@@ -48,8 +48,51 @@ def render_html(data):
     return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
 
 
+# 中文标签映射(2026-08-02 用户拍板:diff 卡必须中文,用户看不懂英文键名)
+FIELD_LABELS = {
+    'height_cm': '身高',
+    'age': '年龄',
+    'gender': '性别',
+    'activity_level': '活动量',
+    'note': '备注',
+    'weight_kg': '体重',
+    'bmi': 'BMI',
+}
+
+
+def _label_for(record_key: str) -> str:
+    """字段键 → 中文标签(如 height_cm → 身高)"""
+    return FIELD_LABELS.get(record_key, record_key)
+
+
+def _latest_weight_kg():
+    """最新体重(kg),TDEE 综合影响计算用"""
+    import db as db_module
+    from pathlib import Path
+    try:
+        db_path = db_module.find_db_path(Path(__file__).parent.parent)
+        with db_module.connection(db_path) as conn:
+            row = conn.execute(
+                'SELECT weight_kg FROM weight_log ORDER BY date DESC, time DESC LIMIT 1'
+            ).fetchone()
+        return row['weight_kg'] if row else None
+    except Exception:
+        return None
+
+
+def _tdee_estimate(age, gender, height_cm, activity_level):
+    """按 Mifflin-St Jeor 估算 TDEE(综合影响卡用)"""
+    from analysis._utils import get_activity_factor
+    w = _latest_weight_kg()
+    if not w or not height_cm or not age:
+        return None, None
+    bmr = 10 * w + 6.25 * height_cm - 5 * age + (5 if gender == 'male' else -161)
+    factor = get_activity_factor(activity_level)
+    return round(bmr * factor), round(bmr * factor - bmr * 1.55, 0)  # TDEE, 相对默认系数差
+
+
 def _profile_receipt(op: str, old_record: dict, new_record: dict, kpis: list,
-                     entity_label: str, action_at: str) -> dict:
+                     entity_label: str, action_at: str, summary: str = '') -> dict:
     """组装 profile 回执数据契约(与 mock_crud_receipt.json 同构)"""
     return {
         'status': 'ok',
@@ -63,6 +106,7 @@ def _profile_receipt(op: str, old_record: dict, new_record: dict, kpis: list,
                 'action_at': action_at,
                 'entity_type': entity_label,
             },
+            'summary': summary,
         },
         'message': f'已生成{entity_label} 回执',
     }
@@ -92,7 +136,10 @@ def build_live_profile_set(age=None, gender=None, height=None, activity=None, no
         {'label': '性别', 'value': '男' if new.get('gender') == 'male' else '女' if new.get('gender') == 'female' else '—'},
         {'label': '活动量', 'value': f'{label}', 'extra': f'系数 × {factor}'},
     ]
-    return _profile_receipt(op, old, new, kpis, '设置档案', new.get('updated_at', '')[:16].replace('T', ' '))
+    summary = (f"档案已{'设置' if is_first else '更新'}:身高{new.get('height_cm')}cm / 年龄{new.get('age')} / "
+               f"性别{'男' if new.get('gender')=='male' else '女' if new.get('gender')=='female' else '—'} / "
+               f"活动量 {label}(系数×{factor})")
+    return _profile_receipt(op, old, new, kpis, '设置档案', new.get('updated_at', '')[:16].replace('T', ' '), summary)
 
 
 def build_live_profile_activity(level: str) -> dict:
@@ -119,7 +166,11 @@ def build_live_profile_activity(level: str) -> dict:
         {'label': '更新时间', 'value': result['updated_at'][:16].replace('T', ' '),
          'extra': 'id=1'},
     ]
-    return _profile_receipt('update', old, new, kpis, '设活动量', result['updated_at'][:16].replace('T', ' '))
+    summary = (f"活动量已设置:{ACTIVITY_LEVEL_LABELS.get(old_level, old_level)} → "
+               f"{result['activity_label']}({result['activity_level']}),TDEE 系数 {old_f} → {new_f}"
+               f"({delta_pct:+.1f}%),每日消耗{delta_pct:+.1f}%")
+    return _profile_receipt('update', old, new, kpis, '设活动量',
+                            result['updated_at'][:16].replace('T', ' '), summary)
 
 
 def build_live_profile_update(field_value_pairs):
@@ -129,6 +180,7 @@ def build_live_profile_update(field_value_pairs):
         field_value_pairs: [(field, value), ...] 成对列表(支持多字段一行一条)
     """
     import profile
+    from analysis._utils import ACTIVITY_LEVEL_LABELS
 
     old = profile.get_profile()
     results = []
@@ -146,10 +198,12 @@ def build_live_profile_update(field_value_pairs):
             impact_map[col] = r['impact']
     new = {**new, **{f'__impact_{k}': v for k, v in impact_map.items()}}
 
-    # KPI:字段数 / 改前 / 改后 / 更新时间(多字段时显示首字段对比)
+    # KPI:字段数 / 改前 / 改后 / TDEE 综合影响 / 更新时间
     first = results[0]
     last = results[-1]
     multi = len(results) > 1
+    tdee_new, tdee_delta = _tdee_estimate(
+        new.get('age'), new.get('gender'), new.get('height_cm'), new.get('activity_level'))
     kpis = [
         {'label': '字段', 'value': f"{len(results)} 项" if multi else first['label'],
          'extra': '、'.join(r['label'] for r in results) if multi else f"field={first['field']}"},
@@ -160,7 +214,25 @@ def build_live_profile_update(field_value_pairs):
         {'label': '更新时间', 'value': last['updated_at'][:16].replace('T', ' '),
          'extra': 'id=1'},
     ]
-    return _profile_receipt('update', old, new, kpis, '改档案', last['updated_at'][:16].replace('T', ' '))
+    if tdee_new:
+        kpis.append({'label': 'TDEE 估算', 'value': f'{tdee_new:,} 卡/天',
+                     'extra': f'按最新体重×系数'})
+
+    # 1 句话总结(2026-08-02 用户拍板:prompt 承诺的总结必须在 HTML 有对应物)
+    changes = []
+    for r in results:
+        col = _FIELD_TO_COL.get(r['field'], r['field'])
+        if col == 'activity_level':
+            old_label = ACTIVITY_LEVEL_LABELS.get(str(r['old_value']).lower(), r['old_value'])
+            new_label = ACTIVITY_LEVEL_LABELS.get(str(r['new_value']).lower(), r['new_value'])
+            changes.append(f"活动量 {old_label}→{new_label}")
+        else:
+            changes.append(f"{r['label']} {r['old_value']}→{r['new_value']}")
+    summary = f"已修改 {len(results)} 项:" + '、'.join(changes)
+    if tdee_new:
+        summary += f";TDEE 约 {tdee_new:,} 卡/天"
+    return _profile_receipt('update', old, new, kpis, '改档案',
+                            last['updated_at'][:16].replace('T', ' '), summary)
 
 
 def main():
@@ -228,6 +300,14 @@ def main():
         if not args.mock and args.chain:
             data['data']['meta']['chain'] = args.chain.strip()
             data['data']['meta']['wake_word'] = cmd_name
+        # 复制日志自描述字段(2026-08-02):渲染命令 + 数据来源
+        if not args.mock:
+            argv = sys.argv[1:]
+            if '--output' in argv:
+                i = argv.index('--output')
+                argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
+            data['data']['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(argv)
+            data['data']['meta']['source'] = 'user_profile (写库回执)'
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

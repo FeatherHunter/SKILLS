@@ -95,6 +95,7 @@
   <div class="title" id="opTitle">--</div>
   <div class="id" id="recordId">--</div>
   <div class="meta" id="recordMeta">--</div>
+  <div class="summary" id="summaryLine" style="display:none;margin-top:10px;font-size:14px;color:var(--fg2);"></div>
 </div>
 
 <div class="kpi-grid" id="kpiGrid"></div>
@@ -113,7 +114,8 @@
   <div class="src" id="srcLine">📊 操作于 --</div>
   <div>
     <button class="btn" id="undoBtn">↩ 撤销(复制指令)</button>
-    <button class="btn btn-primary" id="copyBtn">📋 复制回执</button>
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>
   </div>
 </div>
 
@@ -157,7 +159,21 @@
     });
   }
 
-  // diff 卡(只 update 模式)
+  // 1 句话总结(2026-08-02 用户拍板:prompt 承诺的总结必须在 HTML 有对应物)
+  if (D.data.summary) {
+    const sl = document.getElementById('summaryLine');
+    sl.textContent = '💬 ' + D.data.summary;
+    sl.style.display = 'block';
+  }
+
+  // diff 卡(只 update 模式;字段用中文标签 · 2026-08-02 用户拍板)
+  const FIELD_LABELS = {height_cm:'身高', age:'年龄', gender:'性别', activity_level:'活动量', note:'备注', weight_kg:'体重', bmi:'BMI'};
+  const ACT_LABELS = {sedentary:'久坐', light:'轻度活动', moderate:'中度活动', active:'活跃', very_active:'高度活跃'};
+  function fmtVal(k, v) {
+    if (k === 'activity_level') return ACT_LABELS[v] || v;
+    if (k === 'gender') return v === 'male' ? '男' : v === 'female' ? '女' : v;
+    return v === null || v === undefined ? '—' : v;
+  }
   if (op === 'update' && old_record && new_record) {
     const diffCard = document.getElementById('diffCard');
     diffCard.style.display = 'block';
@@ -170,11 +186,12 @@
       const newV = new_record[k];
       if (oldV === newV) return;
       const impact = new_record['__impact_' + k];
+      const label = FIELD_LABELS[k] || k;
       diffList.insertAdjacentHTML('beforeend',
         `<div class="diff-row">` +
-        `<div><div class="diff-label">${k}</div><div class="diff-old">${oldV === null || oldV === undefined ? '—' : oldV}</div></div>` +
+        `<div><div class="diff-label">${label}</div><div class="diff-old">${fmtVal(k, oldV)}</div></div>` +
         `<div class="diff-arrow">→</div>` +
-        `<div><div class="diff-label">新值</div><div class="diff-new">${newV === null || newV === undefined ? '—' : newV}</div>` +
+        `<div><div class="diff-label">新值</div><div class="diff-new">${fmtVal(k, newV)}</div>` +
         (impact ? `<div class="diff-impact" style="font-size:11px;color:var(--fg2);margin-top:4px;">${impact}</div>` : '') +
         `</div>`);
     });
@@ -214,24 +231,100 @@
     undoBtn.style.display = 'none';
   }
 
-  // 复制
-  document.getElementById('copyBtn').onclick = function() {
-    let r = `${opLabel}成功 · ${meta.entity_type} #${record_id} (${meta.action_at})\n`;
-    if (old_record && new_record) {
+  // 复制工具:clipboard API + textarea fallback + toast(2026-08-02 对齐 crud_view)
+  function showToast(msg) {
+    let t = document.getElementById('copyToast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'copyToast';
+      t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);' +
+        'background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;' +
+        'font-size:13px;z-index:999;max-width:86vw;text-align:center;box-shadow:0 4px 16px rgba(0,0,0,.2);';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.style.display = 'block';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.style.display = 'none'; }, 3200);
+  }
+  function copyText(text, btn, okMsg) {
+    const after = () => {
+      const orig = btn.textContent;
+      btn.textContent = '✓ 已复制';
+      setTimeout(() => btn.textContent = orig, 2000);
+      showToast(okMsg);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
+    } else { fallbackCopy(text); after(); }
+  }
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  // 复制数据:用户关心信息的人类可读文本
+  function buildDataText() {
+    const lines = [`${opLabel}${meta.entity_type}成功 #${record_id} (${meta.action_at})`, ''];
+    if (D.data.summary) lines.push(`💬 ${D.data.summary}`, '');
+    if (context && context.kpis) {
+      context.kpis.forEach(k => lines.push(`${k.label}: ${k.value}${k.extra ? ' ' + k.extra : ''}`));
+      lines.push('');
+    }
+    if (op === 'update' && old_record && new_record) {
+      lines.push('字段变更:');
       Object.keys(new_record).forEach(k => {
-        if (old_record[k] !== new_record[k] && k !== 'created_at' && k !== 'updated_at') {
-          r += `  ${k}: ${old_record[k] ?? '—'} → ${new_record[k]}\n`;
+        if (k.startsWith('__impact_') || k === 'created_at' || k === 'updated_at') return;
+        if (old_record[k] !== new_record[k]) {
+          lines.push(`  ${FIELD_LABELS[k] || k}: ${fmtVal(k, old_record[k])} → ${fmtVal(k, new_record[k])}`);
+          const imp = new_record['__impact_' + k];
+          if (imp) lines.push(`    影响: ${imp}`);
         }
       });
     }
-    if (context && context.totals) {
-      r += '\n今日累计:\n';
-      context.totals.forEach(t => { r += `  ${t.label}: ${t.value} ${t.unit || ''}\n`; });
+    return lines.join('\n');
+  }
+
+  // 复制日志:排障信息(含思考链/改前改后/撤销指令/原始数据)
+  function buildLogText() {
+    const lines = [`[${meta.entity_type} 排障日志]`, ''];
+    lines.push(`唤醒词: ${meta.wake_word || '(未知)'}`);
+    lines.push(`渲染命令: ${meta.render_cmd || '(未知)'}`);
+    lines.push(`数据来源: ${meta.source || '(未知)'}`);
+    lines.push(`操作时间: ${meta.action_at || '(未知)'}`);
+    lines.push('');
+    if (meta.chain) {
+      lines.push(`AI 思考链:`);
+      lines.push(meta.chain);
+    } else {
+      lines.push(`AI 思考链: (未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)`);
     }
-    navigator.clipboard.writeText(r).then(() => {
-      this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制回执', 2000);
-    });
+    if (old_record && new_record) {
+      lines.push('');
+      lines.push(`改前:`);
+      lines.push(JSON.stringify(old_record, null, 2));
+      lines.push(`改后:`);
+      lines.push(JSON.stringify(new_record, null, 2));
+    }
+    if (meta.undo_cli) {
+      lines.push('');
+      lines.push(`撤销指令: 请撤销 ${opLabel} ${meta.entity_type} #${record_id} (${meta.action_at})`);
+      lines.push(`执行: ${meta.undo_cli}`);
+    }
+    return lines.join('\n');
+  }
+
+  document.getElementById('copyDataBtn').onclick = function() {
+    copyText(buildDataText(), this, `${meta.entity_type} 数据复制成功 ✓`);
+  };
+  document.getElementById('copyLogBtn').onclick = function() {
+    copyText(buildLogText(), this, '排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');
   };
 })();
 </script>

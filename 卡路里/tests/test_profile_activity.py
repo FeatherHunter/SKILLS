@@ -168,6 +168,26 @@ def test_live_profile_update_multi_field(profile_env):
     assert p["height_cm"] == 180.0 and p["activity_level"] == "active" and p["age"] == 35
 
 
+def test_profile_receipt_summary(profile_env):
+    """改档案回执:1 句话总结 + 中文标签 + TDEE 综合影响(用户拍板 2026-08-02)"""
+    import render_crud_receipt
+    prof = profile_env
+    prof.set_profile(age=30, gender="male", height_cm=177, activity_level="moderate")
+    data = render_crud_receipt.build_live_profile_update(
+        [("height", "180"), ("activity", "active")])
+    # 1 句话总结
+    assert "已修改 2 项" in data["data"]["summary"]
+    assert "身高" in data["data"]["summary"]
+    assert "活动量" in data["data"]["summary"]
+    # 中文标签映射
+    assert render_crud_receipt._label_for("height_cm") == "身高"
+    assert render_crud_receipt._label_for("activity_level") == "活动量"
+    assert render_crud_receipt._label_for("unknown_col") == "unknown_col"
+    # 设置档案总结
+    d2 = render_crud_receipt.build_live_profile_set(age=30, gender="male", height=177, activity="moderate")
+    assert "档案已" in d2["data"]["summary"]
+
+
 def test_chain_required_live_modes(profile_env, capsys):
     """思考链强制校验:live 模式不传/无效 → 报错退出(用户拍板 2026-08-02)"""
     import render_crud_receipt

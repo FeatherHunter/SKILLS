@@ -164,7 +164,10 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/plan_builder_wizard.html` | 制定健身计划 / 改健身计划 / 落地健身计划 | DB query + 计划生成 | `scripts/render_plan_builder.py` |
 | `templates/health_dashboard.html` | 查健康报告 | `analysis.dashboard(as_dict=True)` 4 维 | `scripts/render_health_dashboard.py [--range / --days]` |
 | `templates/lint_health.html` | 查卡路里数据 | `lint_health()` | `scripts/render_lint_health.py` |
-| `templates/goal_config.html` | 定营养目标 / 定营养目标(自动算) / 定体重目标 / 定体重目标(自动算截止) / 定体重目标(含起始日) / 定饮水目标 / 定饮水目标(自动算) / 一键定全套目标 / 改营养目标 / 改体重目标 / 改饮水目标 / 暂停所有目标 / 重启所有目标 | `nutrition_goal.get/set` + `weight_goal.get/set` | `scripts/render_goal_config.py` |
+| `templates/goal_config.html` | 定营养目标 / 定饮水目标 / 改营养目标 / 改饮水目标 | `daily_goal` + `food_log` | `scripts/render_goal_config.py` |
+| `templates/goal_recommend.html` | 定营养目标(自动算) / 定饮水目标(自动算) / 一键定全套目标 | `recommend_nutrition_goal` / `recommend_water_goal` | `scripts/render_goal_recommend.py` |
+| `templates/goal_weight.html` | 定体重目标 / 定体重目标(自动算截止) / 定体重目标(含起始日) / 改体重目标 | `weight_goal` | `scripts/render_goal_weight.py` |
+| `templates/goal_status.html` | 暂停所有目标 / 重启所有目标 | `goal_manager` | `scripts/render_goal_status.py` |
 | `templates/goal_progress.html` | 看今日目标 / 看本周目标 / 看营养目标进度 / 看饮水目标进度 / 看目标对比实际 / 看目标完成度 / 看即将到期的目标 / 看目标完成率(按周) / 看目标完成率(按月) / 看目标历史完成 / 看目标预测达成 | `daily_goal` + `food_log` 聚合 + `weight_goal` | `scripts/render_goal_progress.py` |
 | `templates/profile_setup.html` | (设置档案 · 配置辅助页) | `profile.get/set` | `scripts/render_profile_setup.py [--live]` |
 | `templates/cron_setup.html` | 开启定时复盘 / 关闭定时复盘 | `mavis cron list/create/delete` (AI 自动查状态) | `scripts/render_cron_setup.py` |
@@ -328,14 +331,14 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 定营养目标 | 设 4 项宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水;热量低于 BMR 提示 | `python scripts/calorie_tracker.py goal <热量> <蛋白> <碳水> <脂肪> [饮水ml]` |
-| 定营养目标(自动算) | 按档案 + 方向(减脂/维持/增肌)自动算 4 项,给依据与推荐理由 | `AI 路由: nutrition_goal.recommend_nutrition_goal` |
-| 定体重目标 | 目标 kg + 可选截止日期,显示当前体重/Δkg/建议速率 | `python scripts/calorie_tracker.py weight-goal --weight-goal <kg> [--deadline <日期>]` |
-| 定体重目标(自动算截止) | 目标 kg + 期望速率 → 推算截止日 + 速率校验 | `AI 路由: weight_goal.set_weight_goal`(AI 算截止) |
-| 定体重目标(含起始日) | 完整 setup:目标 + 起始日 + 截止日 + 起点体重 | `AI 路由: weight_goal.set_weight_goal`(AI 补起始日) |
-| 定饮水目标 | 每天饮水目标(ml) | `AI 路由: nutrition_goal.set_nutrition_goal` |
-| 定饮水目标(自动算) | 按体重 + 季节推推荐值,与旧值对比 | `AI 路由: nutrition_goal.recommend_water_goal` |
-| 一键定全套目标 | 营养+体重+饮水 3 类一键自动算,展示后确认采纳 | `AI 路由: nutrition_goal.recommend_nutrition_goal`(全套) |
+| 定营养目标 | 设 4 项宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水;热量低于 BMR 提示 | `python scripts/render_goal_config.py --live` |
+| 定营养目标(自动算) | 按档案 + 方向(减脂/维持/增肌)自动算 4 项,给依据与推荐理由 | `python scripts/render_goal_recommend.py --profile <减脂/维持/增肌>` |
+| 定体重目标 | 目标 kg + 可选截止日期,显示当前体重/Δkg/建议速率 | `python scripts/render_goal_weight.py --mode basic` |
+| 定体重目标(自动算截止) | 目标 kg + 期望速率 → 推算截止日 + 速率校验 | `python scripts/render_goal_weight.py --mode auto_deadline` |
+| 定体重目标(含起始日) | 完整 setup:目标 + 起始日 + 截止日 + 起点体重 | `python scripts/render_goal_weight.py --mode with_start` |
+| 定饮水目标 | 每天饮水目标(ml) | `python scripts/render_goal_config.py --live --water-only` |
+| 定饮水目标(自动算) | 按体重 + 季节推推荐值,与旧值对比 | `python scripts/render_goal_recommend.py --water-only` |
+| 一键定全套目标 | 营养+体重+饮水 3 类一键自动算,展示后确认采纳 | `python scripts/render_goal_recommend.py --full-kit --profile <减脂/维持/增肌>` |
 
 #### G2 看目标(10)
 
@@ -356,11 +359,11 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
-| 改营养目标 | 改某项/多项营养目标,显示改前/改后 + 影响预估 | `python scripts/calorie_tracker.py goal <新值...>` |
-| 改体重目标 | 改体重目标值/截止日,显示改前/改后 + 新建议速率 | `python scripts/calorie_tracker.py weight-goal --weight-goal <新kg> [--deadline <日期>]` |
-| 改饮水目标 | 只改饮水目标,其他不变 | `AI 路由: nutrition_goal.update_water_goal` |
-| 暂停所有目标 | 临时冻结全部目标(记录照常),给恢复入口提示 | `AI 路由: goal_manager.pause_all_goals` |
-| 重启所有目标 | 从暂停恢复全部目标 | `AI 路由: goal_manager.resume_all_goals` |
+| 改营养目标 | 改某项/多项营养目标,显示改前/改后 + 影响预估 | `python scripts/render_goal_config.py --modify-nutrition` |
+| 改体重目标 | 改体重目标值/截止日,显示改前/改后 + 新建议速率 | `python scripts/render_goal_weight.py --mode modify` |
+| 改饮水目标 | 只改饮水目标,其他不变 | `python scripts/render_goal_config.py --modify-water` |
+| 暂停所有目标 | 临时冻结全部目标(记录照常),给恢复入口提示 | `python scripts/render_goal_status.py --status paused` |
+| 重启所有目标 | 从暂停恢复全部目标 | `python scripts/render_goal_status.py --status resumed` |
 
 #### 新增(2)
 

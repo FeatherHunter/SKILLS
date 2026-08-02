@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>备忘录 · 初始化报告</title>
+<style>
+/* ================================================================
+   备忘录初始化报告 · 过程型 HTML(#8 经验:场景 HTML 承载 AI 执行证据)
+   设计原则:
+     1. 移动优先:480px 居中,PC 不空
+     2. 首屏结论:就绪度汇总 → 逐项检查清单 → 待办指引
+     3. 承诺↔兑现:prompt 说 5 步,HTML 每步有对应物
+     4. 状态色:绿=就绪 / 橙=可选缺失 / 红=必装缺失
+     5. 自包含:零外链 · 原生 details 折叠 · 无 JS 依赖渲染
+   ================================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+  --bg:#f5f5f7;--card:#fff;--line:#d2d2d7;
+  --blue:#007aff;--blue-soft:#f5f8ff;
+  --ok:#34c759;--ok-soft:#ecfff2;--ok-fg:#178a3a;
+  --warn:#ff9500;--warn-soft:#fff7e8;--warn-fg:#b25b00;
+  --err:#ff3b30;--err-soft:#fff5f5;--err-fg:#c7254e;
+  --shadow-md:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  --font:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased;padding:0 env(safe-area-inset-right,0) env(safe-area-inset-bottom,0) env(safe-area-inset-left,0)}
+.wrap{max-width:480px;margin:0 auto;padding:max(20px,env(safe-area-inset-top,0)) 16px calc(40px + env(safe-area-inset-bottom,0))}
+
+/* ===== 首屏状态卡 ===== */
+.status-card{background:var(--card);border-radius:20px;padding:24px 22px;margin:16px 0 14px;box-shadow:var(--shadow-md);text-align:center}
+.status-icon{font-size:44px;line-height:1;margin-bottom:10px}
+.status-title{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.status-sub{font-size:13.5px;color:var(--fg2);margin-top:6px}
+.status-meta{font-size:12px;color:var(--fg3);margin-top:10px}
+
+/* ===== 段落 ===== */
+.section-title{font-size:13px;font-weight:700;color:var(--fg3);letter-spacing:.06em;margin:22px 0 8px;text-transform:uppercase}
+
+/* ===== 检查清单(逐项) ===== */
+.check-item{background:var(--card);border-radius:14px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--line);display:flex;gap:10px;align-items:flex-start}
+.check-item .st{flex-shrink:0;font-size:16px;line-height:1.4;min-width:22px;text-align:center}
+.check-item .body{flex:1;min-width:0}
+.check-item .name{font-size:14px;font-weight:600}
+.check-item .desc{font-size:12.5px;color:var(--fg2);margin-top:2px}
+.check-item .action{font-size:12.5px;margin-top:4px;padding:5px 10px;border-radius:8px;display:inline-block}
+.check-item.ok{background:var(--ok-soft);border-color:transparent}
+.check-item.ok .name{color:var(--ok-fg)}
+.check-item.warn{background:var(--warn-soft);border-color:transparent}
+.check-item.warn .action{background:#fff;color:var(--warn-fg)}
+.check-item.err{background:var(--err-soft);border-color:transparent}
+.check-item.err .name{color:var(--err-fg)}
+.check-item.err .action{background:#fff;color:var(--err-fg)}
+
+/* ===== 待办指引 ===== */
+.todo-card{background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:8px;border:1px solid var(--line)}
+.todo-card .todo-title{font-size:13.5px;font-weight:700;margin-bottom:6px}
+.todo-card ol{padding-left:18px;font-size:13px;color:var(--fg2)}
+.todo-card li{margin-bottom:4px}
+
+/* ===== 完成验证清单(可勾选 · 承诺↔兑现) ===== */
+.verify-card{background:var(--card);border-radius:14px;padding:14px 16px;border:1px solid var(--line)}
+.verify-card .verify-title{font-size:13.5px;font-weight:700;margin-bottom:6px}
+.verify-item{display:flex;gap:8px;align-items:flex-start;padding:6px 0;font-size:13px;color:var(--fg2)}
+.verify-item input{margin-top:3px}
+
+/* ===== 4 状态 fallback ===== */
+.state-banner{display:none;padding:18px;border-radius:14px;margin:16px 0;text-align:center;font-weight:600}
+.state-banner.success{background:var(--ok-soft);color:var(--ok-fg)}
+.state-banner.empty{background:var(--warn-soft);color:var(--warn-fg)}
+.state-banner.missing{background:var(--err-soft);color:var(--err-fg)}
+.state-banner.error{background:var(--err-soft);color:var(--err-fg)}
+
+@media(max-width:360px){.check-item .name{font-size:13px}.status-card{padding:20px 16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="status-card" id="statusCard">
+  <div class="status-icon" id="statusIcon">🔍</div>
+  <div class="status-title" id="statusTitle">环境检查中…</div>
+  <div class="status-sub" id="statusSub">加载检查结果</div>
+  <div class="status-meta" id="statusMeta"></div>
+</div>
+
+<div id="stateSuccess" class="state-banner success" style="display:none;">✓ 初始化报告已加载</div>
+<div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无检查数据</div>
+<div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 检查数据不完整</div>
+<div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
+
+<main id="bodyContent"></main>
+</div>
+<!--INJECT-SHARED-->
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function showState(name){
+  ['Success','Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
+  if(name){var el=document.getElementById('state'+name);if(el)el.style.display='block'}
+}
+
+try{
+  if(typeof window.__DATA__!=='object'||window.__DATA__===null){showState('Error');throw new Error('数据未注入')}
+  var payload=(window.__DATA__.data)||{};
+  var items=Array.isArray(payload.items)?payload.items:[];
+
+  if(items.length===0){
+    showState('Empty');
+  }else{
+
+  // 汇总
+  var ready=items.filter(function(i){return i.status==='ok'}).length;
+  var warn=items.filter(function(i){return i.status==='warn'}).length;
+  var err=items.filter(function(i){return i.status==='err'}).length;
+  var icon=err>0?'❌':(warn>0?'⚠️':'✅');
+  var title=err>0?'环境未就绪':(warn>0?'部分就绪':'环境就绪');
+  document.getElementById('statusIcon').textContent=icon;
+  document.getElementById('statusTitle').textContent=title;
+  document.getElementById('statusSub').textContent='就绪 '+ready+' · 可选缺失 '+warn+' · 必装缺失 '+err;
+  document.getElementById('statusMeta').textContent=(payload.generated_at?'生成于 '+payload.generated_at+' · ':'')+'共 '+items.length+' 项检查';
+
+  var main=document.getElementById('bodyContent');
+  main.innerHTML='';
+
+  // 检查清单
+  var sec1=document.createElement('div');sec1.className='section-title';sec1.textContent='环境检查';
+  main.appendChild(sec1);
+  items.forEach(function(i){
+    var el=document.createElement('div');el.className='check-item '+esc(i.status||'err');
+    var st=document.createElement('div');st.className='st';
+    st.textContent=i.status==='ok'?'✅':(i.status==='warn'?'⚠️':'❌');
+    el.appendChild(st);
+    var body=document.createElement('div');body.className='body';
+    var name=document.createElement('div');name.className='name';name.textContent=esc(i.name);
+    body.appendChild(name);
+    if(i.desc){var d=document.createElement('div');d.className='desc';d.textContent=esc(i.desc);body.appendChild(d)}
+    if(i.action){var a=document.createElement('div');a.className='action';a.textContent=esc(i.action);body.appendChild(a)}
+    el.appendChild(body);
+    main.appendChild(el);
+  });
+
+  // 待办指引
+  var todos=Array.isArray(payload.todos)?payload.todos:[];
+  if(todos.length){
+    var sec2=document.createElement('div');sec2.className='section-title';sec2.textContent='待办指引';
+    main.appendChild(sec2);
+    todos.forEach(function(t){
+      var card=document.createElement('div');card.className='todo-card';
+      var tt=document.createElement('div');tt.className='todo-title';tt.textContent=esc(t.title||'');
+      card.appendChild(tt);
+      if(Array.isArray(t.steps)){
+        var ol=document.createElement('ol');
+        t.steps.forEach(function(s){var li=document.createElement('li');li.textContent=esc(s);ol.appendChild(li)});
+        card.appendChild(ol);
+      }
+      main.appendChild(card);
+    });
+  }
+
+  // 完成验证清单(承诺↔兑现:prompt 5 步 → 可勾选)
+  var verify=Array.isArray(payload.verify)?payload.verify:[];
+  if(verify.length){
+    var sec3=document.createElement('div');sec3.className='section-title';sec3.textContent='完成验证清单';
+    main.appendChild(sec3);
+    var vc=document.createElement('div');vc.className='verify-card';
+    var vt=document.createElement('div');vt.className='verify-title';vt.textContent='全部完成即初始化成功,可勾选';
+    vc.appendChild(vt);
+    verify.forEach(function(v){
+      var vi=document.createElement('label');vi.className='verify-item';
+      var cb=document.createElement('input');cb.type='checkbox';
+      var tx=document.createElement('span');tx.textContent=esc(v);
+      vi.appendChild(cb);vi.appendChild(tx);
+      vc.appendChild(vi);
+    });
+    main.appendChild(vc);
+  }
+
+  showState('Success');
+  }
+}catch(e){
+  console.error('渲染失败:',e);
+  showState('Error');
+}
+</script>
+</body>
+</html>

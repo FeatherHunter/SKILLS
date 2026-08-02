@@ -26,6 +26,7 @@ SYNC_REPORT_TEMPLATE_PATH = SKILL_DIR / "templates" / "sync_report.html"
 WISH_PLAN_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_plan.html"
 WISH_COMPLETE_TEMPLATE_PATH = SKILL_DIR / "templates" / "wish_complete.html"
 CHANGE_CATEGORY_TEMPLATE_PATH = SKILL_DIR / "templates" / "change_category.html"
+INIT_REPORT_TEMPLATE_PATH = SKILL_DIR / "templates" / "init_report.html"
 HELP_TEMPLATE_PATH = SKILL_DIR / "templates" / "memo_help.html"
 SCENARIOS_PATH = SKILL_DIR / "references" / "scenarios.yaml"
 
@@ -96,6 +97,18 @@ def render_wish_complete(payload, name="心愿完成"):
 def render_change_category(payload, name="批量改分类"):
     """渲染批量改分类向导页(过程型 HTML)"""
     template = CHANGE_CATEGORY_TEMPLATE_PATH.read_text(encoding="utf-8")
+    return _write(name, _inject_body(template, payload))
+
+
+def render_init_report(payload, name="备忘录_初始化报告"):
+    """渲染初始化报告页(过程型 HTML · #8 经验:承载 AI 执行证据)。
+
+    payload.data 期望字段:
+      items: [{name, status(ok/warn/err), desc, action}]  # 检查清单
+      todos: [{title, steps: [str]}]                      # 待办指引
+      verify: [str]                                       # 完成验证清单
+    """
+    template = INIT_REPORT_TEMPLATE_PATH.read_text(encoding="utf-8")
     return _write(name, _inject_body(template, payload))
 
 

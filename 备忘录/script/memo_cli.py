@@ -1651,6 +1651,20 @@ def main():
     # completed reminders
     p_completed = sub.add_parser("completed")
     p_completed.add_argument("--html", action="store_true", help="生成 HTML 已完成提醒页")
+
+    # init-report(v1.2.0 · 首次使用场景的过程型 HTML · #8 经验:承载 AI 执行证据)
+    # AI 诊断完成后把检查结果以 --data JSON 传入,渲染初始化报告页
+    # 数据契约:{"items":[{name,status(ok/warn/err),desc,action}],
+    #            "todos":[{title,steps:[str]}],"verify":[str]}
+    p_ir = sub.add_parser(
+        "init-report",
+        help="首次使用:生成初始化报告页(过程型 HTML · 检查清单 + 待办 + 验证清单)",
+    )
+    p_ir.add_argument(
+        "--data", required=True,
+        help="诊断结果 JSON(见 SKILL.md 首次使用行为规范)",
+    )
+
     # help (v1.1.4 · 总纲 §07 契约 · 必生成 HELP HTML)
     # 必须行为:跑命令 = 必生成 HTML + 覆盖 skill 根目录 备忘录.html
     # 不暴露 --html flag(简化调用,无歧义)
@@ -1741,6 +1755,22 @@ def main():
         list_reminders(args)
     elif args.command == "completed":
         completed_reminders(args)
+    elif args.command == "init-report":
+        # v1.2.0 · 首次使用场景过程型 HTML(AI 诊断后渲染报告页)
+        import json as _json
+        from memo_render import render_init_report
+        try:
+            diag = _json.loads(args.data)
+        except _json.JSONDecodeError as e:
+            output_json({"error": "data 不是合法 JSON"}, status="error",
+                        message=f"--data 解析失败: {e}")
+            return
+        payload = {"status": "ok", "data": diag.get("data", diag)}
+        path = render_init_report(payload)
+        output_json(
+            {"html_path": path},
+            message="初始化报告页已生成",
+        )
     elif args.command == "help":
         # 总纲 §07 契约:HELP 命中必 invoke HTML
         # 用户额外要求:覆盖 skill 根目录 备忘录.html(永远写)

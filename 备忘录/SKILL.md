@@ -317,6 +317,24 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 
 > v1.2.0:快速开始 prompt 与 Init 场景(首次使用)统一为**唯一入口**。原 prompt 暴露 `script/init.sql` 路径违反 prompt 契约(§07 §3),已废弃。AI 收到「首次使用 / 初始化 / 新手」均走同一初始化流程,诊断复用现有命令,不新增 CLI 子命令。
 
+### 首次使用行为规范(v1.2.0 · #8 经验落地:交互规则落 SKILL.md,不只靠 prompt)
+
+AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行(**7 环节完整工作流**):
+
+1. **诊断**(逐项检查,复用现有命令,不新增 CLI 子命令):
+   - Python 运行环境:`python --version`(需 3.10+)
+   - 数据存储:检查 SKILLS_DB_PATH / 数据库文件可写;SQLite FTS5 可用性(`python -c "import sqlite3;conn=sqlite3.connect(':memory:');conn.execute(\"CREATE VIRTUAL TABLE t USING fts5(x)\")"`)
+   - 飞书联动(可选):`feishu_sync.py check` 或按飞书 CLI 探测;**未装/未授权 → 标 warn,不阻断**
+   - 环境变量:SKILLS_DB_PATH / MEMO_MEDIA_DIR
+2. **初始化数据库**:确认数据表就绪;缺失则建表(复用 memo_cli 内部初始化逻辑,不暴露路径)
+3. **引导配置**:数据目录 + 媒体目录(MEMO_MEDIA_DIR),确认路径可写
+4. **提醒调度**:说明 cron 配置方式,验证方式由宿主环境决定;无法验证 → 标 warn + 给指引
+5. **过程 HTML + 回执**:诊断完成后,调用 `memo_cli.py init-report --data '<诊断结果 JSON>'` 生成初始化报告页(items 检查清单 + todos 待办 + verify 完成验证清单),发给用户;流程完成再给一句话文字总结
+   - `--data` 数据契约:`{"items":[{name,status(ok/warn/err),desc,action}], "todos":[{title,steps:[str]}], "verify":[str]}`
+   - status 取值:ok=就绪 / warn=可选缺失(飞书、cron 等)/ err=必装缺失(Python、数据库等)
+6. **承诺↔兑现**:prompt 5 步 → 报告页必须有对应物(检查项/待办/验证清单);缺失即流程断裂
+7. **飞书缺失不降级阻断**:飞书是可选能力,缺失只标 warn,初始化照常完成
+
 **⚠️ Cron 任务特性**:
 - 当有待提醒事项时 → 通过 message 工具发送到 QQ
 - 当无提醒事项时 → 输出「NO_REPLY」静默,不发送任何消息

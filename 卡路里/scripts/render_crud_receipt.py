@@ -112,10 +112,11 @@ def _profile_receipt(op: str, old_record: dict, new_record: dict, kpis: list,
     }
 
 
-def build_live_profile_set(age=None, gender=None, height=None, activity=None, note=None):
+def build_live_profile_set(age=None, gender=None, height=None, activity=None, note=None, reason=''):
     """设置档案:全量写库 + 组装回执(呈现:身高/年龄/性别/活动量 + 设置时间)
 
     首次设置 op=create;已存在档案 op=update(改前/改后对比)。
+    reason: AI 采访式引导的推荐理由(2026-08-02 · 语义映射必须可审计 R6)
     """
     import profile
     from analysis._utils import ACTIVITY_LEVEL_LABELS, TDEE_ACTIVITY_FACTORS
@@ -130,15 +131,33 @@ def build_live_profile_set(age=None, gender=None, height=None, activity=None, no
     factor = TDEE_ACTIVITY_FACTORS.get(al, 1.55)
     label = ACTIVITY_LEVEL_LABELS.get(al, al)
     op = 'create' if is_first else 'update'
+
+    # 逐字段影响提示(2026-08-02 缺口修复:设置档案也应有改前/改后+影响,同改档案)
+    _FIELD_TO_COL = {'height': 'height_cm', 'activity': 'activity_level'}
+    impact_map = {}
+    for f, col in (('height', 'height_cm'), ('age', 'age'), ('gender', 'gender'), ('activity', 'activity_level')):
+        old_v = old.get(col) if old else None
+        new_v = new.get(col)
+        if old_v != new_v:
+            imp = profile._compute_impact(f, old_v, new_v)
+            if imp:
+                impact_map[col] = imp
+    new_disp = {**new, **{f'__impact_{k}': v for k, v in impact_map.items()}}
+
     # 信息唯一性(2026-08-02):KPI 与 summary/diff 重复 → 只留 summary,不填 kpis
     summary = (f"档案已{'设置' if is_first else '更新'}:身高{new.get('height_cm')}cm / 年龄{new.get('age')} / "
                f"性别{'男' if new.get('gender')=='male' else '女' if new.get('gender')=='female' else '—'} / "
                f"活动量 {label}(系数×{factor})")
-    return _profile_receipt(op, old, new, [], '设置档案', new.get('updated_at', '')[:16].replace('T', ' '), summary)
+    if reason:
+        summary += f";推荐理由:{reason}"
+    return _profile_receipt(op, old, new_disp, [], '设置档案', new.get('updated_at', '')[:16].replace('T', ' '), summary)
 
 
-def build_live_profile_activity(level: str) -> dict:
-    """设活动量:写库 + 组装回执(呈现:活动等级 + 影响(TDEE 系数))"""
+def build_live_profile_activity(level: str, reason=''):
+    """设活动量:写库 + 组装回执(呈现:活动等级 + 影响(TDEE 系数))
+
+    reason: AI 对用户语义(如「运动量很大」)→ 档位映射的说明(2026-08-02 · R6 语义映射可审计)
+    """
     import profile
     from analysis._utils import ACTIVITY_LEVEL_LABELS, TDEE_ACTIVITY_FACTORS, get_activity_factor
 
@@ -151,11 +170,18 @@ def build_live_profile_activity(level: str) -> dict:
     new_f = result['activity_factor']
     delta_pct = round((new_f - old_f) / old_f * 100, 1) if old_f else 0
 
+    # 影响提示注入(2026-08-02 缺口修复:diff 卡逐字段影响,同改档案/设置档案)
+    impact = (f"活动量 {ACTIVITY_LEVEL_LABELS.get(old_level, old_level)} → "
+              f"{result['activity_label']},TDEE 系数 {old_f} → {new_f}({delta_pct:+.1f}%)")
+    new_disp = {**new, '__impact_activity_level': impact}
+
     # 信息唯一性(2026-08-02):KPI 与 summary/diff 重复 → 只留 summary,不填 kpis
     summary = (f"活动量已设置:{ACTIVITY_LEVEL_LABELS.get(old_level, old_level)} → "
                f"{result['activity_label']}({result['activity_level']}),TDEE 系数 {old_f} → {new_f}"
                f"({delta_pct:+.1f}%),每日消耗{delta_pct:+.1f}%")
-    return _profile_receipt('update', old, new, [], '设活动量',
+    if reason:
+        summary += f";映射依据:{reason}"
+    return _profile_receipt('update', old, new_disp, [], '设活动量',
                             result['updated_at'][:16].replace('T', ' '), summary)
 
 
@@ -225,6 +251,7 @@ def main():
     p.add_argument('--field', action='append', help='改档案字段(height/age/gender/activity/note,可多次)')
     p.add_argument('--value', action='append', help='改档案新值(与 --field 成对,可多次)')
     p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
+    p.add_argument('--reason', help='AI 映射/推荐理由(设活动量:语义→档位;设置档案:采访推荐 · 2026-08-02 R6)')
     p.add_argument('--output')
     args = p.parse_args()
 
@@ -263,9 +290,9 @@ def main():
         elif args.live_profile_set:
             data = build_live_profile_set(age=args.age, gender=args.gender,
                                           height=args.height, activity=args.activity,
-                                          note=args.note)
+                                          note=args.note, reason=args.reason or '')
         elif args.live_profile_activity:
-            data = build_live_profile_activity(args.live_profile_activity)
+            data = build_live_profile_activity(args.live_profile_activity, reason=args.reason or '')
         else:
             data = build_live_profile_update(list(zip(fields, values)))
         # AI 思考链注入 meta(复制日志带出 · 2026-08-02)

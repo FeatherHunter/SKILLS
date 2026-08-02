@@ -1742,11 +1742,11 @@ AI 看到错误时按此表处理:
 
 **设置档案**(采访式引导 = AI 默认交互):
 1. 用户信息不全 → 逐项问(身高/年龄/性别/活动量),活动量根据日常情况推荐(久坐/轻度/中度/活跃/高度活跃)并说明理由
-2. 信息齐 → 调 `render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析意图→2.写库→3.生成回执"`(写库 + 回执 HTML 一体;--chain 必传)
+2. 信息齐 → 调 `render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析意图→2.写库→3.生成回执" --reason "推荐理由"`(写库 + 回执 HTML 一体;--chain/--reason 必传,reason=活动量推荐依据)
 3. 回执 HTML(呈现:身高/年龄/性别/活动量 + 设置时间;已存在档案时含改前/改后)
 
 **设活动量**:
-1. 调 `render_crud_receipt.py --live-profile-activity <level> --chain "1.解析意图→2.写库→3.生成回执"`(写库 + 回执 HTML,level ∈ sedentary/light/moderate/active/very_active;--chain 必传)
+1. 调 `render_crud_receipt.py --live-profile-activity <level> --chain "1.解析意图→2.写库→3.生成回执" --reason "映射依据"`(写库 + 回执 HTML,level ∈ sedentary/light/moderate/active/very_active;--chain/--reason 必传,reason=语义→档位映射依据,如 运动量很大→活跃)
 2. 回执 HTML(呈现:活动等级 + 影响(TDEE 系数旧→新)+ 对每日消耗影响)
 
 **改档案**:

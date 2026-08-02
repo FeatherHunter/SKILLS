@@ -188,6 +188,28 @@ def test_profile_receipt_summary(profile_env):
     assert "档案已" in d2["data"]["summary"]
 
 
+def test_profile_set_activity_reason_and_impact(profile_env):
+    """设置档案/设活动量:reason 透传 + 影响提示注入(全流程审查 2026-08-02)"""
+    import render_crud_receipt
+    prof = profile_env
+    prof.set_profile(age=30, gender="male", height_cm=177, activity_level="moderate")
+    # 设活动量:reason 进 summary + impact 进 diff
+    d1 = render_crud_receipt.build_live_profile_activity("active", reason="运动量很大→活跃")
+    assert "映射依据:运动量很大→活跃" in d1["data"]["summary"]
+    assert "__impact_activity_level" in d1["data"]["new_record"]
+    assert "1.725" in d1["data"]["new_record"]["__impact_activity_level"]
+    # 设置档案:reason 进 summary + 逐字段 impact(身高/活动量)
+    d2 = render_crud_receipt.build_live_profile_set(
+        age=31, gender="female", height=180, activity="very_active", reason="健身3次/周→高度活跃")
+    assert "推荐理由:健身3次/周→高度活跃" in d2["data"]["summary"]
+    nr = d2["data"]["new_record"]
+    assert "__impact_height_cm" in nr and "BMI" in nr["__impact_height_cm"]
+    assert "__impact_activity_level" in nr and "1.9" in nr["__impact_activity_level"]
+    assert "__impact_age" in nr
+    # 无变化的字段不注入
+    assert "__impact_note" not in nr
+
+
 def test_chain_required_live_modes(profile_env, capsys):
     """思考链强制校验:live 模式不传/无效 → 报错退出(用户拍板 2026-08-02)"""
     import render_crud_receipt

@@ -2112,6 +2112,529 @@ TRIGGERS = [
             'user_intent': '我想检查训练计划里的禁忌动作', 'data_fields': ["part", "hits", "severity", "safe_variants"],
             'depends_on_external': False, 'order': 0},
     {
+            'category': '目标管理',     'wake_word': '定营养目标',     'desc': '设每日 4 项宏量营养目标',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_config.py --live', 'text': '请你加载技能 卡路里,执行唤醒词「定营养目标」。\n\n我想设每日 4 大宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水目标。若热量明显低于我的基础代谢(BMR),请提示我注意。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标数值(请按实际替换,不知道的可以空着):\n热量(卡):____\n蛋白(g):____\n碳水(g):____\n脂肪(g):____\n饮水(ml):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_nutrition', 'name': '定营养目标', 'subfunction': '定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'python scripts/render_goal_config.py --live', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定营养目标」。\n\n我想设每日 4 大宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水目标。若热量明显低于我的基础代谢(BMR),请提示我注意。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标数值(请按实际替换,不知道的可以空着):\n热量(卡):____\n蛋白(g):____\n碳水(g):____\n脂肪(g):____\n饮水(ml):____',
+            'user_intent': '设每日 4 项宏量营养目标', 'data_fields': ["calorie_goal", "protein_goal", "carbs_goal", "fat_goal", "water_goal"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '目标管理',     'wake_word': '定营养目标(自动算)',     'desc': '按档案 + 策略自动算每日营养目标',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_recommend.py --profile <减脂/维持/增肌>', 'text': '请你加载技能 卡路里,执行唤醒词「定营养目标(自动算)」。\n\n想根据我的档案(身高/体重/年龄/活动量)+ 目标方向自动算出 4 项营养目标。若我未提供方向或档案信息缺失,请先询问补齐;若我已明确表达,直接计算,必要时做几句信息确认即可。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标方向(减脂 / 维持 / 增肌):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_nutrition_auto', 'name': '定营养目标(自动算)', 'subfunction': '定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_recommend.html', 'data_source': 'python scripts/render_goal_recommend.py --profile <减脂/维持/增肌>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定营养目标(自动算)」。\n\n想根据我的档案(身高/体重/年龄/活动量)+ 目标方向自动算出 4 项营养目标。若我未提供方向或档案信息缺失,请先询问补齐;若我已明确表达,直接计算,必要时做几句信息确认即可。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标方向(减脂 / 维持 / 增肌):____',
+            'user_intent': '按档案 + 策略自动算每日营养目标', 'data_fields': ["tdee", "recommend", "weekly_rate", "macros_4", "basis", "plan_reasons"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '目标管理',     'wake_word': '定体重目标',     'desc': '设定体重目标值与可选截止日期',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_weight.py --mode basic', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(目标 kg + 可选截止日期)。请显示我的当前体重、目标值、差值(Δkg)和建议速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n截止日期(选填):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_weight', 'name': '定体重目标', 'subfunction': '定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode basic', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(目标 kg + 可选截止日期)。请显示我的当前体重、目标值、差值(Δkg)和建议速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n截止日期(选填):____',
+            'user_intent': '设定体重目标值与可选截止日期', 'data_fields': ["current_weight", "target_weight", "deadline", "delta_kg", "suggested_rate"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '目标管理',     'wake_word': '定体重目标(自动算截止)',     'desc': '按速率推算截止日期的体重目标',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_weight.py --mode auto_deadline', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n我想设定体重目标(目标 kg + 期望每周减重速率),由你自动推算合理截止日期,并校验速率是否合理(不超安全范围)。请显示我的当前体重、目标值、推算截止日期和速率校验结果。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n期望每周减重速率(kg/周):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_weight_auto_deadline', 'name': '定体重目标(自动算截止)', 'subfunction': '定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode auto_deadline', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n我想设定体重目标(目标 kg + 期望每周减重速率),由你自动推算合理截止日期,并校验速率是否合理(不超安全范围)。请显示我的当前体重、目标值、推算截止日期和速率校验结果。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n期望每周减重速率(kg/周):____',
+            'user_intent': '按速率推算截止日期的体重目标', 'data_fields': ["current_weight", "target_weight", "est_deadline", "rate_check"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '目标管理',     'wake_word': '定体重目标(含起始日)',     'desc': '完整 setup 体重目标含起始日',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_weight.py --mode with_start', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n我想完整设定体重目标:目标 kg + 起始日 + 截止日 + 起点体重。请显示我的起始日、起点体重、当前体重、目标值、截止和差值。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n起始日:____\n截止日期:____\n起点体重(kg):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_weight_with_start', 'name': '定体重目标(含起始日)', 'subfunction': '定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode with_start', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n我想完整设定体重目标:目标 kg + 起始日 + 截止日 + 起点体重。请显示我的起始日、起点体重、当前体重、目标值、截止和差值。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n起始日:____\n截止日期:____\n起点体重(kg):____',
+            'user_intent': '完整 setup 体重目标含起始日', 'data_fields': ["weight_goal", "goal_deadline", "start_date", "start_weight"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '目标管理',     'wake_word': '定饮水目标',     'desc': '设每日饮水目标',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_config.py --live --water-only', 'text': '请你加载技能 卡路里,执行唤醒词「定饮水目标」。\n\n我想设定每天饮水目标(ml)。完成后给 1 句话总结,不需要过多文字解释。\n\n我的饮水目标(ml):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_water', 'name': '定饮水目标', 'subfunction': '定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'python scripts/render_goal_config.py --live --water-only', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定饮水目标」。\n\n我想设定每天饮水目标(ml)。完成后给 1 句话总结,不需要过多文字解释。\n\n我的饮水目标(ml):____',
+            'user_intent': '设每日饮水目标', 'data_fields': ["water_goal"],
+            'depends_on_external': False, 'order': 5},
+    {
+            'category': '目标管理',     'wake_word': '定饮水目标(自动算)',     'desc': '按体重推算饮水目标推荐值',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_recommend.py --water-only', 'text': '请你加载技能 卡路里,执行唤醒词「定饮水目标(自动算)」。\n\n想按我的体重(ml/kg)自动推算饮水目标推荐值,并和旧目标对比。请显示计算依据、推荐值、旧值与新值对比。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重(kg,选填,默认取最新记录):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_water_auto', 'name': '定饮水目标(自动算)', 'subfunction': '定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_recommend.html', 'data_source': 'python scripts/render_goal_recommend.py --water-only', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定饮水目标(自动算)」。\n\n想按我的体重(ml/kg)自动推算饮水目标推荐值,并和旧目标对比。请显示计算依据、推荐值、旧值与新值对比。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重(kg,选填,默认取最新记录):____',
+            'user_intent': '按体重推算饮水目标推荐值', 'data_fields': ["weight_kg", "season", "recommended_water_ml"],
+            'depends_on_external': False, 'order': 6},
+    {
+            'category': '目标管理',     'wake_word': '一键定全套目标',     'desc': '一键设定营养+体重+饮水全套目标',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_recommend.py --full-kit --profile <减脂/维持/增肌>', 'text': '请你加载技能 卡路里,执行唤醒词「一键定全套目标」。\n\n想一键设定 3 类目标(营养 + 体重 + 饮水),基于我的档案自动计算,先给我看每类目标值与依据说明,等我确认后再采纳。若我的档案(身高/年龄/活动量)未设置、无体重记录或信息缺失,请先询问补齐;若我已明确表达,直接计算,必要时做几句信息确认即可。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标方向(减脂 / 维持 / 增肌):____\n我的体重目标(kg,选填):____\n截止日期(选填):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_set_full_kit', 'name': '一键定全套目标', 'subfunction': '定目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_recommend.html', 'data_source': 'python scripts/render_goal_recommend.py --full-kit --profile <减脂/维持/增肌>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「一键定全套目标」。\n\n想一键设定 3 类目标(营养 + 体重 + 饮水),基于我的档案自动计算,先给我看每类目标值与依据说明,等我确认后再采纳。若我的档案(身高/年龄/活动量)未设置、无体重记录或信息缺失,请先询问补齐;若我已明确表达,直接计算,必要时做几句信息确认即可。完成后给 1 句话总结,不需要过多文字解释。\n\n我的目标方向(减脂 / 维持 / 增肌):____\n我的体重目标(kg,选填):____\n截止日期(选填):____',
+            'user_intent': '一键设定营养+体重+饮水全套目标', 'data_fields': ["calorie_goal", "protein_goal", "carbs_goal", "fat_goal", "water_goal", "weight_goal"],
+            'depends_on_external': False, 'order': 7},
+    {
+            'category': '目标管理',     'wake_word': '看今日目标',     'desc': '看今日营养 4 项 + 饮水共 5 项目标完成度（体重为累计目标，引导到看体重目标进度）',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode today', 'text': '请你加载技能 卡路里,执行唤醒词「看今日目标」。\n\n我想看今日 5 项目标完成度:热量/蛋白/碳水/脂肪/饮水的目标值、实际值与完成度百分比。体重是累计目标,若我想看,请引导我到「看体重目标进度」。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_today', 'name': '看今日目标', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode today', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日目标」。\n\n我想看今日 5 项目标完成度:热量/蛋白/碳水/脂肪/饮水的目标值、实际值与完成度百分比。体重是累计目标,若我想看,请引导我到「看体重目标进度」。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今日营养 4 项 + 饮水共 5 项目标完成度（体重为累计目标，引导到看体重目标进度）', 'data_fields': ["calorie_goal", "protein_goal", "carbs_goal", "fat_goal", "water_goal", "actual", "pct"],
+            'depends_on_external': False, 'order': 8},
+    {
+            'category': '目标管理',     'wake_word': '看本周目标',     'desc': '看本周目标完成度汇总',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode week', 'text': '请你加载技能 卡路里,执行唤醒词「看本周目标」。\n\n我想看本周目标完成情况:日均实际 vs 日目标、周总量 vs 周目标(热量/蛋白/碳水/脂肪/饮水)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_week', 'name': '看本周目标', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周目标」。\n\n我想看本周目标完成情况:日均实际 vs 日目标、周总量 vs 周目标(热量/蛋白/碳水/脂肪/饮水)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周目标完成度汇总', 'data_fields': ["daily_avg", "daily_target", "week_total", "week_target"],
+            'depends_on_external': False, 'order': 9},
+    {
+            'category': '目标管理',     'wake_word': '看营养目标进度',     'desc': '看 4 项营养目标进度',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode nutrition', 'text': '请你加载技能 卡路里,执行唤醒词「看营养目标进度」。\n\n我想看 4 项营养目标(热量/蛋白/碳水/脂肪)的完成进度条、完成度百分比和缺口(目标 - 实际)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_nutrition_progress', 'name': '看营养目标进度', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode nutrition', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看营养目标进度」。\n\n我想看 4 项营养目标(热量/蛋白/碳水/脂肪)的完成进度条、完成度百分比和缺口(目标 - 实际)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看 4 项营养目标进度', 'data_fields': ["calorie_rate", "protein_rate", "carbs_rate", "fat_rate", "calorie_gap"],
+            'depends_on_external': False, 'order': 10},
+    {
+            'category': '目标管理',     'wake_word': '看体重目标进度',     'desc': '看体重目标进度含预估达成',
+            'main_prompt': {
+        'cli': 'python scripts/calorie_tracker.py weight-goal-progress', 'text': '请你加载技能 卡路里,执行唤醒词「看体重目标进度」。\n\n我想看体重目标进度:当前体重、目标值、差值(Δ)、完成百分比、预测达成日、剩余天数和建议速率。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_weight_progress', 'name': '看体重目标进度', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/calorie_tracker.py weight-goal-progress', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体重目标进度」。\n\n我想看体重目标进度:当前体重、目标值、差值(Δ)、完成百分比、预测达成日、剩余天数和建议速率。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看体重目标进度含预估达成', 'data_fields': ["current", "target", "delta", "pct", "predict_date", "days_left", "suggested_rate"],
+            'depends_on_external': False, 'order': 11},
+    {
+            'category': '目标管理',     'wake_word': '看饮水目标进度',     'desc': '看饮水目标进度',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode water', 'text': '请你加载技能 卡路里,执行唤醒词「看饮水目标进度」。\n\n我想看今日饮水进度:累计饮水量、目标值、完成度百分比和剩余量(ml)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_water_progress', 'name': '看饮水目标进度', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode water', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看饮水目标进度」。\n\n我想看今日饮水进度:累计饮水量、目标值、完成度百分比和剩余量(ml)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看饮水目标进度', 'data_fields': ["cumulative", "target", "pct", "remaining_ml"],
+            'depends_on_external': False, 'order': 12},
+    {
+            'category': '目标管理',     'wake_word': '看目标对比实际',     'desc': '看目标线 vs 实际线折线对比',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode vs_actual', 'text': '请你加载技能 卡路里,执行唤醒词「看目标对比实际」。\n\n我想看热量目标线 vs 实际摄入线的对比折线图 + 偏差分析,默认最近 30 天(可自定义时间窗口)。完成后给 1 句话总结,不需要过多文字解释。\n\n时间窗口(天,选填,默认 30):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_vs_actual', 'name': '看目标对比实际', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode vs_actual', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标对比实际」。\n\n我想看热量目标线 vs 实际摄入线的对比折线图 + 偏差分析,默认最近 30 天(可自定义时间窗口)。完成后给 1 句话总结,不需要过多文字解释。\n\n时间窗口(天,选填,默认 30):____',
+            'user_intent': '看目标线 vs 实际线折线对比', 'data_fields': ["daily_calorie_goal", "daily_calorie_actual", "deviation_pct"],
+            'depends_on_external': False, 'order': 13},
+    {
+            'category': '目标管理',     'wake_word': '看目标完成度',     'desc': '查看全部目标完成度 + 缺口绝对值 + 总评分',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode completion', 'text': '请你加载技能 卡路里,执行唤醒词「看目标完成度」。\n\n我想看全部目标完成度汇总:5 项(热量/蛋白/碳水/脂肪/饮水)完成度百分比、各自缺口(目标 - 实际)和总评分。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_completion', 'name': '看目标完成度（含缺口）', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode completion', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标完成度」。\n\n我想看全部目标完成度汇总:5 项(热量/蛋白/碳水/脂肪/饮水)完成度百分比、各自缺口(目标 - 实际)和总评分。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '查看全部目标完成度 + 缺口绝对值 + 总评分', 'data_fields': ["pct", "gap", "total_score"],
+            'depends_on_external': False, 'order': 14},
+    {
+            'category': '目标管理',     'wake_word': '看即将到期的目标',     'desc': '看即将到期的目标列表',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode weight --expiring 14', 'text': '请你加载技能 卡路里,执行唤醒词「看即将到期的目标」。\n\n我想看即将到期的体重目标:目标值、截止日期、剩余天数、当前进度和紧迫度(默认 14 天内到期)。完成后给 1 句话总结,不需要过多文字解释。\n\n到期窗口(天,选填,默认 14):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_expiring', 'name': '看即将到期的目标', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode weight --expiring 14', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看即将到期的目标」。\n\n我想看即将到期的体重目标:目标值、截止日期、剩余天数、当前进度和紧迫度(默认 14 天内到期)。完成后给 1 句话总结,不需要过多文字解释。\n\n到期窗口(天,选填,默认 14):____',
+            'user_intent': '看即将到期的目标列表', 'data_fields': ["weight_goal", "deadline", "days_left", "current_weight", "completion_pct", "urgency"],
+            'depends_on_external': False, 'order': 15},
+    {
+            'category': '目标管理',     'wake_word': '看目标完成率(按周)',     'desc': '看本周营养目标每日完成率',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode nutrition --period week', 'text': '请你加载技能 卡路里,执行唤醒词「看目标完成率(按周)」。\n\n我想看本周(7 天)每日目标完成率柱状图 + 达标天数(达标带 80%-120%)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_completion_rate_week', 'name': '看目标完成率(按周)', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode nutrition --period week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标完成率(按周)」。\n\n我想看本周(7 天)每日目标完成率柱状图 + 达标天数(达标带 80%-120%)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周营养目标每日完成率', 'data_fields': ["week_daily_rate", "week_complete_days", "week_avg_rate"],
+            'depends_on_external': False, 'order': 16},
+    {
+            'category': '目标管理',     'wake_word': '看目标完成率(按月)',     'desc': '看本月营养目标每日完成率',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode nutrition --period month', 'text': '请你加载技能 卡路里,执行唤醒词「看目标完成率(按月)」。\n\n我想看本月(30 天)每日目标完成率柱状图 + 达标天数(达标带 80%-120%)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_completion_rate_month', 'name': '看目标完成率(按月)', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode nutrition --period month', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标完成率(按月)」。\n\n我想看本月(30 天)每日目标完成率柱状图 + 达标天数(达标带 80%-120%)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月营养目标每日完成率', 'data_fields': ["month_daily_rate", "month_complete_days", "month_avg_rate"],
+            'depends_on_external': False, 'order': 17},
+    {
+            'category': '目标管理',     'wake_word': '改营养目标',     'desc': '改某项或全部营养目标',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_config.py --modify-nutrition', 'text': '请你加载技能 卡路里,执行唤醒词「改营养目标」。\n\n我想修改营养目标(热量/蛋白/碳水/脂肪/饮水),可同时改多项。请显示每项改前值与改后值,并预估修改后的影响(热量缺口/预算变化)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n热量(卡)新目标值:____\n蛋白(g)新目标值:____\n碳水(g)新目标值:____\n脂肪(g)新目标值:____\n饮水(ml)新目标值:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_modify_nutrition', 'name': '改营养目标', 'subfunction': '改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'python scripts/render_goal_config.py --modify-nutrition', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改营养目标」。\n\n我想修改营养目标(热量/蛋白/碳水/脂肪/饮水),可同时改多项。请显示每项改前值与改后值,并预估修改后的影响(热量缺口/预算变化)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n热量(卡)新目标值:____\n蛋白(g)新目标值:____\n碳水(g)新目标值:____\n脂肪(g)新目标值:____\n饮水(ml)新目标值:____',
+            'user_intent': '改某项或全部营养目标', 'data_fields': ["old_calorie_goal", "new_calorie_goal", "old_protein_goal", "new_protein_goal", "old_water_goal", "new_water_goal"],
+            'depends_on_external': False, 'order': 18},
+    {
+            'category': '目标管理',     'wake_word': '改体重目标',     'desc': '改体重目标含截止日',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_weight.py --mode modify', 'text': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想修改体重目标值或截止日期。请显示改前值与改后值,并给出新的建议减重速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n体重目标(kg):____\n截止日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_modify_weight', 'name': '改体重目标', 'subfunction': '改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode modify', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想修改体重目标值或截止日期。请显示改前值与改后值,并给出新的建议减重速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n体重目标(kg):____\n截止日期:____',
+            'user_intent': '改体重目标含截止日', 'data_fields': ["old_weight_goal", "new_weight_goal", "old_deadline", "new_deadline"],
+            'depends_on_external': False, 'order': 19},
+    {
+            'category': '目标管理',     'wake_word': '改饮水目标',     'desc': '单独改饮水目标',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_config.py --modify-water', 'text': '请你加载技能 卡路里,执行唤醒词「改饮水目标」。\n\n我想单独修改饮水目标,其他营养目标保持不变。请显示改前值与改后值。完成后给 1 句话总结,不需要过多文字解释。\n\n饮水目标(ml):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_modify_water', 'name': '改饮水目标', 'subfunction': '改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_config.html', 'data_source': 'python scripts/render_goal_config.py --modify-water', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改饮水目标」。\n\n我想单独修改饮水目标,其他营养目标保持不变。请显示改前值与改后值。完成后给 1 句话总结,不需要过多文字解释。\n\n饮水目标(ml):____',
+            'user_intent': '单独改饮水目标', 'data_fields': ["old_water_goal", "new_water_goal"],
+            'depends_on_external': False, 'order': 20},
+    {
+            'category': '目标管理',     'wake_word': '暂停所有目标',     'desc': '临时暂停全部目标',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_status.py --status paused', 'text': '请你加载技能 卡路里,执行唤醒词「暂停所有目标」。\n\n我想临时冻结全部目标(营养 + 体重 + 饮水),记录照常,仅目标暂停。请显示暂停状态、说明和恢复入口提示。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_pause_all', 'name': '暂停所有目标', 'subfunction': '改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_status.html', 'data_source': 'python scripts/render_goal_status.py --status paused', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「暂停所有目标」。\n\n我想临时冻结全部目标(营养 + 体重 + 饮水),记录照常,仅目标暂停。请显示暂停状态、说明和恢复入口提示。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '临时暂停全部目标', 'data_fields': ["paused", "note", "restore_hint"],
+            'depends_on_external': False, 'order': 21},
+    {
+            'category': '目标管理',     'wake_word': '重启所有目标',     'desc': '从暂停恢复全部目标',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_status.py --status resumed', 'text': '请你加载技能 卡路里,执行唤醒词「重启所有目标」。\n\n我想从暂停恢复全部目标(营养 + 体重 + 饮水)。请显示重启状态。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_resume_all', 'name': '重启所有目标', 'subfunction': '改目标', 'output_type': 'receipt',
+            'html_template': 'templates/goal_status.html', 'data_source': 'python scripts/render_goal_status.py --status resumed', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「重启所有目标」。\n\n我想从暂停恢复全部目标(营养 + 体重 + 饮水)。请显示重启状态。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '从暂停恢复全部目标', 'data_fields': ["resume_state", "resumed_at"],
+            'depends_on_external': False, 'order': 22},
+    {
+            'category': '目标管理',     'wake_word': '看目标历史完成',     'desc': '看历史目标完成情况',
+            'main_prompt': {
+        'cli': 'goal_history.list_completed_goals', 'text': '请你加载技能 卡路里,执行唤醒词「看目标历史完成」。\n\n我想看历史目标达成情况:每日达成列表(按时间排序)+ 完成/未完成天数统计(达标带 80%-120%)。完成后给 1 句话总结,不需要过多文字解释。\n\n回看天数(选填,默认 30):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_history_complete', 'name': '看目标历史完成', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'goal_history.list_completed_goals', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标历史完成」。\n\n我想看历史目标达成情况:每日达成列表(按时间排序)+ 完成/未完成天数统计(达标带 80%-120%)。完成后给 1 句话总结,不需要过多文字解释。\n\n回看天数(选填,默认 30):____',
+            'user_intent': '看历史目标完成情况', 'data_fields': ["goal_history", "completed_count", "incomplete_count"],
+            'depends_on_external': False, 'order': 23},
+    {
+            'category': '目标管理',     'wake_word': '看目标预测达成',     'desc': '预测目标达成日 + 置信度（体重部分复用对比体重 B1 的预测）',
+            'main_prompt': {
+        'cli': 'python scripts/render_goal_progress.py --mode predict', 'text': '请你加载技能 卡路里,执行唤醒词「看目标预测达成」。\n\n我想看按当前趋势预测的目标达成日 + 置信度(体重部分复用对比体重的预测逻辑)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'goal_view_predict', 'name': '看目标预测达成', 'subfunction': '看目标', 'output_type': 'result',
+            'html_template': 'templates/goal_progress.html', 'data_source': 'python scripts/render_goal_progress.py --mode predict', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看目标预测达成」。\n\n我想看按当前趋势预测的目标达成日 + 置信度(体重部分复用对比体重的预测逻辑)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '预测目标达成日 + 置信度（体重部分复用对比体重 B1 的预测）', 'data_fields': ["predict_date", "confidence"],
+            'depends_on_external': False, 'order': 24},
+
+    {
+            'category': '基础信息',     'wake_word': '设置档案',     'desc': '设置基础档案(身高/年龄/性别/活动量)',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'profile_setup', 'name': '设置档案', 'subfunction': '设置资料', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____',
+            'user_intent': '设置基础档案(身高/年龄/性别/活动量)', 'data_fields': ["height_cm", "age", "gender", "activity_level", "activity_factor", "created_at"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '基础信息',     'wake_word': '设活动量',     'desc': '单独设置活动量',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-profile-activity <level> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「设活动量」。\n\n我要单独设置活动量(久坐/轻度/中度/活跃/高度活跃)。设置后请告诉我:活动等级、对应的消耗系数(TDEE 系数)、以及对我每日消耗的影响。完成后给 1 句话总结,不需要过多文字解释。\n\n我的活动量(久坐/轻度/中度/活跃/高度活跃):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'profile_set_activity', 'name': '设活动量', 'subfunction': '设置资料', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-activity <level> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设活动量」。\n\n我要单独设置活动量(久坐/轻度/中度/活跃/高度活跃)。设置后请告诉我:活动等级、对应的消耗系数(TDEE 系数)、以及对我每日消耗的影响。完成后给 1 句话总结,不需要过多文字解释。\n\n我的活动量(久坐/轻度/中度/活跃/高度活跃):____',
+            'user_intent': '单独设置活动量', 'data_fields': ["activity_level", "activity_factor", "tdee"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '基础信息',     'wake_word': '改档案',     'desc': '修改档案中的某个字段',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值,改完后给我看:改前/改后对比 + 影响提示(如改身高影响 BMI、改活动量影响每日消耗)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'profile_update', 'name': '改档案', 'subfunction': '改资料', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值,改完后给我看:改前/改后对比 + 影响提示(如改身高影响 BMI、改活动量影响每日消耗)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____',
+            'user_intent': '修改档案中的某个字段', 'data_fields': ["height_cm", "age", "gender", "activity_level", "note", "bmi", "tdee"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '基础信息',     'wake_word': '查档案',     'desc': '查看档案及最新体重与身体指标',
+            'main_prompt': {
+        'cli': 'python scripts/render_crud_view.py --entity profile --chain "1.识别→2.读DB→3.算TDEE"', 'text': '请你加载技能 卡路里,执行唤醒词「查档案」。\n\n我想看自己的完整档案:身高/年龄/性别/活动量 + 最新体重 + BMI/BMR/TDEE(含活动量对应的消耗系数说明)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'profile_view', 'name': '查档案', 'subfunction': '看档案', 'output_type': 'result',
+            'html_template': 'templates/crud_view.html', 'data_source': 'python scripts/render_crud_view.py --entity profile --chain "1.识别→2.读DB→3.算TDEE"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「查档案」。\n\n我想看自己的完整档案:身高/年龄/性别/活动量 + 最新体重 + BMI/BMR/TDEE(含活动量对应的消耗系数说明)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '查看档案及最新体重与身体指标', 'data_fields': ["height_cm", "age", "gender", "activity_level", "activity_factor", "weight_kg", "bmi", "bmr", "tdee"],
+            'depends_on_external': False, 'order': 0},
+
+    {
+            'category': '身体细节',     'wake_word': '记体脂（皮褶钳）',     'desc': '我想用手持皮褶钳测 7 点并自动算体脂率存档',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_composition_wizard.py --caliper-chest-mm <C> --caliper-abdominal-mm <A> --caliper-thigh-mm <T> --caliper-tricep-mm <T> --caliper-subscapular-mm <S> --caliper-suprailiac-mm <I> --caliper-midaxillary-mm <M> --age <A> --sex <男/女>', 'text': '请你加载技能 卡路里,执行唤醒词「记体脂（皮褶钳）」。\n\n我用皮褶钳测了 7 点(胸/腹/大腿/三头/肩胛下/髂上/腋中 mm),请按 Jackson-Pollock 7 点法帮我算体脂率并记录。如果我没说性别/年龄,请先问我。完成后给 1 句话总结,不需要过多文字解释。\n\n7 点皮褶厚度(mm):\n胸:____\n腹:____\n大腿:____\n三头:____\n肩胛下:____\n髂上:____\n腋中:____\n性别(男/女):____\n年龄:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_add_caliper', 'name': '记体脂（皮褶钳）', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --caliper-chest-mm <C> --caliper-abdominal-mm <A> --caliper-thigh-mm <T> --caliper-tricep-mm <T> --caliper-subscapular-mm <S> --caliper-suprailiac-mm <I> --caliper-midaxillary-mm <M> --age <A> --sex <男/女>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记体脂（皮褶钳）」。\n\n我用皮褶钳测了 7 点(胸/腹/大腿/三头/肩胛下/髂上/腋中 mm),请按 Jackson-Pollock 7 点法帮我算体脂率并记录。如果我没说性别/年龄,请先问我。完成后给 1 句话总结,不需要过多文字解释。\n\n7 点皮褶厚度(mm):\n胸:____\n腹:____\n大腿:____\n三头:____\n肩胛下:____\n髂上:____\n腋中:____\n性别(男/女):____\n年龄:____',
+            'user_intent': '我想用手持皮褶钳测 7 点并自动算体脂率存档', 'data_fields': ["caliper_chest_mm", "caliper_abdominal_mm", "caliper_thigh_mm", "caliper_tricep_mm", "caliper_subscapular_mm", "caliper_suprailiac_mm", "caliper_midaxillary_mm", "body_fat_pct", "age", "sex", "source"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身体细节',     'wake_word': '记体脂（外部测量）',     'desc': '我想记录外部设备(健身房/医院)测的体脂率',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_composition_wizard.py --source <健身房/医院/其他> --body-fat-pct <P> --date <D>', 'text': '请你加载技能 卡路里,执行唤醒词「记体脂（外部测量）」。\n\n我用外部设备(健身房 InBody/医院/其他)测了体脂率,请帮我记录体脂率和来源、日期。完成后给 1 句话总结,不需要过多文字解释。\n\n体脂率(%):____\n来源(健身房/医院/其他):____\n日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_add_external', 'name': '记体脂（外部测量）', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --source <健身房/医院/其他> --body-fat-pct <P> --date <D>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记体脂（外部测量）」。\n\n我用外部设备(健身房 InBody/医院/其他)测了体脂率,请帮我记录体脂率和来源、日期。完成后给 1 句话总结,不需要过多文字解释。\n\n体脂率(%):____\n来源(健身房/医院/其他):____\n日期:____',
+            'user_intent': '我想记录外部设备(健身房/医院)测的体脂率', 'data_fields': ["body_fat_pct", "source", "date"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '身体细节',     'wake_word': '记围度',     'desc': '我想记录身体围度(13 项,可部分填写)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_measurements_wizard.py --chest-cm <C> --waist-cm <W> --abdomen-cm <A> --hip-cm <H> --shoulder-cm <S> --left-thigh-cm <LT> --right-thigh-cm <RT> --left-calf-cm <LC> --right-calf-cm <RC> --left-arm-cm <LA> --right-arm-cm <RA> --left-forearm-cm <LF> --right-forearm-cm <RF>', 'text': '请你加载技能 卡路里,执行唤醒词「记围度」。\n\n我量了身体围度,请帮我记录 13 项围度(胸/腰/腹/臀/肩/大腿/小腿/手臂/前臂,左+右),量了哪项填哪项,没量的留空。完成后给 1 句话总结,不需要过多文字解释。\n\n胸围(cm):____\n腰围(cm):____\n腹围(cm):____\n臀围(cm):____\n肩围(cm):____\n左大腿(cm):____\n右大腿(cm):____\n左小腿(cm):____\n右小腿(cm):____\n左上臂(cm):____\n右上臂(cm):____\n左前臂(cm):____\n右前臂(cm):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_add', 'name': '记围度', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/render_body_measurements_wizard.py --chest-cm <C> --waist-cm <W> --abdomen-cm <A> --hip-cm <H> --shoulder-cm <S> --left-thigh-cm <LT> --right-thigh-cm <RT> --left-calf-cm <LC> --right-calf-cm <RC> --left-arm-cm <LA> --right-arm-cm <RA> --left-forearm-cm <LF> --right-forearm-cm <RF>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记围度」。\n\n我量了身体围度,请帮我记录 13 项围度(胸/腰/腹/臀/肩/大腿/小腿/手臂/前臂,左+右),量了哪项填哪项,没量的留空。完成后给 1 句话总结,不需要过多文字解释。\n\n胸围(cm):____\n腰围(cm):____\n腹围(cm):____\n臀围(cm):____\n肩围(cm):____\n左大腿(cm):____\n右大腿(cm):____\n左小腿(cm):____\n右小腿(cm):____\n左上臂(cm):____\n右上臂(cm):____\n左前臂(cm):____\n右前臂(cm):____',
+            'user_intent': '我想记录身体围度(13 项,可部分填写)', 'data_fields': ["chest_cm", "waist_cm", "abdomen_cm", "hip_cm", "shoulder_cm", "left_thigh_cm", "right_thigh_cm", "left_calf_cm", "right_calf_cm", "left_arm_cm", "right_arm_cm", "left_forearm_cm", "right_forearm_cm", "date"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '身体细节',     'wake_word': '补记体脂',     'desc': '我想补录过去某天的体脂测量',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_composition_wizard.py --date <D> --body-fat-pct <P> --source <皮褶钳/健身房/医院/其他>', 'text': '请你加载技能 卡路里,执行唤醒词「补记体脂」。\n\n我要补录之前某天的体脂测量(不是今天的)。如果那天已有记录,请先告诉我冲突再确认。补完后可以问我还要不要补其他日期。完成后给 1 句话总结,不需要过多文字解释。\n\n体脂率(%):____\n来源(皮褶钳/健身房/医院/其他):____\n日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_backfill', 'name': '补记体脂', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_composition_wizard.html', 'data_source': 'python scripts/render_body_composition_wizard.py --date <D> --body-fat-pct <P> --source <皮褶钳/健身房/医院/其他>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「补记体脂」。\n\n我要补录之前某天的体脂测量(不是今天的)。如果那天已有记录,请先告诉我冲突再确认。补完后可以问我还要不要补其他日期。完成后给 1 句话总结,不需要过多文字解释。\n\n体脂率(%):____\n来源(皮褶钳/健身房/医院/其他):____\n日期:____',
+            'user_intent': '我想补录过去某天的体脂测量', 'data_fields': ["date", "body_fat_pct", "source", "conflict"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '身体细节',     'wake_word': '补记围度',     'desc': '我想补录过去某天的围度测量',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_measurements_wizard.py --date <D> --waist-cm <W> --hip-cm <H>', 'text': '请你加载技能 卡路里,执行唤醒词「补记围度」。\n\n我要补录之前某天的围度测量(不是今天的)。如果那天已有记录,请先告诉我冲突再确认。补完后可以问我还要不要补其他日期。完成后给 1 句话总结,不需要过多文字解释。\n\n各围度(cm,量了哪项填哪项):\n胸围:____\n腰围:____\n腹围:____\n臀围:____\n肩围:____\n左大腿:____\n右大腿:____\n左小腿:____\n右小腿:____\n左上臂:____\n右上臂:____\n左前臂:____\n右前臂:____\n日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_backfill', 'name': '补记围度', 'subfunction': '记身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/body_measurements_wizard.html', 'data_source': 'python scripts/render_body_measurements_wizard.py --date <D> --waist-cm <W> --hip-cm <H>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「补记围度」。\n\n我要补录之前某天的围度测量(不是今天的)。如果那天已有记录,请先告诉我冲突再确认。补完后可以问我还要不要补其他日期。完成后给 1 句话总结,不需要过多文字解释。\n\n各围度(cm,量了哪项填哪项):\n胸围:____\n腰围:____\n腹围:____\n臀围:____\n肩围:____\n左大腿:____\n右大腿:____\n左小腿:____\n右小腿:____\n左上臂:____\n右上臂:____\n左前臂:____\n右前臂:____\n日期:____',
+            'user_intent': '我想补录过去某天的围度测量', 'data_fields': ["date", "chest_cm", "waist_cm", "abdomen_cm", "hip_cm", "shoulder_cm", "conflict"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '身体细节',     'wake_word': '看体脂',     'desc': '我想看历史体脂记录并可按来源筛选',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_composition_view.py --mode list --source <皮褶钳/健身房/医院/全部>', 'text': '请你加载技能 卡路里,执行唤醒词「看体脂」。\n\n我想看历史体脂记录:日期/体脂率/来源 的表格 + 当前最新值,并按来源筛选(皮褶钳/健身房/医院/全部)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_list', 'name': '看体脂', 'subfunction': '看身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_composition_view.html', 'data_source': 'python scripts/render_body_composition_view.py --mode list --source <皮褶钳/健身房/医院/全部>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体脂」。\n\n我想看历史体脂记录:日期/体脂率/来源 的表格 + 当前最新值,并按来源筛选(皮褶钳/健身房/医院/全部)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看历史体脂记录并可按来源筛选', 'data_fields': ["date", "body_fat_pct", "source", "source_filter", "current"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身体细节',     'wake_word': '看体脂趋势',     'desc': '我想看体脂率趋势(默认最近来源,可切换)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_composition_view.py --mode trend --source <默认最近来源> --days 90', 'text': '请你加载技能 卡路里,执行唤醒词「看体脂趋势」。\n\n我想看体脂率变化折线图,默认用我最近用的来源,也可以切换来源;同时给 KPI(变化/平均/最低)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_trend', 'name': '看体脂趋势', 'subfunction': '看身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_composition_view.html', 'data_source': 'python scripts/render_body_composition_view.py --mode trend --source <默认最近来源> --days 90', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看体脂趋势」。\n\n我想看体脂率变化折线图,默认用我最近用的来源,也可以切换来源;同时给 KPI(变化/平均/最低)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看体脂率趋势(默认最近来源,可切换)', 'data_fields': ["source", "trend", "delta", "avg", "min"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '身体细节',     'wake_word': '看围度',     'desc': '我想看历史围度记录并可按部位筛选',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_measurements_view.py --mode list --metric <部位>', 'text': '请你加载技能 卡路里,执行唤醒词「看围度」。\n\n我想看历史围度记录:日期/各围度 的表格,并按部位筛选(只看某部位的历史)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_list', 'name': '看围度', 'subfunction': '看身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_measurements_view.html', 'data_source': 'python scripts/render_body_measurements_view.py --mode list --metric <部位>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看围度」。\n\n我想看历史围度记录:日期/各围度 的表格,并按部位筛选(只看某部位的历史)。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看历史围度记录并可按部位筛选', 'data_fields': ["date", "measurements", "metric_filter"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '身体细节',     'wake_word': '看围度趋势',     'desc': '我想看某部位围度的变化趋势',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_measurements_view.py --mode trend --metric <部位> --days 90', 'text': '请你加载技能 卡路里,执行唤醒词「看围度趋势」。\n\n我想看某个部位的围度变化折线图。请先让我选部位,再画折线并给变化摘要。完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_trend', 'name': '看围度趋势', 'subfunction': '看身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_measurements_view.html', 'data_source': 'python scripts/render_body_measurements_view.py --mode trend --metric <部位> --days 90', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看围度趋势」。\n\n我想看某个部位的围度变化折线图。请先让我选部位,再画折线并给变化摘要。完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '我想看某部位围度的变化趋势', 'data_fields': ["metric", "trend", "delta_summary"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '身体细节',     'wake_word': '对比体脂',     'desc': '我想对比两段时间的体脂变化',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_composition_view.py --mode compare --start1 <D1> --end1 <D2> --start2 <D3> --end2 <D4> --source <来源>', 'text': '请你加载技能 卡路里,执行唤醒词「对比体脂」。\n\n我想对比两次体脂测量,第一次和第二次都可以给具体日期或一段时间。请显示两次各自的均值/最低/记录数 + 差值(Δ)和变化率,并注明必须同来源对比才有意义。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次(日期或时间段):____\n第二次(日期或时间段):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_compare', 'name': '对比体脂', 'subfunction': '比身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_composition_view.html', 'data_source': 'python scripts/render_body_composition_view.py --mode compare --start1 <D1> --end1 <D2> --start2 <D3> --end2 <D4> --source <来源>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比体脂」。\n\n我想对比两次体脂测量,第一次和第二次都可以给具体日期或一段时间。请显示两次各自的均值/最低/记录数 + 差值(Δ)和变化率,并注明必须同来源对比才有意义。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次(日期或时间段):____\n第二次(日期或时间段):____',
+            'user_intent': '我想对比两段时间的体脂变化', 'data_fields': ["period1", "period2", "delta", "pct_change", "source"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身体细节',     'wake_word': '对比围度',     'desc': '我想对比两个日期的围度变化',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_measurements_view.py --mode compare --date1 <D1> --date2 <D2>', 'text': '请你加载技能 卡路里,执行唤醒词「对比围度」。\n\n我想对比两次围度测量,显示 13 项各自的差值(Δ)。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次日期:____\n第二次日期:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_compare', 'name': '对比围度', 'subfunction': '比身体细节', 'output_type': 'result',
+            'html_template': 'templates/body_measurements_view.html', 'data_source': 'python scripts/render_body_measurements_view.py --mode compare --date1 <D1> --date2 <D2>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比围度」。\n\n我想对比两次围度测量,显示 13 项各自的差值(Δ)。完成后给 1 句话总结,不需要过多文字解释。\n\n第一次日期:____\n第二次日期:____',
+            'user_intent': '我想对比两个日期的围度变化', 'data_fields': ["date1", "date2", "deltas"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '身体细节',     'wake_word': '删体脂',     'desc': '我想删除一条体脂记录',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_delete_receipt.py --entity composition --id <ID>', 'text': '请你加载技能 卡路里,执行唤醒词「删体脂」。\n\n我要删一条体脂记录。如果我没说清是哪条,请先列出最近的几条记录(日期/体脂率/来源)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_comp_delete', 'name': '删体脂', 'subfunction': '删身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_body_delete_receipt.py --entity composition --id <ID>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删体脂」。\n\n我要删一条体脂记录。如果我没说清是哪条,请先列出最近的几条记录(日期/体脂率/来源)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
+            'user_intent': '我想删除一条体脂记录', 'data_fields': ["id", "date", "body_fat_pct", "source", "snapshot"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身体细节',     'wake_word': '删围度',     'desc': '我想删除一条围度记录',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_delete_receipt.py --entity measurements --id <ID>', 'text': '请你加载技能 卡路里,执行唤醒词「删围度」。\n\n我要删一条围度记录。如果我没说清是哪条,请先列出最近的几条记录(日期/各围度)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_meas_delete', 'name': '删围度', 'subfunction': '删身体细节', 'output_type': 'receipt',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_body_delete_receipt.py --entity measurements --id <ID>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删围度」。\n\n我要删一条围度记录。如果我没说清是哪条,请先列出最近的几条记录(日期/各围度)让我选。确认后,删除前先给我看这条记录的内容,确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的记录(选填,如「最近一条」或日期):____',
+            'user_intent': '我想删除一条围度记录', 'data_fields': ["id", "date", "measurements", "snapshot"],
+            'depends_on_external': False, 'order': 1},
+
+    {
+            'category': '身材照片',     'wake_word': '记身材照',     'desc': '存一张身材照(发图/路径双模式)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-add <照片路径> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要存一张身材照。你可以直接发照片给我(手机/飞书),也可以告诉我照片文件路径(电脑)。如果标签没说,请问我。存完后给我看:照片缩略图预览 + 拍摄日期 + 标签 + 距上次同标签拍照间隔了几天(规律拍照提醒)。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面/侧面/背部):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_add_single', 'name': '存一张照片', 'subfunction': '存身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-add <照片路径> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要存一张身材照。你可以直接发照片给我(手机/飞书),也可以告诉我照片文件路径(电脑)。如果标签没说,请问我。存完后给我看:照片缩略图预览 + 拍摄日期 + 标签 + 距上次同标签拍照间隔了几天(规律拍照提醒)。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面/侧面/背部):____',
+            'user_intent': '存一张身材照并预览回执', 'data_fields': ["photo_path", "tag_list", "date", "distance_days", "note"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身材照片',     'wake_word': '记身材照',     'desc': '存一张带备注的身材照',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-add <照片路径> --tag <标签> --note <备注> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要存一张身材照并附备注(比如当时的状态/饮食阶段)。你可以直接发照片给我(手机/飞书),也可以告诉我照片文件路径(电脑)。如果标签没说,请问我。存完后给我看:照片缩略图预览 + 拍摄日期 + 标签 + 备注 + 距上次同标签拍照间隔。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面/侧面/背部):____\n备注:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_add_note', 'name': '存照片（含备注）', 'subfunction': '存身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-add <照片路径> --tag <标签> --note <备注> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要存一张身材照并附备注(比如当时的状态/饮食阶段)。你可以直接发照片给我(手机/飞书),也可以告诉我照片文件路径(电脑)。如果标签没说,请问我。存完后给我看:照片缩略图预览 + 拍摄日期 + 标签 + 备注 + 距上次同标签拍照间隔。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面/侧面/背部):____\n备注:____',
+            'user_intent': '存一张带备注的身材照', 'data_fields': ["photo_path", "tag_list", "date", "note", "distance_days"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '身材照片',     'wake_word': '记身材照',     'desc': '批量存多张身材照(逐张状态明细)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-add <照片1> <照片2> ... --tag <标签> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要一次性存多张身材照(可连发多张照片,或给多个路径)。每张照片可以单独指定标签(如"这张是侧面"),没指定的用我给的默认标签。存完后给我看:每张照片的缩略图 + 标签 + 状态(成功/跳过/失败+原因)+ 汇总成功张数。完成后给 1 句话总结,不需要过多文字解释。\n\n默认标签(如 正面):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_add_batch', 'name': '批量存照片', 'subfunction': '存身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-add <照片1> <照片2> ... --tag <标签> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记身材照」。\n\n我要一次性存多张身材照(可连发多张照片,或给多个路径)。每张照片可以单独指定标签(如"这张是侧面"),没指定的用我给的默认标签。存完后给我看:每张照片的缩略图 + 标签 + 状态(成功/跳过/失败+原因)+ 汇总成功张数。完成后给 1 句话总结,不需要过多文字解释。\n\n默认标签(如 正面):____',
+            'user_intent': '批量存多张身材照并看逐张结果', 'data_fields': ["photo_path", "tag_list", "status", "reason", "batch_count"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '身材照片',     'wake_word': '查身材照',     'desc': '浏览身材照(网格 + 时间/标签筛选 + 计数)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_gallery.py [--days <N> | --start <D> --end <D>] [--tag <标签>] --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「查身材照」。\n\n我想浏览身材照:照片网格 + 按时间/标签筛选 + 照片总数/各标签计数 + 距上次拍照多少天。时间可以用天数(如最近 30 天)、某个日期(如 7月1日)、或一段范围(如 6月1日~7月1日);没填默认最近 90 天。完成后给 1 句话总结,不需要过多文字解释。\n\n时间(最近 N 天 / 某日期 / 某范围,选填):____\n标签(选填,如 正面):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_list', 'name': '看身材照', 'subfunction': '看身材照', 'output_type': 'result',
+            'html_template': 'templates/body_photo_gallery.html', 'data_source': 'python scripts/render_body_photo_gallery.py [--days <N> | --start <D> --end <D>] [--tag <标签>] --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「查身材照」。\n\n我想浏览身材照:照片网格 + 按时间/标签筛选 + 照片总数/各标签计数 + 距上次拍照多少天。时间可以用天数(如最近 30 天)、某个日期(如 7月1日)、或一段范围(如 6月1日~7月1日);没填默认最近 90 天。完成后给 1 句话总结,不需要过多文字解释。\n\n时间(最近 N 天 / 某日期 / 某范围,选填):____\n标签(选填,如 正面):____',
+            'user_intent': '浏览身材照并按时间/标签筛选', 'data_fields': ["photos", "tag_counts", "total_count", "days_since_last", "filters"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身材照片',     'wake_word': '对比两张照片',     'desc': '两张照片并排对比(间隔天数/标签/备注)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_compare.py --id1 <ID> --id2 <ID> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「对比两张照片」。\n\n我想把两张身材照并排对比。可以说日期(如"月初 vs 月底")、编号,或让我从最近的照片里选。并排显示:两张照片 + 各自拍摄日期 + 间隔天数 + 各自标签/备注。完成后给 1 句话总结,不需要过多文字解释。\n\n照片 1(日期/编号/留空):____\n照片 2(日期/编号/留空):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_compare', 'name': '对比两张照片', 'subfunction': '比身材照', 'output_type': 'result',
+            'html_template': 'templates/body_photo_compare.html', 'data_source': 'python scripts/render_body_photo_compare.py --id1 <ID> --id2 <ID> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「对比两张照片」。\n\n我想把两张身材照并排对比。可以说日期(如"月初 vs 月底")、编号,或让我从最近的照片里选。并排显示:两张照片 + 各自拍摄日期 + 间隔天数 + 各自标签/备注。完成后给 1 句话总结,不需要过多文字解释。\n\n照片 1(日期/编号/留空):____\n照片 2(日期/编号/留空):____',
+            'user_intent': '并排对比两张身材照看变化', 'data_fields': ["photo1", "photo2", "interval_days", "tag_list", "note"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '身材照片',     'wake_word': '生成身材照GIF',     'desc': '时间段多张照片合成变化 GIF(帧数/首末日期)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_gif_result.py --tag <标签> [--start <D> --end <D> | --days <N> | --photo-id <ID> ...] --chain "1.识别→2.选照片→3.合成→4.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「生成身材照GIF」。\n\n我要把一段时间的多张身材照合成变化 GIF。请先确认照片范围(标签/时间),生成后给我看:GIF 预览 + 文件位置 + 时间跨度 + 帧数 + 合成照片总数 + 首末日期。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面):____\n时间范围(如 最近3个月 / 起始日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_gif', 'name': '生成身材照 GIF', 'subfunction': '比身材照', 'output_type': 'result',
+            'html_template': 'templates/body_photo_gif_result.html', 'data_source': 'python scripts/render_body_photo_gif_result.py --tag <标签> [--start <D> --end <D> | --days <N> | --photo-id <ID> ...] --chain "1.识别→2.选照片→3.合成→4.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「生成身材照GIF」。\n\n我要把一段时间的多张身材照合成变化 GIF。请先确认照片范围(标签/时间),生成后给我看:GIF 预览 + 文件位置 + 时间跨度 + 帧数 + 合成照片总数 + 首末日期。完成后给 1 句话总结,不需要过多文字解释。\n\n标签(如 正面):____\n时间范围(如 最近3个月 / 起始日期):____',
+            'user_intent': '把一段时间的身材照合成变化 GIF', 'data_fields': ["gif_path", "time_span", "frames", "photo_count", "first_date", "last_date"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身材照片',     'wake_word': '删身材照',     'desc': '删除照片(先列候选 → 快照确认 → 回执)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-delete --id <ID> --chain "1.列候选→2.确认→3.删除→4.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删身材照」。\n\n我要删一张身材照(删除后无法恢复)。如果我没说清是哪张,请先列出最近的几张照片(缩略图+日期+标签)让我选。确认后,删除前先给我看这张照片的内容(快照),确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的照片(选填,如「最近一张」或日期):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_delete', 'name': '删身材照', 'subfunction': '管身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-delete --id <ID> --chain "1.列候选→2.确认→3.删除→4.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删身材照」。\n\n我要删一张身材照(删除后无法恢复)。如果我没说清是哪张,请先列出最近的几张照片(缩略图+日期+标签)让我选。确认后,删除前先给我看这张照片的内容(快照),确认无误再删,最后给我确认回执。完成后给 1 句话总结,不需要过多文字解释。\n\n要删的照片(选填,如「最近一张」或日期):____',
+            'user_intent': '删除一张身材照(带快照确认)', 'data_fields': ["id", "date", "tag_list", "snapshot", "photo_path"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '身材照片',     'wake_word': '改照片标签',     'desc': '标签覆盖整套(可多个,改前/改后对比)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-tag-set --id <ID> --tag-list <标签1,标签2> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改照片标签」。\n\n我要把某张照片的标签换成整套新标签(覆盖旧的,可多个)。请先确认这张照片原来的完整标签列表,改完后给我看:改前/改后对比 + 新的完整标签列表。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n新标签(可多个,如 正面,侧面):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_tag_set', 'name': '改照片标签', 'subfunction': '管身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-tag-set --id <ID> --tag-list <标签1,标签2> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改照片标签」。\n\n我要把某张照片的标签换成整套新标签(覆盖旧的,可多个)。请先确认这张照片原来的完整标签列表,改完后给我看:改前/改后对比 + 新的完整标签列表。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n新标签(可多个,如 正面,侧面):____',
+            'user_intent': '把照片标签换成整套新标签', 'data_fields': ["tag_before", "tag_after", "tag_list"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '身材照片',     'wake_word': '加照片标签',     'desc': '追加标签(可多个,判重提示)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-tag-add --id <ID> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「加照片标签」。\n\n我要给某张照片追加标签(不覆盖已有,可一次加多个)。如果某个标签已经存在,请提示我。加完后给我看:新增后完整标签列表。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n要加的标签(可多个,逗号分隔):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_tag_add', 'name': '加照片标签', 'subfunction': '管身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-tag-add --id <ID> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「加照片标签」。\n\n我要给某张照片追加标签(不覆盖已有,可一次加多个)。如果某个标签已经存在,请提示我。加完后给我看:新增后完整标签列表。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n要加的标签(可多个,逗号分隔):____',
+            'user_intent': '给照片追加一个标签', 'data_fields': ["tag_added", "tag_list", "duplicate"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '身材照片',     'wake_word': '删照片标签',     'desc': '移除标签(可多个,至少保留 1 个)',
+            'main_prompt': {
+        'cli': 'python scripts/render_body_photo_receipt.py --live-tag-remove --id <ID> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「删照片标签」。\n\n我要从某张照片上移除标签(其余保留,可一次删多个)。请先告诉我这张照片当前有哪些标签,删完后给我看:删除前/删除后列表。每张照片至少保留 1 个标签,删空会提示我;想清空全部标签请用「改照片标签」。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n要删的标签(可多个,逗号分隔):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'body_photo_tag_remove', 'name': '删照片标签', 'subfunction': '管身材照', 'output_type': 'receipt',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-tag-remove --id <ID> --tag <标签> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「删照片标签」。\n\n我要从某张照片上移除标签(其余保留,可一次删多个)。请先告诉我这张照片当前有哪些标签,删完后给我看:删除前/删除后列表。每张照片至少保留 1 个标签,删空会提示我;想清空全部标签请用「改照片标签」。完成后给 1 句话总结,不需要过多文字解释。\n\n照片(日期或编号):____\n要删的标签(可多个,逗号分隔):____',
+            'user_intent': '从照片上移除一个标签', 'data_fields': ["tag_removed", "tag_before", "tag_after"],
+            'depends_on_external': False, 'order': 3},
+    {
             'category': '分析',     'wake_word': '看体重 vs 摄入(最近 7 天)',     'desc': '看体重 vs 摄入(最近 7 天)',
             'main_prompt': {
         'cli': 'python scripts/render_analysis.py --view combined --pair weight_calorie --window 7d', 'text': '请你加载技能 卡路里,执行唤醒词「看体重 vs 摄入(最近 7 天)」。\n\n我想看最近 7 天的体重走势 vs 每日摄入热量的关系(吃多少影响体重吗)。请显示:双轴折线 + 散点图(含回归线)+ 相关系数 + 摄入日均 + 体重净变化 + 延迟相关性(前 1-3 天摄入 vs 当日体重)+ 超标日标注 + 工作日 vs 周末分层 + 一句话洞察。完成后给 1 句话总结,不需要过多文字解释。'},

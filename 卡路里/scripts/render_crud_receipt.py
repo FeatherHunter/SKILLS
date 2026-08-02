@@ -9,12 +9,14 @@
   - 改照片标签     → mode=update
   - 改运动记录     → mode=update
   - 改体重记录     → mode=update
+  - 设置档案       → mode=create/update(live-profile-set)
   - 设活动量       → mode=update(live-profile-activity)
   - 改档案         → mode=update(live-profile-update)
 对应模板: templates/crud_receipt.html
 
 数据来源(互斥):
   --mock <json>                    mock 数据(测试)
+  --live-profile-set               实读 DB:设置档案(全量写库 + 回执一体 · ticket #8)
   --live-profile-activity <level>  实读 DB:设活动量(写库 + 回执一体 · ticket #8)
   --live-profile-update           实读 DB:改档案(--field/--value,写库 + 回执一体)
 """
@@ -63,6 +65,33 @@ def _profile_receipt(op: str, old_record: dict, new_record: dict, kpis: list,
         },
         'message': f'已生成{entity_label} 回执',
     }
+
+
+def build_live_profile_set(age=None, gender=None, height=None, activity=None, note=None):
+    """设置档案:全量写库 + 组装回执(呈现:身高/年龄/性别/活动量 + 设置时间)
+
+    首次设置 op=create;已存在档案 op=update(改前/改后对比)。
+    """
+    import profile
+    from analysis._utils import ACTIVITY_LEVEL_LABELS, TDEE_ACTIVITY_FACTORS
+
+    old = profile.get_profile()
+    is_first = not old
+    result = profile.set_profile(age=age, gender=gender, height_cm=height,
+                                  note=note, activity_level=activity)
+    new = profile.get_profile()
+
+    al = new.get('activity_level') or 'moderate'
+    factor = TDEE_ACTIVITY_FACTORS.get(al, 1.55)
+    label = ACTIVITY_LEVEL_LABELS.get(al, al)
+    op = 'create' if is_first else 'update'
+    kpis = [
+        {'label': '身高', 'value': f"{new.get('height_cm')} cm" if new.get('height_cm') else '—'},
+        {'label': '年龄', 'value': str(new.get('age', '—'))},
+        {'label': '性别', 'value': '男' if new.get('gender') == 'male' else '女' if new.get('gender') == 'female' else '—'},
+        {'label': '活动量', 'value': f'{label}', 'extra': f'系数 × {factor}'},
+    ]
+    return _profile_receipt(op, old, new, kpis, '设置档案', new.get('updated_at', '')[:16].replace('T', ' '))
 
 
 def build_live_profile_activity(level: str) -> dict:
@@ -117,10 +146,17 @@ def main():
     p = argparse.ArgumentParser(description='渲染 CRUD 操作回执 HTML')
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument('--mock', help='mock JSON(通用 CRUD 实际数据由各 CLI 写入)')
+    g.add_argument('--live-profile-set', action='store_true',
+                   help='实读 DB 设置档案(全量写库 + 回执)')
     g.add_argument('--live-profile-activity', metavar='LEVEL',
                    help='实读 DB 设活动量(sedentary/light/moderate/active/very_active)')
     g.add_argument('--live-profile-update', action='store_true',
                    help='实读 DB 改档案(需 --field/--value)')
+    p.add_argument('--age', type=int, help='设置档案:年龄')
+    p.add_argument('--gender', help='设置档案:male/female')
+    p.add_argument('--height', type=float, help='设置档案:身高(cm)')
+    p.add_argument('--activity', help='设置档案:活动量档位')
+    p.add_argument('--note', help='设置档案:备注')
     p.add_argument('--field', help='改档案字段(height/age/gender/activity/note)')
     p.add_argument('--value', help='改档案新值')
     p.add_argument('--output')
@@ -129,10 +165,18 @@ def main():
     if args.live_profile_update and (not args.field or args.value is None):
         print('❌ --live-profile-update 需要 --field 与 --value', file=sys.stderr)
         return 1
+    if args.live_profile_set and (args.age is None and args.gender is None and
+                                  args.height is None and args.activity is None):
+        print('❌ --live-profile-set 至少需要 --age/--gender/--height/--activity 之一', file=sys.stderr)
+        return 1
 
     try:
         if args.mock:
             data = _load_data(args.mock)
+        elif args.live_profile_set:
+            data = build_live_profile_set(age=args.age, gender=args.gender,
+                                          height=args.height, activity=args.activity,
+                                          note=args.note)
         elif args.live_profile_activity:
             data = build_live_profile_activity(args.live_profile_activity)
         else:

@@ -835,11 +835,11 @@ TRIGGERS = [
     {
             'category': '基础信息',     'wake_word': '设置档案',     'desc': '设置基础档案(身高/年龄/性别/活动量,含采访式引导)',
             'main_prompt': {
-        'cli': 'python scripts/render_profile_setup.py', 'text': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____'},
+        'cli': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L>', 'text': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'profile_setup', 'name': '设置档案', 'subfunction': 'P1 设置资料', 'output_type': 'receipt',
-            'html_template': 'templates/profile_setup.html', 'data_source': 'python scripts/render_profile_setup.py', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____',
             'user_intent': '设置基础档案(身高/年龄/性别/活动量)', 'data_fields': ['height_cm', 'age', 'gender', 'activity_level', 'activity_factor', 'created_at'],
             'depends_on_external': False, 'order': 0},
     {

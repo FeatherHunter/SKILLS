@@ -281,6 +281,11 @@ def update_profile_field(field, value):
         )
 
     col, validator, label = _PROFILE_FIELD_MAP[field]
+    if field == 'age' and not isinstance(value, int):
+        try:
+            value = int(value)
+        except (TypeError, ValueError):
+            raise InvalidAgeError(f"年龄必须是整数,当前: {value!r}")
     if validator:
         value = validator(value)
     if value is None:

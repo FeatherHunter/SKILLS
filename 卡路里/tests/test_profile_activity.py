@@ -133,6 +133,18 @@ def test_update_profile_field_unknown(profile_env):
         prof.update_profile_field("weight", 70)
 
 
+def test_update_profile_field_age_string(profile_env):
+    """改档案:CLI 层 age 传字符串('30')应自动转 int(对抗审查 #8 修复)"""
+    prof = profile_env
+    prof.set_profile(age=30, gender="male", height_cm=177)
+    result = prof.update_profile_field("age", "35")
+    assert result["old_value"] == 30
+    assert result["new_value"] == 35
+    assert prof.get_profile()["age"] == 35
+    with pytest.raises(prof.InvalidAgeError):
+        prof.update_profile_field("age", "abc")
+
+
 def test_set_profile_with_activity(profile_env):
     """profile set --activity 透传"""
     prof = profile_env

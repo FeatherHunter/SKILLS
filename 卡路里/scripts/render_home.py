@@ -97,8 +97,8 @@ def build_recent_logs(target_date: str, limit: int = 5) -> dict:
 
 
 QUICK_ACTIONS = [
-    {'label': '记录饮食',    'wake_word': '记吃了',       'command': 'python scripts/calorie_tracker.py add ...'},
-    {'label': '查今日吃',    'wake_word': '查今天吃',     'command': 'python scripts/calorie_tracker.py summary'},
+    {'label': '记录饮食',    'wake_word': '记一餐',       'command': 'python scripts/render_crud_receipt.py --live-diet-add ...'},
+    {'label': '查今日吃',    'wake_word': '看今日饮食',   'command': 'python scripts/render_today_diet.py'},
     {'label': '记录运动',    'wake_word': '记运动',       'command': 'python scripts/exercise_tracker.py add ...'},
     {'label': '查健康报告',  'wake_word': '查健康报告',   'command': 'python scripts/render_health_dashboard.py --days 7'},
     {'label': '查热量趋势',  'wake_word': '查热量趋势',   'command': 'python scripts/render_health_dashboard.py --days 30'},

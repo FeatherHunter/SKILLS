@@ -249,3 +249,257 @@ def get_weight_history(days=30, start_date=None, end_date=None):
 
     print()
     return rows
+
+
+# ===================== 2026-08-02 · 体重 58 场景业务层扩展(ticket #4) =====================
+
+NOTE_TAGS = ['晨起空腹', '运动后', '睡前', '餐前', '餐后', '晨起', '空腹', '早起', '运动前', '生理期']
+
+
+def note_tag(note):
+    """备注 → 分类标签(看「有备注」的体重记录 · 分类分布)"""
+    if not note:
+        return None
+    for tag in NOTE_TAGS:
+        if tag in note:
+            return tag
+    return '其他'
+
+
+def get_weight_goal_value():
+    """统一读 daily_goal.weight_goal(目标体重单行表 id=1)"""
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('SELECT weight_goal FROM daily_goal WHERE id = 1')
+    g = c.fetchone()
+    conn.close()
+    return g[0] if g and g[0] else None
+
+
+def delta_last(target_date=None):
+    """距上次体重(kg):目标记录之前的最后一条(或目标当天首条之前)。无上次 → None"""
+    d = target_date or date.today().isoformat()
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT weight_kg FROM weight_log
+        WHERE (date < ?) OR (date = ? AND time < (SELECT MIN(time) FROM weight_log WHERE date = ?))
+        ORDER BY date DESC, time DESC LIMIT 1
+    ''', (d, d, d))
+    row = c.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+def goal_diff(weight_kg):
+    """与目标体重差距(kg):有目标 → 返回差值;无目标 → None"""
+    goal = get_weight_goal_value()
+    if goal is None:
+        return None
+    return round(weight_kg - goal, 1)
+
+
+def delete_weight(weight_id):
+    """按 ID 删除体重记录(软删替代方案:物理 DELETE,返回删除前快照)
+
+    Returns:
+        dict: {id, date, time, weight_kg, bmi, note, deleted_count}
+        失败:None(带错误输出)
+    """
+    try:
+        weight_id = int(weight_id)
+    except ValueError:
+        print('Error: 体重记录 ID 必须是数字')
+        return None
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('SELECT id, date, time, weight_kg, bmi, note FROM weight_log WHERE id = ?', (weight_id,))
+    row = c.fetchone()
+    if not row:
+        print(f'Error: 体重记录 ID {weight_id} 不存在')
+        conn.close()
+        return None
+    c.execute('DELETE FROM weight_log WHERE id = ?', (weight_id,))
+    conn.commit()
+    conn.close()
+    return {
+        'id': row[0], 'date': row[1], 'time': row[2], 'weight_kg': row[3],
+        'bmi': row[4], 'note': row[5], 'deleted_count': 1,
+    }
+
+
+def delete_weight_by_date(target_date):
+    """按日期删除该日全部体重记录
+
+    Returns:
+        dict: {date, deleted_count, snapshot: [dict...]} 或 None(无记录)
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('SELECT id, date, time, weight_kg, bmi, note FROM weight_log WHERE date = ? ORDER BY time', (target_date,))
+    rows = c.fetchall()
+    if not rows:
+        conn.close()
+        print(f'Error: {target_date} 无体重记录')
+        return None
+    c.execute('DELETE FROM weight_log WHERE date = ?', (target_date,))
+    conn.commit()
+    conn.close()
+    return {
+        'date': target_date,
+        'deleted_count': len(rows),
+        'snapshot': [{'id': r[0], 'date': r[1], 'time': r[2], 'weight_kg': r[3], 'bmi': r[4], 'note': r[5]} for r in rows],
+    }
+
+
+def delete_weight_range(start_date, end_date):
+    """按日期范围批量删除体重记录
+
+    Returns:
+        dict: {start, end, deleted_count, snapshot: [dict...]} 或 None(无记录)
+    """
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('''
+        SELECT id, date, time, weight_kg, bmi, note FROM weight_log
+        WHERE date BETWEEN ? AND ? ORDER BY date, time
+    ''', (start_date, end_date))
+    rows = c.fetchall()
+    if not rows:
+        conn.close()
+        print(f'Error: {start_date} ~ {end_date} 无体重记录')
+        return None
+    c.execute('DELETE FROM weight_log WHERE date BETWEEN ? AND ?', (start_date, end_date))
+    conn.commit()
+    conn.close()
+    return {
+        'start': start_date, 'end': end_date,
+        'deleted_count': len(rows),
+        'snapshot': [{'id': r[0], 'date': r[1], 'time': r[2], 'weight_kg': r[3], 'bmi': r[4], 'note': r[5]} for r in rows],
+    }
+
+
+def update_weight_by_date(target_date, weight_kg=None, note=None):
+    """按日期定位更新体重记录(改某日体重 · 命中 1+ 条全改)
+
+    Returns:
+        dict: {date, hit_count, old_rows: [dict...], new_weight, bmi, note}
+        失败:None(无记录 / 缺参)
+    """
+    if weight_kg is None and note is None:
+        print('Error: 至少需要传入 --weight 或 --note 中的一个')
+        return None
+    from profile import get_profile as _get_user_profile
+    _p = _get_user_profile()
+    profile_height = _p.get('height_cm') if _p else None
+    if profile_height is None or profile_height <= 0:
+        print('Error: user_profile 未设身高,无法重算 BMI')
+        return None
+    conn = _get_db()
+    c = conn.cursor()
+    c.execute('SELECT id, date, time, weight_kg, bmi, note FROM weight_log WHERE date = ? ORDER BY time', (target_date,))
+    rows = c.fetchall()
+    if not rows:
+        conn.close()
+        print(f'Error: {target_date} 无体重记录')
+        return None
+    old_rows = [{'id': r[0], 'date': r[1], 'time': r[2], 'weight_kg': r[3], 'bmi': r[4], 'note': r[5]} for r in rows]
+    height_m = profile_height / 100
+    new_bmi = None
+    if weight_kg is not None:
+        new_kg = float(weight_kg)
+        new_bmi = round(new_kg / (height_m ** 2), 1)
+        c.execute('UPDATE weight_log SET weight_kg = ?, bmi = ? WHERE date = ?', (new_kg, new_bmi, target_date))
+    if note is not None:
+        c.execute('UPDATE weight_log SET note = ? WHERE date = ?', (note, target_date))
+    conn.commit()
+    conn.close()
+    return {
+        'date': target_date,
+        'hit_count': len(rows),
+        'old_rows': old_rows,
+        'new_weight': float(weight_kg) if weight_kg is not None else None,
+        'bmi': new_bmi,
+        'note': note,
+    }
+
+
+def batch_log_weight(items):
+    """批量补录体重(批量补录体重 · 写入/跳过/失败条数 + 明细)
+
+    Args:
+        items: [{date: 'YYYY-MM-DD', kg: float}, ...] 按时间顺序
+
+    Returns:
+        dict: {wrote, skipped, failed, items: [{date, kg, status, reason}]}
+    """
+    from profile import get_profile as _get_user_profile
+    _p = _get_user_profile()
+    height_cm = _p.get('height_cm') if _p else None
+    height_m = (height_cm / 100) if height_cm else None
+
+    conn = _get_db()
+    c = conn.cursor()
+    results = []
+    wrote = skipped = failed = 0
+    for it in items:
+        d = it.get('date')
+        try:
+            kg = float(it.get('kg'))
+        except (TypeError, ValueError):
+            failed += 1
+            results.append({'date': d, 'kg': it.get('kg'), 'status': '失败', 'reason': '体重非数字'})
+            continue
+        if kg <= 0:
+            failed += 1
+            results.append({'date': d, 'kg': kg, 'status': '失败', 'reason': '体重必须为正数'})
+            continue
+        if not d or not date.fromisoformat(d):
+            failed += 1
+            results.append({'date': d, 'kg': kg, 'status': '失败', 'reason': '日期格式错误'})
+            continue
+        c.execute('SELECT weight_kg FROM weight_log WHERE date = ? ORDER BY time DESC LIMIT 1', (d,))
+        exist = c.fetchone()
+        if exist:
+            skipped += 1
+            results.append({'date': d, 'kg': kg, 'status': '跳过', 'reason': f'已有记录 {exist[0]}kg'})
+            continue
+        bmi = round(kg / (height_m ** 2), 1) if height_m else None
+        c.execute('INSERT INTO weight_log (date, time, weight_kg, height_cm, bmi, note) VALUES (?, ?, ?, ?, ?, ?)',
+                  (d, '08:00:00', kg, height_cm, bmi, ''))
+        wrote += 1
+        results.append({'date': d, 'kg': kg, 'status': '写入', 'reason': ''})
+    conn.commit()
+    conn.close()
+    return {'wrote': wrote, 'skipped': skipped, 'failed': failed, 'items': results}
+
+
+def fetch_weight_logs(start, end, note_only=False):
+    """区间体重记录(渲染层共用):date/kg/bmi/delta/note/anomaly 带排序"""
+    conn = _get_db()
+    c = conn.cursor()
+    if note_only:
+        c.execute('''
+            SELECT date, weight_kg, bmi, note FROM weight_log
+            WHERE date BETWEEN ? AND ? AND note IS NOT NULL AND note != ''
+            ORDER BY date, time
+        ''', (start, end))
+    else:
+        c.execute('''
+            SELECT date, weight_kg, bmi, note FROM weight_log
+            WHERE date BETWEEN ? AND ? ORDER BY date, time
+        ''', (start, end))
+    rows = c.fetchall()
+    c.execute('SELECT height_cm FROM user_profile ORDER BY id DESC LIMIT 1')
+    h = c.fetchone()
+    conn.close()
+    height_m = (h[0] / 100) if h and h[0] else None
+    items = []
+    prev = None
+    for d, kg, bmi, note in rows:
+        if bmi is None and height_m:
+            bmi = round(kg / (height_m ** 2), 1)
+        delta = round(kg - prev, 1) if prev is not None else 0
+        items.append({'date': d, 'kg': kg, 'bmi': bmi, 'delta': delta, 'note': note or '', 'tag': note_tag(note)})
+        prev = kg
+    return items

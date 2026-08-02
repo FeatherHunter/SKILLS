@@ -166,7 +166,7 @@
     document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
     return;
   }
-  const { summary, items, target, meta, mode } = D.data;
+  const { summary, items, target, meta, mode, milestones } = D.data;
   const m = mode || 'history';
 
   document.getElementById('metaLeft').textContent =
@@ -176,10 +176,11 @@
 
   // 标题
   const titles = {
-    history: '⚖️ 体重历史',
-    trend: '📉 体重趋势',
-    volatility: '📊 体重波动',
-    compare: '🔄 对比体重'
+    history: '⚖️ 体重明细',
+    trend: '📉 体重曲线',
+    volatility: '📊 体重稳不稳',
+    compare: '🔄 对比体重',
+    notes: '🗒 带备注的体重记录'
   };
   document.getElementById('h1Title').textContent = titles[m] || titles.history;
   document.getElementById('sub').textContent = summary.subtitle;
@@ -280,6 +281,21 @@
     if (items.length >= 7) {
       legendHtml += `<span><i class="d"></i> 7 天均线</span>`;
     }
+    // ticket #4: 里程碑点(带里程碑视图 · 5/10kg 达成日)
+    if (milestones && milestones.length) {
+      milestones.forEach(ms => {
+        const idx = items.findIndex(p => p.date === ms.date);
+        if (idx < 0) return;
+        const px = x(idx), py = y(ms.kg);
+        svg.insertAdjacentHTML('beforeend',
+          `<g class="chart-milestone" aria-label="减重 ${ms.delta_kg}kg 达成 ${ms.date}">` +
+          `<line x1="${px}" y1="0" x2="${px}" y2="${H}" stroke="#ff9500" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.5"/>` +
+          `<circle cx="${px}" cy="${py}" r="8" fill="none" stroke="#ff9500" stroke-width="2.5" vector-effect="non-scaling-stroke"/>` +
+          `<text x="${px + 8}" y="${py - 6}" font-size="${labelFontSize}" fill="#ff9500" font-weight="700">减${ms.delta_kg}kg · ${ms.date}</text>` +
+          `</g>`);
+        legendHtml += `<span><i style="background:transparent;border:2px solid #ff9500;border-radius:50%"></i> 里程碑减${ms.delta_kg}kg</span>`;
+      });
+    }
     const firstItem = items[0];
     const lastItem = items[items.length - 1];
     const elapsedDays = Math.max(1, Math.round((Date.parse(lastItem.date) - Date.parse(firstItem.date)) / 86400000));
@@ -309,8 +325,12 @@
     document.getElementById('chartSection').style.display = 'none';
   }
 
-  // 表格头
-  document.getElementById('tableHead').innerHTML = summary.table_header;
+  // 表格头(notes 模式由 JS 动态追加备注列 · 2026-08-02)
+  let tableHeader = summary.table_header;
+  if (summary.show_note_col && !tableHeader.includes('备注')) {
+    tableHeader = tableHeader.replace('</tr>', "<th class='note'>备注</th></tr>");
+  }
+  document.getElementById('tableHead').innerHTML = tableHeader;
 
   // 表格行
   const tb = document.getElementById('tableBody');
@@ -327,6 +347,7 @@
       `<td class="num kg">${p.kg} kg</td>` +
       // V2.5.3: chip 包 <span class="delta-chip">,td.delta 保持 table-cell 占满 column
       (p.delta !== undefined ? `<td class="delta"><span class="delta-chip ${deltaCls}">${p.delta >= 0 ? '+' : ''}${p.delta}</span></td>` : '') +
+      (m === 'notes' ? `<td class="note">${p.note || ''}</td>` : '') +
       `</tr>`);
   });
 

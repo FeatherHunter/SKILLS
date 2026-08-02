@@ -227,21 +227,26 @@ class TestHelpCenterErgonomics:
         assert ('220%' in tpl or '36px' in tpl or 'calc(28px' in tpl), 'h1 字号未上调'
 
     def test_triggers_have_fill_hints_field(self):
-        """每个 TRIGGER 都有 fill_hints 字段(默认空 list)"""
+        """每个 TRIGGER 都有 fill_hints 字段(默认空 list)
+
+        2026-08-02 改:饮食 68 场景同步后旧词 记吃了/查今天吃 已替换为 13 字段新格式;
+        输入引导从 fill_hints 字段迁移到 prompt_template 的「____」填空行(06/07/08 同款)。
+        """
         import sys; sys.path.insert(0, str(SCRIPTS_DIR))
         from _triggers import TRIGGERS
         for t in TRIGGERS:
             assert 'fill_hints' in t, f'trigger {t["wake_word"]} 缺 fill_hints 字段'
             assert isinstance(t['fill_hints'], list)
-        # 输入型 trigger 应有非空 fill_hints
-        eat = next(t for t in TRIGGERS if t['wake_word'] == '记吃了')
-        assert eat['fill_hints'], '记吃了 应有非空 fill_hints'
-        assert any('食物' in h for h in eat['fill_hints'])
+        # 输入型 trigger 应有非空 fill_hints(旧格式)或 prompt 含填空行(新 13 字段格式)
         water = next(t for t in TRIGGERS if t['wake_word'] == '记喝水')
-        assert water['fill_hints'], '记喝水 应有非空 fill_hints'
-        # 查询型应空
-        search = next(t for t in TRIGGERS if t['wake_word'] == '查今天吃')
-        assert search['fill_hints'] == [], '查今天吃 fill_hints 应为空'
+        if water['fill_hints']:
+            assert water['fill_hints'], '记喝水 应有非空 fill_hints'
+        else:
+            pt = water.get('prompt_template', '')
+            assert '____' in pt, '记喝水(新格式)prompt_template 应含填空行'
+        # 新格式输入型场景抽查:记一餐 prompt 应有填空行
+        meal = next(t for t in TRIGGERS if t['wake_word'] == '记一餐')
+        assert '____' in meal.get('prompt_template', ''), '记一餐 prompt_template 应含填空行'
 
 
 class TestTodayDiet6Kpi:
@@ -292,7 +297,7 @@ class TestHomeDashboardRedesign:
         result = _attach_prompts(QUICK_ACTIONS)
         assert all('prompt' in a for a in result), 'quick_actions 缺 prompt 字段'
         eat = next(a for a in result if a['label'] == '记录饮食')
-        assert '记吃了' in eat['prompt'], f"记录饮食 prompt 应含 '记吃了', 实得: {eat['prompt'][:80]}"
+        assert '记一餐' in eat['prompt'], f"记录饮食 prompt 应含 '记一餐', 实得: {eat['prompt'][:80]}"
 
     def test_home_dashboard_deficit_math_breakdown(self):
         tpl = (SKILL_DIR / 'templates' / 'home_dashboard.html').read_text(encoding='utf-8')

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""render_weight_receipt.py — 记体重回执 HTML 渲染器(G7)
+"""render_weight_receipt.py — 记体重回执 HTML 渲染器(G7 · ticket #4 扩展)
 
-对应 SKILL.md 唤醒词:记体重
+对应 SKILL.md 唤醒词:记体重 / 记体重（含备注）/ 补录体重 / 批量补录体重
 
 设计原则(回执型 C,非过程型 B):
 - 录入后立即看到大数字 + 趋势图 + 复制按钮
@@ -11,26 +11,41 @@
 
 用法:
     python scripts/render_weight_receipt.py --mock tests/fixtures/mock/mock_weight_receipt.json
-    python scripts/render_weight_receipt.py --mock <JSON> --output /path/out.html
+    python scripts/render_weight_receipt.py --live --kg 70 --note 晨起空腹 --chain "1.解析→2.写库→3.回执"
+    python scripts/render_weight_receipt.py --live --kg 70 --date 2026-07-20 --chain "1.解析→2.查冲突→3.写库→4.回执"
+    python scripts/render_weight_receipt.py --live-batch --input items.jsonl --chain "1.解析→2.查冲突→3.批量写库→4.回执"
 """
 import argparse
 import json
-from html_paths import html_path
+from html_paths import html_path, html_scene_path
 import sys
 from pathlib import Path
+from datetime import date
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'weight_log_receipt.html'
+BATCH_TEMPLATE_PATH = SKILL_DIR / 'templates' / 'weight_batch_receipt.html'
+
+sys.path.insert(0, str(SCRIPT_DIR))
+from render_crud_view import _chain_valid, _quote_arg  # noqa: E402
 
 
 def build_parser():
     p = argparse.ArgumentParser(
         prog='render_weight_receipt',
-        description='渲染记体重回执 HTML(G7 · 趋势图 + 大数字回执)',
+        description='渲染记体重回执 HTML(G7 · 趋势图 + 大数字回执 · ticket #4 live 扩展)',
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    p.add_argument('--mock', required=True, help='回执数据 JSON 文件路径(mock 或 weight.py 输出)')
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument('--mock', help='回执数据 JSON 文件路径(mock 或 weight.py 输出)')
+    g.add_argument('--live', action='store_true', help='实读 DB:记体重(写库 + 回执一体 · ticket #4)')
+    g.add_argument('--live-batch', action='store_true', help='实读 DB:批量补录体重(写库 + 回执一体)')
+    p.add_argument('--kg', type=float, help='体重(kg)')
+    p.add_argument('--note', help='备注')
+    p.add_argument('--date', help='记录日期 YYYY-MM-DD(默认今天;补录体重用)')
+    p.add_argument('--input', help='批量补录 JSONL(每行 {"date": "YYYY-MM-DD", "kg": 70})')
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则 · 2026-08-02)')
     p.add_argument('--output', help='输出文件路径')
     return p
 
@@ -55,8 +70,8 @@ def normalize(data: dict) -> dict:
     }
 
 
-def render_html(data: dict) -> str:
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
+def render_html(data: dict, template_path: Path) -> str:
+    template = template_path.read_text(encoding='utf-8')
     placeholder = '<!--INJECT-DATA-->'
     if template.count(placeholder) != 1:
         raise ValueError(f'模板占位符数量异常: {template.count(placeholder)}')
@@ -67,21 +82,139 @@ def render_html(data: dict) -> str:
     return template.replace(placeholder, inject, 1)
 
 
+# ============ ticket #4 · live 模式(写库 + 回执一体) ============
+
+def _latest_history(conn, limit=30):
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT date, weight_kg FROM weight_log
+        ORDER BY date DESC, time DESC LIMIT ?
+    ''', (limit,))
+    rows = cur.fetchall()
+    return [{'date': r[0], 'weight_kg': r[1]} for r in reversed(rows)]
+
+
+def build_live_receipt(kg, note='', target_date=None):
+    """记体重 / 记体重（含备注）/ 补录体重:写库 + 组装回执
+
+    呈现:体重值/记录时间/BMI/距上次/距目标/备注+分类标签/补录标识+距今天数
+    """
+    import weight
+    from db import find_db_path
+    import sqlite3
+
+    is_backfill = bool(target_date)
+    receipt = weight.log_weight(kg, note=note, target_date=target_date)
+    if receipt is None:
+        raise ValueError('写库失败(请先设置档案身高:profile set)')
+
+    db_path = find_db_path(SKILL_DIR)
+    conn = sqlite3.connect(str(db_path))
+    history = _latest_history(conn)
+    cur = conn.cursor()
+    cur.execute('SELECT weight_goal FROM daily_goal WHERE id = 1')
+    g = cur.fetchone()
+    conn.close()
+
+    dl = weight.delta_last(receipt['date']) if receipt['date'] else None
+    dl = round(receipt['kg'] - dl, 1) if dl is not None else None
+    goal = g[0] if g and g[0] else None
+    goal_diff = round(receipt['kg'] - goal, 1) if goal else None
+    days_ago = None
+    if is_backfill:
+        days_ago = (date.today() - date.fromisoformat(receipt['date'])).days
+
+    summary = {
+        'new_record': {
+            'id': receipt['id'],
+            'date': receipt['date'],
+            'time': receipt['time'],
+            'weight_kg': receipt['kg'],
+            'bmi': receipt['bmi'],
+            'note': receipt['note'],
+            'tag': weight.note_tag(receipt['note']) if receipt['note'] else None,
+        },
+        'delta_last': dl,
+        'goal_diff': goal_diff,
+        'weight_goal': {'target': goal} if goal else None,
+        'backfill': {'days_ago': days_ago} if is_backfill else None,
+    }
+    return normalize({'summary': summary, 'history': history})
+
+
+def build_live_batch(items):
+    """批量补录体重:批量写库 + 组装回执(写入/跳过/失败条数 + 明细)"""
+    import weight
+    r = weight.batch_log_weight(items)
+    return {
+        'subtitle': f'共 {len(items)} 条 · 已处理',
+        'wrote': r['wrote'],
+        'skipped': r['skipped'],
+        'failed': r['failed'],
+        'items': r['items'],
+        'summary': f'批量补录完成:写入 {r["wrote"]} 条,跳过 {r["skipped"]} 条,失败 {r["failed"]} 条',
+        'meta': {'generated_at': date.today().isoformat()},
+    }
+
+
 def main():
     args = build_parser().parse_args()
-    input_path = Path(args.mock)
+    input_path = Path(args.mock) if args.mock else None
 
     try:
-        data = normalize(load_data(input_path))
-        html = render_html(data)
+        if args.live:
+            if args.kg is None:
+                print('❌ --live 需要 --kg <体重>', file=sys.stderr)
+                return 1
+            if not _chain_valid(args.chain):
+                print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+                return 2
+            data = build_live_receipt(args.kg, note=args.note or '', target_date=args.date)
+            cmd_name = '补录体重' if args.date else ('记体重（含备注）' if args.note else '记体重')
+            template = TEMPLATE_PATH
+            data['meta'] = {'chain': args.chain.strip(), 'wake_word': cmd_name, 'generated_at': date.today().isoformat()}
+        elif args.live_batch:
+            if not args.input:
+                print('❌ --live-batch 需要 --input <jsonl>', file=sys.stderr)
+                return 1
+            if not _chain_valid(args.chain):
+                print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+                return 2
+            ip = Path(args.input)
+            if not ip.exists():
+                print(f'❌ 输入文件不存在: {ip}', file=sys.stderr)
+                return 1
+            items = [json.loads(line) for line in ip.read_text(encoding='utf-8').splitlines() if line.strip()]
+            data = build_live_batch(items)
+            cmd_name = '批量补录体重'
+            template = BATCH_TEMPLATE_PATH
+            data['meta'] = {'chain': args.chain.strip(), 'wake_word': cmd_name, 'generated_at': date.today().isoformat()}
+        else:
+            data = normalize(load_data(input_path))
+            cmd_name = None
+            template = TEMPLATE_PATH
+        html = render_html(data, template)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'体重记录回执_{input_path.stem}')
+    if args.live or args.live_batch:
+        argv = sys.argv[1:]
+        if '--output' in argv:
+            i = argv.index('--output')
+            argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
+        data['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv)
+        data['meta']['source'] = 'weight_log (写库回执)'
+        out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, cmd_name, 'receipt')
+    else:
+        out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'体重记录回执_{input_path.stem}')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
 
+    if args.live_batch:
+        print(f'✅ {out_path}')
+        print(f'   批量补录: 写入 {data["wrote"]} · 跳过 {data["skipped"]} · 失败 {data["failed"]}')
+        return 0
     r = data.get('summary', {}).get('new_record', {})
     print(f'✅ {out_path}')
     print(f'   已记录: {r.get("date", "?")} {r.get("time", "")} | {r.get("weight_kg", "?")}kg | BMI {r.get("bmi", "?")}')

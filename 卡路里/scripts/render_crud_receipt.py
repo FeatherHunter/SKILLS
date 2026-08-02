@@ -12,6 +12,8 @@
   - 设置档案       → mode=create/update(live-profile-set)
   - 设活动量       → mode=update(live-profile-activity)
   - 改档案         → mode=update(live-profile-update)
+  - 改体重记录/改某日体重 → live-weight-update(ticket #4)
+  - 删体重记录/删某日体重/批量删体重 → live-weight-delete(ticket #4)
 对应模板: templates/crud_receipt.html
 
 数据来源(互斥):
@@ -19,6 +21,8 @@
   --live-profile-set               实读 DB:设置档案(全量写库 + 回执一体 · ticket #8)
   --live-profile-activity <level>  实读 DB:设活动量(写库 + 回执一体 · ticket #8)
   --live-profile-update           实读 DB:改档案(--field/--value,写库 + 回执一体)
+  --live-weight-update            实读 DB:改体重记录(--id 或 --date,写库 + 回执一体 · ticket #4)
+  --live-weight-delete            实读 DB:删体重记录(--id/--date/--start --end,写库 + 回执一体 · ticket #4)
 """
 import argparse, json, sys
 from datetime import datetime
@@ -257,6 +261,126 @@ def build_live_profile_update(field_value_pairs):
         summary += f";TDEE 约 {tdee_new:,} 卡/天"
     return _profile_receipt('update', old, new, [], '改档案',
                             last['updated_at'][:16].replace('T', ' '), summary)
+
+
+# ==================== ticket #4 · 体重 改/删 live 模式 ====================
+
+def _weight_record(weight_id):
+    """查单条体重记录"""
+    import db as db_module
+    db_path = db_module.find_db_path(Path(__file__).parent.parent)
+    with db_module.connection(db_path) as conn:
+        row = conn.execute(
+            'SELECT id, date, time, weight_kg, bmi, note FROM weight_log WHERE id = ?', (weight_id,)
+        ).fetchone()
+    return dict(row) if row else None
+
+
+def build_live_weight_update(target_id=None, target_date=None, weight_kg=None, note=None):
+    """改体重记录 / 改某日体重:写库 + 组装回执(呈现:命中条数/改前/改后 + 影响字段)
+
+    按 ID:改 1 条,按日期:命中 1+ 条全改
+    """
+    import weight
+
+    if target_id is not None:
+        old = _weight_record(target_id)
+        if old is None:
+            raise ValueError(f'体重记录 ID {target_id} 不存在')
+        r = weight.update_weight(target_id, weight_kg=weight_kg, note=note)
+        if r is None:
+            raise ValueError('更新失败')
+        new = _weight_record(target_id)
+        summary = f"已修改 #{target_id}({r['date']}):体重 {r['old_weight']}→{r['new_weight']}kg"
+        if note is not None and r.get('note'):
+            summary += f",备注→{r['note']}"
+        if r.get('bmi'):
+            summary += f";BMI {r['bmi']}"
+        return _profile_receipt('update', old, new, [], '体重记录', r['date'], summary)
+
+    # 按日期
+    if not target_date:
+        raise ValueError('--live-weight-update 需要 --id 或 --date')
+    r = weight.update_weight_by_date(target_date, weight_kg=weight_kg, note=note)
+    if r is None:
+        raise ValueError(f'{target_date} 无体重记录')
+    old_rows = r['old_rows']
+    first = old_rows[0]
+    old_record = {'date': first['date'], 'time': first['time'],
+                  'weight_kg': first['weight_kg'], 'bmi': first['bmi'], 'note': first['note']}
+    new_record = {'date': target_date, 'weight_kg': r['new_weight'] or first['weight_kg'],
+                  'bmi': r['bmi'], 'note': r['note'] if r['note'] is not None else first['note']}
+    summary = f"已修改 {target_date} 的 {r['hit_count']} 条记录:体重 {first['weight_kg']}→{r['new_weight']}kg"
+    if r['bmi']:
+        summary += f";BMI {r['bmi']}"
+    return {
+        'status': 'ok',
+        'data': {
+            'op': 'update',
+            'record_id': first['id'],
+            'old_record': old_record,
+            'new_record': new_record,
+            'context': {'kpis': [{'label': '命中条数', 'value': str(r['hit_count']), 'extra': target_date}]},
+            'meta': {'action_at': target_date, 'entity_type': '体重记录'},
+            'summary': summary,
+        },
+        'message': '已生成改体重记录 回执',
+    }
+
+
+def build_live_weight_delete(target_id=None, target_date=None, start=None, end=None):
+    """删体重记录 / 删某日体重 / 批量删体重:删除 + 组装回执(呈现:确认回执含快照/条数/范围)"""
+    import weight
+
+    if target_id is not None:
+        r = weight.delete_weight(target_id)
+        if r is None:
+            raise ValueError(f'体重记录 ID {target_id} 不存在')
+        snap = {'date': r['date'], 'time': r['time'], 'weight_kg': r['weight_kg'], 'bmi': r['bmi'], 'note': r['note']}
+        summary = f"已删除 #{r['id']}({r['date']} {r['time'][:5]}) 体重 {r['weight_kg']}kg"
+        totals = [{'label': '被删记录', 'value': f"{r['date']} {r['weight_kg']}kg", 'unit': ''}]
+        undo = f"python scripts/calorie_tracker.py weight {r['weight_kg']} --note '{r['note'] or ''}' --date {r['date']}"
+        return _weight_delete_receipt('delete', r['id'], snap, totals, summary, r['date'], undo)
+
+    if target_date is not None:
+        r = weight.delete_weight_by_date(target_date)
+        if r is None:
+            raise ValueError(f'{target_date} 无体重记录')
+        first = r['snapshot'][0]
+        summary = f"已删除 {target_date} 的 {r['deleted_count']} 条记录(如 {first['weight_kg']}kg)"
+        totals = [{'label': '删除条数', 'value': str(r['deleted_count']), 'unit': '条'},
+                  {'label': '日期', 'value': target_date, 'unit': ''}]
+        undo = f"python scripts/calorie_tracker.py weight {first['weight_kg']} --date {target_date}"
+        return _weight_delete_receipt('delete', first['id'], r['snapshot'][0], totals, summary, target_date, undo)
+
+    if start and end:
+        r = weight.delete_weight_range(start, end)
+        if r is None:
+            raise ValueError(f'{start} ~ {end} 无体重记录')
+        first = r['snapshot'][0]
+        summary = f"已删除 {start} ~ {end} 的 {r['deleted_count']} 条记录"
+        totals = [{'label': '时间范围', 'value': f'{start} ~ {end}', 'unit': ''},
+                  {'label': '删除条数', 'value': str(r['deleted_count']), 'unit': '条'}]
+        undo = f"python scripts/calorie_tracker.py weight {first['weight_kg']} --date {first['date']}"
+        return _weight_delete_receipt('delete', first['id'], r['snapshot'][0], totals, summary, f'{start} ~ {end}', undo)
+
+    raise ValueError('--live-weight-delete 需要 --id / --date / --start+--end 之一')
+
+
+def _weight_delete_receipt(op, record_id, snapshot, totals, summary, action_at, undo_cli):
+    return {
+        'status': 'ok',
+        'data': {
+            'op': op,
+            'record_id': record_id,
+            'old_record': snapshot,
+            'new_record': {},
+            'context': {'kpis': [], 'totals': totals},
+            'meta': {'action_at': action_at, 'entity_type': '体重记录', 'undo_cli': undo_cli},
+            'summary': summary,
+        },
+        'message': '已生成删体重记录 回执',
+    }
 
 
 # ==================== 饮食记录 live 模式(ticket #3 · 2026-08-02) ====================
@@ -522,6 +646,11 @@ def main():
                    help='改食品:写库 + 回执(flag 后接 <id> + 字段)')
     g.add_argument('--live-product-deprecate', action='store_true',
                    help='下架食品:标废弃 + 回执(flag 后接 <id>)')
+    # 体重记录 live 模式(ticket #4 · 2026-08-02)
+    g.add_argument('--live-weight-update', action='store_true',
+                   help='改体重记录/改某日体重:写库 + 回执(flag 后接 <id|date>,可带 --weight/--note)')
+    g.add_argument('--live-weight-delete', action='store_true',
+                   help='删体重记录/删某日体重/批量删体重:写库 + 回执(flag 后接 <id|date|start end>)')
     p.add_argument('--age', type=int, help='设置档案:年龄')
     p.add_argument('--gender', help='设置档案:male/female')
     p.add_argument('--height', type=float, help='设置档案:身高(cm)')
@@ -577,6 +706,8 @@ def main():
         'live_product_add': ('存食品', 'receipt'),
         'live_product_update': ('改食品', 'receipt'),
         'live_product_deprecate': ('下架食品', 'receipt'),
+        'live_weight_update': ('改体重记录', 'receipt'),
+        'live_weight_delete': ('删体重记录', 'receipt'),
     }
     active = None
     for flag_name in ('live_profile_set', 'live_profile_activity', 'live_profile_update',
@@ -584,7 +715,7 @@ def main():
                       'live_diet_update', 'live_diet_update_date', 'live_diet_delete',
                       'live_diet_delete_meal', 'live_diet_delete_date', 'live_diet_delete_range',
                       'live_water_add', 'live_product_add', 'live_product_update',
-                      'live_product_deprecate'):
+                      'live_product_deprecate', 'live_weight_update', 'live_weight_delete'):
         if getattr(args, flag_name.replace('-', '_')):
             active = flag_name
             break
@@ -766,6 +897,51 @@ def main():
                 print('❌ --live-product-deprecate 需要 <id>', file=sys.stderr)
                 return 1
             data = build_live_product_deprecate(pos[0])
+        elif args.live_weight_update:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-weight-update') + 1:]
+            pos = [a for a in rest if not a.startswith('--')]
+            kw = {}
+            i = 0
+            while i < len(rest):
+                if rest[i].startswith('--') and i + 1 < len(rest) and not rest[i+1].startswith('--'):
+                    kw[rest[i][2:]] = rest[i+1]
+                    i += 2
+                else:
+                    i += 1
+            if not pos:
+                print('❌ --live-weight-update 需要 <id> 或 <date>', file=sys.stderr)
+                return 1
+            target = pos[0]
+            try:
+                w_id = int(target)
+                data = build_live_weight_update(target_id=w_id, weight_kg=kw.get('weight'),
+                                                note=kw.get('note'))
+            except ValueError:
+                data = build_live_weight_update(target_date=target, weight_kg=kw.get('weight'),
+                                                note=kw.get('note'))
+        elif args.live_weight_delete:
+            import sys as _sys
+            rest = _sys.argv[_sys.argv.index('--live-weight-delete') + 1:]
+            pos = []
+            i = 0
+            while i < len(rest):
+                if rest[i].startswith('--'):
+                    i += 2 if (i + 1 < len(rest) and not rest[i+1].startswith('--')) else 1
+                else:
+                    pos.append(rest[i])
+                    i += 1
+            if not pos:
+                print('❌ --live-weight-delete 需要 <id|date|start end>', file=sys.stderr)
+                return 1
+            if len(pos) >= 2:
+                data = build_live_weight_delete(start=pos[0], end=pos[1])
+            else:
+                target = pos[0]
+                try:
+                    data = build_live_weight_delete(target_id=int(target))
+                except ValueError:
+                    data = build_live_weight_delete(target_date=target)
         else:
             data = build_live_profile_update(list(zip(fields, values)))
         # AI 思考链注入 meta(复制日志带出 · 2026-08-02)
@@ -780,7 +956,8 @@ def main():
                 argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
             data['data']['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv)
             src = 'food_log (写库回执)' if active.startswith(('live_diet', 'live_water')) else (
-                  'nutrition_products (写库回执)' if active.startswith('live_product') else 'user_profile (写库回执)')
+                  'nutrition_products (写库回执)' if active.startswith('live_product') else (
+                  'weight_log (写库回执)' if active.startswith('live_weight') else 'user_profile (写库回执)'))
             data['data']['meta']['source'] = src
         html = render_html(data)
     except Exception as e:

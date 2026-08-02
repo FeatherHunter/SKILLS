@@ -346,17 +346,20 @@ def main():
 
         elif command == "weight":
             # 2026-07-20 改:身高从 user_profile 读,note 用 --note 标志(强制)
+            # 2026-08-02 改:加 --date(补录体重 · ticket #4)
             if len(sys.argv) < 3:
-                print("Error: weight requires <kg> [--note '<备注>']")
+                print("Error: weight requires <kg> [--note '<备注>'] [--date YYYY-MM-DD]")
                 print("  2026-07-20 改:身高不再 CLI 传")
                 print("  note 必须用 --note 标志(不接受位置参数)")
                 print("  用法:")
                 print("    calorie_tracker.py weight 70")
                 print("    calorie_tracker.py weight 70 --note '我今天吃饱了'")
+                print("    calorie_tracker.py weight 70 --date 2026-07-20   # 补录体重")
                 sys.exit(1)
             args = sys.argv[3:]
-            # 解析 --note 标志(必须成对出现)
+            # 解析 --note / --date 标志(必须成对出现)
             note = ''
+            target_date = None
             consumed = []
             i = 0
             while i < len(args):
@@ -365,6 +368,13 @@ def main():
                         print("Error: --note 标志后必须跟备注内容")
                         sys.exit(1)
                     note = args[i + 1]
+                    consumed.extend([i, i + 1])
+                    i += 2
+                elif args[i] == '--date':
+                    if i + 1 >= len(args):
+                        print("Error: --date 标志后必须跟日期 YYYY-MM-DD")
+                        sys.exit(1)
+                    target_date = args[i + 1]
                     consumed.extend([i, i + 1])
                     i += 2
                 else:
@@ -378,7 +388,7 @@ def main():
                 print(f"  请改:calorie_tracker.py weight 70 --note '<备注>'")
                 sys.exit(1)
             # v2.4.14 改:符合 V1.0 §02 第②特性 "回执 = ID + 时间戳 + 影响行数"
-            receipt = weight.log_weight(sys.argv[2], note=note)
+            receipt = weight.log_weight(sys.argv[2], note=note, target_date=target_date)
             if receipt is None:
                 sys.exit(1)
             print(f"✓ 体重已记录 (id={receipt['id']}, 影响 {receipt['rows_affected']} 行)")
@@ -389,14 +399,27 @@ def main():
 
         elif command == "weight-update":
             # 2026-07-20 改:--height 参数已删除
+            # 2026-08-02 改:支持 --date(改某日体重 · ticket #4)
             if len(sys.argv) < 3:
-                print("Error: weight-update requires <id> [--weight <kg>] [--note <备注>]")
+                print("Error: weight-update requires <id|--date> [--weight <kg>] [--note <备注>]")
                 sys.exit(1)
             kwargs = _parse_kw_args(sys.argv[3:])
             if 'height' in kwargs:
                 print("Error: --height 参数已删除(2026-07-20)")
                 print("  身高从 user_profile 读,请用:profile set 30 male --height <cm>")
                 sys.exit(1)
+            if 'date' in kwargs and kwargs['date']:
+                # 改某日体重:按日期定位
+                receipt = weight.update_weight_by_date(
+                    kwargs['date'],
+                    weight_kg=kwargs.get('weight'),
+                    note=kwargs.get('note'),
+                )
+                if receipt is None:
+                    sys.exit(1)
+                print(f"✓ 已更新 {receipt['date']} 的 {receipt['hit_count']} 条记录")
+                print(f"  体重: {receipt['old_rows'][0]['weight_kg']} → {receipt['new_weight']} kg | BMI: {receipt['bmi']}")
+                sys.exit(0)
             # v2.4.18a 改:符合 V1.0 §02 第②特性"回执 = ID + 时间戳 + 影响行数"
             receipt = weight.update_weight(
                 sys.argv[2],
@@ -410,6 +433,51 @@ def main():
             print(f"  体重: {receipt['old_weight']} → {receipt['new_weight']} kg | BMI: {receipt['bmi']}")
             if receipt['note']:
                 print(f"  备注: {receipt['note']}")
+
+        elif command == "weight-delete":
+            # ticket #4 · 删体重记录 / 删某日体重 / 批量删体重
+            if len(sys.argv) < 3:
+                print("Error: weight-delete requires <id> | --date <YYYY-MM-DD> | --start <S> --end <E>")
+                sys.exit(1)
+            kwargs = _parse_kw_args(sys.argv[3:])
+            pos = [a for a in sys.argv[3:] if not a.startswith('--')]
+            if kwargs.get('date'):
+                receipt = weight.delete_weight_by_date(kwargs['date'])
+            elif kwargs.get('start') and kwargs.get('end'):
+                receipt = weight.delete_weight_range(kwargs['start'], kwargs['end'])
+            elif pos:
+                receipt = weight.delete_weight(pos[0])
+            else:
+                print("Error: weight-delete requires <id> | --date | --start --end")
+                sys.exit(1)
+            if receipt is None:
+                sys.exit(1)
+            print(f"✓ 已删除 {receipt.get('deleted_count', 1)} 条体重记录")
+            if receipt.get('date'):
+                print(f"  日期: {receipt['date']}")
+            if receipt.get('start'):
+                print(f"  范围: {receipt['start']} ~ {receipt['end']}")
+            if receipt.get('weight_kg') is not None:
+                print(f"  被删: #{receipt['id']} {receipt['weight_kg']}kg {receipt['date']}")
+
+        elif command == "weight-batch":
+            # ticket #4 · 批量补录体重(--input jsonl,每行 {"date": "YYYY-MM-DD", "kg": 70})
+            kwargs = _parse_kw_args(sys.argv[2:])
+            inp = kwargs.get('input')
+            if not inp:
+                print("Error: weight-batch requires --input <file.jsonl>")
+                sys.exit(1)
+            import json as _json
+            p = Path(inp)
+            if not p.exists():
+                print(f"Error: 输入文件不存在: {inp}")
+                sys.exit(1)
+            items = [_json.loads(line) for line in p.read_text(encoding='utf-8').splitlines() if line.strip()]
+            r = weight.batch_log_weight(items)
+            print(f"✓ 批量补录完成: 写入 {r['wrote']} · 跳过 {r['skipped']} · 失败 {r['failed']}")
+            for it in r['items']:
+                if it['status'] != '写入':
+                    print(f"  {it['date']} {it['kg']}kg: {it['status']} ({it['reason']})")
 
         elif command == "weight-history":
             _sub_help(sys.argv[2:],

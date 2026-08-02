@@ -56,21 +56,20 @@ def test_skill_md_template_list_includes_food_library():
 
 
 def test_skill_md_trigger_table_lists_food_search_cli():
-    """§触发词速查表 含 查热量 → render_food_search.py"""
+    """§触发词速查表 含 查食品 → render_food_search.py(2026-08-02 改:旧词 查热量 退役,新词 查食品)"""
     text = _read(SKILL_MD)
-    # 排除 查热量历史 等以"查热量"开头的别名,用 \| 或 boundary 锁定
-    m = re.search(r"^\| 查热量 \|[^|]*\|.*?python scripts/[^\s|]+", text, re.MULTILINE)
+    m = re.search(r"^\| 查食品 \|[^|]*\|.*?python scripts/[^\s|]+", text, re.MULTILINE)
     assert m and "render_food_search" in m.group(0), (
-        f"查热量 行的 CLI 列应是 render_food_search.py,实得: {m.group(0)[:200] if m else 'no match'}"
+        f"查食品 行的 CLI 列应是 render_food_search.py,实得: {m.group(0)[:200] if m else 'no match'}"
     )
 
 
 def test_skill_md_trigger_table_lists_food_library_cli():
-    """§触发词速查表 含 查食品库 → render_food_library.py"""
+    """§触发词速查表 含 看食品库（去重） → render_dedupe_report.py(2026-08-02 改:旧词 查食品库 退役)"""
     text = _read(SKILL_MD)
-    m = re.search(r"^\| 查食品库 \|[^|]*\|.*?python scripts/[^\s|]+", text, re.MULTILINE)
-    assert m and "render_food_library" in m.group(0), (
-        f"查食品库 行的 CLI 列应是 render_food_library.py,实得: {m.group(0)[:200] if m else 'no match'}"
+    m = re.search(r"^\| 看食品库（去重） \|[^|]*\|.*?python scripts/[^\s|]+", text, re.MULTILINE)
+    assert m and "render_dedupe_report" in m.group(0), (
+        f"看食品库（去重） 行的 CLI 列应是 render_dedupe_report.py,实得: {m.group(0)[:200] if m else 'no match'}"
     )
 
 

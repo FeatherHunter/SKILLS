@@ -173,7 +173,7 @@ TRIGGERS = [
             'category': '饮食',     'wake_word': '记喝水',     'desc': '记喝水',
             'main_prompt': {
         'cli': 'python scripts/render_crud_receipt.py --live-water-add <ml> [--date <日期>] --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记喝水」。\n\n我喝了水,帮我记录。如果我说「喝了几杯」,请按一杯约 250ml 折算成总量;如果我只说了杯子大小,先问我确认。记录后给我看:本次 ml + 今日累计/目标 + 距目标进度。完成后给 1 句话总结,不需要过多文字解释。\n\n喝水量(ml,或「几杯」):____'},
-        'fill_hints': [],
+        'fill_hints': ['喝水量(ml,或「几杯」): '],
             'variants': [],
             'key': 'diet_log_water', 'name': '记喝水', 'subfunction': '记饮食', 'output_type': 'receipt',
             'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-water-add <ml> [--date <日期>] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「记喝水」。\n\n我喝了水,帮我记录。如果我说「喝了几杯」,请按一杯约 250ml 折算成总量;如果我只说了杯子大小,先问我确认。记录后给我看:本次 ml + 今日累计/目标 + 距目标进度。完成后给 1 句话总结,不需要过多文字解释。\n\n喝水量(ml,或「几杯」):____',

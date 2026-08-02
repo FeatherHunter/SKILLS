@@ -179,6 +179,14 @@
   // 当前 mode 状态(供 render 使用)
   let currentMode = getInitialMode();
 
+  // 看波动异常点:仅异常视图(2026-08-02 · 隐藏 KPI + Canvas,只留异常列表)
+  if (DATA.data && DATA.data.view === 'anomalies-only') {
+    const hide = document.querySelectorAll('.kpi-grid, .chart-section');
+    hide.forEach(el => { if (el) el.style.display = 'none'; });
+    const h1 = document.querySelector('h1');
+    if (h1) h1.textContent = '⚠ 看波动异常点';
+  }
+
   // ========== Render 函数(可被 toggle 调用) ==========
   function render() {
     const d = DATA.data;

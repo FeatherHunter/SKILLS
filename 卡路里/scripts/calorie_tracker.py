@@ -627,16 +627,22 @@ def main():
 
         elif command == "profile":
             # profile 子命令
-            #   profile set <age> <gender> [--height <cm>] [--note <text>]
+            #   profile set <age> <gender> [--height <cm>] [--note <text>] [--activity <level>]
             #   profile get
             #   profile show
+            #   profile activity <level>
+            #   profile update --field <X> --value <Y>
             # (2026-07-20 删:profile sync-height)
             if len(sys.argv) < 3:
                 print("用法:")
-                print("  profile set <age> <gender> [--height <cm>] [--note <text>]")
-                print("    示例:profile set 30 male --height 177")
+                print("  profile set <age> <gender> [--height <cm>] [--note <text>] [--activity <level>]")
+                print("    示例:profile set 30 male --height 177 --activity moderate")
                 print("  profile get")
                 print("  profile show")
+                print("  profile activity <level>")
+                print("    示例:profile activity active")
+                print("  profile update --field <height|age|gender|activity|note> --value <新值>")
+                print("    示例:profile update --field height --value 180")
                 sys.exit(1)
 
             sub = sys.argv[2]
@@ -644,7 +650,7 @@ def main():
                 if sub == "set":
                     if len(sys.argv) < 5:
                         print("Error: profile set 需要 <age> <gender>")
-                        print("  示例:profile set 30 male --height 177")
+                        print("  示例:profile set 30 male --height 177 --activity moderate")
                         sys.exit(1)
                     age = int(sys.argv[3])
                     gender = sys.argv[4]
@@ -654,6 +660,7 @@ def main():
                         gender=gender,
                         height_cm=float(kwargs["height"]) if "height" in kwargs else None,
                         note=kwargs.get("note"),
+                        activity_level=kwargs.get("activity"),
                     )
                     print("✓ 档案已更新")
                     profile.print_profile()
@@ -663,6 +670,32 @@ def main():
                     print(json.dumps(p, ensure_ascii=False, indent=2))
                 elif sub == "show":
                     profile.print_profile()
+                elif sub == "activity":
+                    # profile activity <level> — 设活动量(单独,无需重传其他字段 · #22C)
+                    if len(sys.argv) < 4:
+                        print("Error: profile activity 需要 <level>")
+                        print("  示例:profile activity active")
+                        print(f"  可选: {profile.VALID_ACTIVITY_LEVELS}")
+                        sys.exit(1)
+                    result = profile.set_activity_level(sys.argv[3])
+                    print(f"✓ 活动量已设置 (id=1, 影响 1 行)")
+                    print(f"  等级: {result['activity_level']} ({result['activity_label']})")
+                    print(f"  系数: {result['old_factor']} → {result['activity_factor']}")
+                elif sub == "update":
+                    # profile update --field <X> --value <Y> — 单字段更新(改档案 · #22C)
+                    kwargs = _parse_kw_args(sys.argv[3:])
+                    field = kwargs.get("field")
+                    value = kwargs.get("value")
+                    if not field or value is None:
+                        print("Error: profile update 需要 --field 与 --value")
+                        print("  示例:profile update --field height --value 180")
+                        sys.exit(1)
+                    result = profile.update_profile_field(field, value)
+                    print(f"✓ {result['label']}已更新 (id=1, 影响 1 行)")
+                    print(f"  改前: {result['old_value']}")
+                    print(f"  改后: {result['new_value']}")
+                    if result['impact']:
+                        print(f"  影响: {result['impact']}")
                 # 2026-07-20 删:profile sync-height 子命令
                 else:
                     print(f"Error: profile 子命令 \"{sub}\" 未知")
@@ -671,6 +704,12 @@ def main():
                 print(f"Error: {e}")
                 sys.exit(1)
             except profile.InvalidGenderError as e:
+                print(f"Error: {e}")
+                sys.exit(1)
+            except profile.InvalidActivityLevelError as e:
+                print(f"Error: {e}")
+                sys.exit(1)
+            except profile.InvalidFieldError as e:
                 print(f"Error: {e}")
                 sys.exit(1)
             except profile.ProfileError as e:

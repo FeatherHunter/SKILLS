@@ -22,7 +22,73 @@ SKILL_DIR = Path(__file__).parent.parent.parent
 DB_FILENAME = "calorie_data.db"
 DB_PATH = find_db_path(SKILL_DIR, DB_FILENAME)
 
-BMR_ACTIVITY_FACTOR = 1.3
+BMR_ACTIVITY_FACTOR = 1.3  # 旧常量，兼容保留；新代码请用 TDEE_ACTIVITY_FACTORS / get_activity_factor()
+
+# activity_level → TDEE 系数（2026-08-02 · ticket #8 · 唯一来源）
+# Mifflin-St Jeor 活动系数表（Harris-Benedict 修订版）
+TDEE_ACTIVITY_FACTORS = {
+    'sedentary':    1.2,
+    'light':        1.375,
+    'moderate':     1.55,
+    'active':       1.725,
+    'very_active':  1.9,
+}
+
+ACTIVITY_LEVEL_LABELS = {
+    'sedentary':    '久坐',
+    'light':        '轻度活动',
+    'moderate':     '中度活动',
+    'active':       '活跃',
+    'very_active':  '高度活跃',
+}
+
+
+def get_activity_factor(level=None):
+    """根据 activity_level 返回 TDEE 系数，缺省/未知回退 moderate(1.55)
+
+    Args:
+        level: 'sedentary' / 'light' / 'moderate' / 'active' / 'very_active' / None
+    """
+    if not level:
+        return TDEE_ACTIVITY_FACTORS['moderate']
+    return TDEE_ACTIVITY_FACTORS.get(str(level).lower(), TDEE_ACTIVITY_FACTORS['moderate'])
+
+
+def calc_tdee(weight_kg, height_cm, age, gender='male', activity_level=None):
+    """Mifflin-St Jeor BMR × activity_factor（读取 user_profile.activity_level）
+
+    TDEE = BMR × activity_factor（日常活动部分）
+    当日运动消耗由 exercise_log 单独累加，不在此函数内。
+
+    Args:
+        weight_kg: 体重(kg)
+        height_cm: 身高(cm)
+        age: 年龄(岁)
+        gender: 'male' / 'female'
+        activity_level: 活动量档位（None 时读 user_profile，仍缺则默认 moderate）
+    """
+    if activity_level is None:
+        activity_level = get_profile_activity_level()
+    if not weight_kg or not height_cm:
+        return 1800  # fallback
+
+    if gender == 'male':
+        bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age + 5
+    else:
+        bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161
+
+    factor = get_activity_factor(activity_level)
+    return round(bmr * factor)
+
+
+def get_profile_activity_level():
+    """读 user_profile.activity_level；无档案/异常回退 'moderate'"""
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+        import profile
+        return profile.get_profile().get('activity_level') or 'moderate'
+    except Exception:
+        return 'moderate'
 
 
 def _get_db():

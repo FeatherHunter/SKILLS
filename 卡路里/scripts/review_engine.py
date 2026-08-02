@@ -24,6 +24,12 @@ import db as db_module  # ④ 数据层
 import profile          # 用户档案(③ 业务层)
 import workout_plan     # 健身计划循环逻辑
 
+try:
+    from analysis._utils import get_activity_factor  # TDEE 活动系数唯一来源(ticket #8)
+except Exception:
+    def get_activity_factor(level=None):
+        return 1.55
+
 
 # ==================== 错误类(契约层用) ====================
 
@@ -321,6 +327,7 @@ def derive(raw_data):
         height_cm=user_profile.get('height_cm'),
         age=user_profile.get('age', 30),
         gender=user_profile.get('gender', 'male'),
+        activity_level=user_profile.get('activity_level'),
     )
 
     # 2. 摄入汇总(用 complete_days,排除今日)
@@ -759,11 +766,11 @@ def _calc_nutrition_match_rate(daily_intake, nutrition_targets):
     }
 
 
-def _calc_tdee(weight_kg, height_cm, age, gender='male'):
-    """Mifflin-St Jeor 公式 + 活动系数 1.55(中度)
+def _calc_tdee(weight_kg, height_cm, age, gender='male', activity_level=None):
+    """Mifflin-St Jeor 公式 + activity_level 活动系数(ticket #8 · 2026-08-02)
 
     BMR: 10W + 6.25H - 5A + (5 男 / -161 女)
-    TDEE = BMR × 1.55
+    TDEE = BMR × activity_factor(默认 moderate=1.55,读 user_profile.activity_level)
     """
     if not weight_kg or not height_cm:
         return 1800  # fallback
@@ -773,7 +780,7 @@ def _calc_tdee(weight_kg, height_cm, age, gender='male'):
     else:
         bmr = 10 * weight_kg + 6.25 * height_cm - 5 * age - 161
 
-    return round(bmr * 1.55)
+    return round(bmr * get_activity_factor(activity_level))
 
 
 def _get_latest_weight(weight_logs):

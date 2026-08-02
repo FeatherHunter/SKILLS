@@ -3,7 +3,7 @@
 """render_crud_view.py — 通用状态查看 HTML 渲染器(报告型)
 
 对应 SKILL.md 唤醒词(2 个):
-  - 查档案   → 显示 user_profile 字段
+  - 查档案   → 显示 user_profile 字段(含活动量/系数/TDEE)
   - 查定时复盘 → 显示 mavis cron 任务配置
 对应模板: templates/crud_view.html
 """
@@ -53,13 +53,18 @@ def build_data(entity_type):
         w = cur.fetchone()
         prof_d = dict(prof)
         weight_d = dict(w) if w else {}
-        # BMR + TDEE
+        # BMR + TDEE（activity 系数读 user_profile.activity_level · ticket #8）
         age = prof['age'] or 30
         h = prof['height_cm'] or 175
         w_kg = weight_d.get('weight_kg', 70)
+        gender = prof['gender'] or 'male'
+        activity_level = prof['activity_level'] or 'moderate'
         # Mifflin-St Jeor
-        bmr = round(10 * w_kg + 6.25 * h - 5 * age + 5, 0)
-        tdee = round(bmr * 1.4, 0)
+        bmr = round(10 * w_kg + 6.25 * h - 5 * age + (5 if gender == 'male' else -161), 0)
+        from analysis._utils import get_activity_factor, ACTIVITY_LEVEL_LABELS
+        activity_factor = get_activity_factor(activity_level)
+        activity_label = ACTIVITY_LEVEL_LABELS.get(activity_level, activity_level)
+        tdee = round(bmr * activity_factor, 0)
         bmi = weight_d.get('bmi')
         height_str = f'{h:g} cm' if h else '—'
         bmi_str = f'{bmi} (正常)' if bmi and 18.5 <= bmi <= 24 else f'{bmi} (超重)' if bmi and bmi > 24 else '—' if bmi else '—'
@@ -84,10 +89,12 @@ def build_data(entity_type):
                     {'key':'年龄(AGE)', 'value':str(age)},
                     {'key':'性别(GENDER)', 'value':prof['gender'] or '—'},
                     {'key':'身高(HEIGHT_CM)', 'value':height_str},
+                    {'key':'活动量(ACTIVITY_LEVEL)', 'value':f'{activity_label} ({activity_level})'},
+                    {'key':'活动系数', 'value':f'× {activity_factor}（{activity_label}档）'},
                     {'key':'最近体重', 'value':weight_str},
                     {'key':'最近 BMI', 'value':bmi_str},
                     {'key':'BMR(Mifflin-St Jeor)', 'value':f'{bmr:,} 卡/天'},
-                    {'key':'TDEE(BMR × 1.4)', 'value':f'{tdee:,} 卡/天'},
+                    {'key':'TDEE(BMR × 活动系数)', 'value':f'{tdee:,} 卡/天'},
                     {'key':'档案创建', 'value':prof['created_at'] or '—'},
                     {'key':'档案更新', 'value':prof['updated_at'] or '—'},
                     {'key':'备注', 'value':prof['note'] or '(空)'}

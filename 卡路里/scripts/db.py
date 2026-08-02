@@ -353,6 +353,41 @@ def init_db(db_path):
         )
     ''')
 
+    # 迁移：user_profile 表新增 activity_level（2026-08-02 · ticket #8 · 基础信息 4 场景）
+    # 值域：sedentary / light / moderate / active / very_active（英文字典 + 中文 label 映射，#19A 决策）
+    _existing_cols_profile = {
+        row[1] for row in c.execute('PRAGMA table_info(user_profile)').fetchall()
+    }
+    if 'activity_level' not in _existing_cols_profile:
+        c.execute(
+            "ALTER TABLE user_profile ADD COLUMN activity_level "
+            "TEXT DEFAULT 'moderate'"
+        )
+        # 已有数据回填（幂等：默认值已覆盖，仅防御 NULL）
+        c.execute(
+            "UPDATE user_profile SET activity_level = 'moderate' "
+            "WHERE activity_level IS NULL"
+        )
+    # 枚举约束（SQLite ADD COLUMN 带 CHECK 兼容性差，用 trigger 守护，同 body_measurements 风格）
+    c.execute('''
+        CREATE TRIGGER IF NOT EXISTS user_profile_activity_level_check
+        BEFORE INSERT ON user_profile
+        WHEN (NEW.activity_level IS NOT NULL AND NEW.activity_level NOT IN
+              ('sedentary', 'light', 'moderate', 'active', 'very_active'))
+        BEGIN
+            SELECT RAISE(ABORT, 'activity_level 必须是 sedentary/light/moderate/active/very_active 之一');
+        END
+    ''')
+    c.execute('''
+        CREATE TRIGGER IF NOT EXISTS user_profile_activity_level_check_update
+        BEFORE UPDATE OF activity_level ON user_profile
+        WHEN (NEW.activity_level IS NOT NULL AND NEW.activity_level NOT IN
+              ('sedentary', 'light', 'moderate', 'active', 'very_active'))
+        BEGIN
+            SELECT RAISE(ABORT, 'activity_level 必须是 sedentary/light/moderate/active/very_active 之一');
+        END
+    ''')
+
     # 迁移：删除废弃的 fitness_goals 表（2026-07-12，重构为 workout_plans）
     if 'fitness_goals' in _existing_tables:
         c.execute('DROP TABLE IF EXISTS fitness_goals')

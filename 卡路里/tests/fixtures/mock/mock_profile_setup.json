@@ -35,6 +35,35 @@
         "hint": "用于 BMI"
       },
       {
+        "key": "activity",
+        "label": "活动量",
+        "type": "select",
+        "required": false,
+        "options": [
+          {
+            "value": "sedentary",
+            "label": "久坐(几乎不运动)"
+          },
+          {
+            "value": "light",
+            "label": "轻度(每周 1-3 次轻度运动)"
+          },
+          {
+            "value": "moderate",
+            "label": "中度(每周 3-5 次中等强度运动)"
+          },
+          {
+            "value": "active",
+            "label": "活跃(每周 6-7 次高强度运动)"
+          },
+          {
+            "value": "very_active",
+            "label": "高度活跃(每天高强度运动 + 体力劳动)"
+          }
+        ],
+        "hint": "影响 TDEE 系数,不知道选哪个可留空让 AI 推荐"
+      },
+      {
         "key": "note",
         "label": "备注",
         "type": "textarea",
@@ -45,13 +74,14 @@
       "age": 30,
       "gender": "male",
       "height": 177,
+      "activity": "moderate",
       "note": ""
     },
-    "exec_cmd_template": "calorie_tracker.py profile set {age} {gender} --height {height} # optional: --note {note}",
+    "exec_cmd_template": "calorie_tracker.py profile set {age} {gender} --height {height} --activity {activity} # optional: --note {note}",
     "exec_cmd_optional": "note",
     "meta": {
       "fetched_at": "2026-07-24 18:30:00",
-      "subtitle": "设置年龄/性别/身高,系统用 Mifflin-St Jeor 公式计算 BMR 和 TDEE"
+      "subtitle": "设置年龄/性别/身高/活动量,系统用 Mifflin-St Jeor 公式计算 BMR 和 TDEE"
     }
   },
   "message": "已生成设置档案 配置"

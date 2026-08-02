@@ -15,7 +15,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from analysis._utils import _get_db, _parse_date, BMR_ACTIVITY_FACTOR
+from analysis._utils import _get_db, _parse_date, get_activity_factor, get_profile_activity_level
 from nutrition_goal import get_nutrition_goal
 
 _scripts_dir = str(Path(__file__).resolve().parent.parent)
@@ -351,7 +351,7 @@ def diet_deficit_analysis(start_date, end_date=None, as_dict=False):
     wrow = cur2.fetchone()
     conn.close()
     current_weight = wrow[0] if wrow else 70
-    bmr = current_weight * 24 * BMR_ACTIVITY_FACTOR
+    bmr = current_weight * 24 * get_activity_factor(get_profile_activity_level())
 
     avg_deficit = bmr + avg_ex - avg_intake
     total_deficit = avg_deficit * days

@@ -2,14 +2,21 @@
 # -*- coding: utf-8 -*-
 """render_crud_receipt.py — 通用 CRUD 操作回执 HTML 渲染器(回执型)
 
-对应 SKILL.md 唤醒词(8 个):
+对应 SKILL.md 唤醒词(10 个):
   - 删吃的/改吃的   → mode=update/delete
   - 存食品/改食品   → mode=update/create
   - 删身材照       → mode=delete
   - 改照片标签     → mode=update
   - 改运动记录     → mode=update
   - 改体重记录     → mode=update
+  - 设活动量       → mode=update(live-profile-activity)
+  - 改档案         → mode=update(live-profile-update)
 对应模板: templates/crud_receipt.html
+
+数据来源(互斥):
+  --mock <json>                    mock 数据(测试)
+  --live-profile-activity <level>  实读 DB:设活动量(写库 + 回执一体 · ticket #8)
+  --live-profile-update           实读 DB:改档案(--field/--value,写库 + 回执一体)
 """
 import argparse, json, sys
 from datetime import datetime
@@ -38,13 +45,98 @@ def render_html(data):
     return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
 
 
+def _profile_receipt(op: str, old_record: dict, new_record: dict, kpis: list,
+                     entity_label: str, action_at: str) -> dict:
+    """组装 profile 回执数据契约(与 mock_crud_receipt.json 同构)"""
+    return {
+        'status': 'ok',
+        'data': {
+            'op': op,
+            'record_id': 1,
+            'old_record': old_record,
+            'new_record': new_record,
+            'context': {'kpis': kpis},
+            'meta': {
+                'action_at': action_at,
+                'entity_type': entity_label,
+            },
+        },
+        'message': f'已生成{entity_label} 回执',
+    }
+
+
+def build_live_profile_activity(level: str) -> dict:
+    """设活动量:写库 + 组装回执(呈现:活动等级 + 影响(TDEE 系数))"""
+    import profile
+    from analysis._utils import ACTIVITY_LEVEL_LABELS, TDEE_ACTIVITY_FACTORS, get_activity_factor
+
+    old = profile.get_profile()
+    old_level = old.get('activity_level') or 'moderate'
+    result = profile.set_activity_level(level)
+    new = profile.get_profile()
+
+    old_f = TDEE_ACTIVITY_FACTORS.get(old_level, 1.55)
+    new_f = result['activity_factor']
+    delta_pct = round((new_f - old_f) / old_f * 100, 1) if old_f else 0
+
+    kpis = [
+        {'label': '活动量', 'value': result['activity_label'],
+         'extra': f"({result['activity_level']})"},
+        {'label': 'TDEE 系数', 'value': f'{old_f} → {new_f}',
+         'extra': f'{delta_pct:+.1f}%'},
+        {'label': '影响', 'value': f'每日消耗{delta_pct:+.1f}%',
+         'extra': '仅日常活动,运动另计'},
+        {'label': '更新时间', 'value': result['updated_at'][:16].replace('T', ' '),
+         'extra': 'id=1'},
+    ]
+    return _profile_receipt('update', old, new, kpis, '设活动量', result['updated_at'][:16].replace('T', ' '))
+
+
+def build_live_profile_update(field: str, value: str) -> dict:
+    """改档案:写库 + 组装回执(呈现:改前/改后 + 影响提示)"""
+    import profile
+
+    old = profile.get_profile()
+    result = profile.update_profile_field(field, value)
+    new = profile.get_profile()
+
+    kpis = [
+        {'label': '字段', 'value': result['label'],
+         'extra': f"field={result['field']}"},
+        {'label': '改前', 'value': str(result['old_value']),
+         'extra': '—'},
+        {'label': '改后', 'value': str(result['new_value']),
+         'extra': '—'},
+        {'label': '更新时间', 'value': result['updated_at'][:16].replace('T', ' '),
+         'extra': 'id=1'},
+    ]
+    return _profile_receipt('update', old, new, kpis, '改档案', result['updated_at'][:16].replace('T', ' '))
+
+
 def main():
     p = argparse.ArgumentParser(description='渲染 CRUD 操作回执 HTML')
-    p.add_argument('--mock', required=True, help='mock JSON(通用 CRUD 实际数据由各 CLI 写入)')
+    g = p.add_mutually_exclusive_group(required=True)
+    g.add_argument('--mock', help='mock JSON(通用 CRUD 实际数据由各 CLI 写入)')
+    g.add_argument('--live-profile-activity', metavar='LEVEL',
+                   help='实读 DB 设活动量(sedentary/light/moderate/active/very_active)')
+    g.add_argument('--live-profile-update', action='store_true',
+                   help='实读 DB 改档案(需 --field/--value)')
+    p.add_argument('--field', help='改档案字段(height/age/gender/activity/note)')
+    p.add_argument('--value', help='改档案新值')
     p.add_argument('--output')
     args = p.parse_args()
+
+    if args.live_profile_update and (not args.field or args.value is None):
+        print('❌ --live-profile-update 需要 --field 与 --value', file=sys.stderr)
+        return 1
+
     try:
-        data = _load_data(args.mock)
+        if args.mock:
+            data = _load_data(args.mock)
+        elif args.live_profile_activity:
+            data = build_live_profile_activity(args.live_profile_activity)
+        else:
+            data = build_live_profile_update(args.field, args.value)
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

@@ -17,6 +17,12 @@ from pathlib import Path
 
 from db import find_db_path, get_db, init_db
 
+try:
+    from analysis._utils import get_activity_factor  # TDEE 活动系数唯一来源(ticket #8)
+except Exception:
+    def get_activity_factor(level=None):
+        return 1.55
+
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8')
     sys.stderr.reconfigure(encoding='utf-8')
@@ -147,11 +153,12 @@ def _latest_weight_kg():
 
 def _profile_basis(weight_kg, height_cm, age, gender):
     """从 user_profile 读档案，缺字段用默认值 + 标记缺省"""
-    defaults = {'weight_kg': weight_kg, 'height_cm': height_cm, 'age': age, 'gender': gender}
+    defaults = {'weight_kg': weight_kg, 'height_cm': height_cm, 'age': age, 'gender': gender,
+                'activity_level': 'moderate'}
     missing = []
     conn = _get_db()
     try:
-        row = conn.execute('SELECT age, gender, height_cm FROM user_profile WHERE id = 1').fetchone()
+        row = conn.execute('SELECT age, gender, height_cm, activity_level FROM user_profile WHERE id = 1').fetchone()
     except Exception:
         row = None
     conn.close()
@@ -168,6 +175,7 @@ def _profile_basis(weight_kg, height_cm, age, gender):
             defaults['height_cm'] = row['height_cm']
         else:
             missing.append('身高')
+        defaults['activity_level'] = row['activity_level'] or 'moderate'
     else:
         missing = ['年龄', '性别', '身高']
     if defaults['weight_kg'] is None:
@@ -198,9 +206,9 @@ def recommend_nutrition_goal(profile='cut', weight_kg=None, height_cm=None, age=
     a = defaults['age'] or 30
     g = defaults['gender'] or 'male'
 
-    # BMR（Mifflin-St Jeor）+ TDEE（activity 系数暂 1.4，ticket 07 接入活动量后替换）
+    # BMR（Mifflin-St Jeor）+ TDEE（activity 系数读 user_profile.activity_level · ticket #8）
     bmr = 10 * w + 6.25 * h - 5 * a + (5 if g == 'male' else -161)
-    tdee = bmr * 1.4
+    tdee = bmr * get_activity_factor(defaults['activity_level'])
 
     p = PROFILES[profile]
     cal = int(tdee + p['calorie_adj'])

@@ -16,7 +16,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from analysis._utils import _get_db, _parse_date, _days_between, BMR_ACTIVITY_FACTOR
+from analysis._utils import _get_db, _parse_date, _days_between, get_activity_factor, get_profile_activity_level
 
 _scripts_dir = str(Path(__file__).resolve().parent.parent)
 if _scripts_dir not in sys.path:
@@ -187,7 +187,7 @@ def exercise_deficit_contribution(start_date, end_date=None, as_dict=False):
     wrow = cur2.fetchone()
     conn.close()
     current_weight = wrow[0] if wrow else 70
-    bmr = current_weight * 24 * BMR_ACTIVITY_FACTOR
+    bmr = current_weight * 24 * get_activity_factor(get_profile_activity_level())
 
     bmr_total = bmr * span
     diet_deficit = bmr_total - total_intake

@@ -361,9 +361,10 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
       c. **安装 CLI SKILL**:`npx -y skills add https://open.feishu.cn --skill -y`(**AI 直接执行**)—— 官方 Required,跳过会导致快捷命令不可用
       d. 验证:`lark-cli --version` 可执行;`lark-cli auth status` 能输出 JSON(仅验证 CLI 工作,授权另看下一步)
    - **配置 app(先让用户选场景)**:
-      - **app = agent**:飞书平台中应用(app)就是 AI agent 的载体,同一概念(appId 形如 `cli_xxx`)。对用户如实说明:「将在飞书创建一个 AI 应用(agent 身份),备忘录通过它调用飞书」
       - **必须先于 auth login**:无 app 配置时 `auth login` 直接失败(not_configured)
-      - **场景 A · 用户从未创建过 app** → `lark-cli config init --new`(AI 可代做,引导用户浏览器完成,创建新 app)
+      - **场景 A · 用户从未创建过 app** → `lark-cli config init --new`(AI 可代做):
+        - **实际流程(用户实测确认)**:命令执行后输出一个 URL → AI 把 URL 发给用户 → 用户点击进入飞书开放平台后台 → 按页面提示创建「飞书 CLI 应用」→ 创建完成即配置成功
+        - **提醒用户**:「点击链接进入飞书后台,创建飞书 CLI 应用;创建完就配置好了,回来说一声即可」
       - **场景 B · 用户已有 app** → 用户提供 App ID + App Secret,非交互配置:
         - 引导用户到飞书开放平台开发者后台(open.feishu.cn)→ 应用列表 → 找到自己的应用 → 复制 App ID 和 App Secret
         - 配置:`echo "<App Secret>" | lark-cli config init --app-id "<App ID>" --app-secret-stdin`(Secret 从 stdin 读,不暴露进程列表)

@@ -29,10 +29,11 @@ Issues 以本地 markdown 文件形式存放在 `.scratch/<feature>/` 目录下�
 **空白 agent 拿到 issue 后按此顺序**:
 1. 读 `.scratch/scene-index-recovered.md` 对应分类章节(§1-§11)— 该分类的全部场景设计 + 用户已确认的决策
 2. 读对应 `tickets/NN-分类.md`(每个 ticket 已含「权威清单」指针 + Success Criteria)
-3. 按 schema `.scratch/scene_data/schema.json` 把场景填进 `.scratch/scene_data/NN-分类.json`(13 字段)
-4. `python scripts/check_scene_data.py --only <分类>` 校验通过
-5. **用户逐条确认后才同步**到 `scripts/_triggers.py`(最高优先级原则,不允许跳过)
-6. 同步后跑 `python scripts/render_help_center.py` 重 render 卡路里.html
+3. **必读「分类 issue 开发须知」(7 条目标 · 2026-08-02 用户拍板)** — 见 GitHub 地图 #1 Notes 或各分类 issue body 末尾;开发完毕的定义 = 该分类每个场景满足完整工作流(prompt 逐场景讨论 / 帮助页可找到 / 可复制 prompt / AI 识别唤醒词 / 按规则交互(规则落地 SKILL.md)/ 过程-结果-回执 HTML / HTML 符合呈现数据 / 场景 HTML ≠ 帮助 HTML)
+4. 按 schema `.scratch/scene_data/schema.json` 把场景填进 `.scratch/scene_data/NN-分类.json`(13 字段)
+5. `python scripts/check_scene_data.py --only <分类>` 校验通过
+6. **用户逐条确认 prompt 后才同步**到 `scripts/_triggers.py`(最高优先级原则,不允许跳过;场景数量+场景名已定稿,prompt 仍需逐条确认)
+7. 同步后跑 `python scripts/render_help_center.py` 重 render 卡路里.html
 
 **已确认分类**(2026-08-01):11 分类全部定稿——主页 9 / 饮食 68 / 体重 58 / 运动 39 / 健身计划 29 / 目标管理 25 / 基础信息 4 / 身体细节 13 / 身材照片 10 / 分析 154 / 技能协同 37(合计 446,2026-08-01 核算)。
 

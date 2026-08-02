@@ -1742,21 +1742,21 @@ AI 看到错误时按此表处理:
 
 **设置档案**(采访式引导 = AI 默认交互):
 1. 用户信息不全 → 逐项问(身高/年龄/性别/活动量),活动量根据日常情况推荐(久坐/轻度/中度/活跃/高度活跃)并说明理由
-2. 信息齐 → 调 `render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L>`(写库 + 回执 HTML 一体)
+2. 信息齐 → 调 `render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析意图→2.写库→3.生成回执"`(写库 + 回执 HTML 一体;--chain 必传)
 3. 回执 HTML(呈现:身高/年龄/性别/活动量 + 设置时间;已存在档案时含改前/改后)
 
 **设活动量**:
-1. 调 `render_crud_receipt.py --live-profile-activity <level>`(写库 + 回执 HTML,level ∈ sedentary/light/moderate/active/very_active)
+1. 调 `render_crud_receipt.py --live-profile-activity <level> --chain "1.解析意图→2.写库→3.生成回执"`(写库 + 回执 HTML,level ∈ sedentary/light/moderate/active/very_active;--chain 必传)
 2. 回执 HTML(呈现:活动等级 + 影响(TDEE 系数旧→新)+ 对每日消耗影响)
 
 **改档案**:
 1. 先确认当前旧值(`profile get`)
-2. 调 `render_crud_receipt.py --live-profile-update --field <X> --value <Y>`(可追加多对 --field/--value,一次写库生成一个合并回执 HTML)
+2. 调 `render_crud_receipt.py --live-profile-update --field <X> --value <Y> --chain "1.解析意图→2.写库→3.生成回执"`(可追加多对 --field/--value,一次写库生成一个合并回执 HTML;--chain 必传)
 3. 回执 HTML(呈现:改前/改后对比 + 影响提示:改身高→BMI 重算,改活动量→TDEE 系数变化)
 
 **查档案**:
 1. 调 `render_crud_view.py --entity profile --wake-word 查档案 --chain "1.识别唤醒词→2.调CLI读DB→3.算BMI/BMR/TDEE"` → HTML(呈现:档案字段含活动量 + 最新体重 + BMI/BMR/TDEE 含系数说明)
-2. **--chain 注入约定(2026-08-02 拍板)**:AI 执行时用 `--chain` 附上处理步骤,`--wake-word` 附唤醒词;不进 UI,用户点「复制日志」可带出,用于排障对比
+2. **--chain 强制规则(2026-08-02 拍板)**:渲染类场景 **必须** 传 `--chain`(AI 实际处理步骤)与 `--wake-word`;不传/传无效 → CLI 报错退出(exit 2)。未传 = AI 未按流程执行,行为不可控。思考链不进 UI,用户点「复制日志」带出用于排障对比
 
 ---
 

@@ -116,14 +116,37 @@ def build_data(entity_type):
     return None
 
 
+
+
+def _chain_valid(chain):
+    """思考链有效性校验(2026-08-02 用户拍板):非空 + 含步骤特征 + 拒绝偷懒占位"""
+    chain = (chain or '').strip()
+    if len(chain) < 8:
+        return False
+    if not any(m in chain for m in ('→', '->', '1.', '1、', '2.', '第一步')):
+        return False
+    if chain.lower() in ('x', 'xx', 'xxx', '思考链', 'chain', '无', 'none'):
+        return False
+    return True
+
+
 def main():
     p = argparse.ArgumentParser(description='渲染状态查看 HTML(查档案/查定时复盘)')
     p.add_argument('--entity', choices=['profile','cron'], help='DB 实体类型(与 --mock 二选一)')
     p.add_argument('--mock', help='mock JSON(与 --entity 二选一)')
-    p.add_argument('--chain', help='AI 思考链(注入 meta.chain,供「复制日志」带出 · 2026-08-02)')
-    p.add_argument('--wake-word', help='唤醒词(注入 meta.wake_word,供「复制日志」带出)')
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
+    p.add_argument('--wake-word', help='唤醒词(覆盖渲染器自推断,供「复制日志」带出)')
     p.add_argument('--output')
     args = p.parse_args()
+
+    # ⭐ 思考链强制校验(2026-08-02 用户拍板):live 模式必传 + 有效性校验,防止 AI 偷懒
+    if not args.mock and not _chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print("     --chain \"1.识别唤醒词→2.调CLI读DB→3.计算BMI/BMR/TDEE(系数1.55)\"", file=sys.stderr)
+        return 2
+
     try:
         if args.mock:
             data = _load_data(args.mock)

@@ -168,6 +168,21 @@ def test_live_profile_update_multi_field(profile_env):
     assert p["height_cm"] == 180.0 and p["activity_level"] == "active" and p["age"] == 35
 
 
+def test_chain_required_live_modes(profile_env, capsys):
+    """思考链强制校验:live 模式不传/无效 → 报错退出(用户拍板 2026-08-02)"""
+    import render_crud_receipt
+    import render_crud_view
+    # 无效链被拒
+    assert render_crud_view._chain_valid("xxx") is False
+    assert render_crud_view._chain_valid("") is False
+    assert render_crud_view._chain_valid("1.识别→2.读DB→3.算TDEE") is True
+    assert render_crud_view._chain_valid("第一步 解析用户意图") is True
+    # 偷懒占位被拒
+    assert render_crud_view._chain_valid("chain") is False
+    assert render_crud_view._chain_valid("无") is False
+    assert render_crud_receipt._chain_valid("1.解析→2.写库→3.回执") is True
+
+
 def test_set_profile_with_activity(profile_env):
     """profile set --activity 透传"""
     prof = profile_env

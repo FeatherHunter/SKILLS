@@ -30,6 +30,7 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'crud_receipt.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path, html_scene_path  # noqa
+from render_crud_view import _chain_valid  # 思考链校验单一来源(2026-08-02)
 
 
 def _load_data(input_path):
@@ -179,8 +180,17 @@ def main():
     p.add_argument('--note', help='设置档案:备注')
     p.add_argument('--field', action='append', help='改档案字段(height/age/gender/activity/note,可多次)')
     p.add_argument('--value', action='append', help='改档案新值(与 --field 成对,可多次)')
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
     p.add_argument('--output')
     args = p.parse_args()
+
+    # ⭐ 思考链强制校验(2026-08-02 用户拍板):live 模式必传 + 有效性校验,防止 AI 偷懒
+    if not args.mock and not _chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print("     --chain \"1.解析用户意图→2.调用CLI写库→3.生成回执\"", file=sys.stderr)
+        return 2
 
     if args.live_profile_update:
         fields = args.field or []
@@ -193,6 +203,16 @@ def main():
         print('❌ --live-profile-set 至少需要 --age/--gender/--height/--activity 之一', file=sys.stderr)
         return 1
 
+    # 输出名与场景关联 + 类型后缀(2026-08-02 用户拍板:HTML 名 = 场景名_类型)
+    if args.live_profile_set:
+        cmd_name, ot = '设置档案', 'receipt'
+    elif args.live_profile_activity:
+        cmd_name, ot = '设活动量', 'receipt'
+    elif args.live_profile_update:
+        cmd_name, ot = '改档案', 'receipt'
+    else:
+        cmd_name, ot = '操作回执', None
+
     try:
         if args.mock:
             data = _load_data(args.mock)
@@ -204,19 +224,14 @@ def main():
             data = build_live_profile_activity(args.live_profile_activity)
         else:
             data = build_live_profile_update(list(zip(fields, values)))
+        # AI 思考链注入 meta(复制日志带出 · 2026-08-02)
+        if not args.mock and args.chain:
+            data['data']['meta']['chain'] = args.chain.strip()
+            data['data']['meta']['wake_word'] = cmd_name
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
-    # 输出名与场景关联 + 类型后缀(2026-08-02 用户拍板:HTML 名 = 场景名_类型)
-    if args.live_profile_set:
-        cmd_name, ot = '设置档案', 'receipt'
-    elif args.live_profile_activity:
-        cmd_name, ot = '设活动量', 'receipt'
-    elif args.live_profile_update:
-        cmd_name, ot = '改档案', 'receipt'
-    else:
-        cmd_name, ot = '操作回执', None
     out_path = Path(args.output) if args.output else (
         html_scene_path(SKILL_DIR, cmd_name, ot) if ot else html_path(SKILL_DIR, cmd_name))
     out_path.parent.mkdir(parents=True, exist_ok=True)

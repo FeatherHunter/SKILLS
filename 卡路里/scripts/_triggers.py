@@ -835,41 +835,41 @@ TRIGGERS = [
     {
             'category': '基础信息',     'wake_word': '设置档案',     'desc': '设置基础档案(身高/年龄/性别/活动量,含采访式引导)',
             'main_prompt': {
-        'cli': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L>', 'text': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____'},
+        'cli': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'profile_setup', 'name': '设置档案', 'subfunction': '设置资料', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置完成后给我看:身高/年龄/性别/活动量 + 推荐活动量 + 设置时间。完成后给 1 句话总结,不需要过多文字解释。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____',
             'user_intent': '设置基础档案(身高/年龄/性别/活动量)', 'data_fields': ['height_cm', 'age', 'gender', 'activity_level', 'activity_factor', 'created_at'],
             'depends_on_external': False, 'order': 0},
     {
             'category': '基础信息',     'wake_word': '设活动量',     'desc': '单独设置活动量(含 TDEE 系数影响)',
             'main_prompt': {
-        'cli': 'python scripts/render_crud_receipt.py --live-profile-activity <level>', 'text': '请你加载技能 卡路里,执行唤醒词「设活动量」。\n\n我要单独设置活动量(久坐/轻度/中度/活跃/高度活跃)。设置后请告诉我:活动等级、对应的消耗系数(TDEE 系数)、以及对我每日消耗的影响。完成后给 1 句话总结,不需要过多文字解释。\n\n我的活动量(久坐/轻度/中度/活跃/高度活跃):____'},
+        'cli': 'python scripts/render_crud_receipt.py --live-profile-activity <level> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「设活动量」。\n\n我要单独设置活动量(久坐/轻度/中度/活跃/高度活跃)。设置后请告诉我:活动等级、对应的消耗系数(TDEE 系数)、以及对我每日消耗的影响。完成后给 1 句话总结,不需要过多文字解释。\n\n我的活动量(久坐/轻度/中度/活跃/高度活跃):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'profile_set_activity', 'name': '设活动量', 'subfunction': '设置资料', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-activity <level>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设活动量」。\n\n我要单独设置活动量(久坐/轻度/中度/活跃/高度活跃)。设置后请告诉我:活动等级、对应的消耗系数(TDEE 系数)、以及对我每日消耗的影响。完成后给 1 句话总结,不需要过多文字解释。\n\n我的活动量(久坐/轻度/中度/活跃/高度活跃):____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-activity <level> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设活动量」。\n\n我要单独设置活动量(久坐/轻度/中度/活跃/高度活跃)。设置后请告诉我:活动等级、对应的消耗系数(TDEE 系数)、以及对我每日消耗的影响。完成后给 1 句话总结,不需要过多文字解释。\n\n我的活动量(久坐/轻度/中度/活跃/高度活跃):____',
             'user_intent': '单独设置活动量', 'data_fields': ['activity_level', 'activity_factor', 'tdee'],
             'depends_on_external': False, 'order': 1},
     {
             'category': '基础信息',     'wake_word': '改档案',     'desc': '单字段或多字段修改档案(含改前/改后对比 + 影响提示)',
             'main_prompt': {
-        'cli': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y>', 'text': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值,改完后给我看:改前/改后对比 + 影响提示(如改身高影响 BMI、改活动量影响每日消耗)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____'},
+        'cli': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值,改完后给我看:改前/改后对比 + 影响提示(如改身高影响 BMI、改活动量影响每日消耗)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'profile_update', 'name': '改档案', 'subfunction': '改资料', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值,改完后给我看:改前/改后对比 + 影响提示(如改身高影响 BMI、改活动量影响每日消耗)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值,改完后给我看:改前/改后对比 + 影响提示(如改身高影响 BMI、改活动量影响每日消耗)。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____',
             'user_intent': '修改档案中的字段', 'data_fields': ['height_cm', 'age', 'gender', 'activity_level', 'note', 'bmi', 'tdee'],
             'depends_on_external': False, 'order': 0},
     {
             'category': '基础信息',     'wake_word': '查档案',     'desc': '查看完整档案(含活动量/最新体重/BMI/BMR/TDEE)',
             'main_prompt': {
-        'cli': 'python scripts/render_crud_view.py --entity profile', 'text': '请你加载技能 卡路里,执行唤醒词「查档案」。\n\n我想看自己的完整档案:身高/年龄/性别/活动量 + 最新体重 + BMI/BMR/TDEE(含活动量对应的消耗系数说明)。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_crud_view.py --entity profile --chain "1.识别→2.读DB→3.算TDEE"', 'text': '请你加载技能 卡路里,执行唤醒词「查档案」。\n\n我想看自己的完整档案:身高/年龄/性别/活动量 + 最新体重 + BMI/BMR/TDEE(含活动量对应的消耗系数说明)。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'profile_view', 'name': '查档案', 'subfunction': '看档案', 'output_type': 'result',
-            'html_template': 'templates/crud_view.html', 'data_source': 'python scripts/render_crud_view.py --entity profile', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「查档案」。\n\n我想看自己的完整档案:身高/年龄/性别/活动量 + 最新体重 + BMI/BMR/TDEE(含活动量对应的消耗系数说明)。完成后给 1 句话总结,不需要过多文字解释。',
+            'html_template': 'templates/crud_view.html', 'data_source': 'python scripts/render_crud_view.py --entity profile --chain "1.识别→2.读DB→3.算TDEE"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「查档案」。\n\n我想看自己的完整档案:身高/年龄/性别/活动量 + 最新体重 + BMI/BMR/TDEE(含活动量对应的消耗系数说明)。完成后给 1 句话总结,不需要过多文字解释。',
             'user_intent': '查看档案及最新体重与身体指标', 'data_fields': ['height_cm', 'age', 'gender', 'activity_level', 'activity_factor', 'weight_kg', 'bmi', 'bmr', 'tdee'],
             'depends_on_external': False, 'order': 0}
 ]

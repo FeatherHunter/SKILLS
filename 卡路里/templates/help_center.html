@@ -194,12 +194,6 @@ body {
 .scene-detail .intent {
   color: var(--sub); margin-bottom: 5px; line-height: 1.5;
 }
-.scene-detail .cli {
-  background: var(--code-bg); padding: 3px 6px;
-  border-radius: 4px; font-family: "SF Mono", Consolas, monospace;
-  font-size: 11px; display: inline-block;
-  margin: 2px 0 6px; word-break: break-all;
-}
 .scene-detail .prompt-pre {
   background: #fff; border: 1px solid var(--border);
   padding: 7px 9px; border-radius: 4px;
@@ -434,11 +428,10 @@ function renderSceneDetail(s) {
     metaBits.push(`<span>📋 ${escapeHTML(s.data_fields.join(', '))}</span>`);
   }
   const meta = metaBits.length ? `<div class="meta">${metaBits.join('')}</div>` : '';
-  const cli = s.data_source ? `<div class="cli">${escapeHTML(s.data_source)}</div>` : '';
   const intent = s.user_intent ? `<div class="intent">${escapeHTML(s.user_intent)}</div>` : '';
   const prompt = s.prompt_template ? `<pre class="prompt-pre">${escapeHTML(s.prompt_template)}</pre>` : '';
-  // 顺序(2026-08-02 用户拍板):intent → prompt → meta(📦/🎨/📋) → cli(可复制命令)
-  return `<div class="scene-detail">${intent}${prompt}${meta}${cli}</div>`;
+  // 顺序(2026-08-02 用户拍板):intent → prompt → meta(📦/🎨/📋);底部 cli 已删(meta 📦 已含 data_source)
+  return `<div class="scene-detail">${intent}${prompt}${meta}</div>`;
 }
 
 function renderScene(s, i) {

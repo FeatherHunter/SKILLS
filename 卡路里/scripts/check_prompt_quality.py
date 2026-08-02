@@ -52,11 +52,12 @@ def check_one(label: str, text: str, errors: list, warnings: list, must_contain:
     if not text.strip().startswith('请你加载技能'):
         errors.append(f'[{label}] head 错误: 必须以"请你加载技能..."开头')
 
-    # 规则 2: body 非空(head + tail 至少 60 字节,算 body 至少有内容)
-    # 提取 head(到 \n\n) 和 tail(最后一句)
+    # 规则 2: body 非空(head + body 至少 2 段)
+    # v1.0 场景格式:结果型无输入引导 = 2 段(head + body);输入型 = 3 段(head + body + 填空引导)
+    # 2026-08-02 修订:阈值 3 → 2(结果型场景无输入字段是合法结构)
     parts = text.strip().split('\n\n')
-    if len(parts) < 3:
-        errors.append(f'[{label}] 结构错误: prompt 应有 head + body + tail 3 段')
+    if len(parts) < 2:
+        errors.append(f'[{label}] 结构错误: prompt 应有 head + body 至少 2 段')
 
     # 规则 3-6: 流程型措辞(关键!)
     for pat, why in BAD_PATTERNS:

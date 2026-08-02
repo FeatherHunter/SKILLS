@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""render_home.py — 卡路里主面板 HTML 渲染器
+"""render_home.py — 卡路里主面板 HTML 渲染器(主页 9 场景 · ticket #2)
 
-对应 SKILL.md 唤醒词: 开卡路里 / 卡路里面板 / 今日卡路里
+对应 SKILL.md 唤醒词: 看今日主页 / 看今日饮食概览 / 看今日运动概览 / 看今日体重概览 /
+看今日目标进度 / 看本周主页 / 看本月主页 / 看连续记录天数 / 看今日热量预算
+(aliases: 开卡路里 / 卡路里面板 / 今日卡路里 → 看今日主页)
 
-设计原则(《预置 HTML + 注入数据指导手册》):
-- 复用 analysis.dashboard(as_dict=True) 拿 4 维数据
-- 占位符唯一:<!--INJECT-DATA--> 恰好 1 次
-- Apple 风:浅色 + 系统字体 + 蓝色主色 + 圆角 + 留白
-- 结果型(A 类),无 AI 互动需求
+设计原则(R1-R8 · #8 经验沉淀 2026-08-02):
+- R4 自描述:渲染器按 --section/--period 推断场景名(meta.wake_word),不依赖外部传参
+- R3 思考链:--chain 必传(live 模式),注入 meta.chain(复制日志可带出),未传→报错 exit2
+- R5 命名:输出 <场景名>_结果_<TS>.html,统一 html_scene_path() 入口
+- R1 视图分离:UI 只放用户数据;原始聚合留在 __DATA__
+- R6 呈现完整:每视图含真实数值 + 一句话总结
+- R8 移动端:6 KPI 卡 2x3 网格(模板 CSS 控制)
 
 用法:
-    python scripts/render_home.py                              # 默认今天
-    python scripts/render_home.py --date 2026-07-23            # 指定日期
-    python scripts/render_home.py --output <path>             # 指定输出
+    python scripts/render_home.py [--date YYYY-MM-DD]
+        [--section {diet,exercise,weight,goals,streak,budget}]
+        [--period {week,month}]
+        --chain "1.识别→2.读DB聚合→3.渲染"   # 必填
+        [--output <path>] [--wake-word <场景名>]
 """
 import argparse
 import json
-from html_paths import html_path
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -28,12 +33,193 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'home_dashboard.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from analysis import dashboard
+from analysis._utils import calc_tdee
 from _triggers import TRIGGERS
 from db import find_db_path, get_db
+from html_paths import html_scene_path
+
+# 场景名 → 参数映射(R4 自描述 · 2026-08-02 ticket #2)
+VIEW_SCENES = {
+    'overview': '看今日主页',
+    'diet': '看今日饮食概览',
+    'exercise': '看今日运动概览',
+    'weight': '看今日体重概览',
+    'goals': '看今日目标进度',
+    'week': '看本周主页',
+    'month': '看本月主页',
+    'streak': '看连续记录天数',
+    'budget': '看今日热量预算',
+}
+
+
+def _chain_valid(chain):
+    """思考链有效性校验(R3 · 与 render_crud_view 同规则)"""
+    chain = (chain or '').strip()
+    if len(chain) < 8:
+        return False
+    if not any(m in chain for m in ('→', '->', '1.', '1、', '2.', '第一步')):
+        return False
+    if chain.lower() in ('x', 'xx', 'xxx', '思考链', 'chain', '无', 'none'):
+        return False
+    return True
+
+
+def _quote_arg(a: str) -> str:
+    """参数加引号(含空格/特殊字符),保证 render_cmd 可复制直接执行(C10)"""
+    if not a:
+        return '""'
+    if any(ch in a for ch in (' ', '"', "'", '\\', '&', '|', '>', '<', '(', ')')):
+        return '"' + a.replace('"', '\\"') + '"'
+    return a
+
+
+def _goal_row():
+    """读 daily_goal(id=1)"""
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    c = conn.cursor()
+    row = c.execute('SELECT * FROM daily_goal WHERE id = 1').fetchone()
+    if not row:
+        conn.close()
+        return None
+    cols = [d[0] for d in c.description]
+    conn.close()
+    return dict(zip(cols, row))
+
+
+def _today_actual(target_date: str) -> dict:
+    """今日 food_log 实际聚合(热量/蛋白/饮水 ml)"""
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    row = conn.execute('''
+        SELECT COALESCE(SUM(calories),0), COALESCE(SUM(protein),0),
+               COALESCE(SUM(grams),0)
+        FROM food_log WHERE date = ? AND food_name = '💧水'
+    ''', (target_date,)).fetchone()
+    cal = conn.execute('SELECT COALESCE(SUM(calories),0), COALESCE(SUM(protein),0) FROM food_log WHERE date = ?',
+                       (target_date,)).fetchone()
+    conn.close()
+    return {'calorie': cal[0], 'protein': cal[1], 'water': row[2]}
+
+
+def _pct(actual, goal):
+    return round(actual / goal * 100, 1) if goal else None
+
+
+def _today_exercise(target_date: str) -> dict:
+    """今日运动聚合(消耗/时长)"""
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    row = conn.execute('''
+        SELECT COALESCE(SUM(calories_burned),0), COALESCE(SUM(duration_minutes),0), COUNT(*)
+        FROM exercise_log WHERE date = ?
+    ''', (target_date,)).fetchone()
+    conn.close()
+    return {'burn': row[0], 'minutes': row[1], 'count': row[2]}
+
+
+def _streak(target_date: str) -> dict:
+    """连续记录天数:最近连续 N 天(饮食/饮水/运动/体重任一项)有记录 + 历史最长"""
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    d = date.fromisoformat(target_date)
+    # 从目标日往前数,任一项有记录即算连续
+    cur = 0
+    cursor = d
+    while True:
+        ds = cursor.isoformat()
+        food = conn.execute('SELECT COUNT(*) FROM food_log WHERE date = ?', (ds,)).fetchone()[0]
+        ex = conn.execute('SELECT COUNT(*) FROM exercise_log WHERE date = ?', (ds,)).fetchone()[0]
+        wt = conn.execute('SELECT COUNT(*) FROM weight_log WHERE date = ?', (ds,)).fetchone()[0]
+        if food == 0 and ex == 0 and wt == 0:
+            break
+        cur += 1
+        cursor -= timedelta(days=1)
+        if cur > 4000:
+            break
+    # 历史最长:全表扫描连续段(简化:按日期去重后找最长连续)
+    rows = conn.execute('SELECT DISTINCT date FROM food_log').fetchall()
+    rows += conn.execute('SELECT DISTINCT date FROM exercise_log').fetchall()
+    rows += conn.execute('SELECT DISTINCT date FROM weight_log').fetchall()
+    conn.close()
+    days = sorted({r[0] for r in rows})
+    longest = 0
+    run = 0
+    prev = None
+    for ds in days:
+        dd = date.fromisoformat(ds)
+        if prev is not None and (dd - prev).days == 1:
+            run += 1
+        else:
+            run = 1
+        longest = max(longest, run)
+        prev = dd
+    return {'current': cur, 'longest': longest}
+
+
+def _period_range(period: str, target_date: str) -> tuple:
+    """周期范围:week=本周一..今天;month=本月1号..今天"""
+    d = date.fromisoformat(target_date)
+    if period == 'week':
+        start = d - timedelta(days=d.isoweekday() - 1)
+    elif period == 'month':
+        start = d.replace(day=1)
+    else:
+        start = d
+    return start.isoformat(), target_date
+
+
+def _period_summary(period: str, start: str, end: str) -> dict:
+    """周期聚合(饮食/运动累计 + 体重趋势)"""
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    diet = conn.execute('''
+        SELECT COALESCE(SUM(calories),0), COALESCE(SUM(protein),0), COUNT(DISTINCT date)
+        FROM food_log WHERE date BETWEEN ? AND ?
+    ''', (start, end)).fetchone()
+    ex = conn.execute('''
+        SELECT COALESCE(SUM(calories_burned),0), COALESCE(SUM(duration_minutes),0), COUNT(DISTINCT date)
+        FROM exercise_log WHERE date BETWEEN ? AND ?
+    ''', (start, end)).fetchone()
+    wt = conn.execute('''
+        SELECT MIN(date), MAX(date) FROM weight_log WHERE date BETWEEN ? AND ?
+    ''', (start, end)).fetchone()
+    wstart = wend = None
+    if wt[0] and wt[1] and wt[0] != wt[1]:
+        a = conn.execute('SELECT weight_kg FROM weight_log WHERE date = ? ORDER BY time ASC LIMIT 1', (wt[0],)).fetchone()
+        b = conn.execute('SELECT weight_kg FROM weight_log WHERE date = ? ORDER BY time DESC LIMIT 1', (wt[1],)).fetchone()
+        if a and b:
+            wstart, wend = a[0], b[0]
+    conn.close()
+    return {
+        'diet_calories': diet[0], 'diet_protein': diet[1], 'diet_days': diet[2],
+        'exercise_burn': ex[0], 'exercise_minutes': ex[1], 'exercise_days': ex[2],
+        'weight_start': wstart, 'weight_end': wend,
+    }
+
+
+def _budget(target_date: str) -> dict:
+    """今日热量预算:TDEE(档案) + 运动消耗 + 已摄入 + 剩余可吃"""
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    prof = conn.execute('SELECT height_cm, age, gender, activity_level FROM user_profile WHERE id = 1').fetchone()
+    wt = conn.execute('SELECT weight_kg FROM weight_log WHERE date <= ? ORDER BY date DESC, time DESC LIMIT 1',
+                      (target_date,)).fetchone()
+    conn.close()
+    tdee = None
+    if prof and wt:
+        try:
+            tdee = round(calc_tdee(wt[0], prof[0] or 170, prof[1] or 30, prof[2] or 'male', prof[3] or 'moderate'))
+        except Exception:
+            tdee = None
+    act = _today_actual(target_date)
+    ex = _today_exercise(target_date)
+    remaining = (tdee + ex['burn'] - act['calorie']) if tdee is not None else None
+    return {'tdee': tdee, 'exercise_burn': ex['burn'], 'intake': act['calorie'], 'remaining': remaining}
 
 
 def build_today_status(target_date: str) -> dict:
-    """检测今日是否记录了 饮食/饮水/运动/体重"""
+    """检测今日是否记录了 饮食/饮水/运动/体重(含 H1.4/H1.5 扩展 · 2026-08-02)"""
     db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
     conn = get_db(db_path)
     c = conn.cursor()
@@ -51,7 +237,7 @@ def build_today_status(target_date: str) -> dict:
     c.execute('SELECT COUNT(*) FROM weight_log WHERE date = ?', (target_date,))
     weight_count = c.fetchone()[0]
 
-    # H1.4 对接(2026-08-02 · ticket #4 Success Criteria #5):体重 widget 显示实际数值
+    # H1.4 对接(ticket #4 Success Criteria #5):体重 widget 显示实际数值
     c.execute('SELECT weight_kg FROM weight_log WHERE date = ? ORDER BY time DESC LIMIT 1', (target_date,))
     w_row = c.fetchone()
     latest_kg = w_row[0] if w_row else None
@@ -64,7 +250,7 @@ def build_today_status(target_date: str) -> dict:
     delta_7d = round(latest_kg - prev[0], 1) if latest_kg is not None and prev else None
     goal_diff = round(latest_kg - goal_kg, 1) if latest_kg is not None and goal_kg is not None else None
 
-    # 健身计划待办对接(2026-08-02 · ticket #6 Success Criteria #5):今日有训练计划但实绩不足 → 待办
+    # 健身计划待办对接(ticket #6 Success Criteria #5):今日有训练计划但实绩不足 → 待办
     workout_todo = False
     try:
         from workout_plan import calc_plan_week, get_plan_config
@@ -161,16 +347,93 @@ def _attach_prompts(actions):
     return out
 
 
-def build_data(target_date: str) -> dict:
-    """组装主面板数据契约"""
+def build_data(target_date: str, view: str = 'overview', period: str = None) -> dict:
+    """组装主面板数据契约(view 决定渲染哪个场景视图)"""
     dash_data = dashboard(target_date, target_date, as_dict=True)
-    return {
+    data = {
         'date': target_date,
+        'view': view,
         'dashboard': dash_data['data'],
         'today_status': build_today_status(target_date),
         'recent_logs': build_recent_logs(target_date),
         'quick_actions': _attach_prompts(QUICK_ACTIONS),
     }
+
+    # 各 section 视图数据(R6 呈现数据完整性 · ticket #2)
+    if view == 'diet':
+        goal = _goal_row() or {}
+        act = _today_actual(target_date)
+        data['diet'] = {
+            'calories': act['calorie'],
+            'protein': act['protein'],
+            'goal_cal': goal.get('calorie_goal'),
+            'goal_protein': goal.get('protein_goal'),
+            'cal_pct': _pct(act['calorie'], goal.get('calorie_goal')),
+            'protein_pct': _pct(act['protein'], goal.get('protein_goal')),
+        }
+    elif view == 'exercise':
+        ex = _today_exercise(target_date)
+        goal = _goal_row() or {}
+        data['exercise'] = {
+            'burn': ex['burn'],
+            'minutes': ex['minutes'],
+            'count': ex['count'],
+            'goal': goal.get('exercise_goal'),
+            'pct': _pct(ex['burn'], goal.get('exercise_goal')),
+        }
+    elif view == 'weight':
+        w = data['today_status']['weight']
+        data['weight'] = {
+            'latest_kg': w['latest_kg'],
+            'goal_kg': w['goal_kg'],
+            'goal_diff': w['goal_diff'],
+            'delta_7d': w['delta_7d'],
+        }
+    elif view == 'goals':
+        goal = _goal_row() or {}
+        act = _today_actual(target_date)
+        ex = _today_exercise(target_date)
+        items = [
+            {'label': '热量', 'goal': goal.get('calorie_goal'), 'actual': act['calorie'],
+             'pct': _pct(act['calorie'], goal.get('calorie_goal'))},
+            {'label': '蛋白', 'goal': goal.get('protein_goal'), 'actual': act['protein'],
+             'pct': _pct(act['protein'], goal.get('protein_goal'))},
+            {'label': '饮水', 'goal': goal.get('water_goal'), 'actual': act['water'],
+             'pct': _pct(act['water'], goal.get('water_goal'))},
+            {'label': '运动', 'goal': goal.get('exercise_goal'), 'actual': ex['burn'],
+             'pct': _pct(ex['burn'], goal.get('exercise_goal'))},
+        ]
+        pcts = [(it['label'], it['pct']) for it in items if it['pct'] is not None]
+        if pcts:
+            high = max(pcts, key=lambda x: x[1])
+            low = min(pcts, key=lambda x: x[1])
+            summary = f'完成最好的是{high[0]}({high[1]}%),最需补的是{low[0]}({low[1]}%)'
+        else:
+            summary = '未设营养目标'
+        data['goals'] = {'items': items, 'summary': summary}
+    elif view == 'week' or view == 'month':
+        start, end = _period_range(view, target_date)
+        s = _period_summary(view, start, end)
+        wt = s['weight_start']
+        s['weight_change'] = round(s['weight_end'] - wt, 1) if wt is not None and s['weight_end'] is not None else None
+        data['period'] = {'period': view, 'start': start, 'end': end, **s}
+    elif view == 'streak':
+        st = _streak(target_date)
+        data['streak'] = st
+        data['streak']['summary'] = (
+            f'已连续记录 {st["current"]} 天' + (f',历史最长 {st["longest"]} 天' if st['longest'] > st['current'] else '')
+        )
+    elif view == 'budget':
+        b = _budget(target_date)
+        summary = None
+        if b['remaining'] is not None:
+            if b['remaining'] >= 0:
+                summary = f'今天还能吃 {round(b["remaining"]):,} 卡'
+            else:
+                summary = f'已超预算 {abs(round(b["remaining"])):,} 卡'
+        b['summary'] = summary
+        data['budget'] = b
+    return data
 
 
 def render_html(data: dict) -> str:
@@ -187,27 +450,54 @@ def render_html(data: dict) -> str:
 
 
 def main():
-    p = argparse.ArgumentParser(description='渲染卡路里主面板 HTML(Apple 风)')
+    p = argparse.ArgumentParser(description='渲染卡路里主面板 HTML(主页 9 场景 · Apple 风)')
     p.add_argument('--date', help='日期 YYYY-MM-DD(默认今天)')
+    p.add_argument('--section', choices=['diet', 'exercise', 'weight', 'goals', 'streak', 'budget'],
+                   help='今日维度聚焦视图(看今日xxx场景)')
+    p.add_argument('--period', choices=['week', 'month'], help='周期视图(看本周/本月主页)')
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
+    p.add_argument('--wake-word', help='唤醒词(覆盖渲染器自推断,供「复制日志」带出)')
     p.add_argument('--output', help='输出文件路径')
     args = p.parse_args()
 
+    # R3 思考链强制校验(2026-08-02 用户拍板):live 模式必传 + 有效性校验
+    if not _chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print('     --chain "1.识别唤醒词→2.读DB聚合(饮食/运动/体重/目标)→3.渲染HTML"', file=sys.stderr)
+        return 2
+
     target_date = args.date or date.today().isoformat()
+    if args.period:
+        view = args.period
+    elif args.section:
+        view = args.section
+    else:
+        view = 'overview'
+    scene_name = args.wake_word or VIEW_SCENES[view]
 
     try:
-        data = build_data(target_date)
+        data = build_data(target_date, view=view, period=args.period)
+        # 调试元数据注入(不进 UI,复制日志可带出;R1 视图分离 + R4 自描述)
+        data['meta'] = {
+            'fetched_at': date.today().isoformat(),
+            'wake_word': scene_name,
+            'chain': args.chain,
+            'view': view,
+        }
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '主页仪表盘')
+    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene_name, 'result')
     out_path.write_text(html, encoding='utf-8')
 
     todo = data['today_status']['todo']
     todo_summary = f' — {", ".join(t["label"] for t in todo[:3])}' if todo else ' — 全部完成 ✓'
     print(f'✅ {out_path}')
-    print(f'   日期: {target_date} | 待办: {len(todo)} 项{todo_summary}')
+    print(f'   场景: {scene_name} | 日期: {target_date} | 待办: {len(todo)} 项{todo_summary}')
     return 0
 
 

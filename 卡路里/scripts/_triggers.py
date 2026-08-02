@@ -103,14 +103,98 @@ CATEGORIES = [
 ]
 
 
-# ===== 101 唤醒词(80 旧 + 25 目标管理新场景) =====
+# ===== 109 唤醒词(9 主页新场景 + 100)(80 旧 + 25 目标管理新场景) =====
 TRIGGERS = [
     {
-            'category': '主页',     'wake_word': '看今日主页', 'aliases': ['开卡路里', '卡路里面板', '今日卡路里'],     'desc': '把今日主页仪表盘渲染成 HTML:今日 4 维 KPI + 待办 + 最近 7 天小图',
+            'category': '主页',     'wake_word': '看今日主页', 'aliases': ['开卡路里', '卡路里面板', '今日卡路里'],     'desc': '看今天主页的整体数据,了解今天哪些做得好/差',
             'main_prompt': {
-        'cli': 'python scripts/render_home.py', 'text': '请你加载技能 卡路里,执行唤醒词「看今日主页」。\n\n我想看今天主页 dashboard:今日 4 维 KPI(热量/蛋白/饮水/运动)+ 今日目标完成度 + 最近 7 天趋势小图 + 待办事项。\n\n完成后给 1 句话总结,不需要过多文字解释。'},
-            'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_home.py --chain "1.识别→2.读DB聚合→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日主页」。\n\n我想看今天的主页 dashboard:饮食/运动/体重/目标/进度/连续 6 张 KPI 卡 + 最近 7 天趋势小图 + 一句话总结\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'home_today_overview', 'name': '看今日主页', 'subfunction': '看今日主页', 'output_type': 'result',
+            'html_template': 'templates/home_dashboard.html', 'data_source': 'python scripts/render_home.py --chain "1.识别→2.读DB聚合→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日主页」。\n\n我想看今天的主页 dashboard:饮食/运动/体重/目标/进度/连续 6 张 KPI 卡 + 最近 7 天趋势小图 + 一句话总结\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今天主页的整体数据,了解今天哪些做得好/差', 'data_fields': ["today_kpi", "goal_progress", "weekly_trend", "streak_days"],
+            'depends_on_external': False, 'order': 0},
+    {
+            'category': '主页',     'wake_word': '看今日饮食概览',     'desc': '只看今天饮食维度的完成情况',
+            'main_prompt': {
+        'cli': 'python scripts/render_home.py --section diet --chain "1.识别→2.读DB聚合→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日饮食概览」。\n\n我想看今天饮食 widget:累计热量/蛋白 + 距目标完成度 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'home_today_diet_overview', 'name': '看今日饮食概览', 'subfunction': '看今日主页', 'output_type': 'result',
+            'html_template': 'templates/home_dashboard.html', 'data_source': 'python scripts/render_home.py --section diet --chain "1.识别→2.读DB聚合→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日饮食概览」。\n\n我想看今天饮食 widget:累计热量/蛋白 + 距目标完成度 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '只看今天饮食维度的完成情况', 'data_fields': ["diet_calories", "diet_protein", "diet_goal", "diet_vs_target"],
+            'depends_on_external': False, 'order': 1},
+    {
+            'category': '主页',     'wake_word': '看今日运动概览',     'desc': '只看今天运动维度的完成情况',
+            'main_prompt': {
+        'cli': 'python scripts/render_home.py --section exercise --chain "1.识别→2.读DB聚合→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日运动概览」。\n\n我想看今天运动 widget:累计消耗/时长 + 距目标完成度 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'home_today_exercise_overview', 'name': '看今日运动概览', 'subfunction': '看今日主页', 'output_type': 'result',
+            'html_template': 'templates/home_dashboard.html', 'data_source': 'python scripts/render_home.py --section exercise --chain "1.识别→2.读DB聚合→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日运动概览」。\n\n我想看今天运动 widget:累计消耗/时长 + 距目标完成度 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '只看今天运动维度的完成情况', 'data_fields': ["exercise_burn", "exercise_duration", "exercise_goal", "exercise_vs_target"],
+            'depends_on_external': False, 'order': 2},
+    {
+            'category': '主页',     'wake_word': '看今日体重概览',     'desc': '只看今天体重维度的状态',
+            'main_prompt': {
+        'cli': 'python scripts/render_home.py --section weight --chain "1.识别→2.读DB聚合→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日体重概览」。\n\n我想看今天体重 widget:最新体重/距目标 + 近 7 天变化 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'home_today_weight_overview', 'name': '看今日体重概览', 'subfunction': '看今日主页', 'output_type': 'result',
+            'html_template': 'templates/home_dashboard.html', 'data_source': 'python scripts/render_home.py --section weight --chain "1.识别→2.读DB聚合→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日体重概览」。\n\n我想看今天体重 widget:最新体重/距目标 + 近 7 天变化 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '只看今天体重维度的状态', 'data_fields': ["latest_weight", "weight_goal_gap", "weight_delta_7d"],
+            'depends_on_external': False, 'order': 3},
+    {
+            'category': '主页',     'wake_word': '看今日目标进度',     'desc': '看今天 4 项目标(热量/蛋白/饮水/运动)的完成度',
+            'main_prompt': {
+        'cli': 'python scripts/render_home.py --section goals --chain "1.识别→2.读DB聚合→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日目标进度」。\n\n我想看今天 4 项目标(热量/蛋白/饮水/运动)完成度 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'home_today_goal_progress', 'name': '看今日目标进度', 'subfunction': '看今日主页', 'output_type': 'result',
+            'html_template': 'templates/home_dashboard.html', 'data_source': 'python scripts/render_home.py --section goals --chain "1.识别→2.读DB聚合→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日目标进度」。\n\n我想看今天 4 项目标(热量/蛋白/饮水/运动)完成度 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今天 4 项目标(热量/蛋白/饮水/运动)的完成度', 'data_fields': ["goal_calorie_pct", "goal_protein_pct", "goal_water_pct", "goal_exercise_pct"],
+            'depends_on_external': False, 'order': 4},
+    {
+            'category': '主页',     'wake_word': '看本周主页',     'desc': '看本周的整体数据总览',
+            'main_prompt': {
+        'cli': 'python scripts/render_home.py --period week --chain "1.识别→2.读DB聚合→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看本周主页」。\n\n我想看本周 dashboard:饮食/运动本周累计 + 体重趋势 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'home_week_overview', 'name': '看本周主页', 'subfunction': '看周期主页', 'output_type': 'result',
+            'html_template': 'templates/home_dashboard.html', 'data_source': 'python scripts/render_home.py --period week --chain "1.识别→2.读DB聚合→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周主页」。\n\n我想看本周 dashboard:饮食/运动本周累计 + 体重趋势 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本周的整体数据总览', 'data_fields': ["week_diet_total", "week_exercise_total", "week_weight_trend"],
+            'depends_on_external': False, 'order': 5},
+    {
+            'category': '主页',     'wake_word': '看本月主页',     'desc': '看本月的整体数据总览',
+            'main_prompt': {
+        'cli': 'python scripts/render_home.py --period month --chain "1.识别→2.读DB聚合→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看本月主页」。\n\n我想看本月 dashboard:饮食/运动本月累计 + 趋势 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'home_month_overview', 'name': '看本月主页', 'subfunction': '看周期主页', 'output_type': 'result',
+            'html_template': 'templates/home_dashboard.html', 'data_source': 'python scripts/render_home.py --period month --chain "1.识别→2.读DB聚合→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本月主页」。\n\n我想看本月 dashboard:饮食/运动本月累计 + 趋势 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看本月的整体数据总览', 'data_fields': ["month_diet_total", "month_exercise_total", "month_weight_trend"],
+            'depends_on_external': False, 'order': 6},
+    {
+            'category': '主页',     'wake_word': '看连续记录天数',     'desc': '看连续记录天数,获得激励',
+            'main_prompt': {
+        'cli': 'python scripts/render_home.py --section streak --chain "1.识别→2.读DB聚合→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看连续记录天数」。\n\n我想看我的连续记录:当前连续天数 + 历史最长 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'home_streak_days', 'name': '看连续记录天数', 'subfunction': '看今日成就', 'output_type': 'result',
+            'html_template': 'templates/home_dashboard.html', 'data_source': 'python scripts/render_home.py --section streak --chain "1.识别→2.读DB聚合→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看连续记录天数」。\n\n我想看我的连续记录:当前连续天数 + 历史最长 + 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看连续记录天数,获得激励', 'data_fields': ["streak_current", "streak_longest"],
+            'depends_on_external': False, 'order': 7},
+    {
+            'category': '主页',     'wake_word': '看今日热量预算',     'desc': '看今天还剩多少热量可吃',
+            'main_prompt': {
+        'cli': 'python scripts/render_home.py --section budget --chain "1.识别→2.读DB聚合→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日热量预算」。\n\n我想看今天还能吃多少:TDEE + 运动消耗 + 已摄入 + 剩余可吃(突出)+ 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'home_today_budget', 'name': '看今日热量预算', 'subfunction': '看今日主页', 'output_type': 'result',
+            'html_template': 'templates/home_dashboard.html', 'data_source': 'python scripts/render_home.py --section budget --chain "1.识别→2.读DB聚合→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日热量预算」。\n\n我想看今天还能吃多少:TDEE + 运动消耗 + 已摄入 + 剩余可吃(突出)+ 一句话\n\n完成后给 1 句话总结,不需要过多文字解释。',
+            'user_intent': '看今天还剩多少热量可吃', 'data_fields': ["tdee", "exercise_burn", "intake_today", "remaining_calories", "goal_gap"],
+            'depends_on_external': False, 'order': 8},
     {
             'category': '饮食',     'wake_word': '记一餐',     'desc': '记一餐',
             'main_prompt': {

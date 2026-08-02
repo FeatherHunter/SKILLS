@@ -21,7 +21,7 @@ SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'exercise_distribution.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
-from html_paths import html_path  # noqa
+from html_paths import html_path, html_scene_path  # noqa
 from _cmd_maps import EXERCISE_DISTRIBUTION_MODE_MAP  # noqa
 
 
@@ -64,8 +64,8 @@ def build_data(start, end, mode='distribution', tdee=1700):
     for date_, type_, cat, cal, mins, sets, n in rows:
         key = _CAT_MAP.get(cat, 'daily')
         buckets[key]['count'] += n
-        buckets[key]['calorie'] += cal
-        buckets[key]['minutes'] += mins
+        buckets[key]['calorie'] += cal or 0   # None 防护(2026-08-02 · ticket #5 对抗审查)
+        buckets[key]['minutes'] += mins or 0
 
     days = (date.fromisoformat(end) - date.fromisoformat(start)).days + 1
     active_days = len({r[0] for r in rows})
@@ -125,8 +125,17 @@ def main():
     p.add_argument('--mode', choices=['distribution','contribution'], default='distribution')
     p.add_argument('--mock', help='mock JSON 文件(代替 DB 查询)')
     p.add_argument('--tdee', type=int, default=1700)
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则 · 2026-08-02 ticket #5)')
     p.add_argument('--output')
     args = p.parse_args()
+    # ⭐ 思考链强制(R3 · 2026-08-02 ticket #5 运动 39 场景对齐)
+    from render_crud_view import _chain_valid
+    if not _chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print('     --chain "1.识别唤醒词→2.读DB→3.渲染报表"', file=sys.stderr)
+        return 2
     if args.days:
         end_d = date.today()
         start_d = end_d - timedelta(days=args.days - 1)
@@ -139,11 +148,15 @@ def main():
         # mock 缺 mode 字段时手动注入
         if 'mode' not in data.get('data', {}):
             data['data']['mode'] = args.mode
+        # R5 场景命名 + meta 注入(2026-08-02 · ticket #5)
+        scene = '看运动类型分布' if args.mode == 'distribution' else '看运动贡献'
+        data['data']['meta']['chain'] = args.chain.strip()
+        data['data']['meta']['wake_word'] = scene
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'运动分布_{EXERCISE_DISTRIBUTION_MODE_MAP[args.mode]}')
+    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene, 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     sm = data['data']['summary']

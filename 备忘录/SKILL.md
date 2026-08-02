@@ -366,9 +366,11 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
       b. 安装(官方推荐优先):`npx @larksuite/cli@latest install`(一行完成安装 + 创建/选择 app 配置;AI 可代为执行);或 `npm install -g @larksuite/cli`(仅装包,需另行 config init;若 npm 不在 PATH → 用完整路径 `%ProgramFiles%\nodejs\npm.cmd` 或新会话验证)
       c. 验证:`lark-cli --version` 可执行;`lark-cli auth status` 能输出 JSON(仅验证 CLI 工作,授权另看下一步)
    - **授权(两步,官方文档 · 2026-08-02 校准)**:
-      ① `lark-cli config init`(初始化 app 配置 · 创建/选择飞书应用 · AI 可代做;`--new` 新建)
-      ② `lark-cli auth login`(**用户身份授权 · 必须用户本人扫码/打开链接确认** · AI 不可代做)
-     - 授权验证:`lark-cli auth status` → `identities.user.openId` 存在即已授权(这正是 feishu_sync.py 读取的字段)
+       ① `lark-cli config init`(初始化 app 配置 · 创建/选择飞书应用 · AI 可代做;`--new` 新建)
+       ② `lark-cli auth login`(**用户身份授权 · 必须用户本人扫码/打开链接确认** · AI 不可代做)
+     - 授权验证(两步,防「token 过期仍报已授权」):
+       a. `python ${SKILL_DIR}/script/feishu_sync.py check` → `auth: true`
+       b. **真实 API 探测**(2026-08-02 补):跑一次 `lark-cli task +get-my-tasks`(只读 · 已实测可用),返回 `ok: true` = 授权真实可用;报错(如 token 过期/权限不足)→ 按 FAQ 重授权
      - 权限不足(FAQ):`lark-cli auth login --scope "<缺失权限>"` 按 CLI 提示补授权
      - 授权码过期(FAQ):重跑 `lark-cli auth login`
    - **只有用户明确拒绝**(如「不用飞书」「跳过」)才标 warn 跳过 —— 但必须**醒目告知功能残缺**:心愿→飞书、备忘录同步 两个核心功能不可用,后续想用时说「配置飞书」即可补装

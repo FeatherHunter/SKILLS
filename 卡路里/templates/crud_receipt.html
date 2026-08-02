@@ -58,10 +58,11 @@
   .ctx-row .value { font-weight:600; font-variant-numeric:tabular-nums; }
   .ctx-row .pct { font-size:11px; color:var(--fg3); margin-left:6px; }
   /* Footer 按钮 */
-  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
   .footer .src { font-size:12px; color:var(--fg3); }
+  .footer .btn-group { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
-         cursor:pointer; font-size:13px; color:var(--fg); margin-left:6px; }
+         cursor:pointer; font-size:13px; color:var(--fg); min-height:36px; }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary:hover { background:#005bb0; }
@@ -72,6 +73,16 @@
     .section { padding:16px 18px; border-radius:12px; }
     .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
     .food-card .macros { grid-template-columns:1fr 1fr; }
+    /* 移动端:footer 纵向排(来源行在上,按钮组在下占满宽) · 2026-08-02 */
+    .footer { flex-direction:column; align-items:stretch; }
+    .footer .src { order:1; }
+    .footer .btn-group { order:2; justify-content:stretch; }
+    .footer .btn-group .btn { flex:1 1 45%; min-height:44px; margin-left:0; }
+    /* 移动端:diff 三列改上下结构(旧值/新值各占一行,影响文本不被挤压) · 2026-08-02 */
+    .diff-row { grid-template-columns:1fr; gap:4px; }
+    .diff-arrow { display:none; }
+    .diff-row > div:nth-child(1)::after { content:" → "; color:var(--fg3); font-size:13px; }
+    .diff-impact { white-space:normal; word-break:break-word; }
   }
   /* table 在小屏内滚 */
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -112,7 +123,7 @@
 
 <div class="footer">
   <div class="src" id="srcLine">📊 操作于 --</div>
-  <div>
+  <div class="btn-group">
     <button class="btn" id="undoBtn">↩ 撤销(复制指令)</button>
     <button class="btn" id="copyDataBtn">📋 复制数据</button>
     <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>

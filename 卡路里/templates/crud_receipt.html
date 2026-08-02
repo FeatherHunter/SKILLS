@@ -43,12 +43,15 @@
   /* 字段对比卡(改/删时显示)*/
   .diff-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .diff-card h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
-  .diff-row { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); align-items:center; }
-  .diff-row:last-child { border-bottom:none; }
-  .diff-label { font-size:12px; color:var(--fg2); }
-  .diff-old { padding:8px 12px; background:#ffeaea; border-radius:8px; font-size:13px; color:#c7254e; font-weight:500; text-decoration:line-through; }
-  .diff-new { padding:8px 12px; background:rgba(52,199,89,.15); border-radius:8px; font-size:13px; color:var(--good); font-weight:600; }
-  .diff-arrow { font-size:18px; color:var(--fg3); }
+.diff-row { display:grid; grid-template-columns:1fr auto 1fr; gap:12px; padding:10px 0; border-bottom:1px solid var(--border); align-items:center; }
+.diff-row:last-child { border-bottom:none; }
+.diff-label { font-size:12px; color:var(--fg2); }
+.diff-old { padding:8px 12px; background:#ffeaea; border-radius:8px; font-size:13px; color:#c7254e; font-weight:500; text-decoration:line-through; }
+.diff-new { padding:8px 12px; background:rgba(52,199,89,.15); border-radius:8px; font-size:13px; color:var(--good); font-weight:600; }
+.diff-arrow { font-size:18px; color:var(--fg3); }
+/* 影响提示:独立行(diff-row 之外 · 2026-08-02 修复红绿框水平不对齐) */
+.diff-impact { font-size:11px; color:var(--fg2); padding:2px 0 8px 12px; border-bottom:1px solid var(--border); }
+.diff-row:has(+ .diff-impact) { border-bottom:none; }
   /* 上下文卡(增/改时显示今日累计)*/
   .ctx-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .ctx-card h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
@@ -196,13 +199,14 @@
       if (oldV === newV) return;
       const impact = new_record['__impact_' + k];
       const label = FIELD_LABELS[k] || k;
+      // impact 放 diff-row 之外独立一行(2026-08-02 修复:挂新值列内会撑高绿框导致红绿框水平不对齐)
       diffList.insertAdjacentHTML('beforeend',
         `<div class="diff-row">` +
         `<div><div class="diff-label">${label}</div><div class="diff-old">${fmtVal(k, oldV)}</div></div>` +
         `<div class="diff-arrow">→</div>` +
-        `<div><div class="diff-label">新值</div><div class="diff-new">${fmtVal(k, newV)}</div>` +
-        (impact ? `<div class="diff-impact" style="font-size:11px;color:var(--fg2);margin-top:4px;">${impact}</div>` : '') +
-        `</div>`);
+        `<div><div class="diff-label">新值</div><div class="diff-new">${fmtVal(k, newV)}</div></div>` +
+        `</div>` +
+        (impact ? `<div class="diff-impact">${impact}</div>` : ''));
     });
   }
 

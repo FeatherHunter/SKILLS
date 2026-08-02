@@ -902,6 +902,34 @@
 
 ---
 
+## [1.2.0] · 2026-08-02
+
+> **HELP HTML 4 级重构 + 首次使用模块**(wayfinder #30 map · #31-#36 tickets · ADR-0007)
+
+**Tested-By**: exempt(无 fresh agent · 详见 ADR-0005)
+
+### Added
+
+- **「首次使用」初始化场景**(#32/#36):scenario_id = memo_init_setup · category init · 五步诊断 prompt · dependencies 依赖清单(七项)
+  - 别名「初始化 / 新手」在 SKILL.md 触发层(#31 Q1),不写 scenarios.yaml
+- **script/validate_scenarios.py**(#35):共享校验模块,测试 + 渲染前双触发(#31 Q7)
+- **ADR-0007**:HELP 4 级重构决策归档
+
+### Changed
+
+- **scenarios.yaml**:顶层 categories 列表(8 类)+ 每场景 category/subfunction 字段(#33 归类 · 29 → 30 场景)
+- **memo_help.html**:2 级 → 4 级 details(分类 → 子功能 → 场景 → 详情子折叠)+ JS 数据驱动(payload.categories)+ dependencies 渲染块
+- **memo_render.py**:payload 注入 categories + 渲染前共享校验
+- **SKILL.md**:version 1.1.5 → 1.2.0 · 唤醒词表加「首次使用」· 快速开始 prompt 修复(原暴露 script/init.sql 路径违反 §07 §3 → 引导「首次使用」场景)
+- **_meta.json**:version 镜像 1.2.0
+- **test_help.py**:schema 断言改共享校验消费方 · 4 级结构断言 · Init 别名契约 · Playwright 渲染快照(8 分类/13 子功能/30 场景)
+
+### Removed
+
+- 旧 2 级分组(记录类/查找类/批量类/跨Skill/子唤醒词)从 HELP 渲染消灭(#33 技术分组)
+
+---
+
 ## 备注
 
 ### 归档周期

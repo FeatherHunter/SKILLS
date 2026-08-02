@@ -16,7 +16,7 @@
 
 ## 决策文件位置
 
-- 永久 ADR → `docs/adr/0001-N.md`(序号持续追加,按 INDEX:ADR-0006 templates 静态扫描等)
+- 永久 ADR → `docs/adr/0001-N.md`(序号持续追加,按 INDEX:ADR-0007 HELP 4 级重构等)
 - 临时决策 → `.scratch/<feature>/decisions.md`(轻量 ADR,不进 docs/adr/)
 - 术语表 → `CONTEXT.md`(唤醒词 / 场景 / 4 元 / 4 段 prompt / HTML 镜像 / 渲染产物 / 模板静态扫描 / 搜索意图 / 场景资产 / 【待开发】)
 

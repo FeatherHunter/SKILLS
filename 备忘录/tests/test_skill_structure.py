@@ -56,8 +56,8 @@ class TestSkillStructure:
             f"_meta.json version={meta['version']!r} ≠ SKILL.md frontmatter version={fm['version']!r}"
         )
 
-    def test_5_adr_files_exist(self):
-        for n in range(1, 6):
+    def test_adr_files_exist(self):
+        for n in range(1, 8):
             # 文件名前缀为 000N,后缀主题不限(glob 兜底)
             matches = list(ADR_DIR.glob(f"000{n}-*.md"))
             assert matches, f"docs/adr/000{n}-*.md 不存在"

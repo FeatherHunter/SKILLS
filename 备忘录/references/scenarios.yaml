@@ -1,5 +1,51 @@
+# 备忘录 · 场景资产(v1.2.0)
+#
+# 总纲 §07-HELP与场景完备性.md 契约:场景资产 = HELP HTML 唯一事实源
+# 字段(7 必填 + 3 新):
+#   wake_word:       关联业务唤醒词(HELP 唯一展示名;别名只在 SKILL.md 匹配层,#31 Q1)
+#   scenario_id:     稳定 ID,跨版本不变
+#   scenario_title:  用户可读标题
+#   dimensions:      合法维度(领域决定)
+#   prompt:          稳定用户意图(不暴露 CLI / DB / Python / 模板路径)
+#   status:          ""(可用) | "【待开发】"(禁用 + AI 必停)
+#   result:          预期结果(用户视角)
+#   category:        必填,引用顶层 categories 的 key(#31 Q2/Q5 · #33 归类)
+#   subfunction:     可选,子功能分组(空 = 「基础」兜底组,#31 Q3)
+#   dependencies:    可选,环境依赖清单多行文本(#32 决议 · 仅 Init 场景)
+#
+# 30 个场景 = 29 个唯一唤醒词(28 业务 + 首次使用;备忘改分类 单条+批量 共用)。
+# 无 order 字段:组内序 = 书写序(#31 Q4)。
+# 共享校验:script/validate_scenarios.py(测试 + 渲染前双触发,#31 Q7)。
+#
+# 编辑本文件后,需重新跑 `memo_cli.py help` 刷新 HELP HTML。
+
 skill: 备忘录
-version: 1.1.5
+version: 1.2.0
+categories:
+- key: memo
+  name: 备忘类
+  icon: 📝
+- key: search
+  name: 查找类
+  icon: 🔍
+- key: remind
+  name: 提醒类
+  icon: ⏰
+- key: wish
+  name: 心愿类
+  icon: 🎯
+- key: checkin
+  name: 打卡类
+  icon: ✅
+- key: mood
+  name: 情绪类
+  icon: 💭
+- key: sync
+  name: 同步类
+  icon: 🔄
+- key: init
+  name: 初始化类
+  icon: 🚀
 scenarios:
 - wake_word: 记备忘
   scenario_id: memo_add_basic
@@ -455,28 +501,26 @@ scenarios:
   status: ''
   result: 走通用改笔记流程。
   category: mood
-categories:
-- key: memo
-  name: 备忘类
-  icon: 📝
-- key: search
-  name: 查找类
-  icon: 🔍
-- key: remind
-  name: 提醒类
-  icon: ⏰
-- key: wish
-  name: 心愿类
-  icon: 🎯
-- key: checkin
-  name: 打卡类
-  icon: ✅
-- key: mood
-  name: 情绪类
-  icon: 💭
-- key: sync
-  name: 同步类
-  icon: 🔄
-- key: init
-  name: 初始化类
-  icon: 🚀
+- wake_word: 首次使用
+  scenario_id: memo_init_setup
+  scenario_title: 初始化备忘录(首次使用引导)
+  dimensions: {}
+  dependencies: 'Python 3.10+: 必装(全部命令由 Python 驱动)
+
+    SQLite(含 FTS5): Python 内置免装,需确认 FTS5 可用(全文搜索依赖)
+
+    lark-cli(飞书 CLI) >=1.0.59: 可选,仅「心愿→飞书」「备忘录同步」需要,未装/未授权自动降级
+
+    SKILLS_DB_PATH: 可选环境变量,数据库根目录(不设回落 D:/.db)
+
+    MEMO_MEDIA_DIR: 可选环境变量,媒体目录(本机约定绝对路径,如 D:/media)
+
+    Cron 提醒调度: 可选,宿主平台定时调提醒检查;推送渠道(QQ/飞书/微信)由宿主选择
+
+    浏览器: 系统自带,查看 HELP/查询/向导 HTML 用默认浏览器'
+  prompt: "请帮我初始化备忘录,我是第一次使用(唤醒词:首次使用):\n\n无需参数,直接发送。\n\n请按以下步骤处理:\n1. 检查环境:运行环境、数据存储、飞书联动(可选),缺什么逐项告诉我\n\
+    2. 初始化数据库:建好备忘录的数据表\n3. 引导我配置数据目录和媒体目录\n4. 配置提醒调度:让我设的备忘提醒能按时推送\n5. 完成后报告就绪情况,并带我浏览一遍全部功能\n\
+    \n期望效果:\n  AI 逐项检查环境并报告缺什么,初始化数据库,引导配置目录与提醒调度,完成后报告就绪情况。"
+  status: ''
+  result: AI 逐项检查环境(Python/数据存储/飞书工具/环境变量),报告缺什么并给安装指引;初始化数据库、引导配置目录与提醒调度;完成后报告就绪情况并带你浏览全部功能。飞书未装不影响基础使用,只提示可选能力。
+  category: init

@@ -1,5 +1,35 @@
 # 备忘录数据库与API参考
 
+## 场景资产契约(v1.2.0 · #31/#33/#36)
+
+场景资产 `references/scenarios.yaml` = HELP HTML 唯一事实源(总纲 §07)。
+
+### 字段(7 必填 + 3 新)
+
+| 字段 | 必填 | 说明 |
+|------|------|------|
+| wake_word | ✅ | 唯一展示名;别名只在 SKILL.md 匹配层(#31 Q1) |
+| scenario_id | ✅ | 稳定 ID,跨版本不变;全局唯一 |
+| scenario_title | ✅ | 用户可读标题 |
+| dimensions | ✅ | 合法维度(领域决定) |
+| prompt | ✅ | 稳定用户意图,不暴露 CLI/DB/路径 |
+| status | ✅ | ""(可用) / 【待开发】(禁用) |
+| result | ✅ | 预期结果(用户视角) |
+| category | ✅ | 引用顶层 categories key(白名单 8 个) |
+| subfunction | 可选 | 空 = 「基础」兜底组 |
+| dependencies | 可选 | 环境依赖清单多行文本(仅 Init) |
+
+### categories 列表(8)
+
+memo 备忘类📝 / search 查找类🔍 / remind 提醒类⏰ / wish 心愿类🎯 / checkin 打卡类✅ / mood 情绪类💭 / sync 同步类🔄 / init 初始化类🚀
+
+### 约束
+
+- 无 order:组内序 = yaml 书写序(#31 Q4)
+- 禁字段:order/aliases/wake_words/wake_word_index(#31 Q1/Q4/Q6)
+- wake_word 允许多对一(备忘改分类 单条+批量)
+- 共享校验:script/validate_scenarios.py(测试 + 渲染前双触发)
+
 ## 数据库表结构
 详见 `script/init.sql`。
 

@@ -112,15 +112,15 @@ class TestScenariosSchema:
 
     def test_skill_and_version_keys(self, scenarios):
         assert scenarios.get("skill") == "备忘录"
-        assert scenarios.get("version") == "1.1.5"
+        assert scenarios.get("version") == "1.2.0"
 
-    def test_28_wake_words_minimum(self, scenarios):
-        """§07 §4:每个业务唤醒词必穷举所有合法场景(下限 28, 含 12 子唤醒词)"""
+    def test_29_wake_words_minimum(self, scenarios):
+        """§07 §4:每个业务唤醒词必穷举所有合法场景(下限 29, 含 首次使用)"""
         wake_words = {s["wake_word"] for s in scenarios["scenarios"]}
-        assert len(wake_words) >= 28, f"唤醒词数 {len(wake_words)} < 28"
+        assert len(wake_words) >= 29, f"唤醒词数 {len(wake_words)} < 29"
 
     def test_wake_word_multi_mapping_precision(self, scenarios):
-        """wake_word 多对一契约(#33 归类):29 场景 = 28 唯一唤醒词。
+        """wake_word 多对一契约(#33 归类 + #36 Init):30 场景 = 29 唯一唤醒词。
 
         唯一合法多对一 = 备忘改分类(单条 memo_change_category_single +
         批量 memo_batch_change_category 共用);其余唤醒词各映射恰好 1 个
@@ -128,7 +128,7 @@ class TestScenariosSchema:
         """
         from collections import Counter
         counter = Counter(s["wake_word"] for s in scenarios["scenarios"])
-        assert len(counter) == 28, f"唯一唤醒词应 28,实际 {len(counter)}"
+        assert len(counter) == 29, f"唯一唤醒词应 29,实际 {len(counter)}"
         multi = {k: v for k, v in counter.items() if v > 1}
         assert multi == {"备忘改分类": 2}, f"多对一应仅备忘改分类×2,实际 {multi}"
 
@@ -172,6 +172,22 @@ class TestScenariosSchema:
         assert index["记备忘"] == ["memo_add_basic"]
         # 无匹配 → 空
         assert "不存在的唤醒词xyz" not in index
+
+    def test_init_wake_word_aliases(self, scenarios):
+        """Init 别名命中契约(#35 补记 · #36 落地)。
+
+        场景资产:唯一主词「首次使用」→ memo_init_setup。
+        别名「初始化」「新手」在 SKILL.md 触发层(不写 yaml,#31 Q1):
+        - scenarios.yaml 不得含 aliases/wake_words 字段(共享校验禁字段守卫)
+        - SKILL.md 须标注别名 → 由 TestHelpWakeWordFlexibility 守护
+        """
+        init = [s for s in scenarios["scenarios"]
+                if s["scenario_id"] == "memo_init_setup"]
+        assert len(init) == 1, f"memo_init_setup 应恰 1 条,实际 {len(init)}"
+        assert init[0]["wake_word"] == "首次使用", \
+            f"Init 唯一展示名应为 首次使用,实际 {init[0]['wake_word']}"
+        assert init[0].get("category") == "init", "Init 应在 init 分类"
+        assert init[0].get("dependencies"), "Init 应含 dependencies 依赖清单"
 
 
 # ==================== HELP HTML 模板 ====================
@@ -552,7 +568,7 @@ class TestHelpThreeLevelCollapse:
             assert f not in text, f"残留状态摘要元素: {f}"
 
     def test_three_level_structure_via_js_simulation(self):
-        """模拟 JS 渲染:8 分类(7 有场景 + init 空)+ 29 场景全映射"""
+        """模拟 JS 渲染:8 分类(全部有场景)+ 30 场景全映射"""
         import yaml
         yaml_data = yaml.safe_load(Path("references/scenarios.yaml").read_text(encoding="utf-8"))
         scenarios = yaml_data["scenarios"]
@@ -564,19 +580,20 @@ class TestHelpThreeLevelCollapse:
             assert k in cat_keys, f"场景 {s['scenario_id']} 的 category={k} 不在白名单"
             by_cat.setdefault(k, []).append(s)
         total = sum(len(v) for v in by_cat.values())
-        assert total == 29, f"应渲染 29 场景,实际 {total}"
-        assert set(by_cat.keys()) == {"memo", "search", "remind", "wish", "checkin", "mood", "sync"}, \
-            f"应有 7 个非空分类,实际 {set(by_cat.keys())}"
-        # init 分类预留(无场景,待 Round 3 并入)
-        assert "init" in cat_keys, "categories 应含 init(初始化类)"
+        assert total == 30, f"应渲染 30 场景,实际 {total}"
+        assert set(by_cat.keys()) == {"memo", "search", "remind", "wish", "checkin", "mood", "sync", "init"}, \
+            f"应有 8 个非空分类,实际 {set(by_cat.keys())}"
+        # Init 场景在 init 分类(#36 并入)
+        init_ids = {s["scenario_id"] for s in by_cat["init"]}
+        assert init_ids == {"memo_init_setup"}, f"init 分类应仅 memo_init_setup,实际 {init_ids}"
 
     def test_rendered_html_snapshot(self, rendered):
-        """渲染快照(#35 Task 3):JS 执行后 DOM 结构断言。
+        """渲染快照(#35 Task 3 + #36 Init):JS 执行后 DOM 结构断言。
 
         4 级结构由 JS 动态创建,静态解析拿不到 → 用 Playwright 真实渲染
-        (headless chromium),锁定 #34 实际输出:
-        7 分类 + 12 子功能 + 29 场景卡 + 29 复制按钮 + 零 JS 错误。
-        init 分类无场景不渲染(#33 决议)。
+        (headless chromium),锁定 #34/#36 实际输出:
+        8 分类 + 13 子功能 + 30 场景卡 + 30 复制按钮 + 零 JS 错误。
+        init 分类含 memo_init_setup(#36 并入)。
         """
         pytest.importorskip("playwright.sync_api")
         from playwright.sync_api import sync_playwright
@@ -595,15 +612,17 @@ class TestHelpThreeLevelCollapse:
             toast = page.locator("#toast").count()
             backtop = page.locator("#backToTop").count()
             names = page.locator("details.module > summary").all_text_contents()
+            deps_boxes = page.locator(".deps-box").count()
             browser.close()
         assert not js_errors, f"JS 错误: {js_errors}"
-        assert modules == 7, f"应 7 个分类,实际 {modules}"
-        assert sub_modules == 12, f"应 12 个子功能,实际 {sub_modules}"
-        assert scenarios == 29, f"应 29 场景卡,实际 {scenarios}"
-        assert copy_btns == 29, f"应 29 复制按钮,实际 {copy_btns}"
+        assert modules == 8, f"应 8 个分类,实际 {modules}"
+        assert sub_modules == 13, f"应 13 个子功能,实际 {sub_modules}"
+        assert scenarios == 30, f"应 30 场景卡,实际 {scenarios}"
+        assert copy_btns == 30, f"应 30 复制按钮,实际 {copy_btns}"
+        assert deps_boxes == 1, f"应 1 个依赖清单块(Init),实际 {deps_boxes}"
         assert toast == 1 and backtop == 1, "toast / back-to-top 元素应在"
         joined = " ".join(names)
-        for cn in ["备忘类", "查找类", "提醒类", "心愿类", "打卡类", "情绪类", "同步类"]:
+        for cn in ["备忘类", "查找类", "提醒类", "心愿类", "打卡类", "情绪类", "同步类", "初始化类"]:
             assert cn in joined, f"分类 {cn} 未渲染"
 
 # ==================== prompt 填写友好性(用户反馈) ====================

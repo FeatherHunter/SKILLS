@@ -86,9 +86,18 @@ class TestHelpHtmlStructure:
             assert t in text, f"HELP HTML 缺唤醒词: {t}"
 
     def test_has_7_groups(self, text):
-        """#33 归类:8 个分类(7 有场景 + init 预留)来自 categories 数据"""
+        """#33 归类:8 个分类(categories 注入数据)完整注入 HTML。
+
+        4 级架构下分类名由 JS 动态渲染,静态文本不含 → 改从 window.__DATA__
+        注入数据断言(渲染层已有 Playwright 快照覆盖,见 test_help.py)。
+        """
+        m = re.search(r"window\.__DATA__ = (\{.*?\});</script>", text, re.DOTALL)
+        assert m, "找不到 window.__DATA__ 注入"
+        import json
+        payload = json.loads(m.group(1))
+        cats = [c["name"] for c in payload.get("data", {}).get("categories", [])]
         for g in ["备忘类", "查找类", "提醒类", "心愿类", "打卡类", "情绪类", "同步类", "初始化类"]:
-            assert g in text, f"缺分类: {g}"
+            assert g in cats, f"categories 注入缺分类: {g}"
 
     def test_help_not_show_itself(self, text):
         """§07 §5 反模式 3:HELP 唤醒词自身不出现在 HTML"""

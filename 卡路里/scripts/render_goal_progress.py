@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""render_goal_progress.py — 目标进度 HTML 渲染器（G2 看目标 · 10 模式）
+"""render_goal_progress.py — 目标进度 HTML 渲染器（G2 看目标 · 11 模式）
 
-对应 SKILL.md 唤醒词: 看今日目标 / 看本周目标 / 看营养目标进度 / 看饮水目标进度 / 看目标对比实际 / 看目标完成度 / 看即将到期的目标 / 看目标完成率(按周) / 看目标完成率(按月) / 看目标预测达成
+对应 SKILL.md 唤醒词: 看今日目标 / 看本周目标 / 看营养目标进度 / 看体重目标进度 / 看饮水目标进度 / 看目标对比实际 / 看目标完成度 / 看即将到期的目标 / 看目标完成率(按周) / 看目标完成率(按月) / 看目标历史完成 / 看目标预测达成
 对应模板: templates/goal_progress.html
 - 输出目录: $DATA_DIR/calorie_html/目标进度_<TS>.html (手册 §4.1 · 中文化)
 - 占位符: <!--INJECT-DATA--> 恰好 1 次
@@ -13,16 +13,20 @@
   --mode week        看本周目标: 日均 vs 日目标 + 周总量 vs 周目标
   --mode nutrition   看营养目标进度: 4 项进度条 + 完成度% + 缺口
   --mode water       看饮水目标进度: 累计/目标/完成度 + 剩余 ml
+  --mode weight_progress  看体重目标进度: 当前/目标/Δ/完成%/预测 + 剩余天数/建议速率
   --mode vs_actual   看目标对比实际: 目标线 vs 实际线 + 偏差 + 时间窗口(默认 30 天)
   --mode completion  看目标完成度: 完成度% + 缺口 + 总评分
   --mode weight --expiring 14   看即将到期的目标: 目标/截止/剩余天数/进度/紧迫度
   --mode nutrition --period week|month   看目标完成率(按周/按月): 每日完成率柱状 + 达标天数
+  --mode history     看目标历史完成: 每日达成列表 + 完成/未完成统计
   --mode predict     看目标预测达成: 预测达成日 + 置信度(体重部分复用 weight_milestone)
 
 用法:
     python scripts/render_goal_progress.py --mode today
     python scripts/render_goal_progress.py --mode nutrition --period week
     python scripts/render_goal_progress.py --mode weight --expiring 14
+    python scripts/render_goal_progress.py --mode weight_progress
+    python scripts/render_goal_progress.py --mode history
 """
 import argparse
 import json
@@ -385,6 +389,93 @@ def build_mode_predict(goal):
     }
 
 
+def build_mode_weight_progress(goal):
+    """看体重目标进度: 当前/目标/Δ/完成%/预测 + 剩余天数/建议速率(weight_milestone)"""
+    from analysis.weight import weight_milestone
+    ms = weight_milestone(as_dict=True)
+    if ms.get('status') != 'ok' or not ms.get('data'):
+        return {
+            'mode': 'weight_progress',
+            'title': '看体重目标进度',
+            'subtitle': '当前/目标/Δ/完成%/预测 + 剩余天数/建议速率',
+            'empty': ms.get('message', '数据不足'),
+            'summary': '先设体重目标并记录体重',
+        }
+    d = ms['data']
+    # 完成% = 已减 / 总需减(起点 = 最早一次体重)
+    from db import find_db_path, get_db
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    start = conn.execute('SELECT weight_kg FROM weight_log ORDER BY date ASC LIMIT 1').fetchone()
+    conn.close()
+    pct = None
+    if start and d['weight_goal'] is not None and d['current_weight'] is not None:
+        total = start[0] - d['weight_goal']
+        done = start[0] - d['current_weight']
+        if total != 0:
+            pct = round(done / total * 100, 1)
+    rate = d.get('calorie_adjustment')
+    rate_text = None
+    if rate is not None:
+        rate_text = f"{abs(rate)} 卡/天{'缺口' if rate > 0 else '盈余'}"
+    return {
+        'mode': 'weight_progress',
+        'title': '看体重目标进度',
+        'subtitle': '当前/目标/Δ/完成%/预测 + 剩余天数/建议速率',
+        'kpis': [
+            {'label': '当前', 'value': d['current_weight'], 'unit': 'kg'},
+            {'label': '目标', 'value': d['weight_goal'], 'unit': 'kg'},
+            {'label': '差距', 'value': f"{d['gap_kg']:+.1f}", 'unit': 'kg'},
+            {'label': '完成', 'value': pct if pct is not None else '—', 'unit': '%'},
+        ],
+        'items': [
+            {'label': '剩余天数', 'unit': '天', 'goal': None, 'actual': d.get('est_days'), 'pct': None},
+            {'label': '预计达成', 'unit': '', 'goal': None, 'actual': d.get('est_date'), 'pct': None},
+            {'label': '建议速率', 'unit': '', 'goal': None, 'actual': rate_text, 'pct': None},
+        ],
+        'summary': f"预计 {d.get('est_date') or '—'} 达成 · 状态 {d.get('status')}"
+                   + (f' · {rate_text}' if rate_text else ''),
+    }
+
+
+def build_mode_history(goal, days=30):
+    """看目标历史完成: 每日达成列表 + 完成/未完成统计"""
+    hist = goal_history.list_completed_goals(days)
+    rows = []
+    for h in hist['goal_history']:
+        pct = h['pct'] or 0
+        rows.append({
+            'date': h['date'],
+            'calorie_actual': h['calorie_actual'],
+            'calorie_goal': h['calorie_goal'] or '—',
+            'rate': {'bar': min(pct, 150), 'text': f'{pct}%'},
+            'status': {'badge': 'ok' if h['status'] == '完成' else ('bad' if h['status'] == '未完成' else 'neutral'),
+                       'text': h['status']},
+        })
+    return {
+        'mode': 'history',
+        'title': '看目标历史完成',
+        'subtitle': f'近 {days} 天每日达成列表 · 达标带 80%-120%',
+        'kpis': [
+            {'label': '完成', 'value': hist['completed_count'], 'unit': f'/{days} 天'},
+            {'label': '未完成', 'value': hist['incomplete_count'], 'unit': '天'},
+        ],
+        'table': {
+            'title': '每日达成',
+            'hint': '绿色=达标 80-120%',
+            'cols': [
+                {'key': 'date', 'label': '日期'},
+                {'key': 'calorie_actual', 'label': '实际'},
+                {'key': 'calorie_goal', 'label': '目标'},
+                {'key': 'rate', 'label': '达成率'},
+                {'key': 'status', 'label': '状态'},
+            ],
+            'rows': rows,
+        },
+        'summary': f'完成 {hist["completed_count"]} 天 / 未完成 {hist["incomplete_count"]} 天',
+    }
+
+
 def render_html(data: dict) -> str:
     template = TEMPLATE_PATH.read_text(encoding='utf-8')
     placeholder = '<!--INJECT-DATA-->'
@@ -397,10 +488,10 @@ def render_html(data: dict) -> str:
 
 
 def main():
-    p = argparse.ArgumentParser(description='渲染目标进度 HTML(G2 看目标 · 10 模式)')
+    p = argparse.ArgumentParser(description='渲染目标进度 HTML(G2 看目标 · 11 模式)')
     p.add_argument('--mode', required=True,
                    choices=['today', 'week', 'nutrition', 'water', 'vs_actual',
-                            'completion', 'weight', 'predict'],
+                            'completion', 'weight', 'weight_progress', 'history', 'predict'],
                    help='查看模式')
     p.add_argument('--period', choices=['week', 'month'], help='nutrition 模式周期(完成率)')
     p.add_argument('--expiring', type=int, default=14, help='weight 模式紧迫窗口天数(默认 14)')
@@ -424,6 +515,10 @@ def main():
             data = build_mode_completion(goal)
         elif args.mode == 'weight':
             data = build_mode_weight(goal, expiring=args.expiring)
+        elif args.mode == 'weight_progress':
+            data = build_mode_weight_progress(goal)
+        elif args.mode == 'history':
+            data = build_mode_history(goal, days=args.days)
         elif args.mode == 'predict':
             data = build_mode_predict(goal)
         html = render_html(data)

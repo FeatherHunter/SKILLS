@@ -19,7 +19,7 @@ import argparse
 import json
 from html_paths import html_path
 import sys
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -51,6 +51,19 @@ def build_today_status(target_date: str) -> dict:
     c.execute('SELECT COUNT(*) FROM weight_log WHERE date = ?', (target_date,))
     weight_count = c.fetchone()[0]
 
+    # H1.4 对接(2026-08-02 · ticket #4 Success Criteria #5):体重 widget 显示实际数值
+    c.execute('SELECT weight_kg FROM weight_log WHERE date = ? ORDER BY time DESC LIMIT 1', (target_date,))
+    w_row = c.fetchone()
+    latest_kg = w_row[0] if w_row else None
+    c.execute('SELECT weight_goal FROM daily_goal WHERE id = 1')
+    g = c.fetchone()
+    goal_kg = g[0] if g and g[0] else None
+    week_ago = (date.fromisoformat(target_date) - timedelta(days=7)).isoformat()
+    c.execute('SELECT weight_kg FROM weight_log WHERE date <= ? ORDER BY date DESC, time DESC LIMIT 1', (week_ago,))
+    prev = c.fetchone()
+    delta_7d = round(latest_kg - prev[0], 1) if latest_kg is not None and prev else None
+    goal_diff = round(latest_kg - goal_kg, 1) if latest_kg is not None and goal_kg is not None else None
+
     conn.close()
 
     todo = []
@@ -67,7 +80,8 @@ def build_today_status(target_date: str) -> dict:
         'food': {'count': food_count, 'calories': int(food_cal)},
         'water': {'count': water_count, 'calories': int(water_cal)},
         'exercise': {'count': exercise_count, 'calories': int(exercise_cal)},
-        'weight': {'count': weight_count},
+        'weight': {'count': weight_count, 'latest_kg': latest_kg, 'goal_kg': goal_kg,
+                   'goal_diff': goal_diff, 'delta_7d': delta_7d},
         'todo': todo,
     }
 

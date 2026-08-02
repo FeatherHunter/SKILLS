@@ -682,8 +682,8 @@ function render() {
     </div>
     <div class="kpi">
       <div class="label"><span class="icon">⚖️</span>体重<span class="badge ${wtBadge[0]}">${wtBadge[1]}</span></div>
-      <div class="main"><span class="value">${wt.avg_weight != null ? wt.avg_weight.toFixed(1) : '—'}</span><span class="unit">kg</span></div>
-      <div class="detail">${wt.change_kg != null ? (wt.change_kg > 0 ? '+' : '') + wt.change_kg.toFixed(1) + 'kg' : '—'} · 最近 ${wt.last_date || '—'}</div>
+      <div class="main"><span class="value">${today_status.weight.latest_kg != null ? today_status.weight.latest_kg.toFixed(1) : (wt.avg_weight != null ? wt.avg_weight.toFixed(1) : '—')}</span><span class="unit">kg</span></div>
+      <div class="detail">${today_status.weight.goal_diff != null ? '距目标 ' + (today_status.weight.goal_diff > 0 ? '+' : '') + today_status.weight.goal_diff.toFixed(1) + 'kg' : '距目标 —'} · Δ7天 ${today_status.weight.delta_7d != null ? (today_status.weight.delta_7d > 0 ? '+' : '') + today_status.weight.delta_7d.toFixed(1) + 'kg' : '—'}</div>
     </div>
     <div class="kpi">
       <div class="label"><span class="icon">📉</span>缺口<span class="badge ${df.size_label === '过大' ? 'warn' : df.size_label === '适中' ? 'ok' : df.size_label === '适宜' ? 'good' : 'ok'}">${escapeHTML(df.size_label || '')}</span></div>

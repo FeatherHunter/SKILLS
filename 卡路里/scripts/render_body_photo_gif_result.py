@@ -50,6 +50,11 @@ def build(tag, start=None, end=None, days=None, photo_ids=None,
     dates = sorted(r[1] for r in rows)
     first_date, last_date = (dates[0], dates[-1]) if dates else (None, None)
 
+    # C3(2026-08-02):帧数/照片总数从 generate_gif 模块属性读取(呈现数据承诺字段)
+    info = bpt.get_last_gif_info()
+    photo_count = info.get('photo_count', len(rows))
+    frame_count = info.get('frame_count')
+
     # GIF base64 内嵌(浏览器可播放;体积大时前端降级路径)
     gif_b64 = None
     try:
@@ -59,7 +64,6 @@ def build(tag, start=None, end=None, days=None, photo_ids=None,
     except Exception:
         pass
 
-    frames = None  # generate_gif 内部未回传帧数,由 CLI 输出;此处尽量从文件估算
     return {
         'status': 'ok',
         'data': {
@@ -71,7 +75,8 @@ def build(tag, start=None, end=None, days=None, photo_ids=None,
                 'tag': tag,
                 'start_date': start or (dates[0] if dates else None),
                 'end_date': end or (dates[-1] if dates else None),
-                'photo_count': len(rows),
+                'photo_count': photo_count,
+                'frame_count': frame_count,
                 'first_date': first_date,
                 'last_date': last_date,
                 'width': width, 'height': height,

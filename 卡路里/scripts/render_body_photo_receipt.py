@@ -191,23 +191,23 @@ def build_live_tag_set(photo_id, tag_list):
 
 
 def build_live_tag_add(photo_id, tag):
-    """加照片标签:追加(判重)。新增后完整标签列表 + 判重提示"""
+    """加照片标签:追加(判重,支持逗号分隔多个)。新增后完整标签列表 + 判重提示"""
     bpt = _tracker()
     photo = bpt.get_photo_row(photo_id)
     if not photo:
         raise ValueError(f"照片 #{photo_id} 不存在")
     before = photo['tag_list']
     tags = bpt.validate_tags(bpt.parse_tags(tag))
-    if len(tags) != 1:
-        raise ValueError(f"加标签一次只加 1 个,收到 {len(tags)} 个: {tags!r}")
-    new_tag = tags[0]
-    if new_tag in before:
-        return _tag_op_data(photo_id, before, before, '加照片标签', '加照片标签',
-                            f"⚠ 标签「{new_tag}」已存在(当前标签:{'、'.join(before)}),未做修改", True)
-    bpt.tag_add(photo_id, new_tag)
+    existing = set(before)
+    added = [t for t in tags if t not in existing]
+    dup = [t for t in tags if t in existing]
+    bpt.tag_add(photo_id, bpt.serialize_tags(tags))
     after = bpt.get_photo_row(photo_id)['tag_list']
-    summary = f"已为照片 #{photo_id} 追加标签「{new_tag}」,当前标签:{'、'.join(after)}"
-    return _tag_op_data(photo_id, before, after, '加照片标签', '加照片标签', summary, False)
+    if not added:
+        summary = f"⚠ 标签{'、'.join(dup)}已存在(当前标签:{'、'.join(before)}),未做修改"
+    else:
+        summary = f"已为照片 #{photo_id} 追加标签「{'、'.join(added)}」,当前标签:{'、'.join(after)}"
+    return _tag_op_data(photo_id, before, after, '加照片标签', '加照片标签', summary, after == before)
 
 
 def build_live_tag_remove(photo_id, tag):

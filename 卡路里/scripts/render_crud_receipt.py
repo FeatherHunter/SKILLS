@@ -199,18 +199,29 @@ def build_live_profile_update(field_value_pairs):
     new = {**new, **{f'__impact_{k}': v for k, v in impact_map.items()}}
 
     # KPI:字段数 / 改前 / 改后 / TDEE 综合影响 / 更新时间
+    # 改前/改后显示首个变更字段的具体对比(2026-08-02 对抗审查:空转「见下方对比」无意义)
     first = results[0]
     last = results[-1]
     multi = len(results) > 1
-    tdee_new, tdee_delta = _tdee_estimate(
+    first_col = _FIELD_TO_COL.get(first['field'], first['field'])
+    first_label = _label_for(first_col)
+    first_old_disp = str(first['old_value'])
+    first_new_disp = str(first['new_value'])
+    if first_col == 'activity_level':
+        first_old_disp = ACTIVITY_LEVEL_LABELS.get(str(first['old_value']).lower(), first['old_value'])
+        first_new_disp = ACTIVITY_LEVEL_LABELS.get(str(first['new_value']).lower(), first['new_value'])
+    if first_col == 'gender':
+        first_old_disp = '男' if first['old_value'] == 'male' else '女' if first['old_value'] == 'female' else str(first['old_value'])
+        first_new_disp = '男' if first['new_value'] == 'male' else '女' if first['new_value'] == 'female' else str(first['new_value'])
+    tdee_new, _ = _tdee_estimate(
         new.get('age'), new.get('gender'), new.get('height_cm'), new.get('activity_level'))
     kpis = [
         {'label': '字段', 'value': f"{len(results)} 项" if multi else first['label'],
          'extra': '、'.join(r['label'] for r in results) if multi else f"field={first['field']}"},
-        {'label': '改前', 'value': '见下方对比' if multi else str(first['old_value']),
-         'extra': '—'},
-        {'label': '改后', 'value': '见下方对比' if multi else str(first['new_value']),
-         'extra': '—'},
+        {'label': f'改前({first_label})', 'value': first_old_disp,
+         'extra': f'共 {len(results)} 项变更' if multi else '—'},
+        {'label': f'改后({first_label})', 'value': first_new_disp,
+         'extra': f'其余见下方' if multi else '—'},
         {'label': '更新时间', 'value': last['updated_at'][:16].replace('T', ' '),
          'extra': 'id=1'},
     ]

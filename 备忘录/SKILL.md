@@ -319,21 +319,50 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 
 ### 首次使用行为规范(v1.2.0 · #8 经验落地:交互规则落 SKILL.md,不只靠 prompt)
 
-AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行(**7 环节完整工作流**):
+AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**核心:引导式环境搭建(bootstrap)—— 检测 → 安装/配置 → 验证 → 下一步,假设用户环境可能什么都没做,每步必须给出可执行指引,不允许只报告「缺什么」而不给「怎么装」。**
 
-1. **诊断**(逐项检查,复用现有命令,不新增 CLI 子命令):
-   - Python 运行环境:`python --version`(需 3.10+)
-   - 数据存储:检查 SKILLS_DB_PATH / 数据库文件可写;SQLite FTS5 可用性(`python -c "import sqlite3;conn=sqlite3.connect(':memory:');conn.execute(\"CREATE VIRTUAL TABLE t USING fts5(x)\")"`)
-   - 飞书联动(可选):`feishu_sync.py check` 或按飞书 CLI 探测;**未装/未授权 → 标 warn,不阻断**
-   - 环境变量:SKILLS_DB_PATH / MEMO_MEDIA_DIR
-2. **初始化数据库**:确认数据表就绪;缺失则建表(复用 memo_cli 内部初始化逻辑,不暴露路径)
-3. **引导配置**:数据目录 + 媒体目录(MEMO_MEDIA_DIR),确认路径可写
-4. **提醒调度**:说明 cron 配置方式,验证方式由宿主环境决定;无法验证 → 标 warn + 给指引
-5. **过程 HTML + 回执**:诊断完成后,调用 `memo_cli.py init-report --data '<诊断结果 JSON>'` 生成初始化报告页(items 检查清单 + todos 待办 + verify 完成验证清单),发给用户;流程完成再给一句话文字总结
+**执行原则**:
+- 每步:先检测 → 缺失/未就绪 → 给出**具体安装/配置指引**(命令级)→ 引导用户执行 → 验证通过 → 下一步
+- 用户同意后 AI 可代为执行安装命令(权限允许时);否则给出命令让用户自行执行
+- 任何一步失败 → 报告页标 err/warn + 在「待办指引」给具体下一步,不静默跳过
+- 完成后生成初始化报告页(init-report CLI)+ 逐项验证清单
+
+**逐步流程**:
+
+1. **Python 运行环境**(3.10+ 必装):
+   - 检测:`python --version`(或 `python3 --version`)
+   - 缺失 → 指引安装:Windows 从 python.org 下载 3.10+ 安装包(安装时勾选「Add to PATH」);macOS `brew install python@3.10`;Linux 发行版包管理器
+   - 验证:重跑 `python --version` 确认 ≥3.10
+2. **数据存储(SQLite + FTS5)**(Python 内置,验证即可):
+   - 检测:`python -c "import sqlite3;conn=sqlite3.connect(':memory:');conn.execute('CREATE VIRTUAL TABLE t USING fts5(x)')"`
+   - FTS5 不可用 → 指引重装/换发行版(Python 官方构建含 FTS5);不用 SQLite 文件之外的其他方案
+3. **飞书 CLI(@larksuite/cli ≥1.0.59)**(默认安装,不再视为纯可选):
+   - 检测:`python script/feishu_sync.py check`(输出 JSON:available/cli_path/auth)
+   - ⚠️ **包名陷阱(2026-08-02 对抗审查确认)**:官方包是 **`@larksuite/cli`**(bin 名恰为 `lark-cli`);npm registry 上的 `lark-cli` 是 2017 年僵尸包(0.1.0,无 auth 命令),**严禁指引安装 `lark-cli`**
+   - 未安装 → 逐步指引:
+     a. 检测 Node.js:`node --version`(需 ≥ 18);未装 → 先装 Node LTS(nodejs.org 或包管理器)
+     b. 安装:`npm install -g @larksuite/cli`(Windows 生成 %APPDATA%\npm\lark-cli.cmd)
+     c. 验证:`npm view @larksuite/cli version` ≥ 1.0.59 且 `lark-cli --version` 可执行
+   - 已装未授权 → 指引 `lark-cli auth login`(用户扫码/网页授权);`check` 的 auth 字段应转 available
+   - 用户拒绝安装/授权 → 标 warn(不阻断),但**明确告知**:心愿→飞书、备忘录同步 两个功能不可用
+4. **环境变量**(SKILLS_DB_PATH / MEMO_MEDIA_DIR):
+   - 检测:读环境变量,为空则未配置
+   - 未配置 → 引导设置(用户级持久化):
+     - Windows:`setx SKILLS_DB_PATH "D:\.db"`(示例) / `setx MEMO_MEDIA_DIR "D:\media"`
+     - macOS/Linux:写入 ~/.zshrc 或 ~/.bashrc 后 `source`
+     - 不设置也可用(有默认回落),但建议设置专属目录
+5. **数据库初始化**:
+   - 检测:数据表是否就绪(通过 memo_cli 任意命令试探,如 `search ""` 不报错即就绪)
+   - 未就绪 → 引导建表(复用 memo_cli 内部初始化逻辑,不暴露 SQL 路径;AI 调用初始化后验证)
+6. **提醒调度(Cron)**:
+   - 说明:提醒由宿主平台定时任务触发(Windows 任务计划程序 / macOS launchd / Linux crontab),调用提醒检查命令
+   - 无法在会话内验证 → 标 warn + 在待办指引给宿主差异说明
+7. **过程 HTML + 回执**:以上全部完成后,调用 `memo_cli.py init-report --data '<诊断结果 JSON>'` 生成初始化报告页(items 检查清单 + todos 待办 + verify 完成验证清单),发给用户;再给一句话总结
    - `--data` 数据契约:`{"items":[{name,status(ok/warn/err),desc,action}], "todos":[{title,steps:[str]}], "verify":[str]}`
-   - status 取值:ok=就绪 / warn=可选缺失(飞书、cron 等)/ err=必装缺失(Python、数据库等)
-6. **承诺↔兑现**:prompt 5 步 → 报告页必须有对应物(检查项/待办/验证清单);缺失即流程断裂
-7. **飞书缺失不降级阻断**:飞书是可选能力,缺失只标 warn,初始化照常完成
+   - status 取值:ok=就绪 / warn=可选缺失(用户拒绝飞书、cron 未验证等)/ err=必装缺失(Python、数据库等)
+   - 报告页「完成验证清单」= 用户可勾选:Python 可运行 / 数据库已建 / 飞书已授权(若选装)/ 环境变量已配置 / HELP 页面可打开
+8. **承诺↔兑现**:prompt 说的每项 → 报告页必须有对应物(检查项/待办/验证清单);缺失即流程断裂
+9. **飞书拒绝不阻断**:用户明确拒绝安装飞书 → 标 warn,初始化照常完成(但「备忘录同步/心愿→飞书」不可用,如实告知)
 
 **⚠️ Cron 任务特性**:
 - 当有待提醒事项时 → 通过 message 工具发送到 QQ

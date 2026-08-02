@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>目标状态 · 卡路里</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--accent-soft:rgba(0,113,227,.10);--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.12);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:720px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 24px;margin-bottom:16px;background:linear-gradient(135deg,#fff,#f5f8ff);border-radius:20px;box-shadow:var(--shadow)}
+.hero h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px}
+.hero .sub{font-size:14px;color:var(--ink3)}
+.section{background:var(--card);border-radius:16px;padding:20px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
+.status-badge{display:inline-flex;align-items:center;gap:8px;padding:12px 20px;border-radius:999px;font-size:16px;font-weight:700}
+.status-badge.paused{background:var(--orange-soft);color:var(--orange)}
+.status-badge.resumed{background:var(--green-soft);color:var(--green)}
+.note{margin-top:14px;padding:12px 16px;background:var(--bg);border-radius:12px;font-size:13.5px;color:var(--ink2);line-height:1.6;border:1px solid rgba(60,60,67,.06)}
+.restore{margin-top:12px;padding:12px 16px;background:var(--accent-soft);border-radius:12px;font-size:13.5px;color:var(--accent)}
+.receipt{margin-top:14px;padding:12px 16px;background:var(--bg);border-radius:12px;font-size:12.5px;color:var(--ink3);font-family:"SF Mono",monospace;border:1px solid rgba(60,60,67,.06)}
+footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;border-top:1px solid rgba(60,60,67,.08);margin-top:28px}
+@media(max-width:640px){.wrap{padding:16px 12px 48px}.hero{padding:22px 18px 18px}.hero h1{font-size:22px}.section{padding:16px 14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">卡路里 · 目标管理</div>
+<h1 id="title">目标状态</h1>
+<div class="sub" id="subtitle">加载中…</div>
+</header>
+<div class="section">
+<div class="section-title"><h2>状态</h2><span class="hint" id="timeHint"></span></div>
+<div id="badge"></div>
+<div class="note" id="note" style="display:none"></div>
+<div class="restore" id="restore" style="display:none"></div>
+<div class="receipt" id="receipt" style="display:none"></div>
+</div>
+<footer>卡路里 Skill · 目标状态 · 2026-08-02</footer>
+</div>
+<!--INJECT-DATA-->
+<script>
+const DATA=(()=>{if(typeof window.__DATA__!=='object'||window.__DATA__===null)return null;return window.__DATA__})();
+const D=DATA&&DATA.data?DATA.data:{};
+document.getElementById('title').textContent=D.title||'目标状态';
+document.getElementById('subtitle').textContent=D.subtitle||'';
+if(D.timeHint)document.getElementById('timeHint').textContent=D.timeHint;
+const badge=document.getElementById('badge');
+if(D.paused){
+  badge.innerHTML='<span class="status-badge paused">⏸ 全部目标已暂停</span>';
+  if(D.note){const n=document.getElementById('note');n.style.display='block';n.textContent=D.note;}
+  if(D.restoreHint){const r=document.getElementById('restore');r.style.display='block';r.textContent='🔁 '+D.restoreHint;}
+}else{
+  badge.innerHTML='<span class="status-badge resumed">▶ 全部目标运行中</span>';
+}
+if(D.receipt){const r=document.getElementById('receipt');r.style.display='block';r.textContent=D.receipt;}
+</script>
+</body>
+</html>

@@ -27,6 +27,17 @@
 
 ## 命令约定
 
+> ⚠️ **gh 未加入 PATH**（2026-08-02 核实：`shutil.which('gh')` 返回 None）。gh 可执行文件在 **`D:\0Tools\GitHubCLI\gh.exe`**。PowerShell 调用方式：
+>
+> ```powershell
+> # 方式 1:call operator 全路径
+> & "D:\0Tools\GitHubCLI\gh.exe" issue list --state open --label "skill:卡路里"
+> # 方式 2:session 内临时加 PATH(本 session 内直接写 gh)
+> $env:Path += ";D:\0Tools\GitHubCLI"
+> ```
+>
+> 本文档及 wayfinder 相关协议中出现的所有 `gh` 命令均指此路径；在 PATH 配置好前不要假设 `gh` 可直接调用。
+
 `gh` CLI 在仓库根目录运行自动推断 `owner/repo`，无需显式传参。
 
 ```bash

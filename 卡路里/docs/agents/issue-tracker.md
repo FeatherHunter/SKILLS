@@ -64,6 +64,8 @@
 
 ## 命令示例（卡路里场景）
 
+> gh 未加入 PATH，可执行文件在 `D:\0Tools\GitHubCLI\gh.exe`（详见仓库根 `docs/agents/issue-tracker.md` 命令约定）。PowerShell 用 `& "D:\0Tools\GitHubCLI\gh.exe" <参数>` 或先 `$env:Path += ";D:\0Tools\GitHubCLI"`。
+
 ```bash
 gh issue create \
   --title "[卡路里] 主页 9 场景的 prompt 与触发词落地" \

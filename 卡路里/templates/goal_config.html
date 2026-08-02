@@ -92,6 +92,13 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <div class="weight-grid" id="weightGrid"></div>
 </div>
 </section>
+<section class="section" id="diffSection" style="display:none">
+<div class="section-title">
+<h2>改前 vs 改后</h2>
+<span class="hint">修改影响预估</span>
+</div>
+<div id="diffRows"></div>
+</section>
 <section class="copy-section">
 <h2>复制配置指令</h2>
 <p class="sub">
@@ -116,22 +123,24 @@ const DATA=(()=>{if(typeof window.__DATA__!=='object'||window.__DATA__===null)re
 const CURRENT=DATA&&DATA.data&&DATA.data.current_goal?DATA.data.current_goal:{};
 const YESTERDAY=DATA&&DATA.data&&DATA.data.yesterday_actual?DATA.data.yesterday_actual:{};
 const WEIGHT=DATA&&DATA.data&&DATA.data.weight_progress?DATA.data.weight_progress:null;
+const WATER_ONLY=!!(DATA&&DATA.data&&DATA.data.water_only);
 const FIELDS=[
-  {key:'calorie_goal',label:'卡路里',unit:'卡',min:1000,max:3500,step:50,yesterdayKey:'calorie'},
+  {key:'calorie_goal',label:'热量',unit:'卡',min:1000,max:3500,step:50,yesterdayKey:'calorie'},
   {key:'protein_goal',label:'蛋白',unit:'g',min:50,max:300,step:5,yesterdayKey:'protein'},
   {key:'carbs_goal',label:'碳水',unit:'g',min:50,max:500,step:10,yesterdayKey:'carbs'},
   {key:'fat_goal',label:'脂肪',unit:'g',min:20,max:150,step:5,yesterdayKey:'fat'},
   {key:'water_goal',label:'饮水',unit:'ml',min:500,max:4000,step:100,yesterdayKey:'water'}
 ];
+const ACTIVE_FIELDS=WATER_ONLY?FIELDS.filter(f=>f.key==='water_goal'):FIELDS;
 const state={};
-FIELDS.forEach(f=>{state[f.key]=CURRENT[f.key]||f.min});
+ACTIVE_FIELDS.forEach(f=>{state[f.key]=CURRENT[f.key]||f.min});
 function renderHeader(){
   document.getElementById('title').textContent='营养/体重目标';
   document.getElementById('subtitle').textContent=
     `目标日 ${CURRENT.calorie_goal||'?'} 卡 · 蛋白 ${CURRENT.protein_goal||'?'}g · 碳水 ${CURRENT.carbs_goal||'?'}g · 脂肪 ${CURRENT.fat_goal||'?'}g · 饮水 ${CURRENT.water_goal||'?'}ml`;
 }
 function renderSliders(){
-  const html=FIELDS.map(f=>{
+  const html=ACTIVE_FIELDS.map(f=>{
     return `<div class="slider-row">
       <div class="name">${f.label}<span class="unit">${f.unit}</span></div>
       <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${state[f.key]}" data-key="${f.key}" oninput="onSlider(this)">
@@ -146,7 +155,7 @@ function onSlider(el){
   // BUG 修复:input 是 void element 无 nextElementSibling,改用 parentElement.querySelector('.value')
   const valueCell = el.parentElement.querySelector('.value');
   if (valueCell) {
-    valueCell.innerHTML = el.value + '<span class="unit">' + FIELDS.find(f => f.key === key).unit + '</span>';
+    valueCell.innerHTML = el.value + '<span class="unit">' + ACTIVE_FIELDS.find(f => f.key === key).unit + '</span>';
   }
   updateMiniChart();
   updatePreview();
@@ -154,7 +163,7 @@ function onSlider(el){
 function updateMiniChart(){
   if(!YESTERDAY||Object.keys(YESTERDAY).length===0)return;
   document.getElementById('miniChart').style.display='block';
-  const rows=FIELDS.map(f=>{
+  const rows=ACTIVE_FIELDS.map(f=>{
     const actual=YESTERDAY[f.yesterdayKey]||0;
     const target=state[f.key];
     const maxVal=Math.max(actual,target,1)*1.2;
@@ -185,6 +194,22 @@ function renderWeight(){
     '<div class="weight-stat"><div class="label">目标</div><div class="value">'+WEIGHT.target+' kg</div></div>'+
     '<div class="weight-stat"><div class="label">距离</div><div class="value">'+diff+' kg</div></div>';
 }
+function renderDiff(){
+  const DIFF=DATA&&DATA.data&&DATA.data.diff?DATA.data.diff:null;
+  if(!DIFF||!DIFF.items||!DIFF.items.length)return;
+  document.getElementById('diffSection').style.display='block';
+  const rows=DIFF.items.map(it=>{
+    const oldV=it.old!=null?it.old:'未设';
+    const newV=it.new!=null?it.new:'未设';
+    const impact=it.impact?`<div class="mini-num" style="color:var(--ink2)">影响: ${it.impact}</div>`:'';
+    return `<div class="slider-row">
+      <div class="name">${it.label}<span class="unit">${it.unit||''}</span></div>
+      <div class="value" style="text-align:left;font-size:14px;color:var(--ink3)">${oldV} → <b style="color:var(--ink)">${newV}</b></div>
+      <div></div>
+    </div>${impact}`;
+  }).join('');
+  document.getElementById('diffRows').innerHTML=rows;
+}
 function buildAdoptPrompt(){
   let p='我已调整营养和体重目标,请帮我写入数据库。\n\n';
   p+='营养目标 (调用 nutrition_goal.set_nutrition_goal):\n';
@@ -199,7 +224,7 @@ function buildAdoptPrompt(){
     p+='  --deadline '+(CURRENT.goal_deadline||'未设置')+'\n\n';
   }
   p+='当前值 vs 昨日实际:\n';
-  FIELDS.forEach(f=>{
+  ACTIVE_FIELDS.forEach(f=>{
     const actual=YESTERDAY[f.yesterdayKey]||0;
     const diff=actual-state[f.key];
     p+='  '+f.label+': 目标 '+state[f.key]+f.unit+' · 昨日 '+actual+f.unit+' · 差 '+(diff>0?'+':'')+diff+f.unit+'\n';
@@ -254,6 +279,7 @@ function flashMsg(btnId,msg){flashCopied(btnId,msg);}
 renderHeader();
 renderSliders();
 renderWeight();
+renderDiff();
 updateMiniChart();
 updatePreview();
 </script>

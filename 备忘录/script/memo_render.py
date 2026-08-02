@@ -140,6 +140,11 @@ def render_help(payload=None, name="备忘录_HELP", output_path=None):
 
     if payload is None:
         scenarios_data = _load_scenarios()
+        # #31 Q7 共享校验模块:渲染前校验(生产路径守护)
+        from validate_scenarios import validate_scenarios
+        vres = validate_scenarios(scenarios_data)
+        if not vres.ok:
+            raise ValueError("场景资产校验失败: " + "; ".join(vres.errors[:5]))
         payload = {
             "status": "ok",
             "data": {

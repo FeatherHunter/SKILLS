@@ -30,11 +30,6 @@ SCENARIOS_PATH = SKILL_DIR / "references" / "scenarios.yaml"
 HELP_TEMPLATE = SKILL_DIR / "templates" / "memo_help.html"
 SKILL_ROOT_HELP = SKILL_DIR / "备忘录.html"
 
-REQUIRED_FIELDS = {
-    "wake_word", "scenario_id", "scenario_title",
-    "dimensions", "prompt", "status", "result",
-}
-
 
 @pytest.fixture(scope="module")
 def scenarios():
@@ -49,13 +44,71 @@ def rendered(tmp_path_factory):
     return render_help()
 
 
-# ==================== 场景资产 schema ====================
+# ==================== 场景资产 schema(#31 Q7 · 共享校验模块) ====================
 
 class TestScenariosSchema:
-    """§07 §2.2 契约:7 字段必填"""
+    """§07 §2.2 契约:7 字段必填 + #31/#32/#33 新约束。
+
+    校验实现单一真相 = script/validate_scenarios.py(测试与生产共用)。
+    本类只做「消费方」断言:共享模块的 errors 为空,且其错误信息可读。
+    """
+
+    def test_shared_validator_importable(self):
+        from validate_scenarios import validate_scenarios
+        assert callable(validate_scenarios)
 
     def test_file_exists(self):
         assert SCENARIOS_PATH.exists()
+
+    def test_shared_validator_passes(self, scenarios):
+        """共享校验模块对当前 scenarios.yaml 判定通过(#31 Q7 生产同逻辑)"""
+        from validate_scenarios import validate_scenarios
+        r = validate_scenarios(scenarios)
+        assert r.ok, f"共享校验失败: {r.errors[:5]}"
+
+    def test_validator_rejects_missing_category(self):
+        """共享校验:缺 category 必报错(白名单守卫,生产侧同逻辑)"""
+        from validate_scenarios import validate_scenarios
+        bad = {
+            "skill": "备忘录", "version": "9.9.9",
+            "categories": [{"key": "memo", "name": "备忘类"}],
+            "scenarios": [{"wake_word": "x", "scenario_id": "s1",
+                           "scenario_title": "t", "dimensions": {},
+                           "prompt": "p", "status": "", "result": "r"}],
+        }
+        r = validate_scenarios(bad)
+        assert not r.ok
+        assert any("category" in e for e in r.errors)
+
+    def test_validator_rejects_forbidden_order_field(self):
+        """共享校验:#31 Q4 无 order 字段(防回归:不许重新引入)"""
+        from validate_scenarios import validate_scenarios
+        bad = {
+            "skill": "备忘录", "version": "9.9.9",
+            "categories": [{"key": "memo", "name": "备忘类"}],
+            "scenarios": [{"wake_word": "x", "scenario_id": "s1",
+                           "scenario_title": "t", "dimensions": {},
+                           "prompt": "p", "status": "", "result": "r",
+                           "category": "memo", "order": 0}],
+        }
+        r = validate_scenarios(bad)
+        assert not r.ok
+        assert any("order" in e for e in r.errors)
+
+    def test_validator_rejects_empty_dependencies(self):
+        """共享校验:#32 dependencies 存在则非空"""
+        from validate_scenarios import validate_scenarios
+        bad = {
+            "skill": "备忘录", "version": "9.9.9",
+            "categories": [{"key": "memo", "name": "备忘类"}],
+            "scenarios": [{"wake_word": "x", "scenario_id": "s1",
+                           "scenario_title": "t", "dimensions": {},
+                           "prompt": "p", "status": "", "result": "r",
+                           "category": "memo", "dependencies": "   "}],
+        }
+        r = validate_scenarios(bad)
+        assert not r.ok
+        assert any("dependencies" in e for e in r.errors)
 
     def test_skill_and_version_keys(self, scenarios):
         assert scenarios.get("skill") == "备忘录"
@@ -65,6 +118,19 @@ class TestScenariosSchema:
         """§07 §4:每个业务唤醒词必穷举所有合法场景(下限 28, 含 12 子唤醒词)"""
         wake_words = {s["wake_word"] for s in scenarios["scenarios"]}
         assert len(wake_words) >= 28, f"唤醒词数 {len(wake_words)} < 28"
+
+    def test_wake_word_multi_mapping_precision(self, scenarios):
+        """wake_word 多对一契约(#33 归类):29 场景 = 28 唯一唤醒词。
+
+        唯一合法多对一 = 备忘改分类(单条 memo_change_category_single +
+        批量 memo_batch_change_category 共用);其余唤醒词各映射恰好 1 个
+        scenario_id。这是共享校验「允许 wake_word 重复」的配套契约测试。
+        """
+        from collections import Counter
+        counter = Counter(s["wake_word"] for s in scenarios["scenarios"])
+        assert len(counter) == 28, f"唯一唤醒词应 28,实际 {len(counter)}"
+        multi = {k: v for k, v in counter.items() if v > 1}
+        assert multi == {"备忘改分类": 2}, f"多对一应仅备忘改分类×2,实际 {multi}"
 
     def test_scenario_count_matches_skill_md(self, scenarios):
         """唤醒词表与 scenarios 一致(防文档裂缝)"""
@@ -80,36 +146,32 @@ class TestScenariosSchema:
         actual = {s["wake_word"] for s in scenarios["scenarios"]}
         assert expected <= actual, f"缺失唤醒词: {expected - actual}"
 
-    def test_all_7_fields_present(self, scenarios):
-        missing = []
-        for s in scenarios["scenarios"]:
-            for f in REQUIRED_FIELDS:
-                if f not in s:
-                    missing.append((s.get("scenario_id", "?"), f))
-        assert not missing, f"缺字段: {missing}"
-
-    def test_scenario_id_unique(self, scenarios):
-        ids = [s["scenario_id"] for s in scenarios["scenarios"]]
-        dupes = [x for x in set(ids) if ids.count(x) > 1]
-        assert not dupes, f"scenario_id 重复: {dupes}"
-
     def test_no_pending_dev_status(self, scenarios):
         """本期无【待开发】;若未来引入,必须配 AI 停步逻辑"""
         pending = [s["scenario_id"] for s in scenarios["scenarios"]
                    if s["status"] == "【待开发】"]
         assert not pending, f"本期不应有【待开发】: {pending}"
 
-    def test_no_cli_or_db_leak_in_prompt(self, scenarios):
-        """§07 §3 反例:prompt 不暴露 CLI / DB / Python / 模板路径 / 错误码"""
-        forbidden = ["memo_cli.py", "memo.db", "templates/", "script/",
-                     "SELECT ", "INSERT ", "UPDATE ", ".py", "ERR_"]
-        leaks = []
+    def test_wake_word_scan_simulation(self, scenarios):
+        """AI 全表扫描模拟(#35 Task 2 · 不建索引,扫全表足够 #31 Q6)。
+
+        输入任意唤醒词 → 应命中 1-2 个 scenario_id;输入无匹配 → 空。
+        该逻辑是 AI 侧行为(非代码实现),测试锁定数据契约:
+        - 每个合法唤醒词都能扫到 ≥1 场景
+        - 随机无匹配词返回空
+        """
+        index = {}
         for s in scenarios["scenarios"]:
-            text = (s.get("prompt") or "") + " " + (s.get("result") or "")
-            for f in forbidden:
-                if f in text:
-                    leaks.append((s["scenario_id"], f, text[:80]))
-        assert not leaks, f"prompt 暴露实现细节: {leaks}"
+            index.setdefault(s["wake_word"], []).append(s["scenario_id"])
+        # 合法唤醒词全命中
+        for ww, ids in index.items():
+            assert ids, f"唤醒词 {ww} 无场景"
+        # 精确命中(含备忘改分类多对一)
+        assert set(index["备忘改分类"]) == {
+            "memo_change_category_single", "memo_batch_change_category"}
+        assert index["记备忘"] == ["memo_add_basic"]
+        # 无匹配 → 空
+        assert "不存在的唤醒词xyz" not in index
 
 
 # ==================== HELP HTML 模板 ====================
@@ -507,6 +569,42 @@ class TestHelpThreeLevelCollapse:
             f"应有 7 个非空分类,实际 {set(by_cat.keys())}"
         # init 分类预留(无场景,待 Round 3 并入)
         assert "init" in cat_keys, "categories 应含 init(初始化类)"
+
+    def test_rendered_html_snapshot(self, rendered):
+        """渲染快照(#35 Task 3):JS 执行后 DOM 结构断言。
+
+        4 级结构由 JS 动态创建,静态解析拿不到 → 用 Playwright 真实渲染
+        (headless chromium),锁定 #34 实际输出:
+        7 分类 + 12 子功能 + 29 场景卡 + 29 复制按钮 + 零 JS 错误。
+        init 分类无场景不渲染(#33 决议)。
+        """
+        pytest.importorskip("playwright.sync_api")
+        from playwright.sync_api import sync_playwright
+        html_path = Path(rendered["skill_root_path"]).as_uri()
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page(viewport={"width": 1280, "height": 900})
+            js_errors = []
+            page.on("pageerror", lambda e: js_errors.append(str(e)))
+            page.goto(html_path)
+            page.wait_for_timeout(300)
+            modules = page.locator("details.module").count()
+            sub_modules = page.locator("details.sub-module").count()
+            scenarios = page.locator("article.scenario").count()
+            copy_btns = page.locator(".copy-btn").count()
+            toast = page.locator("#toast").count()
+            backtop = page.locator("#backToTop").count()
+            names = page.locator("details.module > summary").all_text_contents()
+            browser.close()
+        assert not js_errors, f"JS 错误: {js_errors}"
+        assert modules == 7, f"应 7 个分类,实际 {modules}"
+        assert sub_modules == 12, f"应 12 个子功能,实际 {sub_modules}"
+        assert scenarios == 29, f"应 29 场景卡,实际 {scenarios}"
+        assert copy_btns == 29, f"应 29 复制按钮,实际 {copy_btns}"
+        assert toast == 1 and backtop == 1, "toast / back-to-top 元素应在"
+        joined = " ".join(names)
+        for cn in ["备忘类", "查找类", "提醒类", "心愿类", "打卡类", "情绪类", "同步类"]:
+            assert cn in joined, f"分类 {cn} 未渲染"
 
 # ==================== prompt 填写友好性(用户反馈) ====================
 

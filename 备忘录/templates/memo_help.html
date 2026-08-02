@@ -39,6 +39,22 @@ h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 .copy-btn:hover{background:var(--blue2)}
 .copy-btn.copied{background:var(--ok)}
 
+/* ===== Level 2:子功能(4 级架构 #34) ===== */
+.sub-module{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.sub-module>summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;color:var(--fg2);user-select:none;list-style:none;display:flex;align-items:center;gap:8px;transition:background .15s}
+.sub-module>summary::-webkit-details-marker{display:none}
+.sub-module>summary::before{content:"▸";font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.sub-module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.sub-module>summary:hover{background:var(--soft)}
+.sub-module .module-body{padding:10px 12px 12px}
+
+/* ===== Level 4:详情子块(#34) ===== */
+.detail-body{padding-top:2px}
+.deps-box{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:10px 14px;margin-top:10px}
+.deps-title{font-size:12px;font-weight:700;color:var(--fg3);letter-spacing:.05em;margin-bottom:6px}
+.deps-list{margin:0;padding-left:18px}
+.deps-list li{font-size:13px;color:var(--fg2);margin-bottom:3px;line-height:1.55}
+
 /* ===== Level 3:场景细节(可折叠,默认折叠) ===== */
 .details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
 .details summary{cursor:pointer;font-size:13px;color:var(--fg2);user-select:none;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px}
@@ -138,36 +154,49 @@ try{
     });
     if(validScenarios.length===0){showState('Missing');throw new Error('所有场景均缺必填字段')}
 
-    // 分组(7 类)
-    var groups={'记录类':[],'查找类':[],'提醒类':[],'心愿类':[],'批量类':[],'跨 Skill':[],'子唤醒词':[]};
-    var subWake=['记心愿','删心愿','改心愿','记打卡','删打卡','改打卡','记情绪','删情绪','改情绪'];
+    // 分组(#31 Q2:#33 落地 · categories 列表来自 scenarios.yaml,渲染只读不硬编码)
+    var categories=Array.isArray(payload.categories)?payload.categories:[];
+    var catKeys={};
+    var catName={};var catIcon={};
+    categories.forEach(function(c){catKeys[c.key]=[];catName[c.key]=c.name||c.key;catIcon[c.key]=c.icon||''});
     validScenarios.forEach(function(s){
-      if(subWake.indexOf(s.wake_word)>=0)groups['子唤醒词'].push(s);
-      else if(s.wake_word==='备忘改分类'&&s.scenario_id.indexOf('batch')>=0)groups['批量类'].push(s);
-      else if(s.wake_word==='备忘录同步')groups['跨 Skill'].push(s);
-      else if(['完成心愿','心愿排期'].indexOf(s.wake_word)>=0)groups['心愿类'].push(s);
-      else if(['记提醒','设提醒','看提醒','查已提醒备忘'].indexOf(s.wake_word)>=0)groups['提醒类'].push(s);
-      else if(['搜备忘','查备忘','看备忘','按时间搜备忘','查心愿','查打卡','查情绪'].indexOf(s.wake_word)>=0)groups['查找类'].push(s);
-      else groups['记录类'].push(s);
+      var k=s.category;
+      if(!(k in catKeys)){if(!('?' in catKeys)){catKeys['?']=[];catName['?']='未分类';catIcon['?']=''};k='?'}
+      catKeys[k].push(s);
     });
 
-    // 渲染 Level 1:模块(默认折叠) + Level 2:场景
+    // 渲染 Level 1:分类(默认折叠) + Level 2:子功能 + Level 3:场景 + Level 4:详情
     var main=document.getElementById('bodyContent');
     main.innerHTML='';
-    Object.keys(groups).forEach(function(g){
-      var items=groups[g];
-      if(items.length===0)return;
-      // Level 1:模块
-      var module=document.createElement('details');module.className='module';
-      var sum=document.createElement('summary');sum.textContent=g;
-      module.appendChild(sum);
-      var body=document.createElement('div');body.className='module-body';
-      // Level 2:场景卡片
-      items.forEach(function(s){body.appendChild(buildScenarioCard(s))});
-      module.appendChild(body);
-      main.appendChild(module);
+    var rendered=0;
+    // 分类顺序 = categories 列表书写序;未分类兜底最后
+    var orderedKeys=categories.map(function(c){return c.key}).concat(Object.keys(catKeys).filter(function(k){return !(categories.some(function(c){return c.key===k}))}));
+    orderedKeys.forEach(function(k){
+      var items=catKeys[k];
+      if(!items||items.length===0)return;
+      // Level 1:分类
+      var cat=document.createElement('details');cat.className='module';
+      var catSum=document.createElement('summary');catSum.textContent=(catIcon[k]?catIcon[k]+' ':'')+catName[k]+' ('+items.length+')';
+      cat.appendChild(catSum);
+      var catBody=document.createElement('div');catBody.className='module-body';
+      // Level 2:子功能分组(subfunction 空 →「基础」兜底 · #31 Q3)
+      var subGroups={};
+      items.forEach(function(s){var sub=s.subfunction||'基础';(subGroups[sub]=subGroups[sub]||[]).push(s)});
+      Object.keys(subGroups).forEach(function(sub){
+        var subEl=document.createElement('details');subEl.className='sub-module';
+        var subSum=document.createElement('summary');subSum.textContent=sub+' ('+subGroups[sub].length+')';
+        subEl.appendChild(subSum);
+        var subBody=document.createElement('div');subBody.className='module-body';
+        // Level 3:场景卡片(组内序 = 书写序 · #31 Q4)
+        subGroups[sub].forEach(function(s){subBody.appendChild(buildScenarioCard(s))});
+        subEl.appendChild(subBody);
+        catBody.appendChild(subEl);
+      });
+      cat.appendChild(catBody);
+      main.appendChild(cat);
+      rendered+=items.length;
     });
-    showState('Success');
+    if(rendered>0){showState('Success')}else{showState('Missing')}
   }
 }catch(err){
   console.error('渲染失败:',err);
@@ -187,26 +216,43 @@ function buildScenarioCard(s){
   head.appendChild(chip);head.appendChild(title);head.appendChild(btn);
   card.appendChild(head);
 
-  // Level 3:细节(可折叠,默认折叠)
+  // Level 4:详情子折叠(各 detail 独立折叠 · 4 级架构)
   var details=document.createElement('details');details.className='details';
   var sum=document.createElement('summary');sum.textContent='查看详情 · 维度 / prompt / 预期结果';
   details.appendChild(sum);
+  var detailBody=document.createElement('div');detailBody.className='detail-body';
 
-  // 维度
+  // 维度(dim 本身作为子块,不再直接铺)
   var dimBlock=document.createElement('div');dimBlock.className='dim';
   Object.keys(s.dimensions||{}).forEach(function(k){
     dimBlock.innerHTML+='<b>'+esc(k)+'</b>: '+esc(s.dimensions[k])+'<br>';
   });
-  details.appendChild(dimBlock);
+  if(dimBlock.innerHTML)detailBody.appendChild(dimBlock);
 
   // prompt
   var promptBox=document.createElement('pre');promptBox.className='prompt-box';promptBox.textContent=(s.prompt||'').trim();
-  details.appendChild(promptBox);
+  detailBody.appendChild(promptBox);
 
   // result
   var resultBox=document.createElement('pre');resultBox.className='result-box';resultBox.textContent='预期: '+(s.result||'').trim();
-  details.appendChild(resultBox);
+  detailBody.appendChild(resultBox);
 
+  // dependencies 依赖清单(#32 决议 · 可选字段 · 渲染为圆点列表)
+  if(s.dependencies&&String(s.dependencies).trim()){
+    var depBox=document.createElement('div');depBox.className='deps-box';
+    var depTitle=document.createElement('div');depTitle.className='deps-title';depTitle.textContent='环境依赖';
+    depBox.appendChild(depTitle);
+    var depList=document.createElement('ul');depList.className='deps-list';
+    String(s.dependencies).split('\n').forEach(function(line){
+      line=line.trim();if(!line)return;
+      var li=document.createElement('li');li.textContent=line;
+      depList.appendChild(li);
+    });
+    depBox.appendChild(depList);
+    detailBody.appendChild(depBox);
+  }
+
+  details.appendChild(detailBody);
   card.appendChild(details);
 
   // 【待开发】标记(§07 §4)

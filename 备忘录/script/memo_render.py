@@ -148,6 +148,7 @@ def render_help(payload=None, name="备忘录_HELP", output_path=None):
                 "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "version": scenarios_data.get("version", ""),
                 "skill": scenarios_data.get("skill", "备忘录"),
+                "categories": scenarios_data.get("categories", []),
                 "scenarios": scenarios_data.get("scenarios", []),
             },
             "message": f"共 {len(scenarios_data.get('scenarios', []))} 个场景",

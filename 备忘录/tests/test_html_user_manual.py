@@ -86,9 +86,9 @@ class TestHelpHtmlStructure:
             assert t in text, f"HELP HTML 缺唤醒词: {t}"
 
     def test_has_7_groups(self, text):
-        """§04 原则 3:按维度分组(场景按类别分组)"""
-        for g in ["记录类", "查找类", "提醒类", "心愿类", "批量类", "跨 Skill", "子唤醒词"]:
-            assert g in text, f"缺分组: {g}"
+        """#33 归类:8 个分类(7 有场景 + init 预留)来自 categories 数据"""
+        for g in ["备忘类", "查找类", "提醒类", "心愿类", "打卡类", "情绪类", "同步类", "初始化类"]:
+            assert g in text, f"缺分类: {g}"
 
     def test_help_not_show_itself(self, text):
         """§07 §5 反模式 3:HELP 唤醒词自身不出现在 HTML"""

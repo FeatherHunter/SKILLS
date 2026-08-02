@@ -426,44 +426,54 @@ class TestReverseLookupTable:
             f"反向指引表应覆盖 ≥5 个核心唤醒词,实际 {present}"
 
 
-# ==================== 三层折叠结构(post-FT · v1.1.4) ====================
+# ==================== 四层折叠结构(post-FT · #34 重构) ====================
 
 class TestHelpThreeLevelCollapse:
-    """v1.1.4 重构:HELP HTML = Level 1 模块(默认折叠) + Level 2 场景 + Level 3 细节(默认折叠)
-    设计原则:
-    - Level 1: 功能模块分组(<details class="module"> · 默认折叠)
-    - Level 2: 场景卡片(头有 chip + title + 复制按钮 · 总是可见)
-    - Level 3: 维度/prompt/result(<details class="details"> · 默认折叠)
+    """#34 重构:HELP HTML = Level 1 分类(默认折叠) + Level 2 子功能 + Level 3 场景 + Level 4 详情(默认折叠)
+    设计原则(#31 Q2/Q3/Q4 · #33 落地):
+    - Level 1: 分类(<details class="module"> · 数据来自 payload.categories · 默认折叠)
+    - Level 2: 子功能(<details class="sub-module"> · subfunction 空 →「基础」兜底)
+    - Level 3: 场景卡片(头有 chip + title + 复制按钮 · 总是可见)
+    - Level 4: 维度/prompt/result(<details class="details"> · 默认折叠)
     """
 
     HELP_TEMPLATE = SKILL_DIR / "templates" / "memo_help.html"
 
     def test_template_has_level1_module_creation(self):
-        """JS 创建 Level 1 <details class='module'>"""
+        """JS 创建 Level 1 <details class='module'>(分类,来自 categories 数据)"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        assert "createElement('details');module.className='module'" in text, \
-            "应 JS 动态创建 Level 1 模块标签"
+        assert "cat.className='module'" in text, \
+            "应 JS 动态创建 Level 1 分类标签"
+        assert "payload.categories" in text, \
+            "Level 1 分类应从 payload.categories 读取,不硬编码"
+
+    def test_template_has_level2_submodule_creation(self):
+        """JS 创建 Level 2 <details class='sub-module'>(子功能分组)"""
+        text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
+        assert "subEl.className='sub-module'" in text, \
+            "应 JS 动态创建 Level 2 子功能标签"
+        assert "s.subfunction||'基础'" in text, \
+            "subfunction 空应兜底「基础」分组"
 
     def test_template_has_level3_details_creation(self):
-        """JS 创建 Level 3 <details class='details'>"""
+        """JS 创建 Level 4 <details class='details'>(详情折叠)"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
         assert "createElement('details');details.className='details'" in text, \
-            "应 JS 动态创建 Level 3 细节标签"
+            "应 JS 动态创建 Level 4 详情标签"
 
     def test_modules_default_collapsed(self):
-        """Level 1 模块默认折叠(无 open 属性)"""
+        """Level 1 分类默认折叠(无 open 属性)"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        # 模板不应硬编码 "open" 属性在 module 上
-        module_section = text.split("function renderBody")[1] if "function renderBody" in text else text
-        assert "'open'" not in module_section or 'open' not in module_section.split('className=\'module\'')[1].split('module.appendChild')[0], \
-            "模块应默认折叠(无 open 属性)"
+        module_section = text.split("var main=document.getElementById('bodyContent')")[1] if "var main=document.getElementById('bodyContent')" in text else text
+        assert "'open'" not in module_section.split('cat.className=\'module\'')[1].split('cat.appendChild(catBody)')[0], \
+            "分类应默认折叠(无 open 属性)"
 
     def test_scenario_details_default_collapsed(self):
-        """Level 3 细节默认折叠(无 open 属性)"""
+        """Level 4 详情默认折叠(无 open 属性)"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
         details_section = text.split("function buildScenarioCard")[1] if "function buildScenarioCard" in text else ""
         assert 'open' not in details_section.split('details.className=\'details\'')[1].split('card.appendChild(details)')[0] if details_section else True, \
-            "细节应默认折叠"
+            "详情应默认折叠"
 
     def test_copy_button_visible_at_scenario_level(self):
         """复制按钮在场景头,无需展开细节即可见"""
@@ -480,25 +490,23 @@ class TestHelpThreeLevelCollapse:
             assert f not in text, f"残留状态摘要元素: {f}"
 
     def test_three_level_structure_via_js_simulation(self):
-        """模拟 JS 渲染:7 模块 + 29 场景"""
+        """模拟 JS 渲染:8 分类(7 有场景 + init 空)+ 29 场景全映射"""
         import yaml
         yaml_data = yaml.safe_load(Path("references/scenarios.yaml").read_text(encoding="utf-8"))
         scenarios = yaml_data["scenarios"]
-        sub_wake = {"记心愿","删心愿","改心愿","记打卡","删打卡","改打卡","记情绪","删情绪","改情绪"}
-        groups = {"记录类":[],"查找类":[],"提醒类":[],"心愿类":[],"批量类":[],"跨 Skill":[],"子唤醒词":[]}
+        categories = yaml_data["categories"]
+        cat_keys = {c["key"] for c in categories}
+        by_cat = {}
         for s in scenarios:
-            ww = s["wake_word"]
-            if ww in sub_wake: groups["子唤醒词"].append(s)
-            elif ww == "备忘改分类" and "batch" in s["scenario_id"]: groups["批量类"].append(s)
-            elif ww == "备忘录同步": groups["跨 Skill"].push(s) if False else groups["跨 Skill"].append(s)
-            elif ww in ["完成心愿","心愿排期"]: groups["心愿类"].append(s)
-            elif ww in ["记提醒","设提醒","看提醒","查已提醒备忘"]: groups["提醒类"].append(s)
-            elif ww in ["搜备忘","查备忘","看备忘","按时间搜备忘","查心愿","查打卡","查情绪"]: groups["查找类"].append(s)
-            else: groups["记录类"].append(s)
-        total = sum(len(v) for v in groups.values())
-        non_empty = {g: len(v) for g, v in groups.items() if v}
+            k = s.get("category")
+            assert k in cat_keys, f"场景 {s['scenario_id']} 的 category={k} 不在白名单"
+            by_cat.setdefault(k, []).append(s)
+        total = sum(len(v) for v in by_cat.values())
         assert total == 29, f"应渲染 29 场景,实际 {total}"
-        assert len(non_empty) == 7, f"应 7 个非空模块,实际 {len(non_empty)}"
+        assert set(by_cat.keys()) == {"memo", "search", "remind", "wish", "checkin", "mood", "sync"}, \
+            f"应有 7 个非空分类,实际 {set(by_cat.keys())}"
+        # init 分类预留(无场景,待 Round 3 并入)
+        assert "init" in cat_keys, "categories 应含 init(初始化类)"
 
 # ==================== prompt 填写友好性(用户反馈) ====================
 

@@ -29,7 +29,7 @@ SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'crud_receipt.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
-from html_paths import html_path  # noqa
+from html_paths import html_path, html_scene_path  # noqa
 
 
 def _load_data(input_path):
@@ -208,16 +208,17 @@ def main():
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
-    # 输出名与场景关联(2026-08-02 用户拍板:HTML 名可识别场景)
+    # 输出名与场景关联 + 类型后缀(2026-08-02 用户拍板:HTML 名 = 场景名_类型)
     if args.live_profile_set:
-        cmd_name = '设置档案'
+        cmd_name, ot = '设置档案', 'receipt'
     elif args.live_profile_activity:
-        cmd_name = '设活动量'
+        cmd_name, ot = '设活动量', 'receipt'
     elif args.live_profile_update:
-        cmd_name = '改档案'
+        cmd_name, ot = '改档案', 'receipt'
     else:
-        cmd_name = '操作回执'
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, cmd_name)
+        cmd_name, ot = '操作回执', None
+    out_path = Path(args.output) if args.output else (
+        html_scene_path(SKILL_DIR, cmd_name, ot) if ot else html_path(SKILL_DIR, cmd_name))
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     d = data['data']

@@ -20,7 +20,7 @@ SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'crud_view.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
-from html_paths import html_path  # noqa
+from html_paths import html_path, html_scene_path  # noqa
 
 
 def _load_data(input_path):
@@ -145,7 +145,7 @@ def main():
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
-    out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '查档案')
+    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, '查档案', 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     d = data['data']

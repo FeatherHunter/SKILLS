@@ -13,6 +13,13 @@ HTML 子目录命名:卡路里 = "calorie" → "/.../calorie_html/"
   - 动态 command(如 food_ranking_{category}):拼接用中文(category 映射见 scripts/_cmd_maps.py)
   - 中文示例:主页仪表盘_20260726_123000.html / 热量趋势_20260726_123000.html
   - 同秒冲突自动追加 _2 / _3 后缀
+
+⭐ 场景 HTML 命名规则(v1.0 · 2026-08-02 用户拍板 · 新场景开发必读):
+  文件名 = <场景名>_<类型中文>_<TS>.html
+  - 类型中文映射:process→过程 / result→结果 / receipt→回执
+  - 例:查档案_结果_20260802_131014.html / 设活动量_回执_20260802_131014.html
+  - 一个场景可能多类型(wizard=过程 + 回执),靠类型后缀区分同一场景不同产物
+  - 统一用 html_scene_path(skill_dir, 场景名, output_type) 生成,禁止手拼
 """
 
 import glob
@@ -80,5 +87,37 @@ def html_path(skill_dir, command):
         Path: 完整输出路径(目录保证存在),如 .../calorie_html/主页仪表盘_20260726_103045.html
     """
     hd = html_dir(skill_dir, mkdir=True)
+    nm = html_name(command, html_dir=hd)
+    return hd / nm
+
+
+# ⭐ 场景 HTML 类型后缀(v1.0 · 2026-08-02 用户拍板)
+OUTPUT_TYPE_LABELS = {
+    'process': '过程',
+    'result':  '结果',
+    'receipt': '回执',
+}
+
+
+def html_scene_path(skill_dir, scene_name, output_type):
+    """场景 HTML 输出路径:<场景名>_<类型中文>_<TS>.html
+
+    规则(2026-08-02 用户拍板 · 新场景开发必读):
+      - 类型中文:process→过程 / result→结果 / receipt→回执
+      - 例:查档案_结果_20260802_131014.html / 设活动量_回执_20260802_131014.html
+      - 一个场景多类型时靠后缀区分(wizard=过程 + 回执)
+      - 所有场景 HTML 生成必须走本函数,禁止手拼 html_path()
+
+    Args:
+        skill_dir: Skill 根目录
+        scene_name: 场景名(如 "查档案" / "设活动量")
+        output_type: 'process' / 'result' / 'receipt'
+
+    Returns:
+        Path: .../calorie_html/查档案_结果_20260802_131014.html
+    """
+    label = OUTPUT_TYPE_LABELS.get(output_type, '')
+    command = f"{scene_name}_{label}" if label else scene_name
+    return html_path(skill_dir, command)
     nm = html_name(command, html_dir=hd)
     return hd / nm

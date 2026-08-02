@@ -27,6 +27,14 @@ SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "calorie_data.db"
 DB_PATH = find_db_path(SKILL_DIR, DB_FILENAME)
 
+# 最近一次 GIF 合成信息(ticket #10 · C3:呈现数据要"帧数/照片总数",generate_gif 返回 Path 兼容旧测试,
+# 帧信息挂模块属性由 render_body_photo_gif_result 读取)
+_last_gif_info = {}
+
+
+def get_last_gif_info():
+    return dict(_last_gif_info)
+
 
 def get_photos_dir():
     """获取照片存储目录，未配置则报错退出"""
@@ -294,24 +302,28 @@ def update_tag(photo_id, new_tag):
 
 
 def tag_add(photo_id, tag):
-    """加照片标签:追加(不覆盖已有),已存在则判重提示(no-op)"""
+    """加照片标签:追加(不覆盖已有),已存在则判重跳过
+
+    2026-08-02 支持逗号分隔多标签(逐个追加,判重);返回新增标签数。
+    """
     photo = get_photo_row(photo_id)
     if not photo:
         print(f"Error: 照片 #{photo_id} 不存在")
-        return False
+        return 0
 
     tags = validate_tags(parse_tags(tag))
-    if len(tags) != 1:
-        print(f"Error: 加标签一次只加 1 个,收到 {len(tags)} 个: {tags!r}")
-        return False
-    new_tag = tags[0]
-
     existing = photo['tag_list']
-    if new_tag in existing:
-        print(f"⚠ 标签「{new_tag}」已存在(照片 #{photo_id} 当前标签: {photo['tag']}),无需添加")
-        return False
+    added = []
+    for new_tag in tags:
+        if new_tag in existing:
+            print(f"⚠ 标签「{new_tag}」已存在(照片 #{photo_id} 当前标签: {photo['tag']}),跳过")
+            continue
+        existing.append(new_tag)
+        added.append(new_tag)
 
-    existing.append(new_tag)
+    if not added:
+        return 0
+
     new_serialized = serialize_tags(existing)
     conn = get_db()
     cur = conn.cursor()
@@ -319,8 +331,8 @@ def tag_add(photo_id, tag):
     conn.commit()
     conn.close()
 
-    print(f"✓ 已为照片 #{photo_id} 追加标签「{new_tag}」→ 当前标签: {new_serialized}")
-    return True
+    print(f"✓ 已为照片 #{photo_id} 追加标签「{'、'.join(added)}」→ 当前标签: {new_serialized}")
+    return len(added)
 
 
 def tag_remove(photo_id, tag):
@@ -581,6 +593,14 @@ def generate_gif(tag, start_date=None, end_date=None, days=None,
     print(f"✓ 已生成 GIF: {output_path}")
     print(f"  包含 {len(images)} 张原始照片 → {len(final_frames)} 帧")
     print(f"  参数: {width}×{height}, {duration}ms/帧, {transition}, 水印{'「'+watermark+'」' if watermark else '无'}")
+    global _last_gif_info
+    _last_gif_info = {
+        'path': str(output_path),
+        'photo_count': len(images),
+        'frame_count': len(final_frames),
+        'width': width, 'height': height,
+        'duration_ms': duration, 'transition': transition,
+    }
     return output_path
 
 

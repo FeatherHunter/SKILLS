@@ -130,16 +130,11 @@ def build_live_profile_set(age=None, gender=None, height=None, activity=None, no
     factor = TDEE_ACTIVITY_FACTORS.get(al, 1.55)
     label = ACTIVITY_LEVEL_LABELS.get(al, al)
     op = 'create' if is_first else 'update'
-    kpis = [
-        {'label': '身高', 'value': f"{new.get('height_cm')} cm" if new.get('height_cm') else '—'},
-        {'label': '年龄', 'value': str(new.get('age', '—'))},
-        {'label': '性别', 'value': '男' if new.get('gender') == 'male' else '女' if new.get('gender') == 'female' else '—'},
-        {'label': '活动量', 'value': f'{label}', 'extra': f'系数 × {factor}'},
-    ]
+    # 信息唯一性(2026-08-02):KPI 与 summary/diff 重复 → 只留 summary,不填 kpis
     summary = (f"档案已{'设置' if is_first else '更新'}:身高{new.get('height_cm')}cm / 年龄{new.get('age')} / "
                f"性别{'男' if new.get('gender')=='male' else '女' if new.get('gender')=='female' else '—'} / "
                f"活动量 {label}(系数×{factor})")
-    return _profile_receipt(op, old, new, kpis, '设置档案', new.get('updated_at', '')[:16].replace('T', ' '), summary)
+    return _profile_receipt(op, old, new, [], '设置档案', new.get('updated_at', '')[:16].replace('T', ' '), summary)
 
 
 def build_live_profile_activity(level: str) -> dict:
@@ -156,20 +151,11 @@ def build_live_profile_activity(level: str) -> dict:
     new_f = result['activity_factor']
     delta_pct = round((new_f - old_f) / old_f * 100, 1) if old_f else 0
 
-    kpis = [
-        {'label': '活动量', 'value': result['activity_label'],
-         'extra': f"({result['activity_level']})"},
-        {'label': 'TDEE 系数', 'value': f'{old_f} → {new_f}',
-         'extra': f'{delta_pct:+.1f}%'},
-        {'label': '影响', 'value': f'每日消耗{delta_pct:+.1f}%',
-         'extra': '仅日常活动,运动另计'},
-        {'label': '更新时间', 'value': result['updated_at'][:16].replace('T', ' '),
-         'extra': 'id=1'},
-    ]
+    # 信息唯一性(2026-08-02):KPI 与 summary/diff 重复 → 只留 summary,不填 kpis
     summary = (f"活动量已设置:{ACTIVITY_LEVEL_LABELS.get(old_level, old_level)} → "
                f"{result['activity_label']}({result['activity_level']}),TDEE 系数 {old_f} → {new_f}"
                f"({delta_pct:+.1f}%),每日消耗{delta_pct:+.1f}%")
-    return _profile_receipt('update', old, new, kpis, '设活动量',
+    return _profile_receipt('update', old, new, [], '设活动量',
                             result['updated_at'][:16].replace('T', ' '), summary)
 
 
@@ -198,36 +184,11 @@ def build_live_profile_update(field_value_pairs):
             impact_map[col] = r['impact']
     new = {**new, **{f'__impact_{k}': v for k, v in impact_map.items()}}
 
-    # KPI:字段数 / 改前 / 改后 / TDEE 综合影响 / 更新时间
-    # 改前/改后显示首个变更字段的具体对比(2026-08-02 对抗审查:空转「见下方对比」无意义)
+    # 信息唯一性(2026-08-02):KPI 与 summary/diff 重复 → 只留 summary,不填 kpis
     first = results[0]
     last = results[-1]
-    multi = len(results) > 1
-    first_col = _FIELD_TO_COL.get(first['field'], first['field'])
-    first_label = _label_for(first_col)
-    first_old_disp = str(first['old_value'])
-    first_new_disp = str(first['new_value'])
-    if first_col == 'activity_level':
-        first_old_disp = ACTIVITY_LEVEL_LABELS.get(str(first['old_value']).lower(), first['old_value'])
-        first_new_disp = ACTIVITY_LEVEL_LABELS.get(str(first['new_value']).lower(), first['new_value'])
-    if first_col == 'gender':
-        first_old_disp = '男' if first['old_value'] == 'male' else '女' if first['old_value'] == 'female' else str(first['old_value'])
-        first_new_disp = '男' if first['new_value'] == 'male' else '女' if first['new_value'] == 'female' else str(first['new_value'])
     tdee_new, _ = _tdee_estimate(
         new.get('age'), new.get('gender'), new.get('height_cm'), new.get('activity_level'))
-    kpis = [
-        {'label': '字段', 'value': f"{len(results)} 项" if multi else first['label'],
-         'extra': '、'.join(r['label'] for r in results) if multi else f"field={first['field']}"},
-        {'label': f'改前({first_label})', 'value': first_old_disp,
-         'extra': f'共 {len(results)} 项变更' if multi else '—'},
-        {'label': f'改后({first_label})', 'value': first_new_disp,
-         'extra': f'其余见下方' if multi else '—'},
-        {'label': '更新时间', 'value': last['updated_at'][:16].replace('T', ' '),
-         'extra': 'id=1'},
-    ]
-    if tdee_new:
-        kpis.append({'label': 'TDEE 估算', 'value': f'{tdee_new:,} 卡/天',
-                     'extra': f'按最新体重×系数'})
 
     # 1 句话总结(2026-08-02 用户拍板:prompt 承诺的总结必须在 HTML 有对应物)
     changes = []
@@ -242,7 +203,7 @@ def build_live_profile_update(field_value_pairs):
     summary = f"已修改 {len(results)} 项:" + '、'.join(changes)
     if tdee_new:
         summary += f";TDEE 约 {tdee_new:,} 卡/天"
-    return _profile_receipt('update', old, new, kpis, '改档案',
+    return _profile_receipt('update', old, new, [], '改档案',
                             last['updated_at'][:16].replace('T', ' '), summary)
 
 

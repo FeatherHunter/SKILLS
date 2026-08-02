@@ -35,7 +35,7 @@
   .id-card .id { font-size:42px; font-weight:800; color:var(--fg); font-variant-numeric:tabular-nums; margin:8px 0; }
   .id-card .meta { font-size:13px; color:var(--fg2); }
   /* KPI 4 卡 */
-  .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+  .kpi-grid { display:none; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; } /* 默认隐藏,有数据才显示(2026-08-02) */
   .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
   .kpi .label { font-size:11px; color:var(--fg2); margin-bottom:4px; }
   .kpi .value { font-size:18px; font-weight:700; }
@@ -58,8 +58,7 @@
   .ctx-row .value { font-weight:600; font-variant-numeric:tabular-nums; }
   .ctx-row .pct { font-size:11px; color:var(--fg3); margin-left:6px; }
   /* Footer 按钮 */
-  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
-  .footer .src { font-size:12px; color:var(--fg3); }
+  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:flex-end; align-items:center; }
   .footer .btn-group { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
          cursor:pointer; font-size:13px; color:var(--fg); min-height:36px; }
@@ -74,9 +73,8 @@
     .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
     .food-card .macros { grid-template-columns:1fr 1fr; }
     /* 移动端:footer 纵向排(来源行在上,按钮组在下占满宽) · 2026-08-02 */
-    .footer { flex-direction:column; align-items:stretch; }
-    .footer .src { order:1; }
-    .footer .btn-group { order:2; justify-content:stretch; }
+    .footer { flex-direction:row; justify-content:flex-end; }
+    .footer .btn-group { justify-content:stretch; }
     .footer .btn-group .btn { flex:1 1 45%; min-height:44px; margin-left:0; }
     /* 移动端:diff 三列改上下结构(旧值/新值各占一行,影响文本不被挤压) · 2026-08-02 */
     .diff-row { grid-template-columns:1fr; gap:4px; }
@@ -122,7 +120,6 @@
 </div>
 
 <div class="footer">
-  <div class="src" id="srcLine">📊 操作于 --</div>
   <div class="btn-group">
     <button class="btn" id="undoBtn">↩ 撤销(复制指令)</button>
     <button class="btn" id="copyDataBtn">📋 复制数据</button>
@@ -158,9 +155,10 @@
   document.getElementById('sub').innerHTML =
     `<span class="pill pill-${opClass}">${opLabel}</span> ${meta.entity_type} #${record_id} ${opLabel}成功`;
 
-  // 4 KPI(从 context 选前 4)
+  // KPI 卡(仅当数据提供 kpis 时渲染;profile 场景已不填,见 render_crud_receipt.py · 2026-08-02)
   const kpiGrid = document.getElementById('kpiGrid');
-  if (context && context.kpis) {
+  if (context && context.kpis && context.kpis.length) {
+    kpiGrid.style.display = 'grid';
     context.kpis.forEach(k => {
       kpiGrid.insertAdjacentHTML('beforeend',
         `<div class="kpi"><div class="label">${k.label}</div>` +
@@ -223,7 +221,7 @@
     document.getElementById('ctxCard').style.display = 'none';
   }
 
-  document.getElementById('srcLine').textContent = `📊 操作于 ${meta.action_at} · 实体 #${record_id}`;
+
 
   // 撤销按钮:只在 meta.undo_cli 存在时启用(围度/体脂/记吃场景不传 undo_cli → 自动隐藏)
   const undoBtn = document.getElementById('undoBtn');

@@ -449,7 +449,13 @@ def main():
         '--live-plan-update-movement': 'plan_update_movement', '--live-plan-delete': 'plan_delete',
         '--live-plan-sync': 'plan_sync', '--live-plan-backfill': 'plan_backfill',
     }
-    key = next((k for flag, k in live_map.items() if getattr(args, flag)), None)
+    # argparse 把 --live-plan-set 转成 live_plan_set(下划线),据此查
+    key = None
+    for flag, k in live_map.items():
+        attr = flag.lstrip('-').replace('-', '_')
+        if getattr(args, attr, False):
+            key = k
+            break
     if key is None:
         print('❌ 未识别 live 模式', file=sys.stderr)
         return 1

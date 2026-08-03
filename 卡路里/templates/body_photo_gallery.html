@@ -33,25 +33,26 @@
   .tag-chip.active { background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600; }
   .filter-bar input { border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-size:12px; max-width:120px; }
   .filter-bar .lbl { font-size:12px; color:var(--fg3); }
-  /* 照片网格 */
+  /* 照片网格 · 拍立得式:照片独立圆角内嵌(2026-08-03 验收拍板) */
   .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
   .cell { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
-  .cell .imgwrap { position:relative; aspect-ratio:3/4; background:var(--soft); }
-  .cell img { width:100%; height:100%; object-fit:cover; display:block; }
-  .cell .broken { width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:var(--fg3); font-size:13px; }
+  .cell .imgwrap { position:relative; aspect-ratio:3/4; padding:3px 3px 0; background:var(--soft); }
+  .cell .imgwrap img { width:100%; height:100%; object-fit:cover; display:block; border-radius:10px; }
+  .cell .broken { width:100%; height:100%; display:flex; align-items:center; justify-content:center; color:var(--fg3); font-size:13px; border-radius:10px; background:var(--soft); }
   .cell .meta { padding:8px 10px; font-size:11px; color:var(--fg2); }
   .cell .meta .tags span { display:inline-block; background:rgba(0,113,227,.12); color:var(--accent);
                            border-radius:8px; padding:0 6px; margin-right:3px; font-size:10px; }
   .cell .meta .date { margin-top:2px; font-weight:600; color:var(--fg); }
   .empty { text-align:center; padding:60px 20px; color:var(--fg3); }
   /* Footer 按钮 */
-  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:flex-end; }
+  .footer { margin-top:24px; padding:16px 18px; background:transparent; border-radius:12px; display:flex; justify-content:flex-end; }
   .footer .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
   .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
-         cursor:pointer; font-size:13px; color:var(--fg); min-height:36px; }
+         cursor:pointer; font-size:13px; color:var(--fg); min-height:36px; white-space:nowrap; }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary:hover { background:#005bb0; }
+  .footer .btn-group .btn { min-width:116px; }
   @media (max-width:640px) {
     body { padding:20px 14px 80px; }
     h1 { font-size:22px; }
@@ -91,7 +92,7 @@
 <div class="footer">
   <div class="btn-group">
     <button class="btn" id="copyDataBtn">📋 复制数据</button>
-    <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
   </div>
 </div>
 
@@ -116,6 +117,11 @@
 
   // 筛选栏:标签 chips + 日期范围
   const fbar = document.getElementById('filterBar');
+  const allChip = document.createElement('span');
+  allChip.className = 'tag-chip active';
+  allChip.textContent = '全部';
+  allChip.title = '显示全部照片';
+  fbar.appendChild(allChip);
   (d.tag_counts || []).forEach(tc => {
     const chip = document.createElement('span');
     chip.className = 'tag-chip' + (d.filters.tag === tc.tag ? ' active' : '');
@@ -132,22 +138,51 @@
 
   // 网格
   const grid = document.getElementById('grid');
+  const cellById = {};
   (d.photos || []).forEach(p => {
     const img = p.photo_data_base64
       ? `<img src="${p.photo_data_base64}" alt="照片 ${p.id}" loading="lazy">`
       : `<div class="broken">📷 无图${p.file_exists === false ? ' · 文件缺失' : ''}</div>`;
     const tags = (p.tag_list || []).map(t => `<span>${t}</span>`).join('');
-    grid.insertAdjacentHTML('beforeend',
-      `<div class="cell">
-         <div class="imgwrap">${img}</div>
-         <div class="meta">
-           <div class="tags">${tags}</div>
-           <div class="date">#${p.id} · ${p.date} ${p.time || ''}</div>
-           ${p.note ? '<div class="tags" style="margin-top:2px">📝 ' + p.note + '</div>' : ''}
-         </div>
-       </div>`);
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.tags = (p.tag_list || []).join(',');
+    cell.innerHTML =
+      `<div class="imgwrap">${img}</div>
+       <div class="meta">
+         <div class="tags">${tags}</div>
+         <div class="date">#${p.id} · ${p.date} ${p.time || ''}</div>
+         ${p.note ? '<div class="tags" style="margin-top:2px">📝 ' + p.note + '</div>' : ''}
+       </div>`;
+    grid.appendChild(cell);
+    cellById[p.id] = cell;
   });
   if (!(d.photos || []).length) document.getElementById('empty').style.display = 'block';
+
+  // 标签筛选(点击即时过滤,再点恢复全部) · 2026-08-03 验收修复
+  const kpiTotal = document.getElementById('kpiTotal');
+  let activeTag = d.filters.tag || '';
+  function applyFilter(tag) {
+    let visible = 0;
+    (d.photos || []).forEach(p => {
+      const hit = !tag || (p.tag_list || []).includes(tag);
+      cellById[p.id].style.display = hit ? '' : 'none';
+      if (hit) visible++;
+    });
+    kpiTotal.textContent = visible;
+    document.getElementById('empty').style.display = visible ? 'none' : 'block';
+    fbar.querySelectorAll('.tag-chip').forEach(c => {
+      c.classList.toggle('active', c.textContent === (tag ? tag + ' ' + (d.tag_counts || []).find(t => t.tag === tag).count : '全部'));
+    });
+  }
+  fbar.addEventListener('click', e => {
+    const chip = e.target.closest('.tag-chip');
+    if (!chip) return;
+    const tag = chip.textContent.split(' ')[0];
+    activeTag = (tag === '全部' || tag === activeTag) ? '' : tag;
+    applyFilter(activeTag);
+  });
+  applyFilter(activeTag);
 
   // 复制工具
   function showToast(msg) {
@@ -172,8 +207,7 @@
   }
   function copyText(text, btn, okMsg) {
     const after = () => {
-      const orig = btn.textContent; btn.textContent = '✓ 已复制';
-      setTimeout(() => btn.textContent = orig, 2000); showToast(okMsg);
+      showToast(okMsg);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });

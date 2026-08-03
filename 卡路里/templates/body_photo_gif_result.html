@@ -32,13 +32,14 @@
   .info .value { font-size:17px; font-weight:700; font-variant-numeric:tabular-nums; }
   .info .value.small { font-size:13px; font-weight:500; word-break:break-all; }
   /* Footer 按钮 */
-  .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:flex-end; }
+  .footer { margin-top:24px; padding:16px 18px; background:transparent; border-radius:12px; display:flex; justify-content:flex-end; }
   .footer .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
   .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
-         cursor:pointer; font-size:13px; color:var(--fg); min-height:36px; }
+         cursor:pointer; font-size:13px; color:var(--fg); min-height:36px; white-space:nowrap; }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary:hover { background:#005bb0; }
+  .footer .btn-group .btn { min-width:116px; }
   @media (max-width:640px) {
     body { padding:20px 14px 80px; }
     h1 { font-size:22px; }
@@ -77,7 +78,7 @@
 <div class="footer">
   <div class="btn-group">
     <button class="btn" id="copyDataBtn">📋 复制数据</button>
-    <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
   </div>
 </div>
 
@@ -132,8 +133,7 @@
   }
   function copyText(text, btn, okMsg) {
     const after = () => {
-      const orig = btn.textContent; btn.textContent = '✓ 已复制';
-      setTimeout(() => btn.textContent = orig, 2000); showToast(okMsg);
+      showToast(okMsg);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });

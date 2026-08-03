@@ -125,7 +125,7 @@ const WATER_ONLY=!!(DATA&&DATA.data&&DATA.data.water_only);
 // 2026-08-02 对抗审查拍板:所有目标下限 0;热量 slider 上限 = 宏量上限的 4/4/9 总和(4550)
 const MACRO_MAX={protein_goal:300,carbs_goal:500,fat_goal:150};
 const FIELDS=[
-  {key:'calorie_goal',label:'热量',unit:'卡',min:0,max:MACRO_MAX.protein_goal*4+MACRO_MAX.carbs_goal*4+MACRO_MAX.fat_goal*9,step:50,yesterdayKey:'calorie'},
+  {key:'calorie_goal',label:'热量',unit:'卡',min:0,max:MACRO_MAX.protein_goal*4+MACRO_MAX.carbs_goal*4+MACRO_MAX.fat_goal*9,step:5,yesterdayKey:'calorie'},
   {key:'protein_goal',label:'蛋白',unit:'g',min:0,max:MACRO_MAX.protein_goal,step:1,yesterdayKey:'protein'},
   {key:'carbs_goal',label:'碳水',unit:'g',min:0,max:MACRO_MAX.carbs_goal,step:1,yesterdayKey:'carbs'},
   {key:'fat_goal',label:'脂肪',unit:'g',min:0,max:MACRO_MAX.fat_goal,step:1,yesterdayKey:'fat'},
@@ -134,10 +134,12 @@ const FIELDS=[
 const ACTIVE_FIELDS=WATER_ONLY?FIELDS.filter(f=>f.key==='water_goal'):FIELDS;
 const state={};
 ACTIVE_FIELDS.forEach(f=>{state[f.key]=CURRENT[f.key]||f.min});
+// 2026-08-03 用户验收 #2:全 0 起手拖热量用默认比例 30/50/20;用户手动调过宏量后锁定当前比例
+let macroLocked=(state.protein_goal>0||state.carbs_goal>0||state.fat_goal>0);
 function renderHeader(){
   document.getElementById('title').textContent=PAGE_TITLE;
   document.getElementById('subtitle').textContent=
-    `目标日 ${CURRENT.calorie_goal||'?'} 卡 · 蛋白 ${CURRENT.protein_goal||'?'}g · 碳水 ${CURRENT.carbs_goal||'?'}g · 脂肪 ${CURRENT.fat_goal||'?'}g · 饮水 ${CURRENT.water_goal||'?'}ml`;
+    `目标日 ${fmtNum(CURRENT.calorie_goal||'?')} 卡 · 蛋白 ${fmtNum(CURRENT.protein_goal||'?')}g · 碳水 ${fmtNum(CURRENT.carbs_goal||'?')}g · 脂肪 ${fmtNum(CURRENT.fat_goal||'?')}g · 饮水 ${fmtNum(CURRENT.water_goal||'?')}ml`;
 }
 function renderSliders(){
   const html=ACTIVE_FIELDS.map(f=>{
@@ -155,36 +157,84 @@ function onSlider(el){
   if(key==='calorie_goal'){
     scaleMacros(state.calorie_goal);
   }else if(key!=='water_goal'){
+    if(state[key]>0)macroLocked=true;
     recalcCalorie();
   }
   syncSliderValues();
   updateMiniChart();
 }
-// 宏量联动(2026-08-02 用户验收 #1):热量 slider 拖动 → 蛋白/碳水/脂肪按当前比例缩放;
-// 单调蛋白/碳水/脂肪 → 热量按 4/4/9 kcal/g 自动重算。饮水独立不联动。
+// 宏量联动 v2(2026-08-03 用户验收 #2 修复):
+// - 热量 slider:min 0 / max 4550(=宏量上限 4/4/9 能量和)/ step 5
+// - 拖热量 → 宏量按比例分配(全 0 起手 = 默认 30/50/20;用户调过宏量后 = 当前比例);
+//   单个宏量封顶后剩余能量按比例重分配,总能量跟踪热量(偏差 ≤4 卡,无累积漂移)
+// - 拖宏量 → 热量按 4/4/9 精确重算(step 5 取整)
 function macroSum(){return ((state.protein_goal||0)*4)+((state.carbs_goal||0)*4)+((state.fat_goal||0)*9);}
 function clampV(v,min,max){return Math.min(max,Math.max(min,v));}
 function roundStep(v,step){return Math.round(v/step)*step;}
-function scaleMacros(newCal){
-  const sum=macroSum();
-  let p,c,f;
-  if(sum>0){
-    const s=newCal/sum;
-    p=roundStep((state.protein_goal||0)*s,1);
-    c=roundStep((state.carbs_goal||0)*s,1);
-    f=roundStep((state.fat_goal||0)*s,1);
-  }else{
-    // 全部为 0 时按默认热量占比:蛋白 30% / 碳水 50% / 脂肪 20%
-    p=roundStep(newCal*0.30/4,1);
-    c=roundStep(newCal*0.50/4,1);
-    f=roundStep(newCal*0.20/9,1);
+function fmtNum(v){const n=Math.round((Number(v)||0)*100)/100;return String(n);}
+function distributeMacros(newCal){
+  const pMax=fieldMax('protein_goal'),cMax=fieldMax('carbs_goal'),fMax=fieldMax('fat_goal');
+  const capP=pMax*4,capC=cMax*4,capF=fMax*9;
+  const sumE=macroSum();
+  let shP,shC,shF;
+  if(macroLocked&&sumE>0){
+    shP=(state.protein_goal||0)*4/sumE;shC=(state.carbs_goal||0)*4/sumE;shF=(state.fat_goal||0)*9/sumE;
+  }else{shP=0.30;shC=0.50;shF=0.20;}
+  let dP=newCal*shP,dC=newCal*shC,dF=newCal*shF;
+  let excess=0;
+  if(dP>capP){excess+=dP-capP;dP=capP;}
+  if(dC>capC){excess+=dC-capC;dC=capC;}
+  if(dF>capF){excess+=dF-capF;dF=capF;}
+  let guard=0;
+  while(excess>0.5&&guard<6){
+    guard++;
+    const roomP=capP-dP,roomC=capC-dC,roomF=capF-dF;
+    const total=roomP+roomC+roomF;
+    if(total<=0)break;
+    const aP=Math.min(roomP,excess*roomP/total);
+    const aC=Math.min(roomC,excess*roomC/total);
+    const aF=Math.min(roomF,excess*roomF/total);
+    dP+=aP;dC+=aC;dF+=aF;
+    excess-=(aP+aC+aF);
   }
-  state.protein_goal=clampV(p,0,fieldMax('protein_goal'));
-  state.carbs_goal=clampV(c,0,fieldMax('carbs_goal'));
-  state.fat_goal=clampV(f,0,fieldMax('fat_goal'));
+  return roundGrams(dP/4,dC/4,dF/9,newCal);
+}
+function roundGrams(p,c,f,newCal){
+  let gP=Math.round(p),gC=Math.round(c),gF=Math.round(f);
+  const pMax=fieldMax('protein_goal'),cMax=fieldMax('carbs_goal'),fMax=fieldMax('fat_goal');
+  for(let i=0;i<4;i++){
+    const e=gP*4+gC*4+gF*9;
+    const diff=newCal-e;
+    if(Math.abs(diff)<=4)break;
+    if(diff>0){
+      const opts=[];
+      if(gP<pMax)opts.push({k:'p',frac:p-Math.floor(p)});
+      if(gC<cMax)opts.push({k:'c',frac:c-Math.floor(c)});
+      if(gF<fMax)opts.push({k:'f',frac:f-Math.floor(f)});
+      if(!opts.length)break;
+      opts.sort((a,b)=>b.frac-a.frac);
+      if(opts[0].k==='p')gP++;else if(opts[0].k==='c')gC++;else gF++;
+    }else{
+      const opts=[];
+      if(gP>0)opts.push({k:'p',frac:p-Math.floor(p)});
+      if(gC>0)opts.push({k:'c',frac:c-Math.floor(c)});
+      if(gF>0)opts.push({k:'f',frac:f-Math.floor(f)});
+      if(!opts.length)break;
+      opts.sort((a,b)=>a.frac-b.frac);
+      if(opts[0].k==='p')gP--;else if(opts[0].k==='c')gC--;else gF--;
+    }
+  }
+  return [clampV(gP,0,pMax),clampV(gC,0,cMax),clampV(gF,0,fMax)];
+}
+function scaleMacros(newCal){
+  const r=distributeMacros(newCal);
+  state.protein_goal=r[0];
+  state.carbs_goal=r[1];
+  state.fat_goal=r[2];
 }
 function recalcCalorie(){
-  state.calorie_goal=roundStep(clampV(macroSum(),0,fieldMax('calorie_goal')),50);
+  const f=FIELDS.find(x=>x.key==='calorie_goal');
+  state.calorie_goal=roundStep(clampV(macroSum(),0,f.max),f.step);
 }
 function fieldMax(key){return FIELDS.find(f=>f.key===key).max;}
 function syncSliderValues(){
@@ -212,15 +262,15 @@ function updateMiniChart(){
     const targetPct=target/maxVal*100;
     const actualPct=actual/maxVal*100;
     const diff=actual-target;
-    const diffText=(diff>0?'+':'')+diff;
+    const diffText=(diff>0?'+':'')+fmtNum(diff);
     const diffColor=diff>0?'var(--orange)':'var(--green)';
     return `<div class="mini-row">
       <div class="mini-label">${f.label}(${f.unit})</div>
       <div class="mini-bar-bg">
         <div class="mini-bar-fg" style="width:${targetPct}%"></div>
-        <div class="mini-bar-actual" style="width:${actualPct}%" title="昨日实际: ${actual}"></div>
+        <div class="mini-bar-actual" style="width:${actualPct}%" title="昨日实际: ${fmtNum(actual)}"></div>
       </div>
-      <div class="mini-num" style="color:${diffColor}">${actual}/${target} (${diffText})</div>
+      <div class="mini-num" style="color:${diffColor}">${fmtNum(actual)}/${fmtNum(target)} (${diffText})</div>
     </div>`;
   }).join('');
   document.getElementById('chartRows').innerHTML=rows;
@@ -229,11 +279,11 @@ function renderWeight(){
   if(!WEIGHT)return;
   document.getElementById('weightSection').style.display='block';
   document.getElementById('weightHint').textContent=
-    '目标 '+WEIGHT.target+'kg · '+WEIGHT.days_left+'天剩余';
-  const diff=(WEIGHT.current-WEIGHT.target).toFixed(1);
+    '目标 '+fmtNum(WEIGHT.target)+'kg · '+WEIGHT.days_left+'天剩余';
+  const diff=fmtNum(WEIGHT.current-WEIGHT.target);
   document.getElementById('weightGrid').innerHTML=
-    '<div class="weight-stat"><div class="label">当前</div><div class="value">'+WEIGHT.current+' kg</div></div>'+
-    '<div class="weight-stat"><div class="label">目标</div><div class="value">'+WEIGHT.target+' kg</div></div>'+
+    '<div class="weight-stat"><div class="label">当前</div><div class="value">'+fmtNum(WEIGHT.current)+' kg</div></div>'+
+    '<div class="weight-stat"><div class="label">目标</div><div class="value">'+fmtNum(WEIGHT.target)+' kg</div></div>'+
     '<div class="weight-stat"><div class="label">距离</div><div class="value">'+diff+' kg</div></div>';
 }
 function renderDiff(){
@@ -278,7 +328,7 @@ function buildConfigPrompt(){
   ACTIVE_FIELDS.forEach(f=>{
     const actual=YESTERDAY[f.yesterdayKey]||0;
     const diff=actual-state[f.key];
-    p+='  '+f.label+': 目标 '+state[f.key]+f.unit+' · 昨日 '+(hasYesterdayData()?actual:'无记录')+' · 差 '+(diff>0?'+':'')+diff+f.unit+'\n';
+    p+='  '+f.label+': 目标 '+state[f.key]+f.unit+' · 昨日 '+(hasYesterdayData()?fmtNum(actual):'无记录')+' · 差 '+(diff>0?'+':'')+fmtNum(diff)+f.unit+'\n';
   });
   p+='\n数据来源: 目标配置 v1 · render_goal_config.py · '+new Date().toISOString().split('T')[0];
   return p;
@@ -287,17 +337,6 @@ function hasYesterdayData(){
   return YESTERDAY&&Object.keys(YESTERDAY).length>0&&ACTIVE_FIELDS.some(f=>(YESTERDAY[f.yesterdayKey]||0)>0);
 }
 function copyConfig(){doCopy(buildConfigPrompt(),'btnAdopt','✓ 已复制配置指令,粘给 AI 即可');}
-function doCopy(text,btnId,msg){
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>flashCopied(btnId,msg));}
-  else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');flashCopied(btnId,msg);}catch(e){}document.body.removeChild(ta);}
-}
-function flashCopied(btnId,msg){
-  const btn=document.getElementById(btnId);
-  if(!btn)return;
-  const orig=btn.textContent;
-  btn.textContent=msg;btn.classList.add('copied');
-  setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2200);
-}
 renderHeader();
 renderSliders();
 renderWeight();
@@ -338,7 +377,7 @@ function showToast(msg){
   setTimeout(()=>{t.style.display='none';},2000);
 }
 function doCopy(text,btnId,msg){
-  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),2200);}showToast(msg);};
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),600);}showToast(msg);};
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
   } else { fallbackCopy(text,done); }

@@ -63,7 +63,7 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;borde
 <h2>确认目标</h2>
 <p class="sub">确认无误后,复制下方指令发给 AI,AI 会调用写库。</p>
 <div class="btn-row">
-<button class="btn primary" id="btnAdopt" onclick="copyAdopt()">✓ 采纳</button>
+<button class="btn primary" id="btnAdopt" onclick="copyAdopt()">✓ 复制指令给 AI</button>
 <button class="btn secondary" id="copyDataBtn" onclick="copyData()">📋 复制数据</button>
 <button class="btn secondary" id="copyLogBtn" onclick="copyLog()">📋 复制日志</button>
 </div>
@@ -112,25 +112,21 @@ function buildPrompt(){
   const FIELDS=D.fields||[];
   const values={};
   document.querySelectorAll('#fields input').forEach(i=>{values[i.dataset.key]=i.value.trim();});
-  if(D.cliLabel)p+=D.cliLabel+'\n';
   FIELDS.forEach(f=>{
     const v=values[f.key]||f.placeholder;
-    p+='  --'+f.key+' '+v+'\n';
+    p+='  '+f.label+': '+v+(f.unit?' '+f.unit:'')+'\n';
   });
   if(D.extraPrompt)p+='\n'+D.extraPrompt+'\n';
-  p+='\n数据来源: 体重目标 v1 · render_goal_weight.py · '+new Date().toISOString().split('T')[0];
   return p;
 }
-function copyAdopt(){
-  const text=buildPrompt();
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(()=>{flash('✓ 已复制');});}
-  else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');flash('✓ 已复制');}catch(e){}document.body.removeChild(ta);}
-}
-function flash(msg){const b=document.getElementById('btnAdopt');const orig=b.textContent;b.textContent=msg;b.classList.add('copied');setTimeout(()=>{b.textContent=orig;b.classList.remove('copied');},2200);}
+function copyAdopt(){doCopy(buildPrompt(),'btnAdopt','已复制确认指令,粘贴给 AI 即可 ✓');}
 renderKpis();
 renderFields();
 renderResult();
 document.getElementById('copyPreview').textContent=buildPrompt();
+document.querySelectorAll('#fields input').forEach(i=>{
+  i.addEventListener('input',()=>{document.getElementById('copyPreview').textContent=buildPrompt();});
+});
 
 // R2 双按钮:复制数据(用户口径)/ 复制日志(排障口径) · 2026-08-02 对齐 #8
 const META=D.meta||{};
@@ -166,7 +162,7 @@ function showToast(msg){
   setTimeout(()=>{t.style.display='none';},2000);
 }
 function doCopy(text,btnId,msg){
-  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),2200);}showToast(msg);};
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),600);}showToast(msg);};
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
   } else { fallbackCopy(text,done); }

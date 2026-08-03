@@ -68,7 +68,6 @@ def build_data(mode='basic'):
             {'key': 'weight-goal', 'label': '目标体重', 'unit': 'kg', 'placeholder': '如 70'},
             {'key': 'deadline', 'label': '截止日期', 'unit': '', 'placeholder': '如 2026-12-31(选填)'},
         ]
-        data['cliLabel'] = '体重目标 (调用 weight_goal.set_weight_goal):'
         data['extraPrompt'] = '若我未提供目标或档案缺失,请先询问补齐;已明确则直接执行。'
 
     elif mode == 'auto_deadline':
@@ -80,7 +79,6 @@ def build_data(mode='basic'):
             {'key': 'weight-goal', 'label': '目标体重', 'unit': 'kg', 'placeholder': '如 70'},
             {'key': 'rate', 'label': '期望每周速率', 'unit': 'kg/周', 'placeholder': '如 0.5'},
         ]
-        data['cliLabel'] = '体重目标 (调用 weight_goal.set_weight_goal, 截止日由 AI 推算):'
         data['extraPrompt'] = '请按我给的速率推算合理截止日,并校验速率是否在安全范围(0.25~1.0 kg/周)。'
 
     elif mode == 'with_start':
@@ -92,7 +90,6 @@ def build_data(mode='basic'):
             {'key': 'deadline', 'label': '截止日期', 'unit': '', 'placeholder': '如 2026-12-31'},
             {'key': 'start-weight', 'label': '起点体重', 'unit': 'kg', 'placeholder': '如 75'},
         ]
-        data['cliLabel'] = '体重目标 (调用 weight_goal.set_weight_goal, 含起始日/起点体重):'
         data['extraPrompt'] = '请完整记录起始日与起点体重,作为目标起点。'
 
     elif mode == 'modify':
@@ -103,7 +100,6 @@ def build_data(mode='basic'):
             {'key': 'weight-goal', 'label': '新目标体重', 'unit': 'kg', 'placeholder': f'当前 {current_goal}' if current_goal else '如 70'},
             {'key': 'deadline', 'label': '新截止日期', 'unit': '', 'placeholder': f'当前 {deadline}' if deadline else '选填'},
         ]
-        data['cliLabel'] = '体重目标 (调用 weight_goal.set_weight_goal):'
         data['extraPrompt'] = '请显示改前/改后,并按新目标给出建议速率。'
 
     return data

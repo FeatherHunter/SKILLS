@@ -74,6 +74,17 @@
   .ctx-row .label { color:var(--fg2); }
   .ctx-row .value { font-weight:600; font-variant-numeric:tabular-nums; }
   .ctx-row .pct { font-size:11px; color:var(--fg3); margin-left:6px; }
+  /* 明细卡(复制昨日饮食 · #44) */
+  .items-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
+  .items-card h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
+  .item-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px; }
+  .item-row:last-child { border-bottom:none; }
+  .item-row.item-skip { opacity:.55; }
+  .item-time { color:var(--fg3); font-size:13px; min-width:48px; }
+  .item-food { flex:1; font-weight:500; }
+  .item-grams { color:var(--fg2); font-variant-numeric:tabular-nums; }
+  .item-cal { font-weight:600; font-variant-numeric:tabular-nums; }
+  .item-tag { font-size:11px; color:var(--warn); background:rgba(255,149,0,.12); padding:1px 8px; border-radius:999px; }
   /* Footer 按钮 */
   .footer { margin-top:12px; padding:12px 14px; background:transparent; border-radius:12px; display:flex; justify-content:flex-end; align-items:center; } /* #44 审查:手机版底部空白减半(24→12 + body padding) */
   .footer .btn-group { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
@@ -142,6 +153,11 @@
 <div class="ctx-card" id="ctxCard">
   <h2>📊 今日累计</h2>
   <div id="ctxList"></div>
+</div>
+
+<div class="items-card" id="itemsCard" style="display:none">
+  <h2 id="itemsTitle">📋 复制明细</h2>
+  <div id="itemList"></div>
 </div>
 
 <div class="footer">
@@ -355,6 +371,28 @@
     document.getElementById('ctxCard').style.display = 'none';
   }
 
+  // 明细卡(复制昨日饮食等 · #44 审查用户第一性原理:复制了哪些数据必须可见)
+  if (context && context.items && context.items.length) {
+    const itemsCard = document.getElementById('itemsCard');
+    const itemList = document.getElementById('itemList');
+    const nCopied = context.items.filter(it => it.label !== '已跳过').length;
+    const nSkipped = context.items.length - nCopied;
+    document.getElementById('itemsTitle').textContent =
+      `📋 复制明细(已复制 ${nCopied} 条${nSkipped ? ` · 跳过 ${nSkipped} 条` : ''})`;
+    context.items.forEach(it => {
+      const cls = it.label === '已跳过' ? 'item-skip' : '';
+      itemList.insertAdjacentHTML('beforeend',
+        `<div class="item-row ${cls}">` +
+        `<span class="item-time">${it.time || '—'}</span>` +
+        `<span class="item-food">${escapeHTML(it.food_name)}</span>` +
+        `<span class="item-grams">${it.grams}g</span>` +
+        `<span class="item-cal">${it.calories}卡</span>` +
+        `${it.label === '已跳过' ? '<span class="item-tag">已跳过</span>' : ''}` +
+        `</div>`);
+    });
+    itemsCard.style.display = 'block';
+  }
+
 
 
   // 撤销按钮:只在 meta.undo_cli 存在时启用(围度/体脂/记吃场景不传 undo_cli → 自动隐藏)
@@ -431,6 +469,16 @@
         }
       });
     }
+    // #44 审查(用户第一性原理):复制数据包含明细(复制昨日饮食等)
+    if (context && context.items && context.items.length) {
+      lines.push('');
+      const nCopied = context.items.filter(it => it.label !== '已跳过').length;
+      const nSkipped = context.items.length - nCopied;
+      lines.push(`复制明细(已复制 ${nCopied} 条${nSkipped ? ` · 跳过 ${nSkipped} 条` : ''}):`);
+      context.items.forEach(it => {
+        lines.push(`  ${it.time || '—'} ${it.food_name} ${it.grams}g ${it.calories}卡${it.label === '已跳过' ? ' [已跳过]' : ''}`);
+      });
+    }
     return lines.join('\n');
   }
 
@@ -454,6 +502,12 @@
       lines.push(JSON.stringify(old_record, null, 2));
       lines.push(`改后:`);
       lines.push(JSON.stringify(new_record, null, 2));
+    }
+    // #44 审查:日志带出明细原始数据(复制昨日饮食等)
+    if (context && context.items && context.items.length) {
+      lines.push('');
+      lines.push(`复制明细(原始):`);
+      lines.push(JSON.stringify(context.items, null, 2));
     }
     if (meta.undo_cli) {
       lines.push('');

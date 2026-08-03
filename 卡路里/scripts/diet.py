@@ -258,7 +258,8 @@ def copy_meals(from_date, to_date=None):
     目标日已有同名同时间记录则跳过(防重复)。
 
     Returns:
-        dict{ok, copied, skipped, from_date, to_date}
+        dict{ok, copied, skipped, from_date, to_date,
+             copied_items, skipped_items}  # #44 审查:明细透出,回执可展示复制了什么
     """
     if to_date is None:
         to_date = date.today().isoformat()
@@ -270,6 +271,8 @@ def copy_meals(from_date, to_date=None):
     ''', (from_date,))
     rows = c.fetchall()
     copied = skipped = 0
+    copied_items = []
+    skipped_items = []
     for time_, food, grams, cal, pro, carb, fat, note in rows:
         c.execute('''
             SELECT COUNT(*) FROM food_log
@@ -277,16 +280,21 @@ def copy_meals(from_date, to_date=None):
         ''', (to_date, time_, food))
         if c.fetchone()[0] > 0:
             skipped += 1
+            skipped_items.append({'time': time_, 'food_name': food, 'grams': grams,
+                                  'calories': cal})
             continue
         c.execute('''
             INSERT INTO food_log (date, time, food_name, grams, calories, protein, carbs, fat, note)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (to_date, time_, food, grams, cal, pro, carb, fat, note))
         copied += 1
+        copied_items.append({'time': time_, 'food_name': food, 'grams': grams,
+                             'calories': cal})
     conn.commit()
     conn.close()
     return {'ok': True, 'copied': copied, 'skipped': skipped,
-            'from_date': from_date, 'to_date': to_date}
+            'from_date': from_date, 'to_date': to_date,
+            'copied_items': copied_items, 'skipped_items': skipped_items}
 
 
 def add_meals_batch(entries):

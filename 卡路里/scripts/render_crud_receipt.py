@@ -393,8 +393,11 @@ def _weight_delete_receipt(op, record_id, snapshot, totals, summary, action_at, 
 
 def _diet_receipt(op: str, record_id, old_record: dict, new_record: dict,
                   entity_label: str, action_at: str, summary: str = '',
-                  kpis: list | None = None) -> dict:
-    """组装饮食回执数据契约(与 profile 回执同构,复用 crud_receipt.html)"""
+                  kpis: list | None = None, items: list | None = None) -> dict:
+    """组装饮食回执数据契约(与 profile 回执同构,复用 crud_receipt.html)
+
+    items: 明细列表(如复制昨日饮食的复制明细 · #44 审查),模板以「明细卡」展示
+    """
     return {
         'status': 'ok',
         'data': {
@@ -402,7 +405,7 @@ def _diet_receipt(op: str, record_id, old_record: dict, new_record: dict,
             'record_id': record_id,
             'old_record': old_record or {},
             'new_record': new_record or {},
-            'context': {'kpis': kpis or []},
+            'context': {'kpis': kpis or [], 'items': items or []},
             'meta': {
                 'action_at': action_at,
                 'entity_type': entity_label,
@@ -477,8 +480,14 @@ def build_live_diet_copy(from_date, to_date=None):
     summary = f"已从 {r['from_date']} 复制 {r['copied']} 条到 {r['to_date']}"
     if r['skipped']:
         summary += f"(同日同食物已存在,跳过 {r['skipped']} 条)"
+    # #44 审查(用户第一性原理):复制明细展示——用户需要知道复制了哪些数据
+    items = [{'label': '已复制', 'time': it['time'], 'food_name': it['food_name'],
+              'grams': it['grams'], 'calories': it['calories']} for it in r['copied_items']]
+    items += [{'label': '已跳过', 'time': it['time'], 'food_name': it['food_name'],
+               'grams': it['grams'], 'calories': it['calories']} for it in r['skipped_items']]
     return _diet_receipt('create', 0, {}, new_record, '复制昨日饮食',
-                         datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+                         datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary,
+                         items=items)
 
 
 def build_live_diet_update(entry_id, **kwargs):

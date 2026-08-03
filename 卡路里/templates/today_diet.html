@@ -102,7 +102,7 @@
     td:nth-child(3){grid-area:c; min-width:0; word-break:break-all;}
     td:nth-child(10){grid-area:d}  /* 手机:克数+热量同处行1 右侧 */
     td:nth-child(4), td:nth-child(5), td:nth-child(6), td:nth-child(7), td:nth-child(8) { display:none; } /* 桌面列手机隐藏 */
-    td.summary-line{grid-area:e; display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:2px;}
+    td.summary-line{grid-area:e; display:block; margin-top:2px;}
     /* 行1:时间弱化灰 · 食物加粗 · 克数+热量右侧(同一行) */
     td:nth-child(1)::before, td:nth-child(2)::before, td:nth-child(3)::before { content:none; }
     td:nth-child(1) { color:var(--fg3); font-size:11px; font-variant-numeric:tabular-nums; }
@@ -110,9 +110,9 @@
     td.cal-grams { display:flex; align-items:baseline; justify-content:flex-end; gap:6px; }
     td.cal-grams .cg { color:var(--fg3); font-size:11px; font-variant-numeric:tabular-nums; }
     td.cal-grams .cc { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; color:var(--fg); }
-    /* 摘要行:营养三项右侧紧凑(蛋白质全称 + 彩色圆点) */
-    .sl-nuts { display:inline-flex; gap:10px; }
-    .sl-nut { font-size:11px; color:var(--fg2); font-variant-numeric:tabular-nums; }
+    /* 摘要行:营养三项等分行2 区域,文字居左(蛋白质全称 + 彩色圆点) */
+    .sl-nuts { display:flex; width:100%; }
+    .sl-nut { flex:1; text-align:left; font-size:11px; color:var(--fg2); font-variant-numeric:tabular-nums; white-space:nowrap; }
     .sl-nut.prot { color:var(--prot); }
     .sl-nut.carb { color:var(--carb); }
     .sl-nut.fat { color:var(--fat); }

@@ -30,6 +30,7 @@ from db import find_db_path, init_db  # noqa: E402
 from html_paths import html_scene_path  # noqa: E402
 from source_constants import SOURCE_LABELS  # noqa: E402
 from validators import MEASUREMENT_FIELDS  # noqa: E402
+from render_crud_view import _chain_valid  # noqa: E402 · 思考链校验单一来源(2026-08-02)
 
 ENTITY = {
     'composition': {
@@ -71,7 +72,7 @@ def _get_conn():
     return sqlite3.connect(str(p))
 
 
-def build_delete(entity, record_id):
+def build_delete(entity, record_id, _chain=''):
     spec = ENTITY[entity]
     table = spec['table']
     cols = spec['columns']
@@ -128,6 +129,7 @@ def build_delete(entity, record_id):
                 'entity_type': spec['scene'],
                 'wake_word': spec['scene'],
                 'source': f'{table} (删除前快照)',
+                'chain': _chain,
             },
         },
         'message': f'已生成{spec["scene"]} 回执',
@@ -147,12 +149,21 @@ def main():
     p = argparse.ArgumentParser(description='渲染删体脂/删围度 删除回执 HTML(v1.0 · ticket #9)')
     p.add_argument('--entity', choices=['composition', 'measurements'], required=True)
     p.add_argument('--id', type=int, required=True)
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
     p.add_argument('--output', help='输出文件路径(默认 html_scene_path 规则)')
     args = p.parse_args()
 
+    # ⭐ 思考链强制校验(R3 · 2026-08-02 用户拍板)
+    if not _chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print('     --chain "1.列候选→2.确认→3.删除→4.回执"', file=sys.stderr)
+        return 2
+
     spec = ENTITY[args.entity]
     try:
-        data = build_delete(args.entity, args.id)
+        data = build_delete(args.entity, args.id, _chain=args.chain)
     except ValueError as e:
         print(f'❌ {e}', file=sys.stderr)
         return 1

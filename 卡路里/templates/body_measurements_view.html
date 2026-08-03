@@ -38,7 +38,11 @@
   .empty { text-align: center; color: var(--fg3); padding: 24px 0; font-size: 14px; }
   .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .table-scroll table { min-width: 560px; }
+  .table-scroll th, .table-scroll td { white-space: nowrap; }
   .tip { background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--fg2); }
+  .compare-summary { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+  .compare-summary .cs-big { font-size: 16px; font-weight: 600; }
+  .compare-summary .cs-sub { font-size: 12px; color: var(--fg3); margin-top: 4px; }
   .note { font-size: 12px; color: var(--fg3); margin-top: 6px; }
   .delta { font-weight: 700; }
   .delta.neg { color: var(--green); }
@@ -46,6 +50,16 @@
   .bar { display: flex; align-items: flex-end; gap: 3px; height: 180px; padding-top: 10px; }
   .bar div { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
   .bar div span { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--fg3); }
+  .chart { width: 100%; }
+  .chart svg { width: 100%; height: 200px; display: block; }
+  .chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+  .chart .dot { fill: var(--accent); }
+  .chart .vlabel { font-size: 10px; fill: var(--fg3); }
+  .chart .xlabel { font-size: 10px; fill: var(--fg3); }
+  @media (max-width: 640px) {
+    th, td { padding: 7px 6px; font-size: 12px; }
+    .chart svg { height: 170px; }
+  }
 </style>
 </head>
 <body>
@@ -77,7 +91,7 @@
   </div>
   <div class="card">
     <h2>折线图</h2>
-    <div class="bar" id="trendBar"></div>
+    <div class="chart" id="trendChart"></div>
     <p class="note" id="trendNote"></p>
   </div>
 </div>
@@ -112,17 +126,26 @@ if (D.mode === 'list') {
     const c = document.createElement('button');
     c.className = 'chip' + (it.value === D.filter.active ? ' active' : '');
     c.textContent = `${it.label} (${it.n})`;
-    c.onclick = () => { location.search = `?metric=${it.value}`; };
+    c.onclick = () => { D.filter.active = it.value; setChips(); renderHist(); };
     chips.appendChild(c);
   });
+  function setChips() {
+    [...chips.children].forEach(c => c.classList.remove('active'));
+    const cur = [...chips.children].find(c => c.textContent.startsWith(
+      (D.filter.items.find(f => f.value === D.filter.active) || {}).label || '全部'));
+    if (cur) cur.classList.add('active');
+    else chips.children[0].classList.add('active');
+  }
   const wrap = document.getElementById('histTableWrap');
-  if (!D.rows.length) { wrap.innerHTML = '<div class="empty">暂无记录</div>'; }
-  else {
+  function renderHist() {
+    const activeCol = D.filter.active && D.metric_cli[D.filter.active];
+    const rows = D.rows.filter(r => !activeCol || r[activeCol] != null);
+    if (!rows.length) { wrap.innerHTML = '<div class="empty">暂无记录</div>'; return; }
     let html = '<table><thead><tr><th>日期</th>';
     const cols = Object.keys(D.metric_labels);
     cols.forEach(c => { html += `<th>${D.metric_labels[c]}(cm)</th>`; });
     html += '<th>备注</th></tr></thead><tbody>';
-    D.rows.forEach(r => {
+    rows.forEach(r => {
       html += `<tr><td>${esc(r.date)}</td>`;
       cols.forEach(c => { html += `<td>${r[c] == null ? '—' : esc(r[c])}</td>`; });
       html += `<td>${esc(r.note)}</td></tr>`;
@@ -130,11 +153,35 @@ if (D.mode === 'list') {
     html += '</tbody></table>';
     wrap.innerHTML = `<div class="table-scroll">${html}</div>`;
   }
+  renderHist();
+}
+
+function renderLineChart(el, rows, unit) {
+  const W = 560, H = 200, padL = 36, padR = 14, padT = 20, padB = 26;
+  const vals = rows.map(r => r.avg_val);
+  const mx = Math.max(...vals), mn = Math.min(...vals);
+  const rng = (mx - mn) || 1;
+  const x = i => rows.length === 1 ? (W - padL - padR) / 2 + padL
+    : padL + i * (W - padL - padR) / (rows.length - 1);
+  const y = v => padT + (1 - (v - mn) / rng) * (H - padT - padB);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  if (rows.length >= 2) {
+    const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.avg_val).toFixed(1)}`).join(' ');
+    s += `<polyline class="line" points="${pts}"/>`;
+  }
+  rows.forEach((r, i) => {
+    s += `<circle class="dot" cx="${x(i).toFixed(1)}" cy="${y(r.avg_val).toFixed(1)}" r="4"/>`;
+    s += `<text class="vlabel" x="${x(i).toFixed(1)}" y="${(y(r.avg_val) - 9).toFixed(1)}" text-anchor="middle">${r.avg_val}</text>`;
+    s += `<text class="xlabel" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${r.date.slice(5)}</text>`;
+  });
+  s += '</svg>';
+  el.innerHTML = s;
 }
 
 if (D.mode === 'trend') {
   document.getElementById('sceneTitle').textContent = '看围度趋势';
   document.getElementById('sceneSub').textContent = `${D.metric_label} 走势(最近 ${D.days} 天)`;
+  document.getElementById('listMode').style.display = 'none';
   document.getElementById('trendMode').style.display = '';
   const kpi = D.kpi || {};
   const dEl = document.getElementById('tDelta');
@@ -143,21 +190,11 @@ if (D.mode === 'trend') {
   document.getElementById('tAvg').textContent = kpi.avg == null ? '—' : kpi.avg;
   document.getElementById('tMin').textContent = kpi.min == null ? '—' : kpi.min;
   document.getElementById('tMax').textContent = kpi.max == null ? '—' : kpi.max;
-  const bar = document.getElementById('trendBar');
+  const chart = document.getElementById('trendChart');
   if (!D.rows.length) {
     document.getElementById('trendNote').textContent = '该部位暂无趋势数据';
   } else {
-    const vals = D.rows.map(r => r.avg_val);
-    const mx = Math.max(...vals), mn = Math.min(...vals);
-    const rng = (mx - mn) || 1;
-    D.rows.forEach(r => {
-      const h = 8 + ((r.avg_val - mn) / rng) * 160;
-      const div = document.createElement('div');
-      div.style.height = h + 'px';
-      div.innerHTML = `<span>${r.avg_val}</span>`;
-      div.title = `${r.date}: ${r.avg_val}cm`;
-      bar.appendChild(div);
-    });
+    renderLineChart(chart, D.rows, D.metric_label);
     document.getElementById('trendNote').textContent = `${D.rows.length} 个测量日 · ${D.metric_label}`;
   }
 }
@@ -165,19 +202,22 @@ if (D.mode === 'trend') {
 if (D.mode === 'compare') {
   document.getElementById('sceneTitle').textContent = '对比围度';
   document.getElementById('sceneSub').textContent = `${D.date1} vs ${D.date2}`;
+  document.getElementById('listMode').style.display = 'none';
   document.getElementById('compareMode').style.display = '';
   const wrap = document.getElementById('compareWrap');
   if (D.error) { wrap.innerHTML = `<div class="empty">${esc(D.error)}</div>`; }
   else if (!D.deltas || !D.deltas.length) { wrap.innerHTML = '<div class="empty">两个日期无共同可对比部位</div>'; }
   else {
-    let html = `<div class="tip">共 ${D.n_compared} 项可对比(变化最大在前)</div><table><thead><tr><th>部位</th><th>${esc(D.date1)}(cm)</th><th>${esc(D.date2)}(cm)</th><th>Δ(cm)</th><th>变化率</th></tr></thead><tbody>`;
+    const top = D.deltas[0];
+    let html = `<div class="compare-summary"><div class="cs-big">最大变化 <strong>${esc(top.label)}</strong> <span class="delta ${deltaClass(top.delta)}">${deltaSign(top.delta)}cm</span></div><div class="cs-sub">共 ${D.n_compared} 项可对比 · ${esc(D.date1)} → ${esc(D.date2)}</div></div>`;
+    html += `<div class="tip">13 项围度变化,按变化幅度从大到小排列</div><table><thead><tr><th>部位</th><th>${esc(D.date1)}(cm)</th><th>${esc(D.date2)}(cm)</th><th>Δ(cm)</th><th>变化率</th></tr></thead><tbody>`;
     D.deltas.forEach(d => {
       html += `<tr><td>${d.label}</td><td>${d.before}</td><td>${d.after}</td>` +
               `<td class="delta ${deltaClass(d.delta)}">${deltaSign(d.delta)}</td>` +
               `<td class="delta ${deltaClass(d.delta)}">${d.pct == null ? '—' : deltaSign(d.pct) + '%'}</td></tr>`;
     });
     html += '</tbody></table>';
-    wrap.innerHTML = html;
+    wrap.innerHTML = `<div class="table-scroll">${html}</div>`;
   }
 }
 </script>

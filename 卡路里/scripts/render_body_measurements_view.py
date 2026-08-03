@@ -31,6 +31,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from db import find_db_path  # noqa: E402
 from html_paths import html_scene_path  # noqa: E402
 from validators import MEASUREMENT_FIELDS, _caliper_cli_name  # noqa: E402
+from render_crud_view import _chain_valid  # noqa: E402 · 思考链校验单一来源(2026-08-02)
 
 METRIC_CLI = {_caliper_cli_name(f): f for f in MEASUREMENT_FIELDS}
 METRIC_LABELS = {
@@ -67,12 +68,9 @@ def _rows(c, sql, params):
 def build_list(c, metric=None):
     all_cols = ['id', 'date'] + MEASUREMENT_FIELDS + ['note']
     sql = "SELECT " + ', '.join(all_cols) + " FROM body_measurements WHERE is_deprecated = 0"
-    params = []
-    if metric:
-        sql += f" AND {METRIC_CLI[metric]} IS NOT NULL"
     sql += " ORDER BY date DESC, id DESC"
-    rows = _rows(c, sql, params)
-    # 部位筛选器:各部位有数据的日期数
+    rows = _rows(c, sql, [])
+    # 部位筛选器:各部位有数据的日期数(全量统计)
     filters = []
     for cli, col in METRIC_CLI.items():
         n = sum(1 for r in rows if r.get(col) is not None)
@@ -164,8 +162,17 @@ def main():
     p.add_argument('--days', type=int, default=90, help='trend 时间窗')
     p.add_argument('--date1', help='compare: 第一次日期')
     p.add_argument('--date2', help='compare: 第二次日期')
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
     p.add_argument('--output', help='输出文件路径(默认 html_scene_path 规则)')
     args = p.parse_args()
+
+    # ⭐ 思考链强制校验(R3 · 2026-08-02 用户拍板)
+    if not _chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print('     --chain "1.识别→2.选部位→3.读DB→4.渲染"', file=sys.stderr)
+        return 2
 
     c = _get_conn()
     try:

@@ -1110,14 +1110,14 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 | 记围度 | 13 部位(至少 1 项必填)| `python scripts/body_measurements.py add ...` → **HTML:`body_measurements_wizard.html`** · **场景 1/2 决策见 §⚠️ 强制性规定 第 5 条** |
 | 补记体脂 | 补录历史某天(冲突提示 + 循环补)| `python scripts/body_composition.py add --date <D> ...` → **HTML:`body_composition_wizard.html`** |
 | 补记围度 | 补录历史某天(冲突提示 + 循环补)| `python scripts/body_measurements.py add --date <D> ...` → **HTML:`body_measurements_wizard.html`** |
-| 看体脂 | 历史 + 来源筛选(皮褶钳/健身房/医院/全部)| `python scripts/render_body_composition_view.py --mode list [--source <s>]` → **HTML:`body_composition_view.html`** |
-| 看体脂趋势 | 折线(默认最近来源,可切换)| `python scripts/render_body_composition_view.py --mode trend [--source <s>]` → **HTML:`body_composition_view.html`** |
-| 看围度 | 历史 + 部位筛选 | `python scripts/render_body_measurements_view.py --mode list [--metric <col>]` → **HTML:`body_measurements_view.html`** |
-| 看围度趋势 | 折线(先选部位)| `python scripts/render_body_measurements_view.py --mode trend --metric <col>` → **HTML:`body_measurements_view.html`** |
-| 对比体脂 | 两段时间对比(注明同来源)| `python scripts/render_body_composition_view.py --mode compare --start1 <D1> --end1 <D2> --start2 <D3> --end2 <D4> [--source <s>]` → **HTML:`body_composition_view.html`** |
-| 对比围度 | 两个日期 13 项 Δ | `python scripts/render_body_measurements_view.py --mode compare --date1 <D1> --date2 <D2>` → **HTML:`body_measurements_view.html`** |
-| 删体脂 | 软删除(先列候选 → 快照确认 → 回执)| `python scripts/render_body_delete_receipt.py --entity composition --id <ID>` → **HTML:`crud_receipt.html`**(删除前快照+回执) |
-| 删围度 | 软删除(先列候选 → 快照确认 → 回执)| `python scripts/render_body_delete_receipt.py --entity measurements --id <ID>` → **HTML:`crud_receipt.html`**(删除前快照+回执) |
+| 看体脂 | 历史 + 来源筛选(皮褶钳/健身房/医院/全部)| `python scripts/render_body_composition_view.py --mode list [--source <s>] --chain "1.识别→2.读DB→3.渲染"` → **HTML:`body_composition_view.html`** |
+| 看体脂趋势 | 折线(默认最近来源,可切换)| `python scripts/render_body_composition_view.py --mode trend [--source <s>] --chain "1.识别→2.读DB→3.渲染"` → **HTML:`body_composition_view.html`** |
+| 看围度 | 历史 + 部位筛选 | `python scripts/render_body_measurements_view.py --mode list [--metric <col>] --chain "1.识别→2.读DB→3.渲染"` → **HTML:`body_measurements_view.html`** |
+| 看围度趋势 | 折线(先选部位)| `python scripts/render_body_measurements_view.py --mode trend --metric <col> --chain "1.识别→2.选部位→3.读DB→4.渲染"` → **HTML:`body_measurements_view.html`** |
+| 对比体脂 | 两段时间对比(注明同来源)| `python scripts/render_body_composition_view.py --mode compare --start1 <D1> --end1 <D2> --start2 <D3> --end2 <D4> [--source <s>] --chain "1.识别→2.读DB→3.渲染"` → **HTML:`body_composition_view.html`** |
+| 对比围度 | 两个日期 13 项 Δ | `python scripts/render_body_measurements_view.py --mode compare --date1 <D1> --date2 <D2> --chain "1.识别→2.读DB→3.渲染"` → **HTML:`body_measurements_view.html`** |
+| 删体脂 | 软删除(先列候选 → 快照确认 → 回执)| `python scripts/render_body_delete_receipt.py --entity composition --id <ID> --chain "1.列候选→2.确认→3.删除→4.回执"` → **HTML:`crud_receipt.html`**(删除前快照+回执) |
+| 删围度 | 软删除(先列候选 → 快照确认 → 回执)| `python scripts/render_body_delete_receipt.py --entity measurements --id <ID> --chain "1.列候选→2.确认→3.删除→4.回执"` → **HTML:`crud_receipt.html`**(删除前快照+回执) |
 
 **交互规则(v1.0 · ticket #9 用户拍板)**:
 - 用户只说「记体脂」没说方式 → AI 先问:皮褶钳还是外部设备?

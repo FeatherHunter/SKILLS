@@ -46,6 +46,19 @@
   .bar { display: flex; align-items: flex-end; gap: 3px; height: 180px; padding-top: 10px; }
   .bar div { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
   .bar div span { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--fg3); }
+  .chart { width: 100%; }
+  .chart svg { width: 100%; height: 200px; display: block; }
+  .chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+  .chart .dot { fill: var(--accent); }
+  .chart .vlabel { font-size: 10px; fill: var(--fg3); }
+  .chart .xlabel { font-size: 10px; fill: var(--fg3); }
+  .compare-summary { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+  .compare-summary .cs-big { font-size: 16px; font-weight: 600; }
+  .compare-summary .cs-sub { font-size: 12px; color: var(--fg3); margin-top: 4px; }
+  @media (max-width: 640px) {
+    th, td { padding: 7px 6px; font-size: 12px; }
+    .chart svg { height: 170px; }
+  }
 </style>
 </head>
 <body>
@@ -89,7 +102,7 @@
   </div>
   <div class="card">
     <h2>折线图</h2>
-    <div class="bar" id="trendBar"></div>
+    <div class="chart" id="trendChart"></div>
     <p class="note" id="trendNote"></p>
   </div>
 </div>
@@ -124,79 +137,130 @@ if (D.mode === 'list') {
   document.getElementById('sceneTitle').textContent = '看体脂';
   document.getElementById('sceneSub').textContent = '历史记录 + 来源筛选';
   document.getElementById('listMode').style.display = '';
-  const cur = D.current;
-  if (cur) {
-    document.getElementById('curBf').textContent = cur.body_fat_pct;
-    document.getElementById('curDate').textContent = cur.date;
-    document.getElementById('curSrc').textContent = SRC_LABELS[cur.source] || cur.source;
-    document.getElementById('curBadge').textContent = '最新';
-  }
   const chips = document.getElementById('srcChips');
   const groups = D.filter.groups || [];
-  const active = D.filter.active;
   const mkChip = (v, label, n) => {
     const c = document.createElement('button');
-    c.className = 'chip' + (v === active ? ' active' : '');
+    c.className = 'chip' + (v === D.filter.active ? ' active' : '');
     c.textContent = `${label} (${n})`;
-    c.onclick = () => { location.search = v && v !== 'all' ? `?source=${v}` : '?'; };
+    c.onclick = () => { D.filter.active = v; setChips(); renderAll(); };
     return c;
   };
   chips.appendChild(mkChip('all', '全部', (groups.reduce((s, g) => s + g.n, 0))));
   groups.forEach(g => chips.appendChild(mkChip(g.value, g.label, g.n)));
+  function setChips() {
+    [...chips.children].forEach(c => c.classList.remove('active'));
+    const idx = D.filter.active === 'all' ? 0 : Math.max(0, groups.findIndex(g => g.value === D.filter.active) + 1);
+    if (chips.children[idx]) chips.children[idx].classList.add('active');
+  }
   const wrap = document.getElementById('histTableWrap');
-  if (!D.rows.length) { wrap.innerHTML = '<div class="empty">暂无记录</div>'; }
-  else {
+  function renderAll() {
+    const rows = D.rows.filter(r => D.filter.active === 'all' || r.source === D.filter.active);
+    const cur = rows[0] || null;
+    if (cur) {
+      document.getElementById('curBf').textContent = cur.body_fat_pct;
+      document.getElementById('curDate').textContent = cur.date;
+      document.getElementById('curSrc').textContent = SRC_LABELS[cur.source] || cur.source;
+      document.getElementById('curBadge').textContent = '最新';
+    } else {
+      document.getElementById('curBf').textContent = '—';
+      document.getElementById('curDate').textContent = '—';
+      document.getElementById('curSrc').textContent = '—';
+      document.getElementById('curBadge').textContent = '';
+    }
+    if (!rows.length) { wrap.innerHTML = '<div class="empty">暂无记录</div>'; return; }
     let html = '<table><thead><tr><th>日期</th><th>体脂率</th><th>来源</th><th>备注</th></tr></thead><tbody>';
-    D.rows.forEach(r => {
+    rows.forEach(r => {
       html += `<tr><td>${esc(r.date)}</td><td>${esc(r.body_fat_pct)}%</td><td>${esc(SRC_LABELS[r.source] || r.source)}</td><td>${esc(r.note)}</td></tr>`;
     });
     html += '</tbody></table>';
-    wrap.innerHTML = html;
+    wrap.innerHTML = `<div class="table-scroll">${html}</div>`;
   }
+  renderAll();
+}
+
+function renderLineChart(el, rows, unit) {
+  const W = 560, H = 200, padL = 36, padR = 14, padT = 20, padB = 26;
+  const vals = rows.map(r => r.avg_pct);
+  const mx = Math.max(...vals), mn = Math.min(...vals);
+  const rng = (mx - mn) || 1;
+  const x = i => rows.length === 1 ? (W - padL - padR) / 2 + padL
+    : padL + i * (W - padL - padR) / (rows.length - 1);
+  const y = v => padT + (1 - (v - mn) / rng) * (H - padT - padB);
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
+  if (rows.length >= 2) {
+    const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.avg_pct).toFixed(1)}`).join(' ');
+    s += `<polyline class="line" points="${pts}"/>`;
+  }
+  rows.forEach((r, i) => {
+    s += `<circle class="dot" cx="${x(i).toFixed(1)}" cy="${y(r.avg_pct).toFixed(1)}" r="4"/>`;
+    s += `<text class="vlabel" x="${x(i).toFixed(1)}" y="${(y(r.avg_pct) - 9).toFixed(1)}" text-anchor="middle">${r.avg_pct}</text>`;
+    s += `<text class="xlabel" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${r.date.slice(5)}</text>`;
+  });
+  s += '</svg>';
+  el.innerHTML = s;
+}
+
+function kpiHtml(kpi, ids) {
+  const dEl = document.getElementById(ids.delta);
+  dEl.textContent = kpi.delta == null ? '—' : kpi.delta;
+  if (kpi.delta != null) { dEl.classList.add(kpi.delta < 0 ? 'down' : 'up'); }
+  document.getElementById(ids.avg).textContent = kpi.avg == null ? '—' : kpi.avg;
+  document.getElementById(ids.min).textContent = kpi.min == null ? '—' : kpi.min;
+  document.getElementById(ids.max).textContent = kpi.max == null ? '—' : kpi.max;
 }
 
 if (D.mode === 'trend') {
   document.getElementById('sceneTitle').textContent = '看体脂趋势';
   document.getElementById('sceneSub').textContent = `折线(单来源: ${SRC_LABELS[D.source] || D.source}) + KPI`;
+  document.getElementById('listMode').style.display = 'none';
   document.getElementById('trendMode').style.display = '';
-  const kpi = D.kpi || {};
-  const dEl = document.getElementById('tDelta');
-  dEl.textContent = kpi.delta == null ? '—' : kpi.delta;
-  if (kpi.delta != null) { dEl.classList.add(kpi.delta < 0 ? 'down' : 'up'); }
-  document.getElementById('tAvg').textContent = kpi.avg == null ? '—' : kpi.avg;
-  document.getElementById('tMin').textContent = kpi.min == null ? '—' : kpi.min;
-  document.getElementById('tMax').textContent = kpi.max == null ? '—' : kpi.max;
   const chips = document.getElementById('trendSrcChips');
-  Object.keys(SRC_LABELS).forEach(s => {
+  const srcs = Object.keys(D.series || {});
+  const active = D.source;
+  srcs.forEach(s => {
     const c = document.createElement('button');
-    c.className = 'chip' + (s === D.source ? ' active' : '');
-    c.textContent = SRC_LABELS[s];
-    c.onclick = () => { location.search = `?mode=trend&source=${s}`; };
+    c.className = 'chip' + (s === active ? ' active' : '');
+    c.textContent = SRC_LABELS[s] || s;
+    c.onclick = () => {
+      [...chips.children].forEach(x => x.classList.remove('active'));
+      c.classList.add('active');
+      renderSource(s);
+    };
     chips.appendChild(c);
   });
-  const bar = document.getElementById('trendBar');
-  if (!D.rows.length) {
-    document.getElementById('trendNote').textContent = '该来源暂无趋势数据';
-  } else {
-    const vals = D.rows.map(r => r.avg_pct);
-    const mx = Math.max(...vals), mn = Math.min(...vals);
-    const rng = (mx - mn) || 1;
-    D.rows.forEach(r => {
-      const h = 8 + ((r.avg_pct - mn) / rng) * 160;
-      const div = document.createElement('div');
-      div.style.height = h + 'px';
-      div.innerHTML = `<span>${r.avg_pct}</span>`;
-      div.title = `${r.date}: ${r.avg_pct}% (n=${r.n})`;
-      bar.appendChild(div);
-    });
-    document.getElementById('trendNote').textContent =
-      `${D.rows.length} 个测量日 · 最近 ${D.days} 天 · 来源 ${SRC_LABELS[D.source] || D.source}`;
+  const chart = document.getElementById('trendChart');
+  function kpiFor(rows) {
+    const values = rows.map(r => r.avg_pct).filter(v => v != null);
+    return {
+      count: values.length,
+      avg: values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length * 100) / 100 : null,
+      min: values.length ? Math.min(...values) : null,
+      max: values.length ? Math.max(...values) : null,
+      delta: values.length >= 2 ? Math.round((values[values.length - 1] - values[0]) * 100) / 100 : null,
+    };
   }
+  function renderSource(s) {
+    const rows = (D.series[s] || []);
+    document.getElementById('sceneSub').textContent = `折线(单来源: ${SRC_LABELS[s] || s}) + KPI`;
+    if (!rows.length) {
+      chart.innerHTML = '';
+      document.getElementById('trendNote').textContent = '该来源暂无趋势数据';
+      kpiHtml({delta: null, avg: null, min: null, max: null}, {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
+      return;
+    }
+    renderLineChart(chart, rows, '体脂率 %');
+    kpiHtml(kpiFor(rows), {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
+    document.getElementById('trendNote').textContent =
+      `${rows.length} 个测量日 · 最近 ${D.days} 天 · 来源 ${SRC_LABELS[s] || s}`;
+  }
+  renderSource(active);
 }
 
 if (D.mode === 'compare') {
   document.getElementById('sceneTitle').textContent = '对比体脂';
   document.getElementById('sceneSub').textContent = D.same_source_note || '两次测量对比';
+  document.getElementById('listMode').style.display = 'none';
   document.getElementById('compareMode').style.display = '';
   const dEl = document.getElementById('cDelta');
   dEl.textContent = D.delta == null ? '—' : D.delta;
@@ -205,6 +269,7 @@ if (D.mode === 'compare') {
   document.getElementById('cNote').textContent =
     `第 1 段 ${D.period1.start} ~ ${D.period1.end} · 第 2 段 ${D.period2.start} ~ ${D.period2.end} · 来源: ${D.source === 'all' ? '全部(不可直接比)' : (SRC_LABELS[D.source] || D.source)}`;
   const body = document.getElementById('cBody');
+  body.innerHTML = '';
   [['第 1 段', D.period1], ['第 2 段', D.period2]].forEach(([label, p]) => {
     body.innerHTML += `<tr><td><strong>${label}</strong></td><td>${esc(p.avg_pct)}</td><td>${esc(p.min_pct)}</td><td>${esc(p.max_pct)}</td><td>${esc(p.n)}</td></tr>`;
   });

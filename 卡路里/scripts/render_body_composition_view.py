@@ -31,6 +31,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from db import find_db_path  # noqa: E402
 from html_paths import html_scene_path  # noqa: E402
 from source_constants import SOURCE_CHOICES, SOURCE_LABELS, SOURCE_HOME_CALIPER  # noqa: E402
+from render_crud_view import _chain_valid  # noqa: E402 · 思考链校验单一来源(2026-08-02)
 
 
 SCENE_NAME = {
@@ -56,16 +57,12 @@ def _rows(c, sql, params):
 
 
 def build_list(c, source=None):
-    params = []
-    sql = ("SELECT id, date, source, body_fat_pct, note FROM body_composition "
-           "WHERE is_deprecated = 0")
-    if source:
-        sql += " AND source = ?"
-        params.append(source)
-    sql += " ORDER BY date DESC, id DESC"
-    rows = _rows(c, sql, params)
-    current = rows[0] if rows else None
-    # 来源分组计数(筛选器数据)
+    rows = _rows(c, """
+        SELECT id, date, source, body_fat_pct, note FROM body_composition
+        WHERE is_deprecated = 0
+        ORDER BY date DESC, id DESC
+    """, [])
+    # 来源分组计数(筛选器数据,全量统计)
     groups = []
     for s in SOURCE_CHOICES:
         n = sum(1 for r in rows if r['source'] == s)
@@ -73,40 +70,49 @@ def build_list(c, source=None):
     return {
         'mode': 'list',
         'rows': rows,
-        'current': current,
+        'current': rows[0] if rows else None,
         'filter': {'active': source or 'all', 'groups': groups},
         'source_labels': SOURCE_LABELS,
     }
 
 
-def build_trend(c, source=None, days=90):
-    if not source:
-        r = c.execute(
-            "SELECT source FROM body_composition WHERE is_deprecated = 0 "
-            "ORDER BY date DESC, id DESC LIMIT 1"
-        ).fetchone()
-        source = r[0] if r else SOURCE_HOME_CALIPER
+def build_trend_all(c, days=90):
+    """全来源序列(2026-08-03 客户端切换):默认最近来源 + 各来源 series + active"""
     since = (date.today() - timedelta(days=days)).isoformat()
-    rows = _rows(c, """
-        SELECT date, AVG(body_fat_pct) AS avg_pct, COUNT(*) AS n
-        FROM body_composition
-        WHERE is_deprecated = 0 AND date >= ? AND source = ?
-        GROUP BY date ORDER BY date ASC
-    """, (since, source))
-    values = [r['avg_pct'] for r in rows if r['avg_pct'] is not None]
-    kpi = {
-        'count': len(values),
-        'avg': round(sum(values) / len(values), 2) if values else None,
-        'min': min(values) if values else None,
-        'max': max(values) if values else None,
-        'delta': round(values[-1] - values[0], 2) if len(values) >= 2 else None,
-    }
+    last = c.execute(
+        "SELECT source FROM body_composition WHERE is_deprecated = 0 "
+        "ORDER BY date DESC, id DESC LIMIT 1"
+    ).fetchone()
+    active = (last[0] if last else SOURCE_HOME_CALIPER)
+    series = {}
+    for s in SOURCE_CHOICES:
+        rows = _rows(c, """
+            SELECT date, AVG(body_fat_pct) AS avg_pct, COUNT(*) AS n
+            FROM body_composition
+            WHERE is_deprecated = 0 AND date >= ? AND source = ?
+            GROUP BY date ORDER BY date ASC
+        """, (since, s))
+        if rows:
+            series[s] = rows
+
+    def _kpi(rows):
+        values = [r['avg_pct'] for r in rows if r['avg_pct'] is not None]
+        return {
+            'count': len(values),
+            'avg': round(sum(values) / len(values), 2) if values else None,
+            'min': min(values) if values else None,
+            'max': max(values) if values else None,
+            'delta': round(values[-1] - values[0], 2) if len(values) >= 2 else None,
+        }
+
     return {
         'mode': 'trend',
-        'source': source,
-        'rows': rows,
-        'kpi': kpi,
+        'source': active,
+        'series': series,
+        'rows': series.get(active, []),
+        'kpi': _kpi(series.get(active, [])),
         'days': days,
+        'source_labels': SOURCE_LABELS,
     }
 
 
@@ -158,15 +164,24 @@ def main():
     p.add_argument('--end1', help='compare: 第一段时间终点')
     p.add_argument('--start2', help='compare: 第二段时间起点')
     p.add_argument('--end2', help='compare: 第二段时间终点')
+    p.add_argument('--chain', help='AI 思考链(必填·强制规则:未传=AI 未按 SKILL.md 流程执行 · 2026-08-02)')
     p.add_argument('--output', help='输出文件路径(默认 html_scene_path 规则)')
     args = p.parse_args()
+
+    # ⭐ 思考链强制校验(R3 · 2026-08-02 用户拍板)
+    if not _chain_valid(args.chain):
+        print('❌ --chain 缺失或无效:AI 思考链是排障日志的必要字段(强制规则)', file=sys.stderr)
+        print('   未传 = AI 未按 SKILL.md 流程执行,行为不可控。', file=sys.stderr)
+        print('   请传入你的实际处理步骤,例如:', file=sys.stderr)
+        print('     --chain "1.识别→2.读DB→3.渲染"', file=sys.stderr)
+        return 2
 
     c = _get_conn()
     try:
         if args.mode == 'list':
             data = build_list(c, source=args.source)
         elif args.mode == 'trend':
-            data = build_trend(c, source=args.source, days=args.days)
+            data = build_trend_all(c, days=args.days)
         else:
             if not (args.start1 and args.end1 and args.start2 and args.end2):
                 print('❌ compare 模式需 --start1/--end1/--start2/--end2', file=sys.stderr)

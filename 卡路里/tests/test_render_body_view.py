@@ -69,8 +69,11 @@ def test_composition_view_list_source_filter(tmp_db, monkeypatch):
     c = rv._get_conn()
     try:
         data = rv.build_list(c, source='gym')
-        assert len(data['rows']) == 1
-        assert data['rows'][0]['source'] == 'gym'
+        assert data['filter']['active'] == 'gym'
+        assert len(data['rows']) == 2
+        groups = {g['value']: g['n'] for g in data['filter']['groups']}
+        assert groups['gym'] == 1
+        assert groups['home_caliper'] == 1
     finally:
         c.close()
 
@@ -79,11 +82,13 @@ def test_composition_view_trend_default_latest_source(tmp_db, monkeypatch):
     import render_body_composition_view as rv
     c = rv._get_conn()
     try:
-        data = rv.build_trend(c, days=90)
+        data = rv.build_trend_all(c, days=90)
         assert data['mode'] == 'trend'
         assert data['source'] == 'gym'
+        assert set(data['series'].keys()) == {'gym', 'home_caliper'}
         assert len(data['rows']) == 1
         assert data['kpi']['avg'] == 17.8
+        assert data['series']['home_caliper'][0]['avg_pct'] == 18.5
     finally:
         c.close()
 

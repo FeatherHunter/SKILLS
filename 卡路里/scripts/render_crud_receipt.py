@@ -427,7 +427,9 @@ def build_live_diet_add(food, calories, protein, carbs='0', fat='0', grams='100'
     if r['cal_goal']:
         rem = r['remaining_cal'] or 0
         marker = '剩余' if rem > 0 else '超标'
-        summary += f";{date_label}累计 {r['today_total_cal']}/{r['cal_goal']}卡,{marker} {abs(rem):.0f}卡"
+        # #44 审查:补记场景累计段用「当日累计」,避免日期重复(已记入 X …;X 累计 → 当日累计)
+        cumulative = '当日累计' if target_date else '今日累计'
+        summary += f";{cumulative} {r['today_total_cal']}/{r['cal_goal']}卡,{marker} {abs(rem):.0f}卡"
     return _diet_receipt('create', r['id'], {}, new_record, '记一餐',
                          f"{r['date']} {r['time']}", summary)
 

@@ -338,11 +338,11 @@ TRIGGERS = [
     {
             'category': '饮食',     'wake_word': '看今日饮食',     'desc': '看今日饮食',
             'main_prompt': {
-        'cli': 'python scripts/render_today_diet.py --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日饮食」。\n\n我想看今天的饮食:按餐别分组列出每条食物(克数/热量/蛋白/碳水/脂肪)+ 今日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_today_diet.py --mode nutrition --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日饮食」。\n\n我想看今天的饮食:按餐别分组列出每条食物(克数/热量/蛋白/碳水/脂肪)+ 今日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'diet_view_today', 'name': '看今日饮食', 'subfunction': '看饮食', 'output_type': 'result',
-            'html_template': 'templates/today_diet.html', 'data_source': 'python scripts/render_today_diet.py --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日饮食」。\n\n我想看今天的饮食:按餐别分组列出每条食物(克数/热量/蛋白/碳水/脂肪)+ 今日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。',
+            'html_template': 'templates/today_diet.html', 'data_source': 'python scripts/render_today_diet.py --mode nutrition --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日饮食」。\n\n我想看今天的饮食:按餐别分组列出每条食物(克数/热量/蛋白/碳水/脂肪)+ 今日累计 vs 目标。完成后给 1 句话总结,不需要过多文字解释。',
             'user_intent': '看今天按餐别分组的饮食明细', 'data_fields': ["meal", "food_name", "grams", "calories", "protein", "carbs", "fat", "goal"],
             'depends_on_external': False, 'order': 0},
     {
@@ -548,11 +548,11 @@ TRIGGERS = [
     {
             'category': '饮食',     'wake_word': '看今日营养',     'desc': '看今日营养',
             'main_prompt': {
-        'cli': 'python scripts/render_today_diet.py --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日营养」。\n\n我想看今天 4 项营养(热量/蛋白/碳水/脂肪)的实际 vs 目标 + 完成度。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_today_diet.py --mode nutrition --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看今日营养」。\n\n我想看今天 4 项营养(热量/蛋白/碳水/脂肪)的实际 vs 目标 + 完成度。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'nutrition_today', 'name': '看今日营养', 'subfunction': '看营养', 'output_type': 'result',
-            'html_template': 'templates/today_diet.html', 'data_source': 'python scripts/render_today_diet.py --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日营养」。\n\n我想看今天 4 项营养(热量/蛋白/碳水/脂肪)的实际 vs 目标 + 完成度。完成后给 1 句话总结,不需要过多文字解释。',
+            'html_template': 'templates/today_diet.html', 'data_source': 'python scripts/render_today_diet.py --mode nutrition --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日营养」。\n\n我想看今天 4 项营养(热量/蛋白/碳水/脂肪)的实际 vs 目标 + 完成度。完成后给 1 句话总结,不需要过多文字解释。',
             'user_intent': '看今日 4 项营养完成度', 'data_fields': ["calories", "protein", "carbs", "fat", "goal", "pct"],
             'depends_on_external': False, 'order': 1},
     {

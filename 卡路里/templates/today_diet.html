@@ -137,21 +137,21 @@
 <h1>🍽️ 今日饮食</h1>
 <p class="sub" id="sub">--</p>
 
-<div class="kpi-grid">
-  <div class="kpi"><div class="label">记录数</div><div class="value" id="kRec">--</div><div class="extra" id="kRecE">--</div></div>
-  <div class="kpi"><div class="label">总热量</div><div class="value" id="kCal">--</div><div class="extra" id="kCalE">--</div></div>
-  <div class="kpi"><div class="label">蛋白</div><div class="value" id="kProt">--</div><div class="extra" id="kProtE">--</div></div>
-  <div class="kpi"><div class="label">碳水</div><div class="value" id="kCarb">--</div><div class="extra" id="kCarbE">--</div></div>
-  <div class="kpi"><div class="label">脂肪</div><div class="value" id="kFat">--</div><div class="extra" id="kFatE">--</div></div>
-  <div class="kpi"><div class="label">饮水</div><div class="value" id="kWater">--</div><div class="extra" id="kWaterE">--</div></div>
+<div class="kpi-grid" id="kpiGrid">
+  <div class="kpi kpi-rec"><div class="label">记录数</div><div class="value" id="kRec">--</div><div class="extra" id="kRecE">--</div></div>
+  <div class="kpi kpi-cal"><div class="label">总热量</div><div class="value" id="kCal">--</div><div class="extra" id="kCalE">--</div></div>
+  <div class="kpi kpi-prot"><div class="label">蛋白质</div><div class="value" id="kProt">--</div><div class="extra" id="kProtE">--</div></div>
+  <div class="kpi kpi-carb"><div class="label">碳水</div><div class="value" id="kCarb">--</div><div class="extra" id="kCarbE">--</div></div>
+  <div class="kpi kpi-fat"><div class="label">脂肪</div><div class="value" id="kFat">--</div><div class="extra" id="kFatE">--</div></div>
+  <div class="kpi kpi-water"><div class="label">饮水</div><div class="value" id="kWater">--</div><div class="extra" id="kWaterE">--</div></div>
 </div>
 
-<div class="section">
+<div class="section" id="secMealProgress">
   <h2>餐次进度</h2>
   <div id="mealBars"></div>
 </div>
 
-<div class="section">
+<div class="section" id="secPie">
   <h2>营养配比</h2>
   <div class="pie-wrap">
     <svg id="pie" width="180" height="180" viewBox="0 0 180 180"></svg>
@@ -159,7 +159,7 @@
   </div>
 </div>
 
-<div class="section">
+<div class="section" id="secDetail">
   <h2>今日明细</h2>
   <div class="table-wrap">
   <table>
@@ -185,14 +185,26 @@
     return;
   }
   const { summary, meals, meta } = D.data;
+  const mode = meta.mode || 'diet';
 
   // #44 审查:标题按日期动态——今天=今日饮食,历史日期=「M月D日 饮食」
   const h1 = document.querySelector('h1');
-  if (meta.date === meta.today) {
+  if (mode === 'nutrition') {
+    h1.textContent = '🥗 今日营养';
+  } else if (meta.date === meta.today) {
     h1.textContent = '🍽️ 今日饮食';
   } else {
     const parts = meta.date.split('-');
     h1.textContent = `🍽️ ${Number(parts[1])}月${Number(parts[2])}日 饮食`;
+  }
+
+  // #44 审查:nutrition 视角分离——隐藏 餐次进度/今日明细,只留 4 营养 KPI + 配比
+  if (mode === 'nutrition') {
+    document.getElementById('secMealProgress').style.display = 'none';
+    document.getElementById('secDetail').style.display = 'none';
+    document.querySelector('.kpi-rec').style.display = 'none';
+    document.querySelector('.kpi-cal').style.display = 'none';
+    document.querySelector('.type-badge').textContent = '报告型 · 今日营养完成度';
   }
 
   // #44 审查:数值统一格式化——最多 2 位小数(整数不带尾零,浮点去噪声)
@@ -204,9 +216,21 @@
 
   document.getElementById('metaLeft').textContent = `${meta.date} · 共 ${meals.length} 条记录`;
   const remain = summary.target - summary.calorie;
-  document.getElementById('sub').innerHTML = remain > 0
-    ? `查今天吃 · ${meta.date} · 距离目标还剩 <span class="pill pill-good">${fmt2(remain)} 卡</span>`
-    : `查今天吃 · ${meta.date} · 已超目标 <span class="pill pill-bad">${fmt2(-remain)} 卡</span>`;
+  // #44 审查:nutrition 模式副标题 = 4 项营养完成度一句话
+  if (mode === 'nutrition') {
+    const parts = [
+      `蛋白质 ${summary.protein_pct}%`,
+      `碳水 ${summary.carb_pct}%`,
+      `脂肪 ${summary.fat_pct}%`,
+      `饮水 ${Math.round(summary.water_ml / summary.water_target * 100)}%`,
+    ];
+    document.getElementById('sub').innerHTML =
+      `查今日营养 · ${meta.date} · ` + parts.map(t => `<span class="pill pill-info">${t}</span>`).join(' ');
+  } else {
+    document.getElementById('sub').innerHTML = remain > 0
+      ? `查今天吃 · ${meta.date} · 距离目标还剩 <span class="pill pill-good">${fmt2(remain)} 卡</span>`
+      : `查今天吃 · ${meta.date} · 已超目标 <span class="pill pill-bad">${fmt2(-remain)} 卡</span>`;
+  }
 
   document.getElementById('kRec').textContent = (summary.record_count != null ? summary.record_count : meals.length);
   document.getElementById('kRecE').textContent = `今日共 ${summary.record_count != null ? summary.record_count : meals.length} 条`;
@@ -343,6 +367,15 @@
   }
 
   document.getElementById('copyBtn').onclick = function() {
+    if (mode === 'nutrition') {
+      const r = `今日营养 ${meta.date}\n` +
+                `蛋白质 ${fmt2(summary.protein_g)}g / 目标 ${fmt2(summary.protein_target)}g (${summary.protein_pct}%)\n` +
+                `碳水 ${fmt2(summary.carb_g)}g / 目标 ${fmt2(summary.carb_target)}g (${summary.carb_pct}%)\n` +
+                `脂肪 ${fmt2(summary.fat_g)}g / 目标 ${fmt2(summary.fat_target)}g (${summary.fat_pct}%)\n` +
+                `饮水 ${fmt2(summary.water_ml)}ml / 目标 ${fmt2(summary.water_target)}ml`;
+      doCopyText(r, this, '今日营养数据复制成功 ✓');
+      return;
+    }
     const lines = meals.map(m =>
       `${m.time} ${mealLabels[m.meal_type]||m.meal_type} ${m.food_name} ${fmt2(m.grams)}g = ${fmt2(m.calorie)}卡`);
     const r = `今日饮食 ${meta.date}\n总热量 ${fmt2(summary.calorie)} / ${fmt2(summary.target)} 卡\n` +

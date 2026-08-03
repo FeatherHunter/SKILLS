@@ -53,8 +53,11 @@ def _load_data(input_path):
     return raw
 
 
-def build_data(day):
-    """从 calorie_data.db 查 food_log + daily_goal + 餐次聚合"""
+def build_data(day, mode='diet'):
+    """从 calorie_data.db 查 food_log + daily_goal + 餐次聚合
+
+    mode: 'diet'(默认,看今日饮食) | 'nutrition'(看今日营养 · #44 视角分离)
+    """
     from db import find_db_path
     import sqlite3
 
@@ -143,6 +146,7 @@ def build_data(day):
             'meta': {
                 'date':  day,
                 'today': date.today().isoformat(),
+                'mode':  mode,   # #44 审查:看今日营养(视角分离)
             },
         },
         'message': f'已生成 {day} 今日饮食({len(meals)} 条)',
@@ -163,8 +167,10 @@ def render_html(data):
 
 
 def main():
-    p = argparse.ArgumentParser(description='渲染今日饮食 HTML(报告型 · 单日 4 餐)')
+    p = argparse.ArgumentParser(description='渲染今日饮食/今日营养 HTML(报告型 · 单日)')
     p.add_argument('--date', help='日期 YYYY-MM-DD(默认今天)')
+    p.add_argument('--mode', choices=['diet', 'nutrition'], default='diet',
+                   help='视图模式:diet=看今日饮食(明细视角) / nutrition=看今日营养(完成度视角 · #44)')
     p.add_argument('--mock', help='从 mock JSON 文件加载(代替 DB 查询)')
     p.add_argument('--output', help='输出文件路径(默认 calorie_html/今日饮食总览_<TS>.html)')
     p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
@@ -175,7 +181,7 @@ def main():
         if args.mock:
             data = _load_data(args.mock)
         else:
-            data = build_data(day)
+            data = build_data(day, mode=args.mode)
         if args.chain:
             data['data']['meta']['chain'] = args.chain
         html = render_html(data)

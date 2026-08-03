@@ -60,7 +60,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .weight-stat .value{font-size:20px;font-weight:700;font-feature-settings:"tnum"}
 footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;border-top:1px solid var(--lineS);margin-top:36px}
 #backTop{position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--line);color:var(--ink);text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;box-shadow:var(--shadow)}
-@media(max-width:640px){.wrap{padding:20px 16px 60px}.hero{padding:24px 20px 20px}.hero h1{font-size:24px}.section,.copy-section{padding:18px 20px}.slider-row{grid-template-columns:1fr;gap:8px}.weight-grid{grid-template-columns:1fr}.mini-row{grid-template-columns:1fr;gap:6px}.mini-num{text-align:left}}
+@media(max-width:640px){.wrap{padding:20px 16px 60px}.hero{padding:24px 20px 20px}.hero h1{font-size:24px}.section,.copy-section{padding:18px 20px}.slider-row{grid-template-columns:1fr auto;grid-template-areas:"name value""bar bar";gap:8px 10px}.slider-row .name{grid-area:name}.slider-row .value{grid-area:value;text-align:right}.slider-row input[type="range"]{grid-area:bar}.weight-grid{grid-template-columns:1fr}.mini-row{grid-template-columns:1fr;gap:6px}.mini-num{text-align:left}}
 </style>
 </head>
 <body>

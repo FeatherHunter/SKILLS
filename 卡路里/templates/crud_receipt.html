@@ -27,13 +27,23 @@
   .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
   /* 顶部 ID 卡 */
   .id-card { background:linear-gradient(135deg,#e8f5e8,#f0f8ff); border:1px solid var(--good);
-             border-radius:16px; padding:32px; text-align:center; margin-bottom:20px; }
+             border-radius:16px; padding:24px; text-align:center; margin-bottom:20px; }
   .id-card.delete { background:linear-gradient(135deg,#ffeaea,#fff5f5); border-color:var(--bad); }
   .id-card.update { background:linear-gradient(135deg,#fff5e5,#fffaf0); border-color:var(--warn); }
-  .id-card .icon { font-size:48px; margin-bottom:8px; }
-  .id-card .title { font-size:18px; font-weight:700; margin-bottom:4px; }
-  .id-card .id { font-size:42px; font-weight:800; color:var(--fg); font-variant-numeric:tabular-nums; margin:8px 0; }
-  .id-card .meta { font-size:13px; color:var(--fg2); }
+  .id-card .headline { display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap; }
+  .id-card .icon { font-size:24px; margin:0; }
+  .id-card .title { font-size:18px; font-weight:700; margin:0; }
+  .id-card .id { font-size:13px; font-weight:600; color:var(--fg3); font-variant-numeric:tabular-nums; margin:0; }
+  .id-card .meta { font-size:13px; color:var(--fg2); display:none; } /* #44 审查:时间·场景行去掉(时间已在页眉) */
+  .id-card .summary { flex-basis:100%; margin-top:12px; font-size:15px; color:var(--fg); line-height:1.7; }
+  .id-card .sum-kpis { margin-top:6px; display:flex; align-items:baseline; justify-content:center; gap:8px; flex-wrap:wrap; }
+  .id-card .sum-label { font-size:12px; color:var(--fg3); }
+  .id-card .sum-val { font-size:16px; font-weight:600; color:var(--fg); font-variant-numeric:tabular-nums; }
+  .id-card .sum-remain { font-size:22px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .id-card .sum-remain.good { color:var(--good); }
+  .id-card .sum-remain.warn { color:var(--warn); }
+  .id-card .sum-remain.bad { color:var(--bad); }
+  .id-card .sum-dot { color:var(--fg3); }
   /* KPI 4 卡 */
   .kpi-grid { display:none; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; } /* 默认隐藏,有数据才显示(2026-08-02) */
   .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
@@ -68,6 +78,7 @@
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary:hover { background:#005bb0; }
+  .btn.copied { background:var(--good); color:#fff; border-color:var(--good); } /* #44 审查:复制成功反馈(点击变绿) */
   /* Phase 3c:mobile 断点(640px 以下单列堆叠 + 缩 padding) */
   @media (max-width:640px) {
     body { padding:20px 14px 80px; }
@@ -103,11 +114,13 @@
 <p class="sub" id="sub">--</p>
 
 <div class="id-card" id="idCard">
-  <div class="icon" id="icon">✓</div>
-  <div class="title" id="opTitle">--</div>
-  <div class="id" id="recordId">--</div>
+  <div class="headline">
+    <div class="icon" id="icon">✓</div>
+    <div class="title" id="opTitle">--</div>
+    <div class="id" id="recordId">--</div>
+  </div>
   <div class="meta" id="recordMeta">--</div>
-  <div class="summary" id="summaryLine" style="display:none;margin-top:10px;font-size:14px;color:var(--fg2);"></div>
+  <div class="summary" id="summaryLine" style="display:none"></div>
 </div>
 
 <div class="kpi-grid" id="kpiGrid"></div>
@@ -125,8 +138,8 @@
 <div class="footer">
   <div class="btn-group">
     <button class="btn" id="undoBtn">↩ 撤销(复制指令)</button>
-    <button class="btn" id="copyDataBtn">📋 复制数据</button>
-    <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>
+    <button class="btn btn-primary" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
   </div>
 </div>
 
@@ -138,6 +151,12 @@
     return;
   }
   const { op, record_id, old_record, new_record, context, meta } = D.data;
+
+  function escapeHTML(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+      {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+    ));
+  }
 
   document.getElementById('metaLeft').textContent = meta.action_at;
   const opLabels = {add:'新增', create:'新增', update:'修改', delete:'删除'};
@@ -153,10 +172,11 @@
   document.getElementById('icon').textContent = opIcon;
   document.getElementById('opTitle').textContent = opLabel + '成功';
   document.getElementById('recordId').textContent = '#' + record_id;
+  document.getElementById('recordMeta').style.display = 'none';  // #44 审查:时间·场景行去掉(时间已在页眉 meta-bar)
   document.getElementById('recordMeta').textContent = meta.action_at + ' · ' + meta.entity_type;
 
   document.getElementById('sub').innerHTML =
-    `<span class="pill pill-${opClass}">${opLabel}</span> ${meta.entity_type} #${record_id} ${opLabel}成功`;
+    `<span class="pill pill-${opClass}">${opLabel}</span> ${meta.entity_type} ${opLabel}成功`;
 
   // KPI 卡(仅当数据提供 kpis 时渲染;profile 场景已不填,见 render_crud_receipt.py · 2026-08-02)
   const kpiGrid = document.getElementById('kpiGrid');
@@ -172,9 +192,28 @@
   }
 
   // 1 句话总结(2026-08-02 用户拍板:prompt 承诺的总结必须在 HTML 有对应物)
+  // #44 审查(2026-08-03 用户拍板):关键数字突出设计——一句话常规,「今日累计 X/Y · 剩余 Z」拆为数字行(大号主色),不加背景不全加粗
   if (D.data.summary) {
     const sl = document.getElementById('summaryLine');
-    sl.textContent = '💬 ' + D.data.summary;
+    const s = D.data.summary;
+    const m = s.match(/今日累计\s*([\d,]+)\s*\/\s*([\d,]+)\s*卡\s*[,，]\s*剩余\s*(-?[\d,]+)\s*卡/);
+    if (m) {
+      const head = s.slice(0, m.index).replace(/[;；]\s*$/, '');
+      // #44 审查:剩余量状态驱动配色——充裕绿 / 接近上限橙 / 已超红(负数文案改「已超 X 卡」)
+      const remain = parseInt(m[3].replace(/,/g, ''), 10);
+      const target = parseInt(m[2].replace(/,/g, ''), 10);
+      let cls = 'good', remainTxt = `剩余 ${m[3]} 卡`;
+      if (remain < 0) { cls = 'bad'; remainTxt = `已超 ${Math.abs(remain)} 卡`; }
+      else if (target > 0 && remain <= Math.round(target * 0.2)) { cls = 'warn'; }
+      sl.innerHTML =
+        `<div class="sum-line">💬 ${escapeHTML(head)}</div>` +
+        `<div class="sum-kpis"><span class="sum-label">今日累计</span>` +
+        `<span class="sum-val">${m[1]} / ${m[2]} 卡</span>` +
+        `<span class="sum-dot">·</span>` +
+        `<span class="sum-remain ${cls}">${remainTxt}</span></div>`;
+    } else {
+      sl.textContent = '💬 ' + s;
+    }
     sl.style.display = 'block';
   }
 
@@ -327,8 +366,9 @@
   function copyText(text, btn, okMsg) {
     const after = () => {
       const orig = btn.textContent;
+      btn.classList.add('copied');
       btn.textContent = '✓ 已复制';
-      setTimeout(() => btn.textContent = orig, 2000);
+      setTimeout(() => { btn.classList.remove('copied'); btn.textContent = orig; }, 2000);
       showToast(okMsg);
     };
     if (navigator.clipboard && navigator.clipboard.writeText) {

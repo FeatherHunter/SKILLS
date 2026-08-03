@@ -120,15 +120,17 @@ function renderMissing(){
   document.getElementById('missing').innerHTML='⚠️ 档案缺: '+R.missing.join(' / ')+' — 已用默认值估算,建议先设置档案';
 }
 function buildAdoptPrompt(){
-  let p='我已确认推荐目标,请按「定营养目标(自动算)」流程写入数据库。\n\n';
-  p+='营养目标:\n';
-  p+='  热量 '+GOAL.calorie_goal+' 卡\n';
-  p+='  蛋白 '+GOAL.protein_goal+' g\n';
-  p+='  碳水 '+GOAL.carbs_goal+' g\n';
-  p+='  脂肪 '+GOAL.fat_goal+' g\n';
-  p+='  饮水 '+GOAL.water_goal+' ml\n\n';
+  const wake=META.wake_word||'定营养目标(自动算)';
+  let p='我已确认推荐目标,请按「'+wake+'」流程写入数据库。\n\n';
+  const hasMacro=GOAL.calorie_goal!=null||GOAL.protein_goal!=null||GOAL.carbs_goal!=null||GOAL.fat_goal!=null;
+  const rows=[];
+  if(GOAL.calorie_goal!=null)rows.push('  热量 '+GOAL.calorie_goal+' 卡');
+  if(GOAL.protein_goal!=null)rows.push('  蛋白 '+GOAL.protein_goal+' g');
+  if(GOAL.carbs_goal!=null)rows.push('  碳水 '+GOAL.carbs_goal+' g');
+  if(GOAL.fat_goal!=null)rows.push('  脂肪 '+GOAL.fat_goal+' g');
+  if(GOAL.water_goal!=null)rows.push('  饮水 '+GOAL.water_goal+' ml');
+  p+=(hasMacro?'营养目标':'饮水目标')+':\n'+rows.join('\n')+'\n\n';
   if(R.plan_reasons)p+='推荐理由:\n'+R.plan_reasons.map(x=>'  - '+x).join('\n')+'\n\n';
-  p+='数据来源: 目标推荐 v1 · render_goal_recommend.py · '+new Date().toISOString().split('T')[0];
   return p;
 }
 function copyAdopt(){doCopy(buildAdoptPrompt(),'btnAdopt','采纳指令已复制,粘贴给 AI 即可写入 ✓');}
@@ -136,10 +138,10 @@ renderKpis();
 renderRows();
 renderReasons();
 renderMissing();
-document.getElementById('copyPreview').textContent=buildAdoptPrompt();
-
 // R2 双按钮:复制数据(用户口径)/ 复制日志(排障口径) · 2026-08-02 对齐 #8
 const META=D.meta||{};
+document.getElementById('copyPreview').textContent=buildAdoptPrompt();
+
 function buildDataText(){
   const lines=[(D.title||'目标推荐')+(META.fetched_at?' ('+META.fetched_at+')':''),''];
   if(R.tdee!=null)lines.push(`TDEE: ${R.tdee} 卡`);

@@ -152,6 +152,7 @@ def build_mode_week(goal):
             {'label': '周总量', 'value': total['calorie'], 'unit': '卡'},
             {'label': '周目标', 'value': week_goal * 7 if week_goal else '—', 'unit': '卡'},
             {'label': '日均', 'value': avg['calorie'], 'unit': '卡'},
+            {'label': '日均目标', 'value': week_goal if week_goal else '—', 'unit': '卡'},
         ],
         'items': items,
         'summary': f'本周日均热量 {avg["calorie"]} 卡' + (f' · 周目标 {week_goal * 7} 卡' if week_goal else ''),

@@ -54,7 +54,8 @@ def _disp(record: dict) -> dict:
 
 
 def _receipt(op: str, record_id, old_record: dict, new_record: dict,
-             entity_label: str, summary: str, action_at: str | None = None) -> dict:
+             entity_label: str, summary: str, action_at: str | None = None,
+             kpis: list | None = None) -> dict:
     return {
         'status': 'ok',
         'data': {
@@ -62,7 +63,7 @@ def _receipt(op: str, record_id, old_record: dict, new_record: dict,
             'record_id': record_id,
             'old_record': old_record or {},
             'new_record': new_record or {},
-            'context': {'kpis': []},
+            'context': {'kpis': kpis or []},
             'meta': {
                 'action_at': action_at or datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'entity_type': entity_label,
@@ -111,7 +112,19 @@ def build_live_add(date, etype, calories, minutes=None, time_str=None, note='',
         parts.append(f"备注:{rec['note']}")
     label = '补记运动' if is_backfill else '记运动'
     summary = f"已记录:{'、'.join(parts)}{' · 补录' if is_backfill else ''}{conflict_note}"
-    return _receipt('add', rid, {}, _disp(rec), label, summary, rec['time'] and f"{date} {rec['time']}")
+    kpis = [{'label': '类型', 'value': rec['exercise_type']}]
+    if rec.get('duration_minutes'):
+        kpis.append({'label': '时长', 'value': f"{rec['duration_minutes']} 分钟"})
+    kpis.append({'label': '消耗', 'value': f"{rec['calories_burned']} 卡"})
+    if is_backfill:
+        kpis.append({'label': '补录日期', 'value': date})
+        kpis.append({'label': '补录标识', 'value': '补录'})
+    if rec.get('time'):
+        kpis.append({'label': '时间', 'value': rec['time']})
+    if rec.get('note'):
+        kpis.append({'label': '备注', 'value': rec['note']})
+    return _receipt('add', rid, {}, _disp(rec), label, summary,
+                    rec['time'] and f"{date} {rec['time']}", kpis)
 
 
 def build_live_add_strength(date, etype, sets, load_kg, reps, note=''):
@@ -127,8 +140,11 @@ def build_live_add_strength(date, etype, sets, load_kg, reps, note=''):
     summary = f"已记录 {etype}:{_fmt_strength(sets, load_kg, reps)}"
     new = {'exercise_type': etype, 'date': date, 'set_index': f'1~{sets}',
            'load_kg': load_kg, 'reps': reps, 'note': note or ''}
+    kpis = [{'label': '动作名', 'value': etype},
+            {'label': '训练量', 'value': _fmt_strength(sets, load_kg, reps)},
+            {'label': '总消耗', 'value': '0 卡'}]
     return _receipt('add', ids[0], {}, _disp(new), '记力量训练', summary,
-                    f"{date} {datetime.now().strftime('%H:%M:%S')}")
+                    f"{date} {datetime.now().strftime('%H:%M:%S')}", kpis)
 
 
 def build_live_add_daily(date, etype, minutes, steps=None, period=None, calories=None):
@@ -142,8 +158,18 @@ def build_live_add_daily(date, etype, minutes, steps=None, period=None, calories
         parts.append(f"{rec['period']}")
     if rec.get('calories_burned'):
         parts.append(f"{rec['calories_burned']} 卡")
+    kpis = [{'label': '类型', 'value': rec['exercise_type']}]
+    if rec.get('steps'):
+        kpis.append({'label': '步数', 'value': f"{rec['steps']} 步"})
+    if rec.get('period'):
+        kpis.append({'label': '时段', 'value': rec['period']})
+    if rec.get('duration_minutes'):
+        kpis.append({'label': '时长', 'value': f"{rec['duration_minutes']} 分钟"})
+    kpis.append({'label': '消耗', 'value': f"{rec['calories_burned']} 卡"})
+    if rec.get('time'):
+        kpis.append({'label': '时间', 'value': rec['time']})
     return _receipt('add', rid, {}, _disp(rec), '记日常活动', f"已记录:{'、'.join(parts)}",
-                    f"{date} {rec['time']}")
+                    f"{date} {rec['time']}", kpis)
 
 
 def build_live_batch_add(items):
@@ -155,7 +181,10 @@ def build_live_batch_add(items):
            'failed': result['failed'],
            'failures': '\n'.join(f"{f['item'].get('date')} {f['item'].get('type')}: {f['reason']}"
                                  for f in result['failures']) or None}
-    return _receipt('add', f"{result['written']} 条", {}, _disp(new), '批量补记运动', summary)
+    kpis = [{'label': '写入', 'value': f"{result['written']} 条"},
+            {'label': '跳过', 'value': f"{result['skipped']} 条"},
+            {'label': '失败', 'value': f"{result['failed']} 条"}]
+    return _receipt('add', f"{result['written']} 条", {}, _disp(new), '批量补记运动', summary, kpis=kpis)
 
 
 def build_live_copy(target):
@@ -164,7 +193,11 @@ def build_live_copy(target):
     summary = f"已复制昨日运动 {source} → {target}:复制 {copied} 条 / 跳过 {skipped} 条"
     new = {'source_date': source, 'target_date': target,
            'copied': copied, 'skipped': skipped}
-    return _receipt('add', f"{copied} 条", {}, _disp(new), '复制昨日运动', summary)
+    kpis = [{'label': '复制条数', 'value': f"{copied} 条"},
+            {'label': '跳过条数', 'value': f"{skipped} 条"},
+            {'label': '来源日期', 'value': source},
+            {'label': '目标日期', 'value': target}]
+    return _receipt('add', f"{copied} 条", {}, _disp(new), '复制昨日运动', summary, kpis=kpis)
 
 
 def build_live_update(record_id, field_value_pairs):
@@ -197,17 +230,21 @@ def build_live_delete_day(date):
     """删某日运动:删除条数/日期"""
     count = et.delete_day(date)
     summary = f"已删除 {date} 的运动记录 {count} 条"
+    kpis = [{'label': '删除条数', 'value': f"{count} 条"},
+            {'label': '日期', 'value': date}]
     return _receipt('delete', f"{count} 条", {}, {'date': date, 'deleted_count': count},
-                    '删某日运动', summary)
+                    '删某日运动', summary, kpis=kpis)
 
 
 def build_live_delete_range(from_date, to_date):
     """批量删运动:时间范围/删除条数"""
     count = et.delete_range(from_date, to_date)
     summary = f"已删除 {from_date} ~ {to_date} 的运动记录 {count} 条"
+    kpis = [{'label': '时间范围', 'value': f"{from_date} ~ {to_date}"},
+            {'label': '删除条数', 'value': f"{count} 条"}]
     return _receipt('delete', f"{count} 条", {},
                     {'start_date': from_date, 'end_date': to_date, 'deleted_count': count},
-                    '批量删运动', summary)
+                    '批量删运动', summary, kpis=kpis)
 
 
 def _scene_name_for(mode: str) -> str:

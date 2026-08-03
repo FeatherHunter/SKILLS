@@ -116,13 +116,17 @@ def _tdee_estimate(age, gender, height_cm, activity_level):
 
 
 def _profile_receipt(op: str, old_record: dict, new_record: dict, kpis: list,
-                     entity_label: str, action_at: str, summary: str = '') -> dict:
-    """组装 profile 回执数据契约(与 mock_crud_receipt.json 同构)"""
+                     entity_label: str, action_at: str, summary: str = '', record_id: int = 1) -> dict:
+    """组装 profile 回执数据契约(与 mock_crud_receipt.json 同构)
+
+    record_id 默认 1(档案单行表);体重改记录按 ID 时传真实 id
+    (2026-08-03 · ticket #43 场景 6 终审:硬编码 1 导致 idCard 显示 #1 而 summary 显示 #40)
+    """
     return {
         'status': 'ok',
         'data': {
             'op': op,
-            'record_id': 1,
+            'record_id': record_id,
             'old_record': old_record,
             'new_record': new_record,
             'context': {'kpis': kpis},
@@ -296,7 +300,7 @@ def build_live_weight_update(target_id=None, target_date=None, weight_kg=None, n
             summary += f",备注→{r['note']}"
         if r.get('bmi'):
             summary += f";BMI {r['bmi']}"
-        return _profile_receipt('update', old, new, [], '体重记录', r['date'], summary)
+        return _profile_receipt('update', old, new, [], '体重记录', r['date'], summary, target_id)
 
     # 按日期
     if not target_date:

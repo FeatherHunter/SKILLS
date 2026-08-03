@@ -38,6 +38,8 @@
   .id-card .summary { flex-basis:100%; margin-top:12px; font-size:15px; color:var(--fg); line-height:1.7; }
   .id-card .sum-line { margin-top:10px; }
   .id-card .sum-nums { color:var(--accent); font-weight:600; } /* #44 审查:核心数据(克数/卡)颜色强调 */
+.sum-old { color:#c7254e; text-decoration:line-through; font-weight:500; } /* 2026-08-03 场景 6 终审:汇总句 旧→新 变更语义(与 diff 卡同约定) */
+.sum-new { color:var(--good); font-weight:600; }
   .id-card .sum-kpis { margin-top:6px; display:flex; align-items:baseline; justify-content:center; gap:8px; flex-wrap:wrap; }
   .id-card .sum-label { font-size:12px; color:var(--fg3); }
   .id-card .sum-val { font-size:16px; font-weight:600; color:var(--fg); font-variant-numeric:tabular-nums; }
@@ -80,7 +82,12 @@
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary { background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn-primary:hover { background:#005bb0; }
-  .btn.copied { background:var(--good); color:#fff; border-color:var(--good); } /* #44 审查:复制成功反馈(点击变绿) */
+  /* 2026-08-03 · ticket #43 场景 6 终审:删除 .copied 点击变绿(仅 toast 反馈) */
+  /* 移动端触屏:tap 后不粘 hover 色(2026-08-03 运动验收:点击后按钮不应变色) */
+  @media (hover: none) {
+    .btn:hover { background:var(--card); color:var(--fg); border-color:var(--border); }
+    .btn-primary:hover { background:var(--accent); color:#fff; }
+  }
   /* Phase 3c:mobile 断点(640px 以下单列堆叠 + 缩 padding) */
   @media (max-width:640px) {
     body { padding:20px 14px 80px; }
@@ -215,7 +222,21 @@
         `<span class="sum-dot">·</span>` +
         `<span class="sum-remain ${cls}">${remainTxt}</span></div>`;
     } else {
-      sl.textContent = '💬 ' + s;
+      // 2026-08-03 运动验收:一句话总结中的关键数值(数字+单位:卡/分钟/克/步/km/条等)accent 色强化
+      // 2026-08-03 场景 6 终审:「旧→新」变更对子按 diff 卡约定着色(旧值红删除线/新值绿),
+      // 其余关键数字保持 accent 蓝(占位符防嵌套)
+      const isChange = op === 'update' || op === 'delete';
+      const parts = [];
+      let s2 = escapeHTML(s);
+      if (isChange) {
+        s2 = s2.replace(/(\S+?)→(\S+)/g, (m, a, b) => {
+          parts.push(`<span class="sum-old">${a}</span>→<span class="sum-new">${b}</span>`);
+          return '\u0000' + (parts.length - 1) + '\u0000';
+        });
+      }
+      s2 = s2.replace(/(\d+(?:\.\d+)?\s*(?:卡|分钟|克|步|km|ml|组|kg|次|条))/g, '<span class="sum-nums">$1</span>');
+      s2 = s2.replace(/\u0000(\d+)\u0000/g, (m, i) => parts[+i]);
+      sl.innerHTML = '💬 ' + s2;
     }
     sl.style.display = 'block';
   }
@@ -339,12 +360,14 @@
     undoBtn.style.display = 'inline-block';
     undoBtn.onclick = () => {
       if (undoBtn.disabled) return;
-      const undoCmd = `请撤销 ${opLabel} ${meta.entity_type} #${record_id} (${meta.action_at})\n执行: ${meta.undo_cli}`;
-      navigator.clipboard.writeText(undoCmd).then(() => {
-        undoBtn.textContent = '✓ 撤销指令已复制';
-        undoBtn.classList.add('btn-primary');
-        undoBtn.disabled = true;
-      });
+      const undoCmd = `请撤销刚才的${opLabel}${meta.entity_type}(操作时间 ${meta.action_at}),执行细节请按技能流程处理`;
+      const done = () => {
+        // 2026-08-03 · ticket #43 场景 6 终审:取消变绿闪烁,仅 toast
+        showToast('✓ 撤销指令已复制');
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(undoCmd).then(done).catch(() => { fallbackCopy(undoCmd); done(); });
+      } else { fallbackCopy(undoCmd); done(); }
     };
   } else {
     undoBtn.style.display = 'none';
@@ -367,7 +390,10 @@
     t._timer = setTimeout(() => { t.style.display = 'none'; }, 3200);
   }
   function copyText(text, btn, okMsg) {
-    const after = () => { showToast(okMsg); };
+    const after = () => {
+      // 2026-08-03 · ticket #43 场景 6 终审:取消按钮变绿闪烁(原 .copied),仅 toast 反馈
+      showToast(okMsg);
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
     } else { fallbackCopy(text); after(); }

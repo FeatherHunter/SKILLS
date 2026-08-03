@@ -25,6 +25,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .bar-fg.ok{background:var(--green)}.bar-fg.warn{background:var(--orange)}.bar-fg.bad{background:var(--red)}
 .row .num{font-size:13px;color:var(--ink2);text-align:right;font-feature-settings:"tnum"}
 .row .num b{font-size:16px;font-weight:700;color:var(--ink)}
+.pct{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;margin-left:6px}
+.pct.ok{background:var(--green-soft);color:var(--green)}
+.pct.warn{background:var(--orange-soft);color:var(--orange)}
+.pct.bad{background:var(--red-soft);color:var(--red)}
+.pct.neutral{background:var(--accent-soft);color:var(--accent)}
 .badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
 .badge.ok{background:var(--green-soft);color:var(--green)}
 .badge.warn{background:var(--orange-soft);color:var(--orange)}
@@ -45,7 +50,7 @@ td .mini-bar i{display:block;height:100%;border-radius:3px;background:var(--acce
 .empty{padding:24px;text-align:center;color:var(--ink3);font-size:14px}
 .copy-row{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit;flex:1;background:var(--bg);color:var(--ink);border:1px solid var(--line)}
-.btn:hover{opacity:.85}
+.btn:hover{background:var(--green-soft);border-color:var(--green);color:var(--green);opacity:1}
 .btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
 #copyToast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:99;display:none;max-width:80vw}
 footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;border-top:1px solid rgba(60,60,67,.08);margin-top:28px}
@@ -89,7 +94,7 @@ function renderRows(){
       return '<div class="row"><div class="name">'+it.label+'<span class="unit">'+it.unit+'</span></div>'+
         '<div class="bar-bg"><div class="bar-fg '+barCls+'" style="width:'+barPct+'%"></div></div>'+
         '<div class="num">'+(it.actual!=null?it.actual+'<b> / '+it.goal+'</b>':'<b>'+it.goal+'</b>')+
-        (pct!=null?' · '+pct+'%':'')+'</div></div>';
+        (pct!=null?'<span class="pct '+barCls+'">'+pct+'%</span>':'')+'</div></div>';
     }).join('')+'</div>';
 }
 
@@ -151,13 +156,16 @@ function showToast(msg){
   setTimeout(()=>{t.style.display='none';},2000);
 }
 function doCopy(text,btnId,msg){
-  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),2200);}showToast(msg);};
+  // 乐观反馈:点击立即绿闪+toast,不等剪贴板 promise(file:// 下 writeText 可能挂起)
+  const b=document.getElementById(btnId);
+  if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),600);}
+  showToast(msg);
   if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
-  } else { fallbackCopy(text,done); }
-  function fallbackCopy(txt,ok){
+    navigator.clipboard.writeText(text).catch(()=>fallbackCopy(text));
+  } else { fallbackCopy(text); }
+  function fallbackCopy(txt){
     const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');ok();}catch(e){}document.body.removeChild(ta);
+    try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);
   }
 }
 function copyData(){doCopy(buildDataText(),'copyDataBtn',`${D.title||'目标进度'} 数据复制成功 ✓`);}

@@ -168,19 +168,14 @@ body{
 .btn-row{
   display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;
 }
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;
-  gap:6px;padding:11px 18px;
-  border-radius:999px;font-size:14px;font-weight:600;
-  cursor:pointer;border:none;
-  transition:opacity .15s;
-  font-family:inherit;
-}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 18px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:background .15s,opacity .15s;font-family:inherit}
 .btn.primary{background:var(--accent);color:#fff}
 .btn.secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line)}
 .btn.danger{background:var(--red-soft);color:var(--red)}
-.btn:hover{opacity:.85}
-.btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+/* #44 审查:点击不变色,hover 淡淡蓝色即可 */
+.btn:hover{background:rgba(0,122,255,.12);color:var(--accent);opacity:1}
+.btn.primary:hover{background:var(--accent);opacity:.85;color:#fff}
+.btn.copied{background:rgba(0,122,255,.12);color:var(--accent)} /* #44 审查:点击反馈 = 淡蓝,不变绿 */
 
 .copy-preview{
   background:var(--bg-soft);
@@ -426,9 +421,14 @@ function applyInitialValues() {
     el.addEventListener('input', onFieldChange);
   });
   // 补录日期(指定日期场景 · #44 缺陷B):不入 FIELD_ORDER(与 add-product 位置无关),单独填充
+  // #44 审查:未传 date 时默认今天(扫描营养表默认记今日)
   const dEl = document.querySelector('[data-key="date"]');
   if (dEl) {
-    if (AI_OUTPUT.date) dEl.value = AI_OUTPUT.date;
+    if (AI_OUTPUT.date) {
+      dEl.value = AI_OUTPUT.date;
+    } else if (!dEl.value) {
+      dEl.value = new Date().toISOString().slice(0, 10);
+    }
     dEl.addEventListener('input', onFieldChange);
   }
   onFieldChange();
@@ -470,6 +470,13 @@ function resetEdits() {
   const dEl = document.querySelector('[data-key="date"]');
   if (dEl) dEl.value = AI_OUTPUT.date || '';
   onFieldChange();
+  // #44 审查:重置反馈 = toast + 短暂高亮,按钮文字不变
+  const btn = document.querySelector('.btn.danger');
+  if (btn) {
+    btn.classList.add('copied');
+    showToast('✓ 已重置所有修改');
+    setTimeout(() => btn.classList.remove('copied'), 1500);
+  }
 }
 
 // 构建 "采纳保存" prompt
@@ -477,13 +484,10 @@ function buildAdoptPrompt() {
   const current = readForm();
   const dateLine = current.date ? `补录日期: ${current.date}\n` : '';
   const fields = dateLine + FIELD_ORDER.map(k => `${displayLabel(k)}: ${formatVal(current[k])}`).join('\n');
-  const cmd = `python scripts/calorie_tracker.py add-product "${current.product_name || ''}" "${current.brand || ''}" ${current.calories || 0} ${current.protein || 0} ${current.fat || 0} ${current.saturated_fat || 0} ${current.carbohydrates || 0} ${current.sugar || 0} ${current.fiber || 0} ${current.sodium || 0} "${current.note || ''}"`;
-  return `我刚用 AI 识别了一张营养成分表图片,数据已核对,无误。请帮我存入食品库:
+  // #44 审查(用户拍板):prompt 不硬编码脚本/CLI,执行细节由 AI 按技能流程自行处理
+  return `我刚用 AI 识别了一张营养成分表图片,数据已核对,无误。请帮我按技能流程存入食品库${current.date ? `,并按补录日期 ${current.date} 记录` : ''}:
 
 ${fields}
-
-请执行:
-  ${cmd}
 
 数据来源: mmx vision describe(${SOURCE.filename || '?'} · ${SOURCE.described_at || '?'})`;
 }
@@ -509,8 +513,6 @@ function buildModifyPrompt() {
   const dateLine = current.date ? `补录日期: ${current.date}\n` : '';
   const allFieldsWithDate = dateLine + allFields;
 
-  const cmd = `python scripts/calorie_tracker.py add-product "${current.product_name || ''}" "${current.brand || ''}" ${current.calories || 0} ${current.protein || 0} ${current.fat || 0} ${current.saturated_fat || 0} ${current.carbohydrates || 0} ${current.sugar || 0} ${current.fiber || 0} ${current.sodium || 0} "${current.note || ''}"`;
-
   return `我刚用 AI 识别了一张营养成分表图片,识别有误,已手动修改。以下是修改差异:
 
 【原 AI 识别】(${modifiedKeys.length} 个字段)
@@ -522,8 +524,7 @@ ${modifiedLines}
 【完整数据(以修改后为准)】
 ${allFieldsWithDate}
 
-请执行:
-  ${cmd}
+请按技能流程,以修改后的数据为准存入食品库${current.date ? `,并按补录日期 ${current.date} 记录` : ''}。
 
 数据来源: mmx vision describe(${SOURCE.filename || '?'} · ${SOURCE.described_at || '?'}) + 人工修订`;
 }
@@ -586,29 +587,50 @@ function copyLog() {
 }
 
 function doCopy(text, btnId, successMsg) {
+  // #44 审查:clipboard.writeText 可能被拒(file:// / 权限),必须 .catch 走 fallback,否则按钮无反馈
+  const done = () => flashCopied(btnId, successMsg);
   if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => flashCopied(btnId, successMsg));
+    navigator.clipboard.writeText(text).then(done).catch(() => { fallbackCopy(text); done(); });
   } else {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.left = '-9999px';
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand('copy'); flashCopied(btnId, successMsg); } catch(e) {}
-    document.body.removeChild(ta);
+    fallbackCopy(text);
+    done();
   }
 }
 
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.left = '-9999px';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
 function flashCopied(btnId, msg) {
+  // #44 审查:按钮文字不变(操作目标可预期),反馈 = 绿色闪烁 + toast
   const btn = document.getElementById(btnId);
-  const orig = btn.textContent;
-  btn.textContent = msg;
+  if (!btn) return;
   btn.classList.add('copied');
-  setTimeout(() => {
-    btn.textContent = orig;
-    btn.classList.remove('copied');
-  }, 2200);
+  showToast(msg);
+  setTimeout(() => btn.classList.remove('copied'), 2200);
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('copyToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'copyToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
 }
 
 function render() {

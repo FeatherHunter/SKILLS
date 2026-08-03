@@ -154,7 +154,7 @@ def main():
             i = argv.index('--output')
             argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
         data['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv)
-        data['meta']['source'] = 'weight_log (总览)'
+        data['meta']['source'] = 'weight_log (今日)' if args.view == 'today' else 'weight_log (总览)'
         payload = {'status': 'ok', 'data': data, 'message': '已生成体重总览'}
         html = render_html(payload)
     except Exception as e:

@@ -120,12 +120,68 @@
   }
   .recent-bar .copy-prev-btn:hover { background: #d3e7ff; }
   .recent-bar .copy-prev-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* toast(2026-08-03 验收反馈:复制成功要有提示) */
+  #toast {
+    position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(8px);
+    background: rgba(29,29,31,.92); color: #fff; padding: 10px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; z-index: 99;
+    transition: opacity .25s, transform .25s; max-width: 86vw; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast .t-ok { color: #30d158; margin-right: 6px; }
+
+  /* 视觉打磨(2026-08-03 验收反馈) */
+  .hero {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 18px;
+    background: linear-gradient(135deg, #eaf3ff 0%, #f7fbff 55%, #f2f8ff 100%);
+    border: 1px solid #d3e6ff; border-radius: 16px; padding: 18px 20px;
+  }
+  .hero .hero-icon {
+    flex: 0 0 auto; width: 52px; height: 52px; border-radius: 14px;
+    background: linear-gradient(135deg, #0071e3, #2aa4ff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; box-shadow: 0 6px 14px rgba(0,113,227,.28);
+  }
+  .hero h1 { font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
+  .hero .sub { font-size: 12.5px; color: var(--fg3); margin: 2px 0 0; }
+  .hero .step-pills { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .hero .step-pill { font-size: 11px; color: var(--accent); background: #fff; border: 1px solid #cfe2ff; border-radius: 999px; padding: 3px 10px; }
+  details { box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  details:hover { border-color: #b9c7d8; }
+  .body { padding: 6px 22px 22px; }
+  .form-group input, .form-group select, .form-group textarea { background: #fbfdff; }
+  .btn-copy { box-shadow: 0 4px 12px rgba(0,113,227,.25); }
+  .btn-copy:active { transform: scale(.99); }
+  .sticky-bar {
+    position: sticky; bottom: 0; background: rgba(250,250,250,.92);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    padding: 12px 0 16px; margin-top: 6px;
+  }
+  .prompt-box { border: 1px solid #333; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+  .err-hint { color: var(--red); font-size: 11.5px; margin-top: 4px; display: none; }
+  .err-hint.show { display: block; }
+  .input-err { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(255,59,48,.12) !important; }
 </style>
 </head>
 <body>
 
-<h1>📏 记体脂</h1>
-<p class="sub">配置型向导 · 填好 7 处皮褶 + 体脂率后,复制 prompt 给 AI 写入数据库</p>
+<h1 style="display:none">📏 记体脂</h1>
+<p class="sub" style="display:none">配置型向导 · 填好 7 处皮褶 + 体脂率后,复制 prompt 给 AI 写入数据库</p>
+
+<div class="hero">
+  <div class="hero-icon">📏</div>
+  <div>
+    <h1>记体脂</h1>
+    <p class="sub">填好 7 处皮褶 + 体脂率,复制 prompt 给 AI 写入数据库</p>
+    <div class="step-pills">
+      <span class="step-pill">1️⃣ 基本信息</span>
+      <span class="step-pill">2️⃣ 7 皮褶</span>
+      <span class="step-pill">3️⃣ 体脂率</span>
+      <span class="step-pill">4️⃣ 复制给 AI</span>
+    </div>
+  </div>
+</div>
 
 <div id="recentBar" class="recent-bar" style="display:none">
   <div class="row1">
@@ -234,6 +290,8 @@
       <label>体脂率 %<span class="required"> *</span><span class="en">body_fat_pct</span></label>
       <input type="number" id="body-fat-pct" step="0.01" min="0" max="60" placeholder="自动算 或 手动填">
       <button type="button" class="auto-fill" id="autoCalcBtn">🧮 自动算(Jackson-Pollock 7 点法)</button>
+      <div class="hint">点「自动算」= 按 7 皮褶 + 年龄/性别用公式计算;或手动填设备值,范围 (0, 60)%</div>
+      <div class="err-hint" id="bfErr">体脂率需在 (0, 60) 之间,当前值异常</div>
       <div class="sum-box" id="sumBox">
         <strong>7 处总和:</strong> <span id="sumVal">—</span> mm ·
         <strong>公式:</strong> BD = 1.112 - 0.00043499×Σ + 0.00000055×Σ² - 0.00028826×年龄(男) · 体脂率 = (495 / BD) − 450
@@ -251,9 +309,13 @@
   <summary>📋 复制 prompt 给 AI <span class="pill">必走</span></summary>
   <div class="body">
     <div class="prompt-box" id="promptBox">// 完成上方表单后,prompt 自动生成</div>
-    <button class="btn-copy" id="copyBtn">📋 复制 prompt 给 AI</button>
+    <div class="sticky-bar">
+      <button class="btn-copy" id="copyBtn">📋 复制 prompt 给 AI</button>
+    </div>
   </div>
 </details>
+
+<div id="toast"></div>
 
 <div class="footer">卡路里 · body_composition_wizard v1.0 · 飞书 webview 兼容</div>
 
@@ -278,6 +340,19 @@
     ['recent_caliper_suprailiac_mm',  'rcSuprailiac',  '髂上',     'caliper-suprailiac'],
     ['recent_caliper_midaxillary_mm', 'rcMidaxillary', '腋中线',   'caliper-midaxillary'],
   ];
+  // ---------- toast(2026-08-03 验收反馈) ----------
+  let _toastTimer = null;
+  let _autoCalcSilent = false;
+  function toast(msg) {
+    const t = $('toast');
+    if (!t) return;
+    t.innerHTML = `<span class="t-ok">✓</span>${msg}`;
+    t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ---------- 复制上次 7 皮褶 ----------
   if (DATA && DATA.status === 'ok' && DATA.data) {
     const bar = $('recentBar');
     const d = DATA.data;
@@ -303,6 +378,7 @@
       if (anyCaliper) {
         btn.disabled = false;
         btn.onclick = () => {
+          let copied = 0;
           CALIPER_FIELDS.forEach(([key, , , inputId]) => {
             const v = d[key];
             if (v == null) return;
@@ -310,12 +386,13 @@
             if (inp) {
               inp.value = v;
               inp.dispatchEvent(new Event('input'));
+              copied++;
             }
           });
-          // 顺便填 age/sex 如果有
           if (d.recent_age && $('age')) { $('age').value = d.recent_age; $('age').dispatchEvent(new Event('input')); }
           if (d.recent_sex && $('sex')) { $('sex').value = d.recent_sex; $('sex').dispatchEvent(new Event('input')); }
           updatePrompt();
+          toast(`已复制上次 7 皮褶(${copied}/7)` + (d.recent_age ? ' + 年龄/性别' : ''));
         };
       } else {
         btn.disabled = true;
@@ -362,6 +439,7 @@
     if (pct == null) { alert('公式无效,请检查输入'); return; }
     $('body-fat-pct').value = pct;
     updatePrompt();
+    if (!_autoCalcSilent) toast(`自动算完成:体脂率 ${pct}%(Jackson-Pollock 7 点法)`);
   };
 
   // ---------- prompt 构建 ----------
@@ -377,8 +455,21 @@
       if (x == null) missing.push(f); else vals[f] = x;
     });
     if (missing.length) return `// 还差 ${missing.length} 项皮褶:${missing.join(', ')}`;
+    // 范围校验(2026-08-03 验收反馈:手动填 9999 也应拦截)
+    const bfErrEl = $('bfErr'), bfInp = $('body-fat-pct');
+    const outOfRange = FIELDS.filter(f => !(vals[f] > 0 && vals[f] < 100));
+    if (outOfRange.length) {
+      return `// 皮褶值需在 (0, 100) mm 之间:${outOfRange.join(', ')} 当前异常`;
+    }
     const bf = n('body-fat-pct');
     if (bf == null) return '// 请填体脂率(上方第 3 步)或点"🧮 自动算"';
+    if (!(bf > 0 && bf < 60)) {
+      if (bfErrEl) bfErrEl.classList.add('show');
+      if (bfInp) bfInp.classList.add('input-err');
+      return `// 体脂率需在 (0, 60)% 之间,当前 ${bf}% 异常(点"🧮 自动算"或改手动值)`;
+    }
+    if (bfErrEl) bfErrEl.classList.remove('show');
+    if (bfInp) bfInp.classList.remove('input-err');
 
     const parts = [
       `--date ${v('date')}`,
@@ -464,8 +555,12 @@ python scripts/body_composition.py add ${parts.join(' ')}
         }
       }
     });
-    // 触发一次 autoCalc(如果 7 皮褶都填了)
-    if (d.prefill_caliper_chest_mm && $('autoCalcBtn')) $('autoCalcBtn').click();
+    // 触发一次 autoCalc(如果 7 皮褶都填了)— 加载期静默,不弹 toast
+    if (d.prefill_caliper_chest_mm && $('autoCalcBtn')) {
+      _autoCalcSilent = true;
+      $('autoCalcBtn').click();
+      _autoCalcSilent = false;
+    }
   }
 
   updatePrompt();
@@ -473,10 +568,11 @@ python scripts/body_composition.py add ${parts.join(' ')}
   // 复制按钮
   $('copyBtn').onclick = function() {
     const text = $('promptBox').textContent;
-    if (text.startsWith('//')) { alert('请先填好所有必填项'); return; }
+    if (text.startsWith('//')) { toast('请先填好所有必填项'); return; }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => {
         this.textContent = '✓ 已复制'; this.classList.add('copied');
+        toast('prompt 已复制,发给 AI 即可');
         setTimeout(() => { this.textContent = '📋 复制 prompt 给 AI'; this.classList.remove('copied'); }, 2000);
       }, () => fallbackCopy(this, text));
     } else fallbackCopy(this, text);
@@ -486,8 +582,9 @@ python scripts/body_composition.py add ${parts.join(' ')}
     const ta = document.createElement('textarea');
     ta.value = text; document.body.appendChild(ta); ta.select();
     try { document.execCommand('copy'); btn.textContent = '✓ 已复制'; btn.classList.add('copied');
+      toast('prompt 已复制,发给 AI 即可');
       setTimeout(() => { btn.textContent = '📋 复制 prompt 给 AI'; btn.classList.remove('copied'); }, 2000);
-    } catch(e) { alert('复制失败,请手动复制'); }
+    } catch(e) { toast('复制失败,请手动复制'); }
     document.body.removeChild(ta);
   }
 })();

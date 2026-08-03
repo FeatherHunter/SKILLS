@@ -375,7 +375,10 @@ def cmd_validate(args):
             json.dumps(out, ensure_ascii=False), encoding='utf-8')
         print(f"   📄 结构化结果: {args.json_output}")
 
-    return 0 if valid == len(records) else 1
+    # 第一性原理(#44 设计观察 · 2026-08-03 用户拍板):
+    # exit code 只表达「校验是否执行成功」——有失败行是校验结果(在 stdout/JSON 里),不是命令失败。
+    # exit 1 仅留给文件不存在/内部错误;否则 AI 流程会误判命令失败而丢弃结构化结果。
+    return 0
 
 
 # ==============================================================================

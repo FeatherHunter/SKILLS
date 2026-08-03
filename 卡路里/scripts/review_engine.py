@@ -169,17 +169,18 @@ def query_5dims(start, end, skill_dir):
             ORDER BY date
         ''', (start, end)).fetchall()]
 
-        # 4. 健身计划(必须存在,否则失败)
+        # 4. 健身计划(2026-08-03 改:软失败,无计划不阻塞饮食/运动/体重复盘)
+        #    历史:曾强制 require → cron 周复盘会在用户没定计划时崩
+        #    实际 render_review.py 不消费 fitness_plan,这里没计划就返回 None
         config_row = conn.execute(
             'SELECT * FROM workout_plan_config WHERE id = 1'
         ).fetchone()
         if not config_row:
-            raise DataNotFoundError(
-                "workout_plan_config 表无数据,"
-                "请先'制定健身计划'初始化"
-            )
-        config = dict(config_row)
-        fitness_plan_data = _query_fitness_plan(conn, start, end, config)
+            config = None
+            fitness_plan_data = None
+        else:
+            config = dict(config_row)
+            fitness_plan_data = _query_fitness_plan(conn, start, end, config)
 
         # 5. user_profile(从 weight_log 取身高,从 USER_AGE/GENDER env 取)
         user_profile = _query_user_profile(conn)

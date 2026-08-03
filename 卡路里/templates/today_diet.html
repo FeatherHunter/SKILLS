@@ -110,12 +110,12 @@
     td.cal-grams { display:flex; align-items:baseline; justify-content:flex-end; gap:6px; }
     td.cal-grams .cg { color:var(--fg3); font-size:11px; font-variant-numeric:tabular-nums; }
     td.cal-grams .cc { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; color:var(--fg); }
-    /* 摘要行:营养三项等分行2 区域,文字居左(蛋白质全称 + 彩色圆点) */
+    /* 摘要行:营养三项等分行2 区域——蛋白质居左/碳水居中/脂肪居右(各自区域内) */
     .sl-nuts { display:flex; width:100%; }
-    .sl-nut { flex:1; text-align:left; font-size:11px; color:var(--fg2); font-variant-numeric:tabular-nums; white-space:nowrap; }
-    .sl-nut.prot { color:var(--prot); }
-    .sl-nut.carb { color:var(--carb); }
-    .sl-nut.fat { color:var(--fat); }
+    .sl-nut { flex:1; font-size:11px; color:var(--fg2); font-variant-numeric:tabular-nums; white-space:nowrap; }
+    .sl-nut.prot { text-align:left; color:var(--prot); }
+    .sl-nut.carb { text-align:center; color:var(--carb); }
+    .sl-nut.fat { text-align:right; color:var(--fat); }
     /* #44 审查:复制按钮手机有间距且不换行 */
     .footer { flex-direction:column; align-items:stretch; gap:8px; }
     .footer .btn-group { justify-content:space-between; }

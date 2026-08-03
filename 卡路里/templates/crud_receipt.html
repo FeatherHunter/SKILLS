@@ -205,20 +205,23 @@
   if (D.data.summary) {
     const sl = document.getElementById('summaryLine');
     const s = D.data.summary;
-    // #44 审查:累计段兼容「今日累计 / 当日累计(补记)」+ 标记「剩余 / 超标」;核心数字(克数/卡)accent 色强调
-    const m = s.match(/(?:今日|当日)累计\s*([\d,]+)\s*\/\s*([\d,]+)\s*卡\s*[,，]\s*(?:剩余|超标)\s*(-?[\d,]+)\s*卡/);
+    // #44 审查:累计段兼容「今日/当日累计」+ 单位 卡|ml + 标记 剩余/超标/超过;核心数字 accent 色强调
+    const m = s.match(/(?:今日|当日)累计\s*([\d,]+)\s*\/\s*([\d,]+)\s*(卡|ml)\s*[,，]?\s*[（(]?\s*(?:剩余|超标|超过)\s*(-?[\d,]+)\s*(卡|ml)\s*[）)]?/);
     if (m) {
       const head = s.slice(0, m.index).replace(/[;；]\s*$/, '');
-      // 剩余量状态驱动配色——充裕绿 / 接近上限橙 / 已超红(负数或「超标」文案)
-      const remain = parseInt(m[3].replace(/,/g, ''), 10);
+      // 剩余量状态驱动配色——充裕绿 / 接近上限橙 / 已超红;单位随场景(卡|ml)
+      const unit = m[5] || m[3];
+      const rawRemain = parseInt(m[4].replace(/,/g, ''), 10);
+      const isOver = /超过|超标/.test(m[0]);   // 「超过/超标 X」= 已超出,X 为正数
+      const remain = isOver ? -Math.abs(rawRemain) : rawRemain;
       const target = parseInt(m[2].replace(/,/g, ''), 10);
-      let cls = 'good', remainTxt = `剩余 ${m[3]} 卡`;
-      if (remain < 0) { cls = 'bad'; remainTxt = `已超 ${Math.abs(remain)} 卡`; }
+      let cls = 'good', remainTxt = `剩余 ${rawRemain} ${unit}`;
+      if (isOver || remain < 0) { cls = 'bad'; remainTxt = `已超 ${Math.abs(rawRemain)} ${unit}`; }
       else if (target > 0 && remain <= Math.round(target * 0.2)) { cls = 'warn'; }
       sl.innerHTML =
         `<div class="sum-line">💬 ${escapeHTML(head).replace(/\(([\d.]+)g, ([\d.]+)卡\)/, '(<span class="sum-nums">$1g, $2卡</span>)')}</div>` +
         `<div class="sum-kpis"><span class="sum-label">${m[0].includes('当日') ? '当日累计' : '今日累计'}</span>` +
-        `<span class="sum-val">${m[1]} / ${m[2]} 卡</span>` +
+        `<span class="sum-val">${m[1]} / ${m[2]} ${m[3]}</span>` +
         `<span class="sum-dot">·</span>` +
         `<span class="sum-remain ${cls}">${remainTxt}</span></div>`;
     } else {

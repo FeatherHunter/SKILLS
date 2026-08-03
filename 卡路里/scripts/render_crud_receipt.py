@@ -563,8 +563,13 @@ def build_live_water_add(ml, target_date=None):
     if r is None:
         raise ValueError('记喝水失败(ml 校验不过)')
     date_label = '今日' if not target_date else r['date']
+    # #44 审查:超目标不写「剩余 -X」,改「超过 X」
+    if r['remaining_ml'] >= 0:
+        remain_txt = f"剩余 {r['remaining_ml']}ml"
+    else:
+        remain_txt = f"超过 {abs(r['remaining_ml'])}ml"
     summary = (f"已记录饮水 {r['ml']}ml,{date_label}累计 {r['today_total_ml']}/{r['water_goal_ml']}ml "
-               f"(剩余 {r['remaining_ml']:+}ml)")
+               f"({remain_txt})")
     new_record = {'ml': r['ml'], 'today_total_ml': r['today_total_ml'], 'target_ml': r['water_goal_ml'],
                   'remaining_ml': r['remaining_ml'], 'date': r['date'], 'time': r['time']}
     return _diet_receipt('create', r['id'], {}, new_record, '记喝水',

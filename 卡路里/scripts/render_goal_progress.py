@@ -341,7 +341,20 @@ def build_mode_weight(goal, expiring=14):
     cur = conn.execute('SELECT weight_kg, date FROM weight_log ORDER BY date DESC LIMIT 1').fetchone()
     conn.close()
     current = cur[0] if cur else None
-    urgency = '高' if days_left <= 3 else ('中' if days_left <= 7 else '低')
+    # 紧迫度(2026-08-03 用户拍板):剩余天数 × 所需速率(kg/周) vs 安全带 0.25~1.0
+    rate_needed = None
+    if current is not None and weight_goal_val and days_left:
+        need = current - weight_goal_val
+        if need > 0:
+            rate_needed = need / (days_left / 7)
+    if days_left <= 3:
+        urgency = '高'
+    elif rate_needed is not None and rate_needed > 1.0:
+        urgency = '高'
+    elif rate_needed is not None and rate_needed > 0.5:
+        urgency = '中'
+    else:
+        urgency = '低'
     return {
         'mode': 'weight',
         'title': '看即将到期的目标',
@@ -354,7 +367,7 @@ def build_mode_weight(goal, expiring=14):
         ],
         'table': {
             'title': '即将到期',
-            'hint': '紧迫度: ≤3 天高 / ≤7 天中 / 其余低',
+            'hint': '紧迫度: ≤3 天或需 >1.0 kg/周 高 / 需 0.5~1.0 kg/周 中 / 其余低',
             'cols': [
                 {'key': 'weight_goal', 'label': '目标'},
                 {'key': 'deadline', 'label': '截止'},
@@ -367,10 +380,11 @@ def build_mode_weight(goal, expiring=14):
                 'deadline': deadline,
                 'days_left': f'{days_left} 天',
                 'current': f'{current} kg' if current else '—',
-                'urgency': {'badge': 'bad' if days_left <= 3 else ('warn' if days_left <= 7 else 'ok'), 'text': urgency},
+                'urgency': {'badge': 'bad' if urgency == '高' else ('warn' if urgency == '中' else 'ok'), 'text': urgency},
             }],
         },
-        'summary': f'{days_left} 天后到期 · 当前 {current} kg → 目标 {weight_goal_val} kg',
+        'summary': f'{days_left} 天后到期 · 当前 {current} kg → 目标 {weight_goal_val} kg' +
+                   (f' · 需 {rate_needed:.2f} kg/周' if rate_needed else ''),
     }
 
 

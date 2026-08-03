@@ -256,7 +256,7 @@ def build_overview_data(conn):
     training_days = sum(w['plan_days'] for w in weekly_rates)
     c.execute('SELECT COUNT(*) FROM workout_plans WHERE is_rest_day=0')
     total_sessions = c.fetchone()[0]
-    c.execute("SELECT COUNT(*) FROM (SELECT json_each.value->>'name' FROM workout_plans, json_each(workout_plans.movements))")
+    c.execute("SELECT COUNT(*) FROM (SELECT json_extract(json_each.value, '$.name') FROM workout_plans, json_each(workout_plans.movements))")
     total_movements = c.fetchone()[0]
     return {
         'mode': 'overview',

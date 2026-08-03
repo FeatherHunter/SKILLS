@@ -162,6 +162,10 @@
   .err-hint { color: var(--red); font-size: 11.5px; margin-top: 4px; display: none; }
   .err-hint.show { display: block; }
   .input-err { border-color: var(--red) !important; box-shadow: 0 0 0 3px rgba(255,59,48,.12) !important; }
+  .auto-tag {
+    flex: 0 0 auto; background: var(--green); color: #fff; font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 999px; white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -187,7 +191,7 @@
   <div class="row1">
     <span class="dot"></span>
     <span>最近一次:<strong id="recentDate">—</strong> · 体脂率 <strong id="recentBf">—</strong>% · 来源 <strong id="recentSrc">—</strong></span>
-    <button type="button" class="copy-prev-btn" id="copyPrevBtn">📋 复制上次 7 皮褶</button>
+    <button type="button" class="copy-prev-btn" id="copyPrevBtn" title="把最近一次的 7 皮褶 + 年龄/性别填入下方表单,适合同部位连续测量">📋 复制上次 7 皮褶</button>
   </div>
   <div class="row2" id="recentCaliperRow" style="display:none">
     <span>胸 <strong id="rcChest">—</strong></span>
@@ -198,6 +202,7 @@
     <span>髂上 <strong id="rcSuprailiac">—</strong></span>
     <span>腋中线 <strong id="rcMidaxillary">—</strong></span>
   </div>
+  <div class="row3" style="font-size:11px; color:var(--fg3);">「复制上次」= 把最近一次记录的 7 皮褶/年龄/性别填入下方表单(适合同部位连续测量),填完仍可手动改</div>
 </div>
 
 <div class="tip">
@@ -288,9 +293,12 @@
   <div class="body">
     <div class="form-group">
       <label>体脂率 %<span class="required"> *</span><span class="en">body_fat_pct</span></label>
-      <input type="number" id="body-fat-pct" step="0.01" min="0" max="60" placeholder="自动算 或 手动填">
-      <button type="button" class="auto-fill" id="autoCalcBtn">🧮 自动算(Jackson-Pollock 7 点法)</button>
-      <div class="hint">点「自动算」= 按 7 皮褶 + 年龄/性别用公式计算;或手动填设备值,范围 (0, 60)%</div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <input type="number" id="body-fat-pct" step="0.01" min="0" max="60" placeholder="自动算 或 手动填" style="flex:1">
+        <span class="auto-tag" id="bfAutoTag" style="display:none">✓ 自动算</span>
+      </div>
+      <button type="button" class="auto-fill" id="autoCalcBtn">🧮 重新自动算(Jackson-Pollock 7 点法)</button>
+      <div class="hint">7 皮褶 + 年龄/性别填齐后<b>自动算体脂率</b>;或用设备值手动填,范围 (0, 60)%</div>
       <div class="err-hint" id="bfErr">体脂率需在 (0, 60) 之间,当前值异常</div>
       <div class="sum-box" id="sumBox">
         <strong>7 处总和:</strong> <span id="sumVal">—</span> mm ·
@@ -430,17 +438,25 @@
   }
 
   $('autoCalcBtn').onclick = function() {
+    runAutoCalc(true);
+  };
+
+  // ---------- 自动算(2026-08-03 对抗式审查:输入齐应自动触发,非手动点按钮) ----------
+  let _bfAuto = false;   // 当前体脂率是否由自动算写入
+  function runAutoCalc(manual) {
     const { sum, cnt } = calcSum();
-    if (cnt !== 7) { alert(`需 7 项全填,当前 ${cnt}/7`); return; }
+    if (cnt !== 7) { if (manual) alert(`需 7 项全填,当前 ${cnt}/7`); return; }
     const age = $('age').value.trim();
     const sex = $('sex').value;
-    if (!age || !sex) { alert('自动算需要"年龄"和"性别"(见上方第 1 步)'); return; }
+    if (!age || !sex) { if (manual) alert('自动算需要"年龄"和"性别"(见上方第 1 步)'); return; }
     const pct = jp7(sum, age, sex);
-    if (pct == null) { alert('公式无效,请检查输入'); return; }
+    if (pct == null) { if (manual) alert('公式无效,请检查输入'); return; }
     $('body-fat-pct').value = pct;
+    _bfAuto = true;
+    $('bfAutoTag').style.display = 'inline';
     updatePrompt();
-    if (!_autoCalcSilent) toast(`自动算完成:体脂率 ${pct}%(Jackson-Pollock 7 点法)`);
-  };
+    if (manual && !_autoCalcSilent) toast(`自动算完成:体脂率 ${pct}%(Jackson-Pollock 7 点法)`);
+  }
 
   // ---------- prompt 构建 ----------
   function v(id) { return $(id).value.trim(); }
@@ -525,6 +541,19 @@ python scripts/body_composition.py add ${parts.join(' ')}
     el.addEventListener('change', updatePrompt);
   });
 
+  // 手动改体脂率 → 视为用户自己填,取消自动算标记
+  $('body-fat-pct').addEventListener('input', () => {
+    _bfAuto = false;
+    $('bfAutoTag').style.display = 'none';
+  });
+  // 7 皮褶/年龄/性别变化 → 体脂率当前为「自动算值或空」时才重算(手动填的保留)
+  ['age','sex', ...FIELDS].forEach(id => {
+    const el = $(id);
+    if (!el) return;
+    el.addEventListener('input', () => { if (_bfAuto || $('body-fat-pct').value === '') runAutoCalc(false); });
+    el.addEventListener('change', () => { if (_bfAuto || $('body-fat-pct').value === '') runAutoCalc(false); });
+  });
+
   // 预填:场景 2(用户已告诉 AI 体脂数字,AI 调 render 时传 args)
   // wizard 打开时 input 已自动填好,用户只需 verify + 复制 prompt
   if (DATA && DATA.status === 'ok' && DATA.data) {
@@ -555,10 +584,10 @@ python scripts/body_composition.py add ${parts.join(' ')}
         }
       }
     });
-    // 触发一次 autoCalc(如果 7 皮褶都填了)— 加载期静默,不弹 toast
+    // 触发一次自动算(如果 7 皮褶都填了)— 加载期静默,不弹 toast
     if (d.prefill_caliper_chest_mm && $('autoCalcBtn')) {
       _autoCalcSilent = true;
-      $('autoCalcBtn').click();
+      runAutoCalc(false);
       _autoCalcSilent = false;
     }
   }

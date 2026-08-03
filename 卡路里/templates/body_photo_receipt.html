@@ -38,6 +38,12 @@
   .id-card .id { font-size:30px; font-weight:800; color:var(--fg); font-variant-numeric:tabular-nums; margin:6px 0; }
   .id-card .meta { font-size:13px; color:var(--fg2); }
   .id-card .summary { margin-top:10px; font-size:14px; color:var(--fg2); }
+  .id-card .head { display:flex; align-items:center; justify-content:center; gap:10px; margin-bottom:4px; }
+  .id-card .head .icon { font-size:24px; margin-bottom:0; }
+  .id-card .head .title { font-size:20px; font-weight:600; margin-bottom:0; }
+  .id-card .head .id { font-size:34px; margin:0; font-weight:800; color:var(--accent); font-variant-numeric:tabular-nums; }
+  .id-card.delete .head .id { color:var(--bad); }
+  .id-card.update .head .id { color:var(--warn); }
   /* 照片明细卡(存/删) */
   .items-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
   .items-card h2 { font-size:16px; font-weight:600; margin-bottom:14px; }
@@ -105,9 +111,11 @@
 <p class="sub" id="sub">--</p>
 
 <div class="id-card" id="idCard">
-  <div class="icon" id="icon">✓</div>
-  <div class="title" id="opTitle">--</div>
-  <div class="id" id="recordId" style="display:none">--</div>
+  <div class="head">
+    <div class="icon" id="icon">✓</div>
+    <div class="title" id="opTitle">--</div>
+    <div class="id" id="recordId" style="display:none">--</div>
+  </div>
   <div class="meta" id="recordMeta">--</div>
   <div class="summary" id="summaryLine" style="display:none"></div>
 </div>
@@ -161,7 +169,7 @@
   idCard.className = 'id-card ' + (op === 'delete' ? 'delete' : op === 'update' ? 'update' : '');
   document.getElementById('icon').textContent = op === 'delete' ? '✕' : op === 'update' ? '✎' : '✓';
   document.getElementById('opTitle').textContent =
-    (op === 'delete' ? '删除成功' : op === 'update' ? '修改成功' : '存入成功') + (record_id ? ` #${record_id}` : '');
+    (op === 'delete' ? '删除成功' : op === 'update' ? '修改成功' : '存入成功');
   if (record_id) {
     document.getElementById('recordId').textContent = '#' + record_id;
     document.getElementById('recordId').style.display = 'block';

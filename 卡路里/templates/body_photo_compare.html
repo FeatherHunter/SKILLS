@@ -22,13 +22,16 @@
   .sub { font-size:14px; color:var(--fg3); margin-bottom:20px; }
   /* 间隔天数横幅 */
   .interval-banner { background:linear-gradient(135deg,#e8f5e8,#f0f8ff); border:1px solid var(--good);
-                     border-radius:14px; padding:14px 20px; text-align:center; margin-bottom:20px; font-size:14px; }
+                     border-radius:14px; padding:14px 20px; text-align:center; margin-top:20px; font-size:14px; }
   .interval-banner b { font-size:26px; color:var(--good); font-variant-numeric:tabular-nums; }
-  /* 并排 */
+  /* 跨标签对比警告(2026-08-03 验收拍板 · 方案 B) */
+  .cross-tag-warn { background:#fff5e5; border:1px solid var(--warn); border-radius:14px;
+                    padding:12px 18px; margin-bottom:16px; font-size:13px; color:#8a5a00; }
+  /* 并排 · 拍立得式:照片独立圆角内嵌(2026-08-03 验收拍板) */
   .compare { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   .photo-card { background:var(--card); border:1px solid var(--border); border-radius:16px; overflow:hidden; }
-  .photo-card .imgwrap { aspect-ratio:3/4; background:var(--soft); display:flex; align-items:center; justify-content:center; }
-  .photo-card img { width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-card .imgwrap { aspect-ratio:3/4; background:var(--soft); display:flex; align-items:center; justify-content:center; padding:3px 3px 0; }
+  .photo-card img { width:100%; height:100%; object-fit:cover; display:block; border-radius:10px; }
   .photo-card .broken { color:var(--fg3); font-size:13px; padding:20px; text-align:center; }
   .photo-card .cap { padding:12px 14px; }
   .photo-card .cap .who { font-size:12px; font-weight:700; color:var(--fg2); margin-bottom:4px; }
@@ -68,7 +71,7 @@
 <h1>🆚 对比两张照片</h1>
 <p class="sub" id="sub">--</p>
 
-<div class="interval-banner" id="banner">间隔 <b id="intervalDays">--</b> 天</div>
+<div class="cross-tag-warn" id="crossTagWarn" style="display:none">⚠️ 跨标签对比:两张照片标签不同,可比性较弱,建议对比同角度(同标签)照片</div>
 
 <div class="compare">
   <div class="photo-card">
@@ -91,6 +94,8 @@
   </div>
 </div>
 
+<div class="interval-banner" id="banner">间隔 <b id="intervalDays">--</b> 天</div>
+
 <div class="footer">
   <div class="btn-group">
     <button class="btn" id="copyDataBtn">📋 复制数据</button>
@@ -110,6 +115,7 @@
   document.getElementById('metaLeft').textContent = meta.action_at;
   document.getElementById('sub').textContent = `照片 #${d.photo1.id} vs #${d.photo2.id} · 间隔 ${d.interval_days} 天`;
   document.getElementById('intervalDays').textContent = d.interval_days;
+  if (d.cross_tag_warning) document.getElementById('crossTagWarn').style.display = 'block';
 
   function fill(which, p) {
     const imgWrap = document.getElementById('img' + which);

@@ -47,6 +47,10 @@ def build(id1, id2, embed=True):
     interval = (_date.fromisoformat(p2['date']) - _date.fromisoformat(p1['date'])).days
     interval = abs(interval)
 
+    # 跨标签对比警告(2026-08-03 验收拍板 · 方案 B:警告不拦截)
+    # 同标签 = 同角度同姿势,对比才有可比性;不同标签仅提示,不阻止渲染
+    cross_tag = sorted(p1['tag_list']) != sorted(p2['tag_list'])
+
     try:
         photos_dir = bpt.get_photos_dir()
         if embed:
@@ -62,6 +66,7 @@ def build(id1, id2, embed=True):
             'photo1': p1, 'photo2': p2,
             'interval_days': interval,
             'order_by_date': p1['date'] <= p2['date'],
+            'cross_tag_warning': cross_tag,
             'meta': {
                 'action_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'entity_type': '对比两张照片', 'wake_word': '对比两张照片',
@@ -117,6 +122,10 @@ def main():
     out_path.write_text(html, encoding='utf-8')
     print(f'✅ {out_path}')
     print(f'   间隔: {data["data"]["interval_days"]} 天')
+    if data['data'].get('cross_tag_warning'):
+        tags1 = ','.join(data['data']['photo1']['tag_list'] or ['(无)'])
+        tags2 = ','.join(data['data']['photo2']['tag_list'] or ['(无)'])
+        print(f'⚠️ 跨标签对比警告:照片 #{args.id1} 标签[{tags1}] vs #{args.id2} 标签[{tags2}] — 非同标签对比,可比性较弱,建议同角度照片对比')
     emit_send_protocol(out_path)
     return 0
 

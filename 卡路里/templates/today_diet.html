@@ -186,6 +186,15 @@
   }
   const { summary, meals, meta } = D.data;
 
+  // #44 审查:标题按日期动态——今天=今日饮食,历史日期=「M月D日 饮食」
+  const h1 = document.querySelector('h1');
+  if (meta.date === meta.today) {
+    h1.textContent = '🍽️ 今日饮食';
+  } else {
+    const parts = meta.date.split('-');
+    h1.textContent = `🍽️ ${Number(parts[1])}月${Number(parts[2])}日 饮食`;
+  }
+
   // #44 审查:数值统一格式化——最多 2 位小数(整数不带尾零,浮点去噪声)
   function fmt2(v) {
     const n = Number(v) || 0;

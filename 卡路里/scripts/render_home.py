@@ -546,12 +546,17 @@ def main():
 
     try:
         data = build_data(target_date, view=view, period=args.period)
-        # 调试元数据注入(不进 UI,复制日志可带出;R1 视图分离 + R4 自描述)
+        # 调试元数据注入(不进 UI,复制日志可带出;R1 视图分离 + R4 自描述 + C10 引号)
+        argv = sys.argv[1:]
+        if '--output' in argv:
+            i = argv.index('--output')
+            argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
         data['meta'] = {
             'fetched_at': date.today().isoformat(),
             'wake_word': scene_name,
             'chain': args.chain,
             'view': view,
+            'render_cmd': f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv),
         }
         html = render_html(data)
     except Exception as e:

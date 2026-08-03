@@ -60,18 +60,18 @@
   .pstatus { text-align:right; flex-shrink:0; }
   .pstatus .st { font-size:12px; font-weight:600; }
   .st-ok { color:var(--good); } .st-fail { color:var(--bad); } .st-skip { color:var(--warn); }
-  /* 标签 diff 卡 */
+  /* 标签 diff 卡 · 水平方向感(2026-08-03 验收拍板) */
   .diff-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
   .diff-card h2 { font-size:16px; font-weight:600; margin-bottom:14px; }
-  .diff-block { margin-bottom:10px; }
-  .diff-block:last-child { margin-bottom:0; }
+  .diff-row { display:flex; align-items:center; gap:14px; }
+  .diff-block { flex:1; min-width:0; }
   .diff-label { font-size:12px; color:var(--fg2); margin-bottom:4px; }
   .tag-chips { display:flex; flex-wrap:wrap; gap:6px; }
   .chip { font-size:12px; padding:3px 10px; border-radius:10px; font-weight:600; }
   .chip-old { background:#ffeaea; color:#c7254e; text-decoration:line-through; }
   .chip-new { background:rgba(52,199,89,.15); color:var(--good); }
   .chip-none { background:var(--soft); color:var(--fg3); }
-  .diff-arrow { font-size:16px; color:var(--fg3); padding:2px 0; }
+  .diff-arrow { font-size:20px; color:var(--fg3); flex-shrink:0; }
   /* 规律拍照提示卡 */
   .dist-card { background:linear-gradient(135deg,#f0f6ff,#f8fbff); border:1px solid rgba(0,113,227,.25);
                border-radius:14px; padding:14px 20px; margin-bottom:16px; font-size:13px; color:var(--fg2); }
@@ -129,14 +129,16 @@
 
 <div class="diff-card" id="tagDiffCard" style="display:none">
   <h2>🏷 标签变更</h2>
-  <div class="diff-block">
-    <div class="diff-label">改前</div>
-    <div class="tag-chips" id="tagsBefore"></div>
-  </div>
-  <div class="diff-arrow">↓</div>
-  <div class="diff-block">
-    <div class="diff-label">改后</div>
-    <div class="tag-chips" id="tagsAfter"></div>
+  <div class="diff-row">
+    <div class="diff-block">
+      <div class="diff-label">改前</div>
+      <div class="tag-chips" id="tagsBefore"></div>
+    </div>
+    <div class="diff-arrow">→</div>
+    <div class="diff-block">
+      <div class="diff-label">改后</div>
+      <div class="tag-chips" id="tagsAfter"></div>
+    </div>
   </div>
 </div>
 
@@ -215,10 +217,15 @@
     });
   }
 
-  // 标签 diff(改/加/删标签)
+  // 标签 diff(改/加/删标签 · 标签词随场景 · 2026-08-03 验收)
   if (tag_diff) {
     const dcard = document.getElementById('tagDiffCard');
     dcard.style.display = 'block';
+    const labels = { '改照片标签': ['改前', '改后'], '加照片标签': ['加前', '加后'], '删照片标签': ['删除前', '删除后'] };
+    const [lb, la] = labels[scene] || ['改前', '改后'];
+    const heads = dcard.querySelectorAll('.diff-label');
+    heads[0].textContent = lb;
+    heads[1].textContent = la;
     const chips = (arr, cls) => (arr && arr.length)
       ? arr.map(t => `<span class="chip ${cls}">${t}</span>`).join('')
       : '<span class="chip chip-none">(无)</span>';

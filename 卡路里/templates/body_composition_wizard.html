@@ -471,7 +471,6 @@
     if (!v('date')) return '// 请先填日期(上方第 1 步)';
     if (!v('source')) return '// 请选来源(上方第 1 步)';
     const isCaliper = v('source') === 'home_caliper';
-    // 范围校验(2026-08-03 验收反馈:手动填 9999 也应拦截)
     const bfErrEl = $('bfErr'), bfInp = $('body-fat-pct');
     const bf = n('body-fat-pct');
     if (bf == null) return isCaliper
@@ -485,7 +484,6 @@
     if (bfErrEl) bfErrEl.classList.remove('show');
     if (bfInp) bfInp.classList.remove('input-err');
 
-    const parts = [`--date ${v('date')}`, `--source ${v('source')}`];
     let textBody = '';
     if (isCaliper) {
       const vals = {}; let missing = [];
@@ -496,28 +494,16 @@
       if (missing.length) return `// 还差 ${missing.length} 项皮褶:${missing.join(', ')}`;
       const outOfRange = FIELDS.filter(f => !(vals[f] > 0 && vals[f] < 100));
       if (outOfRange.length) return `// 皮褶值需在 (0, 100) mm 之间:${outOfRange.join(', ')} 当前异常`;
-      FIELDS.forEach(f => parts.push(`--${f} ${vals[f]}`));
       const sum7 = FIELDS.reduce((s, f) => s + vals[f], 0).toFixed(1);
       textBody = `- 7 处皮褶(mm):胸 ${vals['caliper-chest']} / 腹 ${vals['caliper-abdominal']} / 大腿 ${vals['caliper-thigh']} / 三头肌 ${vals['caliper-tricep']} / 肩胛下 ${vals['caliper-subscapular']} / 髂上 ${vals['caliper-suprailiac']} / 腋中线 ${vals['caliper-midaxillary']}\n- 7 处总和:${sum7} mm`;
     }
-    parts.push(`--body-fat-pct ${bf}`);
-    if (v('age')) parts.push(`--age ${v('age')}`);
-    if (v('sex')) parts.push(`--sex ${v('sex')}`);
-    if (v('note')) parts.push(`--note "${v('note').replace(/"/g, '\\"')}"`);
 
     return `请帮我记一条${isCaliper ? '体脂钳测' : '外部测量'}结果到卡路里
 
 参数:
 - 日期:${v('date')}
 - 来源:${v('source')}${v('age')?`\n- 年龄:${v('age')}`:''}${v('sex')?`\n- 性别:${v('sex')==='male'?'男':'女'}`:''}
-${textBody ? textBody + '\n' : ''}- 体脂率:${bf}%${v('note')?`\n- 备注:${v('note')}`:''}
-
-命令:
-\`\`\`bash
-python scripts/body_composition.py add ${parts.join(' ')}
-\`\`\`
-
-完成后用 crud_receipt.html 返回回执。`;
+${textBody ? textBody + '\n' : ''}- 体脂率:${bf}%${v('note')?`\n- 备注:${v('note')}`:''}`;
   }
 
 function updatePrompt() {

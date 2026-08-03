@@ -448,8 +448,10 @@ def build_mode_weight_progress(goal):
             {'label': '差距', 'value': f"{d['gap_kg']:+.1f}", 'unit': 'kg'},
             {'label': '完成', 'value': pct if pct is not None else '—', 'unit': '%'},
         ],
+        'itemsTitle': '预测与建议',
+        'itemsHint': '按当前趋势推算',
         'items': [
-            {'label': '剩余天数', 'unit': '天', 'goal': None, 'actual': d.get('est_days'), 'pct': None},
+            {'label': '剩余天数', 'unit': '', 'goal': None, 'actual': d.get('est_days'), 'pct': None},
             {'label': '预计达成', 'unit': '', 'goal': None, 'actual': d.get('est_date'), 'pct': None},
             {'label': '建议速率', 'unit': '', 'goal': None, 'actual': rate_text, 'pct': None},
         ],

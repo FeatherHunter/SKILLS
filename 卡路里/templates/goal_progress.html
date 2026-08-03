@@ -18,6 +18,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .section-title .hint{font-size:12px;color:var(--ink3)}
 .row{display:grid;grid-template-columns:110px 1fr 150px;gap:12px;align-items:center;padding:10px 0;border-top:1px solid rgba(60,60,67,.06)}
 .row:first-child{border-top:none}
+.row.info{grid-template-columns:110px 1fr}
+.row.info .num{font-size:15px;font-weight:600;color:var(--ink)}
 .row .name{font-size:13.5px;font-weight:600}
 .row .name .unit{font-size:11px;color:var(--ink3);font-weight:400;margin-left:3px}
 .bar-bg{height:9px;background:#e5e5ea;border-radius:5px;overflow:hidden}
@@ -85,6 +87,12 @@ document.getElementById('subtitle').textContent=D.subtitle||'';
 
 function pctClass(pct){if(pct==null)return 'neutral';if(pct>=80&&pct<=120)return 'ok';if(pct<60||pct>150)return 'bad';return 'warn';}
 function fmtNum(v){const n=Math.round((Number(v)||0)*100)/100;return String(n);}
+function valText(it){
+  if(it.actual!=null&&it.goal!=null)return it.actual+'<b> / '+it.goal+'</b>';
+  if(it.actual!=null)return '<b>'+it.actual+'</b>';
+  if(it.goal!=null)return '<b>'+it.goal+'</b>';
+  return '—';
+}
 function gapText(it){
   if(it.gap==null)return '';
   if(it.gap>0)return '<span class="gap">还差 '+fmtNum(it.gap)+it.unit+'</span>';
@@ -97,11 +105,15 @@ function renderRows(){
   return '<div class="section"><div class="section-title"><h2>'+(D.itemsTitle||'目标 vs 实际')+'</h2><span class="hint">'+(D.itemsHint||'')+'</span></div>'+
     D.items.map(it=>{
       const pct=it.pct;
+      if(pct==null){
+        return '<div class="row info"><div class="name">'+it.label+(it.unit?'<span class="unit">'+it.unit+'</span>':'')+'</div>'+
+          '<div class="num">'+valText(it)+'</div></div>';
+      }
       const barPct=Math.min(pct!=null?pct:0,150);
       const barCls=pctClass(pct);
       return '<div class="row"><div class="name">'+it.label+'<span class="unit">'+it.unit+'</span></div>'+
         '<div class="bar-bg"><div class="bar-fg '+barCls+'" style="width:'+barPct+'%"></div></div>'+
-        '<div class="num">'+(it.actual!=null?it.actual+'<b> / '+it.goal+'</b>':'<b>'+it.goal+'</b>')+
+        '<div class="num">'+valText(it)+
         (pct!=null?'<span class="pct '+barCls+'">'+pct+'%</span>':'')+gapText(it)+'</div></div>';
     }).join('')+'</div>';
 }

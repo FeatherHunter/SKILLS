@@ -31,34 +31,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .section-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
 .section-title h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
 .section-title .hint{font-size:12px;color:var(--ink3)}
-.trend-svg{width:100%;height:clamp(180px, 40vh, 320px);display:block;background:linear-gradient(180deg,rgba(0,122,255,.02),transparent);border-radius:12px}
+.trend-svg{width:100%;aspect-ratio:4/1;display:block;background:linear-gradient(180deg,rgba(0,122,255,.02),transparent);border-radius:12px;text-rendering:geometricPrecision}
 .trend-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
 .trend-stat{padding:12px 14px;background:var(--bg-soft);border-radius:10px}
 .trend-stat .label{font-size:11px;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
 .trend-stat .value{font-size:18px;font-weight:700;font-feature-settings:"tnum"}
 .trend-stat .value.good{color:var(--green)}
 .trend-stat .value.warn{color:var(--orange)}
-.copy-section{background:linear-gradient(135deg,var(--card),#f8fbff);border-radius:20px;padding:28px 32px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
-.copy-section h2{font-size:19px;font-weight:600;letter-spacing:-.3px;margin-bottom:6px}
-.copy-section .sub{font-size:13.5px;color:var(--ink2);margin-bottom:18px;line-height:1.6}
-.copy-section code{background:var(--bg-soft);padding:1px 6px;border-radius:4px;font-size:12px;font-family:"SF Mono",monospace}
-.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:inherit}
 .btn:hover{opacity:.85;transform:translateY(-1px)}
 .btn.primary{background:var(--green);color:#fff}
+.btn.ghost{background:#fff;color:var(--ink2);border:1px solid var(--line)}
+.btn.ghost:hover{background:var(--bg-soft);border-color:var(--ink3)}
 .btn:disabled{opacity:.5;cursor:not-allowed}
-.btn.copied{background:var(--ink)!important;color:#fff!important}
-.copy-preview{background:var(--bg-soft);border-radius:12px;padding:16px 18px;font-family:"SF Mono",monospace;font-size:12px;line-height:1.65;color:var(--ink2);white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;border:1px solid var(--lineS)}
 .note-row{background:var(--card);border-radius:12px;padding:14px 18px;margin-top:12px;border:1px solid var(--lineS);font-size:13px;color:var(--ink2);display:flex;align-items:center;gap:10px}
 .note-row .lbl{color:var(--ink3);font-size:12px}
 .tags{display:flex;gap:6px;justify-content:center;margin-top:12px;position:relative;z-index:1}
 .one-line{margin-top:12px;font-size:14px;font-weight:600;color:var(--ink2);position:relative;z-index:1}
 .tag{display:inline-block;padding:3px 11px;border-radius:99px;font-size:12px;font-weight:600;background:var(--orange-soft);color:var(--orange)}
 .tag.meta-tag{background:var(--accent-soft);color:var(--accent)}
-footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;border-top:1px solid var(--lineS);margin-top:36px}
+.footer{margin-top:20px;padding:16px 18px;background:var(--card);border-radius:16px;border:1px solid var(--lineS);display:flex;justify-content:flex-end}
+.footer .btn-group{display:flex;gap:10px;flex-wrap:wrap}
 @keyframes pulse{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,149,0,.7)}70%{transform:scale(1.15);box-shadow:0 0 0 12px rgba(255,149,0,0)}100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,149,0,0)}}
 .pulse{animation:pulse 1.5s ease-out}
-@media(max-width:640px){.wrap{padding:20px 16px 60px}.receipt{padding:32px 20px 24px}.receipt .weight{font-size:48px}.trend-stats{grid-template-columns:1fr}}
+@media(max-width:640px){.wrap{padding:20px 16px 60px}.receipt{padding:32px 20px 24px}.receipt .weight{font-size:48px}.trend-stats{grid-template-columns:1fr}.footer .btn-group{justify-content:stretch}.footer .btn-group .btn{flex:1 1 45%;min-height:44px}}
 </style>
 </head>
 <body>
@@ -76,7 +72,7 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <h2>近 30 天趋势</h2>
 <span class="hint">橙色圆点 = 最新记录 · 共 <span id="historyCount">0</span> 条</span>
 </div>
-<svg class="trend-svg" id="trendSvg" viewBox="0 0 800 200" preserveAspectRatio="none">
+<svg class="trend-svg" id="trendSvg" viewBox="0 0 800 200" preserveAspectRatio="xMidYMid meet">
 <line x1="0" y1="100" x2="800" y2="100" stroke="rgba(60,60,67,.06)" stroke-width="1"></line>
 </svg>
 <div class="trend-stats">
@@ -89,17 +85,12 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <span class="lbl">备注:</span><span id="noteText"></span>
 </div>
 </section>
-<section class="copy-section">
-<h2>复制确认</h2>
-<p class="sub">
-回执型 — 不需要 AI 执行命令(数据已写入)。复制下方简短回执(可选)给 AI 让它继续后续操作(如 "你记的体重不错,根据这个调整计划…")。
-</p>
-<div class="btn-row">
-<button class="btn primary" id="btnCopy" onclick="copyReceipt()">📋 复制回执</button>
+<div class="footer">
+<div class="btn-group">
+<button class="btn primary" id="copyDataBtn">📋 复制数据</button>
+<button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
 </div>
-<div class="copy-preview" id="copyPreview">回执预览</div>
-</section>
-<footer>卡路里 Skill · 记体重回执 · 2026-07-23 · G7</footer>
+</div>
 </div>
 <!--INJECT-DATA-->
 <script>
@@ -140,7 +131,6 @@ function renderReceipt(){
   }
   const receipt=document.getElementById('receipt');
   if(receipt){receipt.classList.add('pulse');setTimeout(()=>receipt.classList.remove('pulse'),2000);}
-  updatePreview();
 }
 
 function renderTrend(){
@@ -187,7 +177,10 @@ function renderTrend(){
     svg.appendChild(c);
     if(isLatest){
       const lbl=document.createElementNS('http://www.w3.org/2000/svg','text');
-      lbl.setAttribute('x',px+10);lbl.setAttribute('y',py-8);
+      // 靠右时左置防裁切(2026-08-03 · ticket #43 场景 1 人工终审:最右 "68.xkg" 标签被 viewBox 裁掉)
+      const nearRight=px>W-70;
+      lbl.setAttribute('text-anchor',nearRight?'end':'start');
+      lbl.setAttribute('x',nearRight?px-10:px+10);lbl.setAttribute('y',py-8);
       lbl.setAttribute('fill','#ff9500');lbl.setAttribute('font-size','12');lbl.setAttribute('font-weight','600');
       lbl.setAttribute('font-family','-apple-system,sans-serif');
       lbl.textContent=(h.weight_kg||'')+'kg';
@@ -217,41 +210,70 @@ function renderTrend(){
   }
 }
 
-function updatePreview(){
+function showToast(msg){
+  let t=document.getElementById('copyToast');
+  if(!t){
+    t=document.createElement('div');
+    t.id='copyToast';
+    t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);'+
+      'background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;'+
+      'font-size:13px;z-index:999;max-width:86vw;text-align:center;';
+    document.body.appendChild(t);
+  }
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(t._timer);t._timer=setTimeout(()=>{t.style.display='none';},3200);
+}
+function fallbackCopy(text){
+  const ta=document.createElement('textarea');
+  ta.value=text;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');}catch(e){}
+  document.body.removeChild(ta);
+}
+function copyText(text,btn,okMsg){
+  const after=()=>showToast(okMsg);
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(after).catch(()=>{fallbackCopy(text);after();});
+  }else{fallbackCopy(text);after();}
+}
+function buildDataText(){
   const r=SUMMARY.new_record||{};
   const g=SUMMARY.weight_goal||{};
-  let p=(SUMMARY.backfill?'已补录体重(回执)':'已记录体重(回执)')+':\n\n';
-  p+='  '+r.date+' '+r.time+' | '+r.weight_kg+'kg | BMI '+(r.bmi||'?')+'\n';
-  if(SUMMARY.backfill)p+='  补录标识: 距今 '+SUMMARY.backfill.days_ago+' 天\n';
-  if(r.note)p+='  备注: '+r.note+'\n';
-  if(SUMMARY.delta_last!==undefined&&SUMMARY.delta_last!==null)p+='  较上次: '+(SUMMARY.delta_last>0?'+':'')+SUMMARY.delta_last+'kg\n';
-  if(g.target){
-    p+='\n  体重目标: '+g.target+'kg (距今 '+(g.days_left||'?')+'天)\n';
-    p+='  距离: '+(r.weight_kg-g.target).toFixed(1)+'kg\n';
-  }
-  p+='\n数据来源: 记体重回执 v2 · render_weight_receipt.py · '+new Date().toISOString().split('T')[0];
-  document.getElementById('copyPreview').textContent=p;
+  const lines=[];
+  lines.push(`记体重(回执) ${r.date||''} ${r.time||''}`.trim());
+  lines.push('');
+  lines.push(`体重: ${r.weight_kg} kg`);
+  lines.push(`BMI: ${r.bmi||'—'}`);
+  if(r.note)lines.push(`备注: ${r.note}${r.tag?` (${r.tag})`:''}`);
+  if(SUMMARY.delta_last!==undefined&&SUMMARY.delta_last!==null)lines.push(`较上次: ${SUMMARY.delta_last>0?'+':''}${SUMMARY.delta_last} kg`);
+  if(g.target)lines.push(`体重目标: ${g.target} kg · 距目标 ${(r.weight_kg-g.target).toFixed(1)} kg`);
+  if(SUMMARY.one_line)lines.push(`一句话: ${SUMMARY.one_line.replace('💬 ','')}`);
+  lines.push('');
+  lines.push(`近 30 天趋势(${HISTORY.length} 条):`);
+  HISTORY.slice(0,30).reverse().forEach(h=>lines.push(`  ${h.date} ${h.weight_kg} kg`));
+  return lines.join('\n');
 }
-
-function copyReceipt(){
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(document.getElementById('copyPreview').textContent).then(()=>flashCopied('btnCopy','✓ 已复制'));
-  }else{
-    const ta=document.createElement('textarea');
-    ta.value=document.getElementById('copyPreview').textContent;
-    document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');flashCopied('btnCopy','✓ 已复制');}catch(e){}
-    document.body.removeChild(ta);
-  }
+function buildLogText(){
+  const meta=DATA&&DATA.data&&DATA.data.meta?DATA.data.meta:{};
+  const lines=[`[记体重回执 排障日志]`,''];
+  lines.push(`唤醒词: ${meta.wake_word||'(未知)'}`);
+  lines.push(`渲染命令: ${meta.render_cmd||'(未知)'}`);
+  lines.push(`数据来源: ${meta.source||'(未知)'}`);
+  lines.push(`生成时间: ${meta.generated_at||'(未知)'}`);
+  lines.push('');
+  lines.push('AI 思考链:');
+  lines.push(meta.chain||'(未注入 · 渲染时未传 --chain)');
+  lines.push('');
+  lines.push('原始数据:');
+  lines.push(JSON.stringify({summary:SUMMARY,history:HISTORY},null,2));
+  return lines.join('\n');
 }
-
-function flashCopied(btnId,msg){
-  const btn=document.getElementById(btnId);
-  if(!btn)return;
-  const orig=btn.textContent;
-  btn.textContent=msg;btn.classList.add('copied');
-  setTimeout(()=>{btn.textContent=orig;btn.classList.remove('copied');},2200);
-}
+document.getElementById('copyDataBtn').onclick=function(){
+  copyText(buildDataText(),this,'记体重 数据复制成功 ✓');
+};
+document.getElementById('copyLogBtn').onclick=function(){
+  copyText(buildLogText(),this,'排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');
+};
 
 renderReceipt();
 renderTrend();

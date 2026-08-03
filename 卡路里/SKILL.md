@@ -30,10 +30,10 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
    |---|---|---|
    | **写库类**(`weight` / `add` / `delete` / `update-meal` 等) | `calorie_tracker.py weight 70 --note '...'` | `id=<N>` + `日期 <YYYY-MM-DD> <HH:MM:SS>` + `影响 N 行` + 写入字段摘要 |
    | **HTML 模板类触发**(`查今天吃` / `扫禁忌` 等 §04 决策矩阵 ✅ 的) | `calorie_tracker.py list` | `⚠️ ACTION=SEND_TO_USER \| HTML=<绝对路径>`(V1.3 §HTML 交付协议) |
-   | **单条记录类触发**(`记吃了` / `记体重` / `记运动`,§04 决策矩阵 ❌ 不做 HTML) | `calorie_tracker.py weight` | 仅写库回执(无 HTML) — 由 §04 决策矩阵明文规定,AI 不应擅自加 render |
+   | **v1.0 场景类单条记录**(`记体重` / `记运动` / `记一餐` 等,v1.0 场景设计 446 已定稿) | `calorie_tracker.py weight`(底层 CLI) | 场景化 HTML 回执:按场景 data_source 渲染(如 `render_weight_receipt.py --live` / `render_exercise_receipt.py --live-add` / `render_crud_receipt.py --live-diet-add`);AI 不得退回纯文字回执(2026-08-03 修 · ticket #43 场景 1 终审)
 
    **硬约束**(违反触发协议 fail mode,V1.0 §04 第④特性):
-   - **单条 CRUD 不加 HTML** — 总纲 §04 决策矩阵 ❌ 不做,AI 自作主张接通 render = 违反 §⚠️ 强制性规定 第 4 条(HTML-First 反模式)
+   - **单条 CRUD 不加 HTML(旧契约)** — 总纲 §04 决策矩阵 ❌ 不做,AI 自作主张接通 render = 违反 §⚠️ 强制性规定 第 4 条(HTML-First 反模式)。⚠️ **v1.0 场景化例外**(2026-08-03 · ticket #43 终审):`记体重` / `记运动` / `记一餐` 等已入 446 场景清单,HTML 回执以 `.scratch/scene-index-recovered.md` + `docs/scene-prompts/` 为准,不再受本条约束
    - **模板类必加 HTML** — 总纲 §04 决策矩阵 ✅ 必做,AI 跳过渲染 = 违反 §⚠️ 强制性规定 第 4 条
    - **写库回执必有 ID** — V1.0 §02 第②特性"ID + 时间戳 + 影响行数"是 Verifiable 的硬规则
 

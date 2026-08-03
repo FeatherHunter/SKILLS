@@ -85,13 +85,19 @@ def render_html(data: dict, template_path: Path) -> str:
 # ============ ticket #4 · live 模式(写库 + 回执一体) ============
 
 def _latest_history(conn, limit=30):
+    """最新在前(与模板 weight_log_receipt.html JS 契约一致,newestW = HISTORY[0])
+
+    ticket #43 场景 1 人工终审修复(2026-08-03):此前 reversed(rows) 返回
+    oldest→newest,导致趋势方向反/距目标错/最新点标在最旧点。回归测试:
+    tests/test_weight_receipt_history.py。
+    """
     cur = conn.cursor()
     cur.execute('''
         SELECT date, weight_kg FROM weight_log
         ORDER BY date DESC, time DESC LIMIT ?
     ''', (limit,))
     rows = cur.fetchall()
-    return [{'date': r[0], 'weight_kg': r[1]} for r in reversed(rows)]
+    return [{'date': r[0], 'weight_kg': r[1]} for r in rows]
 
 
 def build_live_receipt(kg, note='', target_date=None):
@@ -206,18 +212,22 @@ def main():
             data = normalize(load_data(input_path))
             cmd_name = None
             template = TEMPLATE_PATH
+
+        # meta 补全必须在 render_html 之前(2026-08-03 · ticket #43 终审:
+        # 原写在 render_html 之后,注入 JSON 缺 render_cmd/source → 复制日志显示 (未知))
+        if args.live or args.live_batch:
+            argv = sys.argv[1:]
+            if '--output' in argv:
+                i = argv.index('--output')
+                argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
+            data['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv)
+            data['meta']['source'] = 'weight_log (写库回执)'
         html = render_html(data, template)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
     if args.live or args.live_batch:
-        argv = sys.argv[1:]
-        if '--output' in argv:
-            i = argv.index('--output')
-            argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
-        data['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv)
-        data['meta']['source'] = 'weight_log (写库回执)'
         out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, cmd_name, 'receipt')
     else:
         out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'体重记录回执_{input_path.stem}')

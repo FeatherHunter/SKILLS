@@ -69,6 +69,7 @@
   .meta-bar .left { font-size:12px; color:var(--fg2); }
   .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  td.summary-line, td.cal-grams { display:none; } /* 桌面表格用 8 列,手机专属行隐藏 */
   @media (max-width:640px) {
     body { padding:24px 16px 40px; }
     .section { padding:16px 18px; }
@@ -81,15 +82,40 @@
     .meal-label { width:auto; }
     .meal-stats { width:auto; margin-left:auto; }
     .meal-bar-wrap { flex:1 1 100%; order:3; height:12px; }
-    /* #44 审查:表格手机卡片化——thead 隐藏,每行块级 + data-label 前缀,无横向滚动 */
+    /* #44 审查:表格手机两段式紧凑卡——行1:时间+餐次+食物+热量;行2:摘要行(克数左 + 营养三项右紧凑) */
     .table-wrap { overflow-x:visible; }
-    table, thead, tbody, tr, th, td { display:block; }
     thead { display:none; }
-    tr { border:1px solid var(--border); border-radius:10px; margin-bottom:8px; padding:8px 12px; }
-    td { display:flex; justify-content:space-between; align-items:center; border:none; padding:3px 0; font-size:12px; }
-    td::before { content:attr(data-label); color:var(--fg2); font-size:11px; }
-    td.num { text-align:left; }
+    tr { display:grid; grid-template-columns:auto auto 1fr auto; grid-template-areas:
+           "a b c d" "e e e e"; gap:3px 10px; background:var(--card); border:1px solid var(--lineS);
+         border-radius:14px; margin-bottom:10px; padding:10px 14px; position:relative; overflow:hidden;
+         box-shadow:0 1px 4px rgba(0,0,0,.04); }
+    /* 餐别色条(左侧 3px) */
+    tr::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--soft); }
+    tr.tr-breakfast::before { background:var(--warn); }
+    tr.tr-lunch::before { background:var(--accent); }
+    tr.tr-dinner::before { background:var(--prot); }
+    tr.tr-snack::before { background:var(--good); }
+    td { display:block; border:none; padding:0; font-size:12px; }
+    td.num { text-align:left; font-weight:400; }
     tr:last-child td { border:none; }
+    td:nth-child(1){grid-area:a} td:nth-child(2){grid-area:b}
+    td:nth-child(3){grid-area:c; min-width:0; word-break:break-all;}
+    td:nth-child(10){grid-area:d}  /* 手机:克数+热量同处行1 右侧 */
+    td:nth-child(4), td:nth-child(5), td:nth-child(6), td:nth-child(7), td:nth-child(8) { display:none; } /* 桌面列手机隐藏 */
+    td.summary-line{grid-area:e; display:flex; align-items:center; justify-content:flex-end; gap:8px; margin-top:2px;}
+    /* 行1:时间弱化灰 · 食物加粗 · 克数+热量右侧(同一行) */
+    td:nth-child(1)::before, td:nth-child(2)::before, td:nth-child(3)::before { content:none; }
+    td:nth-child(1) { color:var(--fg3); font-size:11px; font-variant-numeric:tabular-nums; }
+    td:nth-child(3) { font-weight:600; font-size:13px; }
+    td.cal-grams { display:flex; align-items:baseline; justify-content:flex-end; gap:6px; }
+    td.cal-grams .cg { color:var(--fg3); font-size:11px; font-variant-numeric:tabular-nums; }
+    td.cal-grams .cc { font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; color:var(--fg); }
+    /* 摘要行:营养三项右侧紧凑(蛋白质全称 + 彩色圆点) */
+    .sl-nuts { display:inline-flex; gap:10px; }
+    .sl-nut { font-size:11px; color:var(--fg2); font-variant-numeric:tabular-nums; }
+    .sl-nut.prot { color:var(--prot); }
+    .sl-nut.carb { color:var(--carb); }
+    .sl-nut.fat { color:var(--fat); }
     /* #44 审查:复制按钮手机有间距且不换行 */
     .footer { flex-direction:column; align-items:stretch; gap:8px; }
     .footer .btn-group { justify-content:space-between; }
@@ -248,15 +274,27 @@
   meals.forEach(m => {
     const tag = m.meal_type;
     const tagClass = ['breakfast','lunch','dinner','snack'].includes(tag) ? tag : '';
+    const trCls = tagClass ? ` class="tr-${tagClass}"` : '';
+    // #44 审查:手机行——td10 克数+热量同处行1 右侧;td9 摘要行仅营养三项(紧凑)
+    const calGrams =
+      `<td class="cal-grams" colspan="8"><span class="cg">${fmt2(m.grams)}g</span><span class="cc">${fmt2(m.calorie)} 卡</span></td>`;
+    const summaryLine =
+      `<td class="summary-line" colspan="8">` +
+      `<span class="sl-nuts">` +
+      `<span class="sl-nut prot">● 蛋白质 ${fmt2(m.protein)}</span>` +
+      `<span class="sl-nut carb">● 碳水 ${fmt2(m.carb)}</span>` +
+      `<span class="sl-nut fat">● 脂肪 ${fmt2(m.fat)}</span>` +
+      `</span></td>`;
     tb.insertAdjacentHTML('beforeend',
-      `<tr><td data-label="时间">${m.time}</td>` +
+      `<tr${trCls}><td data-label="时间">${m.time}</td>` +
       `<td data-label="餐次"><span class="meal-tag ${tagClass}">${mealLabels[tag] || tag}</span></td>` +
       `<td data-label="食物">${m.food_name}</td>` +
       `<td class="num" data-label="克数">${fmt2(m.grams)}</td>` +
       `<td class="num" data-label="热量">${fmt2(m.calorie)}</td>` +
       `<td class="num" data-label="蛋白">${fmt2(m.protein)}</td>` +
       `<td class="num" data-label="碳水">${fmt2(m.carb)}</td>` +
-      `<td class="num" data-label="脂肪">${fmt2(m.fat)}</td></tr>`);
+      `<td class="num" data-label="脂肪">${fmt2(m.fat)}</td>` +
+      summaryLine + calGrams + `</tr>`);
   });
 
   document.getElementById('srcLine').textContent =

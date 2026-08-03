@@ -18,7 +18,7 @@
 
 ### Label 命名空间
 
-- 技能分区：`skill:备忘录` / `skill:卡路里` / `skill:居家管家` / `skill:饼干记账` / `skill:智剪工坊` / `skill:作息管家` / `skill:SKILL开发总纲V1.0`
+- 技能分区：`skill:备忘录` / `skill:卡路里` / `skill:居家管家` / `skill:饼干记账` / `skill:智剪工坊` / `skill:作息管家` / `skill:总纲` / `skill:私家大厨` / `skill:学习系统` / `skill:面试系统`(2026-08-03 配色统一 + 新增 3 个技能 label)
 - 分类：`bug` / `enhancement`
 - 状态：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`
 - 自定义（如跨技能主题）：`cross-skill` / `docs` / `infra`

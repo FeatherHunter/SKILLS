@@ -439,16 +439,16 @@ def init_db(db_path):
         CREATE TABLE IF NOT EXISTS body_composition (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             date TEXT NOT NULL,
-            source TEXT NOT NULL CHECK (source IN ({SOURCE_HOME_CALIPER!r}, {SOURCE_HOSPITAL!r})),
+            source TEXT NOT NULL CHECK (source IN ({SOURCE_HOME_CALIPER!r}, {SOURCE_HOSPITAL!r}, {SOURCE_GYM!r})),
             age INTEGER,
             sex TEXT CHECK (sex IN ('male', 'female')),
-            caliper_chest_mm REAL NOT NULL CHECK (caliper_chest_mm > 0 AND caliper_chest_mm < 100),
-            caliper_abdominal_mm REAL NOT NULL CHECK (caliper_abdominal_mm > 0 AND caliper_abdominal_mm < 100),
-            caliper_thigh_mm REAL NOT NULL CHECK (caliper_thigh_mm > 0 AND caliper_thigh_mm < 100),
-            caliper_tricep_mm REAL NOT NULL CHECK (caliper_tricep_mm > 0 AND caliper_tricep_mm < 100),
-            caliper_subscapular_mm REAL NOT NULL CHECK (caliper_subscapular_mm > 0 AND caliper_subscapular_mm < 100),
-            caliper_suprailiac_mm REAL NOT NULL CHECK (caliper_suprailiac_mm > 0 AND caliper_suprailiac_mm < 100),
-            caliper_midaxillary_mm REAL NOT NULL CHECK (caliper_midaxillary_mm > 0 AND caliper_midaxillary_mm < 100),
+            caliper_chest_mm REAL CHECK (caliper_chest_mm > 0 AND caliper_chest_mm < 100),
+            caliper_abdominal_mm REAL CHECK (caliper_abdominal_mm > 0 AND caliper_abdominal_mm < 100),
+            caliper_thigh_mm REAL CHECK (caliper_thigh_mm > 0 AND caliper_thigh_mm < 100),
+            caliper_tricep_mm REAL CHECK (caliper_tricep_mm > 0 AND caliper_tricep_mm < 100),
+            caliper_subscapular_mm REAL CHECK (caliper_subscapular_mm > 0 AND caliper_subscapular_mm < 100),
+            caliper_suprailiac_mm REAL CHECK (caliper_suprailiac_mm > 0 AND caliper_suprailiac_mm < 100),
+            caliper_midaxillary_mm REAL CHECK (caliper_midaxillary_mm > 0 AND caliper_midaxillary_mm < 100),
             body_fat_pct REAL NOT NULL CHECK (body_fat_pct >= 0 AND body_fat_pct <= 60),
             calculated_at TEXT,
             note TEXT DEFAULT '',
@@ -549,5 +549,53 @@ def init_db(db_path):
     ''')
     c.execute('CREATE INDEX IF NOT EXISTS idx_body_measurements_date ON body_measurements(date)')
 
+    _migrate_composition_caliper_nullable(conn)
+
     conn.commit()
     conn.close()
+
+
+def _migrate_composition_caliper_nullable(conn):
+    """迁移:body_composition 7 皮褶列去 NOT NULL(2026-08-03 验收 · 外部测量无皮褶)
+
+    旧表:caliper_*_mm REAL NOT NULL → 新表:REAL(可 NULL,CHECK 保留,NULL 天然通过)。
+    SQLite 不支持 ALTER COLUMN 去 NOT NULL,采用 重建表 + 拷数据 + 改名。
+    """
+    cur = conn.cursor()
+    info = {r[1]: r[3] for r in cur.execute('PRAGMA table_info(body_composition)')}
+    calipers = ['caliper_chest_mm', 'caliper_abdominal_mm', 'caliper_thigh_mm',
+                'caliper_tricep_mm', 'caliper_subscapular_mm', 'caliper_suprailiac_mm',
+                'caliper_midaxillary_mm']
+    if not all(k in info for k in calipers):
+        return
+    if all(info[k] == 0 for k in calipers):
+        return  # 已迁移
+    cols = [r[1] for r in cur.execute('PRAGMA table_info(body_composition)')]
+    col_sql = ', '.join(f'"{x}"' for x in cols)
+    cur.execute('''
+        CREATE TABLE body_composition_mig (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date TEXT NOT NULL,
+            source TEXT NOT NULL CHECK (source IN ('home_caliper', 'hospital', 'gym')),
+            age INTEGER,
+            sex TEXT CHECK (sex IN ('male', 'female')),
+            caliper_chest_mm REAL CHECK (caliper_chest_mm > 0 AND caliper_chest_mm < 100),
+            caliper_abdominal_mm REAL CHECK (caliper_abdominal_mm > 0 AND caliper_abdominal_mm < 100),
+            caliper_thigh_mm REAL CHECK (caliper_thigh_mm > 0 AND caliper_thigh_mm < 100),
+            caliper_tricep_mm REAL CHECK (caliper_tricep_mm > 0 AND caliper_tricep_mm < 100),
+            caliper_subscapular_mm REAL CHECK (caliper_subscapular_mm > 0 AND caliper_subscapular_mm < 100),
+            caliper_suprailiac_mm REAL CHECK (caliper_suprailiac_mm > 0 AND caliper_suprailiac_mm < 100),
+            caliper_midaxillary_mm REAL CHECK (caliper_midaxillary_mm > 0 AND caliper_midaxillary_mm < 100),
+            body_fat_pct REAL NOT NULL CHECK (body_fat_pct >= 0 AND body_fat_pct <= 60),
+            calculated_at TEXT,
+            note TEXT DEFAULT '',
+            is_deprecated INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )
+    ''')
+    cur.execute(f'INSERT INTO body_composition_mig ({col_sql}) SELECT {col_sql} FROM body_composition')
+    cur.execute('DROP TABLE body_composition')
+    cur.execute('ALTER TABLE body_composition_mig RENAME TO body_composition')
+    cur.execute('CREATE INDEX IF NOT EXISTS idx_body_composition_date ON body_composition(date)')
+    cur.execute('CREATE INDEX IF NOT EXISTS idx_body_composition_source ON body_composition(source)')

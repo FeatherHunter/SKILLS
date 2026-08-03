@@ -5,7 +5,7 @@
 """
 import re
 
-from source_constants import SOURCE_CHOICES
+from source_constants import SOURCE_CHOICES, SOURCE_HOME_CALIPER
 
 ISO_DATE_RE = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
@@ -62,11 +62,12 @@ def validate_composition_input(args) -> None:
     if args.source not in SOURCE_CHOICES:
         _fail('source', args.source, SOURCE_CHOICES,
               f'fix: --source {" --source ".join(SOURCE_CHOICES)}')
+    is_caliper = args.source == SOURCE_HOME_CALIPER
     for f in CALIPER_FIELDS:
         v = getattr(args, f, None)
-        if v is None:
-            _fail(f, v, f'(0, 100)mm · 7 个皮褶必填', f'fix: --{_caliper_cli_name(f)} 5')
-        if not (CALIPER_MIN_MM < v < CALIPER_MAX_MM):
+        if is_caliper and v is None:
+            _fail(f, v, f'(0, 100)mm · 皮褶钳来源 7 个皮褶必填', f'fix: --{_caliper_cli_name(f)} 5')
+        if v is not None and not (CALIPER_MIN_MM < v < CALIPER_MAX_MM):
             _fail(f, v, f'({CALIPER_MIN_MM}, {CALIPER_MAX_MM})mm (exclusive)', f'fix: --{_caliper_cli_name(f)} 5')
     bf = getattr(args, 'body_fat_pct', None)
     if bf is None:

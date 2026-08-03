@@ -168,6 +168,11 @@
   }
 
   /* 流程条(2026-08-03 验收反馈:工作流说明改为可视化步骤) */
+  .external-note {
+    background: var(--soft); border: 1px dashed var(--border); border-radius: 10px;
+    padding: 10px 14px; margin-bottom: 12px; font-size: 12.5px; color: var(--fg2); line-height: 1.6;
+  }
+  .external-note strong { color: var(--accent); }
   .flow-strip {
     display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -243,10 +248,9 @@
       <div class="form-group">
         <label>来源<span class="required"> *</span><span class="en">source</span></label>
         <select id="source">
-          <option value="体脂钳测" selected>体脂钳测</option>
-          <option value="inbody">inbody</option>
-          <option value="omron">omron</option>
-          <option value="其他">其他</option>
+          <option value="home_caliper" selected>家测皮褶钳</option>
+          <option value="gym">健身房 InBody</option>
+          <option value="hospital">医院测</option>
         </select>
       </div>
     </div>
@@ -268,7 +272,7 @@
 </details>
 
 <!-- ============== 2. 7 皮褶 ============== -->
-<details>
+<details id="caliperSection">
   <summary>2️⃣ 7 处皮褶厚度(mm)<span class="required" style="color:var(--red);margin-left:6px">*</span> <span class="badge">必填 7 项</span></summary>
   <div class="body">
     <div class="form-row">
@@ -308,6 +312,10 @@
     </div>
   </div>
 </details>
+
+<div class="external-note" id="externalNote" style="display:none">
+  <strong>ℹ️ 外部设备测量</strong>(健身房 InBody / 体脂秤 / 医院):设备直接给出体脂率,不提供 7 皮褶,因此无需填写。其它指标(肌肉量 / BMR / 水分等)可写入备注。
+</div>
 
 <!-- ============== 3. 备注 / 体脂率 ============== -->
 <details>
@@ -462,56 +470,47 @@
   function buildPrompt() {
     if (!v('date')) return '// 请先填日期(上方第 1 步)';
     if (!v('source')) return '// 请选来源(上方第 1 步)';
-    const vals = {}; let missing = [];
-    FIELDS.forEach(f => {
-      const x = n(f);
-      if (x == null) missing.push(f); else vals[f] = x;
-    });
-    if (missing.length) return `// 还差 ${missing.length} 项皮褶:${missing.join(', ')}`;
+    const isCaliper = v('source') === 'home_caliper';
     // 范围校验(2026-08-03 验收反馈:手动填 9999 也应拦截)
     const bfErrEl = $('bfErr'), bfInp = $('body-fat-pct');
-    const outOfRange = FIELDS.filter(f => !(vals[f] > 0 && vals[f] < 100));
-    if (outOfRange.length) {
-      return `// 皮褶值需在 (0, 100) mm 之间:${outOfRange.join(', ')} 当前异常`;
-    }
     const bf = n('body-fat-pct');
-    if (bf == null) return '// 请填体脂率(上方第 3 步)或点"🧮 自动算"';
+    if (bf == null) return isCaliper
+      ? '// 请填体脂率(上方第 3 步)或等自动算'
+      : '// 请填体脂率(上方第 3 步)';
     if (!(bf > 0 && bf < 60)) {
       if (bfErrEl) bfErrEl.classList.add('show');
       if (bfInp) bfInp.classList.add('input-err');
-      return `// 体脂率需在 (0, 60)% 之间,当前 ${bf}% 异常(点"🧮 自动算"或改手动值)`;
+      return `// 体脂率需在 (0, 60)% 之间,当前 ${bf}% 异常`;
     }
     if (bfErrEl) bfErrEl.classList.remove('show');
     if (bfInp) bfInp.classList.remove('input-err');
 
-    const parts = [
-      `--date ${v('date')}`,
-      `--source ${v('source')}`,
-      `--caliper-chest ${vals['caliper-chest']}`,
-      `--caliper-abdominal ${vals['caliper-abdominal']}`,
-      `--caliper-thigh ${vals['caliper-thigh']}`,
-      `--caliper-tricep ${vals['caliper-tricep']}`,
-      `--caliper-subscapular ${vals['caliper-subscapular']}`,
-      `--caliper-suprailiac ${vals['caliper-suprailiac']}`,
-      `--caliper-midaxillary ${vals['caliper-midaxillary']}`,
-      `--body-fat-pct ${bf}`,
-    ];
+    const parts = [`--date ${v('date')}`, `--source ${v('source')}`];
+    let textBody = '';
+    if (isCaliper) {
+      const vals = {}; let missing = [];
+      FIELDS.forEach(f => {
+        const x = n(f);
+        if (x == null) missing.push(f); else vals[f] = x;
+      });
+      if (missing.length) return `// 还差 ${missing.length} 项皮褶:${missing.join(', ')}`;
+      const outOfRange = FIELDS.filter(f => !(vals[f] > 0 && vals[f] < 100));
+      if (outOfRange.length) return `// 皮褶值需在 (0, 100) mm 之间:${outOfRange.join(', ')} 当前异常`;
+      FIELDS.forEach(f => parts.push(`--${f} ${vals[f]}`));
+      const sum7 = FIELDS.reduce((s, f) => s + vals[f], 0).toFixed(1);
+      textBody = `- 7 处皮褶(mm):胸 ${vals['caliper-chest']} / 腹 ${vals['caliper-abdominal']} / 大腿 ${vals['caliper-thigh']} / 三头肌 ${vals['caliper-tricep']} / 肩胛下 ${vals['caliper-subscapular']} / 髂上 ${vals['caliper-suprailiac']} / 腋中线 ${vals['caliper-midaxillary']}\n- 7 处总和:${sum7} mm`;
+    }
+    parts.push(`--body-fat-pct ${bf}`);
     if (v('age')) parts.push(`--age ${v('age')}`);
     if (v('sex')) parts.push(`--sex ${v('sex')}`);
     if (v('note')) parts.push(`--note "${v('note').replace(/"/g, '\\"')}"`);
 
-    const sum7 = (vals['caliper-chest'] + vals['caliper-abdominal'] + vals['caliper-thigh'] +
-                  vals['caliper-tricep'] + vals['caliper-subscapular'] + vals['caliper-suprailiac'] +
-                  vals['caliper-midaxillary']).toFixed(1);
-
-    return `请帮我记一条体脂钳测结果到卡路里
+    return `请帮我记一条${isCaliper ? '体脂钳测' : '外部测量'}结果到卡路里
 
 参数:
 - 日期:${v('date')}
 - 来源:${v('source')}${v('age')?`\n- 年龄:${v('age')}`:''}${v('sex')?`\n- 性别:${v('sex')==='male'?'男':'女'}`:''}
-- 7 处皮褶(mm):胸 ${vals['caliper-chest']} / 腹 ${vals['caliper-abdominal']} / 大腿 ${vals['caliper-thigh']} / 三头肌 ${vals['caliper-tricep']} / 肩胛下 ${vals['caliper-subscapular']} / 髂上 ${vals['caliper-suprailiac']} / 腋中线 ${vals['caliper-midaxillary']}
-- 7 处总和:${sum7} mm
-- 体脂率:${bf}%${v('note')?`\n- 备注:${v('note')}`:''}
+${textBody ? textBody + '\n' : ''}- 体脂率:${bf}%${v('note')?`\n- 备注:${v('note')}`:''}
 
 命令:
 \`\`\`bash
@@ -521,7 +520,7 @@ python scripts/body_composition.py add ${parts.join(' ')}
 完成后用 crud_receipt.html 返回回执。`;
   }
 
-  function updatePrompt() {
+function updatePrompt() {
     calcSum();
     $('promptBox').textContent = buildPrompt();
   }
@@ -594,18 +593,26 @@ python scripts/body_composition.py add ${parts.join(' ')}
   // ---------- 体脂率只读策略(2026-08-03 对抗式审查:皮褶钳=公式算,禁手改;外部设备=手填) ----------
   const bfInput = $('body-fat-pct');
   function applySourceMode() {
-    const isCaliper = $('source').value === '体脂钳测';
+    const isCaliper = $('source').value === 'home_caliper';
     bfInput.readOnly = isCaliper;
     $('autoCalcBtn').style.display = isCaliper ? '' : 'none';
     $('bfHint').textContent = isCaliper
       ? '皮褶钳:7 皮褶 + 年龄/性别填齐后自动按公式算,无需手填'
       : '外部设备:填设备读数,范围 (0, 60)%';
+    // 外部设备无皮褶 → 隐藏 7 皮褶区,显示说明
+    const calSec = $('caliperSection');
+    if (calSec) {
+      calSec.style.display = isCaliper ? '' : 'none';
+      const note = $('externalNote');
+      if (note) note.style.display = isCaliper ? 'none' : 'block';
+    }
     if (isCaliper) {
       if ($('body-fat-pct').value === '' || _bfAuto) runAutoCalc(false);
     } else {
       _bfAuto = false;
       $('bfAutoTag').style.display = 'none';
     }
+    updatePrompt();
   }
   $('source').addEventListener('change', applySourceMode);
   applySourceMode();

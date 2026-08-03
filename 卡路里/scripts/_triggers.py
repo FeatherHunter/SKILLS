@@ -236,23 +236,23 @@ TRIGGERS = [
             'user_intent': '一次批量补录多餐饮食', 'data_fields': ["date", "time", "food_name", "grams", "calories", "protein", "carbs", "fat"],
             'depends_on_external': False, 'order': 3},
     {
-            'category': '饮食',     'wake_word': '扫描营养表',     'desc': '扫描营养表',
+            'category': '饮食',     'wake_word': '拍营养表记一餐',     'desc': '拍营养表记一餐',
             'main_prompt': {
-        'cli': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> → 确认后 python scripts/calorie_tracker.py add', 'text': '请你加载技能 卡路里,执行唤醒词「扫描营养表」。\n\n我拍了食物包装的营养成分表图片,请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养),我确认后写进饮食记录。识别不确定的地方标注一下。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____'},
+        'cli': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> → 确认后 python scripts/calorie_tracker.py add', 'text': '请你加载技能 卡路里,执行唤醒词「拍营养表记一餐」。\n\n我刚吃了这个食物,手边有包装。我拍下包装上的营养成分表给你,请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养),我确认后记入今天的饮食。识别不确定的地方标注一下。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____'},
         'fill_hints': [],
             'variants': [],
-            'key': 'diet_scan_label', 'name': '扫描营养表', 'subfunction': '记饮食', 'output_type': 'process',
-            'html_template': 'templates/nutrition_label_wizard.html', 'data_source': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> → 确认后 python scripts/calorie_tracker.py add', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「扫描营养表」。\n\n我拍了食物包装的营养成分表图片,请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养),我确认后写进饮食记录。识别不确定的地方标注一下。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____',
+            'key': 'diet_scan_label', 'name': '拍营养表记一餐', 'subfunction': '记饮食', 'output_type': 'process',
+            'html_template': 'templates/nutrition_label_wizard.html', 'data_source': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> → 确认后 python scripts/calorie_tracker.py add', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「拍营养表记一餐」。\n\n我刚吃了这个食物,手边有包装。我拍下包装上的营养成分表给你,请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养),我确认后记入今天的饮食。识别不确定的地方标注一下。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____',
             'user_intent': '拍照识别营养成分表并记录', 'data_fields': ["calories", "protein", "carbs", "fat", "sugar", "sodium", "fiber"],
             'depends_on_external': False, 'order': 4},
     {
-            'category': '饮食',     'wake_word': '扫描营养表（指定日期）',     'desc': '扫描营养表（指定日期）',
+            'category': '饮食',     'wake_word': '拍营养表补记一餐',     'desc': '拍营养表补记一餐',
             'main_prompt': {
-        'cli': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> --date <日期> → 确认后 python scripts/calorie_tracker.py add --date <日期>', 'text': '请你加载技能 卡路里,执行唤醒词「扫描营养表（指定日期）」。\n\n我拍了食物包装的营养成分表图片,要补录到指定日期。请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养 + 指定日期),我确认后按该日期写进饮食记录。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____\n日期(YYYY-MM-DD):____'},
+        'cli': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> --date <日期> → 确认后 python scripts/calorie_tracker.py add --date <日期>', 'text': '请你加载技能 卡路里,执行唤醒词「拍营养表补记一餐」。\n\n我某天吃了这个食物但忘了记,现在手边有包装,拍给你识别。请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养 + 补录日期),我确认后按那天记入饮食。识别不确定的地方标注一下。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____\n日期(YYYY-MM-DD):____'},
         'fill_hints': [],
             'variants': [],
-            'key': 'diet_scan_label_date', 'name': '扫描营养表（指定日期）', 'subfunction': '记饮食', 'output_type': 'process',
-            'html_template': 'templates/nutrition_label_wizard.html', 'data_source': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> --date <日期> → 确认后 python scripts/calorie_tracker.py add --date <日期>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「扫描营养表（指定日期）」。\n\n我拍了食物包装的营养成分表图片,要补录到指定日期。请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养 + 指定日期),我确认后按该日期写进饮食记录。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____\n日期(YYYY-MM-DD):____',
+            'key': 'diet_scan_label_date', 'name': '拍营养表补记一餐', 'subfunction': '记饮食', 'output_type': 'process',
+            'html_template': 'templates/nutrition_label_wizard.html', 'data_source': 'mmx vision describe <图片> → python scripts/render_nutrition_label.py --ai-json <json> --date <日期> → 确认后 python scripts/calorie_tracker.py add --date <日期>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「拍营养表补记一餐」。\n\n我某天吃了这个食物但忘了记,现在手边有包装,拍给你识别。请你识别出热量/蛋白/碳水/脂肪等字段,给我看识别结果(照片 + 识别出的营养 + 补录日期),我确认后按那天记入饮食。识别不确定的地方标注一下。完成后给 1 句话总结,不需要过多文字解释。\n\n营养表图片路径:____\n日期(YYYY-MM-DD):____',
             'user_intent': '拍照识别营养表并补录到指定日期', 'data_fields': ["calories", "protein", "carbs", "fat", "date"],
             'depends_on_external': False, 'order': 5},
     {

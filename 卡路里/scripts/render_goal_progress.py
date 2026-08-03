@@ -207,12 +207,22 @@ def build_mode_nutrition(goal, period=None):
     for it in items:
         g = it['goal']
         it['gap'] = (g - it['actual']) if g else None
+    if items:
+        with_gap = [it for it in items if it.get('gap') is not None and it.get('goal')]
+        if with_gap:
+            worst = max(with_gap, key=lambda it: abs(it['gap']))
+            verb = '刚好达标' if worst['gap'] == 0 else ('还差' if worst['gap'] > 0 else '已超')
+            summary = f"差距最大: {worst['label']} {verb} {abs(worst['gap'])} {worst['unit']}"
+        else:
+            summary = '未设营养目标'
+    else:
+        summary = '未设营养目标'
     return {
         'mode': 'nutrition',
         'title': '看营养目标进度',
         'subtitle': '4 项宏量进度条 + 完成度% + 缺口',
         'items': items,
-        'summary': '缺口 = 目标 - 实际(负数=已超)' if items else '未设营养目标',
+        'summary': summary,
     }
 
 

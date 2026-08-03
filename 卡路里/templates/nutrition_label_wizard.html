@@ -47,7 +47,7 @@ body{
 .wrap{max-width:880px;margin:0 auto;padding:32px 20px 80px}
 
 /* HERO */
-.hero{padding:32px 28px 28px;margin-bottom:20px}
+.hero{padding:32px 0 14px;margin-bottom:10px}  /* #44 审查:底部空白减半 + 与 ai-extract 左侧对齐(去左右 padding) */
 .hero .eyebrow{
   font-size:13px;font-weight:600;
   letter-spacing:.5px;color:var(--accent);
@@ -146,10 +146,16 @@ body{
   display:inline-flex;align-items:center;gap:6px;
   background:var(--accent-soft);color:var(--accent);
   padding:6px 12px;border-radius:999px;
-  font-size:13px;font-weight:600;margin-bottom:14px;
-  text-decoration:none;
+  font-size:13px;font-weight:600;margin-bottom:7px;  /* #44 审查:空白减半 */
+  text-decoration:none;cursor:pointer;
 }
 .ai-extract:hover{background:rgba(0,122,255,.15)}
+.ai-raw{ /* #44 审查:原始 AI 输出展开区 */
+  background:var(--bg-soft);border-radius:12px;padding:12px 16px;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Mono","Menlo",monospace;
+  font-size:12px;line-height:1.7;color:var(--ink2);white-space:pre-wrap;
+  word-break:break-all;margin-bottom:14px;border:1px solid var(--lineS);
+}
 
 /* COPY SECTION */
 .copy-section{
@@ -213,7 +219,7 @@ footer{
 /* RESPONSIVE */
 @media (max-width:640px){
   .wrap{padding:20px 16px 60px}
-  .hero{padding:24px 20px 20px}
+  .hero{padding:24px 0 20px}  /* #44 审查:与 ai-extract 左侧对齐(去左右 padding) */
   .hero h1{font-size:26px}
   .section,.copy-section{padding:18px 20px}
   .field-group{grid-template-columns:1fr}
@@ -233,8 +239,9 @@ footer{
 
 <!-- AI EXTRACT HINT -->
 <a class="ai-extract" id="aiExtractHint" href="javascript:void(0)">
-  <span>📸</span><span>查看原始 AI 输出 (mmx vision describe)</span>
+  <span>📸</span><span id="aiExtractLabel">查看原始 AI 输出 (mmx vision describe)</span>
 </a>
+<pre class="ai-raw" id="aiRawOutput" style="display:none"></pre>
 
 <!-- 字段编辑 (13 个字段 · 分 4 组) -->
 <section class="section">
@@ -644,6 +651,24 @@ function render() {
 }
 
 document.getElementById('btnLog').onclick = copyLog;
+
+// #44 审查:查看原始 AI 输出(mmx vision describe 的完整输出)点击展开/收起
+(function () {
+  const hint = document.getElementById('aiExtractHint');
+  const raw = document.getElementById('aiRawOutput');
+  if (!hint || !raw) return;
+  hint.onclick = function () {
+    if (raw.style.display === 'none') {
+      const lines = ['【图片】', JSON.stringify(SOURCE, null, 2), '', '【AI 识别输出】', JSON.stringify(AI_OUTPUT, null, 2)];
+      raw.textContent = lines.join('\n');
+      raw.style.display = 'block';
+      document.getElementById('aiExtractLabel').textContent = '收起原始 AI 输出';
+    } else {
+      raw.style.display = 'none';
+      document.getElementById('aiExtractLabel').textContent = '查看原始 AI 输出 (mmx vision describe)';
+    }
+  };
+})();
 
 render();
 </script>

@@ -76,8 +76,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 <line x1="0" y1="100" x2="800" y2="100" stroke="rgba(60,60,67,.06)" stroke-width="1"></line>
 </svg>
 <div class="trend-stats">
-<div class="trend-stat"><div class="label">距上次</div><div class="value" id="statDeltaLast">--</div></div>
-<div class="trend-stat"><div class="label">距目标</div><div class="value" id="statDiff">--</div></div>
+<div class="trend-stat"><div class="label">当前距上次</div><div class="value" id="statDeltaLast">--</div></div>
+<div class="trend-stat"><div class="label">当前距目标</div><div class="value" id="statDiff">--</div></div>
 <div class="trend-stat"><div class="label">平均</div><div class="value" id="statAvg">--</div></div>
 <div class="trend-stat"><div class="label">趋势</div><div class="value" id="statTrend">--</div></div>
 </div>
@@ -230,10 +230,11 @@ function renderTrend(){
   }
   document.getElementById('statTrend').textContent=trend;
   document.getElementById('statTrend').className='value '+(trendCls||'');
-  // 距上次(2026-08-02 · 记体重呈现数据「距上次」)
+  // 距上次(序列级:最新点 vs 上一记录点 · 2026-08-03 场景 3 终审:原混用服务器记录级 delta,
+  // 补录场景显示 "--" 与同排序列卡不一致 → 统一序列级)
   const dlEl=document.getElementById('statDeltaLast');
-  if(SUMMARY.delta_last!==undefined&&SUMMARY.delta_last!==null){
-    const dl=SUMMARY.delta_last;
+  if(HISTORY.length>=2){
+    const dl=Math.round((HISTORY[0].weight_kg-HISTORY[1].weight_kg)*10)/10;
     dlEl.textContent=(dl>0?'+':'')+dl+'kg';
     dlEl.className='value '+(dl>0?'warn':'good');
   }

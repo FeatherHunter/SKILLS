@@ -151,13 +151,16 @@ def build_live_receipt(kg, note='', target_date=None):
 
 
 def _one_line(receipt, dl, goal_diff, is_backfill, days_ago):
-    parts = [f"已记录 {receipt['kg']}kg(BMI {receipt['bmi']})"]
+    """一句话 = 对话式结论,不回声 meta(BMI/补录·距今 已由 meta+tag 展示)
+
+    ticket #43 场景 3 终审(2026-08-03):去重原则 —— meta=事实,趋势卡=序列,
+    一句话=本记录结论(记录值 + 记录级解读)。
+    """
+    parts = [f"{'已补录' if is_backfill else '已记录'} {receipt['kg']}kg"]
     if dl is not None:
         parts.append(f"较上次{'+' if dl > 0 else ''}{dl}kg")
     if goal_diff is not None:
         parts.append(f"距目标{'+' if goal_diff > 0 else ''}{goal_diff}kg")
-    if is_backfill:
-        parts.append(f"补录 · 距今 {days_ago} 天")
     return ' · '.join(parts)
 
 

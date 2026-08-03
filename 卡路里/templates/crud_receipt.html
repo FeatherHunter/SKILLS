@@ -75,7 +75,7 @@
   .ctx-row .value { font-weight:600; font-variant-numeric:tabular-nums; }
   .ctx-row .pct { font-size:11px; color:var(--fg3); margin-left:6px; }
   /* Footer 按钮 */
-  .footer { margin-top:24px; padding:16px 18px; background:transparent; border-radius:12px; display:flex; justify-content:flex-end; align-items:center; }
+  .footer { margin-top:12px; padding:12px 14px; background:transparent; border-radius:12px; display:flex; justify-content:flex-end; align-items:center; } /* #44 审查:手机版底部空白减半(24→12 + body padding) */
   .footer .btn-group { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
   .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
          cursor:pointer; font-size:13px; color:var(--fg); min-height:36px; }
@@ -90,7 +90,7 @@
   }
   /* Phase 3c:mobile 断点(640px 以下单列堆叠 + 缩 padding) */
   @media (max-width:640px) {
-    body { padding:20px 14px 80px; }
+    body { padding:20px 14px 40px; } /* #44 审查:底部空白减半(80→40) */
     h1 { font-size:22px; }
     .section { padding:16px 18px; border-radius:12px; }
     .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }

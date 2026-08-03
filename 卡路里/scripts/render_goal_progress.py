@@ -171,7 +171,7 @@ def build_mode_nutrition(goal, period=None):
                 'date': h['date'],
                 'calorie_actual': h['calorie_actual'],
                 'calorie_goal': h['calorie_goal'] or '—',
-                'rate': {'bar': min(pct, 150), 'text': f'{pct}%'},
+                'rate': {'bar': min(pct, 150), 'over': max(0, min(pct, 150) - 100), 'text': f'{pct}%'},
                 'status': {'badge': 'ok' if h['status'] == '完成' else ('bad' if h['status'] == '未完成' else 'neutral'), 'text': h['status']},
             })
         return {
@@ -262,7 +262,7 @@ def build_mode_vs_actual(goal, days=30):
             'date': d,
             'actual': round(a['calorie'], 1),
             'goal': g or '—',
-            'deviation': {'bar': min(pct, 150) if pct is not None else 0, 'text': f'{pct}%' if pct is not None else '—'},
+            'deviation': {'bar': min(pct, 150) if pct is not None else 0, 'over': max(0, min(pct, 150) - 100) if pct is not None else 0, 'text': f'{pct}%' if pct is not None else '—'},
         })
         if pct is not None:
             deviations.append(pct - 100)
@@ -470,7 +470,7 @@ def build_mode_history(goal, days=30):
             'date': h['date'],
             'calorie_actual': h['calorie_actual'],
             'calorie_goal': h['calorie_goal'] or '—',
-            'rate': {'bar': min(pct, 150), 'text': f'{pct}%'},
+            'rate': {'bar': min(pct, 150), 'over': max(0, min(pct, 150) - 100), 'text': f'{pct}%'},
             'status': {'badge': 'ok' if h['status'] == '完成' else ('bad' if h['status'] == '未完成' else 'neutral'),
                        'text': h['status']},
         })

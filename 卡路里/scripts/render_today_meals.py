@@ -136,6 +136,7 @@ def main():
     p.add_argument('--with-note', action='store_true', help='只看有备注的记录')
     p.add_argument('--mock')
     p.add_argument('--output')
+    p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
     args = p.parse_args()
     if args.week:
         s, e = _natural_week(args.week)
@@ -149,6 +150,8 @@ def main():
         s, e = args.start, args.end
     try:
         data = _load_data(args.mock) if args.mock else build_data(s, e, with_note=args.with_note)
+        if args.chain:
+            data['data']['meta']['chain'] = args.chain
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

@@ -885,6 +885,12 @@ def main():
                     if pid is None:
                         pid = rest[i]
                     i += 1
+            # 白名单过滤(同 --live-diet-update 的 _FMAP 模式 · #44 缺陷C):
+            # --chain/--output 等框架参数不得当作「已更新字段」进入回执
+            _PRODUCT_FIELDS = {'product_name', 'brand', 'calories', 'protein', 'fat',
+                               'saturated_fat', 'carbohydrates', 'sugar', 'dietary_fiber',
+                               'sodium', 'note', 'category'}
+            kw = {k: v for k, v in kw.items() if k in _PRODUCT_FIELDS}
             if pid is None or not kw:
                 print('❌ --live-product-update 需要 <id> + 至少 1 个字段', file=sys.stderr)
                 return 1

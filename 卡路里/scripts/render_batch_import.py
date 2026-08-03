@@ -69,6 +69,12 @@ def normalize(data: dict) -> dict:
     if not isinstance(runs, list):
         runs = []
 
+    # #44 缺陷D修复:batch_import validate 输出 run.name → 模板需要的 product_name
+    # (预览明细行按 product_name/brand 渲染;validate 输出只有 name,原样透传会显示「(无名)」)
+    for r in runs:
+        if isinstance(r, dict) and 'product_name' not in r and r.get('name'):
+            r['product_name'] = r['name']
+
     # BUG #1 修复:jsonl_path 兜底,避免 prompt 中出现 "undefined"
     if 'jsonl_path' not in summary:
         summary['jsonl_path'] = summary.get('jsonl_path', 'foods.jsonl')

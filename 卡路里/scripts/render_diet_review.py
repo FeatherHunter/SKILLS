@@ -110,10 +110,13 @@ def main():
     p.add_argument('--start')
     p.add_argument('--end')
     p.add_argument('--output')
+    p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
     args = p.parse_args()
     s, e = _resolve_range(args.type, args.start, args.end)
     try:
         data = build_data(s, e)
+        if args.chain:
+            data['data']['meta']['chain'] = args.chain
         html = render_html(data)
     except Exception as ex:
         print(f'❌ 渲染失败: {ex}', file=sys.stderr)

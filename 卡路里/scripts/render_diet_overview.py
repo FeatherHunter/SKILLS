@@ -88,9 +88,12 @@ def render_html(data):
 def main():
     p = argparse.ArgumentParser(description='渲染饮食总览 HTML(结果型 · 周期累计)')
     p.add_argument('--output')
+    p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
     args = p.parse_args()
     try:
         data = build_data()
+        if args.chain:
+            data['data']['meta']['chain'] = args.chain
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

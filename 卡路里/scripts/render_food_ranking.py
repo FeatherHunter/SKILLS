@@ -43,6 +43,7 @@ def build_parser():
     p.add_argument("--days", type=int, help="最近 N 天(默认 7)")
     p.add_argument("--top-n", type=int, default=5, help="每个榜单取前 N 名(默认 5)")
     p.add_argument("--output", help="输出文件路径")
+    p.add_argument("--chain", help="AI 思考链注入(顶层 meta.chain,不进 UI;复制日志可带出 · R3)")
     return p
 
 
@@ -89,6 +90,8 @@ def main():
         data = {}
         for cat in cats:
             data[cat] = fetch_one_ranking(cat, start, end, args.top_n)
+        if args.chain:
+            data['meta'] = {'chain': args.chain, 'start': start, 'end': end}
         html = render_html(data)
     except Exception as e:
         print(f"❌ 渲染失败: {e}", file=sys.stderr)

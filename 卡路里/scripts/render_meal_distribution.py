@@ -128,9 +128,12 @@ def main():
     p.add_argument('--meal', choices=['breakfast', 'lunch', 'dinner', 'snack', 'all'], default='all')
     p.add_argument('--days', type=int, default=7)
     p.add_argument('--output')
+    p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
     args = p.parse_args()
     try:
         data = build_data(args.days, args.meal)
+        if args.chain:
+            data['data']['meta']['chain'] = args.chain
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

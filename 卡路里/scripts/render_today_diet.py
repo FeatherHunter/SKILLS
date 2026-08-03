@@ -167,6 +167,7 @@ def main():
     p.add_argument('--date', help='日期 YYYY-MM-DD(默认今天)')
     p.add_argument('--mock', help='从 mock JSON 文件加载(代替 DB 查询)')
     p.add_argument('--output', help='输出文件路径(默认 calorie_html/今日饮食总览_<TS>.html)')
+    p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
     args = p.parse_args()
 
     day = args.date or date.today().isoformat()
@@ -175,6 +176,8 @@ def main():
             data = _load_data(args.mock)
         else:
             data = build_data(day)
+        if args.chain:
+            data['data']['meta']['chain'] = args.chain
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

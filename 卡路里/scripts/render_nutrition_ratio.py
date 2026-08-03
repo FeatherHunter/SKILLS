@@ -31,11 +31,11 @@ def build_data(start, end):
     conn = sqlite3.connect(str(db_path))
     cur = conn.cursor()
     cur.execute("""
-        SELECT COALESCE(SUM(protein), 0), COALESCE(SUM(carbohydrates), 0), COALESCE(SUM(fat), 0), COALESCE(SUM(calorie), 0)
+        SELECT COALESCE(SUM(protein), 0), COALESCE(SUM(carbs), 0), COALESCE(SUM(fat), 0), COALESCE(SUM(calories), 0)
         FROM food_log WHERE date BETWEEN ? AND ?
     """, (start, end))
     p_g, c_g, f_g, total_cal = cur.fetchone()
-    cur.execute("SELECT protein, carbohydrates, fat, calorie FROM daily_goal ORDER BY id DESC LIMIT 1")
+    cur.execute("SELECT protein_goal, carbs_goal, fat_goal, calorie_goal FROM daily_goal ORDER BY id DESC LIMIT 1")
     g = cur.fetchone() or (120, 200, 60, 1800)
     conn.close()
     days = (date.fromisoformat(end) - date.fromisoformat(start)).days + 1
@@ -81,6 +81,7 @@ def main():
     p.add_argument('--days', type=int)
     p.add_argument('--mock')
     p.add_argument('--output')
+    p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
     args = p.parse_args()
     if args.days:
         end = date.today()
@@ -91,6 +92,8 @@ def main():
     s, e = start.isoformat(), end.isoformat()
     try:
         data = _load_data(args.mock) if args.mock else build_data(s, e)
+        if args.chain:
+            data['data']['meta']['chain'] = args.chain
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

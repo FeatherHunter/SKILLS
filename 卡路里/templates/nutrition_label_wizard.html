@@ -254,6 +254,9 @@ footer{
     <div class="field"><label>品牌 <span class="req">*</span><span class="diff-tag ai">AI</span></label>
       <input type="text" id="brand" data-key="brand" />
     </div>
+    <div class="field"><label>补录日期 <span class="hint-inline">选填 · 指定日期场景</span><span class="diff-tag ai">AI</span></label>
+      <input type="date" id="date" data-key="date" />
+    </div>
   </div>
 </section>
 
@@ -421,6 +424,12 @@ function applyInitialValues() {
     }
     el.addEventListener('input', onFieldChange);
   });
+  // 补录日期(指定日期场景 · #44 缺陷B):不入 FIELD_ORDER(与 add-product 位置无关),单独填充
+  const dEl = document.querySelector('[data-key="date"]');
+  if (dEl) {
+    if (AI_OUTPUT.date) dEl.value = AI_OUTPUT.date;
+    dEl.addEventListener('input', onFieldChange);
+  }
   onFieldChange();
 }
 
@@ -457,13 +466,16 @@ function resetEdits() {
     const v = AI_OUTPUT[k];
     el.value = (v !== null && v !== undefined) ? v : '';
   });
+  const dEl = document.querySelector('[data-key="date"]');
+  if (dEl) dEl.value = AI_OUTPUT.date || '';
   onFieldChange();
 }
 
 // 构建 "采纳保存" prompt
 function buildAdoptPrompt() {
   const current = readForm();
-  const fields = FIELD_ORDER.map(k => `${displayLabel(k)}: ${formatVal(current[k])}`).join('\n');
+  const dateLine = current.date ? `补录日期: ${current.date}\n` : '';
+  const fields = dateLine + FIELD_ORDER.map(k => `${displayLabel(k)}: ${formatVal(current[k])}`).join('\n');
   const cmd = `python scripts/calorie_tracker.py add-product "${current.product_name || ''}" "${current.brand || ''}" ${current.calories || 0} ${current.protein || 0} ${current.fat || 0} ${current.saturated_fat || 0} ${current.carbohydrates || 0} ${current.sugar || 0} ${current.fiber || 0} ${current.sodium || 0} "${current.note || ''}"`;
   return `我刚用 AI 识别了一张营养成分表图片,数据已核对,无误。请帮我存入食品库:
 
@@ -493,6 +505,8 @@ function buildModifyPrompt() {
   ).join('\n');
 
   const allFields = FIELD_ORDER.map(k => `${displayLabel(k)}: ${formatVal(current[k])}`).join('\n');
+  const dateLine = current.date ? `补录日期: ${current.date}\n` : '';
+  const allFieldsWithDate = dateLine + allFields;
 
   const cmd = `python scripts/calorie_tracker.py add-product "${current.product_name || ''}" "${current.brand || ''}" ${current.calories || 0} ${current.protein || 0} ${current.fat || 0} ${current.saturated_fat || 0} ${current.carbohydrates || 0} ${current.sugar || 0} ${current.fiber || 0} ${current.sodium || 0} "${current.note || ''}"`;
 
@@ -505,7 +519,7 @@ ${originalLines}
 ${modifiedLines}
 
 【完整数据(以修改后为准)】
-${allFields}
+${allFieldsWithDate}
 
 请执行:
   ${cmd}

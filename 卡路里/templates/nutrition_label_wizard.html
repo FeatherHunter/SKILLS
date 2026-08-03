@@ -325,6 +325,7 @@ footer{
     <button class="btn primary" id="btnAdopt" onclick="copyAdopt()">✓ 采纳保存(无修改)</button>
     <button class="btn secondary" id="btnModify" onclick="copyModify()">📋 复制修改指令</button>
     <button class="btn danger" onclick="resetEdits()">↺ 重置所有修改</button>
+    <button class="btn" id="btnLog">📋 复制日志</button>
   </div>
   <div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容 · 编辑字段后此处会实时更新</div>
 </section>
@@ -572,6 +573,18 @@ function copyModify() {
   doCopy(text, 'btnModify', '✓ 已复制修改指令');
 }
 
+function copyLog() {
+  const lines = ['[营养成分确认 排障日志]', ''];
+  lines.push('图片: ' + (SOURCE.filename || '(未知)'));
+  lines.push('识别来源: ' + (SOURCE.source || 'mmx vision describe'));
+  lines.push('识别时间: ' + (SOURCE.described_at || '(未知)'));
+  if (AI_OUTPUT.date) lines.push('补录日期: ' + AI_OUTPUT.date);
+  lines.push('');
+  lines.push('AI 原始输出:');
+  lines.push(JSON.stringify(AI_OUTPUT, null, 2));
+  doCopy(lines.join('\n'), 'btnLog', '✓ 已复制日志');
+}
+
 function doCopy(text, btnId, successMsg) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(() => flashCopied(btnId, successMsg));
@@ -607,6 +620,8 @@ function render() {
   renderHeader();
   applyInitialValues();
 }
+
+document.getElementById('btnLog').onclick = copyLog;
 
 render();
 </script>

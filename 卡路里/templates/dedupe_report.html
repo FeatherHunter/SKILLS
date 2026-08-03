@@ -71,7 +71,7 @@
 
 <div class="footer">
   <div class="src" id="srcLine">📊 数据来源:--</div>
-  <button class="btn" id="copyBtn">📋 复制数据</button>
+  <button class="btn" id="copyBtn">📋 复制数据</button> <button class="btn" id="copyLogBtn">📋 复制日志</button>
 </div>
 
 <script>
@@ -115,6 +115,37 @@
     });
   };
 })();
+
+  // 复制日志(#44 审查补 · R3 排障):数据来源/生成时间/思考链/原始数据
+  (function () {
+    const logBtn = document.getElementById('copyLogBtn');
+    if (!logBtn) return;
+    const D0 = window.__DATA__ || {};
+    const META = (D0.data && D0.data.meta) || D0.meta || {};
+    const srcTxt = (document.getElementById('srcLine') || {}).textContent || '';
+    const title = (document.querySelector('h1') || {}).textContent || '结果';
+    logBtn.onclick = function () {
+      const lines = ['[' + title + ' 排障日志]', ''];
+      lines.push('数据来源: ' + srcTxt);
+      lines.push('生成时间: ' + (META.today || META.date || META.start || ''));
+      if (META.chain) { lines.push('AI 思考链:'); lines.push(META.chain); }
+      else { lines.push('AI 思考链: (未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)'); }
+      lines.push('');
+      lines.push('原始数据:');
+      lines.push(JSON.stringify(D0, null, 2));
+      const txt = lines.join('\n');
+      const done = function () { logBtn.textContent = '✅ 已复制'; setTimeout(function () { logBtn.textContent = '📋 复制日志'; }, 2000); };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(done);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    };
+  })();
 </script>
 
 </body>

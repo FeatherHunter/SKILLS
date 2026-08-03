@@ -68,6 +68,10 @@
 
   <div class="footer">
     📂 数据源:calorie_data.db · nutrition_products · ticket 06 / ADR-0005
+    <div style="margin-top:10px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn" id="copyDataBtn">📋 复制数据</button>
+      <button class="btn" id="copyLogBtn">📋 复制日志</button>
+    </div>
   </div>
 
 </div>
@@ -120,6 +124,42 @@
 
   // 初始渲染(显示 updated_at)
   results.innerHTML = items.map(function(it) { return renderCard(it, true); }).join('');
+
+  // 复制数据 / 复制日志(#44 审查补 · 查询场景)
+  function buildDataText() {
+    const cur = (document.getElementById('searchInput') || {}).value || '';
+    const shown = results.textContent ? items.filter(function(it) {
+      return it.product_name.toLowerCase().includes(cur.trim().toLowerCase());
+    }) : items;
+    const list = shown.map(function(it) {
+      return it.product_name + (it.brand ? ' / ' + it.brand : '') + ': 热量 ' + (it.calories != null ? it.calories.toFixed(0) : '—') + ' 卡 · 蛋白 ' + (it.protein != null ? it.protein.toFixed(1) : '—') + 'g · 碳水 ' + (it.carbohydrates != null ? it.carbohydrates.toFixed(1) : '—') + 'g · 脂肪 ' + (it.fat != null ? it.fat.toFixed(1) : '—') + 'g · 来源 ' + (it.source || '未知');
+    }).join('\n');
+    return '查食品 · 关键词「' + query + '」· 匹配 ' + items.length + ' 条\n' + list;
+  }
+  function copyText2(txt, btn, okMsg) {
+    const done = function () { btn.textContent = okMsg; setTimeout(function () { btn.textContent = '📋 ' + (btn === document.getElementById('copyDataBtn') ? '复制数据' : '复制日志'); }, 2000); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
+  document.getElementById('copyDataBtn').onclick = function () {
+    copyText2(buildDataText(), this, '✅ 已复制');
+  };
+  document.getElementById('copyLogBtn').onclick = function () {
+    const lines = ['[查食品 排障日志]', ''];
+    lines.push('查询关键词: ' + query);
+    lines.push('数据来源: calorie_data.db · nutrition_products');
+    lines.push('生成时间: ' + new Date().toISOString().slice(0, 10));
+    lines.push('原始数据:');
+    lines.push(JSON.stringify(DATA, null, 2));
+    copyText2(lines.join('\n'), this, '✅ 已复制');
+  };
 
   // 客户端实时过滤(查询框输入)
   const searchInput = document.getElementById('searchInput');

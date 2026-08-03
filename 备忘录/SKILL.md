@@ -362,23 +362,44 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
       d. 验证:`lark-cli --version` 可执行;`lark-cli auth status` 能输出 JSON(仅验证 CLI 工作,授权另看下一步)
    - **配置 app(先让用户选场景)**:
       - **必须先于 auth login**:无 app 配置时 `auth login` 直接失败(not_configured)
-      - **场景 A · 用户从未创建过 app** → `lark-cli config init --new`(AI 可代做):
-        - **实际流程(用户实测确认)**:命令执行后输出一个 URL → AI 把 URL 发给用户 → 用户点击进入飞书开放平台后台 → 按页面提示创建「飞书 CLI 应用」→ 创建完成即配置成功
-        - **提醒用户**:「点击链接进入飞书后台,创建飞书 CLI 应用;创建完就配置好了,回来说一声即可」
+      - **⚠️ 强制非阻塞模式(2026-08-04 增 · 第一性原理)**:
+        - **根因**:AI 工具 timeout 是秒级(2-5 分钟),用户浏览器操作是分钟级(1-10 分钟),时间维度不匹配。**AI 同步阻塞等用户操作 = 必被强杀**。
+        - **正解**:lark-cli 1.0.82+ 提供了非阻塞多轮协议(`--no-wait --json` 拿 device_code + `--device-code` 续轮询)。**AI 必须用这个模式**,不要直接跑同步阻塞的 `lark-cli config init --new`。
+        - **标准入口**:`scripts/feishu_auth_helper.py`(本 SKILL 自带,封装 3 个非阻塞函数,物理上不暴露同步阻塞 API):
+          - `init_app()` → 调 `lark-cli config init --new --no-wait --json`,秒返,拿 device_code + verification_url
+          - `generate_qr(url, out_path)` → 调 `lark-cli auth qrcode`,生成 PNG
+          - `poll_auth(device_code, domain)` → 调 `lark-cli auth login --device-code <code>`,用户"好了"后调
+        - **4 轮交互流程**:
+          1. AI 调 `init_app()` → 拿 `device_code` + `verification_url`
+          2. AI 调 `generate_qr(url)` → 拿 QR PNG 路径
+          3. AI 把 `verification_url` + `<media src=QR_PNG />` 发给用户,**本轮结束**(等用户操作,时间不在 AI 控制范围)
+          4. 用户回"好了" → AI 调 `poll_auth(device_code, "task")` → 成功
+        - **绝对禁止**:
+          - ❌ `subprocess.run(["lark-cli", "config", "init", "--new"])` 不带 `--no-wait`(会卡到 timeout)
+          - ❌ 给 lark-cli 相关命令设任何 timeout(包括 `run_in_background: true` + `timeout: N`)
+          - ❌ 同一个 device_code 跑两次 init(第二次会让第一次作废)
+      - **场景 A · 用户从未创建过 app** → 走上面"强制非阻塞模式",**不要同步阻塞跑**:
+        - AI 调 `init_app()` + `generate_qr()` → 拿 device_code + URL + QR
+        - AI 把 URL + QR 发给用户(扫码或点链接都行)
+        - 等用户回"好了" → AI 调 `poll_auth(device_code, "task")`
+        - **提醒用户**:「扫二维码(或点链接)在飞书里点同意,完了回来说一声」
       - **场景 B · 用户已有 app** → 用户提供 App ID + App Secret,非交互配置:
         - 引导用户到飞书开放平台开发者后台(open.feishu.cn)→ 应用列表 → 找到自己的应用 → 复制 App ID 和 App Secret
         - 配置:`echo "<App Secret>" | lark-cli config init --app-id "<App ID>" --app-secret-stdin`(Secret 从 stdin 读,不暴露进程列表)
       - 若在 OPENCLAW_HOME/HERMES_HOME 已设的环境运行,CLI 会拒绝 init,改用 `config bind` 绑定环境已有 app
-   - **用户授权(必须用户本人操作)**:
+   - **用户授权(必须用户本人操作,同样走非阻塞模式)**:
       - **必须完成,不可按官方「可选」跳过**:此步开启「以你的身份操作」模式(AI 访问你的个人数据、以你名义执行);备忘录的飞书联动(心愿→飞书任务、备忘录同步)依赖你的用户身份(任务 assignee 是你,同步按你的 open_id 匹配),跳过 = 这两个核心功能不可用
-      - **执行**:`lark-cli auth login --domain task,calendar --recommend` —— AI 运行命令,提取授权链接发给用户,用户打开链接在飞书中确认(扫码/网页);`--domain` 按需授予对应域权限,`--recommend` 自动推荐所需权限
-      - **备忘录需要的权限域**:`task`(心愿→飞书任务、备忘录同步,必授)+ `calendar`(日程,若用户要用飞书日历);缺哪个域补哪个:`lark-cli auth login --domain <缺的域>`
+      - **执行**(强制非阻塞,与配置 app 同理):
+        - AI 调 `init_app()`(如果还没创建 app)→ `generate_qr()` → 发用户 → 等"好了" → `poll_auth(device_code, "task")`
+        - **必须传 `--device-code`**,不能直接 `lark-cli auth login --domain task` 同步跑(会卡死)
+        - `--domain` 按需授予对应域权限;`--recommend` 在 poll_auth 调用前由 `init_app` 后的 user 决定
+      - **备忘录需要的权限域**:`task`(心愿→飞书任务、备忘录同步,必授)+ `calendar`(日程,若用户要用飞书日历);缺哪个域补哪个:重新走一遍 `init_app` + `poll_auth(domain="calendar")`
       - **对用户讲清**:「这一步让备忘录以你的身份在飞书创建/同步任务;跳过则心愿→飞书、备忘录同步不可用」
       - 授权验证:
         a. `python ${SKILL_DIR}/script/feishu_sync.py check` → `auth: true`
-        b. 真实 API 探测:`lark-cli task +get-my-tasks`,返回 `ok: true` = 授权真实可用;报错(如 token 过期/权限不足)→ 按 FAQ 重授权
-      - 权限不足:`lark-cli auth login --scope "<缺失权限>"` 按 CLI 提示补授权
-      - 授权码过期:重跑 `lark-cli auth login`
+        b. 真实 API 探测:`lark-cli task +get-my-tasks`,返回 `ok: true` = 授权真实可用;报错(如 token 过期/权限不足)→ 重新走 `init_app` + `poll_auth(device_code, "task")`
+      - 权限不足:重跑 `init_app` + `poll_auth(device_code, domain="<缺失权限>")`
+      - 授权码过期(默认 10 分钟):重跑 `init_app` 拿新 device_code,旧 device_code 自动作废
    - **只有用户明确拒绝**(如「不用飞书」「跳过」)才标 warn 跳过 —— 但必须**醒目告知功能残缺**:心愿→飞书、备忘录同步 两个核心功能不可用,后续想用时说「配置飞书」即可补装
 4. **环境变量 + 数据位置**(SKILLS_DB_PATH / MEMO_MEDIA_DIR) —— **主动告知,不强制配置**:
    - **告知数据在哪**(知情权):备忘录的所有数据 = 1 个 SQLite 文件(memo.db)+ 媒体目录。默认位置(客观事实):

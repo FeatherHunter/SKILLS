@@ -10,6 +10,20 @@
 
 ---
 
+## [1.2.1] · 2026-08-04
+
+### Changed
+- **飞书授权流程:强制非阻塞模式(架构修复 · 第一性原理)**
+  - **背景**:2026-08-04 实测发现 AI 同步阻塞跑 `lark-cli config init --new` / `lark-cli auth login` 必被 AI 工具 timeout(2-5 分钟)干掉,用户浏览器操作是分钟级(1-10 分钟),时间维度不匹配 → 流程卡死 30+ 分钟。
+  - **根因**:lark-cli 已提供非阻塞多轮协议(`--no-wait --json` 拿 device_code + `--device-code` 续轮询),但 SKILL.md 老版本描述的是同步阻塞用法,所有走该 SKILL 的 AI 都会卡死。
+  - **修复**:
+    1. **新增 `scripts/feishu_auth_helper.py`**:封装 3 个非阻塞函数(`init_app` / `generate_qr` / `poll_auth`),物理上不暴露同步阻塞 API,任何走本模块的 AI 自动安全。
+    2. **SKILL.md 飞书首次引导段重写**:L363-381 段标记"强制非阻塞模式",列出 4 轮交互标准流程、绝对禁止事项(不设 timeout / 不跑同步阻塞 / 不同 device_code 不跑两次)。
+  - **影响范围**:所有未来走备忘录飞书联动的 AI 不会再卡死;老的同步阻塞命令路径从 SKILL 移除,只能走 helper 入口。
+  - **回滚**:`git revert` 或直接删 `feishu_auth_helper.py` + 回滚 SKILL.md 该段。
+
+---
+
 ## [1.0.0] · 2026-07-24
 
 > **首个正式版本**。9 个 commit 闭环,5 个 HTML 模板(2 结果型 + 3 过程型),68 个 pytest 用例全过。

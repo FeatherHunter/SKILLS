@@ -166,6 +166,22 @@
     flex: 0 0 auto; background: var(--green); color: #fff; font-size: 11px; font-weight: 600;
     padding: 3px 10px; border-radius: 999px; white-space: nowrap;
   }
+
+  /* 流程条(2026-08-03 验收反馈:工作流说明改为可视化步骤) */
+  .flow-strip {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 16px;
+  }
+  .flow-strip .f-step {
+    display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg2);
+    background: var(--soft); border-radius: 999px; padding: 4px 12px 4px 5px;
+  }
+  .flow-strip .f-n {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff;
+    font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .flow-strip .f-arrow { color: var(--fg3); font-size: 13px; }
 </style>
 </head>
 <body>
@@ -191,7 +207,6 @@
   <div class="row1">
     <span class="dot"></span>
     <span>最近一次:<strong id="recentDate">—</strong> · 体脂率 <strong id="recentBf">—</strong>% · 来源 <strong id="recentSrc">—</strong></span>
-    <button type="button" class="copy-prev-btn" id="copyPrevBtn" title="把最近一次的 7 皮褶 + 年龄/性别填入下方表单,适合同部位连续测量">📋 复制上次 7 皮褶</button>
   </div>
   <div class="row2" id="recentCaliperRow" style="display:none">
     <span>胸 <strong id="rcChest">—</strong></span>
@@ -202,11 +217,18 @@
     <span>髂上 <strong id="rcSuprailiac">—</strong></span>
     <span>腋中线 <strong id="rcMidaxillary">—</strong></span>
   </div>
-  <div class="row3" style="font-size:11px; color:var(--fg3);">「复制上次」= 把最近一次记录的 7 皮褶/年龄/性别填入下方表单(适合同部位连续测量),填完仍可手动改</div>
 </div>
 
-<div class="tip">
-  <strong>ℹ️ 工作流</strong>:填日期 / 来源 → 量 7 处皮褶(胸/腹/大腿/三头肌/肩胛下/髂上/腋中线,单位 mm)→ 点"自动算"得体脂率(Jackson-Pollock 7 点法)或直接填设备值 → 加备注 → 点底部"📋 复制 prompt 给 AI" → AI 调 <code>body_composition.py add</code>。
+<div class="flow-strip">
+  <div class="f-step"><span class="f-n">1</span>填日期/来源</div>
+  <span class="f-arrow">→</span>
+  <div class="f-step"><span class="f-n">2</span>量 7 皮褶(mm)</div>
+  <span class="f-arrow">→</span>
+  <div class="f-step"><span class="f-n">3</span>体脂率自动算</div>
+  <span class="f-arrow">→</span>
+  <div class="f-step"><span class="f-n">4</span>复制 prompt</div>
+  <span class="f-arrow">→</span>
+  <div class="f-step"><span class="f-n">5</span>AI 写入</div>
 </div>
 
 <!-- ============== 1. 基本信息 ============== -->
@@ -298,7 +320,7 @@
         <span class="auto-tag" id="bfAutoTag" style="display:none">✓ 自动算</span>
       </div>
       <button type="button" class="auto-fill" id="autoCalcBtn">🧮 重新自动算(Jackson-Pollock 7 点法)</button>
-      <div class="hint">7 皮褶 + 年龄/性别填齐后<b>自动算体脂率</b>;或用设备值手动填,范围 (0, 60)%</div>
+      <div class="hint" id="bfHint">皮褶钳:7 皮褶 + 年龄/性别填齐后自动按公式算,无需手填</div>
       <div class="err-hint" id="bfErr">体脂率需在 (0, 60) 之间,当前值异常</div>
       <div class="sum-box" id="sumBox">
         <strong>7 处总和:</strong> <span id="sumVal">—</span> mm ·
@@ -369,7 +391,7 @@
       $('recentBf').textContent = (d.recent_body_fat_pct != null) ? d.recent_body_fat_pct : '—';
       $('recentSrc').textContent = d.recent_source || '—';
 
-      // 填充 7 皮褶详情(只有当所有 7 字段都有值时)
+      // 展示上次 7 皮褶详情(仅作对照参考,2026-08-03 已删「复制上次」按钮)
       const anyCaliper = CALIPER_FIELDS.some(([key]) => d[key] != null);
       if (anyCaliper) {
         let allSet = true;
@@ -379,31 +401,6 @@
           if (v == null) allSet = false;
         });
         $('recentCaliperRow').style.display = allSet ? 'flex' : 'none';
-      }
-
-      // "📋 复制上次 7 皮褶" 按钮:有数据时启用
-      const btn = $('copyPrevBtn');
-      if (anyCaliper) {
-        btn.disabled = false;
-        btn.onclick = () => {
-          let copied = 0;
-          CALIPER_FIELDS.forEach(([key, , , inputId]) => {
-            const v = d[key];
-            if (v == null) return;
-            const inp = document.getElementById(inputId);
-            if (inp) {
-              inp.value = v;
-              inp.dispatchEvent(new Event('input'));
-              copied++;
-            }
-          });
-          if (d.recent_age && $('age')) { $('age').value = d.recent_age; $('age').dispatchEvent(new Event('input')); }
-          if (d.recent_sex && $('sex')) { $('sex').value = d.recent_sex; $('sex').dispatchEvent(new Event('input')); }
-          updatePrompt();
-          toast(`已复制上次 7 皮褶(${copied}/7)` + (d.recent_age ? ' + 年龄/性别' : ''));
-        };
-      } else {
-        btn.disabled = true;
       }
       bar.style.display = 'flex';
     }
@@ -593,6 +590,25 @@ python scripts/body_composition.py add ${parts.join(' ')}
   }
 
   updatePrompt();
+
+  // ---------- 体脂率只读策略(2026-08-03 对抗式审查:皮褶钳=公式算,禁手改;外部设备=手填) ----------
+  const bfInput = $('body-fat-pct');
+  function applySourceMode() {
+    const isCaliper = $('source').value === '体脂钳测';
+    bfInput.readOnly = isCaliper;
+    $('autoCalcBtn').style.display = isCaliper ? '' : 'none';
+    $('bfHint').textContent = isCaliper
+      ? '皮褶钳:7 皮褶 + 年龄/性别填齐后自动按公式算,无需手填'
+      : '外部设备:填设备读数,范围 (0, 60)%';
+    if (isCaliper) {
+      if ($('body-fat-pct').value === '' || _bfAuto) runAutoCalc(false);
+    } else {
+      _bfAuto = false;
+      $('bfAutoTag').style.display = 'none';
+    }
+  }
+  $('source').addEventListener('change', applySourceMode);
+  applySourceMode();
 
   // 复制按钮
   $('copyBtn').onclick = function() {

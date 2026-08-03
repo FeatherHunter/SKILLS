@@ -296,8 +296,10 @@ def build_live_weight_update(target_id=None, target_date=None, weight_kg=None, n
             raise ValueError('更新失败')
         new = _weight_record(target_id)
         summary = f"已修改 #{target_id}({r['date']}):体重 {r['old_weight']}→{r['new_weight']}kg"
-        if note is not None and r.get('note'):
-            summary += f",备注→{r['note']}"
+        if note is not None and r.get('note') is not None:
+            # 2026-08-03 · ticket #43 场景 6 终审:备注变更补旧值,与体重「旧→新」格式一致(原"备注→新值"歧义)
+            old_note = (old or {}).get('note') or '(无)'
+            summary += f",备注 {old_note}→{r['note']}"
         if r.get('bmi'):
             summary += f";BMI {r['bmi']}"
         return _profile_receipt('update', old, new, [], '体重记录', r['date'], summary, target_id)

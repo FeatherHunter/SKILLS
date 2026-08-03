@@ -229,7 +229,7 @@
       const parts = [];
       let s2 = escapeHTML(s);
       if (isChange) {
-        s2 = s2.replace(/(\S+?)→(\S+)/g, (m, a, b) => {
+        s2 = s2.replace(/([^\s,，;；→]+?)→([^\s,，;；]+)/g, (m, a, b) => {
           parts.push(`<span class="sum-old">${a}</span>→<span class="sum-new">${b}</span>`);
           return '\u0000' + (parts.length - 1) + '\u0000';
         });

@@ -19,7 +19,7 @@ body{
   background:var(--bg);color:var(--fg);
   line-height:1.7;-webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+.wrap{max-width:1200px;margin:0 auto;padding:40px 24px 80px}  /* #44:6 列表格放宽(960→1200 · 大屏利用空间) */
 
 .hero{
   background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);
@@ -266,16 +266,16 @@ function copyToAI() {
 
 /* ====== 5 榜单配置 ====== */
 const CATEGORIES = {
-  high_calorie:  { label: '高热量', thead: ['排名', '食物名', '总热量', '均热量/次', '次数', '营养结构'] },
-  low_calorie:   { label: '低热量', thead: ['排名', '食物名', '每餐热量', '总热量', '次数', '营养结构'] },
+  high_calorie:  { label: '高热量', thead: ['排名', '食物名', '总热量', '次数', '均热量/次', '营养结构'] },
+  low_calorie:   { label: '低热量', thead: ['排名', '食物名', '总热量', '次数', '均热量/次', '营养结构'] },
   frequent:      { label: '频繁吃', thead: ['排名', '食物名', '次数', '总热量', '均热量/次', '营养结构'] },
-  high_carb:     { label: '高碳水', thead: ['排名', '食物名', '总碳水', '总热量', '次数', '营养结构'] },
-  high_protein:  { label: '高蛋白', thead: ['排名', '食物名', '总蛋白', '总热量', '次数', '营养结构'] },
+  high_carb:     { label: '高碳水', thead: ['排名', '食物名', '总碳水', '次数', '总热量', '营养结构'] },
+  high_protein:  { label: '高蛋白', thead: ['排名', '食物名', '总蛋白', '次数', '总热量', '营养结构'] },
 };
 
 const METRIC_FIELDS = {
   high_calorie:  (it) => `${it.total_cal} 卡`,
-  low_calorie:   (it) => `${it.avg_cal_per_meal} 卡/餐`,  // #44:低热量榜按每餐热量(与排序依据一致,避免 8136 卡误导)
+  low_calorie:   (it) => `${it.total_cal} 卡`,
   frequent:      (it) => `${it.cnt} 次`,
   high_carb:     (it) => `${it.total_carbs} 克`,
   high_protein:  (it) => `${it.total_protein} 克`,
@@ -283,7 +283,7 @@ const METRIC_FIELDS = {
 
 const CALORIE_FIELDS = {
   high_calorie:  (it) => `${it.avg_cal_per_meal} 卡`,
-  low_calorie:   (it) => `${it.total_cal} 卡`,  // #44:低热量榜第 4 列 = 总热量(thead 对齐)
+  low_calorie:   (it) => `${it.avg_cal_per_meal} 卡`,
   frequent:      (it) => `${it.total_cal} 卡`,
   high_carb:     (it) => `${it.total_cal} 卡`,
   high_protein:  (it) => `${it.total_cal} 卡`,
@@ -333,7 +333,7 @@ function renderCategory(catKey) {
         </td>
         <td class="cal-cell">${escapeHTML(metricFn(it))}</td>
         <td class="cnt-cell">${escapeHTML(calFn(it))}</td>
-        <td>${catKey === 'frequent' ? it.avg_cal_per_meal + ' 卡' : it.cnt + ' 次'}</td>
+        <td>${it.cnt} 次</td>
         <td>
           <div class="nutri-bar">
             <div class="p protein" style="width:${pp}%"></div>

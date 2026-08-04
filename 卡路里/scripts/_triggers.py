@@ -626,6 +626,16 @@ TRIGGERS = [
             'user_intent': '看高蛋白食物 TOP10', 'data_fields': ["rank", "food_name", "protein"],
             'depends_on_external': False, 'order': 4},
     {
+            'category': '饮食',     'wake_word': '看全部排行榜',     'desc': '看全部排行榜',
+            'main_prompt': {
+        'cli': 'python scripts/render_food_ranking.py --all --top-n 10 --days <N> --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看全部排行榜」。\n\n我想同时看所有食物榜单:高热量/低热量/频繁吃/高碳水/高蛋白 5 个榜,页面可点 tab 切换。时间范围默认最近 7 天,也可指定。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'ranking_all', 'name': '看全部排行榜', 'subfunction': '看排行', 'output_type': 'result',
+            'html_template': 'templates/food_ranking.html', 'data_source': 'python scripts/render_food_ranking.py --all --top-n 10 --days <N> --chain "1.识别→2.读DB→3.渲染"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看全部排行榜」。\n\n我想同时看所有食物榜单:高热量/低热量/频繁吃/高碳水/高蛋白 5 个榜,页面可点 tab 切换。时间范围默认最近 7 天,也可指定。完成后给 1 句话总结,不需要过多文字解释。\n\n时间范围(选填,默认最近 7 天):____',
+            'user_intent': '同时看 5 个食物榜单(高热量/低热量/频繁吃/高碳水/高蛋白)', 'data_fields': ["rank", "food_name", "calories", "cnt", "category"],
+            'depends_on_external': False, 'order': 5},
+    {
             'category': '饮食',     'wake_word': '看高热量榜（最近 30 天）',     'desc': '看高热量榜（最近 30 天）',
             'main_prompt': {
         'cli': 'python scripts/render_food_ranking.py --category high_calorie --top-n 10 --days 30 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看高热量榜（最近 30 天）」。\n\n我想看最近 30 天热量最高的食物 TOP 10:排名/食物/热量。完成后给 1 句话总结,不需要过多文字解释。'},
@@ -945,11 +955,11 @@ TRIGGERS = [
     {
             'category': '体重',     'wake_word': '改某日体重',     'desc': '按日期修改某天的体重记录',
             'main_prompt': {
-        'cli': 'python scripts/render_crud_receipt.py --live-weight-update --date <YYYY-MM-DD> --weight <kg> --chain "1.定位→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改某日体重」。\n\n我要按日期改某天的体重记录。改完后请给我看:命中条数、改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____\n新体重(kg):____\n新备注:____'},
+        'cli': 'python scripts/render_crud_receipt.py --live-weight-update --date <YYYY-MM-DD> --weight <kg> [--note <备注>] --chain "1.定位→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改某日体重」。\n\n我要按日期改某天的体重记录。改完后请给我看:命中条数、改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____\n新体重(kg):____\n新备注:____'},
         'fill_hints': [],
             'variants': [],
             'key': 'w_update_by_date', 'name': '改某日体重', 'subfunction': '改体重记录', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-weight-update --date <YYYY-MM-DD> --weight <kg> --chain "1.定位→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某日体重」。\n\n我要按日期改某天的体重记录。改完后请给我看:命中条数、改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____\n新体重(kg):____\n新备注:____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-weight-update --date <YYYY-MM-DD> --weight <kg> [--note <备注>] --chain "1.定位→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某日体重」。\n\n我要按日期改某天的体重记录。改完后请给我看:命中条数、改前/改后对比。完成后给 1 句话总结,不需要过多文字解释。\n\n日期(YYYY-MM-DD):____\n新体重(kg):____\n新备注:____',
             'user_intent': '按日期修改某天的体重记录', 'data_fields': ['date', 'hit_count', 'old_record', 'new_record', 'weight_kg', 'note'],
             'depends_on_external': False, 'order': 1
     },

@@ -52,13 +52,41 @@
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
   .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
   .footer .src { font-size:12px; color:var(--fg3); }
-  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .footer .btn-group { display:flex; gap:6px; }  /* #44:与全场景统一 */
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); white-space:nowrap; }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.copied { background:var(--good); color:#fff; border-color:var(--good); }
   @media (max-width:640px) {
-    body { padding:20px 14px 80px; }
+    body { padding:20px 14px 40px; }  /* #44:底部空白减半 */
     h1 { font-size:22px; }
     .section { padding:16px 18px; border-radius:12px; }
     .dist-wrap { flex-direction:column; align-items:stretch; }
+    /* #44:饼图居中(图例在下) */
+    .dist-pie { margin:0 auto; }
+    /* #44:明细表手机两段式卡(7 列挤 320px 不可读 → 行1 日期·餐次·食物 · 行2 时间·克数·热量·蛋白) */
+    thead { display:none; }
+    #mealTable tr {
+      display:grid;grid-template-columns:auto 1fr auto auto;
+      grid-template-areas:"a b c" "d e f g";
+      gap:4px 10px;background:var(--card);border:1px solid var(--border);
+      border-radius:14px;margin-bottom:10px;padding:10px 14px;
+      box-shadow:0 1px 4px rgba(0,0,0,.04);position:relative;overflow:hidden;
+    }
+    #mealTable tr::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent); }
+    #mealTable td { display:block; border:none; padding:0; font-size:12px; background:none; }
+    #mealTable td:nth-child(1){grid-area:a; font-size:11px; color:var(--fg3);}
+    #mealTable td:nth-child(2){grid-area:d; font-size:11px; color:var(--fg3);}
+    #mealTable td:nth-child(3){grid-area:b; font-weight:600; font-size:13px;}
+    #mealTable td:nth-child(4){grid-area:c; min-width:0; word-break:break-all; font-weight:600;}
+    #mealTable td:nth-child(5){grid-area:e; color:var(--fg2);}
+    #mealTable td:nth-child(6){grid-area:f; font-weight:700; text-align:right;}
+    #mealTable td:nth-child(7){grid-area:g; text-align:right; color:var(--fg2);}
+    /* #44:footer 手机纵向 + 均分 */
+    .footer { flex-direction:column; align-items:stretch; gap:8px; }
+    .footer .btn-group { justify-content:space-between; }
+    .footer .btn-group .btn { flex:1; margin:0 4px; min-height:44px; }
+    .footer .btn-group .btn:first-child { margin-left:0; }
+    .footer .btn-group .btn:last-child { margin-right:0; }
   }
 </style>
 </head>
@@ -96,10 +124,35 @@
 
 <div class="footer">
   <div class="src" id="srcLine">📊 数据来源:--</div>
-  <button class="btn" id="copyBtn">📋 复制数据</button> <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  <div class="btn-group">
+    <button class="btn" id="copyBtn">📋 复制数据</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  </div>
 </div>
 
 <script>
+// #44:复制工具全局函数(统一标准:文字不变 + 绿闪 + toast + .catch fallback)
+let toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('copyToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'copyToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+function fallbackCopyText(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
 (function(){
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') {
@@ -158,14 +211,14 @@ ${x.label}</span>
     let r = `${meta.meal_label}分布 ${meta.start} ~ ${meta.end}\n`;
     r += `${summary.one_line}\n`;
     items.forEach(p => { r += `${p.date} ${p.time} ${p.food} ${p.grams}g = ${p.cal}卡\n`; });
-    navigator.clipboard.writeText(r).then(() => {
-      this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制数据', 2000);
-    });
+    // #44:统一标准——文字不变 + 绿闪 + toast + .catch fallback
+    const done = () => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); showToast('餐别分布数据复制成功 ✓'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(r).then(done).catch(() => { fallbackCopyText(r); done(); });
+    } else { fallbackCopyText(r); done(); }
   };
 })();
 
-  // 复制日志(#44 审查补 · R3 排障):数据来源/生成时间/思考链/原始数据
   (function () {
     const logBtn = document.getElementById('copyLogBtn');
     if (!logBtn) return;
@@ -183,16 +236,15 @@ ${x.label}</span>
       lines.push('原始数据:');
       lines.push(JSON.stringify(D0, null, 2));
       const txt = lines.join('\n');
-      const done = function () { logBtn.textContent = '✅ 已复制'; setTimeout(function () { logBtn.textContent = '📋 复制日志'; }, 2000); };
+      // #44:统一标准——文字不变 + 绿闪 + toast + .catch fallback
+      const done = function () {
+        logBtn.classList.add('copied');
+        setTimeout(function () { logBtn.classList.remove('copied'); }, 2000);
+        showToast('排障日志已复制 ✓');
+      };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(done);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); done(); } catch (e) {}
-        document.body.removeChild(ta);
-      }
+        navigator.clipboard.writeText(txt).then(done).catch(function () { fallbackCopyText(txt); done(); });
+      } else { fallbackCopyText(txt); done(); }
     };
   })();
 </script>

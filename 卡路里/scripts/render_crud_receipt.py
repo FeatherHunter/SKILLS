@@ -513,7 +513,15 @@ def build_live_diet_update_date(target_date, **kwargs):
     summary = f"改某日饮食:{target_date} 命中 {r['matched']} 条,已更新 {r['updated']} 条"
     if r['changed_fields']:
         summary += f"(字段:{'、'.join(r['changed_fields'])})"
-    return _diet_receipt('update', 0, {}, {'date': target_date, '命中': r['matched'], '更新': r['updated']},
+    # 改前/改后(权威清单 D2.2):字段级 diff——旧值唯一则显示,多种则标注
+    old_record = {'date': None, '命中': None, '更新': None}
+    new_record = {'date': target_date, '命中': r['matched'], '更新': r['updated']}
+    for k in r['changed_fields']:
+        olds = sorted({b.get(k) for b in r['before']}, key=lambda v: str(v))
+        news = {a.get(k) for a in r['after']}
+        old_record[k] = olds[0] if len(olds) == 1 else ('(多种旧值)' if len(olds) > 1 else None)
+        new_record[k] = next(iter(news), None)
+    return _diet_receipt('update', 0, old_record, new_record,
                          '改某日饮食', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
 
 

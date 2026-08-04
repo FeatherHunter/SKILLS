@@ -295,7 +295,8 @@ function renderCategory(catKey) {
   if (!DATA) return;
   const items = (DATA[catKey] && DATA[catKey].items) || [];
   const meta = CATEGORIES[catKey];
-  document.getElementById('title').textContent = (DATA[catKey] && DATA[catKey].title) || '🍽️ 食物排行榜';
+  document.getElementById('title').textContent =
+    ((DATA[catKey] && DATA[catKey].title) || '').replace(/（.*?）$/, '') || '🍽️ 食物排行榜';
   document.getElementById('subtitle').textContent =
     `${meta.label} · ${items.length} 个食物 · ${(DATA[catKey] && DATA[catKey].start) || ''} ~ ${(DATA[catKey] && DATA[catKey].end) || ''}`;
 

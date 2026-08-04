@@ -181,10 +181,7 @@ footer{
   <button class="btn" id="copyLogBtn">📋 复制日志</button>
 </div>
 
-<footer>
-  卡路里 Skill · 食物排行榜 · 5 榜单共用模板（1 模板 5 参数）<br>
-  模板：templates/food_ranking.html
-</footer>
+<footer id="pageFooter"></footer>
 
 </div>
 <a id="backTop" href="#top" title="回到顶部">↑</a>
@@ -319,6 +316,9 @@ function init() {
     document.getElementById('title').textContent = '❌ 数据加载失败';
     return;
   }
+
+  // #44:footer 去开发痕迹——只显示日期
+  document.getElementById('pageFooter').textContent = '卡路里 · 食物排行榜 · ' + new Date().toISOString().slice(0, 10);
 
   const firstCat = 'high_calorie';
   const firstData = DATA[firstCat] || {};

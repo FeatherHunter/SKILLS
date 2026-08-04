@@ -60,11 +60,14 @@
   .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
   /* Phase 3c:mobile 断点(640px 以下单列堆叠 + 缩 padding) */
   @media (max-width:640px) {
-    body { padding:20px 14px 80px; }
+    body { padding:20px 14px 40px; }  /* #44:底部空白减半 */
     h1 { font-size:22px; }
     .section { padding:16px 18px; border-radius:12px; }
     .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
     .food-card .macros { grid-template-columns:1fr 1fr; }
+    /* #44:饼图手机纵向堆叠(200px 饼图 + 图例横排溢出 324px 容器) */
+    .pie-wrap { flex-direction:column; gap:16px; }
+    svg.pie { width:180px; height:180px; }
   }
   /* table 在小屏内滚 */
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }

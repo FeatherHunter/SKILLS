@@ -478,6 +478,14 @@ def build_data(target_date: str, view: str = 'overview', period: str = None) -> 
         else:
             summary = '未设营养目标'
         data['goals'] = {'items': items, 'summary': summary}
+        # #66 2026-08-04:暂停读端联动 — 主页目标 widget 横幅(仅提示,数据照常)
+        from goal_manager import get_paused_state
+        ps = get_paused_state()
+        if ps and ps.get('paused'):
+            data['goals']['paused'] = {
+                'paused_at': ps.get('paused_at'),
+                'text': f"⏸️ 目标已暂停({ps.get('paused_at') or '?'}) · 记录照常 · 说「重启所有目标」恢复",
+            }
     elif view == 'week' or view == 'month':
         start, end = _period_range(view, target_date)
         s = _period_summary(view, start, end)

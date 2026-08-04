@@ -618,6 +618,14 @@ def main():
             data = build_mode_history(goal, days=args.days)
         elif args.mode == 'predict':
             data = build_mode_predict(goal)
+        # #66 2026-08-04:暂停读端联动 — 统一注入暂停横幅(用户拍板:仅加横幅,数据照常展示)
+        from goal_manager import get_paused_state
+        ps = get_paused_state()
+        if ps and ps.get('paused'):
+            data['paused_banner'] = {
+                'paused_at': ps.get('paused_at'),
+                'text': f"⏸️ 目标已暂停({ps.get('paused_at') or '?'}) · 记录照常 · 说「重启所有目标」恢复",
+            }
         # R1 视图分离:meta 不进 UI(复制日志带出)
         data['meta'] = build_meta(
             wake_word=scene_name,

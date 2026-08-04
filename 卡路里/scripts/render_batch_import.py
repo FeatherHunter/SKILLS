@@ -36,6 +36,7 @@ def build_parser():
     )
     p.add_argument('--input', required=True, help='结构化数据 JSON 文件路径(batch_import 输出 / mock)')
     p.add_argument('--output', help='输出文件路径')
+    p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
     return p
 
 
@@ -57,7 +58,7 @@ def load_data(json_path: Path) -> dict:
     return raw
 
 
-def normalize(data: dict) -> dict:
+def normalize(data: dict, chain: str | None = None) -> dict:
     """标准化字段:确保 summary/runs 完整 + 防御性兜底"""
     if not isinstance(data, dict):
         return {'summary': {'total': 0, 'added': 0, 'updated': 0, 'skipped': 0, 'failed': 0, 'jsonl_path': '(空)'}, 'runs': []}
@@ -71,6 +72,8 @@ def normalize(data: dict) -> dict:
 
     # #44 缺陷D修复:batch_import validate 输出 run.name → 模板需要的 product_name
     # (预览明细行按 product_name/brand 渲染;validate 输出只有 name,原样透传会显示「(无名)」)
+    # #44 审查(场景 32/33):validate 形态(line/ok|failed/name/reason)统一为模板形态(row/status/product_name)
+    is_validate = bool(runs) and all(isinstance(r, dict) and r.get('status') in ('ok', 'failed') for r in runs)
     for r in runs:
         if isinstance(r, dict) and 'product_name' not in r and r.get('name'):
             r['product_name'] = r['name']
@@ -78,6 +81,16 @@ def normalize(data: dict) -> dict:
     # BUG #1 修复:jsonl_path 兜底,避免 prompt 中出现 "undefined"
     if 'jsonl_path' not in summary:
         summary['jsonl_path'] = summary.get('jsonl_path', 'foods.jsonl')
+
+    if is_validate:
+        for r in runs:
+            if 'row' not in r and r.get('line') is not None:
+                r['row'] = r['line']
+            if 'product_name' not in r and r.get('name'):
+                r['product_name'] = r['name']
+        summary['passed'] = sum(1 for r in runs if r.get('status') == 'ok')
+        summary['failed'] = sum(1 for r in runs if r.get('status') == 'failed')
+        summary['is_validate'] = True
 
     # 自动计算缺失字段(防止用户 JSON 不完整)
     if 'total' not in summary:
@@ -91,14 +104,15 @@ def normalize(data: dict) -> dict:
     if 'failed' not in summary:
         summary['failed'] = sum(1 for r in runs if r.get('status') == 'failed')
 
-    # BUG #3 修复:total 与 runs 长度不一致时,标注提示
+    # BUG #3 修复:total 与 runs 长度不一致时,标注提示(#44:validate 形态按 通过+失败 计算)
     summary['_data_consistent'] = (
-        (summary['added'] + summary['updated'] +
-         summary['skipped'] + summary['failed']) == summary['total']
-        and len(runs) == summary['total']
-    )
+        ((summary.get('passed', summary.get('added', 0)) + summary.get('failed', 0)) == summary['total'])
+        if summary.get('is_validate')
+        else ((summary['added'] + summary['updated'] +
+               summary['skipped'] + summary['failed']) == summary['total'])
+    ) and len(runs) == summary['total']
 
-    return {'summary': summary, 'runs': runs}
+    return {'summary': summary, 'runs': runs, 'meta': {'chain': chain}}
 
 
 def render_html(data: dict) -> str:
@@ -120,7 +134,7 @@ def main():
 
     try:
         raw = load_data(input_path)
-        data = normalize(raw)
+        data = normalize(raw, getattr(args, 'chain', None))
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

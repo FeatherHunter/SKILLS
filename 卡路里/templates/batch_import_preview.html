@@ -385,8 +385,9 @@ function escapeHTML(s) {
 }
 
 const STATUS_LABELS = {
-  added: '新增', updated: '更新', skipped: '跳过', failed: '失败'
+  added: '新增', updated: '更新', skipped: '跳过', failed: '失败', ok: '通过'
 };
+const IS_VALIDATE = SUMMARY.is_validate === true;
 
 function render() {
   if (!DATA) {
@@ -394,10 +395,13 @@ function render() {
     return;
   }
 
-  // HERO(BUG #1 修复:jsonl_path 兜底)
-  document.getElementById('title').textContent = SUMMARY.jsonl_path || '批量导入预览';
+  // HERO(BUG #1 修复:jsonl_path 兜底; #44:只显示文件名,不显示全路径)
+  const jsonlName = (SUMMARY.jsonl_path || '').split(/[\\/]/).pop();
+  document.getElementById('title').textContent = jsonlName || '批量导入预览';
   document.getElementById('subtitle').textContent =
-    `${SUMMARY.total} 条 · ${SUMMARY.failed} 失败 · 请核对`;
+    IS_VALIDATE
+      ? `${SUMMARY.total} 条 · 通过 ${SUMMARY.passed || 0} · 失败 ${SUMMARY.failed || 0}`
+      : `${SUMMARY.total} 条 · ${SUMMARY.failed} 失败 · 请核对`;
 
   // Pills(失败高优先级)
   const pills = document.getElementById('pills');
@@ -417,8 +421,13 @@ function render() {
     pills.innerHTML += `<span class="pill added">+ ${SUMMARY.added} 新增</span>`;
   }
 
-  // KPI 5 张
-  document.getElementById('kpiGrid').innerHTML = `
+  // KPI 5 张(#44:validate 形态显示 总数/通过/失败,导入形态显示 新增/更新/跳过/失败)
+  document.getElementById('kpiGrid').innerHTML = IS_VALIDATE ? `
+    <div class="kpi total"><div class="label">总数</div><div class="value">${SUMMARY.total || 0}</div></div>
+    <div class="kpi added"><div class="label">通过</div><div class="value">${SUMMARY.passed || 0}</div></div>
+    <div class="kpi failed"><div class="label">失败</div><div class="value">${SUMMARY.failed || 0}</div></div>
+    <div class="kpi skipped"><div class="label">通过率</div><div class="value">${SUMMARY.total ? Math.round((SUMMARY.passed || 0) / SUMMARY.total * 100) : 0}%</div></div>
+  ` : `
     <div class="kpi total"><div class="label">总数</div><div class="value">${SUMMARY.total || 0}</div></div>
     <div class="kpi added"><div class="label">新增</div><div class="value">${SUMMARY.added || 0}</div></div>
     <div class="kpi updated"><div class="label">更新</div><div class="value">${SUMMARY.updated || 0}</div></div>
@@ -436,20 +445,29 @@ function render() {
     const updated = (SUMMARY.updated / total * 100).toFixed(1);
     const skipped = (SUMMARY.skipped / total * 100).toFixed(1);
     const failed = (SUMMARY.failed / total * 100).toFixed(1);
-    bar.innerHTML = `
+    bar.innerHTML = IS_VALIDATE ? `
+      <div class="progress-seg added" style="width:${(SUMMARY.passed / total * 100).toFixed(1)}%"></div>
+      <div class="progress-seg failed" style="width:${failed}%"></div>
+    ` : `
       <div class="progress-seg added" style="width:${added}%"></div>
       <div class="progress-seg updated" style="width:${updated}%"></div>
       <div class="progress-seg skipped" style="width:${skipped}%"></div>
       <div class="progress-seg failed" style="width:${failed}%"></div>
     `;
   }
-  const countedIn = SUMMARY.added + SUMMARY.updated + SUMMARY.skipped + SUMMARY.failed;
-  document.getElementById('progressRate').textContent = `${SUMMARY.added + SUMMARY.updated}/${total}`;
-  document.getElementById('progressDetail').textContent =
-    `总数 ${total} 行 · 已计入 ${countedIn}`;
+  document.getElementById('progressRate').textContent = IS_VALIDATE
+    ? `${SUMMARY.passed || 0}/${total}`
+    : `${SUMMARY.added + SUMMARY.updated}/${total}`;
 
-  // BUG #3 修复:数据不一致警告
+  // BUG #3 修复:数据不一致警告(#44:validate 形态按 通过+失败 计算)
   const warn = document.getElementById('consistencyWarn');
+  const countedIn = IS_VALIDATE
+    ? (SUMMARY.passed || 0) + (SUMMARY.failed || 0)
+    : SUMMARY.added + SUMMARY.updated + SUMMARY.skipped + SUMMARY.failed;
+  document.getElementById('progressDetail').textContent =
+    IS_VALIDATE
+      ? `总数 ${total} 行 · 通过 ${SUMMARY.passed || 0} · 失败 ${SUMMARY.failed || 0}`
+      : `总数 ${total} 行 · 已计入 ${countedIn}`;
   if (SUMMARY._data_consistent === false || (countedIn !== total) || (RUNS.length !== total)) {
     warn.innerHTML = `<div class="consistency-warn">⚠️ 数据不一致:summary 报 ${total} 行但 RUNS 实际有 ${RUNS.length} 行,或各状态相加不等于总数。请检查 mock / batch_import 输出。</div>`;
   } else {

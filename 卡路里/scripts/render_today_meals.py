@@ -140,16 +140,26 @@ def main():
     args = p.parse_args()
     if args.week:
         s, e = _natural_week(args.week)
+        label = '本周' if args.week == 'current' else '上周'
     elif args.month:
         s, e = _natural_month(args.month)
+        label = '本月' if args.month == 'current' else '上月'
     elif not args.start or not args.end:
         end_d = date.today()
         start_d = end_d - timedelta(days=args.days - 1)
         s, e = start_d.isoformat(), end_d.isoformat()
+        label = f'最近 {args.days} 天'
     else:
         s, e = args.start, args.end
+        label = '某段时间'
     try:
         data = _load_data(args.mock) if args.mock else build_data(s, e, with_note=args.with_note)
+        # #44 审查:场景标签注入(标题动态:本周饮食/最近 7 天饮食…)+ 日均蛋白(呈现数据要求)
+        data['data']['meta']['label'] = label
+        if args.with_note:
+            data['data']['meta']['label'] = '有备注的'
+        data['data']['summary']['avg_protein'] = round(
+            data['data']['summary']['total_protein'] / max(1, data['data']['meta']['days']), 1)
         if args.chain:
             data['data']['meta']['chain'] = args.chain
         html = render_html(data)

@@ -42,22 +42,61 @@
   .filter-bar { display:flex; gap:8px; align-items:center; padding:12px 14px; background:var(--soft); border-radius:10px; margin-bottom:10px; }
   .filter-bar label { font-size:12px; color:var(--fg2); }
   .filter-bar select { font-size:13px; padding:4px 10px; border:1px solid var(--border); border-radius:6px; background:#fff; }
-  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer { margin-top:12px; padding:12px 14px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
   .footer .src { font-size:12px; color:var(--fg3); }
-  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .footer .btn-group { display:flex; gap:6px; }  /* #44:桌面两按钮贴合 */
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); white-space:nowrap; }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.copied { background:var(--good); color:#fff; border-color:var(--good); }
   .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
   .meta-bar .left { font-size:12px; color:var(--fg2); }
   .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
   /* Phase 3c:mobile 断点(640px 以下单列堆叠 + 缩 padding) */
   @media (max-width:640px) {
-    body { padding:20px 14px 80px; }
+    body { padding:20px 14px 40px; }  /* #44:底部空白减半 */
     h1 { font-size:22px; }
-    .section { padding:16px 18px; border-radius:12px; }
+    .section { padding:16px 16px; border-radius:12px; }
     .kpi-grid { grid-template-columns:1fr 1fr; gap:10px; }
-    .food-card .macros { grid-template-columns:1fr 1fr; }
+    .kpi { padding:12px 14px; }
+    .kpi .value { font-size:20px; }
+    /* #44:filter-bar 手机适配 */
+    .filter-bar { flex-wrap:wrap; }
+    .filter-bar select { flex:1; min-width:0; }
+    /* #44:表格手机两段式紧凑卡——行1:日期时间+餐次+食物+克数热量;行2:蛋白·碳水·脂肪 等分 + 备注 */
+    .table-wrap { overflow-x:visible; }
+    thead { display:none; }
+    tr { display:grid; grid-template-columns:auto auto 1fr auto; grid-template-areas:
+           "a b c d" "e f g h" "i i i i"; gap:3px 10px; background:var(--card); border:1px solid var(--border);
+         border-radius:14px; margin-bottom:10px; padding:10px 14px; position:relative; overflow:hidden;
+         box-shadow:0 1px 4px rgba(0,0,0,.04); }
+    tr::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--soft); }
+    tr.tr-breakfast::before { background:var(--warn); }
+    tr.tr-lunch::before { background:var(--accent); }
+    tr.tr-dinner::before { background:#5856d6; }
+    tr.tr-snack::before { background:var(--good); }
+    td { display:block; border:none; padding:0; font-size:12px; }
+    td.num { text-align:left; font-weight:400; }
+    tr:last-child td { border:none; }
+    td:nth-child(1){grid-area:a; color:var(--fg3); font-size:11px; font-variant-numeric:tabular-nums;}
+    td:nth-child(2){grid-area:b}
+    td:nth-child(3){grid-area:c; min-width:0; word-break:break-all; font-weight:600; font-size:13px;}
+    td:nth-child(4){grid-area:e; color:var(--fg3); font-size:11px;}
+    td:nth-child(5){grid-area:d; text-align:right; font-weight:700; font-size:13px; font-variant-numeric:tabular-nums;}
+    td:nth-child(5)::after { content:' 卡'; font-weight:400; color:var(--fg3); font-size:11px; }
+    td:nth-child(6){grid-area:f} td:nth-child(7){grid-area:g} td:nth-child(8){grid-area:h}
+    td:nth-child(6)::before, td:nth-child(7)::before, td:nth-child(8)::before { content:attr(data-label); color:var(--fg3); font-size:10px; margin-right:2px; }
+    td:nth-child(6), td:nth-child(7), td:nth-child(8) { font-size:11px; color:var(--fg2); font-variant-numeric:tabular-nums; text-align:left; }
+    td:nth-child(9){grid-area:i; font-size:11px; color:var(--fg3); font-style:italic; margin-top:2px;}
+    td:nth-child(1)::before, td:nth-child(2)::before, td:nth-child(3)::before,
+    td:nth-child(4)::before, td:nth-child(5)::before, td:nth-child(9)::before { content:none; }
+    /* 复制按钮手机有间距且不换行 */
+    .footer { flex-direction:column; align-items:stretch; gap:8px; }
+    .footer .btn-group { justify-content:space-between; }
+    .footer .btn-group .btn { flex:1; margin:0 4px; }
+    .footer .btn-group .btn:first-child { margin-left:0; }
+    .footer .btn-group .btn:last-child { margin-right:0; }
   }
-  /* table 在小屏内滚 */
+  /* table 在小屏内滚(桌面) */
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
 
 </style>
@@ -97,10 +136,49 @@
 
 <div class="footer">
   <div class="src" id="srcLine">📊 数据来源:--</div>
-  <button class="btn" id="copyBtn">📋 复制数据</button> <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  <div class="btn-group">
+    <button class="btn" id="copyBtn">📋 复制数据</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  </div>
 </div>
 
 <script>
+// #44:复制工具全局函数(两个 IIFE 共用 · toast/fallback 必须在同一作用域可见)
+let toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('copyToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'copyToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+function flashCopied(btn) { btn.classList.add('copied'); setTimeout(() => btn.classList.remove('copied'), 2000); }
+function fallbackCopyText(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+function doCopyText(txt, btn, okMsg) {
+  const done = () => { flashCopied(btn); showToast(okMsg); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(done).catch(() => { fallbackCopyText(txt); done(); });
+  } else { fallbackCopyText(txt); done(); }
+}
+// #44:数值统一最多 2 位小数
+function fmt2(v) {
+  const n = Number(v) || 0;
+  const r = Math.round(n * 100) / 100;
+  return Number.isInteger(r) ? String(r) : r.toFixed(2);
+}
+
 (function(){
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') {
@@ -110,21 +188,25 @@
   const { summary, items, meta } = D.data;
   const MEAL_LABELS = {breakfast:'早餐', lunch:'午餐', dinner:'晚餐', snack:'加餐'};
 
+  // #44:标题动态(本周饮食/最近 7 天饮食…)
+  const h1 = document.querySelector('h1');
+  h1.textContent = `🍱 ${meta.label || ''}饮食`;
+
   document.getElementById('metaLeft').textContent =
     `${meta.start} ~ ${meta.end} · 共 ${items.length} 条`;
   document.getElementById('sub').textContent =
     (summary.with_note ? `看「有备注」的饮食记录 · 共 ${summary.note_count} 条带备注` :
      `查吃的记录 · 共 ${items.length} 条食物明细`);
 
-  // 4 KPI
+  // 4 KPI(#44:总蛋白 extra 改日均蛋白,呈现数据「总蛋白/日均」)
   document.getElementById('kCnt').textContent = items.length;
   document.getElementById('kCntE').textContent = `跨 ${meta.days} 天`;
-  document.getElementById('kCal').textContent = summary.total_calorie.toLocaleString();
-  document.getElementById('kCalE').textContent = `日均 ${summary.avg_calorie}`;
-  document.getElementById('kProt').textContent = summary.total_protein.toFixed(1) + 'g';
-  document.getElementById('kProtE').textContent = `目标 ${summary.protein_target}g`;
-  document.getElementById('kWater').textContent = summary.total_water + 'ml';
-  document.getElementById('kWaterE').textContent = `日均 ${summary.avg_water}ml`;
+  document.getElementById('kCal').textContent = fmt2(summary.total_calorie);
+  document.getElementById('kCalE').textContent = `日均 ${fmt2(summary.avg_calorie)} 卡`;
+  document.getElementById('kProt').textContent = fmt2(summary.total_protein) + 'g';
+  document.getElementById('kProtE').textContent = `日均 ${fmt2(summary.avg_protein)}g`;
+  document.getElementById('kWater').textContent = fmt2(summary.total_water) + 'ml';
+  document.getElementById('kWaterE').textContent = `日均 ${fmt2(summary.avg_water)}ml`;
 
   // 日期筛选
   const uniqueDates = [...new Set(items.map(i => i.date))].sort().reverse();
@@ -148,22 +230,20 @@
       const tag = p.meal_type;
       const tagClass = ['breakfast','lunch','dinner','snack'].includes(tag) ? tag : '';
       const time = p.time || '—';
-      const prot = p.protein != null ? p.protein.toFixed(1) : '—';
-      const carb = p.carb != null ? p.carb.toFixed(1) : '—';
-      const fat  = p.fat != null ? p.fat.toFixed(1) : '—';
+      const trCls = tagClass ? ` class="tr-${tagClass}"` : '';
       tb.insertAdjacentHTML('beforeend',
-        `<tr><td>${p.date} ${time}</td>` +
+        `<tr${trCls}><td>${p.date} ${time}</td>` +
         `<td><span class="meal-tag ${tagClass}">${MEAL_LABELS[tag] || tag}</span></td>` +
-        `<td>${p.food_name || p.food || '—'}</td>` +
-        `<td class="num">${p.grams}g</td>` +
-        `<td class="num">${p.calorie}</td>` +
-        `<td class="num">${prot}</td>` +
-        `<td class="num">${carb}</td>` +
-        `<td class="num">${fat}</td>` +
+        `<td>${esc(p.food_name || p.food || '—')}</td>` +
+        `<td class="num">${fmt2(p.grams)}g</td>` +
+        `<td class="num">${fmt2(p.calorie)}</td>` +
+        `<td class="num" data-label="蛋白质">${fmt2(p.protein)}g</td>` +
+        `<td class="num" data-label="碳水">${fmt2(p.carb)}g</td>` +
+        `<td class="num" data-label="脂肪">${fmt2(p.fat)}g</td>` +
         `<td>${p.note ? esc(p.note) : ''}</td></tr>`);
     });
   }
-  function esc(s){return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function esc(s){return String(s == null ? '' : s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
   renderRows('__all__');
   sel.onchange = () => renderRows(sel.value);
 
@@ -171,14 +251,11 @@
     `📊 数据来源:calorie_data.db · food_log · ${meta.start} → ${meta.end} · ${items.length} 条`;
   document.getElementById('copyBtn').onclick = function() {
     let r = `吃的记录 ${meta.start} ~ ${meta.end}\n` +
-            `总热量 ${summary.total_calorie} 卡 · 蛋白 ${summary.total_protein}g · 饮水 ${summary.total_water}ml\n\n`;
+            `总热量 ${fmt2(summary.total_calorie)} 卡 · 日均 ${fmt2(summary.avg_calorie)} 卡 · 蛋白 ${fmt2(summary.total_protein)}g · 日均 ${fmt2(summary.avg_protein)}g · 饮水 ${fmt2(summary.total_water)}ml\n\n`;
     items.forEach(p => {
-      r += `${p.date} ${p.time || '??:??'}  ${MEAL_LABELS[p.meal_type] || p.meal_type}  ${p.food_name || '?'} ${p.grams}g = ${p.calorie}卡\n`;
+      r += `${p.date} ${p.time || '??:??'}  ${MEAL_LABELS[p.meal_type] || p.meal_type}  ${p.food_name || '?'} ${fmt2(p.grams)}g = ${fmt2(p.calorie)}卡${p.note ? ' · ' + p.note : ''}\n`;
     });
-    navigator.clipboard.writeText(r).then(() => {
-      this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制数据', 2000);
-    });
+    doCopyText(r, this, '饮食记录数据复制成功 ✓');
   };
 })();
 
@@ -200,16 +277,15 @@
       lines.push('原始数据:');
       lines.push(JSON.stringify(D0, null, 2));
       const txt = lines.join('\n');
-      const done = function () { logBtn.textContent = '✅ 已复制'; setTimeout(function () { logBtn.textContent = '📋 复制日志'; }, 2000); };
+      // #44:文字不变,绿闪 + toast(showToast 全局)
+      const done = function () {
+        logBtn.classList.add('copied');
+        setTimeout(function () { logBtn.classList.remove('copied'); }, 2000);
+        showToast('排障日志已复制 ✓');
+      };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(done);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); done(); } catch (e) {}
-        document.body.removeChild(ta);
-      }
+        navigator.clipboard.writeText(txt).then(done).catch(function () { fallbackCopyText(txt); done(); });
+      } else { fallbackCopyText(txt); done(); }
     };
   })();
 </script>

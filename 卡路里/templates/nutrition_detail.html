@@ -21,10 +21,11 @@
   .card h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
   .row { margin-bottom:18px; }
   .row:last-child { margin-bottom:0; }
-  .row .head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+  .row   .head { display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px; margin-bottom:6px; }  /* #44:名称+数值+推荐一行 · 窄屏自动折行 */
   .row .name { font-size:14px; font-weight:600; }
   .row .val { font-size:14px; color:var(--fg2); font-variant-numeric:tabular-nums; }
   .row .val b { color:var(--fg); font-size:16px; }
+  .head .hint { margin-left:auto; }  /* #44:推荐标注右对齐(同行时) */
   .bar-line .track { flex:1; height:10px; background:var(--soft); border-radius:5px; overflow:hidden; }
   .fill { height:100%; border-radius:5px; }
   .fill.ok { background:var(--good); }
@@ -53,8 +54,6 @@
     .footer .btn-group .btn { flex:1; margin:0 4px; min-height:44px; }
     .footer .btn-group .btn:first-child { margin-left:0; }
     .footer .btn-group .btn:last-child { margin-right:0; }
-    /* #44:head 手机纵向——val 不被 name 挤压换行(整行 275px 放得下) */
-    .head { flex-direction:column; align-items:flex-start; gap:2px; }
   }
 </style>
 </head>
@@ -113,14 +112,14 @@ function fallbackCopyText(txt) {
 
   const rows = document.getElementById('rows');
   items.forEach(it => {
-    // #44:清晰分层——名称 / 数值(累计·日均)/ 推荐 / bar+百分比(百分比在 bar 右侧)
+    // #44:名称+数值+推荐 同一行(flex-wrap 窄屏自动折行);bar+百分比下一行
     rows.insertAdjacentHTML('beforeend',
       `<div class="row">
          <div class="head">
            <span class="name">${it.label}</span>
            <span class="val"><b>${it.value.toLocaleString()}</b> ${it.unit} · 日均 <b>${it.avg}</b> ${it.unit}/天</span>
+           <span class="hint">推荐 ${it.good}</span>
          </div>
-         <div class="hint">推荐 ${it.good}</div>
          <div class="bar-line">
            <div class="track"><div class="fill ${it.status}" style="width:${Math.min(it.pct, 100)}%"></div></div>
            <span class="pct ${it.status}">${it.pct}%</span>

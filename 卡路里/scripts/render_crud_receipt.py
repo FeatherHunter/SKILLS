@@ -545,32 +545,47 @@ def build_live_diet_delete(entry_id):
 
 
 def build_live_diet_delete_meal(target_date, meal_type):
-    """删一餐:按餐别删 + 回执(呈现:餐别选择/删除条数)"""
+    """删一餐:按餐别删 + 回执(呈现:餐别选择/删除条数/删除明细)"""
     import diet
     r = diet.delete_meals_by_type(target_date, meal_type)
     if not r['ok']:
         raise ValueError(r['error'])
     summary = f"已删除 {target_date} {meal_type} 的 {r['deleted']} 条记录"
+    # #44 审查(用户第一性原理):删除必须知道删了什么——删除前明细
+    items = [{'label': '已删除', 'time': it['time'], 'food_name': it['food_name'],
+              'grams': it['grams'], 'calories': it['calories'],
+              'note': it.get('note') or ''} for it in r['before']]
     return _diet_receipt('delete', 0, {}, {'date': r['date'], '餐别': r['meal'], '删除': r['deleted']},
-                         '删一餐', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+                         '删一餐', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary,
+                         items=items)
 
 
 def build_live_diet_delete_date(target_date):
-    """删某日饮食:一整天清空 + 回执(呈现:删除条数/日期)"""
+    """删某日饮食:一整天清空 + 回执(呈现:删除条数/日期/删除明细)"""
     import diet
     r = diet.delete_meals_by_date(target_date)
     summary = f"已清空 {r['date']} 的 {r['deleted']} 条饮食记录"
+    # #44 审查(用户第一性原理):删除必须知道删了什么——删除前明细
+    items = [{'label': '已删除', 'time': it['time'], 'food_name': it['food_name'],
+              'grams': it['grams'], 'calories': it['calories'],
+              'note': it.get('note') or ''} for it in r['before']]
     return _diet_receipt('delete', 0, {}, {'date': r['date'], '删除': r['deleted']},
-                         '删某日饮食', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+                         '删某日饮食', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary,
+                         items=items)
 
 
 def build_live_diet_delete_range(start_date, end_date):
-    """批量删饮食:按日期范围删 + 回执(呈现:时间范围/删除条数/确认回执)"""
+    """批量删饮食:按日期范围删 + 回执(呈现:时间范围/删除条数/删除明细/确认回执)"""
     import diet
     r = diet.delete_meals_by_range(start_date, end_date)
     summary = f"已删除 {r['start']} ~ {r['end']} 的 {r['deleted']} 条饮食记录"
+    # #44 审查(用户第一性原理):删除必须知道删了什么——删除前明细
+    items = [{'label': '已删除', 'time': it['time'], 'food_name': it['food_name'],
+              'grams': it['grams'], 'calories': it['calories'],
+              'note': it.get('note') or ''} for it in r['before']]
     return _diet_receipt('delete', 0, {}, {'start': r['start'], 'end': r['end'], '删除': r['deleted']},
-                         '批量删饮食', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
+                         '批量删饮食', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary,
+                         items=items)
 
 
 def build_live_water_add(ml, target_date=None):

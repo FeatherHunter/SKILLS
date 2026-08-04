@@ -406,36 +406,36 @@ def delete_meals_by_date(target_date):
     """删某日饮食(D2.5 · 一整天清空,排除 💧水)
 
     Returns:
-        dict{ok, deleted, date}
+        dict{ok, deleted, date, before}
     """
     conn = _get_db()
     c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM food_log WHERE date = ? AND food_name != ?",
+    c.execute("SELECT date, time, food_name, grams, calories, note FROM food_log WHERE date = ? AND food_name != ?",
               (target_date, '💧水'))
-    n = c.fetchone()[0]
+    before = [dict(zip(('date', 'time', 'food_name', 'grams', 'calories', 'note'), r)) for r in c.fetchall()]
     c.execute("DELETE FROM food_log WHERE date = ? AND food_name != ?",
               (target_date, '💧水'))
     conn.commit()
     conn.close()
-    return {'ok': True, 'deleted': n, 'date': target_date}
+    return {'ok': True, 'deleted': len(before), 'date': target_date, 'before': before}
 
 
 def delete_meals_by_range(start_date, end_date):
     """批量删饮食(D2.6 · 按日期范围,排除 💧水)
 
     Returns:
-        dict{ok, deleted, start, end}
+        dict{ok, deleted, start, end, before}
     """
     conn = _get_db()
     c = conn.cursor()
-    c.execute("SELECT COUNT(*) FROM food_log WHERE date BETWEEN ? AND ? AND food_name != ?",
+    c.execute("SELECT date, time, food_name, grams, calories, note FROM food_log WHERE date BETWEEN ? AND ? AND food_name != ?",
               (start_date, end_date, '💧水'))
-    n = c.fetchone()[0]
+    before = [dict(zip(('date', 'time', 'food_name', 'grams', 'calories', 'note'), r)) for r in c.fetchall()]
     c.execute("DELETE FROM food_log WHERE date BETWEEN ? AND ? AND food_name != ?",
               (start_date, end_date, '💧水'))
     conn.commit()
     conn.close()
-    return {'ok': True, 'deleted': n, 'start': start_date, 'end': end_date}
+    return {'ok': True, 'deleted': len(before), 'start': start_date, 'end': end_date, 'before': before}
 
 
 def delete_meals_by_type(target_date, meal_type):
@@ -446,7 +446,7 @@ def delete_meals_by_type(target_date, meal_type):
     支持 4 类聚合(与餐别分布同口径):加餐 = 下午茶 + 夜宵
 
     Returns:
-        dict{ok, deleted, date, meal}
+        dict{ok, deleted, date, meal, before}
     """
     windows = {
         '早餐': (6, 10), '午餐': (10, 14), '下午茶': (14, 18),
@@ -461,12 +461,12 @@ def delete_meals_by_type(target_date, meal_type):
     if meal_type == '加餐':
         lo2, hi2 = windows[meal_type][2], windows[meal_type][3]
         c.execute('''
-            SELECT COUNT(*) FROM food_log
+            SELECT date, time, food_name, grams, calories, note FROM food_log
             WHERE date = ? AND food_name != ? AND (
                 (CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?)
                 OR (CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?))
         ''', (target_date, '💧水', lo, hi, lo2, hi2))
-        n = c.fetchone()[0]
+        before = [dict(zip(('date', 'time', 'food_name', 'grams', 'calories', 'note'), r)) for r in c.fetchall()]
         c.execute('''
             DELETE FROM food_log
             WHERE date = ? AND food_name != ? AND (
@@ -475,27 +475,27 @@ def delete_meals_by_type(target_date, meal_type):
         ''', (target_date, '💧水', lo, hi, lo2, hi2))
     elif lo < hi:
         c.execute('''
-            SELECT COUNT(*) FROM food_log
+            SELECT date, time, food_name, grams, calories, note FROM food_log
             WHERE date = ? AND food_name != ? AND CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?
         ''', (target_date, '💧水', lo, hi))
-        n = c.fetchone()[0]
+        before = [dict(zip(('date', 'time', 'food_name', 'grams', 'calories', 'note'), r)) for r in c.fetchall()]
         c.execute('''
             DELETE FROM food_log
             WHERE date = ? AND food_name != ? AND CAST(strftime('%H', time) AS INT) >= ? AND CAST(strftime('%H', time) AS INT) < ?
         ''', (target_date, '💧水', lo, hi))
     else:  # 夜宵 0-6(跨日窗)
         c.execute('''
-            SELECT COUNT(*) FROM food_log
+            SELECT date, time, food_name, grams, calories, note FROM food_log
             WHERE date = ? AND food_name != ? AND (CAST(strftime('%H', time) AS INT) >= ? OR CAST(strftime('%H', time) AS INT) < ?)
         ''', (target_date, '💧水', lo, hi))
-        n = c.fetchone()[0]
+        before = [dict(zip(('date', 'time', 'food_name', 'grams', 'calories', 'note'), r)) for r in c.fetchall()]
         c.execute('''
             DELETE FROM food_log
             WHERE date = ? AND food_name != ? AND (CAST(strftime('%H', time) AS INT) >= ? OR CAST(strftime('%H', time) AS INT) < ?)
         ''', (target_date, '💧水', lo, hi))
     conn.commit()
     conn.close()
-    return {'ok': True, 'deleted': n, 'date': target_date, 'meal': meal_type}
+    return {'ok': True, 'deleted': len(before), 'date': target_date, 'meal': meal_type, 'before': before}
 
 
 def list_meals(target_date=None):

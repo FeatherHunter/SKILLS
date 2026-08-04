@@ -1,0 +1,32 @@
+{
+  "name": "在线视频下载器",
+  "version": "1.0.0",
+  "description": "通用视频下载工具,支持 YouTube / B 站 / 抖音等 yt-dlp 兼容平台",
+  "author": "MiniMax猎羽",
+  "created": "2026-08-04",
+  "updated": "2026-08-04",
+  "depends_on": {
+    "python_packages": [],
+    "system_bins": ["yt-dlp", "ffmpeg", "ffprobe"]
+  },
+  "tested_on": {
+    "platform": "B站",
+    "url": "https://www.bilibili.com/video/BV1S83w6SEtp/",
+    "resolution": "480p",
+    "result": "ok"
+  },
+  "changelog": [
+    {
+      "version": "1.0.0",
+      "date": "2026-08-04",
+      "changes": [
+        "从 ClawHub 安装 openclaw 原始版 + 复制到 MiniMaxCode 失败(B站 412)",
+        "重写 B 站下载逻辑,加 3 个 workarounds:",
+        "  - --extractor-args bilibili:api_host=api.bilibili.com",
+        "  - Referer + User-Agent 头",
+        "  - 显式 format ID 组合(避开 'best' 语义)",
+        "其他平台(YouTube/抖音等)走默认 yt-dlp bestvideo+bestaudio"
+      ]
+    }
+  ]
+}

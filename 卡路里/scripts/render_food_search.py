@@ -141,6 +141,7 @@ def main() -> int:
             "items": items,
             "match_count": len(items),
             "generated_at": datetime.now().isoformat(),
+            "meta": {"chain": args.chain},
         },
         "message": f"找到 {len(items)} 个匹配",
     }

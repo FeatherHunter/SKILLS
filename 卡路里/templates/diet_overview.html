@@ -122,7 +122,7 @@ function fallbackCopyText(txt) {
     return;
   }
   const { week, month, meta } = D.data;
-  document.getElementById('sub').textContent = `看饮食总览 · 周期累计(不含今日) · ${meta.today}`;
+  document.getElementById('sub').textContent = `看饮食总览 · 统计到昨日 · ${meta.today}`;
   document.getElementById('weekRange').textContent = `${week.start} ~ ${week.end} · 共 ${week.days} 天`;
   document.getElementById('wCal').textContent = week.total_cal.toLocaleString() + ' 卡';
   document.getElementById('wAvg').textContent = week.avg_cal.toLocaleString() + ' 卡/天';
@@ -153,9 +153,9 @@ function fallbackCopyText(txt) {
   renderChart('weekChart', week.daily);
   renderChart('monthChart', month.daily);
 
-  document.getElementById('srcLine').textContent = `📊 数据来源:food_log · 周期累计 · 不含今日`;
+  document.getElementById('srcLine').textContent = `📊 数据来源:food_log · 周期累计 · 统计到昨日`;
   document.getElementById('copyBtn').onclick = function() {
-    let r = `饮食总览 (不含今日, ${meta.today})\n`;
+    let r = `饮食总览 (统计到昨日, ${meta.today})\n`;
     r += `本周(${week.start}~${week.end}): 总热量 ${week.total_cal} 卡, 日均 ${week.avg_cal} 卡, 总蛋白 ${week.total_pro}g\n`;
     r += `本月(${month.start}~${month.end}): 总热量 ${month.total_cal} 卡, 日均 ${month.avg_cal} 卡, 总蛋白 ${month.total_pro}g\n`;
     const done = () => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); showToast('饮食总览数据复制成功 ✓'); };

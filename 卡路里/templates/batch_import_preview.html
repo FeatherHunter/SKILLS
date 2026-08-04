@@ -397,13 +397,13 @@ function render() {
     return;
   }
 
-  // HERO(BUG #1 修复:jsonl_path 兜底; #44:只显示文件名,不显示全路径)
+  // HERO(#44:标题 = 场景名;文件名 + 统计放副标题)
   const jsonlName = (SUMMARY.jsonl_path || '').split(/[\\/]/).pop();
-  document.getElementById('title').textContent = jsonlName || '批量导入预览';
+  document.getElementById('title').textContent = SUMMARY.scene || '批量导入预览';
   document.getElementById('subtitle').textContent =
-    IS_VALIDATE
+    (jsonlName ? jsonlName + ' · ' : '') + (IS_VALIDATE
       ? `${SUMMARY.total} 条 · 通过 ${SUMMARY.passed || 0} · 失败 ${SUMMARY.failed || 0}`
-      : `${SUMMARY.total} 条 · ${SUMMARY.failed} 失败 · 请核对`;
+      : `${SUMMARY.total} 条 · ${SUMMARY.failed} 失败 · 请核对`);
 
   // Pills(失败高优先级)
   const pills = document.getElementById('pills');

@@ -37,6 +37,7 @@ def build_parser():
     p.add_argument('--input', required=True, help='结构化数据 JSON 文件路径(batch_import 输出 / mock)')
     p.add_argument('--output', help='输出文件路径')
     p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
+    p.add_argument('--scene', help='场景名(如 校验批量导入/批量导入食品),默认 批量导入预览')
     return p
 
 
@@ -58,12 +59,14 @@ def load_data(json_path: Path) -> dict:
     return raw
 
 
-def normalize(data: dict, chain: str | None = None) -> dict:
+def normalize(data: dict, chain: str | None = None, scene: str | None = None) -> dict:
     """标准化字段:确保 summary/runs 完整 + 防御性兜底"""
     if not isinstance(data, dict):
         return {'summary': {'total': 0, 'added': 0, 'updated': 0, 'skipped': 0, 'failed': 0, 'jsonl_path': '(空)'}, 'runs': []}
 
     summary = data.get('summary', {})
+    if scene:
+        summary['scene'] = scene
     if not isinstance(summary, dict):
         summary = {}
     runs = data.get('runs', [])
@@ -134,7 +137,7 @@ def main():
 
     try:
         raw = load_data(input_path)
-        data = normalize(raw, getattr(args, 'chain', None))
+        data = normalize(raw, getattr(args, 'chain', None), getattr(args, 'scene', None))
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

@@ -68,6 +68,10 @@
     /* #44:饼图手机纵向堆叠(200px 饼图 + 图例横排溢出 324px 容器) */
     .pie-wrap { flex-direction:column; gap:16px; }
     svg.pie { width:180px; height:180px; }
+    /* #44:图例行压缩(90px 数值列 + 12px gap 致 363px 溢出) */
+    .pie-legend .row { gap:8px; }
+    .pie-legend .val { width:70px; font-size:12px; }
+    .pie-legend .name { font-size:12px; }
   }
   /* table 在小屏内滚 */
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }

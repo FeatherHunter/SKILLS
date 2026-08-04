@@ -3,7 +3,9 @@
 """render_goal_config.py — 目标配置 HTML 渲染器(配置型)
 
 对应 SKILL.md 唤醒词: 定营养目标 / 定饮水目标 / 改营养目标 / 改饮水目标
-对应模板: templates/goal_config.html
+对应模板(2026-08-04 ADR-0009 按形态拆分):
+- templates/goal_config_nutrition.html — 营养配置(定/改营养,5 字段 slider 联动)
+- templates/goal_config_water.html — 饮水配置(定/改饮水,单字段,无宏量联动/BMR)
 - 输出目录: $DATA_DIR/calorie_html/目标配置_<TS>.html
 - 占位符: <!--INJECT-DATA--> 恰好 1 次
 - 呈现数据: 4 项宏量 + 饮水目标值(slider 可调); 改类含改前/改后对比 + 影响预估
@@ -23,7 +25,9 @@ from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
-TEMPLATE_PATH = SKILL_DIR / 'templates' / 'goal_config.html'
+# 2026-08-04 ADR-0009:按形态选模板(营养 5 字段 / 饮水单字段),互不干扰
+TEMPLATE_NUTRITION = SKILL_DIR / 'templates' / 'goal_config_nutrition.html'
+TEMPLATE_WATER = SKILL_DIR / 'templates' / 'goal_config_water.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa: E402
@@ -150,8 +154,8 @@ def normalize(data: dict) -> dict:
     }
 
 
-def render_html(data: dict) -> str:
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
+def render_html(data: dict, template_path: Path = None) -> str:
+    template = (template_path or TEMPLATE_NUTRITION).read_text(encoding='utf-8')
     placeholder = '<!--INJECT-DATA-->'
     if template.count(placeholder) != 1:
         raise ValueError(f'模板占位符数量异常: {template.count(placeholder)}')
@@ -173,15 +177,15 @@ def main():
         print('     --chain "1.识别唤醒词→2.调CLI读DB→3.计算目标"', file=sys.stderr)
         return 2
 
-    # R4 自描述:按参数推断场景名(唤醒词)
+    # R4 自描述:按参数推断场景名(唤醒词)与形态模板(2026-08-04 ADR-0009)
     if args.modify_nutrition:
-        scene_name, output_type = '改营养目标', 'receipt'
+        scene_name, output_type, template_path = '改营养目标', 'receipt', TEMPLATE_NUTRITION
     elif args.modify_water:
-        scene_name, output_type = '改饮水目标', 'receipt'
+        scene_name, output_type, template_path = '改饮水目标', 'receipt', TEMPLATE_WATER
     elif args.water_only:
-        scene_name, output_type = '定饮水目标', 'receipt'
+        scene_name, output_type, template_path = '定饮水目标', 'receipt', TEMPLATE_WATER
     else:
-        scene_name, output_type = '定营养目标', 'receipt'
+        scene_name, output_type, template_path = '定营养目标', 'receipt', TEMPLATE_NUTRITION
 
     try:
         if args.mock:
@@ -208,7 +212,7 @@ def main():
             '改饮水目标': '饮水目标 · 修改',
         }.get(scene_name, '目标配置')
         data['scene'] = scene_name
-        html = render_html(data)
+        html = render_html(data, template_path)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1

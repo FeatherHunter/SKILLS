@@ -174,7 +174,8 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/plan_builder_wizard.html` | 定训练计划 | DB query + 计划生成 | `scripts/render_plan_builder.py` |
 | `templates/health_dashboard.html` | 查健康报告 | `analysis.dashboard(as_dict=True)` 4 维 | `scripts/render_health_dashboard.py [--range / --days]` |
 | `templates/lint_health.html` | 查卡路里数据 | `lint_health()` | `scripts/render_lint_health.py` |
-| `templates/goal_config.html` | 定营养目标 / 定饮水目标 / 改营养目标 / 改饮水目标 | `daily_goal` + `food_log` | `scripts/render_goal_config.py` |
+| `templates/goal_config_nutrition.html` | 定营养目标 / 改营养目标 | `daily_goal` + `food_log` | `scripts/render_goal_config.py` |
+| `templates/goal_config_water.html` | 定饮水目标 / 改饮水目标 | `daily_goal` + `food_log` | `scripts/render_goal_config.py` |
 | `templates/goal_recommend.html` | 定营养目标(自动算) / 定饮水目标(自动算) / 一键定全套目标 | `recommend_nutrition_goal` / `recommend_water_goal` | `scripts/render_goal_recommend.py` |
 | `templates/goal_weight.html` | 定体重目标 / 定体重目标(自动算截止) / 定体重目标(含起始日) / 改体重目标 | `weight_goal` | `scripts/render_goal_weight.py` |
 | `templates/goal_status.html` | 暂停所有目标 / 重启所有目标 | `goal_manager` | `scripts/render_goal_status.py` |

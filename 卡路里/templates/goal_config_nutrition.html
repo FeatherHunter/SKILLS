@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>目标配置 · 卡路里</title>
+<title>营养目标配置 · 卡路里</title>
 <style>
 :root{
   --bg:#fff;--bg-soft:#f5f5f7;--card:#fff;
@@ -34,12 +34,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .slider-row .value .unit{font-size:12px;color:var(--ink3);font-weight:400;margin-left:2px}
 .mini-chart{margin:18px 0;padding:16px;background:var(--bg-soft);border-radius:12px}
 .mini-chart h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--ink2)}
-.mini-row{display:grid;grid-template-columns:100px 1fr 110px;align-items:center;gap:10px;padding:6px 0}
+.mini-row{display:grid;grid-template-columns:90px 1fr 150px;align-items:center;gap:10px;padding:6px 0}
 .mini-label{font-size:13px;font-weight:500}
 .mini-bar-bg{height:10px;background:#e5e5ea;border-radius:5px;overflow:hidden;position:relative}
 .mini-bar-fg{position:absolute;top:0;left:0;height:100%;background:var(--accent);border-radius:5px;transition:width .3s}
-.mini-bar-actual{position:absolute;top:0;left:0;height:100%;border-right:2px solid var(--orange);border-radius:5px 0 0 5px;transition:width .3s;background:transparent}
-.mini-num{font-size:12px;color:var(--ink2);text-align:right;font-feature-settings:"tnum"}
+/* 2026-08-04 参照系翻转(用户拍板):旧目标 = 灰条(基准),新目标 = 蓝条覆盖,昨日实际 = 独立小字 */
+.mini-bar-old{position:absolute;top:0;left:0;height:100%;background:#c7c7cc;border-radius:5px;transition:width .3s}
+.mini-num{font-size:12px;color:var(--ink2);text-align:right;font-feature-settings:"tnum";white-space:nowrap}
 .copy-section{background:linear-gradient(135deg,var(--card),#f8fbff);border-radius:20px;padding:28px 32px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
 .copy-section h2{font-size:19px;font-weight:600;letter-spacing:-.3px;margin-bottom:6px}
 .copy-section .sub{font-size:13.5px;color:var(--ink2);margin-bottom:18px;line-height:1.6}
@@ -49,8 +50,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .btn:hover{opacity:.85}
 .btn.primary{background:var(--ink);color:#fff}
 .btn.secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line)}
-.btn.warning{background:var(--orange-soft);color:var(--orange)}
-.btn:disabled{opacity:.5;cursor:not-allowed}
 .btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
 .weight-progress{padding:18px 22px;background:linear-gradient(135deg,var(--accent-soft),#fff);border-radius:14px;margin-top:14px}
 .weight-progress h3{font-size:15px;font-weight:600;margin-bottom:10px;color:var(--accent)}
@@ -59,7 +58,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .weight-stat .label{font-size:11px;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
 .weight-stat .value{font-size:20px;font-weight:700;font-feature-settings:"tnum"}
 footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;border-top:1px solid var(--lineS);margin-top:36px}
-#backTop{position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--line);color:var(--ink);text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;box-shadow:var(--shadow)}
 @media(max-width:640px){.wrap{padding:20px 16px 60px}.hero{padding:24px 20px 20px}.hero h1{font-size:24px}.section,.copy-section{padding:18px 20px}.section-title{flex-direction:column;align-items:flex-start;gap:4px}.slider-row{grid-template-columns:1fr auto;grid-template-areas:"name value""bar bar";gap:8px 10px}.slider-row .name{grid-area:name}.slider-row .value{grid-area:value;text-align:right}.slider-row input[type="range"]{grid-area:bar}.weight-grid{grid-template-columns:1fr}.mini-row{grid-template-columns:1fr;gap:6px}.mini-num{text-align:left}}
 </style>
 </head>
@@ -67,17 +65,17 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <div class="wrap">
 <header class="hero">
 <div class="eyebrow" id="eyebrow">卡路里 · 目标配置</div>
-<h1 id="title">目标配置</h1>
+<h1 id="title">营养目标</h1>
 <div class="sub" id="subtitle">加载中…</div>
 </header>
 <section class="section">
 <div class="section-title">
 <h2>每日营养目标 (5 项)</h2>
-<span class="hint">拖动 slider 调整 · 实时显示昨日 vs 新目标</span>
+<span class="hint">拖动 slider 调整 · 实时显示改前 vs 改后</span>
 </div>
 <div id="sliders"></div>
 <div class="mini-chart" id="miniChart" style="display:none">
-<h3>📊 昨日 vs 新目标 (mini chart)</h3>
+<h3>📊 改前 vs 改后</h3>
 <div id="chartRows"></div>
 </div>
 <div class="weight-progress" id="bmrWarning" style="display:none;background:var(--orange-soft);margin-top:14px">
@@ -112,29 +110,28 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 </div>
 </section>
 </div>
-<a id="backTop" href="#top" title="回到顶部">↑</a>
 <!--INJECT-DATA-->
 <script>
 const DATA=(()=>{if(typeof window.__DATA__!=='object'||window.__DATA__===null)return null;return window.__DATA__})();
 const META=(DATA&&DATA.data&&DATA.data.meta)||{};
-const PAGE_TITLE=DATA&&DATA.data&&DATA.data.page_title?DATA.data.page_title:'目标配置';
+const PAGE_TITLE=DATA&&DATA.data&&DATA.data.page_title?DATA.data.page_title:'营养目标';
 const CURRENT=DATA&&DATA.data&&DATA.data.current_goal?DATA.data.current_goal:{};
 const YESTERDAY=DATA&&DATA.data&&DATA.data.yesterday_actual?DATA.data.yesterday_actual:{};
 const WEIGHT=DATA&&DATA.data&&DATA.data.weight_progress?DATA.data.weight_progress:null;
-const WATER_ONLY=!!(DATA&&DATA.data&&DATA.data.water_only);
-// 2026-08-02 对抗审查拍板:所有目标下限 0;热量 slider 上限 = 宏量上限的 4/4/9 总和(4550)
-const MACRO_MAX={protein_goal:300,carbs_goal:500,fat_goal:150};
-const FIELDS=[
-  {key:'calorie_goal',label:'热量',unit:'卡',min:0,max:MACRO_MAX.protein_goal*4+MACRO_MAX.carbs_goal*4+MACRO_MAX.fat_goal*9,step:5,yesterdayKey:'calorie'},
-  {key:'protein_goal',label:'蛋白',unit:'g',min:0,max:MACRO_MAX.protein_goal,step:1,yesterdayKey:'protein'},
-  {key:'carbs_goal',label:'碳水',unit:'g',min:0,max:MACRO_MAX.carbs_goal,step:1,yesterdayKey:'carbs'},
-  {key:'fat_goal',label:'脂肪',unit:'g',min:0,max:MACRO_MAX.fat_goal,step:1,yesterdayKey:'fat'},
-  {key:'water_goal',label:'饮水',unit:'ml',min:0,max:4000,step:100,yesterdayKey:'water'}
-];
-const ACTIVE_FIELDS=WATER_ONLY?FIELDS.filter(f=>f.key==='water_goal'):FIELDS;
+// 2026-08-04 ADR-0009:模板按形态独立(营养配置页固定 5 字段,不再有 water_only 旁路);
+// 字段声明仍由 render 端下发(fields 契约),数值元数据(上限/步进)为模板单点权威
+const FIELD_META={
+  calorie_goal:{key:'calorie_goal',label:'热量',unit:'卡',min:0,max:300*4+500*4+150*9,step:5,yesterdayKey:'calorie'},
+  protein_goal:{key:'protein_goal',label:'蛋白',unit:'g',min:0,max:300,step:1,yesterdayKey:'protein'},
+  carbs_goal:{key:'carbs_goal',label:'碳水',unit:'g',min:0,max:500,step:1,yesterdayKey:'carbs'},
+  fat_goal:{key:'fat_goal',label:'脂肪',unit:'g',min:0,max:150,step:1,yesterdayKey:'fat'},
+  water_goal:{key:'water_goal',label:'饮水',unit:'ml',min:0,max:6000,step:100,yesterdayKey:'water'}
+};
+const DECLARED_FIELDS=DATA&&DATA.data&&DATA.data.fields&&DATA.data.fields.length?DATA.data.fields:['calorie_goal','protein_goal','carbs_goal','fat_goal','water_goal'];
+const ACTIVE_FIELDS=DECLARED_FIELDS.map(k=>FIELD_META[k]).filter(Boolean);
 const state={};
 // 比例锚定(2026-08-04 场景19 对抗审查定稿):拖热量全程用锚定比例,不用实时比例(避免漂移)
-// - 加载时:初始宏量非零 → 锚定为初始比例;全 0 → 默认 30/50/20
+// - 加载时:初始宏量非零 → 锚定为初始比例;全 0 → 默认 1:1:1 克(能量 4:4:9)
 // - 拖热量归零时:锚定归零前比例(归零后拖回比例保持)
 // - 手动从全 0 设非零宏量:锚定用户设定
 let savedRatio=null;
@@ -179,7 +176,7 @@ function onSlider(el){
 }
 // 宏量联动 v2(2026-08-03 用户验收 #2 修复):
 // - 热量 slider:min 0 / max 4550(=宏量上限 4/4/9 能量和)/ step 5
-// - 拖热量 → 宏量按锚定比例分配(全 0 起手 = 默认 30/50/20;有锚定 = 锚定比例);
+// - 拖热量 → 宏量按锚定比例分配(全 0 起手 = 默认 1:1:1 克;有锚定 = 锚定比例);
 //   单个宏量封顶后剩余能量按比例重分配,总能量跟踪热量(偏差 ≤4 卡,无累积漂移)
 // - 拖宏量 → 热量按 4/4/9 精确重算(step 5 取整)
 function macroSum(){return ((state.protein_goal||0)*4)+((state.carbs_goal||0)*4)+((state.fat_goal||0)*9);}
@@ -281,10 +278,10 @@ function scaleMacros(newCal){
   state.fat_goal=r[2];
 }
 function recalcCalorie(){
-  const f=FIELDS.find(x=>x.key==='calorie_goal');
+  const f=FIELD_META.calorie_goal;
   state.calorie_goal=roundStep(clampV(macroSum(),0,f.max),f.step);
 }
-function fieldMax(key){return FIELDS.find(f=>f.key===key).max;}
+function fieldMax(key){return FIELD_META[key].max;}
 function syncSliderValues(){
   ACTIVE_FIELDS.forEach(f=>{
     const input=document.querySelector('input[data-key="'+f.key+'"]');
@@ -304,29 +301,50 @@ function syncSliderValues(){
 function updateMiniChart(){
   if(!YESTERDAY||Object.keys(YESTERDAY).length===0)return;
   document.getElementById('miniChart').style.display='block';
-  const hasData=ACTIVE_FIELDS.some(f=>(YESTERDAY[f.yesterdayKey]||0)>0);
-  if(!hasData){
-    document.getElementById('chartRows').innerHTML=
-      '<div class="mini-num" style="padding:6px 0;text-align:center;color:var(--ink3)">昨日无饮食记录,暂无对比数据</div>';
+  const hasOld=ACTIVE_FIELDS.some(f=>(CURRENT[f.key]||0)>0);
+  // 2026-08-04 参照系翻转(用户拍板):主对比 = 改前 vs 改后(diff = 新−旧,符号与直觉一致);
+  // 无旧目标(首次设定)时退化为「昨日实际 vs 新目标」作校准;昨日实际不再承担 diff 语义
+  document.querySelector('#miniChart h3').textContent=hasOld?'📊 改前 vs 改后':'📊 昨日 vs 新目标';
+  if(!hasOld){
+    const hasData=ACTIVE_FIELDS.some(f=>(YESTERDAY[f.yesterdayKey]||0)>0);
+    document.getElementById('chartRows').innerHTML=hasData?ACTIVE_FIELDS.map(f=>{
+      const actual=YESTERDAY[f.yesterdayKey]||0;
+      const target=state[f.key];
+      const maxVal=Math.max(actual,target,1)*1.2;
+      const diff=actual-target;
+      const diffText=(diff>0?'+':'')+fmtNum(diff);
+      const diffColor=diff>0?'var(--orange)':'var(--green)';
+      return `<div class="mini-row">
+        <div class="mini-label">${f.label}(${f.unit})</div>
+        <div class="mini-bar-bg">
+          <div class="mini-bar-fg" style="width:${target/maxVal*100}%"></div>
+          <div class="mini-bar-old" style="width:${actual/maxVal*100}%" title="昨日实际: ${fmtNum(actual)}"></div>
+        </div>
+        <div class="mini-num" style="color:${diffColor}">昨日 ${fmtNum(actual)} / 新 ${fmtNum(target)} (${diffText})</div>
+      </div>`;
+    }).join('')
+    :'<div class="mini-num" style="padding:6px 0;text-align:center;color:var(--ink3)">昨日无记录,暂无对比数据</div>';
     return;
   }
   const rows=ACTIVE_FIELDS.map(f=>{
-    const actual=YESTERDAY[f.yesterdayKey]||0;
-    const target=state[f.key];
-    const maxVal=Math.max(actual,target,1)*1.2;
-    const targetPct=target/maxVal*100;
-    const actualPct=actual/maxVal*100;
-    const diff=actual-target;
-    const diffText=(diff>0?'+':'')+fmtNum(diff);
-    const diffColor=diff>0?'var(--orange)':'var(--green)';
+    const oldV=CURRENT[f.key]||0;
+    const newV=state[f.key];
+    const maxVal=Math.max(oldV,newV,1)*1.2;
+    const oldPct=oldV/maxVal*100;
+    const newPct=newV/maxVal*100;
+    const diff=fmtNum(newV-oldV);
+    const diffText=(diff>0?'+':'')+diff;
+    const diffColor=diff>0?'var(--orange)':(diff<0?'var(--green)':'var(--ink3)');
+    const yest=YESTERDAY[f.yesterdayKey];
+    const yestLine=(yest!=null&&yest>0)?`<div class="mini-num" style="font-size:11px;color:var(--ink3);padding:2px 0 6px">昨日实际 ${fmtNum(yest)}${f.unit}</div>`:'';
     return `<div class="mini-row">
       <div class="mini-label">${f.label}(${f.unit})</div>
       <div class="mini-bar-bg">
-        <div class="mini-bar-fg" style="width:${targetPct}%"></div>
-        <div class="mini-bar-actual" style="width:${actualPct}%" title="昨日实际: ${fmtNum(actual)}"></div>
+        <div class="mini-bar-old" style="width:${oldPct}%" title="改前 ${fmtNum(oldV)}${f.unit}"></div>
+        <div class="mini-bar-fg" style="width:${newPct}%" title="改后 ${fmtNum(newV)}${f.unit}"></div>
       </div>
-      <div class="mini-num" style="color:${diffColor}">${fmtNum(actual)}/${fmtNum(target)} (${diffText})</div>
-    </div>`;
+      <div class="mini-num" style="color:${diffColor}">${fmtNum(oldV)} → ${fmtNum(newV)} (${diffText})</div>
+    </div>${yestLine}`;
   }).join('');
   document.getElementById('chartRows').innerHTML=rows;
 }
@@ -385,7 +403,7 @@ function buildConfigPrompt(){
     const diff=actual-state[f.key];
     p+='  '+f.label+': 目标 '+state[f.key]+f.unit+' · 昨日 '+(hasYesterdayData()?fmtNum(actual):'无记录')+' · 差 '+(diff>0?'+':'')+fmtNum(diff)+f.unit+'\n';
   });
-  p+='\n数据来源: 目标配置 v1 · render_goal_config.py · '+new Date().toISOString().split('T')[0];
+  p+='\n数据来源: 目标配置 v2 · render_goal_config.py · '+new Date().toISOString().split('T')[0];
   return p;
 }
 function hasYesterdayData(){
@@ -401,7 +419,7 @@ updateMiniChart();
 
 // R2 双按钮:复制数据(用户口径)/ 复制日志(排障口径) · 2026-08-02 对齐 #8
 function buildDataText(){
-  const lines=['目标配置'+(META.fetched_at?' ('+META.fetched_at+')':''),''];
+  const lines=['营养目标'+(META.fetched_at?' ('+META.fetched_at+')':''),''];
   ACTIVE_FIELDS.forEach(f=>lines.push(`${f.label}: ${state[f.key]}${f.unit}`));
   if(WEIGHT)lines.push(`体重: 当前 ${WEIGHT.current}kg → 目标 ${WEIGHT.target}kg (${WEIGHT.days_left}天)`);
   const DIFF=DATA&&DATA.data&&DATA.data.diff?DATA.data.diff:null;

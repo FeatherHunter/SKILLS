@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>饮水目标配置 · 卡路里</title>
+<style>
+:root{
+  --bg:#fff;--bg-soft:#f5f5f7;--card:#fff;
+  --ink:#1d1d1d;--ink2:#3c3c43;--ink3:#8e8e93;
+  --line:rgba(60,60,67,.12);--lineS:rgba(60,60,67,.06);
+  --accent:#007aff;--accent-soft:rgba(0,122,255,.08);
+  --green:#34c759;--green-soft:rgba(52,199,89,.10);
+  --orange:#ff9500;--orange-soft:rgba(255,149,0,.10);
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04);
+  --r-sm:8px;--r:14px;--r-lg:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg-soft);color:var(--ink);line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:32px 20px 80px}
+.hero{padding:32px 28px 28px;margin-bottom:20px;background:linear-gradient(135deg,#fff,#f5f8ff);border-radius:20px;box-shadow:var(--shadow)}
+.hero h1{font-size:30px;font-weight:700;letter-spacing:-.5px;margin-bottom:6px}
+.hero .sub{font-size:15px;color:var(--ink3);font-weight:400}
+.section{background:var(--card);border-radius:20px;padding:24px 28px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
+.section-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
+.section-title h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
+.section-title .hint{font-size:12px;color:var(--ink3)}
+/* 2026-08-04 场景21拍板:单字段页 bar 左右留白对称 — label/value 列等宽 + 对向对齐 */
+.slider-row{display:grid;grid-template-columns:110px 1fr 110px;gap:14px;align-items:center;padding:14px 0;border-top:1px solid var(--lineS)}
+.slider-row:first-child{border-top:none}
+.slider-row .name{font-size:14px;font-weight:600;text-align:right}
+.slider-row .name .unit{font-size:12px;color:var(--ink3);font-weight:400;margin-left:4px}
+.slider-row input[type="range"]{width:100%;accent-color:var(--accent)}
+.slider-row .value{font-size:18px;font-weight:600;text-align:left;font-feature-settings:"tnum";color:var(--ink)}
+.slider-row .value .unit{font-size:12px;color:var(--ink3);font-weight:400;margin-left:2px}
+.mini-chart{margin:18px 0;padding:16px;background:var(--bg-soft);border-radius:12px}
+.mini-chart h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--ink2)}
+.mini-row{display:grid;grid-template-columns:90px 1fr 150px;align-items:center;gap:10px;padding:6px 0}
+.mini-label{font-size:13px;font-weight:500}
+.mini-bar-bg{height:10px;background:#e5e5ea;border-radius:5px;overflow:hidden;position:relative}
+.mini-bar-fg{position:absolute;top:0;left:0;height:100%;background:var(--accent);border-radius:5px;transition:width .3s}
+/* 2026-08-04 参照系翻转(用户拍板):旧目标 = 灰条(基准),新目标 = 蓝条覆盖,昨日实际 = 独立小字 */
+.mini-bar-old{position:absolute;top:0;left:0;height:100%;background:#c7c7cc;border-radius:5px;transition:width .3s}
+.mini-num{font-size:12px;color:var(--ink2);text-align:right;font-feature-settings:"tnum";white-space:nowrap}
+.copy-section{background:linear-gradient(135deg,var(--card),#f8fbff);border-radius:20px;padding:28px 32px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
+.copy-section h2{font-size:19px;font-weight:600;letter-spacing:-.3px;margin-bottom:6px}
+.copy-section .sub{font-size:13.5px;color:var(--ink2);margin-bottom:18px;line-height:1.6}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit}
+.btn:hover{opacity:.85}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.secondary{background:var(--bg-soft);color:var(--ink);border:1px solid var(--line)}
+.btn.copied{background:var(--green)!important;color:#fff!important;border-color:var(--green)!important}
+footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;border-top:1px solid var(--lineS);margin-top:36px}
+@media(max-width:640px){.wrap{padding:20px 16px 60px}.hero{padding:24px 20px 20px}.hero h1{font-size:24px}.section,.copy-section{padding:18px 20px}.section-title{flex-direction:column;align-items:flex-start;gap:4px}.slider-row{grid-template-columns:1fr auto;grid-template-areas:"name value""bar bar";gap:8px 10px}.slider-row .name{grid-area:name;text-align:left}.slider-row .value{grid-area:value;text-align:right}.slider-row input[type="range"]{grid-area:bar}.mini-row{grid-template-columns:1fr;gap:6px}.mini-num{text-align:left}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow" id="eyebrow">卡路里 · 目标配置</div>
+<h1 id="title">饮水目标</h1>
+<div class="sub" id="subtitle">加载中…</div>
+</header>
+<section class="section">
+<div class="section-title">
+<h2>每日饮水目标</h2>
+<span class="hint">拖动 slider 调整 · 实时显示改前 vs 改后</span>
+</div>
+<div id="sliders"></div>
+<div class="mini-chart" id="miniChart" style="display:none">
+<h3>📊 改前 vs 改后</h3>
+<div id="chartRows"></div>
+</div>
+</section>
+<section class="section" id="diffSection" style="display:none">
+<div class="section-title">
+<h2>改前 vs 改后</h2>
+<span class="hint">修改影响预估</span>
+</div>
+<div id="diffRows"></div>
+</section>
+<section class="copy-section">
+<h2>更改配置</h2>
+<p class="sub">拖动滑块调整目标,点击「更改配置」复制指令,粘到 AI 对话框即可按新配置写入。</p>
+<div class="btn-row">
+<button class="btn primary" id="btnAdopt" onclick="copyConfig()">✏️ 更改配置</button>
+<button class="btn secondary" id="copyDataBtn" onclick="copyData()">📋 复制数据</button>
+<button class="btn secondary" id="copyLogBtn" onclick="copyLog()">📋 复制日志</button>
+</div>
+</section>
+</div>
+<!--INJECT-DATA-->
+<script>
+const DATA=(()=>{if(typeof window.__DATA__!=='object'||window.__DATA__===null)return null;return window.__DATA__})();
+const META=(DATA&&DATA.data&&DATA.data.meta)||{};
+const PAGE_TITLE=DATA&&DATA.data&&DATA.data.page_title?DATA.data.page_title:'饮水目标';
+const CURRENT=DATA&&DATA.data&&DATA.data.current_goal?DATA.data.current_goal:{};
+const YESTERDAY=DATA&&DATA.data&&DATA.data.yesterday_actual?DATA.data.yesterday_actual:{};
+// 2026-08-04 ADR-0009:模板按形态独立(饮水配置页固定单字段,无热量/宏量联动,无 BMR);
+// 字段声明由 render 端下发(fields 契约),数值元数据为模板单点权威
+const FIELD_META={
+  water_goal:{key:'water_goal',label:'饮水',unit:'ml',min:0,max:6000,step:100,yesterdayKey:'water'}
+};
+const DECLARED_FIELDS=DATA&&DATA.data&&DATA.data.fields&&DATA.data.fields.length?DATA.data.fields:['water_goal'];
+const ACTIVE_FIELDS=DECLARED_FIELDS.map(k=>FIELD_META[k]).filter(Boolean);
+const state={};
+ACTIVE_FIELDS.forEach(f=>{state[f.key]=CURRENT[f.key]||f.min});
+function renderHeader(){
+  document.getElementById('title').textContent=PAGE_TITLE;
+  document.getElementById('subtitle').textContent=
+    `目标日 饮水 ${fmtNum(CURRENT.water_goal||'?')}ml`;
+}
+function renderSliders(){
+  const html=ACTIVE_FIELDS.map(f=>{
+    return `<div class="slider-row">
+      <div class="name">${f.label}<span class="unit">${f.unit}</span></div>
+      <input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${state[f.key]}" data-key="${f.key}" oninput="onSlider(this)">
+      <div class="value">${state[f.key]}<span class="unit">${f.unit}</span></div>
+    </div>`;
+  }).join('');
+  document.getElementById('sliders').innerHTML=html;
+}
+function onSlider(el){
+  const key=el.dataset.key;
+  state[key]=parseInt(el.value,10);
+  syncSliderValues();
+  updateMiniChart();
+}
+function fmtNum(v){const n=Math.round((Number(v)||0)*100)/100;return String(n);}
+function syncSliderValues(){
+  ACTIVE_FIELDS.forEach(f=>{
+    const input=document.querySelector('input[data-key="'+f.key+'"]');
+    if(!input)return;
+    input.value=state[f.key];
+    const cell=input.parentElement.querySelector('.value');
+    if(cell)cell.innerHTML=state[f.key]+'<span class="unit">'+f.unit+'</span>';
+  });
+  document.querySelectorAll('#diffRows .slider-row[data-key]').forEach(row=>{
+    const k=row.dataset.key;
+    if(k&&state[k]!=null){
+      const b=row.querySelector('b');
+      if(b)b.textContent=state[k];
+    }
+  });
+}
+function updateMiniChart(){
+  if(!YESTERDAY||Object.keys(YESTERDAY).length===0)return;
+  document.getElementById('miniChart').style.display='block';
+  const hasOld=ACTIVE_FIELDS.some(f=>(CURRENT[f.key]||0)>0);
+  // 2026-08-04 参照系翻转(用户拍板):主对比 = 改前 vs 改后(diff = 新−旧,符号与直觉一致);
+  // 无旧目标(首次设定)时退化为「昨日实际 vs 新目标」作校准
+  document.querySelector('#miniChart h3').textContent=hasOld?'📊 改前 vs 改后':'📊 昨日 vs 新目标';
+  if(!hasOld){
+    const hasData=ACTIVE_FIELDS.some(f=>(YESTERDAY[f.yesterdayKey]||0)>0);
+    document.getElementById('chartRows').innerHTML=hasData?ACTIVE_FIELDS.map(f=>{
+      const actual=YESTERDAY[f.yesterdayKey]||0;
+      const target=state[f.key];
+      const maxVal=Math.max(actual,target,1)*1.2;
+      const diff=actual-target;
+      const diffText=(diff>0?'+':'')+fmtNum(diff);
+      const diffColor=diff>0?'var(--orange)':'var(--green)';
+      return `<div class="mini-row">
+        <div class="mini-label">${f.label}(${f.unit})</div>
+        <div class="mini-bar-bg">
+          <div class="mini-bar-fg" style="width:${target/maxVal*100}%"></div>
+          <div class="mini-bar-old" style="width:${actual/maxVal*100}%" title="昨日实际: ${fmtNum(actual)}"></div>
+        </div>
+        <div class="mini-num" style="color:${diffColor}">昨日 ${fmtNum(actual)} / 新 ${fmtNum(target)} (${diffText})</div>
+      </div>`;
+    }).join('')
+    :'<div class="mini-num" style="padding:6px 0;text-align:center;color:var(--ink3)">昨日无饮水记录,暂无对比数据</div>';
+    return;
+  }
+  const rows=ACTIVE_FIELDS.map(f=>{
+    const oldV=CURRENT[f.key]||0;
+    const newV=state[f.key];
+    const maxVal=Math.max(oldV,newV,1)*1.2;
+    const oldPct=oldV/maxVal*100;
+    const newPct=newV/maxVal*100;
+    const diff=fmtNum(newV-oldV);
+    const diffText=(diff>0?'+':'')+diff;
+    const diffColor=diff>0?'var(--orange)':(diff<0?'var(--green)':'var(--ink3)');
+    const yest=YESTERDAY[f.yesterdayKey];
+    const yestLine=(yest!=null&&yest>0)?`<div class="mini-num" style="font-size:11px;color:var(--ink3);padding:2px 0 6px">昨日实际 ${fmtNum(yest)}${f.unit}</div>`:'';
+    return `<div class="mini-row">
+      <div class="mini-label">${f.label}(${f.unit})</div>
+      <div class="mini-bar-bg">
+        <div class="mini-bar-old" style="width:${oldPct}%" title="改前 ${fmtNum(oldV)}${f.unit}"></div>
+        <div class="mini-bar-fg" style="width:${newPct}%" title="改后 ${fmtNum(newV)}${f.unit}"></div>
+      </div>
+      <div class="mini-num" style="color:${diffColor}">${fmtNum(oldV)} → ${fmtNum(newV)} (${diffText})</div>
+    </div>${yestLine}`;
+  }).join('');
+  document.getElementById('chartRows').innerHTML=rows;
+}
+function renderDiff(){
+  const DIFF=DATA&&DATA.data&&DATA.data.diff?DATA.data.diff:null;
+  if(!DIFF||!DIFF.items||!DIFF.items.length)return;
+  document.getElementById('diffSection').style.display='block';
+  const rows=DIFF.items.map(it=>{
+    const oldV=it.old!=null?it.old:'未设';
+    const newV=(it.key&&state[it.key]!=null)?state[it.key]:(it.new!=null?it.new:'未设');
+    const impact=it.impact?`<div class="mini-num" style="color:var(--ink2)">影响: ${it.impact}</div>`:'';
+    return `<div class="slider-row" data-key="${it.key||''}">
+      <div class="name">${it.label}<span class="unit">${it.unit||''}</span></div>
+      <div class="value" style="text-align:left;font-size:14px;color:var(--ink3)">${oldV} → <b style="color:var(--ink)">${newV}</b></div>
+      <div></div>
+    </div>${impact}`;
+  }).join('');
+  document.getElementById('diffRows').innerHTML=rows;
+}
+function buildConfigPrompt(){
+  const scene=META.wake_word||'定饮水目标';
+  let p='我已调整目标配置,请按「'+scene+'」流程写入数据库。\n\n';
+  p+='饮水目标:\n';
+  p+='  饮水 '+state.water_goal+' ml\n\n';
+  p+='昨日实际(对比参考):\n';
+  ACTIVE_FIELDS.forEach(f=>{
+    const actual=YESTERDAY[f.yesterdayKey]||0;
+    const diff=actual-state[f.key];
+    p+='  '+f.label+': 目标 '+state[f.key]+f.unit+' · 昨日 '+(hasYesterdayData()?fmtNum(actual):'无记录')+' · 差 '+(diff>0?'+':'')+fmtNum(diff)+f.unit+'\n';
+  });
+  p+='\n数据来源: 目标配置 v2 · render_goal_config.py · '+new Date().toISOString().split('T')[0];
+  return p;
+}
+function hasYesterdayData(){
+  return YESTERDAY&&Object.keys(YESTERDAY).length>0&&ACTIVE_FIELDS.some(f=>(YESTERDAY[f.yesterdayKey]||0)>0);
+}
+function copyConfig(){doCopy(buildConfigPrompt(),'btnAdopt','✓ 已复制配置指令,粘给 AI 即可');}
+renderHeader();
+renderSliders();
+renderDiff();
+updateMiniChart();
+
+// R2 双按钮:复制数据(用户口径)/ 复制日志(排障口径) · 2026-08-02 对齐 #8
+function buildDataText(){
+  const lines=['饮水目标'+(META.fetched_at?' ('+META.fetched_at+')':''),''];
+  ACTIVE_FIELDS.forEach(f=>lines.push(`${f.label}: ${state[f.key]}${f.unit}`));
+  const DIFF=DATA&&DATA.data&&DATA.data.diff?DATA.data.diff:null;
+  if(DIFF&&DIFF.items&&DIFF.items.length){
+    lines.push('');
+    DIFF.items.forEach(it=>lines.push(`改前 ${it.label}: ${it.old!=null?it.old:'未设'} → 改后 ${it.new!=null?it.new:'待定'}`));
+  }
+  return lines.join('\n');
+}
+function buildLogText(){
+  const lines=['[目标配置 排障日志]',''];
+  lines.push(`唤醒词: ${META.wake_word||'(未知)'}`);
+  lines.push(`渲染命令: ${META.render_cmd||'(未知)'}`);
+  lines.push(`数据来源: ${META.source||'(未知)'}`);
+  lines.push(`渲染时间: ${META.fetched_at||'(未知)'}`);
+  lines.push('');
+  if(META.chain){lines.push('AI 思考链:');lines.push(META.chain);}
+  else{lines.push('AI 思考链: (未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)');}
+  lines.push('');
+  lines.push('原始数据:');
+  lines.push(JSON.stringify(DATA&&DATA.data?DATA.data:null,null,2));
+  return lines.join('\n');
+}
+function showToast(msg){
+  let t=document.getElementById('copyToast');
+  if(!t){t=document.createElement('div');t.id='copyToast';t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:99;display:none;max-width:80vw';document.body.appendChild(t);}
+  t.textContent=msg;t.style.display='block';
+  setTimeout(()=>{t.style.display='none';},2000);
+}
+function doCopy(text,btnId,msg){
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
+  } else { fallbackCopy(text,done); }
+  function fallbackCopy(txt,ok){
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');ok();}catch(e){}document.body.removeChild(ta);
+  }
+}
+function copyData(){doCopy(buildDataText(),'copyDataBtn','目标配置 数据复制成功 ✓');}
+function copyLog(){doCopy(buildLogText(),'copyLogBtn','排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');}
+</script>
+</body>
+</html>

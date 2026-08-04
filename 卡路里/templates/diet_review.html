@@ -143,22 +143,23 @@ function fallbackCopyText(txt) {
       allDays.push({date: iso, cal: by[iso] || 0});
     }
   }
-  const max = Math.max(...allDays.map(d => d.cal), 1);
   // #44:降采样——窗口 > 62 天按周聚合(216 日柱视觉崩 · 31 周柱合理)
   let renderDays = allDays;
-  let weekly = false;
   if (allDays.length > 62) {
     renderDays = [];
-    weekly = true;
     for (let i = 0; i < allDays.length; i += 7) {
       const chunk = allDays.slice(i, i + 7);
       const sum = chunk.reduce((a, d) => a + (d.cal || 0), 0);
       renderDays.push({date: chunk[0].date + '~' + chunk[chunk.length - 1].date, cal: sum});
     }
   }
-  // #44:图例随降采样动态(周聚合时 = 一周,避免「一天」矛盾)
+  // #44:柱高基准必须用渲染数据(周聚合时用周值,原用日值致柱高超 106px)
+  const max = Math.max(...renderDays.map(d => d.cal), 1);
+  // #44:图例随降采样动态(周聚合时标题/图例同步,避免「每日/一天」矛盾)
+  const weeklyMode = allDays.length > 62;
+  document.querySelector('.chart-title').firstChild.textContent = weeklyMode ? '每周热量趋势' : '每日热量趋势';
   document.querySelector('.chart-hint').textContent =
-    weekly ? '每根柱 = 一周(周聚合) · 灰柱 = 无记录 · 悬停看数值' : '每根柱 = 一天 · 灰柱 = 无记录 · 悬停看数值';
+    weeklyMode ? '每根柱 = 一周(周聚合) · 灰柱 = 无记录 · 悬停看数值' : '每根柱 = 一天 · 灰柱 = 无记录 · 悬停看数值';
   renderDays.forEach(d => {
     const has = d.cal > 0;
     const bar = document.createElement('div');

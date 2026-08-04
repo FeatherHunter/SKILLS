@@ -45,12 +45,12 @@
   .daily-hint { font-size:11px; color:var(--fg3); margin-top:8px; }
   /* #44:每日热量迷你趋势图 */
   .daily-chart { display:flex; align-items:flex-end; gap:3px; height:92px; padding:4px 2px 0; position:relative; border-bottom:1px solid var(--border); margin-bottom:10px; }
-  .dcol { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; }
+  .dcol { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; justify-content:flex-end; }
   .dbar { width:100%; max-width:22px; background:var(--accent); border-radius:3px 3px 0 0; opacity:.85; }
   .dbar.over { background:var(--bad); opacity:.9; }
   .dbar.empty { background:var(--soft); opacity:1; }
   .dday { font-size:9px; color:var(--fg3); transform:rotate(-45deg); white-space:nowrap; }
-  .dday-blank { visibility:hidden; }
+  .dday-blank { visibility:hidden; width:24px; height:14px; }
   .davg { position:absolute; left:0; right:0; border-top:1px dashed var(--warn); font-size:9px; color:var(--warn); padding-left:2px; }
   .footer { margin-top:12px; padding:12px 14px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
   .footer .src { font-size:12px; color:var(--fg3); }
@@ -289,7 +289,8 @@ function fmt2(v) {
       const showDay = i % step === 0 || i === allDates.length - 1;
       return `<div class="dcol" data-date="${d}" title="${d} ${fmt2(g.cal)} 卡">` +
              `<div class="dbar ${over ? 'over' : ''}${g.cal === 0 ? ' empty' : ''}" style="height:${h}px"></div>` +
-             (showDay ? `<div class="dday">${d.slice(5)}</div>` : `<div class="dday dday-blank"></div>`);
+             (showDay ? `<div class="dday">${d.slice(5)}</div>` : `<div class="dday dday-blank"></div>`) +
+             `</div>`;
     }).join('');
     chart.insertAdjacentHTML('beforeend',
       `<div class="davg" style="bottom:${Math.round(avgCal / maxV * 72)}px">日均</div>`);

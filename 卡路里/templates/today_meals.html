@@ -34,6 +34,8 @@
   tr:last-child td { border-bottom:none; }
   .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
   th.num, td.num { text-align:right; }
+  /* #44:with-note 模式隐藏碳水/脂肪列(权威清单:日期/餐别/食物/克数/热量/蛋白/备注) */
+  table.with-note th.opt, table.with-note td.opt { display:none; }
   .meal-tag { display:inline-block; padding:1px 8px; border-radius:6px; font-size:11px; font-weight:600; background:var(--soft); color:var(--fg2); }
   .meal-tag.breakfast { background:rgba(255,149,0,.12); color:var(--warn); }
   .meal-tag.lunch     { background:rgba(0,113,227,.12); color:var(--accent); }
@@ -159,9 +161,9 @@
     <label>查看日期:</label>
     <select id="dateFilter"></select>
   </div>
-  <div class="table-wrap"><table>
+  <div class="table-wrap"><table id="mealTbl">
     <thead>
-      <tr><th>时间</th><th>餐次</th><th>食物</th><th class="num">克数</th><th class="num">热量</th><th class="num">蛋白</th><th class="num">碳水</th><th class="num">脂肪</th><th>备注</th></tr>
+      <tr><th>时间</th><th>餐次</th><th>食物</th><th class="num">克数</th><th class="num">热量</th><th class="num">蛋白</th><th class="num opt">碳水</th><th class="num opt">脂肪</th><th>备注</th></tr>
     </thead>
     <tbody id="mealTable"></tbody>
   </table></div>
@@ -220,6 +222,10 @@ function fmt2(v) {
   }
   const { summary, items, meta } = D.data;
   const MEAL_LABELS = {breakfast:'早餐', lunch:'午餐', dinner:'晚餐', snack:'加餐'};
+  const isNote = !!summary.with_note;
+
+  // #44:with-note 模式按权威清单只显示 日期/餐别/食物/克数/热量/蛋白/备注
+  document.getElementById('mealTbl').classList.toggle('with-note', isNote);
 
   // #44:标题动态(本周饮食/最近 7 天饮食…)
   const h1 = document.querySelector('h1');

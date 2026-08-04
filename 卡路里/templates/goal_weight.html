@@ -87,8 +87,10 @@ function renderKpis(){
   if(D.deadline!=null)kpis.push({label:'截止',value:D.deadline,unit:''});
   if(D.est_deadline!=null)kpis.push({label:'推算截止',value:D.est_deadline,unit:''});
   if(D.suggested_rate!=null)kpis.push({label:'建议速率',value:D.suggested_rate,unit:'kg/周'});
-  if(D.start_date!=null)kpis.push({label:'起始日',value:D.start_date,unit:''});
-  if(D.start_weight!=null)kpis.push({label:'起点体重',value:D.start_weight,unit:'kg'});
+  // 2026-08-04 #52 去重:起点==当前(刚设定默认态)时隐藏起点/起始日,避免与当前体重重复;有进展后旅程卡自然出现
+  const showStart=D.start_weight!=null&&D.current_weight!=null&&Math.abs(D.start_weight-D.current_weight)>=0.1;
+  if(showStart&&D.start_date!=null)kpis.push({label:'起始日',value:D.start_date,unit:''});
+  if(showStart)kpis.push({label:'起点体重',value:D.start_weight,unit:'kg'});
   document.getElementById('kpis').innerHTML=kpis.map(k=>
     '<div class="kpi"><div class="label">'+k.label+'</div><div class="value">'+k.value+'<small> '+k.unit+'</small></div></div>').join('');
 }

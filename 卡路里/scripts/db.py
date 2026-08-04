@@ -76,6 +76,23 @@ def connection(db_path):
         conn.close()
 
 
+_migrated_paths = set()
+
+
+def apply_migrations(conn):
+    """幂等列迁移(2026-08-04 #52: 已有 DB 也保证新列,不只建库时)
+
+    对已打开的连接补 daily_goal 新列;PRAGMA 检查幂等,可重复调用。
+    """
+    c = conn.cursor()
+    cols = {r[1] for r in c.execute('PRAGMA table_info(daily_goal)')}
+    if 'start_weight' not in cols:
+        c.execute('ALTER TABLE daily_goal ADD COLUMN start_weight REAL')
+    if 'start_date' not in cols:
+        c.execute('ALTER TABLE daily_goal ADD COLUMN start_date TEXT')
+    conn.commit()
+
+
 def get_db(db_path):
     """获取数据库连接（兼容旧 API，调用方需自行 close）
 
@@ -83,6 +100,10 @@ def get_db(db_path):
     """
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
+    key = str(db_path)
+    if key not in _migrated_paths:
+        apply_migrations(conn)
+        _migrated_paths.add(key)
     return conn
 
 
@@ -123,6 +144,11 @@ def init_db(db_path):
             fat_goal INTEGER DEFAULT 60,
             weight_goal REAL,
             goal_deadline TEXT,
+            water_goal INTEGER DEFAULT 2000,
+            goal_paused INTEGER DEFAULT 0,
+            exercise_goal INTEGER,
+            start_weight REAL,
+            start_date TEXT,
             updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )
     ''')
@@ -247,6 +273,14 @@ def init_db(db_path):
         pass
     try:
         c.execute('ALTER TABLE daily_goal ADD COLUMN exercise_goal INTEGER')  # 2026-08-02 · ticket #5 运动:每日运动消耗目标(卡)
+    except Exception:
+        pass
+    try:
+        c.execute('ALTER TABLE daily_goal ADD COLUMN start_weight REAL')  # 2026-08-04 · #52:体重目标起点体重(设定时快照)
+    except Exception:
+        pass
+    try:
+        c.execute('ALTER TABLE daily_goal ADD COLUMN start_date TEXT')  # 2026-08-04 · #52:体重目标起点日期
     except Exception:
         pass
 

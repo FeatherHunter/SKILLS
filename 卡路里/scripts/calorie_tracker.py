@@ -527,11 +527,13 @@ def main():
             # ADR-0004 v2.5.5 · ticket 10: --weight-goal --deadline 标志位
             # v2.5.5 起不存 deprecation 库存:positional 参数立即拒绝,无 --legacy-positional 逃生口
             if "--help" in sys.argv[2:] or "-h" in sys.argv[2:]:
-                print("用法: weight-goal --weight-goal <kg> [--deadline <YYYY-MM-DD>]")
-                print("示例: weight-goal --weight-goal 73 --deadline 2026-12-31")
+                print("用法: weight-goal --weight-goal <kg> [--deadline <YYYY-MM-DD>] [--start-weight <kg>] [--start-date <YYYY-MM-DD>]")
+                print("示例: weight-goal --weight-goal 73 --deadline 2026-12-31 --start-weight 75 --start-date 2026-08-01")
                 sys.exit(0)
             kg = None
             deadline = None
+            start_weight = None
+            start_date = None
             i = 2
             while i < len(sys.argv):
                 arg = sys.argv[i]
@@ -545,11 +547,21 @@ def main():
                 elif arg == "--deadline" and i + 1 < len(sys.argv):
                     deadline = sys.argv[i + 1]
                     i += 2
+                elif arg == "--start-weight" and i + 1 < len(sys.argv):
+                    try:
+                        start_weight = float(sys.argv[i + 1])
+                    except ValueError:
+                        print(f"Error: --start-weight 需要数字,实得 '{sys.argv[i + 1]}'", file=sys.stderr)
+                        sys.exit(2)
+                    i += 2
+                elif arg == "--start-date" and i + 1 < len(sys.argv):
+                    start_date = sys.argv[i + 1]
+                    i += 2
                 elif not arg.startswith("--"):
                     # v2.5.5 起,positional 立即拒绝(无 deprecation 库存)
                     print(
                         f"Error: 拒绝 positional 参数 '{arg}'。"
-                        f"请用 --weight-goal <kg> [--deadline <date>]"
+                        f"请用 --weight-goal <kg> [--deadline <date>] [--start-weight <kg>] [--start-date <date>]"
                         f"(v2.5.5 起不存 deprecation 库存,见 ADR-0004)。",
                         file=sys.stderr,
                     )
@@ -560,10 +572,11 @@ def main():
             if kg is None:
                 print(f"Error: 缺少 --weight-goal <kg>", file=sys.stderr)
                 sys.exit(1)
-            # SKILL §⚠️ #6 写库回执契约
-            receipt = weight_goal.set_weight_goal(kg, deadline)
+            # SKILL §⚠️ #6 写库回执契约(#52: 起点体重/日期,缺省 = 设定时最新体重 + 今日)
+            receipt = weight_goal.set_weight_goal(kg, deadline, start_weight, start_date)
             print(f"✓ 体重目标已设定:{receipt['weight_goal']} kg"
-                  + (f" | 目标日期:{receipt['deadline']}" if receipt['deadline'] else ""))
+                  + (f" | 目标日期:{receipt['deadline']}" if receipt['deadline'] else "")
+                  + (f" | 起点:{receipt['start_weight']}kg({receipt['start_date']})"))
             print(f"id={receipt['id']} | 日期 {receipt['updated_at']} | 影响 {receipt['rows_affected']} 行")
 
         elif command == "weight-goal-progress":

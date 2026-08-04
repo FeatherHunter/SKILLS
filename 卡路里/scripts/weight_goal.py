@@ -9,7 +9,7 @@
 """
 
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 from db import find_db_path, get_db, init_db
@@ -29,29 +29,36 @@ def _get_db():
     return get_db(DB_PATH)
 
 
-def set_weight_goal(weight_goal, deadline=None):
+def set_weight_goal(weight_goal, deadline=None, start_weight=None, start_date=None):
     """设置体重目标
 
     Args:
         weight_goal: 目标体重（kg）
         deadline: 目标日期（YYYY-MM-DD），可选
+        start_weight: 起点体重（kg，2026-08-04 #52）。缺省 = 设定时最新体重快照
+        start_date: 起点日期（YYYY-MM-DD）。缺省 = 今日
 
     Returns:
         dict 含 id / updated_at / rows_affected,供 CLI 写回执契约(SKILL §⚠️ #6)
     """
     conn = _get_db()
     c = conn.cursor()
+    if start_weight is None:
+        row_w = c.execute('SELECT weight_kg FROM weight_log ORDER BY date DESC LIMIT 1').fetchone()
+        start_weight = row_w[0] if row_w else weight_goal
+    if start_date is None:
+        start_date = date.today().isoformat()
     c.execute('''
         UPDATE daily_goal
-        SET weight_goal = ?, goal_deadline = ?, updated_at = CURRENT_TIMESTAMP
+        SET weight_goal = ?, goal_deadline = ?, start_weight = ?, start_date = ?, updated_at = CURRENT_TIMESTAMP
         WHERE id = 1
-    ''', (weight_goal, deadline))
+    ''', (weight_goal, deadline, start_weight, start_date))
     rows_affected = c.rowcount
     if rows_affected == 0:
         c.execute('''
-            INSERT INTO daily_goal (id, weight_goal, goal_deadline)
-            VALUES (1, ?, ?)
-        ''', (weight_goal, deadline))
+            INSERT INTO daily_goal (id, weight_goal, goal_deadline, start_weight, start_date)
+            VALUES (1, ?, ?, ?, ?)
+        ''', (weight_goal, deadline, start_weight, start_date))
         rows_affected = c.rowcount
     conn.commit()
     c.execute("SELECT id, updated_at FROM daily_goal WHERE id = 1")
@@ -63,6 +70,8 @@ def set_weight_goal(weight_goal, deadline=None):
         "rows_affected": rows_affected,
         "weight_goal": weight_goal,
         "deadline": deadline,
+        "start_weight": start_weight,
+        "start_date": start_date,
     }
 
 

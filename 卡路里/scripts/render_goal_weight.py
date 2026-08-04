@@ -44,10 +44,20 @@ def build_data(mode='basic'):
     wg = get_weight_goal()
     current_goal = wg[0] if wg else None
     deadline = wg[1] if wg else None
+    # #52 2026-08-04:起点体重/日期(设定时快照),回执页展示「起点行」
+    from db import find_db_path, get_db
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    sw = conn.execute('SELECT start_weight, start_date FROM daily_goal WHERE id = 1').fetchone()
+    conn.close()
+    start_weight = sw[0] if sw and sw[0] is not None else None
+    start_date = sw[1] if sw and sw[1] else None
     data = {
         'current_weight': round(current, 1) if current else None,
         'target_weight': current_goal,
         'deadline': deadline,
+        'start_weight': start_weight,
+        'start_date': start_date,
     }
 
     if mode == 'basic':

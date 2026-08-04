@@ -466,16 +466,20 @@ def build_mode_weight_progress(goal):
         })
         return empty
     d = ms['data']
-    # 完成% = 已减 / 总需减(起点 = 最早一次体重)
+    # 完成% = 已减 / 总需减(起点 = daily_goal.start_weight 设定时快照 · #52 2026-08-04;缺失兜底 = 最早一次体重记录)
     from db import find_db_path, get_db
     db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
     conn = get_db(db_path)
-    start = conn.execute('SELECT weight_kg FROM weight_log ORDER BY date ASC LIMIT 1').fetchone()
+    sw = conn.execute('SELECT start_weight FROM daily_goal WHERE id = 1').fetchone()
+    start_w = sw[0] if sw and sw[0] is not None else None
+    if start_w is None:
+        start = conn.execute('SELECT weight_kg FROM weight_log ORDER BY date ASC LIMIT 1').fetchone()
+        start_w = start[0] if start else None
     conn.close()
     pct = None
-    if start and d['weight_goal'] is not None and d['current_weight'] is not None:
-        total = start[0] - d['weight_goal']
-        done = start[0] - d['current_weight']
+    if start_w is not None and d['weight_goal'] is not None and d['current_weight'] is not None:
+        total = start_w - d['weight_goal']
+        done = start_w - d['current_weight']
         if total != 0:
             pct = round(done / total * 100, 1)
     rate = d.get('calorie_adjustment')
@@ -495,6 +499,7 @@ def build_mode_weight_progress(goal):
         'itemsTitle': '预测与建议',
         'itemsHint': '按当前趋势推算',
         'items': [
+            {'label': '目标起点', 'unit': 'kg', 'goal': None, 'actual': start_w, 'pct': None},
             {'label': '剩余天数', 'unit': '', 'goal': None, 'actual': d.get('est_days'), 'pct': None},
             {'label': '预计达成', 'unit': '', 'goal': None, 'actual': d.get('est_date'), 'pct': None},
             {'label': '建议速率', 'unit': '', 'goal': None, 'actual': rate_text, 'pct': None},

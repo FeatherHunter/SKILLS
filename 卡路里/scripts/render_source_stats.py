@@ -19,7 +19,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa
 
 
-def build_data():
+def build_data(chain=None):
     import product_library
     rows, total = product_library.source_stats()
     items = [{'source': src or '未知', 'count': cnt} for src, cnt in rows]
@@ -31,7 +31,7 @@ def build_data():
         'data': {
             'summary': {'total': total, 'sources': len(items)},
             'items': items,
-            'meta': {'today': datetime.now().strftime('%Y-%m-%d %H:%M:%S')},
+            'meta': {'today': datetime.now().strftime('%Y-%m-%d %H:%M:%S'), 'chain': chain},
         },
         'message': f'食品来源统计 {len(items)} 个来源 / {total} 条',
     }
@@ -48,9 +48,10 @@ def render_html(data):
 def main():
     p = argparse.ArgumentParser(description='渲染食品来源统计 HTML(结果型)')
     p.add_argument('--output')
+    p.add_argument('--chain', help='AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)')
     args = p.parse_args()
     try:
-        data = build_data()
+        data = build_data(getattr(args, 'chain', None))
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

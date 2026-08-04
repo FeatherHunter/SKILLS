@@ -121,6 +121,7 @@ def main() -> int:
     parser.add_argument("--query", help="查询关键词")
     parser.add_argument("--category", help="按分类查询(查食品(按分类) · ticket #3)")
     parser.add_argument("--output", help="输出 HTML 路径(默认 calorie_html/查热量_<TS>.html)")
+    parser.add_argument("--chain", help="AI 思考链注入(meta.chain,不进 UI;复制日志可带出 · R3)")
     args = parser.parse_args()
 
     if args.category:

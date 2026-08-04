@@ -57,14 +57,16 @@
   .bar-day.today { color:var(--accent); font-weight:700; }
   .bar-axis  { margin-top:8px; height:1px; background:var(--border); }
   /* Footer */
-  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px;
+  .footer { margin-top:12px; padding:12px 14px; background:var(--soft); border-radius:12px;
             display:flex; justify-content:space-between; align-items:center; }
   .footer .src { font-size:12px; color:var(--fg3); }
+  .footer .btn-group { display:flex; gap:6px; }  /* #44:桌面两按钮贴合 */
   .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px;
-         cursor:pointer; font-size:12px; color:var(--fg); }
+         cursor:pointer; font-size:12px; color:var(--fg); white-space:nowrap; }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.copied { background:var(--good); color:#fff; border-color:var(--good); }
   @media (max-width: 640px) {
-    body { padding:24px 16px 60px; }
+    body { padding:24px 16px 40px; }  /* #44:底部空白减半 */
     .hero { flex-direction:column; gap:18px; }
     .ring-wrap { width:180px; height:180px; }
     .ring-center .num { font-size:36px; }
@@ -72,6 +74,12 @@
     .bar-chart { gap:4px; }
     .bar-col { font-size:10px; }
     .bar-val, .bar-day { font-size:10px; }
+    /* #44:复制按钮手机有间距且不换行 */
+    .footer { flex-direction:column; align-items:stretch; gap:8px; }
+    .footer .btn-group { justify-content:space-between; }
+    .footer .btn-group .btn { flex:1; margin:0 4px; }
+    .footer .btn-group .btn:first-child { margin-left:0; }
+    .footer .btn-group .btn:last-child { margin-right:0; }
   }
 </style>
 </head>
@@ -122,10 +130,43 @@
 
 <div class="footer">
   <div class="src" id="srcLine">📊 数据来源:--</div>
-  <button class="btn" id="copyBtn">📋 复制数据</button> <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  <div class="btn-group">
+    <button class="btn" id="copyBtn">📋 复制数据</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  </div>
 </div>
 
 <script>
+// #44:复制工具全局函数(两个 IIFE 共用 · toast/fallback 必须在同一作用域可见)
+let toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('copyToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'copyToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+function flashCopied(btn) { btn.classList.add('copied'); setTimeout(() => btn.classList.remove('copied'), 2000); }
+function fallbackCopyText(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+function doCopyText(txt, btn, okMsg) {
+  const done = () => { flashCopied(btn); showToast(okMsg); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(done).catch(() => { fallbackCopyText(txt); done(); });
+  } else { fallbackCopyText(txt); done(); }
+}
+
 (function(){
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') {
@@ -204,15 +245,16 @@
       `<span style="color:var(--fg2)">${c.time}</span><span style="font-weight:600">${c.ml} ml</span></div>`
     ).join('');
   }
+  // #44:复制反馈统一——文字不变,绿闪 + toast(fallback 兜底,工具函数为全局)
   document.getElementById('copyBtn').onclick = function() {
+    // #44:复制数据含每杯明细
+    const cupsTxt = (summary.cups || []).map(c => `  ${c.time} ${c.ml} ml`).join('\n');
     const r = `今日饮水 ${meta.date}\n` +
               `${todayMl} / ${targetMl} ml · ${pct}%\n` +
               `本周: ${wkMl.join(' / ')} ml\n` +
-              `日期: ${wkDate.join(' / ')}`;
-    navigator.clipboard.writeText(r).then(() => {
-      this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制数据', 2000);
-    });
+              `日期: ${wkDate.join(' / ')}\n` +
+              `每杯:\n${cupsTxt}`;
+    doCopyText(r, this, '饮水数据复制成功 ✓');
   };
 })();
 
@@ -234,16 +276,15 @@
       lines.push('原始数据:');
       lines.push(JSON.stringify(D0, null, 2));
       const txt = lines.join('\n');
-      const done = function () { logBtn.textContent = '✅ 已复制'; setTimeout(function () { logBtn.textContent = '📋 复制日志'; }, 2000); };
+      // #44:文字不变,绿闪 + toast(showToast 为全局函数)
+      const done = function () {
+        logBtn.classList.add('copied');
+        setTimeout(function () { logBtn.classList.remove('copied'); }, 2000);
+        showToast('排障日志已复制 ✓');
+      };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(done);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); done(); } catch (e) {}
-        document.body.removeChild(ta);
-      }
+        navigator.clipboard.writeText(txt).then(done).catch(function () { fallbackCopyText(txt); done(); });
+      } else { fallbackCopyText(txt); done(); }
     };
   })();
 </script>

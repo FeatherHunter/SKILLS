@@ -29,6 +29,13 @@
   tr:last-child td { border-bottom:none; }
   .num { font-variant-numeric:tabular-nums; text-align:right; font-weight:600; }
   .dist-wrap { display:flex; align-items:center; gap:24px; }
+  /* #44:饼图(权威清单 D8.5 · conic-gradient 环形) */
+  .dist-pie { width:150px; height:150px; border-radius:50%; flex-shrink:0; position:relative;
+    background:conic-gradient(#86868b 0 100%); }
+  .dist-pie::after { content:''; position:absolute; inset:34px; border-radius:50%; background:var(--card); }
+  .dist-pie-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:1; }
+  .dist-pie-center .big { font-size:17px; font-weight:700; }
+  .dist-pie-center .small { font-size:10px; color:var(--fg3); }
   .dist-list { flex:1; }
   .dist-row { display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid var(--border); font-size:13px; }
   .dist-row:last-child { border-bottom:none; }
@@ -72,6 +79,7 @@
 <div class="section" id="distSection" style="display:none">
   <h2>餐别热量占比</h2>
   <div class="dist-wrap">
+    <div class="dist-pie" id="distPie"><div class="dist-pie-center"><div class="big" id="pieBig">--</div><div class="small">最高占比</div></div></div>
     <div class="dist-list" id="distList"></div>
   </div>
 </div>
@@ -111,13 +119,25 @@
     document.getElementById('kAvg').textContent = summary.avg + ' 卡';
   }
 
-  if (view === 'all' && dist.length) {
+    if (view === 'all' && dist.length) {
     document.getElementById('distSection').style.display = 'block';
+    // #44:饼图(权威清单 D8.5 · conic-gradient 分段)
+    const COLORS = ['#0071e3', '#34c759', '#ff9500', '#5856d6'];
+    let acc = 0;
+    const segs = dist.map((x, i) => {
+      const from = acc;
+      acc += x.pct;
+      return `${COLORS[i % 4]} ${from}% ${acc}%`;
+    });
+    document.getElementById('distPie').style.background = `conic-gradient(${segs.join(', ')})`;
+    const top = dist.reduce((a, b) => (b.pct > a.pct ? b : a), dist[0]);
+    document.getElementById('pieBig').textContent = top.label + ' ' + top.pct + '%';
     const list = document.getElementById('distList');
-    dist.forEach(x => {
+    dist.forEach((x, i) => {
       list.insertAdjacentHTML('beforeend',
         `<div class="dist-row">
-           <span class="dist-label">${x.label}</span>
+           <span class="dist-label">
+${x.label}</span>
            <div class="dist-track"><div class="dist-fill" style="width:${Math.max(x.pct, 1)}%"></div></div>
            <span class="dist-num">${x.count} 餐 · ${x.cal} 卡 · ${x.pct}%</span>
          </div>`);

@@ -29,7 +29,7 @@
   .fill { height:100%; border-radius:5px; }
   .fill.ok { background:var(--good); }
   .fill.over { background:var(--bad); }
-  .hint { font-size:12px; color:var(--fg3); margin-top:6px; }
+  .hint { font-size:12px; color:var(--fg3); margin-bottom:4px; }  /* #44:推荐标注在 bar 上方 */
   .warn-box { background:rgba(255,149,0,.1); border:1px solid rgba(255,149,0,.3); border-radius:10px; padding:10px 14px; font-size:12px; color:#b36b00; margin-top:14px; }
   .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
   .footer .src { font-size:12px; color:var(--fg3); }
@@ -114,8 +114,8 @@ function fallbackCopyText(txt) {
            <span class="name">${it.label}</span>
            <span class="val"><b>${it.value.toLocaleString()}</b> ${it.unit} · 日均 ${it.avg} ${it.unit}/天 · 推荐 ${it.target} ${it.unit}/天 · <b>${it.pct}%</b></span>
          </div>
-         <div class="track"><div class="fill ${it.status}" style="width:${Math.min(it.pct, 100)}%"></div></div>
          <div class="hint">${it.good}</div>
+         <div class="track"><div class="fill ${it.status}" style="width:${Math.min(it.pct, 100)}%"></div></div>
        </div>`);
   });
 

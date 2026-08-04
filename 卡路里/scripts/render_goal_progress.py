@@ -622,10 +622,14 @@ def main():
         from goal_manager import get_paused_state
         ps = get_paused_state()
         if ps and ps.get('paused'):
+            at = ps.get('paused_at') or '?'
             data['paused_banner'] = {
-                'paused_at': ps.get('paused_at'),
-                'text': f"⏸️ 目标已暂停({ps.get('paused_at') or '?'}) · 记录照常 · 说「重启所有目标」恢复",
+                'paused_at': at,
+                'title': '目标已暂停',
+                'sub': f'暂停于 {at} · 记录照常 · 说「重启所有目标」恢复',
             }
+            # 2026-08-04 对抗审查:暂停态考核评语(「最需补」)与横幅语义冲突 → 中性 summary
+            data['paused_summary'] = '暂停期间不考核 · 记录照常 · 说「重启所有目标」恢复'
         # R1 视图分离:meta 不进 UI(复制日志带出)
         data['meta'] = build_meta(
             wake_word=scene_name,

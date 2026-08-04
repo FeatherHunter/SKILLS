@@ -528,6 +528,9 @@ footer{
   .section{padding:18px 20px}
   .log-row{grid-template-columns: 44px 1fr auto;gap:8px}
   .log-row .cal-nutri{display:none}
+  .paused-banner{justify-content:flex-start;align-items:flex-end}
+  .paused-banner .paused-sub{flex-basis:100%;order:3;color:var(--accent);font-weight:600}
+  .paused-banner .btn-restart{order:4;margin:0 auto}
 }
 
 /* ====== SECTION 视图卡片(ticket #2 · 2026-08-02) ====== */
@@ -567,13 +570,27 @@ footer{
   margin-top:14px;padding:12px 16px;border-radius:var(--r);
   background:var(--accent-soft);color:var(--accent);font-size:14px;font-weight:600;
 }
-/* 2026-08-04 #66:暂停横幅(仅提示,数据照常) */
+/* 2026-08-04 #66:暂停横幅(仅提示,数据照常) + 重启复制按钮(右对齐小胶囊) */
 .paused-banner{
-  display:flex;align-items:center;gap:8px;background:var(--accent-soft);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--accent-soft);
   border:1px solid rgba(0,122,255,.25);border-radius:var(--r);
   padding:12px 16px;font-size:13px;font-weight:600;color:var(--accent);
   margin-bottom:12px;line-height:1.5;
 }
+/* 2026-08-04 #66:暂停横幅 — 信息分层卡(图标+粗标题+细副文+动作按钮) */
+.paused-banner{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--accent-soft);
+  border:1px solid rgba(0,122,255,.25);border-radius:var(--r);
+  padding:14px 16px;font-size:13px;font-weight:600;color:var(--accent);
+  margin-bottom:12px;line-height:1.5;
+}
+.paused-banner .paused-icon{font-size:20px;flex-shrink:0}
+.paused-banner .paused-title{font-size:14px;font-weight:700;color:var(--accent);flex-shrink:0}
+.paused-banner .paused-sub{flex:1 1 auto;min-width:0;font-size:12px;font-weight:600;color:var(--accent)}
+.paused-banner .btn-restart{display:inline-flex;align-items:center;justify-content:center;gap:5px;min-height:32px;padding:4px 14px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:var(--accent);color:#fff;font-family:inherit;transition:opacity .15s;flex-shrink:0;white-space:nowrap}
+.paused-banner .btn-restart:hover{opacity:.85}
+.paused-banner .btn-restart.copied{background:var(--green)!important}
+@media (min-width:641px){.paused-banner{flex-wrap:nowrap}.paused-banner .paused-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 .streak-num{font-size:44px;font-weight:800;letter-spacing:-.03em;color:var(--accent)}
 .budget-remaining{font-size:30px;font-weight:800;letter-spacing:-.02em}
 .budget-remaining.pos{color:var(--green)}
@@ -772,15 +789,18 @@ function renderSection(view, date) {
       : (x.goal_diff != null ? (x.goal_diff <= 0 ? `距目标还差 ${Math.abs(x.goal_diff).toFixed(1)} kg` : `已超出目标 ${x.goal_diff.toFixed(1)} kg`) : '未设体重目标');
   } else if (view === 'goals') {
     const x = d.goals || {};
-    // 2026-08-04 #66:暂停横幅(仅提示,数据照常)
+    // 2026-08-04 #66:暂停横幅(仅提示,数据照常) + 重启复制按钮
     const banner = x.paused
-      ? '<div class="paused-banner">' + x.paused.text + '</div>'
+      ? '<div class="paused-banner"><span class="paused-icon">⏸️</span>' +
+        '<span class="paused-title">' + (x.paused.title || '目标已暂停') + '</span>' +
+        '<span class="paused-sub">' + (x.paused.sub || '') + '</span>' +
+        '<button class="btn-restart" id="btnRestart" onclick="copyRestart()">🔄 重启所有目标</button></div>'
       : '';
     const items = (x.items || []).map(it =>
       card(it.label, it.actual != null ? fmtInt(it.actual) : '—', it.unit,
            it.goal != null ? `目标 ${fmtInt(it.goal)}${it.unit || ''}` : '未设', it.pct)).join('');
     document.getElementById('goalsView').innerHTML = banner + items;
-    summary.textContent = x.summary || '未设营养目标';
+    summary.textContent = (x.paused_summary || x.summary || '未设营养目标');
   } else if (view === 'streak') {
     const x = d.streak || {};
     document.getElementById('streakView').innerHTML = `
@@ -1044,6 +1064,13 @@ function render() {
       navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
     } else { fallbackCopy(text); after(); }
   }
+  // 2026-08-04 #66:暂停横幅「重启所有目标」按钮 — 无歧义指令(直接执行,不追问)
+  window.copyRestart = function () {
+    const x = (DATA && DATA.data && DATA.data.goals) || {};
+    const at = x.paused ? ('(暂停于 ' + (x.paused.paused_at || '?') + ')') : '';
+    const text = '我已确认重启所有目标' + at + ',请按「重启所有目标」流程恢复全部目标考核。直接执行写库,无需向我确认。完成后给 1 句话总结。';
+    copyText(text, document.getElementById('btnRestart'), '✓ 重启指令已复制');
+  };
   function buildDataText() {
     const d = (DATA && DATA.data) || {};
     const meta = d.meta || {};

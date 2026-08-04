@@ -25,11 +25,17 @@
   .row .name { font-size:14px; font-weight:600; }
   .row .val { font-size:14px; color:var(--fg2); font-variant-numeric:tabular-nums; }
   .row .val b { color:var(--fg); font-size:16px; }
-  .track { height:10px; background:var(--soft); border-radius:5px; overflow:hidden; }
+  .bar-line .track { flex:1; height:10px; background:var(--soft); border-radius:5px; overflow:hidden; }
   .fill { height:100%; border-radius:5px; }
   .fill.ok { background:var(--good); }
   .fill.over { background:var(--bad); }
   .hint { font-size:12px; color:var(--fg3); margin-bottom:4px; }  /* #44:推荐标注在 bar 上方 */
+  /* #44:bar 与百分比同行(百分比右侧固定 · 清晰分层) */
+  .bar-line { display:flex; align-items:center; gap:10px; }
+  .bar-line .track { flex:1; }
+  .bar-line .pct { font-size:13px; font-weight:700; font-variant-numeric:tabular-nums; width:52px; text-align:right; }
+  .pct.ok { color:var(--good); }
+  .pct.over { color:var(--bad); }
   .warn-box { background:rgba(255,149,0,.1); border:1px solid rgba(255,149,0,.3); border-radius:10px; padding:10px 14px; font-size:12px; color:#b36b00; margin-top:14px; }
   .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
   .footer .src { font-size:12px; color:var(--fg3); }
@@ -107,15 +113,18 @@ function fallbackCopyText(txt) {
 
   const rows = document.getElementById('rows');
   items.forEach(it => {
-    // #44:日均 vs 每日推荐口径(累计/日推荐 无意义);手机不换行
+    // #44:清晰分层——名称 / 数值(累计·日均)/ 推荐 / bar+百分比(百分比在 bar 右侧)
     rows.insertAdjacentHTML('beforeend',
       `<div class="row">
          <div class="head">
            <span class="name">${it.label}</span>
-           <span class="val"><b>${it.value.toLocaleString()}</b> ${it.unit} · 日均 ${it.avg} ${it.unit}/天 · 推荐 ${it.target} ${it.unit}/天 · <b>${it.pct}%</b></span>
+           <span class="val"><b>${it.value.toLocaleString()}</b> ${it.unit} · 日均 <b>${it.avg}</b> ${it.unit}/天</span>
          </div>
-         <div class="hint">${it.good}</div>
-         <div class="track"><div class="fill ${it.status}" style="width:${Math.min(it.pct, 100)}%"></div></div>
+         <div class="hint">推荐 ${it.good}</div>
+         <div class="bar-line">
+           <div class="track"><div class="fill ${it.status}" style="width:${Math.min(it.pct, 100)}%"></div></div>
+           <span class="pct ${it.status}">${it.pct}%</span>
+         </div>
        </div>`);
   });
 

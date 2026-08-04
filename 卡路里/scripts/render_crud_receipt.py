@@ -315,8 +315,18 @@ def build_live_weight_update(target_id=None, target_date=None, weight_kg=None, n
     old_record = {'date': first['date'], 'time': first['time'],
                   'weight_kg': first['weight_kg'], 'bmi': first['bmi'], 'note': first['note']}
     new_record = {'date': target_date, 'weight_kg': r['new_weight'] or first['weight_kg'],
-                  'bmi': r['bmi'], 'note': r['note'] if r['note'] is not None else first['note']}
-    summary = f"已修改 {target_date} 的 {r['hit_count']} 条记录:体重 {first['weight_kg']}→{r['new_weight']}kg"
+                  'bmi': r['bmi'] if r['bmi'] is not None else first['bmi'],
+                  'note': r['note'] if r['note'] is not None else first['note']}
+    # 2026-08-04 · ticket #43 场景 7 终审:备注-only 更新不再出现 "体重 X→Nonekg"(仅改体重才带体重段,
+    # 备注变更补旧值,与改体重记录(按 ID)路径同款格式)
+    summary = f"已修改 {target_date} 的 {r['hit_count']} 条记录"
+    segments = []
+    if r['new_weight'] is not None:
+        segments.append(f"体重 {first['weight_kg']}→{r['new_weight']}kg")
+    if r['note'] is not None:
+        segments.append(f"备注 {first['note'] or '(无)'}→{r['note']}")
+    if segments:
+        summary += ":" + ", ".join(segments)
     if r['bmi']:
         summary += f";BMI {r['bmi']}"
     return {

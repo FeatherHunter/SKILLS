@@ -69,12 +69,26 @@ def build_data(start, end):
 
     daily = [{'date': d, 'cal': round(v[0], 1), 'pro': round(v[1], 1)}
              for d, v in sorted(by_day.items())]
+    # #44 审查(趋势完整窗口):无记录天 0 值占位(模板渲染空柱)
+    _full = []
+    _d = date.fromisoformat(start)
+    _end_d = date.fromisoformat(end)
+    from datetime import timedelta as _td
+    while _d <= _end_d:
+        _iso = _d.isoformat()
+        _full.append({'date': _iso, 'cal': next((x['cal'] for x in daily if x['date'] == _iso), 0),
+                      'pro': next((x['pro'] for x in daily if x['date'] == _iso), 0)})
+        _d += _td(days=1)
+    daily = _full
 
     # 一句话(基于数据)
     if not by_day:
         one_line = '该时间段没有饮食记录'
     else:
-        trend = '波动' if len(daily) < 3 else ('上升' if daily[-1]['cal'] > daily[0]['cal'] * 1.1 else '下降' if daily[-1]['cal'] < daily[0]['cal'] * 0.9 else '平稳')
+        _data_days = sum(1 for d in daily if d['cal'] > 0)
+        trend = ('数据不足(仅 ' + str(_data_days) + ' 天有记录)' if _data_days < 3 else
+                 ('上升' if daily[-1]['cal'] > daily[0]['cal'] * 1.1 else
+                  '下降' if daily[-1]['cal'] < daily[0]['cal'] * 0.9 else '平稳'))
         one_line = (f'{days} 天内日均 {avg_cal} 卡,总蛋白 {total_pro}g;'
                     f'趋势{trend};高频食物 {top5[0]["food"]}({top5[0]["count"]} 次)' if top5 else
                     f'{days} 天内日均 {avg_cal} 卡,总蛋白 {total_pro}g,趋势{trend}')

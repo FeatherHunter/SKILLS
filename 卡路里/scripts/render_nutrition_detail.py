@@ -65,14 +65,17 @@ def build_data(start, end):
         totals['sugar'] += (sugar or 0) * scale
         matched += 1
 
+    days = max(1, (date.fromisoformat(end) - date.fromisoformat(start)).days + 1)
     items = []
     for key, spec in DRI.items():
         val = round(totals[key], 1)
         target = spec['target']
-        pct = round(val / target * 100, 1) if target else 0
+        # #44 审查(D5.4 口径):百分比 = 日均 vs 每日推荐(原累计/日推荐 无意义)
+        avg = round(val / days, 1)
+        pct = round(avg / target * 100, 1) if target else 0
         items.append({
             'key': key, 'label': spec['label'], 'unit': spec['unit'],
-            'value': val, 'target': target, 'pct': pct,
+            'value': val, 'avg': avg, 'target': target, 'pct': pct,
             'good': spec['good'], 'status': 'ok' if pct <= 100 else 'over',
         })
 

@@ -33,12 +33,20 @@
   .warn-box { background:rgba(255,149,0,.1); border:1px solid rgba(255,149,0,.3); border-radius:10px; padding:10px 14px; font-size:12px; color:#b36b00; margin-top:14px; }
   .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
   .footer .src { font-size:12px; color:var(--fg3); }
-  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .footer .btn-group { display:flex; gap:6px; }  /* #44:与全场景统一 */
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); white-space:nowrap; }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.copied { background:var(--good); color:#fff; border-color:var(--good); }
   @media (max-width:640px) {
-    body { padding:20px 14px 80px; }
+    body { padding:20px 14px 40px; }  /* #44:底部空白减半 */
     h1 { font-size:22px; }
     .card { padding:16px 18px; border-radius:12px; }
+    /* #44:手机按钮纵向 + 均分不换行(与全场景统一) */
+    .footer { flex-direction:column; align-items:stretch; gap:8px; }
+    .footer .btn-group { justify-content:space-between; }
+    .footer .btn-group .btn { flex:1; margin:0 4px; min-height:44px; }
+    .footer .btn-group .btn:first-child { margin-left:0; }
+    .footer .btn-group .btn:last-child { margin-right:0; }
   }
 </style>
 </head>
@@ -57,10 +65,35 @@
 
 <div class="footer">
   <div class="src" id="srcLine">📊 数据来源:--</div>
-  <button class="btn" id="copyBtn">📋 复制数据</button> <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  <div class="btn-group">
+    <button class="btn" id="copyBtn">📋 复制数据</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  </div>
 </div>
 
 <script>
+// #44:复制工具全局函数(统一标准:文字不变 + 绿闪 + toast + .catch fallback)
+let toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('copyToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'copyToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+function fallbackCopyText(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
 (function(){
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') {
@@ -72,11 +105,12 @@
 
   const rows = document.getElementById('rows');
   items.forEach(it => {
+    // #44:日均 vs 每日推荐口径(累计/日推荐 无意义);手机不换行
     rows.insertAdjacentHTML('beforeend',
       `<div class="row">
          <div class="head">
            <span class="name">${it.label}</span>
-           <span class="val"><b>${it.value.toLocaleString()}</b> ${it.unit} / 推荐 ${it.target} ${it.unit} (${it.pct}%)</span>
+           <span class="val"><b>${it.value.toLocaleString()}</b> ${it.unit} · 日均 ${it.avg} ${it.unit}/天 · 推荐 ${it.target} ${it.unit}/天 · <b>${it.pct}%</b></span>
          </div>
          <div class="track"><div class="fill ${it.status}" style="width:${Math.min(it.pct, 100)}%"></div></div>
          <div class="hint">${it.good}</div>
@@ -91,15 +125,16 @@
 
   document.getElementById('srcLine').textContent = `📊 数据来源:food_log × nutrition_products(按食物名折算)`;
   document.getElementById('copyBtn').onclick = function() {
-    let r = `营养素深度 ${meta.start} ~ ${meta.end}\n`;
+    let r = `营养素深度 ${meta.start} ~ ${meta.end} (${summary.days} 天)\n`;
     items.forEach(it => {
-      r += `${it.label}: ${it.value}${it.unit} / 推荐 ${it.target}${it.unit} (${it.pct}%)\n`;
+      r += `${it.label}: 累计 ${it.value}${it.unit} · 日均 ${it.avg}${it.unit}/天 / 推荐 ${it.target}${it.unit}/天 (${it.pct}%)\n`;
     });
     if (summary.missing_foods.length) r += `缺数据: ${summary.missing_foods.join('、')}\n`;
-    navigator.clipboard.writeText(r).then(() => {
-      this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制数据', 2000);
-    });
+    // #44:统一标准——文字不变 + 绿闪 + toast + .catch fallback
+    const done = () => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); showToast('营养素深度数据复制成功 ✓'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(r).then(done).catch(() => { fallbackCopyText(r); done(); });
+    } else { fallbackCopyText(r); done(); }
   };
 })();
 
@@ -121,16 +156,15 @@
       lines.push('原始数据:');
       lines.push(JSON.stringify(D0, null, 2));
       const txt = lines.join('\n');
-      const done = function () { logBtn.textContent = '✅ 已复制'; setTimeout(function () { logBtn.textContent = '📋 复制日志'; }, 2000); };
+      // #44:统一标准——文字不变 + 绿闪 + toast + .catch fallback
+      const done = function () {
+        logBtn.classList.add('copied');
+        setTimeout(function () { logBtn.classList.remove('copied'); }, 2000);
+        showToast('排障日志已复制 ✓');
+      };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(done);
-      } else {
-        const ta = document.createElement('textarea');
-        ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); done(); } catch (e) {}
-        document.body.removeChild(ta);
-      }
+        navigator.clipboard.writeText(txt).then(done).catch(function () { fallbackCopyText(txt); done(); });
+      } else { fallbackCopyText(txt); done(); }
     };
   })();
 </script>

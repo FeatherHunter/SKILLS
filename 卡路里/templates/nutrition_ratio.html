@@ -129,7 +129,10 @@
   // 3 KPI
   function setKpi(id, v, t, color, cls) {
     document.getElementById(id).textContent = v + 'g';
-    document.getElementById(id + 'E').innerHTML = `${t}% · 目标 ${target[id.replace('k','').toLowerCase()+'_g']}g`;
+    // #44:键名映射修复——kProt → protein_g(原 replace 得 prot_g 为 undefined)
+    const keyMap = { kProt: 'protein_g', kCarb: 'carb_g', kFat: 'fat_g' };
+    const gKey = keyMap[id] || id.replace('k', '').toLowerCase() + '_g';
+    document.getElementById(id + 'E').innerHTML = `${t}% · 目标 ${target[gKey] ?? '—'}g`;
     document.getElementById(id + 'E').className = 'extra ' + cls;
   }
   setKpi('kProt', summary.protein_g, summary.protein_pct, 'prot', summary.protein_pct >= 10 ? 'good' : summary.protein_pct < 5 ? 'bad' : 'warn');

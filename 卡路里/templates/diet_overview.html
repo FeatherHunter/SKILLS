@@ -24,8 +24,8 @@
   .kpi { background:var(--soft); border-radius:12px; padding:12px 14px; }
   .kpi .label { font-size:11px; color:var(--fg2); margin-bottom:4px; }
   .kpi .value { font-size:20px; font-weight:700; }
-  .chart { height:70px; display:flex; align-items:flex-end; gap:3px; }
-  .chart .day { flex:1; background:var(--accent); opacity:.75; border-radius:3px 3px 0 0; min-height:2px; }
+  .chart { height:70px; display:flex; align-items:flex-end; gap:3px; justify-content:center; }
+  .chart .day { flex:1 1 0; max-width:48px; background:var(--accent); opacity:.75; border-radius:3px 3px 0 0; min-height:2px; }
   .chart .day.empty { background:var(--soft); opacity:1; min-height:1px; }
   .chart .day:hover { opacity:1; }
   .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }

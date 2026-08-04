@@ -63,7 +63,7 @@ table{
 thead{background:var(--accent-soft)}
 th{
   text-align:left;padding:12px 14px;font-size:12px;
-  font-weight:600;color:var(--fg);border-bottom:1px solid var(--border);
+  font-weight:600;color:var(--fg2);border-bottom:1px solid var(--border);
   text-transform:uppercase;letter-spacing:.5px;
 }
 td{
@@ -145,7 +145,29 @@ footer{
   .hero h1{font-size:22px}
   .tabs{gap:6px}
   .tab{padding:6px 12px;font-size:12px}
-  th,td{padding:8px 10px;font-size:13px}
+  /* #44:手机两段式卡片表格(6 列挤 320px 不可读 → 行1 排名/食物/总热量 · 行2 次数/均热量/营养结构) */
+  thead{display:none}
+  tbody tr{
+    display:grid;grid-template-columns:auto 1fr auto;
+    grid-template-areas:"a b c" "d e f";
+    gap:4px 10px;background:var(--card);
+    border:1px solid var(--border);border-radius:14px;
+    margin-bottom:10px;padding:10px 14px;
+    box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  tbody tr::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--accent)}
+  tbody tr.r1::before{background:#f5b301}
+  tbody tr.r2::before{background:#a8a8ad}
+  tbody tr.r3::before{background:#c77b3f}
+  tbody td{display:block;border:none;padding:0;font-size:12px;background:none}
+  tbody td:nth-child(1){grid-area:a}
+  tbody td:nth-child(2){grid-area:b;font-weight:600;font-size:14px;min-width:0;word-break:break-all}
+  tbody td:nth-child(3){grid-area:c;text-align:right;font-weight:700;font-size:14px}
+  tbody td:nth-child(4){grid-area:d;font-size:11px;color:var(--fg2)}
+  tbody td:nth-child(5){grid-area:e;font-size:11px;color:var(--fg2)}
+  tbody td:nth-child(6){grid-area:f;font-size:10px;color:var(--fg3);text-align:right;font-family:"SF Mono",monospace}
+  tbody tr:hover td{background:none}
+  tbody td .food-meta{display:none}
   /* #44:按钮触屏高度 + 复制区按钮自适应 */
   .copy-section .btn{min-height:44px;flex:1;justify-content:center}
   .copy-section .btn + .btn{margin-left:8px}
@@ -343,7 +365,14 @@ function init() {
   // #44:footer 去开发痕迹——只显示日期
   document.getElementById('pageFooter').textContent = '卡路里 · 食物排行榜 · ' + new Date().toISOString().slice(0, 10);
 
-  const firstCat = 'high_calorie';
+  // #44:只显示有数据的榜单 tab(单榜场景不显示无数据 tab)+ 首榜动态
+  const cats = Object.keys(DATA).filter(k => DATA[k] && Array.isArray(DATA[k].items) && DATA[k].items.length > 0);
+  document.querySelectorAll('#tabs .tab').forEach(t => {
+    const has = cats.includes(t.dataset.cat);
+    t.style.display = has ? '' : 'none';
+    if (t.classList.contains('active') && !has) t.classList.remove('active');
+  });
+  const firstCat = cats[0] || 'high_calorie';
   const firstData = DATA[firstCat] || {};
   document.getElementById('rangeStart').textContent = firstData.start || '—';
   document.getElementById('rangeEnd').textContent = firstData.end || '—';

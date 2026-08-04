@@ -57,8 +57,22 @@ def _aggregate(start, end):
         'total_carb': total_carb, 'total_fat': total_fat,
         'days': days, 'with_data_days': len(rows),
         'avg_cal': round(total_cal / max(1, days), 1),
-        'daily': [{'date': r[0], 'cal': r[1] or 0} for r in rows],
+        # #44 审查(D5.3 趋势小图):补全完整窗口——无记录天 0 值占位,趋势连续可见
+        'daily': _fill_daily(start, end, rows),
     }
+
+
+def _fill_daily(start, end, rows):
+    by = {r[0]: r[1] or 0 for r in rows}
+    from datetime import timedelta as _td
+    out = []
+    d = date.fromisoformat(start)
+    end_d = date.fromisoformat(end)
+    while d <= end_d:
+        iso = d.isoformat()
+        out.append({'date': iso, 'cal': by.get(iso, 0)})
+        d += _td(days=1)
+    return out
 
 
 def build_data():

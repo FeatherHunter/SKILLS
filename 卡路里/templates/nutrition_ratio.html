@@ -80,6 +80,10 @@
     .footer .btn-group .btn { flex:1; margin:0 4px; min-height:44px; }
     .footer .btn-group .btn:first-child { margin-left:0; }
     .footer .btn-group .btn:last-child { margin-right:0; }
+    /* #44:推荐范围表手机不换行(表头缩写 下限/上限/距范围 + nowrap 压缩) */
+    .section table { font-size:10px; }
+    .section th, .section td { padding:5px 3px; white-space:nowrap; }
+    .section td:first-child { white-space:normal; }
   }
   /* table 在小屏内滚 */
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -115,7 +119,7 @@
 <div class="section">
   <h2>推荐范围对比</h2>
   <div class="table-wrap"><table>
-    <thead><tr><th>营养素</th><th class="num">实际</th><th class="num">推荐下限</th><th class="num">推荐上限</th><th class="num">缺口</th><th>状态</th></tr></thead>
+    <thead><tr><th>营养素</th><th class="num">实际</th><th class="num">下限</th><th class="num">上限</th><th class="num">距范围</th><th>状态</th></tr></thead>
     <tbody id="table"></tbody>
   </table></div>
 </div>

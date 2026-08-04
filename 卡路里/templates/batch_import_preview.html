@@ -607,23 +607,34 @@ function copyAdopt() { doCopy(buildAdoptPrompt(), 'btnAdopt', '✓ 已采纳 · 
 function copyModify() { doCopy(buildModifyPrompt(), 'btnModify', '✓ 已复制修改指令'); }
 function copySkipFailed() { doCopy(buildSkipFailedPrompt(), 'btnSkipFailed', '✓ 已复制跳过指令'); }
 
-function doCopy(text, btnId, msg) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => flashCopied(btnId, msg));
-  } else {
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); flashCopied(btnId, msg); } catch(e) {}
-    document.body.removeChild(ta);
+// #44:复制统一标准——文字不变 + 绿闪 + toast + .catch fallback(用户拍板)
+let _toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('biToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'biToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;';
+    document.body.appendChild(t);
   }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
 }
-
-function flashCopied(btnId, msg) {
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+function doCopy(text, btnId, msg) {
   const btn = document.getElementById(btnId);
-  const orig = btn.textContent;
-  btn.textContent = msg;
-  btn.classList.add('copied');
-  setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2200);
+  const done = () => { btn.classList.add('copied'); setTimeout(() => btn.classList.remove('copied'), 2000); showToast(msg); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => { fallbackCopy(text); done(); });
+  } else { fallbackCopy(text); done(); }
 }
 
 render();

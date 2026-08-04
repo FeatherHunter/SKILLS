@@ -145,6 +145,8 @@ function fallbackCopyText(txt) {
       bar.className = 'day' + (has ? '' : ' empty');
       bar.style.height = h + 'px';
       bar.title = `${d.date} · ${d.cal} 卡`;
+      // #44:触屏无 hover —— 点击柱 toast 看数值(手机适配)
+      bar.onclick = () => showToast(`${d.date} · ${d.cal} 卡`);
       el.appendChild(bar);
     });
   }

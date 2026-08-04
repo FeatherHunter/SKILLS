@@ -74,7 +74,7 @@
 </div>
 
 <div class="section">
-  <h2>每日热量趋势</h2>
+  <h2 id="trendTitle">每日热量趋势</h2>
   <div class="chart-title">每日热量(卡)<span class="chart-hint">每根柱 = 一天 · 灰柱 = 无记录 · 悬停看数值</span></div>
   <div class="chart" id="chart"></div>
 </div>
@@ -157,7 +157,8 @@ function fallbackCopyText(txt) {
   const max = Math.max(...renderDays.map(d => d.cal), 1);
   // #44:图例随降采样动态(周聚合时标题/图例同步,避免「每日/一天」矛盾)
   const weeklyMode = allDays.length > 62;
-  document.querySelector('.chart-title').firstChild.textContent = weeklyMode ? '每周热量趋势' : '每日热量趋势';
+  document.getElementById('trendTitle').textContent = weeklyMode ? '每周热量趋势' : '每日热量趋势';
+  document.querySelector('.chart-title').firstChild.textContent = weeklyMode ? '每周热量(卡)' : '每日热量(卡)';
   document.querySelector('.chart-hint').textContent =
     weeklyMode ? '每根柱 = 一周(周聚合) · 灰柱 = 无记录 · 悬停看数值' : '每根柱 = 一天 · 灰柱 = 无记录 · 悬停看数值';
   renderDays.forEach(d => {

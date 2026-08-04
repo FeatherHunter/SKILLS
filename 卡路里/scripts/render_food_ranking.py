@@ -89,7 +89,9 @@ def main():
     try:
         data = {}
         for cat in cats:
-            data[cat] = fetch_one_ranking(cat, start, end, args.top_n)
+            # #44:拍平契约——模板读 DATA[cat].items(渲染器返回 {status, data:{...}} 嵌套)
+            res = fetch_one_ranking(cat, start, end, args.top_n)
+            data[cat] = res.get('data', res) if isinstance(res, dict) else res
         if args.chain:
             data['meta'] = {'chain': args.chain, 'start': start, 'end': end}
         html = render_html(data)

@@ -266,6 +266,11 @@ function renderCategory(catKey) {
     return;
   }
 
+  // #44:作用域修复——metricFn/calFn 提升到 renderCategory 作用域
+  // (原定义在 items.map 回调内,复制文本 forEach 引用不到 → ReferenceError)
+  const metricFn = METRIC_FIELDS[catKey] || ((x) => '');
+  const calFn = CALORIE_FIELDS[catKey] || ((x) => '');
+
   tbody.innerHTML = items.map((it, i) => {
     const rankCls = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : 'rx';
     // 营养结构
@@ -273,9 +278,6 @@ function renderCategory(catKey) {
     const pp = total > 0 ? Math.round(it.total_protein * 4 / total * 100) : 0;
     const cp = total > 0 ? Math.round(it.total_carbs * 4 / total * 100) : 0;
     const fp = total > 0 ? Math.round(it.total_fat * 9 / total * 100) : 0;
-
-    const metricFn = METRIC_FIELDS[catKey] || ((x) => '');
-    const calFn = CALORIE_FIELDS[catKey] || ((x) => '');
 
     return `
       <tr>

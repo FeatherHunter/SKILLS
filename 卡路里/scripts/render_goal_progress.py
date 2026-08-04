@@ -466,15 +466,14 @@ def build_mode_weight_progress(goal):
         })
         return empty
     d = ms['data']
-    # 完成% = 已减 / 总需减(起点 = daily_goal.start_weight 设定时快照 · #52 2026-08-04;缺失兜底 = 最早一次体重记录)
+    # 完成% = 已减 / 总需减(起点 = daily_goal.start_weight 设定时快照 · #52 2026-08-04)
+    # 2026-08-04 对抗式审核:起点缺失时**不再回退最早体重记录**(真实数据曾产出 377.5% 荒谬值,
+    # 最早记录与当前目标旅程无关)→ 完成% 显示「—」+ 起点行「未记录」,诚实呈现
     from db import find_db_path, get_db
     db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
     conn = get_db(db_path)
     sw = conn.execute('SELECT start_weight FROM daily_goal WHERE id = 1').fetchone()
     start_w = sw[0] if sw and sw[0] is not None else None
-    if start_w is None:
-        start = conn.execute('SELECT weight_kg FROM weight_log ORDER BY date ASC LIMIT 1').fetchone()
-        start_w = start[0] if start else None
     conn.close()
     pct = None
     if start_w is not None and d['weight_goal'] is not None and d['current_weight'] is not None:

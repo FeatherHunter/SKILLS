@@ -48,6 +48,7 @@
   .dcol { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; min-width:0; }
   .dbar { width:100%; max-width:22px; background:var(--accent); border-radius:3px 3px 0 0; opacity:.85; }
   .dbar.over { background:var(--bad); opacity:.9; }
+  .dbar.empty { background:var(--soft); opacity:1; }
   .dday { font-size:9px; color:var(--fg3); transform:rotate(-45deg); white-space:nowrap; }
   .davg { position:absolute; left:0; right:0; border-top:1px dashed var(--warn); font-size:9px; color:var(--warn); padding-left:2px; }
   .footer { margin-top:12px; padding:12px 14px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
@@ -265,15 +266,23 @@ function fmt2(v) {
     const dates = Object.keys(byDate).sort();
     const avgCal = summary.avg_calorie || 0;
 
-    // #44:每日热量迷你趋势图(30 天场景最有价值视图——波动一眼可见;超标红/正常蓝/日均虚线)
+    // #44:每日热量迷你趋势图——完整窗口(meta.start~meta.end)每天一柱,无记录天 0 高度
     const chart = document.getElementById('dailyChart');
-    const maxV = Math.max(...dates.map(d => byDate[d].cal), avgCal, 1);
-    chart.innerHTML = dates.map(d => {
-      const g = byDate[d];
-      const h = Math.max(2, Math.round(g.cal / maxV * 72));
+    const allDates = [];
+    {
+      const d0 = new Date(meta.start + 'T00:00:00');
+      const d1 = new Date(meta.end + 'T00:00:00');
+      for (let t = d0; t <= d1; t.setDate(t.getDate() + 1)) {
+        allDates.push(t.toISOString().slice(0, 10));
+      }
+    }
+    const maxV = Math.max(...allDates.map(d => (byDate[d] || {cal: 0}).cal), avgCal, 1);
+    chart.innerHTML = allDates.map(d => {
+      const g = byDate[d] || {cal: 0};
+      const h = g.cal > 0 ? Math.max(2, Math.round(g.cal / maxV * 72)) : 1;
       const over = g.cal > avgCal * 1.3;
       return `<div class="dcol" title="${d} ${fmt2(g.cal)} 卡">` +
-             `<div class="dbar ${over ? 'over' : ''}" style="height:${h}px"></div>` +
+             `<div class="dbar ${over ? 'over' : ''}${g.cal === 0 ? ' empty' : ''}" style="height:${h}px"></div>` +
              `<div class="dday">${d.slice(5)}</div></div>`;
     }).join('');
     chart.insertAdjacentHTML('beforeend',

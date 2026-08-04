@@ -848,7 +848,7 @@ TRIGGERS = [
     {
             'category': '饮食',     'wake_word': '看午餐（最近 7 天）',     'desc': '看午餐（最近 7 天）',
             'main_prompt': {
-        'cli': 'python scripts/render_meal_distribution.py --meal lunch --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看午餐（最近 7 天）」。\n\n我想看最近 7 天午餐的饮食:明细表 + 午餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_meal_distribution.py --meal breakfast --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看午餐（最近 7 天）」。\n\n我想看最近 7 天午餐的饮食:明细表 + 午餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'meal_dist_lunch', 'name': '看午餐（最近 7 天）', 'subfunction': '餐别分布', 'output_type': 'result',
@@ -858,7 +858,7 @@ TRIGGERS = [
     {
             'category': '饮食',     'wake_word': '看晚餐（最近 7 天）',     'desc': '看晚餐（最近 7 天）',
             'main_prompt': {
-        'cli': 'python scripts/render_meal_distribution.py --meal dinner --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看晚餐（最近 7 天）」。\n\n我想看最近 7 天晚餐的饮食:明细表 + 晚餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_meal_distribution.py --meal lunch --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看晚餐（最近 7 天）」。\n\n我想看最近 7 天晚餐的饮食:明细表 + 晚餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'meal_dist_dinner', 'name': '看晚餐（最近 7 天）', 'subfunction': '餐别分布', 'output_type': 'result',
@@ -868,7 +868,7 @@ TRIGGERS = [
     {
             'category': '饮食',     'wake_word': '看加餐（最近 7 天）',     'desc': '看加餐（最近 7 天）',
             'main_prompt': {
-        'cli': 'python scripts/render_meal_distribution.py --meal snack --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看加餐（最近 7 天）」。\n\n我想看最近 7 天加餐(下午茶+夜宵)的饮食:明细表 + 加餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_meal_distribution.py --meal dinner --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看加餐（最近 7 天）」。\n\n我想看最近 7 天加餐(下午茶+夜宵)的饮食:明细表 + 加餐日均 + 一句话结论。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'meal_dist_snack', 'name': '看加餐（最近 7 天）', 'subfunction': '餐别分布', 'output_type': 'result',
@@ -878,7 +878,7 @@ TRIGGERS = [
     {
             'category': '饮食',     'wake_word': '看全部餐别分布（最近 7 天）',     'desc': '看全部餐别分布（最近 7 天）',
             'main_prompt': {
-        'cli': 'python scripts/render_meal_distribution.py --meal all --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看全部餐别分布（最近 7 天）」。\n\n我想看最近 7 天各餐别(早餐/午餐/晚餐/加餐)的分布对比:明细表 + 各餐别热量占比 + 占比%。完成后给 1 句话总结,不需要过多文字解释。'},
+        'cli': 'python scripts/render_meal_distribution.py --meal snack --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「看全部餐别分布（最近 7 天）」。\n\n我想看最近 7 天各餐别(早餐/午餐/晚餐/加餐)的分布对比:明细表 + 各餐别热量占比 + 占比%。完成后给 1 句话总结,不需要过多文字解释。'},
         'fill_hints': [],
             'variants': [],
             'key': 'meal_dist_all', 'name': '看全部餐别分布（最近 7 天）', 'subfunction': '餐别分布', 'output_type': 'result',
@@ -889,7 +889,7 @@ TRIGGERS = [
     {
             'category': '体重',     'wake_word': '记体重',     'desc': '记录今天的体重',
             'main_prompt': {
-        'cli': 'python scripts/render_weight_receipt.py --live --kg <kg> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「记体重」。\n\n我刚称了体重,帮我记录今天的体重。记录后请给我看:体重值、记录时间、BMI、与上次体重的差距、与目标体重的差距。完成后给 1 句话总结,不需要过多文字解释。\n\n体重(kg):____'},
+        'cli': 'python scripts/render_meal_distribution.py --meal all --days 7 --chain "1.识别→2.读DB→3.渲染"', 'text': '请你加载技能 卡路里,执行唤醒词「记体重」。\n\n我刚称了体重,帮我记录今天的体重。记录后请给我看:体重值、记录时间、BMI、与上次体重的差距、与目标体重的差距。完成后给 1 句话总结,不需要过多文字解释。\n\n体重(kg):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'w_log', 'name': '记体重', 'subfunction': '量体重', 'output_type': 'receipt',

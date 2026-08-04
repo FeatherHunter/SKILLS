@@ -60,7 +60,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .weight-stat .value{font-size:20px;font-weight:700;font-feature-settings:"tnum"}
 footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;border-top:1px solid var(--lineS);margin-top:36px}
 #backTop{position:fixed;bottom:24px;right:24px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border:1px solid var(--line);color:var(--ink);text-decoration:none;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;box-shadow:var(--shadow)}
-@media(max-width:640px){.wrap{padding:20px 16px 60px}.hero{padding:24px 20px 20px}.hero h1{font-size:24px}.section,.copy-section{padding:18px 20px}.slider-row{grid-template-columns:1fr auto;grid-template-areas:"name value""bar bar";gap:8px 10px}.slider-row .name{grid-area:name}.slider-row .value{grid-area:value;text-align:right}.slider-row input[type="range"]{grid-area:bar}.weight-grid{grid-template-columns:1fr}.mini-row{grid-template-columns:1fr;gap:6px}.mini-num{text-align:left}}
+@media(max-width:640px){.wrap{padding:20px 16px 60px}.hero{padding:24px 20px 20px}.hero h1{font-size:24px}.section,.copy-section{padding:18px 20px}.section-title{flex-direction:column;align-items:flex-start;gap:4px}.slider-row{grid-template-columns:1fr auto;grid-template-areas:"name value""bar bar";gap:8px 10px}.slider-row .name{grid-area:name}.slider-row .value{grid-area:value;text-align:right}.slider-row input[type="range"]{grid-area:bar}.weight-grid{grid-template-columns:1fr}.mini-row{grid-template-columns:1fr;gap:6px}.mini-num{text-align:left}}
 </style>
 </head>
 <body>
@@ -133,9 +133,18 @@ const FIELDS=[
 ];
 const ACTIVE_FIELDS=WATER_ONLY?FIELDS.filter(f=>f.key==='water_goal'):FIELDS;
 const state={};
+// 比例锚定(2026-08-04 场景19 对抗审查定稿):拖热量全程用锚定比例,不用实时比例(避免漂移)
+// - 加载时:初始宏量非零 → 锚定为初始比例;全 0 → 默认 30/50/20
+// - 拖热量归零时:锚定归零前比例(归零后拖回比例保持)
+// - 手动从全 0 设非零宏量:锚定用户设定
+let savedRatio=null;
+let dragDir=0;
+function saveRatio(p,c,f){
+  const sum=(p||0)*4+(c||0)*4+(f||0)*9;
+  if(sum>=60)savedRatio={p:p*4/sum,c:c*4/sum,f:f*9/sum};
+}
 ACTIVE_FIELDS.forEach(f=>{state[f.key]=CURRENT[f.key]||f.min});
-// 2026-08-03 用户验收 #2:全 0 起手拖热量用默认比例 30/50/20;用户手动调过宏量后锁定当前比例
-let macroLocked=(state.protein_goal>0||state.carbs_goal>0||state.fat_goal>0);
+saveRatio(state.protein_goal||0,state.carbs_goal||0,state.fat_goal||0);
 function renderHeader(){
   document.getElementById('title').textContent=PAGE_TITLE;
   document.getElementById('subtitle').textContent=
@@ -153,11 +162,16 @@ function renderSliders(){
 }
 function onSlider(el){
   const key=el.dataset.key;
+  const prev=state[key];
   state[key]=parseInt(el.value,10);
+  dragDir=(state[key]<prev)?-1:((state[key]>prev)?1:0);
   if(key==='calorie_goal'){
     scaleMacros(state.calorie_goal);
   }else if(key!=='water_goal'){
-    if(state[key]>0)macroLocked=true;
+    const curSum=(state.protein_goal||0)+(state.carbs_goal||0)+(state.fat_goal||0);
+    if(state[key]>0&&curSum>0){
+      saveRatio(state.protein_goal||0,state.carbs_goal||0,state.fat_goal||0);
+    }
     recalcCalorie();
   }
   syncSliderValues();
@@ -165,7 +179,7 @@ function onSlider(el){
 }
 // 宏量联动 v2(2026-08-03 用户验收 #2 修复):
 // - 热量 slider:min 0 / max 4550(=宏量上限 4/4/9 能量和)/ step 5
-// - 拖热量 → 宏量按比例分配(全 0 起手 = 默认 30/50/20;用户调过宏量后 = 当前比例);
+// - 拖热量 → 宏量按锚定比例分配(全 0 起手 = 默认 30/50/20;有锚定 = 锚定比例);
 //   单个宏量封顶后剩余能量按比例重分配,总能量跟踪热量(偏差 ≤4 卡,无累积漂移)
 // - 拖宏量 → 热量按 4/4/9 精确重算(step 5 取整)
 function macroSum(){return ((state.protein_goal||0)*4)+((state.carbs_goal||0)*4)+((state.fat_goal||0)*9);}
@@ -176,11 +190,30 @@ function distributeMacros(newCal){
   const pMax=fieldMax('protein_goal'),cMax=fieldMax('carbs_goal'),fMax=fieldMax('fat_goal');
   const capP=pMax*4,capC=cMax*4,capF=fMax*9;
   const sumE=macroSum();
-  let shP,shC,shF;
-  if(macroLocked&&sumE>0){
-    shP=(state.protein_goal||0)*4/sumE;shC=(state.carbs_goal||0)*4/sumE;shF=(state.fat_goal||0)*9/sumE;
-  }else{shP=0.30;shC=0.50;shF=0.20;}
-  let dP=newCal*shP,dC=newCal*shC,dF=newCal*shF;
+  let dP,dC,dF;
+  // 满项锁定(2026-08-04 用户拍板):当前已在上限的宏量保持满值,剩余能量按锚定比例(未满项归一)分配
+  const pFull=state.protein_goal>=pMax, cFull=state.carbs_goal>=cMax, fFull=state.fat_goal>=fMax;
+  const lockedE=(pFull?capP:0)+(cFull?capC:0)+(fFull?capF:0);
+  if(savedRatio&&newCal>lockedE){
+    let shP=pFull?0:savedRatio.p, shC=cFull?0:savedRatio.c, shF=fFull?0:savedRatio.f;
+    const t=shP+shC+shF;
+    if(t>0){
+      shP/=t;shC/=t;shF/=t;
+    }else{
+      // 锚定比例全落在满项上(如手动设脂肪独占后脂肪已满)→ 未满项回退默认 1:1:1 分配
+      shP=pFull?0:4/17;shC=cFull?0:4/17;shF=fFull?0:9/17;
+      const t2=shP+shC+shF;
+      if(t2>0){shP/=t2;shC/=t2;shF/=t2;}
+    }
+    const budget=newCal-lockedE;
+    dP=pFull?capP:budget*shP;
+    dC=cFull?capC:budget*shC;
+    dF=fFull?capF:budget*shF;
+  }else if(savedRatio){
+    dP=newCal*savedRatio.p;dC=newCal*savedRatio.c;dF=newCal*savedRatio.f;
+  }else{
+    dP=newCal*4/17;dC=newCal*4/17;dF=newCal*9/17;
+  }
   let excess=0;
   if(dP>capP){excess+=dP-capP;dP=capP;}
   if(dC>capC){excess+=dC-capC;dC=capC;}
@@ -200,7 +233,10 @@ function distributeMacros(newCal){
   return roundGrams(dP/4,dC/4,dF/9,newCal);
 }
 function roundGrams(p,c,f,newCal){
-  let gP=Math.round(p),gC=Math.round(c),gF=Math.round(f);
+  // 2026-08-04 用户拍板:向左拖动(减少)用 floor 立即响应(满项不锁);向右用 round(满项保持)
+  let gP=dragDir<0?Math.floor(p):Math.round(p);
+  let gC=dragDir<0?Math.floor(c):Math.round(c);
+  let gF=dragDir<0?Math.floor(f):Math.round(f);
   const pMax=fieldMax('protein_goal'),cMax=fieldMax('carbs_goal'),fMax=fieldMax('fat_goal');
   for(let i=0;i<4;i++){
     const e=gP*4+gC*4+gF*9;
@@ -216,9 +252,9 @@ function roundGrams(p,c,f,newCal){
       if(opts[0].k==='p')gP++;else if(opts[0].k==='c')gC++;else gF++;
     }else{
       const opts=[];
-      if(gP>0)opts.push({k:'p',frac:p-Math.floor(p)});
-      if(gC>0)opts.push({k:'c',frac:c-Math.floor(c)});
-      if(gF>0)opts.push({k:'f',frac:f-Math.floor(f)});
+      if(gP>0&&gP<pMax)opts.push({k:'p',frac:p-Math.floor(p)});
+      if(gC>0&&gC<cMax)opts.push({k:'c',frac:c-Math.floor(c)});
+      if(gF>0&&gF<fMax)opts.push({k:'f',frac:f-Math.floor(f)});
       if(!opts.length)break;
       opts.sort((a,b)=>a.frac-b.frac);
       if(opts[0].k==='p')gP--;else if(opts[0].k==='c')gC--;else gF--;
@@ -227,6 +263,7 @@ function roundGrams(p,c,f,newCal){
   return [clampV(gP,0,pMax),clampV(gC,0,cMax),clampV(gF,0,fMax)];
 }
 function scaleMacros(newCal){
+  if(newCal===0)saveRatio(state.protein_goal||0,state.carbs_goal||0,state.fat_goal||0);
   const r=distributeMacros(newCal);
   state.protein_goal=r[0];
   state.carbs_goal=r[1];
@@ -244,6 +281,13 @@ function syncSliderValues(){
     input.value=state[f.key];
     const cell=input.parentElement.querySelector('.value');
     if(cell)cell.innerHTML=state[f.key]+'<span class="unit">'+f.unit+'</span>';
+  });
+  document.querySelectorAll('#diffRows .slider-row[data-key]').forEach(row=>{
+    const k=row.dataset.key;
+    if(k&&state[k]!=null){
+      const b=row.querySelector('b');
+      if(b)b.textContent=state[k];
+    }
   });
 }
 function updateMiniChart(){
@@ -292,9 +336,9 @@ function renderDiff(){
   document.getElementById('diffSection').style.display='block';
   const rows=DIFF.items.map(it=>{
     const oldV=it.old!=null?it.old:'未设';
-    const newV=it.new!=null?it.new:'未设';
+    const newV=(it.key&&state[it.key]!=null)?state[it.key]:(it.new!=null?it.new:'未设');
     const impact=it.impact?`<div class="mini-num" style="color:var(--ink2)">影响: ${it.impact}</div>`:'';
-    return `<div class="slider-row">
+    return `<div class="slider-row" data-key="${it.key||''}">
       <div class="name">${it.label}<span class="unit">${it.unit||''}</span></div>
       <div class="value" style="text-align:left;font-size:14px;color:var(--ink3)">${oldV} → <b style="color:var(--ink)">${newV}</b></div>
       <div></div>

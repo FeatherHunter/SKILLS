@@ -99,7 +99,7 @@ def build_live_data(water_only=False, modify_nutrition=False, modify_water=False
                                                      'carbs_goal', 'fat_goal', 'water_goal']
         for k in keys:
             label, unit = labels[k]
-            diff_items.append({'label': label, 'unit': unit,
+            diff_items.append({'key': k, 'label': label, 'unit': unit,
                                'old': current_goal.get(k),
                                'new': None, 'impact': '由 AI 按新值给出影响预估'})
         data['diff'] = {'items': diff_items}

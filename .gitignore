@@ -128,3 +128,6 @@ Thumbs.db
 
 # Local git worktrees
 .worktrees/
+
+# 居家管家个人想法目录(私人内容,不入版本控制)
+居家管家/.个人想法目录禁止看里面文件/

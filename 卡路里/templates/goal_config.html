@@ -191,6 +191,16 @@ function distributeMacros(newCal){
   const capP=pMax*4,capC=cMax*4,capF=fMax*9;
   const sumE=macroSum();
   let dP,dC,dF;
+  if(dragDir<0){
+    // 向左(2026-08-04 用户拍板):按当前宏量实时比例同步缩小,满项立即动
+    let shP,shC,shF;
+    if(sumE>0){
+      shP=(state.protein_goal||0)*4/sumE;shC=(state.carbs_goal||0)*4/sumE;shF=(state.fat_goal||0)*9/sumE;
+    }else if(savedRatio){
+      shP=savedRatio.p;shC=savedRatio.c;shF=savedRatio.f;
+    }else{shP=4/17;shC=4/17;shF=9/17;}
+    dP=newCal*shP;dC=newCal*shC;dF=newCal*shF;
+  }else{
   // 满项锁定(2026-08-04 用户拍板):当前已在上限的宏量保持满值,剩余能量按锚定比例(未满项归一)分配
   const pFull=state.protein_goal>=pMax, cFull=state.carbs_goal>=cMax, fFull=state.fat_goal>=fMax;
   const lockedE=(pFull?capP:0)+(cFull?capC:0)+(fFull?capF:0);

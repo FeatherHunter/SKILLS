@@ -28,7 +28,7 @@
   .chart-title .chart-hint { font-weight:400; color:var(--fg3); font-size:11px; margin-left:8px; }
   .chart { height:110px; display:flex; align-items:flex-end; gap:3px; justify-content:center; }
   .chart .day { flex:1 1 0; max-width:48px; background:var(--accent); opacity:.75; border-radius:3px 3px 0 0; min-height:2px; }
-  .chart .day.empty { background:var(--soft); opacity:1; min-height:1px; }
+  .chart .day.empty { background:var(--soft); opacity:1; min-height:4px; }  /* #44:空柱 4px 可见(无记录天明显) */
   .chart .day:hover { opacity:1; }
   .top-list { list-style:none; }
   .top-list li { display:flex; justify-content:space-between; padding:9px 4px; border-bottom:1px solid var(--border); font-size:13px; }
@@ -148,7 +148,7 @@ function fallbackCopyText(txt) {
     const has = d.cal > 0;
     const bar = document.createElement('div');
     bar.className = 'day' + (has ? '' : ' empty');
-    bar.style.height = (has ? Math.max(2, Math.round(d.cal / max * 106)) : 1) + 'px';
+    bar.style.height = (has ? Math.max(2, Math.round(d.cal / max * 106)) : 4) + 'px';
     bar.title = `${d.date} · ${d.cal} 卡`;
     bar.onclick = () => showToast(`${d.date} · ${d.cal} 卡`);
     chart.appendChild(bar);

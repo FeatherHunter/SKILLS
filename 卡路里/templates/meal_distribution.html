@@ -63,11 +63,12 @@
     .dist-wrap { flex-direction:column; align-items:stretch; }
     /* #44:饼图居中(图例在下) */
     .dist-pie { margin:0 auto; }
-    /* #44:明细表手机两段式卡(7 列挤 320px 不可读 → 行1 日期·餐次·食物 · 行2 时间·克数·热量·蛋白) */
+    /* #44:明细表手机两段式卡——3 列两行(日期+时间合并 ::after · 餐次 · 食物 / 克数 · 热量 · 蛋白)
+       注意:grid-template-areas 行内区域数必须一致(原 3/4 区错配致整个无效、td 全重叠) */
     thead { display:none; }
     #mealTable tr {
-      display:grid;grid-template-columns:auto 1fr auto auto;
-      grid-template-areas:"a b c" "d e f g";
+      display:grid;grid-template-columns:auto 1fr auto;
+      grid-template-areas:"a b c" "d e f";
       gap:4px 10px;background:var(--card);border:1px solid var(--border);
       border-radius:14px;margin-bottom:10px;padding:10px 14px;
       box-shadow:0 1px 4px rgba(0,0,0,.04);position:relative;overflow:hidden;
@@ -75,12 +76,13 @@
     #mealTable tr::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent); }
     #mealTable td { display:block; border:none; padding:0; font-size:12px; background:none; }
     #mealTable td:nth-child(1){grid-area:a; font-size:11px; color:var(--fg3);}
-    #mealTable td:nth-child(2){grid-area:d; font-size:11px; color:var(--fg3);}
+    #mealTable td:nth-child(1)::after { content:' ' attr(data-time); }
+    #mealTable td:nth-child(2){display:none;}
     #mealTable td:nth-child(3){grid-area:b; font-weight:600; font-size:13px;}
-    #mealTable td:nth-child(4){grid-area:c; min-width:0; word-break:break-all; font-weight:600;}
-    #mealTable td:nth-child(5){grid-area:e; color:var(--fg2);}
-    #mealTable td:nth-child(6){grid-area:f; font-weight:700; text-align:right;}
-    #mealTable td:nth-child(7){grid-area:g; text-align:right; color:var(--fg2);}
+    #mealTable td:nth-child(4){grid-area:c; min-width:0; word-break:break-all; font-weight:600; text-align:right;}
+    #mealTable td:nth-child(5){grid-area:d; color:var(--fg2);}
+    #mealTable td:nth-child(6){grid-area:e; font-weight:700; text-align:right;}
+    #mealTable td:nth-child(7){grid-area:f; text-align:right; color:var(--fg2);}
     /* #44:footer 手机纵向 + 均分 */
     .footer { flex-direction:column; align-items:stretch; gap:8px; }
     .footer .btn-group { justify-content:space-between; }
@@ -201,7 +203,7 @@ ${x.label}</span>
   items.forEach(p => {
     const cls = ['breakfast','lunch','dinner','snack'].includes(p.meal) ? p.meal : '';
     tb.insertAdjacentHTML('beforeend',
-      `<tr><td>${p.date}</td><td>${p.time}</td>` +
+      `<tr><td data-time="${p.time}">${p.date}</td><td>${p.time}</td>` +
       `<td><span class="meal-tag ${cls}">${p.meal === 'breakfast' ? '早餐' : p.meal === 'lunch' ? '午餐' : p.meal === 'dinner' ? '晚餐' : '加餐'}</span></td>` +
       `<td>${p.food}</td><td class="num">${p.grams}g</td><td class="num">${p.cal}</td><td class="num">${p.pro.toFixed(1)}g</td></tr>`);
   });

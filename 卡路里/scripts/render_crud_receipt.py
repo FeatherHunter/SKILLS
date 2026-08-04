@@ -654,8 +654,9 @@ def build_live_product_deprecate(product_id):
     if not r['ok']:
         raise ValueError(r['error'])
     summary = f"「{r['name']}」已下架,搜索/查询/导入去重不再出现"
-    return _diet_receipt('update', r['id'], {'product_name': r['name']},
-                         {'product_name': r['name'], 'is_deprecated': 1, '提示': '已下架'},
+    # 改前/改后(权威清单 D4.5):状态 正常→已下架;提示放 summary 即可,不占 diff 字段
+    return _diet_receipt('update', r['id'], {'product_name': r['name'], 'is_deprecated': 0},
+                         {'product_name': r['name'], 'is_deprecated': 1},
                          '下架食品', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
 
 

@@ -361,7 +361,7 @@ function fmt2(v) {
   document.getElementById('srcLine').textContent =
     `📊 数据来源:calorie_data.db · food_log · ${meta.start} → ${meta.end} · ${items.length} 条`;
   document.getElementById('copyBtn').onclick = function() {
-    let r = `吃的记录 ${meta.start} ~ ${meta.end}\n` +
+    let r = `${meta.label || ''}饮食 ${meta.start} ~ ${meta.end}\n` +
             `总热量 ${fmt2(summary.total_calorie)} 卡 · 日均 ${fmt2(summary.avg_calorie)} 卡 · 蛋白 ${fmt2(summary.total_protein)}g · 日均 ${fmt2(summary.avg_protein)}g · 饮水 ${fmt2(summary.total_water)}ml\n\n`;
     items.forEach(p => {
       r += `${p.date} ${(p.time || '??:??').slice(0,5)}  ${MEAL_LABELS[p.meal_type] || p.meal_type}  ${p.food_name || '?'} ${fmt2(p.grams)}g = ${fmt2(p.calorie)}卡${p.note ? ' · ' + p.note : ''}\n`;

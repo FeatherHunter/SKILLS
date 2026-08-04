@@ -282,7 +282,7 @@
     if (k === 'activity_level') return ACT_LABELS[v] || v;
     if (k === 'gender') return v === 'male' ? '男' : v === 'female' ? '女' : v;
     if (k === 'is_deprecated') return v == 1 ? '已下架' : '正常';
-    if (v === null || v === undefined) return '—';
+    if (v === null || v === undefined || v === '') return '—';
     const unit = UNIT_LABELS[k];
     return unit ? `${v} ${unit}` : v;
   }

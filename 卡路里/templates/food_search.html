@@ -94,7 +94,7 @@
   const query = DATA.data.query || '';
 
   document.getElementById('metaSub').textContent =
-    '查询关键词:' + query + ' · 匹配 ' + items.length + ' 条';
+    '查询' + (DATA.data.query_label || ('关键词:' + query)) + ' · 匹配 ' + items.length + ' 条';
   document.getElementById('matchCount').textContent = items.length + ' 个匹配';
 
   const results = document.getElementById('results');

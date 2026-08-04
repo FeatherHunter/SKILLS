@@ -628,17 +628,22 @@ def build_live_product_update(product_id, **kwargs):
     import product_library
     conn = product_library._get_db()
     c = conn.cursor()
-    c.execute('SELECT product_name FROM nutrition_products WHERE id = ?', (product_id,))
+    c.execute('SELECT * FROM nutrition_products WHERE id = ?', (product_id,))
+    cols = [d[0] for d in c.description]
     row = c.fetchone()
     conn.close()
     if not row:
         raise ValueError(f'食品 {product_id} 不存在')
-    old_name = row[0]
+    before = dict(zip(cols, row))
+    old_name = before.get('product_name', '')
     ok = product_library.update_product(product_id, **kwargs)
     if not ok:
         raise ValueError('改食品失败')
     summary = f"已更新「{old_name}」:{'、'.join(kwargs)}"
-    return _diet_receipt('update', product_id, {'product_name': old_name}, dict(kwargs),
+    # 改前/改后(权威清单 D4.4):旧值全量快照
+    old_record = {k: before.get(k) for k in kwargs}
+    new_record = dict(kwargs)
+    return _diet_receipt('update', product_id, old_record, new_record,
                          '改食品', datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
 
 

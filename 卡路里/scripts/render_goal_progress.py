@@ -388,18 +388,46 @@ def build_mode_weight(goal, expiring=14):
     }
 
 
+def _empty_context() -> dict:
+    """空态增强(2026-08-04 场景25 对抗审查):已有数据 KPI + 两步指引"""
+    from db import find_db_path, get_db
+    db_path = find_db_path(SKILL_DIR, 'calorie_data.db')
+    conn = get_db(db_path)
+    row = conn.execute('SELECT weight_kg FROM weight_log ORDER BY date DESC LIMIT 1').fetchone()
+    cnt = conn.execute(
+        "SELECT COUNT(*) FROM weight_log WHERE date >= date('now','-30 days')").fetchone()
+    old = conn.execute(
+        "SELECT weight_kg FROM weight_log WHERE date >= date('now','-30 days') ORDER BY date ASC LIMIT 1").fetchone()
+    conn.close()
+    kpis = []
+    if row:
+        kpis.append({'label': '当前体重', 'value': row['weight_kg'], 'unit': 'kg'})
+    if cnt and cnt[0]:
+        kpis.append({'label': '近30天记录', 'value': cnt[0], 'unit': '条'})
+    if row and old and old[0] is not None and round(row[0] - old[0], 1) != 0:
+        kpis.append({'label': '近30天变化', 'value': round(row[0] - old[0], 1), 'unit': 'kg'})
+    return {
+        'context_kpis': kpis,
+        'guide': ['先设定体重目标(说「定体重目标 XXkg」)',
+                  '持续记录体重(记体重),趋势数据越多预测越准',
+                  '设定后再来看预测达成日与置信度'],
+    }
+
+
 def build_mode_predict(goal):
     """看目标预测达成: 体重部分复用 weight_milestone(est_date), 置信度按数据量"""
     from analysis.weight import weight_milestone
     ms = weight_milestone(as_dict=True)
     if ms.get('status') != 'ok' or not ms.get('data'):
-        return {
+        empty = dict(_empty_context())
+        empty.update({
             'mode': 'predict',
             'title': '看目标预测达成',
             'subtitle': '按当前趋势预测目标达成日 + 置信度',
             'empty': ms.get('message', '数据不足,无法预测'),
             'summary': '先设体重目标并记录体重,才能预测',
-        }
+        })
+        return empty
     d = ms['data']
     confidence = '低'
     if d.get('actual_daily_change_kg'):
@@ -428,13 +456,15 @@ def build_mode_weight_progress(goal):
     from analysis.weight import weight_milestone
     ms = weight_milestone(as_dict=True)
     if ms.get('status') != 'ok' or not ms.get('data'):
-        return {
+        empty = dict(_empty_context())
+        empty.update({
             'mode': 'weight_progress',
             'title': '看体重目标进度',
             'subtitle': '当前/目标/Δ/完成%/预测 + 剩余天数/建议速率',
             'empty': ms.get('message', '数据不足'),
             'summary': '先设体重目标并记录体重',
-        }
+        })
+        return empty
     d = ms['data']
     # 完成% = 已减 / 总需减(起点 = 最早一次体重)
     from db import find_db_path, get_db

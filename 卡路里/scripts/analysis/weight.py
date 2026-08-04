@@ -282,7 +282,10 @@ def weight_milestone(as_dict=False):
 
     if days_left is not None and actual_daily:
         required = gap / days_left if days_left > 0 else 0
-        diff = actual_daily - required
+        # 2026-08-04 修复(场景25 对抗审查):实际/需求速率需同方向比较 —— 减重时 actual_daily 为负、required 为正
+        # 统一到"目标方向上的速度":减重 gap>0 → 用 -actual_daily;增重 gap<0 → 用 actual_daily
+        actual_pace = -actual_daily if gap > 0 else actual_daily
+        diff = actual_pace - required
         if abs(diff) < 0.02:
             status = "进度正常"
         elif diff > 0:

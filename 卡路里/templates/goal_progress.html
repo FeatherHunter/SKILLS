@@ -60,6 +60,12 @@ td .bar-up-text.over{color:var(--red);font-weight:700}
 .kpi .value{font-size:20px;font-weight:700;font-feature-settings:"tnum"}
 .kpi .value small{font-size:12px;color:var(--ink3);font-weight:400}
 .empty{padding:24px;text-align:center;color:var(--ink3);font-size:14px}
+/* 2026-08-04 场景25 对抗审查:空态增强 — 已有数据 KPI + 两步指引(为什么没有 + 怎么获得) */
+.empty-card{padding:24px 22px}
+.empty-card .kpis{grid-template-columns:repeat(auto-fit,minmax(110px,1fr));margin-top:14px}
+.guide{margin-top:16px;display:grid;gap:10px}
+.guide-step{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink2);background:var(--bg);border-radius:10px;padding:10px 14px;line-height:1.5}
+.guide-no{width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .copy-row{display:flex;gap:10px;margin:16px 0;flex-wrap:wrap}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 20px;border-radius:999px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:opacity .15s;font-family:inherit;flex:1;background:var(--bg);color:var(--ink);border:1px solid var(--line)}
 .btn:hover{background:var(--green-soft);border-color:var(--green);color:var(--green);opacity:1}
@@ -185,8 +191,18 @@ function renderVsChart(){
     '</svg></div>';
 }
 
+function renderEmpty(){
+  if(!D.empty)return '';
+  const kpis=(D.context_kpis||[]).map(k=>'<div class="kpi"><div class="label">'+k.label+'</div><div class="value">'+k.value+'<small> '+k.unit+'</small></div></div>').join('');
+  const guide=(D.guide||[]).map((g,i)=>'<div class="guide-step"><span class="guide-no">'+(i+1)+'</span><span>'+g+'</span></div>').join('');
+  return '<div class="section empty-card">'+
+    '<p class="empty">'+D.empty+'</p>'+
+    (kpis?'<div class="kpis">'+kpis+'</div>':'')+
+    (guide?'<div class="guide">'+guide+'</div>':'')+
+    '</div>';
+}
 document.getElementById('main-content').innerHTML=
-  renderKpis()+renderVsChart()+renderRows()+renderTable();
+  renderEmpty()||(renderKpis()+renderVsChart()+renderRows()+renderTable());
 if(D.summary){document.getElementById('summary').textContent=D.summary;}
 
 // R2 双按钮:复制数据(用户口径)/ 复制日志(排障口径) · 2026-08-02 对齐 #8

@@ -53,8 +53,10 @@
   th.num, td.num { text-align:right; }
   .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
   .footer .src { font-size:12px; color:var(--fg3); }
-  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .footer .btn-group { display:flex; gap:6px; }  /* #44:与全场景统一 */
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); white-space:nowrap; }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.copied { background:var(--good); color:#fff; border-color:var(--good); }
   .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
   .meta-bar .left { font-size:12px; color:var(--fg2); }
   .meta-bar .type-badge { font-size:11px; padding:3px 10px; border-radius:6px; background:var(--soft); color:var(--fg2); font-weight:600; }
@@ -72,6 +74,12 @@
     .pie-legend .row { gap:8px; }
     .pie-legend .val { width:70px; font-size:12px; }
     .pie-legend .name { font-size:12px; }
+    /* #44:手机按钮纵向 + 均分不换行(与全场景统一) */
+    .footer { flex-direction:column; align-items:stretch; gap:8px; }
+    .footer .btn-group { justify-content:space-between; }
+    .footer .btn-group .btn { flex:1; margin:0 4px; min-height:44px; }
+    .footer .btn-group .btn:first-child { margin-left:0; }
+    .footer .btn-group .btn:last-child { margin-right:0; }
   }
   /* table 在小屏内滚 */
   .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -114,10 +122,35 @@
 
 <div class="footer">
   <div class="src" id="srcLine">📊 数据来源:--</div>
-  <button class="btn" id="copyBtn">📋 复制数据</button> <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  <div class="btn-group">
+    <button class="btn" id="copyBtn">📋 复制数据</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  </div>
 </div>
 
 <script>
+// #44:复制工具全局函数(统一标准:文字不变 + 绿闪 + toast + .catch fallback)
+let toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('copyToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'copyToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+function fallbackCopyText(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
 (function(){
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') {
@@ -192,13 +225,19 @@
       `</div>`);
   });
 
-  // 表格
+  // 表格(#44 审查:推荐下限/上限按总热量占比换算(蛋白/碳水 4kcal/g · 脂肪 9kcal/g);
+  //  缺口 = 相对推荐范围(超上限 +/低下限 -/范围内 ✓),原实现按目标比例换算致口径错误)
   const tb = document.getElementById('table');
+  const kcalPerG = { protein: 4, carb: 4, fat: 9 };
   items.forEach(it => {
     const r = range[it.key];
-    const target_g = target[it.key + '_g'];
-    const diff = target_g - it.g;
-    const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+    const perG = kcalPerG[it.key] || 4;
+    const min_g = Math.round(summary.total_calorie * r.min / 100 / perG);
+    const max_g = Math.round(summary.total_calorie * r.max / 100 / perG);
+    let gapStr, gapCls;
+    if (it.g > max_g) { gapStr = `+${it.g - max_g}g`; gapCls = 'var(--bad)'; }
+    else if (it.g < min_g) { gapStr = `-${min_g - it.g}g`; gapCls = 'var(--warn)'; }
+    else { gapStr = '✓'; gapCls = 'var(--good)'; }
     const inRange = it.pct >= r.min && it.pct <= r.max;
     const status = inRange
       ? '<span class="pill pill-good">✓ 在范围内</span>'
@@ -208,9 +247,9 @@
     tb.insertAdjacentHTML('beforeend',
       `<tr><td><strong>${it.name}</strong></td>` +
       `<td class="num">${it.g}g <span style="color:var(--fg3);font-weight:400">(${it.pct}%)</span></td>` +
-      `<td class="num">${r.min}% (${Math.round(r.min / 100 * target_g)}g)</td>` +
-      `<td class="num">${r.max}% (${Math.round(r.max / 100 * target_g)}g)</td>` +
-      `<td class="num">${diffStr}g</td>` +
+      `<td class="num">${r.min}% (${min_g}g)</td>` +
+      `<td class="num">${r.max}% (${max_g}g)</td>` +
+      `<td class="num" style="color:${gapCls}">${gapStr}</td>` +
       `<td>${status}</td></tr>`);
   });
 
@@ -222,10 +261,11 @@
               `蛋白 ${summary.protein_g}g (${summary.protein_pct}%) · 推荐 ${range.protein.label}\n` +
               `碳水 ${summary.carb_g}g (${summary.carb_pct}%) · 推荐 ${range.carb.label}\n` +
               `脂肪 ${summary.fat_g}g (${summary.fat_pct}%) · 推荐 ${range.fat.label}`;
-    navigator.clipboard.writeText(r).then(() => {
-      this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制数据', 2000);
-    });
+    // #44:统一标准——文字不变 + 绿闪 + toast + .catch fallback
+    const done = () => { this.classList.add('copied'); setTimeout(() => this.classList.remove('copied'), 2000); showToast('营养配比数据复制成功 ✓'); };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(r).then(done).catch(() => { fallbackCopyText(r); done(); });
+    } else { fallbackCopyText(r); done(); }
   };
 })();
 
@@ -247,15 +287,16 @@
       lines.push('原始数据:');
       lines.push(JSON.stringify(D0, null, 2));
       const txt = lines.join('\n');
-      const done = function () { logBtn.textContent = '✅ 已复制'; setTimeout(function () { logBtn.textContent = '📋 复制日志'; }, 2000); };
+      // #44:统一标准——文字不变 + 绿闪 + toast + .catch fallback
+      const done = function () {
+        logBtn.classList.add('copied');
+        setTimeout(function () { logBtn.classList.remove('copied'); }, 2000);
+        showToast('排障日志已复制 ✓');
+      };
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(txt).then(done);
+        navigator.clipboard.writeText(txt).then(done).catch(function () { fallbackCopyText(txt); done(); });
       } else {
-        const ta = document.createElement('textarea');
-        ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); done(); } catch (e) {}
-        document.body.removeChild(ta);
+        fallbackCopyText(txt); done();
       }
     };
   })();

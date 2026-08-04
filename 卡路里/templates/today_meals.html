@@ -90,6 +90,16 @@
     td:nth-child(9){grid-area:i; font-size:11px; color:var(--fg3); font-style:italic; margin-top:2px;}
     td:nth-child(1)::before, td:nth-child(2)::before, td:nth-child(3)::before,
     td:nth-child(4)::before, td:nth-child(5)::before, td:nth-child(9)::before { content:none; }
+    /* #44:按日汇总表——数据少用传统表格,手机保留表格形态(紧凑好看,不被上面卡片化规则覆盖) */
+    .table-daily { width:100%; }
+    .table-daily thead { display:table-header-group; }
+    .table-daily tr { display:table-row; background:none; border:none; box-shadow:none; margin:0; padding:0; border-radius:0; }
+    .table-daily tr::before { content:none; }
+    .table-daily th, .table-daily td { display:table-cell; padding:6px 8px; font-size:11px; border-bottom:1px solid var(--border); }
+    .table-daily th { background:var(--soft); font-weight:600; color:var(--fg2); white-space:nowrap; }
+    .table-daily td:first-child { font-weight:600; color:var(--fg); }
+    .table-daily td.num { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
+    .table-daily tr:last-child td { border-bottom:none; }
     /* 复制按钮手机有间距且不换行 */
     .footer { flex-direction:column; align-items:stretch; gap:8px; }
     .footer .btn-group { justify-content:space-between; }
@@ -123,7 +133,7 @@
 
 <div class="section" id="secDailySummary" style="display:none">
   <h2>按日汇总</h2>
-  <div class="table-wrap"><table>
+  <div class="table-wrap"><table class="table-daily">
     <thead>
       <tr><th>日期</th><th class="num">餐数</th><th class="num">总热量</th><th class="num">总蛋白</th><th class="num">日均对比</th></tr>
     </thead>

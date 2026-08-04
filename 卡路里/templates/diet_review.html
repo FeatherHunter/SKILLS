@@ -144,7 +144,17 @@ function fallbackCopyText(txt) {
     }
   }
   const max = Math.max(...allDays.map(d => d.cal), 1);
-  allDays.forEach(d => {
+  // #44:降采样——窗口 > 62 天按周聚合(216 日柱视觉崩 · 31 周柱合理)
+  let renderDays = allDays;
+  if (allDays.length > 62) {
+    renderDays = [];
+    for (let i = 0; i < allDays.length; i += 7) {
+      const chunk = allDays.slice(i, i + 7);
+      const sum = chunk.reduce((a, d) => a + (d.cal || 0), 0);
+      renderDays.push({date: chunk[0].date + '~' + chunk[chunk.length - 1].date, cal: sum});
+    }
+  }
+  renderDays.forEach(d => {
     const has = d.cal > 0;
     const bar = document.createElement('div');
     bar.className = 'day' + (has ? '' : ' empty');

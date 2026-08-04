@@ -146,6 +146,9 @@ footer{
   .tabs{gap:6px}
   .tab{padding:6px 12px;font-size:12px}
   th,td{padding:8px 10px;font-size:13px}
+  /* #44:按钮触屏高度 + 复制区按钮自适应 */
+  .copy-section .btn{min-height:44px;flex:1;justify-content:center}
+  .copy-section .btn + .btn{margin-left:8px}
 }
 </style>
 </head>
@@ -194,6 +197,29 @@ const DATA = (() => {
   return window.__DATA__;
 })();
 
+// #44:复制工具全局函数(统一标准:文字不变 + 绿闪 + toast + .catch fallback)
+let toastTimer = null;
+function showToast(msg) {
+  let t = document.getElementById('copyToast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'copyToast';
+    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
+}
+function fallbackCopyText(txt) {
+  const ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  document.body.removeChild(ta);
+}
+
 function escapeHTML(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -202,17 +228,17 @@ function escapeHTML(s) {
 
 function copyToAI() {
   const text = document.getElementById('copyText').textContent;
-  navigator.clipboard.writeText(text).then(() => {
+  // #44:统一标准——文字不变 + 绿闪 + toast + .catch fallback
+  const done = () => {
     const btn = document.getElementById('copyBtn');
-    btn.textContent = '✅ 已复制';
     btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = '复制榜单'; btn.classList.remove('copied'); }, 2000);
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
+    setTimeout(() => btn.classList.remove('copied'), 2000);
+    showToast('榜单已复制 · 可发给 AI 解读 ✓');
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => { fallbackCopyText(text); done(); });
+  } else { fallbackCopyText(text); done(); }
+}execCommand('copy');
     document.body.removeChild(ta);
   });
 }
@@ -347,16 +373,15 @@ function init() {
     lines.push('原始数据:');
     lines.push(JSON.stringify(D0, null, 2));
     const txt = lines.join('\n');
-    const done = function () { logBtn.textContent = '✅ 已复制'; setTimeout(function () { logBtn.textContent = '📋 复制日志'; }, 2000); };
+    // #44:统一标准——文字不变 + 绿闪 + toast + .catch fallback
+    const done = function () {
+      logBtn.classList.add('copied');
+      setTimeout(function () { logBtn.classList.remove('copied'); }, 2000);
+      showToast('排障日志已复制 ✓');
+    };
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(txt).then(done);
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';
-      document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); done(); } catch (e) {}
-      document.body.removeChild(ta);
-    }
+      navigator.clipboard.writeText(txt).then(done).catch(function () { fallbackCopyText(txt); done(); });
+    } else { fallbackCopyText(txt); done(); }
   };
 })();
 

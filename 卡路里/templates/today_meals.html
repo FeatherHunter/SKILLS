@@ -42,6 +42,7 @@
   .filter-bar { display:flex; gap:8px; align-items:center; padding:12px 14px; background:var(--soft); border-radius:10px; margin-bottom:10px; }
   .filter-bar label { font-size:12px; color:var(--fg2); }
   .filter-bar select { font-size:13px; padding:4px 10px; border:1px solid var(--border); border-radius:6px; background:#fff; }
+  .daily-hint { font-size:11px; color:var(--fg3); margin-top:8px; }
   .footer { margin-top:12px; padding:12px 14px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
   .footer .src { font-size:12px; color:var(--fg3); }
   .footer .btn-group { display:flex; gap:6px; }  /* #44:桌面两按钮贴合 */
@@ -120,7 +121,18 @@
   <div class="kpi"><div class="label">总饮水</div><div class="value" id="kWater">--</div><div class="extra" id="kWaterE">--</div></div>
 </div>
 
-<div class="section">
+<div class="section" id="secDailySummary" style="display:none">
+  <h2>按日汇总</h2>
+  <div class="table-wrap"><table>
+    <thead>
+      <tr><th>日期</th><th class="num">餐数</th><th class="num">总热量</th><th class="num">总蛋白</th><th class="num">日均对比</th></tr>
+    </thead>
+    <tbody id="dailyTable"></tbody>
+  </table></div>
+  <div class="daily-hint">点击日期行可筛选下方当日明细</div>
+</div>
+
+<div class="section" id="secDetail">
   <h2>每日明细</h2>
   <div class="filter-bar">
     <label>查看日期:</label>
@@ -220,6 +232,41 @@ function fmt2(v) {
   lastOpt.value = '__all__'; lastOpt.textContent = `全部 (${items.length} 条)`;
   sel.insertBefore(lastOpt, sel.firstChild);
   sel.value = '__all__';
+
+  // #44:按日汇总(呈现数据「按日汇总」· 跨天数 > 7 时显示,如本月/30 天) + 点击联动明细筛选
+  if (meta.days > 7) {
+    document.getElementById('secDailySummary').style.display = 'block';
+    const byDate = {};
+    items.forEach(i => {
+      if (!byDate[i.date]) byDate[i.date] = {count: 0, cal: 0, prot: 0};
+      byDate[i.date].count += 1;
+      byDate[i.date].cal += Number(i.calorie) || 0;
+      byDate[i.date].prot += Number(i.protein) || 0;
+    });
+    const dates = Object.keys(byDate).sort().reverse();
+    const avgCal = summary.avg_calorie || 0;
+    const dTable = document.getElementById('dailyTable');
+    dates.forEach(d => {
+      const g = byDate[d];
+      const diff = g.cal - avgCal;
+      const diffTxt = diff > avgCal * 0.3 ? `<span style="color:var(--bad)">+${fmt2(diff)}</span>`
+                    : diff < -avgCal * 0.3 ? `<span style="color:var(--good)">${fmt2(diff)}</span>`
+                    : `<span style="color:var(--fg3)">${diff >= 0 ? '+' : ''}${fmt2(diff)}</span>`;
+      dTable.insertAdjacentHTML('beforeend',
+        `<tr data-date="${d}" style="cursor:pointer"><td>${d}</td>` +
+        `<td class="num">${g.count}</td>` +
+        `<td class="num">${fmt2(g.cal)}</td>` +
+        `<td class="num">${fmt2(g.prot)}g</td>` +
+        `<td class="num">${diffTxt}</td></tr>`);
+    });
+    dTable.querySelectorAll('tr[data-date]').forEach(tr => {
+      tr.onclick = () => {
+        sel.value = tr.dataset.date;
+        renderRows(sel.value);
+        document.getElementById('secDetail').scrollIntoView({behavior: 'smooth'});
+      };
+    });
+  }
 
   function renderRows(filterDate) {
     const filtered = filterDate === '__all__' ? items : items.filter(i => i.date === filterDate);

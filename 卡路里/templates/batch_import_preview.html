@@ -314,7 +314,7 @@ footer{
 <section class="section">
   <div class="section-title">
     <h2>导入概览</h2>
-    <span class="hint">实时反映数据</span>
+    <span class="hint">统计结果</span>
   </div>
   <div class="kpi-grid" id="kpiGrid"></div>
 </section>
@@ -323,7 +323,7 @@ footer{
 <section class="section">
   <div class="section-title">
     <h2>处理进度</h2>
-    <span class="hint">进度条按状态分段</span>
+    <span class="hint">通过占比</span>
   </div>
   <div class="progress-info">
     <span id="progressRate" class="rate">--</span>
@@ -359,10 +359,10 @@ footer{
     <button class="btn secondary" id="btnModify" onclick="copyModify()">📋 复制修改指令</button>
     <button class="btn danger" id="btnSkipFailed" onclick="copySkipFailed()">⚠️ 跳过失败行导入</button>
   </div>
-  <div class="copy-preview" id="copyPreview">预览将复制给 AI 的内容</div>
+  <div class="copy-preview" id="copyPreview">点击上方按钮,指令将复制到剪贴板</div>
 </section>
 
-<footer>卡路里 Skill · 批量导入预览 · 2026-07-23 · G3</footer>
+<footer id="pageFooter"></footer>
 
 </div>
 <a id="backTop" href="#top" title="回到顶部">↑</a>
@@ -388,6 +388,8 @@ const STATUS_LABELS = {
   added: '新增', updated: '更新', skipped: '跳过', failed: '失败', ok: '通过'
 };
 const IS_VALIDATE = SUMMARY.is_validate === true;
+document.getElementById('pageFooter').textContent =
+  '卡路里 · 批量导入预览 · ' + (SUMMARY.today || new Date().toISOString().slice(0, 10));
 
 function render() {
   if (!DATA) {
@@ -479,8 +481,13 @@ function render() {
 }
 
 function renderTabs(filter) {
-  const tabs = ['all', 'failed', 'added', 'updated', 'skipped'];
-  const counts = {
+  const isV = IS_VALIDATE;
+  const tabs = isV ? ['all', 'ok', 'failed'] : ['all', 'failed', 'added', 'updated', 'skipped'];
+  const counts = isV ? {
+    all: RUNS.length,
+    ok: RUNS.filter(r => r.status === 'ok').length,
+    failed: RUNS.filter(r => r.status === 'failed').length,
+  } : {
     all: RUNS.length,
     failed: RUNS.filter(r => r.status === 'failed').length,
     added: RUNS.filter(r => r.status === 'added').length,

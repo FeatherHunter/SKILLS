@@ -36,9 +36,9 @@
   th.num, td.num { text-align:right; }
   /* #44:with-note 模式隐藏碳水/脂肪列(权威清单:日期/餐别/食物/克数/热量/蛋白/备注) */
   table.with-note th.opt, table.with-note td.opt { display:none; }
-  /* #44:备注是「看有备注的记录」核心价值——视觉最明显(桌面:📝+主题蓝加粗;手机:独立背景块) */
-  td.note-cell:not(:empty)::before { content:'📝 '; }
-  td.note-cell:not(:empty) { font-weight:600; color:var(--accent); }
+  /* #44:备注醒目——仅 with-note 模式生效(场景隔离:其他场景备注保持批准版灰斜体) */
+  table.with-note td.note-cell:not(:empty)::before { content:'📝 '; }
+  table.with-note td.note-cell:not(:empty) { font-weight:600; color:var(--accent); }
   .meal-tag { display:inline-block; padding:1px 8px; border-radius:6px; font-size:11px; font-weight:600; background:var(--soft); color:var(--fg2); }
   .meal-tag.breakfast { background:rgba(255,149,0,.12); color:var(--warn); }
   .meal-tag.lunch     { background:rgba(0,113,227,.12); color:var(--accent); }
@@ -102,7 +102,7 @@
     td:nth-child(6)::before, td:nth-child(7)::before, td:nth-child(8)::before { content:attr(data-label); color:var(--fg3); font-size:10px; margin-right:2px; }
     td:nth-child(6), td:nth-child(7), td:nth-child(8) { font-size:11px; color:var(--fg2); font-variant-numeric:tabular-nums; text-align:left; }
     td:nth-child(9){grid-area:i; font-size:11px; color:var(--fg3); font-style:italic; margin-top:2px;}
-    td:nth-child(9):not(:empty) { font-style:normal; background:var(--soft); border-radius:8px; padding:6px 8px !important; margin-top:6px; font-weight:600; color:var(--accent); }
+    table.with-note td:nth-child(9):not(:empty) { font-style:normal; background:var(--soft); border-radius:8px; padding:6px 8px !important; margin-top:6px; font-weight:600; color:var(--accent); }
     td:nth-child(1)::before, td:nth-child(2)::before, td:nth-child(3)::before,
     td:nth-child(4)::before, td:nth-child(5)::before, td:nth-child(9)::before { content:none; }
     /* #44:按日汇总表——数据少用传统表格,手机保留表格形态(紧凑好看,不被上面卡片化规则覆盖) */

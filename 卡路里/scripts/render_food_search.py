@@ -127,17 +127,20 @@ def main() -> int:
     if args.category:
         items = _query_by_category(args.category)
         mode = f"category:{args.category}"
+        query_label = f"分类:{args.category}"
         q = f"分类_{args.category}"
     else:
         if not args.query:
             parser.error("需要 --query 或 --category 之一")
         items = _query_products(args.query)
         mode = args.query
+        query_label = f"关键词:{args.query}"
         q = args.query
     data = {
         "status": "ok",
         "data": {
             "query": mode,
+            "query_label": query_label,
             "items": items,
             "match_count": len(items),
             "generated_at": datetime.now().isoformat(),

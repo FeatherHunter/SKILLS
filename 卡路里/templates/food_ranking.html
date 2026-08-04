@@ -238,9 +238,6 @@ function copyToAI() {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done).catch(() => { fallbackCopyText(text); done(); });
   } else { fallbackCopyText(text); done(); }
-}execCommand('copy');
-    document.body.removeChild(ta);
-  });
 }
 
 /* ====== 5 榜单配置 ====== */

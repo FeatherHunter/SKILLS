@@ -117,6 +117,7 @@ def test_resolve_by_seed_key(sm8_env):
 
 def test_resolve_fallback_to_name(sm8_env):
     """解析器②:无 seed_key(老库)→ 名称命中"""
+    ops.init_db_and_seed()
     conn = sqlite3.connect(str(sm8_env / "home.db"))
     try:
         conn.row_factory = sqlite3.Row
@@ -131,6 +132,7 @@ def test_resolve_fallback_to_name(sm8_env):
 
 def test_resolve_fallback_to_id(sm8_env):
     """解析器③:都失败 → id 兜底"""
+    ops.init_db_and_seed()
     conn = sqlite3.connect(str(sm8_env / "home.db"))
     try:
         conn.row_factory = sqlite3.Row
@@ -310,10 +312,10 @@ def _make_export_file(sm8_env, names=("TEST_导入A", "TEST_导入B")):
         "exported_at": "2026-08-05 00:00:00",
         "items": [{"id": 1, "name": names[0], "category": "分类"},
                   {"id": 2, "name": names[1], "category": "分类"}],
-        "item_locations": [{"item_id": 1, "location": "客厅/电视柜", "quantity": 1,
+        "item_locations": [{"item_id": 2, "location": "客厅/电视柜", "quantity": 1,
                             "reason": "", "location_status": "在家",
                             "purchase_date": None, "expiration_date": None}],
-        "item_tags": [{"item_id": 1, "tag": "红色"}],
+        "item_tags": [{"item_id": 2, "tag": "红色"}],
         "categories": [],
     }
     f = sm8_env / "export_test.json"

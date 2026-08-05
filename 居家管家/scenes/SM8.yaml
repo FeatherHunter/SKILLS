@@ -1,0 +1,91 @@
+# SM8 开始使用域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 居家管家/scenes/SM8.yaml(隔离契约: 每域只写自己的 scenes/SM{n}.yaml)
+# 合并器 = scripts/场景合并.py(公共层产物);改总账的唯一通道 = 合并器。
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# status 判定原则(07 §4/§6 五者对应):
+#   SKILL.md 唤醒词路由 + 场景资产 ✓ + prompt ✓ + 底层工作流 ✓ + HELP 映射 ✓
+#   → SM8 4 场景 CLI+模板已落地(scripts/开始使用/ + templates/开始使用/)+ SKILL.md 路由更新
+#   → status 全部转 ""(可用)
+version: "2.0"
+
+domain:
+  key: setup
+  name: 开始使用
+  icon: "🚀"
+  sm: SM8
+
+scenes:
+  - id: "SM8-1"
+    domain: setup
+    sub: 开始使用
+    wake_word: 首次使用
+    scenario_id: first_use
+    scenario_title: 首次使用(初始化工作流)
+    dimensions: {}
+    type: 向导+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用):
+    result: "6 步向导(环境检测→配置→建库→建分类→引导→回执),幂等可重试。"
+    html:
+      template: 开始使用/first_use_wizard.html
+      command_cn: 首次使用
+      data_source: env + db + seed_categories.yaml
+
+  - id: "SM8-2"
+    domain: setup
+    sub: 开始使用
+    wake_word: 查异常
+    scenario_id: lint_health
+    scenario_title: 数据检查(健康报告)
+    dimensions: {}
+    type: 查看+选择
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我做数据健康检查(唤醒词:查异常):
+    result: "环境信息 + 8 检查项(标签/位置/状态/照片/价格/日期/相似位置),勾选复制修复引导,只建议不自动改。"
+    html:
+      template: 开始使用/health_report.html
+      command_cn: 查异常
+      data_source: items
+
+  - id: "SM8-3"
+    domain: setup
+    sub: 开始使用
+    wake_word: 备份导出
+    scenario_id: backup_export
+    scenario_title: 备份与导出(数据资产)
+    dimensions: {}
+    type: 采集+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我备份导出数据(唤醒词:备份导出):
+
+        操  作: _____________ (备份/导出)
+        格  式: _____________ (导出时:JSON/CSV,选填)
+    result: "备份(db+照片打包,保留 N 份)+ 导出(JSON/CSV),完成回执 + 备份历史 + 距上次备份天数。"
+    html:
+      template: 开始使用/backup_receipt.html
+      command_cn: 备份导出
+      data_source: db + photos
+
+  - id: "SM8-4"
+    domain: setup
+    sub: 开始使用
+    wake_word: 导入恢复
+    scenario_id: import_restore
+    scenario_title: 导入与恢复(迁移)
+    dimensions: {}
+    type: 向导+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我导入恢复数据(唤醒词:导入恢复):
+
+      【导入文件即将发送:】
+    result: "文件选择(预告式)→ 校验 → 冲突预览 → 确认导入(导入前自动备份),失败回滚数据不变。"
+    html:
+      template: 开始使用/import_restore.html
+      command_cn: 导入恢复
+      data_source: json 导出/备份文件

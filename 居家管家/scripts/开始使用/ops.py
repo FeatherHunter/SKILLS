@@ -461,7 +461,7 @@ def backup_payload(keep_n=BACKUP_KEEP_N):
 
 
 def _do_backup():
-    stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    stamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
     file = _backup_dir() / f"home_backup_{stamp}.zip"
     with zipfile.ZipFile(file, "w", zipfile.ZIP_DEFLATED) as zf:
         if DB_PATH.exists():
@@ -482,15 +482,25 @@ def _prune_backups(keep_n):
             pass
 
 
+def _backup_stem_time(name):
+    """从备份文件名解析时间(兼容 %Y%m%d_%H%M%S 与 %Y%m%d_%H%M%S_%f)"""
+    stem = Path(name).stem
+    for fmt in ("home_backup_%Y%m%d_%H%M%S_%f", "home_backup_%Y%m%d_%H%M%S"):
+        try:
+            return datetime.strptime(stem, fmt)
+        except ValueError:
+            continue
+    return None
+
+
 def _days_since_backup():
     files = sorted(_backup_dir().glob("home_backup_*.zip"))
     if not files:
         return None
-    try:
-        d = datetime.strptime(files[-1].stem, "home_backup_%Y%m%d_%H%M%S")
-        return (datetime.now() - d).days
-    except ValueError:
+    t = _backup_stem_time(files[-1].name)
+    if t is None:
         return None
+    return (datetime.now() - t).days
 
 
 def backup_list_payload(keep_n=BACKUP_KEEP_N):
@@ -638,6 +648,7 @@ def import_execute_payload(import_file, mode="skip", auto_backup=True):
     for r in data.get("item_tags", []):
         tags.setdefault(r["item_id"], []).append(r["tag"])
     categories = {r["id"]: r["name"] for r in data.get("categories", [])}
+    source_ids = {it.get("id") for it in items}
 
     backup_file = None
     if auto_backup:
@@ -650,6 +661,18 @@ def import_execute_payload(import_file, mode="skip", auto_backup=True):
         existing = {
             r["name"]: r["id"] for r in cur.execute("SELECT id, name FROM items")
         }
+        # 完整性校验:locations/tags 引用的 item_id 必须在本文件 items 中
+        # (损坏/伪造文件 → 报错回滚,数据不变)
+        dangling = (set(locations) | set(tags)) - source_ids
+        if dangling:
+            conn.rollback()
+            return {
+                "status": "error",
+                "error": "import_dangling_ref",
+                "reason": f"文件内部引用不一致:item_locations/item_tags 引用了 {len(dangling)} 个不存在的物品 id",
+                "suggest": "文件疑似损坏,请重新导出后重试",
+                "rollback_available": False,
+            }
         new_id_map = {}
         for it in items:
             name = (it.get("name") or "").strip()

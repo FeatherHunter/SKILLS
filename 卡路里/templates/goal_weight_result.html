@@ -14,7 +14,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .hero .eyebrow .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block}
 .hero .hero-num{font-size:44px;font-weight:800;letter-spacing:-1.5px;line-height:1.05;font-feature-settings:"tnum"}
 .hero .hero-num small{font-size:20px;font-weight:600;color:var(--ink3);letter-spacing:0;margin-left:4px}
-.hero .hero-label{font-size:13px;color:var(--ink3);margin-top:2px}
+.hero .hero-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:4px}
+.hero .hero-label{font-size:13px;color:var(--ink3)}
+.hero .deadline-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600;white-space:nowrap}
 .hero .sub{font-size:13px;color:var(--ink3);margin-top:10px}
 .summary{background:var(--card);border-radius:16px;padding:16px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06);font-size:15px;font-weight:600;display:flex;gap:8px;align-items:flex-start}
 .summary .ico{color:var(--green);flex:none;margin-top:1px}
@@ -52,7 +54,7 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;borde
 <header class="hero">
 <div class="eyebrow"><span class="dot"></span>已写入 · 卡路里 目标管理</div>
 <div class="hero-num" id="heroNum">—<small>kg</small></div>
-<div class="hero-label" id="heroLabel">目标体重</div>
+<div class="hero-meta"><span class="hero-label">目标体重</span><span class="deadline-pill" id="deadlinePill" style="display:none"></span></div>
 <div class="sub" id="subtitle">加载中…</div>
 </header>
 <div class="summary" id="oneLine"><span class="ico">✓</span><span>加载中…</span></div>
@@ -86,7 +88,8 @@ const D=DATA&&DATA.data?DATA.data:{};
 const W=D.written||{};
 const META=D.meta||{};
 document.getElementById('heroNum').innerHTML=(W.weight_goal!=null?W.weight_goal:'—')+'<small>kg</small>';
-document.getElementById('heroLabel').textContent='目标体重'+(W.deadline?' · 截止 '+W.deadline:'');
+const pill=document.getElementById('deadlinePill');
+if(W.deadline){pill.style.display='inline-flex';pill.textContent='截止 '+W.deadline;}
 document.getElementById('subtitle').textContent=(META.wake_word?META.wake_word+' · ':'')+'写入时间 '+(META.fetched_at||'');
 document.getElementById('oneLine').querySelector('span:last-child').textContent=D.one_line||'';
 document.title=(W.weight_goal!=null?'体重目标已写入 '+W.weight_goal+'kg':'体重目标已写入')+' · 卡路里';

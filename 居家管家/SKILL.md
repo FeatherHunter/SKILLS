@@ -13,6 +13,13 @@ description: >
   看标签、合标签（标签管理）、
   查快递（快递查询）、
   查账号、存账号、改账号（账号密码管理）、
+  批量录入、补录（批量/历史录入）、
+  紧急定位、筛选浏览、拍照找物品、查重复（查找进阶）、
+  数量变更、状态变更、合并物品、撤销操作、物品关联（更新进阶）、
+  管标签、管分类、整理建议（标签分类管理）、
+  查看照片、管照片、照片墙（照片档案）、
+  盘点记录、差异处理、搬家盘点（盘点进阶）、
+  历史（物品历史）、
   借用、家人档案（家庭协作）、
   查闲置（闲置检测）、盘点统计（盘点统计与建议）、
   联动总览、记到卡路里、记到记账（跨技能联动）、
@@ -176,6 +183,8 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 61 | 差异处理 | 处理盘点差异（缺/多/异/待确认） | `python3 scripts/home_manager.py sm1-inventory-diff [--record-id N]` / `sm1-inventory-resolve` → 物品/inventory_diff.html | 否（记录级） |
 | 62 | 搬家盘点 | 搬家打包盘点（带走/不带走） | `python3 scripts/home_manager.py sm1-move-checklist` / `sm1-move-commit` → 物品/move_checklist.html | 否 |
 | 63 | 历史 | 查看物品历史（时间线/轨迹） | `python3 scripts/home_manager.py sm1-history --id N` → 物品/history.html | 是 |
+| 64 | 数量变更 | 变更物品数量（补充/消耗/用完） | `python3 scripts/home_manager.py sm1-qty --id N [--plus\|--minus\|--set]` → 物品/receipt.html | 是 |
+| 65 | 状态变更 | 变更物品状态（废弃/借出/维修/恢复，状态机守卫） | `python3 scripts/home_manager.py sm1-status --id N --status X` → 物品/receipt.html | 是 |
 
 ### 匹配规则
 
@@ -255,6 +264,8 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 固定位 | `sm2-fixed --action list`（清单）· `--action set --item-id N --location "XX"`（设置）· `--action clear --item-id N`（解除） |
 | 收纳建议 | `sm2-suggest --item-id N`（单件）· `--batch [--limit N]`（批量:没固定位的常用件） |
 | 空间视图 | `sm2-view [--path "XX"]`（缺省=顶层） |
+| 借用 | `family --action borrow-list [--output PATH]`(清单 HTML·双向区隔/超期/催还) · `--action borrow-add --direction 借出\|借入 --item-id N 或 --item-name "XX" --object "XX" [--borrowed-at D] [--due-date D]`(登记·借出自动改状态借用中) · `--action borrow-return --borrow-id N`(归还·状态回在家) · `--action borrow-remind --borrow-id N`(催还文案纯文本) |
+| 家人档案 | `family --action member-list [--output PATH]`(成员 HTML·归属统计) · `--action member-add --name "XX" [--relation "XX"] [--note "XX"]`(添加) · `--action member-remove --name "XX"`(移除·归属回使用者) · `--action member-assign --name "XX" --item-ids "1,2,3"`(批量标记归属) |
 
 ---
 

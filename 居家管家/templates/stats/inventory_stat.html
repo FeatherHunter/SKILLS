@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 盘点统计</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:#eef4ff;color:var(--blue);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}
+.card span{font-size:21px;font-weight:700;letter-spacing:-.02em}
+.suggest{background:linear-gradient(135deg,#f0f7ff,#eafaf1);border:1px solid #cfe6ff;border-radius:16px;padding:16px 20px;margin-bottom:14px;font-size:14px}
+.suggest b{color:var(--blue)}
+section{background:var(--card);border-radius:18px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px}
+section h2{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}th{background:#f5f8ff;font-weight:700}
+.legend{display:flex;gap:14px;font-size:11px;color:var(--fg2);margin-bottom:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px;vertical-align:-1px}
+.empty{background:var(--card);border-radius:18px;padding:36px 20px;text-align:center;color:var(--fg3)}
+.empty h2{font-size:18px;color:var(--fg);margin-bottom:6px}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap;position:sticky;bottom:14px}
+.btn{border:none;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;box-shadow:var(--shadow)}
+.btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.copied{background:var(--green)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+.toast.show{opacity:1}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:24px}.actions{position:static}.card span{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 盘点统计</div>
+<h1 id="title">盘点统计</h1>
+<p class="lead" id="subtitle"></p>
+<div class="chips" id="metaBar"></div>
+</header>
+<div class="cards" id="cards"></div>
+<div class="suggest" id="suggest"></div>
+<div id="app"></div>
+<div class="actions">
+<button class="btn" id="reviewBtn">复查盘点</button>
+<button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
+<button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+<!--CHARTS-HELPERS-->
+const app=document.getElementById('app');
+const cardsEl=document.getElementById('cards');
+const suggestEl=document.getElementById('suggest');
+const reviewBtn=document.getElementById('reviewBtn');
+let D=null,META={};
+let _toastTimer=null;
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+function doCopy(text,btnId,msg){
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');b.textContent='✓ 已复制';setTimeout(()=>{b.classList.remove('copied');b.textContent=btnId==='reviewBtn'?(D&&D.review_action?D.review_action.label:'复查盘点'):btnId==='copyDataBtn'?'📋 复制数据':'📋 复制日志';},1600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));}else{fallbackCopy(text,done);}
+}
+function payloadData(){
+  return {has_data:D.has_data||false,records:(D.records||[]).map(r=>({id:r.id,scope:r.scope,occurred_at:r.occurred_at,status:r.status})),history:D.history||null,total_missing:D.total_missing||0,suggestion:D.suggestion||null};
+}
+function buildDataText(){
+  const d5={scene_id:META.scene_id||'stats_inventory',command_cn:(META.wake_word||'盘点统计')+' 结果',occurred_at:META.fetched_at||'',target:'inventory_records(D1 表 · 只读)',payload:payloadData()};
+  return JSON.stringify(d5,null,2);
+}
+function buildLogText(){
+  const lines=[];
+  lines.push('① 场景标识');lines.push(`  command_cn: ${META.wake_word||'(未知)'} 结果`);lines.push(`  唤醒词: ${META.wake_word||'(未知)'}`);lines.push(`  场景名: 盘点统计(scene_id=${META.scene_id||'stats_inventory'})`);lines.push('');
+  lines.push('② AI 思考链');lines.push('  '+(META.chain||'(未注入)'));lines.push('');
+  lines.push('③ 底层数据结构');lines.push('  payload: '+JSON.stringify(payloadData()));lines.push('  DB 操作: SELECT inventory_records(只读;D1 建表前返回空态)');lines.push('');
+  lines.push('④ 调用链');lines.push('  渲染脚本: '+(META.render_cmd||'(未知)'));lines.push('  数据来源: '+(META.source||'(未知)'));lines.push('');
+  lines.push('⑤ 时间戳 + 版本');lines.push('  本地时间: '+(META.fetched_at||'(未知)'));lines.push('  skill 版本: '+(META.version||'(未知)'));lines.push('');
+  lines.push('⑥ 异常信息');lines.push('  无');
+  return lines.join('\n');
+}
+document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'copyDataBtn','盘点数据已复制');
+document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'copyLogBtn','日志已复制');
+reviewBtn.onclick=()=>{const txt=(D&&D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围: 全屋 / 某个位置 / 某个分类 (选填)';doCopy(txt,'reviewBtn','复查 prompt 已复制');};
+function render(){
+  let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
+  const v=validate(p);if(!v.ok){app.innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
+  D=p.data;META=D.meta||{};
+  document.getElementById('title').textContent=D.summary.title||'盘点统计';
+  document.getElementById('subtitle').textContent=D.summary.subtitle||'';
+  const chips=[`<span class="chip">⚡ ${esc(META.wake_word||'盘点统计')}</span>`,`<span class="chip">● 查看</span>`,`<span class="chip">🕒 ${esc(META.fetched_at||'')}</span>`];
+  document.getElementById('metaBar').innerHTML=chips.join('');
+  const metrics=arr(D.summary.metrics);
+  cardsEl.innerHTML=metrics.map(m=>'<div class="card"><b>'+esc(m.label)+'</b><span>'+esc(m.value)+'</span></div>').join('');
+  suggestEl.innerHTML='<b>💡 AI 建议:</b> '+esc(D.suggestion||'');
+  if(!D.has_data){app.innerHTML='<div class="empty"><h2>还没有盘点记录 📋</h2>完成首次盘点后,这里会显示完成率/差异趋势/建议优先盘哪。<div class="actions" style="position:static"><button class="btn" id="firstBtn">复制「首次盘点」</button></div></div>';
+    reviewBtn.style.display='none';
+    const fb=document.getElementById('firstBtn');
+    if(fb)fb.onclick=()=>{const txt=(D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围: 全屋 / 某个位置 / 某个分类 (选填)';doCopy(txt,'firstBtn','盘点 prompt 已复制');};
+    return;}
+  reviewBtn.style.display='';
+  const hist=arr(D.history);
+  app.innerHTML='';
+  if(hist.length){
+    const sec=document.createElement('section');
+    sec.innerHTML='<h2>差异趋势 <span class="hint">每次盘点: 缺 / 多 / 异</span></h2><table><thead><tr><th>时间</th><th>范围</th><th>缺</th><th>多</th><th>异</th><th>状态</th></tr></thead><tbody>'+hist.map(h=>'<tr><td>'+esc((h.occurred_at||'').slice(0,10))+'</td><td>'+esc(h.scope)+'</td><td style="color:#ff3b30;font-weight:700">'+esc(h.missing)+'</td><td style="color:#ff9500;font-weight:700">'+esc(h.extra)+'</td><td style="color:#007aff;font-weight:700">'+esc(h.diff)+'</td><td>'+esc(h.status||'-')+'</td></tr>').join('')+'</tbody></table>';
+    app.appendChild(sec);
+  }
+  const recSec=document.createElement('section');
+  recSec.innerHTML='<h2>盘点明细</h2>';
+  app.appendChild(recSec);
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 家人档案</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.stage{display:inline-block;margin-top:10px;font-size:12px;font-weight:700;color:var(--blue);background:#eaf3ff;border-radius:99px;padding:4px 12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}.card span{font-size:22px;font-weight:700;letter-spacing:-.02em}
+section{background:var(--card);border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px}
+h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
+.banner{background:#f0fff4;border:1px solid #d3f5dd;color:#1e8e4a;border-radius:14px;padding:12px 16px;font-weight:600;margin-bottom:16px}
+.member{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;background:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.member .avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#6db3ff,#8a6bff);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:18px;flex-shrink:0}
+.member .who{flex:1;min-width:160px}
+.member .who .name{font-size:16px;font-weight:700}
+.member .who .meta{color:var(--fg2);font-size:13px}
+.member .count{font-size:13px;color:var(--fg3)}
+.badge{font-size:12px;font-weight:700;padding:2px 10px;border-radius:99px;background:#eaf3ff;color:var(--blue)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.btn{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--fg);border-radius:99px;padding:6px 14px;cursor:pointer}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.danger{color:#d70015}
+.copy{font:inherit;font-size:12px;font-weight:600;background:#f5f5f7;border:1px solid var(--line);border-radius:99px;padding:5px 12px;cursor:pointer}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.form-grid label{display:block;font-size:12px;font-weight:700;color:var(--fg2);margin-bottom:4px}
+.form-grid input,.form-grid select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;width:100%;background:#fff}
+.checklist{max-height:260px;overflow:auto;border:1px solid var(--line);border-radius:12px;padding:10px}
+.checklist label{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;font-size:14px;cursor:pointer}
+.checklist label:hover{background:#f5f8ff}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
+.muted{color:var(--fg3);font-size:12px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 家人档案</div>
+<h1 id="title">家人档案</h1>
+<p class="lead" id="subtitle">成员 · 物品归属标记</p>
+<span class="stage">成员列表</span>
+</header>
+<div class="cards" id="cards"></div>
+<div id="app"></div>
+<p class="footer">模板只展示注入数据，不直连数据库。</p>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+const cardsEl=document.getElementById('cards');
+function copy(text){navigator.clipboard&&navigator.clipboard.writeText(text);}
+function memberCard(m){
+const removePrompt='【移除成员】「'+m.name+'」（'+m.relation+'），其归属 '+m.item_count+' 件物品将回到「使用者」。\n请执行: python home_manager.py family --action member-remove --name "'+m.name+'"';
+return '<div class="member"><div class="avatar">'+esc((m.name||'?').slice(0,1))+'</div>'+
+'<div class="who"><div class="name">'+esc(m.name)+'</div><div class="meta">'+(m.relation?esc(m.relation):'<span class="muted">未填关系</span>')+(m.note?' · '+esc(m.note):'')+'</div></div>'+
+'<span class="count">归属 <b>'+m.item_count+'</b> 件</span>'+
+'<button class="btn danger" onclick="copy('+JSON.stringify(removePrompt)+')">移除成员</button></div>';
+}
+function assignSection(p){
+const members=arr(p.members);
+const items=arr(p.items);
+const memberOpts=members.map(m=>'<option value="'+esc(m.name)+'">'+esc(m.name)+'</option>').join('');
+const rows=items.map(it=>'<label><input type="checkbox" value="'+it.id+'">'+esc(it.name)+' <span class="muted">('+esc(it.owner)+')</span></label>').join('');
+return `<section><h2>标记物品归属</h2>
+<div class="form-grid"><label>归属成员<select id="aMember">${memberOpts}</select></label></div>
+<div class="checklist" id="aItems">${rows||'<p class="muted">库里还没有物品</p>'}</div>
+<button class="btn primary" id="btnAssign">确认标记归属</button></section>`;
+}
+function render(){
+let p;
+try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(p);
+if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=p.data;
+const summary=data.summary||{};
+const members=arr(data.members);
+document.getElementById('title').textContent=summary.title||'家人档案';
+document.getElementById('subtitle').textContent=summary.subtitle||'';
+const metrics=arr(summary.metrics);
+cardsEl.innerHTML=metrics.map(m=>'<div class="card"><b>'+esc(m.label)+'</b><span>'+esc(m.value)+'</span></div>').join('');
+const logText='① 场景：家人档案（唤醒词：家人档案）\n② 思考链：成员列表 → 增删 → 归属标记\n③ 数据结构：family_members(称呼/关系/备注) + items.owner\n④ 调用链: python home_manager.py family --action member-list\n⑤ 时间戳: '+new Date().toLocaleString()+' · 版本 v2.0\n⑥ 异常: 无';
+const dataText=JSON.stringify({scene_id:data.scene_id||'SM7-2',command_cn:data.command_cn||'家人档案',occurred_at:new Date().toLocaleString(),target:'家人档案',payload:{members:members,total_items:data.total_items||0}},null,2);
+const addPrompt='【添加成员】\n称呼: ____\n关系: ____(妈妈/老婆/宝宝…)\n备注: ____(可选)\n请执行: python home_manager.py family --action member-add --name "称呼" --relation "关系" --note "备注"';
+app.innerHTML=(members.length?'':'<div class="banner">还没有家人档案，先添加第一位成员吧</div>')+
+'<section><h2>成员列表</h2>'+(members.length?members.map(memberCard).join(''):'<p class="muted">空 — 添加成员后这里会显示</p>')+'</section>'+
+assignSection(data)+
+`<section><h2>添加成员</h2><div class="form-grid">
+<label>称呼<input id="mName" placeholder="如：妈妈/老婆/宝宝"></label>
+<label>关系<input id="mRelation" placeholder="如：家人/邻居"></label>
+<label>备注<input id="mNote" placeholder="可选"></label>
+</div><button class="btn primary" id="btnAddMember">确认添加</button></section>`+
+`<section><h2>动作</h2><div class="btns">
+<button class="btn" onclick="copy(${JSON.stringify(dataText)})">复制数据</button>
+<button class="btn" onclick="copy(${JSON.stringify(logText)})">复制日志</button>
+</div></section>`;
+document.getElementById('btnAddMember').onclick=function(){
+const name=document.getElementById('mName').value.trim();
+if(!name){alert('请填写成员称呼');return;}
+const relation=document.getElementById('mRelation').value.trim();
+const note=document.getElementById('mNote').value.trim();
+let prompt='【添加成员】「'+name+'」'+(relation?'（'+relation+'）':'')+'\n请执行: python home_manager.py family --action member-add --name "'+name+'"';
+if(relation)prompt+=' --relation "'+relation+'"';
+if(note)prompt+=' --note "'+note+'"';
+copy(prompt);
+};
+document.getElementById('btnAssign').onclick=function(){
+const member=document.getElementById('aMember').value;
+const ids=Array.from(document.querySelectorAll('#aItems input:checked')).map(c=>c.value);
+if(!ids.length){alert('请先勾选物品');return;}
+copy('【标记归属】将 '+ids.length+' 件物品归属「'+member+'」\n请执行: python home_manager.py family --action member-assign --name "'+member+'" --item-ids "'+ids.join(',')+'"');
+};
+}
+render();
+</script>
+</body>
+</html>

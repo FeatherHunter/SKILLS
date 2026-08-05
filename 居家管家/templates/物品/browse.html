@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 筛选浏览</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:34px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 13px;font-size:13px;cursor:pointer}.chip.on{border-color:var(--blue);background:var(--soft);color:var(--blue);font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.mini{background:var(--card);border-radius:14px;padding:12px;border:1px solid #eee}
+.mini b{display:block;font-size:14px}.mini .loc{color:var(--fg2);font-size:12px}.mini .meta{color:var(--fg3);font-size:12px}
+.tag{background:#eef5ff;color:#0a63ce;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px;display:inline-block}
+.empty{color:var(--fg3)}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:8px 13px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:13px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.actions{margin-top:12px;text-align:right}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+let curGroup='all';
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};const s=d.scene||{};
+const hero=metaHeader(payload,{title:s.summary&&s.summary.title||'筛选浏览',lead:'探索式查找 · 按 '+esc(s.group_by||'分类')+' 分组 · 本地可切换排序/分组',stage:'查看'});
+let html=hero;
+html+=`<section><h2>计数</h2><div class="row" style="display:flex;gap:10px">${(s.summary&&s.summary.metrics||[]).map(m=>'<span class="chip on">'+esc(m.label)+' '+esc(m.value)+'</span>').join('')}</div>
+<div class="chips"><button class="chip" data-g="all">全部</button>${(s.groups||[]).map(g=>'<button class="chip" data-g="'+esc(g.name)+'">'+esc(g.name)+' ('+g.items.length+')</button>').join('')}</div>
+<button class="copy ghost" onclick="copyText('筛选浏览(居家管家): 切换分组维度')">切换筛选维度</button>
+</section>`;
+html+='<div id="groups">'+((s.groups||[]).map(g=>`<section class="grp" data-g="${esc(g.name)}" ${g.name===curGroup||curGroup==='all'?'':'style="display:none"'}><h2>${esc(g.name)} <span class="pill" style="font-size:12px">${g.items.length}</span></h2><div class="cards">${g.items.map(it=>`<div class="mini"><b>${esc(it.name)} <span class="pill" style="font-size:11px">ID ${it.id}</span></b><div class="loc">📍 ${esc(it.location||'(未设置)')} ×${esc(it.quantity??1)}</div><div class="meta">${esc(it.status)} · ${it.purchase_price!=null?'¥'+esc(it.purchase_price):''}</div>${(it.tags||[]).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')}</div>`).join('')}</div></section>`).join('')||'<section><p class="empty">无匹配物品</p></section>')+'</div>';
+html+=`<section><h2>通用操作</h2>${actionBar(payload,[{label:'切换排序',text:'筛选浏览(居家管家): 按 录入时间/价格/名称 重新排序',kind:'ghost'}])}</section>`;
+app.innerHTML=html;
+document.querySelectorAll('.chip[data-g]').forEach(c=>c.addEventListener('click',()=>{curGroup=c.dataset.g;document.querySelectorAll('.grp').forEach(x=>x.style.display=(curGroup==='all'||x.dataset.g===curGroup)?'':'none');document.querySelectorAll('.chip[data-g]').forEach(o=>o.classList.toggle('on',o===c));}));
+}
+render();
+</script>
+</body>
+</html>

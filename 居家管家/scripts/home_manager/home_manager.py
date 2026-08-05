@@ -39,6 +39,10 @@ def main():
         account_add, account_list, account_show, account_del, account_set_master
     )
 
+    # SM1 物品管理域(T2 公共层奠基: CLI 注册 + 分发,域代码全在 scripts/物品/)
+    from 物品.cli import register as sm1_register
+    from 物品.cli import run as sm1_run
+
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -148,15 +152,18 @@ def main():
     p_find.add_argument("--limit", type=int, default=5, help="返回候选物品数量上限")
 
     # ── stats ──
-    p_stats = subparsers.add_parser("stats", help="频率统计")
+    p_stats = subparsers.add_parser("stats", help="统计(频率/过期/总览/闲置/盘点统计)")
     p_stats.add_argument("--type", default="summary",
-                         choices=["frequent", "dormant", "summary", "expiring"],
-                         help="统计类型：frequent=高频, dormant=长期未碰, summary=总览, expiring=快过期")
+                         choices=["frequent", "dormant", "summary", "expiring",
+                                  "overview", "idle", "inventory-stat"],
+                         help="统计类型：frequent=高频, dormant=长期未碰, summary=总览, "
+                              "expiring=快过期, overview=物品总览HTML, idle=闲置检测HTML, "
+                              "inventory-stat=盘点统计HTML")
     p_stats.add_argument("--limit", type=int, default=20, help="返回数量上限")
-    p_stats.add_argument("--days", type=int, default=30, help="（expiring用）天数窗口，默认30")
+    p_stats.add_argument("--days", type=int, default=None, help="（expiring用）预告天数窗口，默认30，可选7/30/90；（idle用）闲置阈值，默认90，可选90/180/365")
     p_stats.add_argument("--expired-only", action="store_true", help="（expiring用）只看已过期")
-    p_stats.add_argument("--category-id", type=int, default=None, help="（expiring用）按分类 ID 筛选")
-    p_stats.add_argument("--output", default=None, help="HTML 输出路径（仅 --type expiring 支持）")
+    p_stats.add_argument("--category-id", type=int, default=None, help="（expiring/idle用）按分类 ID 筛选")
+    p_stats.add_argument("--output", default=None, help="HTML 输出路径（overview/idle/expiring/inventory-stat 支持）")
 
     # ── outfit (穿什么 HTML 化) ──
     p_outfit = subparsers.add_parser("outfit", help="今日穿搭选择器")
@@ -198,6 +205,30 @@ def main():
     p_account.add_argument("--tags", default=None, help="标签（逗号分隔）")
     p_account.add_argument("--note", default=None, help="备注")
     p_account.add_argument("--new-master-key", default=None, help="新 master key（用于 set-master）")
+
+    # ── family (SM7 家庭协作域: 家人档案 / 借用管理) ──
+    p_family = subparsers.add_parser("family", help="家庭协作（家人档案/借用管理）")
+    p_family.add_argument("--action", required=True,
+                          choices=["borrow-add", "borrow-return", "borrow-list", "borrow-remind",
+                                   "member-add", "member-remove", "member-list", "member-assign"],
+                          help="操作：borrow-*=借用管理, member-*=家人档案")
+    p_family.add_argument("--direction", default=None, choices=["借出", "借入"],
+                          help="借出/借入（borrow-add）")
+    p_family.add_argument("--item-id", type=int, default=None, help="库内物品 ID（借出必填）")
+    p_family.add_argument("--item-name", default=None, help="物品名（借入自由文本/借出自动回填）")
+    p_family.add_argument("--object", default=None, help="借用对象（家人称呼或外部联系人）")
+    p_family.add_argument("--borrowed-at", default=None, help="借出日期（YYYY-MM-DD，默认今天）")
+    p_family.add_argument("--due-date", default=None, help="约定归还日（YYYY-MM-DD）")
+    p_family.add_argument("--remark", default=None, help="借用备注")
+    p_family.add_argument("--borrow-id", type=int, default=None, help="借用记录 ID（归还/催还用）")
+    p_family.add_argument("--name", default=None, help="成员称呼（member-* 用）")
+    p_family.add_argument("--relation", default=None, help="成员关系（妈妈/老婆/宝宝…）")
+    p_family.add_argument("--note", default=None, help="成员备注")
+    p_family.add_argument("--item-ids", default=None, help="物品 ID 列表（逗号分隔，标记归属用）")
+    p_family.add_argument("--output", default=None, help="HTML 输出路径")
+
+    # SM1 物品管理域子命令(T2 · 29 场景)
+    sm1_register(subparsers)
 
     args = parser.parse_args()
 
@@ -405,23 +436,52 @@ def main():
         return 0
 
     elif args.command == "stats":
-        if args.output and args.type == "expiring":
+        if args.output and args.type in ("expiring", "overview", "idle", "inventory-stat"):
             from render import emit
-            from home_manager.inventory_ops import _stats_expiring_payload
-            conn = get_conn()
-            try:
-                payload_data = _stats_expiring_payload(
-                    conn, limit=args.limit, days=args.days,
-                    expired_only=args.expired_only, category_id=args.category_id
-                )
-            finally:
-                conn.close()
+            if args.type == "expiring":
+                from stats.expiring import expiring_payload
+                conn = get_conn()
+                try:
+                    payload_data = expiring_payload(
+                        conn, limit=args.limit, days=args.days or 30,
+                        expired_only=args.expired_only, category_id=args.category_id
+                    )
+                finally:
+                    conn.close()
+                template_name, msg = "stats/expiring.html", "过期预警 HTML 已生成"
+            elif args.type == "overview":
+                from stats.overview import overview_payload
+                conn = get_conn()
+                try:
+                    payload_data = overview_payload(conn)
+                finally:
+                    conn.close()
+                template_name, msg = "stats/overview.html", "物品总览 HTML 已生成"
+            elif args.type == "idle":
+                from stats.idle import idle_payload
+                conn = get_conn()
+                try:
+                    payload_data = idle_payload(
+                        conn, days=args.days or 90,
+                        category_id=args.category_id
+                    )
+                finally:
+                    conn.close()
+                template_name, msg = "stats/idle.html", "闲置检测 HTML 已生成"
+            else:  # inventory-stat
+                from stats.inventory_stat import inventory_stat_payload
+                conn = get_conn()
+                try:
+                    payload_data = inventory_stat_payload(conn)
+                finally:
+                    conn.close()
+                template_name, msg = "stats/inventory_stat.html", "盘点统计 HTML 已生成"
             payload = {
                 "status": "ok",
                 "data": payload_data,
-                "message": "过期预警 HTML 已生成",
+                "message": msg,
             }
-            return emit(payload, "expiring_alert.html", args.output)
+            return emit(payload, template_name, args.output)
         return stats(stat_type=args.type, limit=args.limit, days=args.days,
                      expired_only=args.expired_only, category_id=args.category_id)
 
@@ -561,6 +621,136 @@ def main():
                 print("✗ " + result["message"])
 
         return 0
+
+    elif args.command == "family":
+        import json
+        from 家庭协作 import family_ops
+        action = args.action
+
+        if action == "member-add":
+            conn = get_conn()
+            try:
+                m = family_ops.member_add(conn, args.name,
+                                          relation=args.relation or "",
+                                          note=args.note or "")
+            except ValueError as e:
+                print(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False))
+                return 1
+            finally:
+                conn.close()
+            print(json.dumps({"status": "ok", "data": m,
+                              "message": f"已添加成员「{m['name']}」"}, ensure_ascii=False))
+            return 0
+
+        elif action == "member-remove":
+            conn = get_conn()
+            try:
+                result = family_ops.member_remove(conn, args.name)
+            except ValueError as e:
+                print(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False))
+                return 1
+            finally:
+                conn.close()
+            print(json.dumps({"status": "ok", "data": result,
+                              "message": f"已移除成员「{result['removed']}」，"
+                                         f"{result['reassigned']} 件物品归属回「使用者」"},
+                             ensure_ascii=False))
+            return 0
+
+        elif action == "member-assign":
+            ids = [int(x) for x in (args.item_ids or "").split(",") if x.strip()]
+            conn = get_conn()
+            try:
+                n = family_ops.member_assign(conn, args.name, ids)
+            except ValueError as e:
+                print(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False))
+                return 1
+            finally:
+                conn.close()
+            print(json.dumps({"status": "ok", "data": {"assigned": n, "member": args.name},
+                              "message": f"已标记 {n} 件物品归属「{args.name}」"}, ensure_ascii=False))
+            return 0
+
+        elif action == "member-list":
+            conn = get_conn()
+            try:
+                payload = family_ops.member_list_payload(conn)
+            finally:
+                conn.close()
+            if args.output:
+                from render import emit
+                return emit(payload, "family_members.html", args.output,
+                            message="家人档案 HTML 已生成")
+            print(json.dumps(payload, ensure_ascii=False))
+            return 0
+
+        elif action == "borrow-add":
+            conn = get_conn()
+            try:
+                r = family_ops.borrow_add(
+                    conn, direction=args.direction, object_name=args.object,
+                    item_name=args.item_name or "", item_id=args.item_id,
+                    borrowed_at=args.borrowed_at, due_date=args.due_date,
+                    remark=args.remark or "",
+                )
+            except ValueError as e:
+                print(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False))
+                return 1
+            finally:
+                conn.close()
+            print(json.dumps({"status": "ok", "data": r,
+                              "message": f"已登记{args.direction}：{r['item_name']} → {r['object_name']}"},
+                             ensure_ascii=False))
+            return 0
+
+        elif action == "borrow-return":
+            conn = get_conn()
+            try:
+                r = family_ops.borrow_return(conn, args.borrow_id)
+            except ValueError as e:
+                print(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False))
+                return 1
+            finally:
+                conn.close()
+            print(json.dumps({"status": "ok", "data": r,
+                              "message": f"已确认归还：{r['item_name']}（{r['object_name']}）"},
+                             ensure_ascii=False))
+            return 0
+
+        elif action == "borrow-remind":
+            conn = get_conn()
+            try:
+                cursor = conn.execute("SELECT * FROM borrow_records WHERE id = ?",
+                                      (args.borrow_id,))
+                row = cursor.fetchone()
+                if not row:
+                    raise ValueError(f"借用记录 {args.borrow_id} 不存在")
+                text = family_ops.remind_text(dict(row))
+            except ValueError as e:
+                print(json.dumps({"status": "error", "message": str(e)}, ensure_ascii=False))
+                return 1
+            finally:
+                conn.close()
+            print(json.dumps({"status": "ok", "data": {"text": text},
+                              "message": "催还文案（复制纯文本发送）"}, ensure_ascii=False))
+            return 0
+
+        elif action == "borrow-list":
+            conn = get_conn()
+            try:
+                payload = family_ops.borrow_list_payload(conn)
+            finally:
+                conn.close()
+            if args.output:
+                from render import emit
+                return emit(payload, "family_borrow.html", args.output,
+                            message="借用管理 HTML 已生成")
+            print(json.dumps(payload, ensure_ascii=False))
+            return 0
+
+    elif args.command and args.command.startswith("sm1-"):
+        # SM1 物品管理域(T2 公共层奠基 · 分发到 物品.cli)
+        return sm1_run(args)
 
     else:
         parser.print_help()

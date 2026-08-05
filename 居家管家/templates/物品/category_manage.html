@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 分类管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.tree{margin-left:6px}
+.l1{padding:10px 0;border-bottom:1px solid #ececf1}
+.l1 b{font-size:16px}
+.cnt{color:var(--fg2);font-size:13px;margin-left:8px}
+.l2{padding:6px 0 6px 22px;color:var(--fg2);font-size:14px}
+.btnrow{display:flex;gap:6px;margin-left:10px;flex-wrap:wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:6px 11px;font-weight:700;cursor:pointer;margin:4px 4px 0 0;font-size:12px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.red{background:var(--red)}
+.actions{margin-top:12px;text-align:right}
+.warnbox{border-left:3px solid var(--orange);background:#fff8e8;padding:10px 14px;border-radius:8px;margin:8px 0}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};const s=d.scene||{};
+const hero=metaHeader(payload,{title:'管分类',lead:'分类体系查看与维护:8 顶级 + 二级,命名规范:禁数字前缀/禁 emoji/同父唯一/1-30 字',stage:'查看'});
+let html=hero;
+html+=`<section><h2>分类树(${s.total||0} 个)</h2><div class="tree">${(s.tree||[]).map(c=>`<div class="l1"><b>${esc(c.name)}</b><span class="cnt">${c.item_count} 件</span>
+<div class="btnrow"><button class="copy ghost" onclick="copyText('新建二级分类(居家管家): 在「${esc(c.name)}」下新建: ')" style="font-size:12px">+二级</button>
+<button class="copy ghost" onclick="copyText('重命名分类(居家管家): 把「${esc(c.name)}」(${c.id})改成: ')" style="font-size:12px">改名</button>
+<button class="copy ghost" onclick="copyText('合并分类(居家管家): 把「${esc(c.name)}」(${c.id})合并到: ')" style="font-size:12px">合并</button></div>
+${(c.children||[]).map(ch=>`<div class="l2">└ ${esc(ch.name)} <span class="cnt">${ch.item_count} 件</span><span class="btnrow"><button class="copy ghost" onclick="copyText('重命名分类(居家管家): 把「${esc(ch.name)}」(${ch.id})改成: ')" style="font-size:12px">改名</button><button class="copy ghost" onclick="copyText('合并分类(居家管家): 把「${esc(ch.name)}」(${ch.id})合并到: ')" style="font-size:12px">合并</button></span></div>`).join('')}
+</div>`).join('')}</div>
+<div class="warnbox">删除拦截:有物品的分类不可删;种子 8 类 + 自定义一律可改不可删。</div>
+<div class="actions"><button class="copy" onclick="copyText('新建分类(居家管家): 新建顶级分类: ')">新建顶级分类</button></div></section>`;
+html+=remindersBlock(payload);
+html+=`<section><h2>通用操作</h2>${actionBar(payload)}</section>`;
+app.innerHTML=html;
+}
+render();
+</script>
+</body>
+</html>

@@ -13,6 +13,8 @@ description: >
   看标签、合标签（标签管理）、
   查快递（快递查询）、
   查账号、存账号、改账号（账号密码管理）、
+  借用、家人档案（家庭协作）、
+  查闲置（闲置检测）、盘点统计（盘点统计与建议）、
   查异常（数据健康检查）。
   所有操作通过 Python CLI 执行数据库读写，AI 负责解析自然语言和交互确认；录物品/拍物品流程在写入前生成 HTML 预览供用户确认。
 metadata:
@@ -124,8 +126,8 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 17 | 带物品 | 出门标记 | features/travel.md → 出门前 | 是 |
 | 18 | 归物品 | 回家归位 | features/travel.md → 回家后 | 否（查所有旅游中） |
 | 19 | 统物品 | 总体统计 | features/stats.md → summary | 否 |
-| 20 | 查高频 | 高频物品 | features/stats.md → frequent | 否 |
-| 21 | 查低频 | 低频物品 | features/stats.md → dormant | 否 |
+| 20 | 查高频 | 高频物品（并入物品总览） | features/stats.md → summary（T5 裁决：并入总览高频 TOP 区块） | 否 |
+| 21 | 查低频 | 低频物品（并入闲置检测） | features/stats.md → idle（T5 裁决：语义由查闲置承接） | 否 |
 | 22 | 查过期 | 过期检查 | features/stats.md → expiring | 否 |
 | 23 | 看标签 | 列出标签 | features/tags.md → 列表 | 否 |
 | 24 | 合标签 | 合并标签 | features/tags.md → 合并 | 是（from/to） |
@@ -139,6 +141,10 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 32 | 查物品(HTML) | 物品搜索(默认输出 HTML) | features/search.md → Step 4 | 可选（无则列全部） |
 | 33 | 看物品(HTML) | 物品详情(默认输出 HTML) | features/search.md → Step 4 | 是（多件时先选） |
 | 34 | 统物品(HTML) | 总体统计(默认输出 HTML) | features/search.md → Step 4 | 否 |
+| 35 | 借用 | 借用管理（借出/借入/归还/催还） | `python3 scripts/home_manager.py family --action borrow-list` → family_borrow.html | 否（登记时选/填） |
+| 36 | 家人档案 | 家人档案（成员/物品归属标记） | `python3 scripts/home_manager.py family --action member-list` → family_members.html | 否 |
+| 37 | 查闲置 | 闲置物品检测 | `python3 scripts/home_manager.py stats --type idle [--days 90|180|365] [--category-id N] --output` → stats/idle.html | 否 |
+| 38 | 盘点统计 | 盘点统计与建议 | `python3 scripts/home_manager.py stats --type inventory-stat --output` → stats/inventory_stat.html | 否 |
 
 ### 匹配规则
 
@@ -193,10 +199,12 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 穿什么 | `list --category-id 138 --status "在家"` (衣物顶级) + `list --category-id 148 --status "在家"` (鞋类二级) |
 | 带物品 | `update --id {ID} --location-status "旅游中"` |
 | 归物品 | `search --status "旅游中"` → 逐个 `update --id {ID} --location-status "在家"` |
-| 统物品 | `stats --type summary` |
-| 查高频 | `stats --type frequent --limit 20` |
-| 查低频 | `stats --type dormant --limit 20` |
-| 查过期 | `stats --type expiring [--days 30] [--expired-only] [--category-id N] [--output PATH]` (--output 走 expiring_alert.html) |
+| 统物品 | `stats --type overview --output`（物品总览 HTML，含状态/分类/位置/价值TOP/高频TOP/趋势） |
+| 查高频 | `stats --type overview --output`（T5 裁决：并入物品总览高频 TOP 区块） |
+| 查低频 | `stats --type idle [--days 90] --output`（T5 裁决：语义由闲置检测承接） |
+| 查闲置 | `stats --type idle [--days 90|180|365] [--category-id N] [--output PATH]` (--output 走 stats/idle.html) |
+| 查过期 | `stats --type expiring [--days 30] [--expired-only] [--category-id N] [--output PATH]` (--output 走 stats/expiring.html) |
+| 盘点统计 | `stats --type inventory-stat [--output PATH]` (--output 走 stats/inventory_stat.html) |
 | 看标签 | `tag-list` |
 | 合标签 | `tag-merge --from "旧" --to "新"` |
 | 查快递 | `search --status "快递中" [--output PATH]` (auto 走 delivery_check.html) |
@@ -287,11 +295,15 @@ $SKILLS_DATA_DIR  >  $SKILLS_DB_PATH  >  Skill 自带 fallback (Windows: D:\.db\
 | `delivery_check.html` | 查快递 |
 | `add_preview.html` | 录物品 |
 | `item_detail.html` | 看物品 |
-| `list_overview.html` | 统物品 |
+| `list_overview.html` | 统物品（v1，保留给盘全部） |
 | `inventory_check.html` | 盘物品 |
-| `expiring_alert.html` | 查过期 |
+| `expiring_alert.html` | 查过期（v1，已迁移至 stats/expiring.html） |
 | `outfit_picker.html` | 穿什么 |
 | `travel_trip.html` | 出行清单（涵盖带物品 pack + 归物品 return） |
+| `stats/overview.html` | 统物品（v2 物品总览，T5） |
+| `stats/idle.html` | 查闲置（T5） |
+| `stats/expiring.html` | 查过期（v2，T5） |
+| `stats/inventory_stat.html` | 盘点统计（T5） |
 
 例子：`home_manager_html/查物品_20260728_171500.html`
 
@@ -374,6 +386,10 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 | `list_overview.html` | `list` | 只读统计（含状态/分类分布） |
 | `inventory_check.html` | `inventory --output` | 状态/数量变更 + 回执 |
 | `expiring_alert.html` | `stats --type expiring --output` | 已处理/废弃 + 回执 |
+| `stats/overview.html` | `stats --type overview --output` | 物品总览（指标/分布图表/价值TOP/高频TOP/趋势下钻）+ 复制数据/日志 |
+| `stats/idle.html` | `stats --type idle --output` | 闲置勾选处理（废弃/送人/先不处理）+ 复制数据/日志 |
+| `stats/expiring.html` | `stats --type expiring --output` | 过期勾选处理（用完/废弃/忽略）+ 复制数据/日志 |
+| `stats/inventory_stat.html` | `stats --type inventory-stat --output` | 盘点统计（趋势/差异/建议复查）+ 复制数据/日志 |
 
 **架构**：渲染器在 `scripts/render/__init__.py`（独立包）；home_manager 包不再反向依赖。详见 `scripts/render/__init__.py` 文档字符串。
 
@@ -462,7 +478,7 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 |------|--------|
 | 查看类 | `查物品` / `看物品` |
 | 盘点类 | `盘物品` / `盘全部` |
-| 统计类 | `统物品` / `查高频` / `查低频` / `查过期` |
+| 统计类 | `统物品` / `查高频` / `查低频` / `查过期` / `查闲置` / `盘点统计` |
 | 出行类 | `查快递` / `穿什么` / `带物品` / `归物品` |
 
 这些唤醒词的 HTML 输出路径见 [§📌 输出位置](#-输出位置) 的 `template → command_cn` 映射表。

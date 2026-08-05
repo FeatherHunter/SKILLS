@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 差异处理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.grp{border:1px solid #eef0f4;border-radius:16px;padding:14px;margin:10px 0}
+.grp h3{font-size:15px;margin-bottom:8px}
+.grp .badge{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:800;color:#fff;margin-right:8px}
+.grp .badge.b-miss{background:var(--red)}.grp .badge.b-extra{background:var(--green)}.grp .badge.b-diff{background:var(--orange)}.grp .badge.b-pending{background:#8e8e93}
+.actrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.act{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 13px;font-size:12px;cursor:pointer}.act.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.act-input{margin-left:8px;display:none}
+.comp{font-size:13px;color:var(--fg2);margin:4px 0}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.green{background:var(--green)}
+.actions{margin-top:14px;text-align:right}
+.empty{color:var(--fg3)}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};const s=d.scene||{};
+const r=s.record||{};
+window.__recId=r.id||'';
+const hero=metaHeader(payload,{title:'差异处理 · 记录#'+(r.id||''),lead:'缺'+esc(r.missing_cnt||0)+'/多'+esc(r.extra_cnt||0)+'/异'+esc(r.diff_cnt||0)+'/待确认'+esc(r.pending_cnt||0)+' · 逐项指定处理,批量执行',stage:'选择 → 确认'});
+let html=hero;
+const group=(label,badge,list,fn)=>list&&list.length?`<div class="grp"><h3><span class="badge ${badge}">${label}${list.length}</span>${label}</h3>${list.map(fn).join('')}</div>`:'';
+html+=group('缺 ','b-miss',s.missing,it=>`<div class="diff-row" data-type="missing" data-id="${it.item?it.item.id:it.id}"><b>${esc(it.item?it.item.name:('#'+it.id))}</b><div class="actrow">${(s.actions&&s.actions.missing||[]).map(a=>'<button class="act" data-a="'+a+'" onclick="pickAct(this,\'missing\')">'+a+'</button>').join('')}<input class="act-input newloc" placeholder="新位置(如 卧室/柜子)"></div></div>`);
+html+=group('多 ','b-extra',s.extra,e=>`<div class="diff-row" data-type="extra"><b>${esc(e.description&&e.description.name||e.description||'清单外物品')}</b><div class="actrow"><button class="act" data-a="录入为新物品" onclick="pickAct(this,'extra')">录入为新物品</button><button class="act" data-a="忽略" onclick="pickAct(this,'extra')">忽略</button><input class="act-input draft" placeholder="物品名/分类/数量(如: 遥控器,数码与电子,1)"></div></div>`);
+html+=group('异 ','b-diff',s.diff,x=>`<div class="diff-row" data-type="diff" data-id="${x.id}"><b>${esc(x.item?x.item.name:('#'+x.id))}</b><div class="comp">系统 ${esc(String(x.before??''))} ⟷ 实际 ${esc(String(x.after??''))} (字段:${esc(x.field||'')})</div><div class="actrow"><button class="act" data-a="按实际更新" onclick="pickAct(this,'diff')">按实际更新</button><button class="act" data-a="忽略" onclick="pickAct(this,'diff')">忽略</button></div></div>`);
+html+=group('待确认 ','b-pending',s.pending,it=>`<div class="diff-row" data-type="pending" data-id="${it.item?it.item.id:it.id}"><b>${esc(it.item?it.item.name:('#'+it.id))}</b><div class="actrow"><button class="act" data-a="标记复查" onclick="pickAct(this,'pending')">标记复查(下次盘点置顶)</button><button class="act" data-a="先不处理" onclick="pickAct(this,'pending')">先不处理</button></div></div>`);
+if(!html.includes('diff-row')){html+='<section><p class="empty">该记录没有未处理差异。</p></section>';}
+html+=`<section><div class="actions"><button class="copy green" onclick="copyText(collectResolve())">批量确认</button></div></section>`;
+html+=remindersBlock(payload);
+html+=`<section><h2>通用操作</h2>${actionBar(payload)}</section>`;
+app.innerHTML=html;
+}
+function pickAct(btn,type){const row=btn.closest('.diff-row');row.querySelectorAll('.act').forEach(x=>x.classList.remove('on'));btn.classList.add('on');const input=row.querySelector('.act-input');if(input)input.style.display=(type==='missing'&&btn.dataset.a==='标记挪走')||(type==='extra'&&btn.dataset.a==='录入为新物品')?'inline-block':'none';}
+function collectResolve(){
+const out={missing:[],extra:[],diff:[],pending:[]};
+document.querySelectorAll('.diff-row').forEach(row=>{
+  const t=row.dataset.type;const act=row.querySelector('.act.on');const id=+row.dataset.id||null;
+  const input=row.querySelector('.act-input');
+  if(t==='missing'){if(act)out.missing.push({id,action:act.dataset.a,new_location:input&&input.value.trim()||undefined});}
+  else if(t==='extra'){if(act){if(act.dataset.a==='录入为新物品'&&input&&input.value.trim()){const parts=input.value.split(',');out.extra.push({description:parts[0].trim(),draft:{name:parts[0].trim(),category_id:parts[1]&&parts[1].trim()||undefined,quantity:parts[2]&&parts[2].trim()||1}});}else{out.extra.push({draft:null});}}}
+  else if(t==='diff'){if(act&&act.dataset.a==='按实际更新')out.diff.push({id,apply:true});}
+  else if(t==='pending'){if(act)out.pending.push({id,mark_review:act.dataset.a==='标记复查'});}
+});
+return '差异处理(居家管家): 记录 '+(window.__recId||'')+' '+JSON.stringify(out);
+}
+render();
+</script>
+</body>
+</html>

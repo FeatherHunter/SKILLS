@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 采集确认</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:34px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px;max-width:760px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.tag{background:#eef5ff;color:#0a63ce;border-radius:999px;padding:5px 10px;margin:4px;font-size:13px;font-weight:650;display:inline-block}
+.ok{color:var(--green)}.warn{color:var(--orange)}.bad{color:var(--red)}.empty{color:var(--fg3)}
+.bar{height:8px;background:#ececf1;border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:var(--green)}
+input,select,textarea{width:100%;padding:9px 12px;border:1.5px solid var(--line);border-radius:12px;font-size:14px;font-family:inherit;background:#fff}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
+label.f{display:block;font-size:12px;color:var(--fg2);margin:10px 0 4px;font-weight:600}
+.f-item{background:#fff;border:1px solid #eef0f4;border-radius:18px;padding:18px;margin:16px 0;position:relative}
+.f-item h3{font-size:17px;margin-bottom:2px}
+.f-sub{color:var(--fg3);font-size:13px;margin-bottom:8px}
+.conf-low{background:#fff6e5!important;border-color:#f0c36d!important}
+.conf-low label.f{color:#b26a00}
+.missing{color:var(--orange);font-weight:600}
+.similar-box{background:#f2f8ff;border-radius:12px;padding:10px 14px;margin:10px 0;font-size:13px}
+.dist-bar{display:flex;border-radius:999px;overflow:hidden;height:14px;margin:10px 0}.dist-bar span{color:#fff;font-size:11px;text-align:center;line-height:14px}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.actions{margin-top:12px;text-align:right}
+.photo{width:100%;min-height:160px;border-radius:14px;background:#f0f3f8;display:flex;align-items:center;justify-content:center;color:var(--fg3);overflow:hidden;margin-bottom:8px}.photo img{width:100%;height:100%;object-fit:cover}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+const STATUSES=['在家','备用','穿着中','旅游中','洗护中','借用中','维修中','已用完','快递中','待处理','已废弃','找不到'];
+function gather(seq){const f=document.getElementById('f_'+seq);const d={};['name','category_id','quantity','location','location_status','price','purchase_date','expiration_date','backfill_date','remark','tags'].forEach(k=>{const el=f.querySelector('[name="'+k+'"]');if(el)d[k]=el.value;});d.tags=(d.tags||'').split(',').map(s=>s.trim()).filter(Boolean);return d;}
+function cardPrompt(seq,scene,cmdLead){const d=gather(seq);return cmdLead+' '+JSON.stringify(d,null,0);}
+function gatherAll(s){return (s.items||[]).map(it=>gather(it.seq));}
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};const s=d.scene||{};
+const mode=s.mode||'add';
+const titles={add:'录入一件新物品',batch:'批量录入多件物品',backfill:'补录历史物品(指定日期)',update:'修改物品信息(勾选变更)',photo_scan:'拍照识别录入物品'};
+const hero=metaHeader(payload,{title:titles[mode]||titles.add,lead:s.lead||'逐项核对,修改后点「确认」复制结果发给 AI 写入。',stage:mode==='update'?'确认变更':'填写 → 确认'});
+let html=hero;
+if(s.category_dist&&s.category_dist.length){const tot=s.total||1;html+=`<section><h2>分类分布</h2><div class="dist-bar">${s.category_dist.map(c=>{const pct=Math.round(c.count*100/tot);return '<span style="width:'+pct+'%;background:hsl('+(210+pct)+',70%,55%)">'+esc(c.name)+' '+c.count+'</span>';}).join('')}</div></section>`;}
+const cats=arr(s.categories);const locs=arr(s.locations);
+(s.items||[]).forEach(it=>{
+  const dft=it.draft||{};
+  const score=Math.round(((it.checks&&it.checks.ready_score)??0)*100);
+  const missing=arr(it.missing);
+  const low=arr(it.low_confidence);
+  const locOptions=locs.map(l=>'<option value="'+esc(l)+'"'+(dft.location===l?' selected':'')+'>'+esc(l)+'</option>').join('');
+  const catOptions=cats.map(c=>'<option value="'+esc(c.id)+'"'+(String(dft.category_id)===String(c.id)?' selected':'')+'>'+esc(c.name)+'</option>').join('');
+  const sim=(it.similar||[]).length?'<div class="similar-box">同款已存在 '+it.similar.length+' 件:'+it.similar.map(x=>esc(x.name)+'('+esc(x.location||'无位置')+')').join('、')+' — 确认要新建?</div>':'';
+  const bdup=it.batch_dup&&it.batch_dup.length?'<div class="similar-box warn">⚠ 批内重复:与第 '+it.batch_dup.join('、')+' 条同名</div>':'';
+  html+=`<div class="f-item ${low.length?'conf-low':''}" id="f_${it.seq}">
+    <h3>${esc(dft.name||'未命名物品')} <span class="pill" style="font-size:12px">#${it.seq}</span></h3>
+    <div class="f-sub">预填度 ${score}%</div>
+    <div class="bar" style="margin-bottom:8px"><span style="width:${Math.max(0,Math.min(100,score))}%"></span></div>
+    ${missing.length?'<div class="missing">还缺:'+missing.map(x=>esc(x)).join(' / ')+'</div>':''}
+    ${sim}${bdup}
+    <div class="grid2">
+      <div><label class="f">名称 *</label><input name="name" value="${esc(dft.name||'')}" placeholder="物品名称"></div>
+      <div><label class="f">分类 *</label><select name="category_id">${catOptions}</select></div>
+      <div><label class="f">数量</label><input name="quantity" type="number" min="0" value="${esc(dft.quantity??1)}"></div>
+      <div><label class="f">位置(选填)</label><input name="location" list="loc_${it.seq}" value="${esc(dft.location||'')}" placeholder="选或输入,如 卧室/衣柜"><datalist id="loc_${it.seq}">${locOptions}</datalist></div>
+      <div><label class="f">状态</label><select name="location_status">${STATUSES.map(st=>'<option'+(dft.location_status===st?' selected':'')+'>'+st+'</option>').join('')}</select></div>
+      <div><label class="f">价格 ¥(选填)</label><input name="price" type="number" min="0" step="0.01" value="${dft.price??''}"></div>
+      <div><label class="f">购买日期</label><input name="purchase_date" type="date" value="${esc(dft.purchase_date||'')}"></div>
+      <div><label class="f">过期日期</label><input name="expiration_date" type="date" value="${esc(dft.expiration_date||'')}"></div>
+      ${mode==='backfill'?'<div><label class="f">录入日期(补录)</label><input name="backfill_date" type="date" value="'+esc(dft.backfill_date||'')+'"></div>':''}
+    </div>
+    <label class="f">标签(逗号分隔)</label><input name="tags" value="${esc((dft.tags||[]).join(','))}" placeholder="进口,临期,旗舰款">
+    <label class="f">备注</label><textarea name="remark" rows="2">${esc(dft.remark||'')}</textarea>
+    ${dft.photo_base64?'<div class="photo" style="margin-top:10px"><img src="data:image/jpeg;base64,'+dft.photo_base64+'"></div>':''}
+    <div class="actions"><button class="copy" onclick="copyText(cardPrompt(${it.seq},${JSON.stringify(s).replace(/</g,'\\u003c')},'${mode==='update'?'确认修改物品(居家管家):':'确认录入物品(居家管家):'}'))">确认${mode==='update'?'变更':'写入'}本条</button></div>
+  </div>`;
+});
+if(s.total>1){html+=`<section><h2>批量操作</h2><p>全部核对无误后,点下方按钮一次性确认全部 ${s.total} 条。</p><div class="actions"><button class="copy ghost" onclick="copyText('确认批量录入(居家管家): '+JSON.stringify(gatherAll(s)))">全部确认(${s.total} 条)</button></div></section>`;}
+html+=remindersBlock(payload);
+app.innerHTML=html;
+}
+function gatherAll(){return (window.__scene||{items:[]}).items.map((it,i)=>gather(it.seq));}
+render();
+</script>
+</body>
+</html>

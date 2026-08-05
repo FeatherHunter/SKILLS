@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 过期检查与预告</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#fff8f8);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px}
+.eyebrow{color:var(--red);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:#ffecec;color:var(--red);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin:16px 0}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.card.danger{border-left-color:var(--red)}.card.warn{border-left-color:var(--orange)}.card.info{border-left-color:var(--blue)}
+.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}
+.card span{font-size:21px;font-weight:700;letter-spacing:-.02em}
+.filter{display:flex;gap:10px;align-items:center;margin:14px 0 10px;flex-wrap:wrap}
+.filter select{border:1px solid var(--line);border-radius:10px;padding:7px 10px;font:inherit;background:#fff;color:var(--fg)}
+.filter #countText{color:var(--fg2);font-size:13px;margin-left:auto}
+.item{background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;border-left:4px solid var(--blue)}
+.item.danger{border-left-color:var(--red);background:#fff8f8}
+.item.warn{border-left-color:var(--orange)}
+.item.info{border-left-color:var(--blue)}
+.item.done{opacity:.45;border-left-color:var(--green)}
+.photo{width:64px;height:64px;border-radius:12px;background:#eef1f5;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:10px}
+.photo img{width:100%;height:100%;object-fit:cover}
+.name{font-weight:700;font-size:14px;margin-bottom:3px}
+.meta{color:var(--fg2);font-size:12px;margin-bottom:5px}
+.badge{display:inline-block;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:700;margin-right:6px}
+.badge.danger{background:#ffe5e5;color:var(--red)}
+.badge.warn{background:#fff0d9;color:var(--orange)}
+.badge.info{background:#eef5ff;color:var(--blue)}
+.tagbox{display:flex;flex-wrap:wrap;margin-top:4px}
+.tag{background:#f0f3f8;color:var(--fg2);border-radius:99px;padding:2px 8px;margin:2px 2px 0 0;font-size:11px}
+.actions{display:flex;flex-direction:column;gap:6px}
+.btn{border:none;border-radius:999px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2);white-space:nowrap}
+.btn:hover{background:#e5e9ef}
+.btn.active{background:var(--blue);color:#fff}
+.btn.done{background:var(--green);color:#fff}
+.btn.skip{background:var(--red);color:#fff}
+.btn.ignore{background:#f0f3f8;color:var(--fg2)}
+.btn.primary{background:var(--blue);color:#fff}
+.btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.copied{background:var(--green);color:#fff}
+.fixed{position:sticky;bottom:14px;display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.empty h2{font-size:18px;color:var(--fg);margin-bottom:6px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+.toast.show{opacity:1}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:24px}.item{grid-template-columns:56px 1fr}.photo{width:56px;height:56px}.actions{flex-direction:row;grid-column:1/-1}.fixed{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 查过期</div>
+<h1 id="title">过期检查与预告</h1>
+<p class="lead" id="subtitle"></p>
+<div class="chips" id="metaBar"></div>
+</header>
+<div class="cards" id="cards"></div>
+<div class="filter" id="filter">
+<select id="categoryFilter"><option value="">全部分类</option></select>
+<span id="countText"></span>
+</div>
+<div id="app"></div>
+<div class="fixed">
+<button class="btn primary" id="confirmBtn">确认处理</button>
+<button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
+<button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+const cardsEl=document.getElementById('cards');
+const confirmBtn=document.getElementById('confirmBtn');
+const categoryFilter=document.getElementById('categoryFilter');
+const countText=document.getElementById('countText');
+let D=null,META={},STATE={},CAT='';
+let _toastTimer=null;
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+function doCopy(text,btnId,msg){
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');b.textContent='✓ 已复制';setTimeout(()=>{b.classList.remove('copied');b.textContent=btnId==='confirmBtn'?'确认处理':btnId==='copyDataBtn'?'📋 复制数据':'📋 复制日志';},1600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));}else{fallbackCopy(text,done);}
+}
+function payloadData(){
+  return {days:D.days||null,allowed:D.allowed||null,items:(D.items||[]).map(it=>({id:it.id,name:it.name,category_name:it.category_name,location:it.location,quantity:it.quantity,expiration_date:it.expiration_date,days_left:it.days_left,severity:it.severity,top_category_id:it.top_category_id}))};
+}
+function buildDataText(){
+  const d5={scene_id:META.scene_id||'stats_expiring',command_cn:(META.wake_word||'查过期')+' 结果',occurred_at:META.fetched_at||'',target:'item_locations.expiration_date(只读)',payload:payloadData()};
+  return JSON.stringify(d5,null,2);
+}
+function buildLogText(){
+  const lines=[];
+  lines.push('① 场景标识');lines.push(`  command_cn: ${META.wake_word||'(未知)'} 结果`);lines.push(`  唤醒词: ${META.wake_word||'(未知)'}`);lines.push(`  场景名: 过期检查与预告(scene_id=${META.scene_id||'stats_expiring'})`);lines.push('');
+  lines.push('② AI 思考链');lines.push('  '+(META.chain||'(未注入)'));lines.push('');
+  lines.push('③ 底层数据结构');lines.push('  payload: '+JSON.stringify(payloadData()));lines.push('  DB 操作: SELECT item_locations.expiration_date(只读聚合)');lines.push('');
+  lines.push('④ 调用链');lines.push('  渲染脚本: '+(META.render_cmd||'(未知)'));lines.push('  数据来源: '+(META.source||'(未知)'));lines.push('');
+  lines.push('⑤ 时间戳 + 版本');lines.push('  本地时间: '+(META.fetched_at||'(未知)'));lines.push('  skill 版本: '+(META.version||'(未知)'));lines.push('');
+  lines.push('⑥ 异常信息');lines.push('  无');
+  return lines.join('\n');
+}
+function rebuildReceipt(){
+  const lines=['expiring_results:'];
+  let used=0,dispose=0,skip=0;
+  D.items.forEach(it=>{
+    const st=STATE[it.id];if(!st||!st.action)return;
+    if(st.action==='used'){used++;lines.push(`- ID ${it.id}（${it.name}）：已用完（数量归零）`);}
+    else if(st.action==='dispose'){dispose++;lines.push(`- ID ${it.id}（${it.name}）：废弃`);}
+    else if(st.action==='skip'){skip++;lines.push(`- ID ${it.id}（${it.name}）：忽略`);}
+  });
+  confirmBtn.textContent=`确认处理（${used} 用完 / ${dispose} 废弃 / ${skip} 忽略）`;
+  return lines.join('\n');
+}
+document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'copyDataBtn','过期数据已复制');
+document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'copyLogBtn','日志已复制');
+confirmBtn.onclick=function(){
+  const txt=rebuildReceipt();
+  if(txt==='expiring_results:'){showToast('还没有勾选任何处理');return;}
+  doCopy(txt,'confirmBtn','处理回执已复制,发给 AI 执行');
+};
+function render(){
+  let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
+  const v=validate(p);if(!v.ok){app.innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
+  D=p.data;META=D.meta||{};STATE={};
+  document.getElementById('title').textContent=D.summary.title||'过期检查与预告';
+  document.getElementById('subtitle').textContent=D.summary.subtitle||'';
+  const chips=[`<span class="chip">⚡ ${esc(META.wake_word||'查过期')}</span>`,`<span class="chip">● 查看+选择</span>`,`<span class="chip">🕒 ${esc(META.fetched_at||'')}</span>`];
+  document.getElementById('metaBar').innerHTML=chips.join('');
+  const metrics=arr(D.summary.metrics);
+  cardsEl.innerHTML=metrics.map(m=>'<div class="card '+esc(m.severity||'info')+'"><b>'+esc(m.label)+'</b><span>'+esc(m.value)+'</span></div>').join('');
+  const cats=arr(D.categories);
+  categoryFilter.innerHTML='<option value="">全部分类</option>'+cats.map(c=>'<option value="'+esc(c.id)+'">'+esc(c.name)+' ('+esc(c.count)+')</option>').join('');
+  if(D.empty){app.innerHTML='<div class="empty"><h2>没有即将过期的物品 ✨</h2>已检查未来 '+esc(D.days)+' 天('+esc((D.allowed||[]).join('/'))+' 天可调)</div>';confirmBtn.style.display='none';return;}
+  confirmBtn.style.display='';
+  renderItems();
+}
+function renderItems(){
+  const items=(D.items||[]).filter(it=>!CAT||String(it.top_category_id)===CAT);
+  countText.textContent=CAT?`分类筛选: ${items.length}/${D.items.length} 件`:`共 ${items.length} 件`;
+  app.innerHTML=items.map(it=>{
+    const tags=arr(it.tags).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')||'<span class="tag">无标签</span>';
+    const photo=it.photo_base64?'<img alt="'+esc(it.name)+'" src="data:image/jpeg;base64,'+it.photo_base64+'">':'无图';
+    const dl=it.days_left;
+    let badge='';
+    if(dl<0)badge='<span class="badge danger">已过期 '+(-dl)+' 天</span>';
+    else if(dl===0)badge='<span class="badge warn">今天到期</span>';
+    else if(dl<=3)badge='<span class="badge warn">'+dl+' 天后到期</span>';
+    else badge='<span class="badge info">'+dl+' 天后到期</span>';
+    return `<div class="item ${esc(it.severity)}" id="item-${it.id}" data-cat="${esc(it.top_category_id||'')}">
+<div class="photo">${photo}</div>
+<div>
+<div class="name">${esc(it.name||'未命名')}</div>
+<div class="meta">📍 ${esc(it.location||'(无位置)')} · ×${esc(it.quantity||1)} · 到期 ${esc(it.expiration_date||'-')}</div>
+<div>${badge}</div>
+<div class="tagbox">${tags}</div>
+</div>
+<div class="actions">
+<button class="btn done" data-act="used" data-id="${it.id}">已用完</button>
+<button class="btn skip" data-act="dispose" data-id="${it.id}">废弃</button>
+<button class="btn ignore" data-act="skip" data-id="${it.id}">忽略</button>
+</div>
+</div>`;
+  }).join('');
+  app.querySelectorAll('button[data-act]').forEach(b=>{
+    b.onclick=function(){
+      const id=this.getAttribute('data-id');
+      const act=this.getAttribute('data-act');
+      STATE[id]=STATE[id]||{};
+      if(STATE[id].action===act){delete STATE[id].action;}else{STATE[id].action=act;}
+      paint(id);
+    };
+  });
+  rebuildReceipt();
+}
+function paint(id){
+  const st=STATE[id]||{};
+  const el=document.getElementById('item-'+id);
+  if(!el)return;
+  el.classList.toggle('done',!!st.action);
+  el.querySelectorAll('button[data-act]').forEach(b=>{b.classList.toggle('active',b.getAttribute('data-act')===st.action);});
+  rebuildReceipt();
+}
+categoryFilter.onchange=function(){CAT=this.value;renderItems();};
+render();
+</script>
+</body>
+</html>

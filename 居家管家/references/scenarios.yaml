@@ -877,7 +877,7 @@ scenarios:
       请加载「居家管家」技能,帮我查看物品总览(唤醒词:统物品):
     result: "件数 + 总价/价格覆盖率 + 分类/位置分布 + 价值 TOP + 近 30 天变动。"
     html:
-      template: list_overview.html
+      template: stats/overview.html
       command_cn: 统物品
       data_source: items
     variants:
@@ -902,16 +902,16 @@ scenarios:
     scenario_title: 闲置物品检测(AI 断舍离建议)
     dimensions: {}
     type: 查看+选择+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我检测闲置物品(唤醒词:查闲置):
 
         闲置标准: _____________ (如 90 天未使用,选填)
     result: "闲置清单(时长排序,诚实标注估算)+ AI 断舍离建议 + 处理闭环。"
     html:
-      template: ""
+      template: stats/idle.html
       command_cn: 查闲置
-      data_source: ""
+      data_source: items
 
   - id: "SM4-3"
     domain: stats
@@ -928,7 +928,7 @@ scenarios:
         预告参数: _____________ (提前 N 天算临期,选填)
     result: "已过期 + 未来 N 天预告(默认 30,可调),勾选处理闭环。"
     html:
-      template: expiring_alert.html
+      template: stats/expiring.html
       command_cn: 查过期
       data_source: items
 
@@ -940,14 +940,14 @@ scenarios:
     scenario_title: 盘点统计与建议
     dimensions: {}
     type: 查看
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我查看盘点统计(唤醒词:盘点统计):
     result: "盘点完成率 + 历史趋势 + 差异遗留 + AI 建议优先盘点 X。"
     html:
-      template: ""
+      template: stats/inventory_stat.html
       command_cn: 盘点统计
-      data_source: ""
+      data_source: inventory_records+items
 
   # ═══════════ SM5 快递购物 ═══════════
   - id: "SM5-1"
@@ -1122,9 +1122,9 @@ scenarios:
         对  象: _____________ (家人或外部联系人,借出/借入时填)
     result: "借出/借入分区 + 超期标记 + 催还文案复制,归还确认回执。"
     html:
-      template: ""
+      template: family_borrow.html
       command_cn: 借用
-      data_source: ""
+      data_source: borrow_records+family_members+items
 
   - id: "SM7-2"
     domain: family
@@ -1142,9 +1142,9 @@ scenarios:
         详  情: _____________
     result: "成员列表 + 增删 + 物品归属批量标记,确认后回执。"
     html:
-      template: ""
+      template: family_members.html
       command_cn: 家人档案
-      data_source: ""
+      data_source: family_members+items
 
   # ═══════════ SM8 开始使用 ═══════════
   - id: "SM8-1"

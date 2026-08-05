@@ -1,0 +1,316 @@
+# ops.py - SM9 联动功能域 · 3 场景业务操作(prompt 生成 + 偏好 JSON + 场景数据)
+#
+# 口径: scenes/SM9-联动功能.md(2026-08-04 定稿)· 08-HTML 交互规范 v1 · 跨技能契约
+# 本质: 跨技能协作 —— 居家管家持物品数据,卡路里/饼干记账持各自领域数据;
+#       联动执行 = 复制 prompt 到对应技能(单工闭环),本域只做能力展示与触发引导。
+# 依赖: scripts/home_manager/* 公共层只读调用,不修改。
+#
+# 数据层裁决(本批): 联动偏好用 JSON 文件($SKILLS_DB_PATH/link_prefs.json)存储,
+#       不增删 DB 表/字段(D1 硬规则: 增删表 = 最后处理 + 单开 ISSUE;D1 总账 #103
+#       已注册「联动偏好表」,若 D1 批决定落表再迁移)。
+import json
+import os
+from pathlib import Path
+
+from home_manager.item_ops import item_detail_payload, search_items_payload
+from home_manager.db import DB_PATH
+
+# ── 联动契约表(能力索引 · 3 条)────────────────────────────────────────────────
+# 每条: 联动名 / 触发词 / 依赖技能 / 数据流 / 示例 prompt / 对应场景
+LINK_CATALOG = [
+    {
+        "id": "food",
+        "name": "食品联动",
+        "trigger": "记到卡路里",
+        "skill": "卡路里",
+        "data_flow": "居家管家物品(名称/数量/单位) → 卡路里「记一餐 / 查食品」",
+        "example_prompt": "把牛奶记到卡路里",
+        "scene": "SM9-2",
+    },
+    {
+        "id": "price",
+        "name": "价格联动",
+        "trigger": "记到记账",
+        "skill": "饼干记账",
+        "data_flow": "居家管家物品(名称/价格/分类) → 饼干记账「记支出」",
+        "example_prompt": "把牛奶的价格记到记账",
+        "scene": "SM9-3",
+    },
+    {
+        "id": "fitness",
+        "name": "健身计划联动",
+        "trigger": "去健身",
+        "skill": "居家管家 · 穿搭出行(SM3)",
+        "data_flow": "卡路里健身计划 → 出行清单物品推荐(基础物品 + 护具知识表)",
+        "example_prompt": "带物品(联动健身计划)",
+        "scene": "SM3-1",
+    },
+]
+
+# 偏好频控三态(SM9-1 偏好设置区)
+PREF_ASK = "ask"            # 每次询问
+PREF_REMEMBER = "remember"  # 记住上次选择
+PREF_OFF = "off"            # 关闭
+
+PREF_DEFAULTS = {
+    "food": PREF_REMEMBER,   # 食品联动: 默认记住上次选择(录入顺路建议)
+    "price": PREF_REMEMBER,  # 价格联动: 默认记住上次选择
+}
+PREF_KEYS = set(PREF_DEFAULTS.keys())
+PREF_VALUES = {PREF_ASK, PREF_REMEMBER, PREF_OFF}
+
+# 食品判定关键词(seed_key 为 D1 字段,本批按分类名 + 名称启发,诚实标注)
+FOOD_CATEGORY_KEYWORDS = (
+    "食物", "饮品", "饮料", "零食", "酒", "乳", "茶", "咖啡",
+    "调味", "粮油", "生鲜", "水果", "蔬菜", "肉", "蛋", "水",
+)
+FOOD_NAME_KEYWORDS = ("水", "奶", "茶", "咖啡", "果汁", "酒", "酸奶", "面包",
+                      "饼干", "米", "面", "油", "酱", "糖", "盐", "果", "菜",
+                      "肉", "蛋", "零食", "薯片", "巧克力")
+
+# 物品分类 → 饼干记账分类映射(可扩展;未命中 → 其他)
+CATEGORY_TO_LEDGER = {
+    "食物与饮品": "餐饮", "饮品": "餐饮", "食物": "餐饮",
+    "家居与陈设": "家居", "清洁用品": "家居",
+    "数码与电子": "数码", "工具与器材": "工具",
+    "健康与医药": "医疗", "文体与娱乐": "娱乐",
+    "衣物与穿戴": "服饰", "资产与凭证": "其他",
+}
+
+
+# ── 偏好存储(JSON 文件 · 不碰 DB)──────────────────────────────────────────────
+
+
+def _prefs_path() -> Path:
+    return Path(str(DB_PATH)).parent / "link_prefs.json"
+
+
+def load_prefs() -> dict:
+    """读偏好 JSON;文件缺失/损坏 → 默认值(防打扰底线 = remember)"""
+    try:
+        data = json.loads(_prefs_path().read_text(encoding="utf-8"))
+        if not isinstance(data, dict):
+            data = {}
+        return {k: data.get(k) if data.get(k) in PREF_VALUES else v
+                for k, v in PREF_DEFAULTS.items()}
+    except Exception:
+        return dict(PREF_DEFAULTS)
+
+
+def save_prefs(prefs: dict) -> tuple[bool, str, dict]:
+    """写偏好 JSON;非法 key/value 静默忽略。返回 (ok, msg, prefs)"""
+    clean = {k: v for k, v in prefs.items()
+             if k in PREF_KEYS and v in PREF_VALUES}
+    data = load_prefs()
+    data.update(clean)
+    try:
+        p = _prefs_path()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as e:
+        return False, f"偏好保存失败: {e}", data
+    desc = {k: {"ask": "每次询问", "remember": "记住上次选择", "off": "关闭"}.get(v, v)
+            for k, v in data.items()}
+    return True, "偏好已保存: " + "; ".join(f"{k}={desc[k]}" for k in desc), data
+
+
+# ── 物品查询(公共层只读调用)────────────────────────────────────────────────────
+
+
+def search_food_candidates(name: str, limit: int = 8) -> list[dict]:
+    """按名称搜物品候选(物品确认前置)"""
+    return search_items_payload(name=name, limit=limit)
+
+
+def get_item(item_id: int) -> dict | None:
+    """按 ID 取物品详情(公共层 item_ops,只读)"""
+    return item_detail_payload(item_id)
+
+
+# ── 食品判定(无 seed_key 的启发式 + 诚实标注)──────────────────────────────────
+
+
+def is_food_item(item: dict) -> tuple[bool, str]:
+    """判定物品是否为食品/饮品。
+
+    返回 (is_food, reason): reason 说明判定依据(分类名 / 名称启发),
+    页面标注「按分类/名称判断,可修正」——不冒充权威。
+    """
+    cat = (item.get("category") or "").strip()
+    name = (item.get("name") or "").strip()
+    if not cat and not name:
+        return False, "物品无分类无名称,无法判定"
+    if cat:
+        for kw in FOOD_CATEGORY_KEYWORDS:
+            if kw in cat:
+                return True, f"分类「{cat}」属食品/饮品"
+    for kw in FOOD_NAME_KEYWORDS:
+        if name and kw in name:
+            return True, f"名称含「{kw}」,疑似食品/饮品"
+    if cat:
+        return False, f"分类「{cat}」不在食品/饮品范围"
+    return False, "名称未命中食品关键词"
+
+
+# ── 价格提取(单价 × 数量 → 总价)──────────────────────────────────────────────
+
+
+def item_price_info(item: dict) -> dict:
+    """价格信息: 单价(元) × 总数量 → 总价;无单价 → has_price=False"""
+    price = item.get("purchase_price")
+    locations = item.get("locations") or []
+    total_qty = sum((l.get("quantity") or 0) for l in locations) or 1
+    if price is None or price == "":
+        return {"has_price": False, "unit_price": None,
+                "quantity": total_qty, "total_price": None}
+    price = float(price)
+    return {"has_price": True, "unit_price": price,
+            "quantity": total_qty, "total_price": round(price * total_qty, 2)}
+
+
+def ledger_category(item: dict) -> str:
+    """物品分类 → 饼干记账分类(映射表,未命中 → 其他)"""
+    cat = (item.get("category") or "").strip()
+    for key, val in CATEGORY_TO_LEDGER.items():
+        if key in cat:
+            return val
+    return "其他"
+
+
+# ── 跨技能 prompt 生成(单工闭环 · 复制到对应技能)──────────────────────────────
+
+
+def build_calorie_prompt(item: dict, action: str) -> str:
+    """食品联动 prompt → 卡路里技能。
+
+    action: "log" = 记到今日饮食 / "query" = 查热量
+    数据契约: 居家管家只提供名称/数量/单位;热量由卡路里侧查食品库补全
+    (居家管家无热量数据,不冒充)。
+    """
+    name = item.get("name") or "该物品"
+    qty = _qty_str(item)
+    if action == "log":
+        return (
+            f"请加载「卡路里」技能,帮我记一餐(唤醒词:记一餐):\n"
+            f"  食物: {name}\n"
+            f"  数量: {qty}(来自居家管家联动)\n"
+            f"  (热量/蛋白请在卡路里食品库查询补充;查不到请引导存食品)"
+        )
+    return (
+        f"请加载「卡路里」技能,帮我查食品热量(唤醒词:查食品):\n"
+        f"  食物: {name}\n"
+        f"  数量: {qty}(来自居家管家联动)"
+    )
+
+
+def build_accounting_prompt(item: dict, direction: str) -> str:
+    """价格联动 prompt → 饼干记账技能。
+
+    direction: "expense" = 记支出 / "income" = 记收入(退货退款)
+    """
+    name = item.get("name") or "该物品"
+    info = item_price_info(item)
+    if not info["has_price"]:
+        return None
+    price = info["total_price"]
+    cat = ledger_category(item)
+    if direction == "income":
+        return (
+            f"请加载「饼干记账」技能,帮我记一笔收入(唤醒词:记收入):\n"
+            f"  物品: {name}(退货退款,来自居家管家联动)\n"
+            f"  金额: +¥{price}\n"
+            f"  分类: {cat}"
+        )
+    return (
+        f"请加载「饼干记账」技能,帮我记一笔支出(唤醒词:记支出):\n"
+        f"  物品: {name}(来自居家管家联动)\n"
+        f"  金额: ¥{price}\n"
+        f"  分类: {cat}"
+    )
+
+
+def build_fitness_prompt() -> str:
+    """健身计划联动 prompt → 居家管家出行清单(SM3 已实现,本域只索引)"""
+    return (
+        f"请加载「居家管家」技能,帮我生成出行带物清单(唤醒词:带物品):\n"
+        f"  行程类型: 健身联动\n"
+        f"  (两层推荐: 力量/有氧/休息日 → 基础物品;动作 → 护具知识表)"
+    )
+
+
+def _qty_str(item: dict) -> str:
+    """数量字符串: N 件/个(单位未录入,诚实标注)"""
+    locations = item.get("locations") or []
+    total = sum((l.get("quantity") or 0) for l in locations) or 1
+    return f"{total} 件/个(单位未录入,请按实际修正)"
+
+
+# ── 场景数据(render 信封的 data.scene 部分)───────────────────────────────────
+
+
+def overview_data() -> dict:
+    """SM9-1 联动总览: 契约条目列表 + 偏好设置区"""
+    entries = [{
+        "id": c["id"], "name": c["name"], "trigger": c["trigger"],
+        "skill": c["skill"], "data_flow": c["data_flow"],
+        "example_prompt": c["example_prompt"], "scene": c["scene"],
+        "fitness_prompt": build_fitness_prompt() if c["id"] == "fitness" else "",
+    } for c in LINK_CATALOG]
+    return {"entries": entries, "prefs": load_prefs(),
+            "pref_options": [PREF_ASK, PREF_REMEMBER, PREF_OFF]}
+
+
+def food_data(item: dict, action: str = "log") -> tuple[bool, str, dict]:
+    """SM9-2 食品联动: (ok, msg, scene_data)"""
+    is_food, reason = is_food_item(item)
+    if not is_food:
+        return False, f"「{item.get('name', '')}」不是食品/饮品: {reason}", {
+            "item": _item_light(item),
+            "suggest": "换一个食品/饮品物品;或先用「改物品」把分类补成食品/饮品",
+        }
+    actions = [
+        {"id": "log", "label": "记到今日饮食", "prompt": build_calorie_prompt(item, "log")},
+        {"id": "query", "label": "查热量", "prompt": build_calorie_prompt(item, "query")},
+    ]
+    return True, "食品联动 prompt 已生成", {
+        "item": _item_light(item),
+        "food_reason": reason,
+        "actions": actions,
+        "prompt": build_calorie_prompt(item, action),
+    }
+
+
+def price_data(item: dict, direction: str = "expense") -> tuple[bool, str, dict]:
+    """SM9-3 价格联动: (ok, msg, scene_data)"""
+    info = item_price_info(item)
+    if not info["has_price"]:
+        return False, f"「{item.get('name', '')}」没有价格信息", {
+            "item": _item_light(item),
+            "suggest": "先用「改物品」补录价格(或录入购买记录时填价格),再联动",
+        }
+    actions = [
+        {"id": "expense", "label": "记支出", "prompt": build_accounting_prompt(item, "expense")},
+        {"id": "income", "label": "记收入(退货退款)", "prompt": build_accounting_prompt(item, "income")},
+    ]
+    return True, "价格联动 prompt 已生成", {
+        "item": _item_light(item),
+        "price": info,
+        "ledger_category": ledger_category(item),
+        "actions": actions,
+        "prompt": build_accounting_prompt(item, direction),
+    }
+
+
+def _item_light(item: dict) -> dict:
+    """物品精简卡(照片/名称/分类/状态/数量)"""
+    locations = item.get("locations") or []
+    total = sum((l.get("quantity") or 0) for l in locations) or 0
+    status = (locations[0].get("location_status") if locations else "在家") or "在家"
+    return {
+        "id": item.get("id"),
+        "name": item.get("name"),
+        "category": item.get("category") or "",
+        "status": status,
+        "quantity": total,
+        "photo_base64": item.get("photo_base64"),
+    }

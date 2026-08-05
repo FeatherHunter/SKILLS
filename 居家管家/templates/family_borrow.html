@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 借用</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.stage{display:inline-block;margin-top:10px;font-size:12px;font-weight:700;color:var(--blue);background:#eaf3ff;border-radius:99px;padding:4px 12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}.card span{font-size:22px;font-weight:700;letter-spacing:-.02em}
+section{background:var(--card);border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px}
+h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
+.banner{background:#fff1f0;border:1px solid #ffd9d5;color:#c0392b;border-radius:14px;padding:12px 16px;font-weight:600;margin-bottom:16px}
+.banner.green{background:#f0fff4;border-color:#d3f5dd;color:#1e8e4a}
+.record{border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;background:#fff}
+.record.returned{opacity:.62}
+.record .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.record .name{font-size:16px;font-weight:700}
+.record .meta{color:var(--fg2);font-size:13px;margin-top:4px}
+.badge{font-size:12px;font-weight:700;padding:2px 10px;border-radius:99px;background:#eaf3ff;color:var(--blue)}
+.badge.warn{background:#fff4e5;color:#c76a00}
+.badge.danger{background:#ffebea;color:#d70015}
+.badge.done{background:#eef1f4;color:var(--fg3)}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--fg);border-radius:99px;padding:6px 14px;cursor:pointer}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--blue)}
+.btn.danger{color:#d70015}
+.copy{font:inherit;font-size:12px;font-weight:600;background:#f5f5f7;border:1px solid var(--line);border-radius:99px;padding:5px 12px;cursor:pointer}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:14px}
+.form-grid label{display:block;font-size:12px;font-weight:700;color:var(--fg2);margin-bottom:4px}
+.form-grid input,.form-grid select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;width:100%;background:#fff}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
+.muted{color:var(--fg3);font-size:12px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 借用</div>
+<h1 id="title">借用管理</h1>
+<p class="lead" id="subtitle">借出 / 借入 · 超期标记 · 催还文案</p>
+<span class="stage" id="stage">清单</span>
+</header>
+<div id="banner"></div>
+<div class="cards" id="cards"></div>
+<div id="app"></div>
+<p class="footer">模板只展示注入数据，不直连数据库。</p>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+const bannerEl=document.getElementById('banner');
+const cardsEl=document.getElementById('cards');
+function copy(text){navigator.clipboard&&navigator.clipboard.writeText(text);}
+function badge(status){
+if(status.startsWith('已超期'))return '<span class="badge danger">'+esc(status)+'</span>';
+if(status==='今日到期')return '<span class="badge warn">'+esc(status)+'</span>';
+if(status==='已归还')return '<span class="badge done">已归还</span>';
+return '<span class="badge">'+esc(status)+'</span>';
+}
+function recordCard(r){
+const returned=r.status==='已归还';
+const returnPrompt='【确认归还】借用记录 ID '+r.id+'(物品「'+r.item_name+'」借给「'+r.object_name+'」)\n请执行: python home_manager.py family --action borrow-return --borrow-id '+r.id;
+const meta=[
+'对象: '+esc(r.object_name),
+'借出: '+esc(r.borrowed_at||'-'),
+'约定归还: '+esc(r.due_date||'未约定'),
+'已借 '+r.days_borrowed+' 天',
+].join(' · ');
+const buttons=returned?'<span class="muted">已还清</span>':
+'<div class="btns"><button class="btn primary" onclick="copy('+JSON.stringify(returnPrompt)+')">确认归还</button><button class="btn" onclick="copy('+JSON.stringify(r.remind)+')">复制催还文案</button></div>';
+return '<div class="record'+(returned?' returned':'')+'"><div class="top"><span class="name">'+esc(r.item_name)+'</span>'+badge(r.status)+'</div>'+
+'<div class="meta">'+meta+(r.remark?' · '+esc(r.remark):'')+'</div>'+buttons+'</div>';
+}
+function section(title,list){
+if(!list.length)return '';
+return '<section><h2>'+title+'</h2>'+list.map(recordCard).join('')+'</section>';
+}
+function registerSection(p){
+const members=arr(p.members);
+const items=arr(p.items);
+const memberOpts=members.map(m=>'<option value="'+esc(m)+'">'+esc(m)+'</option>').join('');
+const itemOpts=items.map(it=>'<option value="'+esc(it.id)+'">'+esc(it.name)+'(ID '+it.id+' · '+esc(it.status)+')</option>').join('');
+return `<section><h2>登记借用</h2>
+<div class="form-grid">
+<label>方向<select id="fDir"><option value="借出">借出（我的物品给别人）</option><option value="借入">借入（别人的物品给我）</option></select></label>
+<label>物品（库内选 or 自由输入）<select id="fItem"><option value="">-- 从库里选 --</option>${itemOpts}</select></label>
+<label>物品自由输入<input id="fItemName" placeholder="库外物品名（借入常用）"></label>
+<label>对象<select id="fObj"><option value="">-- 选家人 --</option>${memberOpts}</select></label>
+<label>对象自由输入<input id="fObjName" placeholder="外部联系人，如：老王"></label>
+<label>借出日期<input id="fBorrowed" type="date"></label>
+<label>约定归还日<input id="fDue" type="date"></label>
+</div>
+<button class="btn primary" id="btnReg">确认登记</button>
+</section>`;
+}
+function render(){
+let p;
+try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(p);
+if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=p.data;
+const summary=data.summary||{};
+const out=arr(data.borrowed_out);
+const inn=arr(data.borrowed_in);
+document.getElementById('title').textContent=summary.title||'借用管理';
+document.getElementById('subtitle').textContent=summary.subtitle||'';
+const metrics=arr(summary.metrics);
+cardsEl.innerHTML=metrics.map(m=>'<div class="card"><b>'+esc(m.label)+'</b><span>'+esc(m.value)+'</span></div>').join('');
+bannerEl.innerHTML=(data.overdue_count>0?'<div class="banner">⏰ 还有 '+data.overdue_count+' 件超期未还，记得催一下</div>':'')+(out.length+inn.length?'':'<div class="banner green">暂无借用记录</div>');
+const logText='① 场景：借用（唤醒词：借用）\n② 思考链：借用清单 → 双向区隔 → 超期标记 → 催还/归还\n③ 数据结构：borrow_records(方向/物品/对象/日期/状态) ⑤ 调用链: python home_manager.py family --action borrow-list\n⑤ 时间戳: '+esc(summary.occurred_at||new Date().toLocaleString())+' · 版本 v2.0\n⑥ 异常: 无';
+const dataText=JSON.stringify({scene_id:data.scene_id||'SM7-1',command_cn:data.command_cn||'借用',occurred_at:new Date().toLocaleString(),target:'借用管理',payload:{borrowed_out:out,borrowed_in:inn,overdue_count:data.overdue_count}},null,2);
+app.innerHTML=section('借出区（我借出去的）',out)+section('借入区（我借进来的）',inn)+registerSection(data)+
+`<section><h2>动作</h2><div class="btns">
+<button class="btn" onclick="copy(${JSON.stringify(dataText)})">复制数据</button>
+<button class="btn" onclick="copy(${JSON.stringify(logText)})">复制日志</button>
+</div></section>`;
+document.getElementById('btnReg').onclick=function(){
+const dir=document.getElementById('fDir').value;
+const itemId=document.getElementById('fItem').value;
+const itemName=document.getElementById('fItemName').value.trim();
+const obj=document.getElementById('fObj').value;
+const objName=document.getElementById('fObjName').value.trim();
+const bdate=document.getElementById('fBorrowed').value||new Date().toISOString().slice(0,10);
+const due=document.getElementById('fDue').value;
+if(dir==='借出'&&!itemId&&!itemName){alert('借出请选库内物品');return;}
+if(!obj&&!objName){alert('请填写借用对象');return;}
+const parts=['python home_manager.py family --action borrow-add','--direction '+dir];
+if(itemId)parts.push('--item-id '+itemId);
+if(itemName)parts.push('--item-name "'+itemName+'"');
+parts.push('--object "'+(obj||objName)+'"','--borrowed-at '+bdate);
+if(due)parts.push('--due-date '+due);
+copy('【登记借用】\n请执行: '+parts.join(' '));
+};
+}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 物品详情</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:34px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.row{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid #ececf1}.row:last-child{border-bottom:none}.k{color:var(--fg2)}.v{font-weight:600;word-break:break-word}
+.pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px}
+.tag{background:#eef5ff;color:#0a63ce;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px;display:inline-block}
+.photo{width:100%;min-height:240px;border-radius:16px;background:#f0f3f8;display:flex;align-items:center;justify-content:center;color:var(--fg3);overflow:hidden}.photo img{width:100%;height:100%;object-fit:cover}
+.thumbs{display:flex;gap:8px;margin-top:8px;overflow-x:auto}.thumbs img{width:72px;height:72px;border-radius:10px;object-fit:cover}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.mini{background:var(--card);border-radius:14px;padding:12px;border:1px solid #eee}
+.mini b{display:block;font-size:13px}.mini .loc{color:var(--fg2);font-size:12px}
+.empty{color:var(--fg3)}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:8px 13px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:13px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.actions{margin-top:12px;text-align:right}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};const s=d.scene||{};
+const it=s.item||{};
+if(!it.id){app.innerHTML=metaHeader(payload,{title:'物品详情'})+'<section><h2 class="bad">未找到该物品</h2></section>';return;}
+const hero=metaHeader(payload,{title:it.name,lead:'「是它吗?」确认场景 · 一切后续动作的跳板',stage:'查看'});
+let html=hero;
+html+=`<section><div class="grid"><div>
+<div class="photo ${it.photo_base64?'':'empty'}">${it.photo_base64?'<img src="data:image/jpeg;base64,'+it.photo_base64+'">':'无照片'}</div>
+${(s.photos||[]).slice(1).map(p=>p.photo_base64?'<div class="thumbs"><img src="data:image/jpeg;base64,'+p.photo_base64+'"></div>':'').join('')}
+</div><div>
+<div class="row"><div class="k">ID</div><div class="v">${it.id}</div></div>
+<div class="row"><div class="k">分类</div><div class="v">${esc(it.category_name)}</div></div>
+<div class="row"><div class="k">位置</div><div class="v">${esc(it.location||'(未设置)')} ×${esc(it.quantity??1)} <span class="pill">${esc(it.status)}</span></div></div>
+<div class="row"><div class="k">标签</div><div class="v">${(it.tags||[]).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')||'<span class="empty">(无)</span>'}</div></div>
+<div class="row"><div class="k">价格</div><div class="v">${it.purchase_price!=null?'¥'+esc(it.purchase_price):'<span class="empty">未填写</span>'}</div></div>
+<div class="row"><div class="k">备注</div><div class="v">${val(it.remark)}</div></div>
+<div class="row"><div class="k">最后使用</div><div class="v">${val(it.last_accessed_at)}</div></div>
+<div class="row"><div class="k">录入时间</div><div class="v">${val(it.created_at)}</div></div>
+</div></div></section>`;
+if((s.relations||[]).length){html+=`<section><h2>关联物品</h2>${s.relations.map(r=>`<span class="pill">${esc(r.reverse?'反向':'')}${esc(r.relation_type)}:${esc(r.related_name)} (ID ${r.related_item_id})</span>`).join('')}</section>`;}
+if((s.neighbors||[]).length){html+=`<section><h2>同位置邻居</h2><div class="cards">${s.neighbors.map(n=>`<div class="mini"><b>${esc(n.name)}</b><div class="loc">${esc(n.location)} ×${esc(n.quantity??1)}</div></div>`).join('')}</div><p class="empty" style="margin-top:8px">「钥匙旁边就是门禁卡」——找相关物品看这里</p></section>`;}
+if((s.similar||[]).length){html+=`<section><h2>相似物品(同分类)</h2><div class="cards">${s.similar.map(n=>`<div class="mini"><b>${esc(n.name)}</b><div class="loc">${esc(n.location||'(未设置)')}</div></div>`).join('')}</div></section>`;}
+const qa=[
+ {label:'改',text:'改物品(居家管家): 物品 '+it.id+'「'+it.name+'」,想改成: '},
+ {label:'移',text:'移物品(居家管家): 把 '+it.id+'「'+it.name+'」移到: '},
+ {label:'补',text:'补物品(居家管家): '+it.id+'「'+it.name+'」补充: '},
+ {label:'减',text:'减物品(居家管家): '+it.id+'「'+it.name+'」减少: '},
+ {label:'标',text:'标物品(居家管家): '+it.id+'「'+it.name+'」打标签: '},
+ {label:'废',text:'废物品(居家管家): '+it.id+'「'+it.name+'」标记废弃'},
+ {label:'标记使用',text:'标记使用(居家管家): '+it.id+'「'+it.name+'」我用过了'},
+];
+html+=`<section><h2>快捷操作</h2>${qa.map(q=>'<button class="copy ghost" onclick="copyText(this.dataset.t)" data-t="'+esc(q.text).replace(/"/g,'&quot;')+'">'+q.label+'</button>').join('')}</section>`;
+html+=`<section><h2>操作历史</h2><p class="empty">${(s.history||[]).length?('最近 '+Math.min(s.history.length,5)+' 条:'+s.history.slice(0,5).map(h=>esc(h.summary)).join(' → ')):'暂无记录(后续操作自动留痕)'}</p></section>`;
+html+=remindersBlock(payload);
+html+=`<section><h2>通用操作</h2>${actionBar(payload,[{label:'查看完整历史',text:'历史(居家管家): 看物品 '+it.id+' 的完整时间线',kind:'ghost'},{label:'查看照片',text:'查看照片(居家管家): 物品 '+it.id,kind:'ghost'}])}</section>`;
+app.innerHTML=html;
+}
+render();
+</script>
+</body>
+</html>

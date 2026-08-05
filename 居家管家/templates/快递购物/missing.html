@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 缺货检测</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:34px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px;max-width:760px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.row{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid #ececf1}
+.row:last-child{border-bottom:none}
+.row input[type=checkbox]{width:20px;height:20px;accent-color:var(--blue);flex:none;cursor:pointer}
+.name{font-weight:700;flex:1;min-width:0;word-break:break-word}
+.suggest{background:var(--soft);border-radius:12px;padding:6px 12px;font-size:14px;white-space:nowrap}
+.suggest b{color:var(--blue)}
+.pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px;white-space:nowrap}
+.badge{display:inline-block;border-radius:999px;padding:2px 9px;margin:2px;font-size:12px;font-weight:700;white-space:nowrap}
+.badge.empty{background:#ffe8e6;color:var(--red)}.badge.low{background:#fff2df;color:var(--orange)}
+.legend{color:var(--fg3);font-size:13px;margin-bottom:10px}
+.empty{padding:26px 0;text-align:center;color:var(--fg3)}
+.ok{color:var(--green)}.warn{color:var(--orange)}.bad{color:var(--red)}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.green{background:var(--green)}
+.actions{margin-top:14px;text-align:right}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{flex-wrap:wrap}.row .name{flex:1 1 100%;order:-1}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};const s=d.scene||{};
+let html=metaHeader(payload,{title:s.summary&&s.summary.title||'缺货检测',lead:s.lead||'检测范围:'+esc(s.scope||'全屋')+';勾选后一键进购物清单',stage:'查看'});
+if(s.items.length){
+  html+=`<section><h2>缺货/不足 ${esc(s.items.length)} 件</h2><p class="legend">阈值来源:囤货设置 / 默认(未设置阈值时按默认 ${esc(s.threshold_default)} 估算并标注)</p><div class="list" id="list">${s.items.map(it=>`
+  <div class="row"><input type="checkbox" data-id="${it.id}" data-name="${esc(it.name)}" data-suggest="${esc(it.suggest)}">
+  <div style="flex:1"><div class="name">${esc(it.name)} <span class="badge ${it.status==='空'?'empty':'low'}">${esc(it.status)}</span></div>
+  <div class="legend">${esc(it.category_name)} · 当前 ${esc(it.current)} · 阈值 ${esc(it.threshold)}(${esc(it.threshold_source)})</div></div>
+  <span class="suggest">建议买 <b>${esc(it.suggest)}</b></span>
+  <span class="pill">ID ${it.id}</span></div>`).join('')}</div>
+  <div class="actions">
+  <button class="copy green" onclick="toList()">一键进清单(勾选)</button>
+  <button class="copy ghost" onclick="copyText('忽略缺货(居家管家): 本次忽略缺货物品,不加入购物清单')">忽略本次</button>
+  </div></section>`;
+}else{
+  html+=`<section><div class="empty">🟢 库存充足,没有缺货物品。<br>范围:${esc(s.scope||'全屋')}</div></section>`;
+}
+html+=remindersBlock(payload);
+html+=`<section><h2>操作</h2>${actionBar(payload,[
+ {label:'换范围检测',text:'缺货检测(居家管家): 只检测某个分类【分类名】',kind:'ghost'},
+ {label:'设置阈值',text:'囤货盘点(居家管家): 给我看看囤货,设置常用物品的阈值',kind:'ghost'}
+])}</section>`;
+app.innerHTML=html;
+}
+function toList(){
+const sel=[...document.querySelectorAll('#list input:checked')];
+if(!sel.length){toast('请先勾选缺货物品');return;}
+const ids=sel.map(c=>c.dataset.id).join(',');
+const names=sel.map(c=>c.dataset.name).join('、');
+copyText('缺货进清单(居家管家): 把缺货物品加入购物清单,item ids='+ids+'。物品:'+names+' 按建议量加入');
+}
+render();
+</script>
+</body>
+</html>

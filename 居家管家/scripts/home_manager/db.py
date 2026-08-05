@@ -158,6 +158,10 @@ def init_db():
         )
     """)
 
+    # ── T9 SM8 前置批:categories.seed_key(种子标识,分类兼容设计 G5)──
+    # 老库零修改:seed_key 为空 → 代码层 fallback 名称查(三级解析器)
+    migrate_add_seed_key_column(conn)
+
     # items.category 老字段:若仍 NOT NULL 则放宽(新 add_item 不写 category 字符串)
     cursor.execute("PRAGMA table_info(items)")
     items_cols_meta = {row[1]: row for row in cursor.fetchall()}
@@ -257,5 +261,20 @@ def migrate_add_category_id_column(conn):
     if "category_id" not in columns:
         cursor.execute("ALTER TABLE items ADD COLUMN category_id INTEGER REFERENCES categories(id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_items_category_id ON items(category_id)")
+
+
+def migrate_add_seed_key_column(conn):
+    """迁移：给 categories 表加 seed_key 列(种子标识:food/clothing…)
+
+    来源:分类兼容设计(seed_key+resolve 三级 fallback)· D1 拆批 seed_key 前置批(T9)
+    - 新库:初始化建分类时写入 seed_key
+    - 老库:列存在但为空 → 代码层按名称查(零修改)
+    """
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(categories)")
+    columns = {row[1] for row in cursor.fetchall()}
+    if "seed_key" not in columns:
+        cursor.execute("ALTER TABLE categories ADD COLUMN seed_key TEXT")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_categories_seed_key ON categories(seed_key)")
 
 

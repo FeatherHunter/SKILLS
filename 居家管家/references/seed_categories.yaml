@@ -1,0 +1,143 @@
+# 通用种子分类(8 顶级 + 52 二级 = 60 节点)
+# 来源: 分类兼容设计(design/分类体系兼容设计.md) · 从用户 277 体系裁剪通用版
+# 命名: 名称与用户体系完全一致(顶级 = SKILL.md 命名规范;二级 = 用户体系二级名)
+# seed_key: 顶级 = food/clothing/home/tool/digital/health/sports/asset;二级 = {parent_key}_{english}
+# 导入: 初始化工作流步骤④(scripts/开始使用/ops.py seed_categories);老库有数据则跳过
+version: 1.0
+categories:
+  - seed_key: food
+    name: 食物与饮品
+    description: 供家庭食用的食品、饮品、调味品、食材
+    children:
+      - seed_key: food_fresh
+        name: 生鲜食品
+      - seed_key: food_processed
+        name: 加工食品
+      - seed_key: food_condiment
+        name: 调味品
+      - seed_key: food_beverage
+        name: 饮品
+      - seed_key: food_dry
+        name: 食材与干货
+  - seed_key: clothing
+    name: 衣物与穿戴
+    description: 个人穿戴的衣物、鞋袜、帽饰配件、床上用品
+    children:
+      - seed_key: clothing_top
+        name: 上装
+      - seed_key: clothing_bottom
+        name: 下装
+      - seed_key: clothing_underwear
+        name: 内衣睡衣
+      - seed_key: clothing_socks
+        name: 袜类
+      - seed_key: clothing_shoes
+        name: 鞋类
+      - seed_key: clothing_accessories
+        name: 帽饰配件
+      - seed_key: clothing_bedding
+        name: 床上用品
+  - seed_key: home
+    name: 家居与陈设
+    description: 家庭居住相关的家具、陈设、清洁、装饰、收纳
+    children:
+      - seed_key: home_furniture
+        name: 家具
+      - seed_key: home_storage
+        name: 收纳
+      - seed_key: home_clean_supplies
+        name: 清洁用品
+      - seed_key: home_clean_tools
+        name: 清洁工具
+      - seed_key: home_decor
+        name: 装饰
+      - seed_key: home_lighting
+        name: 灯具照明
+      - seed_key: home_kitchenware
+        name: 厨房用具
+      - seed_key: home_tableware
+        name: 餐具
+      - seed_key: home_tea_wine
+        name: 茶酒具
+      - seed_key: home_bedding
+        name: 床上用品
+  - seed_key: tool
+    name: 工具与器材
+    description: 维修、手作、测量用的工具与器材
+    children:
+      - seed_key: tool_hand
+        name: 手工具
+      - seed_key: tool_power
+        name: 电动工具
+      - seed_key: tool_hardware
+        name: 五金配件
+      - seed_key: tool_instruments
+        name: 仪器仪表
+      - seed_key: tool_consumables
+        name: 耗材
+  - seed_key: digital
+    name: 数码与电子
+    description: 电子设备、电脑手机、智能家居、个护电子
+    children:
+      - seed_key: digital_computing
+        name: 计算设备
+      - seed_key: digital_mobile
+        name: 移动设备
+      - seed_key: digital_imaging
+        name: 影像设备
+      - seed_key: digital_audio
+        name: 音频设备
+      - seed_key: digital_power
+        name: 电源连接
+      - seed_key: digital_smart_home
+        name: 智能家居
+      - seed_key: digital_appliances
+        name: 大件家电
+      - seed_key: digital_personal_care
+        name: 个护电子
+  - seed_key: health
+    name: 健康与医药
+    description: 药品、保健品、医疗器具、个护卫生
+    children:
+      - seed_key: health_medicine
+        name: 常用药品
+      - seed_key: health_supplements
+        name: 保健品
+      - seed_key: health_devices
+        name: 医疗器具
+      - seed_key: health_personal_care
+        name: 个护卫生
+      - seed_key: health_pet
+        name: 宠物健康
+  - seed_key: sports
+    name: 文体与娱乐
+    description: 书籍文具、运动器材、户外、乐器、玩具、游戏
+    children:
+      - seed_key: sports_books
+        name: 书籍
+      - seed_key: sports_stationery
+        name: 文具
+      - seed_key: sports_exercise
+        name: 运动器材
+      - seed_key: sports_outdoor
+        name: 户外
+      - seed_key: sports_instruments
+        name: 乐器
+      - seed_key: sports_toys
+        name: 玩具收藏
+      - seed_key: sports_games
+        name: 游戏机
+  - seed_key: asset
+    name: 资产与凭证
+    description: 数字资产、金融凭证、证件文件、贵重物品、交通工具
+    children:
+      - seed_key: asset_digital
+        name: 数字资产
+      - seed_key: asset_financial
+        name: 金融凭证
+      - seed_key: asset_documents
+        name: 证件文件
+      - seed_key: asset_valuables
+        name: 贵重物品
+      - seed_key: asset_transport
+        name: 交通出行

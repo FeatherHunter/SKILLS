@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 操作失败</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#fff6f5);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px;border:1px solid #ffe3e0}
+.eyebrow{color:var(--red);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.row{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid #ececf1}.row:last-child{border-bottom:none}.k{color:var(--fg2)}.v{font-weight:600;word-break:break-word}
+.bad{color:var(--red)}.cmd{background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:16px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;white-space:pre-wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.actions{margin-top:14px;text-align:right}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">操作失败 · 流程正常形态</div>
+<h1 id="title">操作失败</h1>
+<p class="lead" id="lead">失败不是打断:原因可读、可行动、可反馈。</p>
+</header>
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};
+const e=d.error||{};
+document.getElementById('title').textContent=e.action?('「'+e.action+'」失败'):'操作失败';
+document.getElementById('lead').textContent=e.suggest||'修正参数后重试';
+const kd=e.key_data||{};
+app.innerHTML=`
+<section><h2 class="bad">失败原因</h2><p class="bad" style="font-weight:600">${esc(e.reason||'未知原因')}</p></section>
+${Object.keys(kd).length?`<section><h2>关键数据</h2>${Object.entries(kd).map(([k,v])=>`<div class="row"><div class="k">${esc(k)}</div><div class="v">${esc(String(v??''))}</div></div>`).join('')}</section>`:''}
+<section><h2>建议下一步</h2><p>${esc(e.suggest||'修正参数后重试')}。修正后把下面按钮复制的内容发给 AI 即可重试。</p>${actionBar(payload,[{label:'修正重试',text:e.suggest?('修正后重试:'+e.suggest):'',kind:'ghost'}])}</section>
+`;
+}
+function renderBase(p){}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 物品历史</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.tl{position:relative;margin-left:14px;border-left:2px solid #e6e8ee;padding-left:20px}
+.ev{position:relative;padding:10px 0}
+.ev::before{content:'';position:absolute;left:-27px;top:16px;width:10px;height:10px;border-radius:50%;background:var(--blue)}
+.ev .time{color:var(--fg3);font-size:12px}
+.ev .sum{font-size:14px;margin:2px 0}
+.ev .type{display:inline-block;border:1px solid var(--line);border-radius:999px;padding:2px 9px;font-size:11px;color:var(--fg2)}
+.diff{display:none;background:#f8f9fb;border-radius:10px;padding:10px;font-size:13px;margin-top:6px;font-family:ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
+.undoable{font-size:12px;color:var(--blue);cursor:pointer}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:4px 11px;font-size:12px;cursor:pointer}.chip.on{border-color:var(--blue);background:var(--soft);color:var(--blue);font-weight:700}
+.traj{background:#f2f8ff;border-radius:12px;padding:12px 14px;font-size:14px;margin:8px 0}
+.pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;font-size:12px}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:8px 13px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:13px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.actions{margin-top:12px;text-align:right}
+.empty{color:var(--fg3)}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+let curType='all';
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};const s=d.scene||{};
+const it=s.item||{};
+const hero=metaHeader(payload,{title:it.name?('「'+it.name+'」的一生'):'物品历史',lead:'啥时候录的/改过几次/位置怎么变 —— 时间线 + 位置轨迹',stage:'查看'});
+let html=hero;
+if(s.trajectory&&s.trajectory.length){html+=`<section><h2>位置轨迹</h2><div class="traj">${s.trajectory.map(l=>'<span class="pill">'+esc(l)+'</span>').join('<span style="color:var(--fg3)"> → </span>')}</div></section>`;}
+html+=`<section><h2>时间线(${s.events?s.events.length:0} 条)</h2>
+<div class="chips"><button class="chip on" data-t="all">全部</button>${(s.filter_types||[]).map(f=>'<button class="chip" data-t="'+f.key+'">'+f.label+'</button>').join('')}</div>
+<div class="tl">${(s.events||[]).map(e=>`<div class="ev" data-t="${esc(e.event_type)}"><div class="time">${esc(e.occurred_at)} <span class="type">${esc(e.event_type)}</span></div>
+<div class="sum">${esc(e.summary)}</div>
+<div class="diff" id="d_${e.id}">${esc(JSON.stringify(e.payload||{},null,2))}</div>
+<div><span class="undoable" onclick="document.getElementById('d_${e.id}').style.display=document.getElementById('d_${e.id}').style.display==='block'?'none':'block'">展开 diff</span>${e.undo_of?'<span class="pill">已撤销</span>':'<span class="undoable" style="margin-left:12px" onclick="copyText(\'撤销操作(居家管家): 撤销事件 ${e.id}\')">撤销此操作</span>'}</div></div>`).join('')||'<p class="empty">暂无事件</p>'}</div></section>`;
+html+=remindersBlock(payload);
+html+=`<section><h2>通用操作</h2>${actionBar(payload,[{label:'复制事件 JSON',text:JSON.stringify((s.events||[]).map(e=>({id:e.id,type:e.event_type,time:e.occurred_at,summary:e.summary}))),kind:'ghost'}])}</section>`;
+app.innerHTML=html;
+document.querySelectorAll('.chip[data-t]').forEach(c=>c.addEventListener('click',()=>{curType=c.dataset.t;document.querySelectorAll('.chip[data-t]').forEach(o=>o.classList.toggle('on',o===c));document.querySelectorAll('.ev').forEach(x=>{x.style.display=(curType==='all'||x.dataset.t===curType)?'':'none';});}));
+}
+render();
+</script>
+</body>
+</html>

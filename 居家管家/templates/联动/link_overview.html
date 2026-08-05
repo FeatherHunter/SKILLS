@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 联动总览</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:30px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:34px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.stage{display:inline-block;background:#eef5ff;color:#0a63ce;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;margin-top:10px}
+section,article{background:var(--card);border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px}
+h2{font-size:19px;letter-spacing:-.02em;margin-bottom:14px}
+.card{border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px;background:#fbfbfd}
+.card:last-child{margin-bottom:0}
+.c-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.c-name{font-size:17px;font-weight:800}
+.badge{background:#eef5ff;color:#0a63ce;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700}
+.badge.skill{background:#f2f2f7;color:#48484a}
+.c-flow{color:var(--fg2);font-size:14px;margin-bottom:6px}
+.c-flow b{color:var(--fg)}
+.c-example{font-size:13px;color:var(--fg3);background:#f2f2f7;border-radius:10px;padding:8px 12px;display:inline-block;margin-bottom:10px}
+.c-actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:none;border-radius:12px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff;transition:filter .15s}
+.btn:hover{filter:brightness(.92)}
+.btn.ghost{background:#f2f2f7;color:var(--fg)}
+.btn.green{background:var(--green)}
+.prefs{display:flex;flex-direction:column;gap:14px}
+.pref-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #ececf1;padding-bottom:12px;flex-wrap:wrap}
+.pref-row:last-child{border-bottom:none;padding-bottom:0}
+.pref-name{font-weight:700;font-size:15px}
+.pref-desc{color:var(--fg3);font-size:12px}
+.radios{display:flex;gap:6px;flex-wrap:wrap}
+.radio{background:#f2f2f7;border-radius:99px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .15s}
+.radio.sel{background:#eef5ff;color:#0a63ce;border-color:var(--blue)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.actions button{border:none;border-radius:12px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer}
+.copy{background:var(--blue);color:#fff}
+.copy.alt{background:#f2f2f7;color:var(--fg)}
+.copy.green{background:var(--green);color:#fff}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.err{background:#fff5f5;border:1px solid #ffd7d5;border-radius:18px;padding:24px;margin-bottom:16px}
+.err h2{color:var(--red);margin-bottom:8px}
+.err .reason{font-size:15px;margin-bottom:8px}
+.err .next{color:var(--fg2);font-size:14px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}section,article{padding:18px 14px}.pref-row{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow" id="eyebrow">Home Manager · 联动总览</div>
+<h1 id="title">联动功能总览</h1>
+<p class="lead" id="subtitle">居家管家能与其他技能联动的能力索引</p>
+</header>
+<div id="app"></div>
+<p class="footer" style="color:var(--fg3);font-size:12px;text-align:center;margin-top:30px">联动执行 = 复制 prompt 到对应技能(单工闭环)</p>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+const sub=document.getElementById('subtitle');
+function render(){
+let p;
+try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(p);
+if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=p.data;
+window.__data=data;
+if(p.status==='error'){
+  app.innerHTML='<div class="err"><h2>'+esc(data.operation||'操作失败')+'</h2><div class="reason">'+esc(data.reason||'')+'</div><div class="next">'+esc(data.next||'')+'</div></div>'+actionBar(p);
+  return;
+}
+document.getElementById('title').textContent='联动功能总览';
+sub.textContent='共 '+arr(data.entries).length+' 条联动 · 偏好可随时调整';
+const entries=arr(data.entries).map(e=>`
+<article class="card">
+<div class="c-top"><span class="c-name">${esc(e.name)}</span><span class="badge">${esc(e.trigger)}</span><span class="badge skill">${esc(e.skill)}</span></div>
+<div class="c-flow"><b>数据流</b>：${esc(e.data_flow)}</div>
+<div class="c-flow"><b>场景</b>：${esc(e.scene)}</div>
+<div class="c-example">示例：${esc(e.example_prompt)}</div>
+<div class="c-actions">
+<button class="btn ghost" data-t="" onclick="copyPrompt(this,'${esc(e.id)}')">复制触发 prompt</button>
+<button class="btn" data-t="" onclick="goScene(this,'${esc(e.id)}')">前往业务场景</button>
+</div>
+</article>`).join('');
+const prefs=arr(Object.entries(data.prefs||{})).map(([k,v])=>{
+  const desc=k==='food'?'食品联动(录入顺路建议)':'价格联动(录入/购买记录顺路建议)';
+  const opts=arr(data.pref_options||[]).map(o=>`<span class="radio ${v===o?'sel':''}" data-k="${esc(k)}" data-v="${esc(o)}" onclick="pick(this)">${o==='ask'?'每次询问':o==='remember'?'记住上次选择':'关闭'}</span>`).join('');
+  return `<div class="pref-row"><div><div class="pref-name">${k==='food'?'食品联动频控':'价格联动频控'}</div><div class="pref-desc">${desc}</div></div><div class="radios">${opts}</div></div>`;
+}).join('');
+app.innerHTML=`
+<section><h2>联动条目</h2>${entries||'<div class="empty">无联动配置</div>'}</section>
+<section><h2>联动偏好设置</h2><div class="prefs">${prefs}</div>
+<div class="actions" style="margin-top:16px"><button class="copy green" onclick="applyPrefs()">应用偏好(复制 prompt)</button></div></section>
+`+actionBar(p);
+}
+function copyPrompt(btn,id){
+const e=(window.__data||{}).entries||[];const it=e.find(x=>x.id===id);if(!it)return;
+const prompt='请加载「居家管家」技能,帮我做联动(唤醒词:'+it.trigger+'):\n  联动: '+it.name+'\n  依赖技能: '+it.skill+'\n  ('+it.data_flow+')';
+copyText(prompt);btn.dataset.t=prompt;
+}
+function goScene(btn,id){
+const it=(window.__data||{}).entries||[];const e=it.find(x=>x.id===id);if(!e)return;
+const prompt='请加载「居家管家」技能,前往业务场景(唤醒词:'+e.trigger+'):\n  '+e.example_prompt;
+copyText(prompt);btn.dataset.t=prompt;
+}
+window.__selPrefs={};
+function pick(el){
+const k=el.dataset.k,v=el.dataset.v;
+window.__selPrefs[k]=v;
+el.parentNode.querySelectorAll('.radio').forEach(r=>r.classList.toggle('sel',r.dataset.v===v));
+}
+function applyPrefs(){
+const sel=window.__selPrefs;const keys=Object.keys(sel);
+if(!keys.length){toast('请先选择偏好');return;}
+const parts=keys.map(k=>k+'='+(sel[k]==='ask'?'每次询问':sel[k]==='remember'?'记住上次选择':'关闭'));
+const prompt='请把联动偏好设置为:'+parts.join(';')+'(调用 link_center.py prefs 落地)';
+copyText(prompt);
+}
+render();
+</script>
+</body>
+</html>

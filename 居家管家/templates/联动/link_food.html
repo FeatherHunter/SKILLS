@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 记到卡路里</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:30px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:34px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:16px}
+.stage{display:inline-block;background:#eef5ff;color:#0a63ce;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;margin-top:10px}
+section,article{background:var(--card);border-radius:18px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:16px}
+h2{font-size:19px;letter-spacing:-.02em;margin-bottom:14px}
+.item{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.photo{width:88px;height:88px;border-radius:16px;background:#eef1f5;display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:12px;overflow:hidden;flex:none}
+.photo img{width:100%;height:100%;object-fit:cover}
+.it-meta{flex:1;min-width:200px}
+.it-name{font-size:20px;font-weight:800;margin-bottom:4px}
+.it-sub{color:var(--fg2);font-size:14px}
+.reason{display:inline-block;background:#eef9f0;color:#1d7a2e;border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;margin-top:8px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.act{flex:1;min-width:200px;border:1.5px solid var(--line);border-radius:16px;padding:16px;cursor:pointer;background:#fbfbfd;transition:all .15s;text-align:left}
+.act.sel{border-color:var(--blue);background:#eef5ff}
+.act-name{font-weight:800;font-size:15px;margin-bottom:4px}
+.act-desc{color:var(--fg2);font-size:13px}
+.prompt{background:#f2f2f7;border-radius:14px;padding:14px 16px;font-size:13px;white-space:pre-wrap;word-break:break-word;margin:12px 0;color:#3a3a3c}
+.actions-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.actions-bar button{border:none;border-radius:12px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer}
+.copy{background:var(--blue);color:#fff}
+.copy.alt{background:#f2f2f7;color:var(--fg)}
+.copy.green{background:var(--green);color:#fff}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.err{background:#fff5f5;border:1px solid #ffd7d5;border-radius:18px;padding:24px;margin-bottom:16px}
+.err h2{color:var(--red);margin-bottom:8px}
+.err .reason{font-size:15px;margin-bottom:8px}
+.err .next{color:var(--fg2);font-size:14px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}section,article{padding:18px 14px}.photo{width:72px;height:72px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow" id="eyebrow">Home Manager · 记到卡路里</div>
+<h1 id="title">食品联动</h1>
+<p class="lead" id="subtitle">把食品/饮品物品联动到卡路里技能</p>
+</header>
+<div id="app"></div>
+<p class="footer" style="color:var(--fg3);font-size:12px;text-align:center;margin-top:30px">复制 prompt 到卡路里技能 → 单工闭环执行</p>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+function render(){
+let p;
+try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(p);
+if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=p.data;
+window.__data=data;
+if(p.status==='error'){
+  app.innerHTML='<div class="err"><h2>'+esc(data.operation||'操作失败')+'</h2><div class="reason">'+esc(data.reason||'')+'</div><div class="next">'+esc(data.next||'')+'</div></div>'+actionBar(p);
+  return;
+}
+const it=data.item||{};
+const photo=it.photo_base64?'<img alt="'+esc(it.name||'')+'" src="data:image/jpeg;base64,'+it.photo_base64+'">':'无照片';
+const acts=arr(data.actions).map(a=>`<div class="act" data-id="${esc(a.id)}" onclick="pick(this,'${esc(a.id)}')"><div class="act-name">${esc(a.label)}</div><div class="act-desc">${esc(a.id==='log'?'复制后卡路里记一餐(热量食品库补全)':'复制后卡路里查食品热量')}</div></div>`).join('');
+app.innerHTML=`
+<section><h2>目标物品确认</h2>
+<div class="item"><div class="photo">${photo}</div>
+<div class="it-meta"><div class="it-name">${esc(it.name||'未命名')}</div>
+<div class="it-sub">分类 ${esc(it.category||'未分类')} · 状态 ${esc(it.status||'')} · 数量 ${esc(it.quantity)}</div>
+<span class="reason">✓ ${esc(data.food_reason||'食品判定通过')} · 按分类/名称判断,可修正</span></div></div></section>
+<section><h2>联动动作选择</h2><div class="actions">${acts}</div>
+<div class="prompt" id="promptBox">${esc(data.prompt||'')}</div>
+<div class="actions-bar">
+<button class="copy" id="btnCopy" onclick="copyPrompt()">复制 prompt 到卡路里</button>
+<button class="copy alt" onclick="copyText(JSON.stringify(window.__data.copy_data,null,2))">复制数据</button>
+<button class="copy alt" onclick="copyText(JSON.stringify(window.__data.copy_log||{},null,2))">复制日志</button>
+</div></section>
+`;
+}
+function pick(el,id){
+el.parentNode.querySelectorAll('.act').forEach(a=>a.classList.remove('sel'));
+el.classList.add('sel');
+const a=arr(window.__data.actions).find(x=>x.id===id);
+document.getElementById('promptBox').textContent=a?esc(a.prompt):'';
+document.getElementById('btnCopy').dataset.t=a?a.prompt:'';
+}
+function copyPrompt(){
+const b=document.getElementById('btnCopy');
+const t=b.dataset.t||document.getElementById('promptBox').textContent;
+copyText(t);
+}
+render();
+</script>
+</body>
+</html>

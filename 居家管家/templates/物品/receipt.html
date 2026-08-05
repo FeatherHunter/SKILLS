@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 操作回执</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f6fbf7);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--green);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.row{display:grid;grid-template-columns:150px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid #ececf1}.row:last-child{border-bottom:none}.k{color:var(--fg2)}.v{font-weight:600;word-break:break-word}
+.pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:4px 10px;margin:3px;font-size:13px}
+.tag{background:#eef5ff;color:#0a63ce;border-radius:999px;padding:5px 10px;margin:4px;font-size:13px;font-weight:650;display:inline-block}
+.tag.removed{background:#ffefee;color:#c0392b;text-decoration:line-through}
+.cmd{background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:16px;overflow:auto;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;white-space:pre-wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.red{background:var(--red)}
+.photo{width:100%;min-height:180px;border-radius:18px;background:#f0f3f8;display:flex;align-items:center;justify-content:center;color:var(--fg3);overflow:hidden}.photo img{width:100%;height:100%;object-fit:cover}
+.diff-before{color:var(--red);text-decoration:line-through;margin-right:8px}.diff-after{color:var(--green);font-weight:700}
+.remind{background:#fffbea}.remind-item{border-left:3px solid var(--orange);background:#fff8e8;padding:10px 14px;border-radius:8px;margin:8px 0}.remind-item.bad{border-color:var(--red);background:#fff0ee}
+.actions{margin-top:14px;text-align:right}
+.stage{display:inline-block;background:var(--soft);color:var(--blue);border-radius:999px;padding:4px 12px;font-size:13px;font-weight:700;margin-top:10px}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};
+const s=d.scene||{};
+const r=s.receipt||{};
+const hero=metaHeader(payload,{title:r.action?('✓ '+r.action):'操作完成',lead:r.summary||s.message||'',stage:'已完成'});
+let body='';
+body+=`<section><h2>变更结果</h2>${r.diff&&r.diff.length?r.diff.map(x=>`<div class="row"><div class="k">${esc(x.field||'')}</div><div class="v"><span class="diff-before">${esc(String(x.before??''))}</span><span class="diff-after">${esc(String(x.after??''))}</span></div></div>`).join(''):'<p class="ok">无字段级变化</p>'}</section>`;
+if(s.item){
+  const it=s.item;
+  body+=`<section><h2>当前状态</h2>
+  ${it.photo_base64?`<div class="photo"><img src="data:image/jpeg;base64,${it.photo_base64}"></div>`:''}
+  <div class="row"><div class="k">名称</div><div class="v">${esc(it.name)} <span class="pill">ID ${it.id}</span></div></div>
+  <div class="row"><div class="k">分类</div><div class="v">${esc(it.category_name)}</div></div>
+  <div class="row"><div class="k">位置</div><div class="v">${esc(it.location||'(未设置)')} ×${esc(it.quantity??1)}</div></div>
+  <div class="row"><div class="k">状态</div><div class="v">${esc(it.status)}</div></div>
+  <div class="row"><div class="k">标签</div><div class="v">${(it.tags||[]).map(t=>'<span class="tag">'+esc(t)+'</span>').join('')||'<span class="empty">(无)</span>'}</div></div>
+  <div class="row"><div class="k">备注</div><div class="v">${val(it.remark)}</div></div></section>`;
+}
+if(r.tags_before!==undefined){body+=`<section><h2>标签变更</h2><div>${(r.tags_removed||[]).map(t=>'<span class="tag removed">'+esc(t)+'</span>').join('')}${(r.tags_added||[]).map(t=>'<span class="tag">+ '+esc(t)+'</span>').join('')}</div></section>`;}
+if(r.extra){body+=`<section>${typeof r.extra==='string'?`<p>${esc(r.extra)}</p>`:Object.entries(r.extra).map(([k,v])=>`<div class="row"><div class="k">${esc(k)}</div><div class="v">${esc(String(v??''))}</div></div>`).join('')}</section>`;}
+if(r.steps){body+=`<section><h2>处理明细</h2><ul class="list" style="margin-left:18px">${r.steps.map(x=>`<li>${x.ok?'<span class="ok">✓</span>':'<span class="bad">✗</span>'} ${esc(x.message||String(x.action||''))}</li>`).join('')}</ul></section>`;}
+app.innerHTML=hero+body+remindersBlock(payload)+`<section><h2>下一步</h2>${r.next?'<p>'+esc(r.next)+'</p>':''}${actionBar(payload,[{label:'撤销',text:r.undo_prompt||'',kind:'red'},{label:'查看详情',text:'看看这个物品的详情: python home_manager.py sm1-detail --id '+(s.item?s.item.id:''),kind:'ghost'}])}</section>`;
+}
+render();
+</script>
+</body>
+</html>

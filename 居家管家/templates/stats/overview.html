@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 物品总览</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:#eef4ff;color:var(--blue);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+.card{background:var(--card);border-radius:16px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}
+.card span{font-size:21px;font-weight:700;letter-spacing:-.02em}
+.card .sub{display:block;color:var(--fg3);font-size:11px;margin-top:3px}
+section{background:var(--card);border-radius:18px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px}
+section h2{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
+.tip{background:#fff8e6;border:1px solid #f5d98f;color:#8a6d1a;border-radius:14px;padding:12px 16px;font-size:13px;margin-bottom:14px}
+.tip button{margin-left:8px}
+.tl{font-size:13px;color:var(--fg2);margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left}th{background:#f5f8ff;font-weight:700}
+.tval{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #f0f0f3}
+.tval:last-child{border-bottom:none}
+.tval .ph{width:44px;height:44px;border-radius:10px;background:#eef1f5;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:9px;flex:none}
+.tval .ph img{width:100%;height:100%;object-fit:cover}
+.tval .nm{flex:1;min-width:0}
+.tval .nm .n{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tval .nm .c{color:var(--fg3);font-size:11px}
+.tval .pr{font-weight:700;font-size:13px;flex:none}
+.drill{background:#f8fafc;border:1px dashed var(--line);border-radius:12px;padding:10px 14px;margin-top:10px;font-size:12px;display:none}
+.drill.open{display:block}
+.drill b{color:var(--fg2)}
+.drill ul{list-style:none;margin-top:4px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:2px 12px}
+.empty{background:var(--card);border-radius:18px;padding:36px 20px;text-align:center;color:var(--fg3)}
+.empty h2{font-size:18px;color:var(--fg);margin-bottom:6px}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap;position:sticky;bottom:14px}
+.btn{border:none;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;box-shadow:var(--shadow)}
+.btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.copied{background:var(--green)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+.toast.show{opacity:1}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:24px}.actions{position:static}.card span{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · 统物品</div>
+<h1 id="title">物品总览</h1>
+<p class="lead" id="subtitle"></p>
+<div class="chips" id="metaBar"></div>
+</header>
+<div class="cards" id="cards"></div>
+<div id="flags"></div>
+<div id="app"></div>
+<div class="actions">
+<button class="btn" id="copyDataBtn">📋 复制数据</button>
+<button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+<!--CHARTS-HELPERS-->
+const app=document.getElementById('app');
+const flagsEl=document.getElementById('flags');
+const cardsEl=document.getElementById('cards');
+let D=null,META={};
+let _toastTimer=null;
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function doCopy(text,btnId,msg){
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');b.textContent=btnId==='copyDataBtn'?'✓ 数据已复制':'✓ 日志已复制';setTimeout(()=>{b.classList.remove('copied');b.textContent=btnId==='copyDataBtn'?'📋 复制数据':'📋 复制日志';},1600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));}
+  else{fallbackCopy(text,done);}
+}
+function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+function payloadData(){
+  return {flags:D.flags||null,statuses:D.statuses||null,categories:D.categories||null,locations:D.locations||null,owners:D.owners||null,top_value:(D.top_value||[]).map(x=>({id:x.id,name:x.name,price:x.price,category_name:x.category_name})),frequent_top:D.frequent_top||null,trend:D.trend||null};
+}
+function buildDataText(){
+  const d5={scene_id:META.scene_id||'stats_summary',command_cn:(META.wake_word||'统物品')+' 结果',occurred_at:META.fetched_at||'',target:'items + item_locations 聚合(只读)',payload:payloadData()};
+  return JSON.stringify(d5,null,2);
+}
+function buildLogText(){
+  const lines=[];
+  lines.push('① 场景标识');lines.push(`  command_cn: ${META.wake_word||'(未知)'} 结果`);lines.push(`  唤醒词: ${META.wake_word||'(未知)'}`);lines.push(`  场景名: 物品总览(scene_id=${META.scene_id||'stats_summary'})`);lines.push('');
+  lines.push('② AI 思考链');lines.push('  '+(META.chain||'(未注入)'));lines.push('');
+  lines.push('③ 底层数据结构');lines.push('  payload: '+JSON.stringify(payloadData()));lines.push('  DB 操作: SELECT items/item_locations/categories(只读聚合)');lines.push('');
+  lines.push('④ 调用链');lines.push('  渲染脚本: '+(META.render_cmd||'(未知)'));lines.push('  数据来源: '+(META.source||'(未知)'));lines.push('');
+  lines.push('⑤ 时间戳 + 版本');lines.push('  本地时间: '+(META.fetched_at||'(未知)'));lines.push('  skill 版本: '+(META.version||'(未知)'));lines.push('');
+  lines.push('⑥ 异常信息');lines.push('  无');
+  return lines.join('\n');
+}
+document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'copyDataBtn','总览数据已复制');
+document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'copyLogBtn','日志已复制');
+
+function render(){
+  let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
+  const v=validate(p);if(!v.ok){app.innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
+  D=p.data;META=D.meta||{};
+  document.getElementById('title').textContent=D.summary.title||'物品总览';
+  document.getElementById('subtitle').textContent=D.summary.subtitle||'';
+  const stage='查看';const chips=[`<span class="chip">⚡ ${esc(META.wake_word||'统物品')}</span>`,`<span class="chip">● ${stage}</span>`,`<span class="chip">🕒 ${esc(META.fetched_at||'')}</span>`];
+  document.getElementById('metaBar').innerHTML=chips.join('');
+  const metrics=arr(D.summary.metrics);
+  cardsEl.innerHTML=metrics.map(m=>'<div class="card"><b>'+esc(m.label)+'</b><span>'+esc(m.value)+'</span>'+(m.sub?'<span class="sub">'+esc(m.sub)+'</span>':'')+'</div>').join('');
+  const flags=D.flags||{};
+  let flagsHtml='';
+  if(flags.empty){app.innerHTML='<div class="empty"><h2>还没有物品 📦</h2>录入第一批物品后,这里就是你的家底总览。<div class="actions" style="position:static"><button class="btn" id="initBtn">复制「初始化/录入第一批」</button></div></div>';bindInit();renderActions();return;}
+  if(flags.low_coverage){flagsHtml+='<div class="tip">📌 价格覆盖率低:'+esc(metrics[2]?.sub||'')+'。建议为未录价的物品补上价格,总价值才可信。<button class="btn ghost" id="priceTipBtn">复制补价提示</button></div>';}
+  flagsEl.innerHTML=flagsHtml;
+  const pBtn=document.getElementById('priceTipBtn');
+  if(pBtn){pBtn.onclick=()=>{const missing=arr(D.categories);const txt='请加载「居家管家」技能,帮我给未录价的物品补上价格:\n  操作: 逐件补价(名称+价格),价格未知的标注「未知」';doCopy(txt,'priceTipBtn','补价提示已复制');};}
+  app.innerHTML='';
+  const catSec=document.createElement('section');
+  catSec.innerHTML='<h2>分类分布 <span class="hint">点柱子 = 复制筛选浏览 prompt</span></h2><div id="catChart"></div>'+(arr(D.categories).length?'':'<p style="color:var(--fg3);font-size:13px">暂无分类数据</p>');
+  app.appendChild(catSec);
+  const catData=arr(D.categories).map(c=>({label:c.name,value:c.count,sub:c.total_value}));
+  if(catData.length){charts.bar(document.getElementById('catChart'),catData,{onclick:i=>{const c=arr(D.categories)[i];if(!c)return;const txt='请加载「居家管家」技能,帮我按条件浏览物品(唤醒词:筛选浏览):\n  分  类: '+c.name;doCopy(txt,'catChart','筛选 prompt 已复制');}});}
+  const locSec=document.createElement('section');
+  locSec.innerHTML='<h2>位置分布 <span class="hint">哪里最挤 · 收纳线索</span></h2><div id="locChart"></div>';
+  app.appendChild(locSec);
+  const locData=arr(D.locations).map(l=>({label:l.name,value:l.count}));
+  if(locData.length){charts.bar(document.getElementById('locChart'),locData);}else{locSec.innerHTML+='<p style="color:var(--fg3);font-size:13px">暂无位置数据</p>';}
+  const stSec=document.createElement('section');
+  stSec.innerHTML='<h2>状态分布</h2><div id="stRows"></div>';
+  app.appendChild(stSec);
+  const statuses=arr(D.statuses);
+  if(statuses.length){stSec.querySelector('#stRows').innerHTML=statuses.map(s=>'<div class="tl"><span style="display:inline-block;min-width:56px">'+esc(s.name)+'</span><span style="display:inline-block;width:36px;text-align:right;font-weight:700">'+esc(s.count)+'</span></div><div id="st_'+esc(s.name)+'"></div>').join('');statuses.forEach(s=>{const el=document.getElementById('st_'+s.name);if(el)charts.progress(el,s.pct);});}
+  else{stSec.innerHTML+='<p style="color:var(--fg3);font-size:13px">暂无状态数据</p>';}
+  const owners=arr(D.owners);
+  if(owners.length){const owSec=document.createElement('section');owSec.innerHTML='<h2>归属分布</h2>'+owners.map(o=>'<div class="tl">'+esc(o.name)+' · <b>'+esc(o.count)+'</b> 件</div>').join('');app.appendChild(owSec);}
+  const tv=arr(D.top_value);
+  if(tv.length){const tvSec=document.createElement('section');tvSec.innerHTML='<h2>价值 TOP <span class="hint">最贵 N 件</span></h2><div>'+tv.map(x=>'<div class="tval"><div class="ph">'+(x.photo_base64?'<img alt="'+esc(x.name)+'" src="data:image/jpeg;base64,'+x.photo_base64+'">':'无图')+'</div><div class="nm"><div class="n">'+esc(x.name)+'</div><div class="c">'+esc(x.category_name||'')+'</div></div><div class="pr">¥'+esc(Number(x.price).toFixed(2))+'</div></div>').join('')+'</div>';app.appendChild(tvSec);}
+  const ft=arr(D.frequent_top);
+  if(ft.length){const ftSec=document.createElement('section');ftSec.innerHTML='<h2>高频 TOP <span class="hint">访问频次(查高频并入)</span></h2><table><thead><tr><th>名称</th><th>访问次数</th><th>最后访问</th></tr></thead><tbody>'+ft.map(x=>'<tr><td>'+esc(x.name)+'</td><td>'+esc(x.access_count)+'</td><td>'+esc(x.last_accessed_at||'从未')+'</td></tr>').join('')+'</tbody></table>';app.appendChild(ftSec);}
+  const tr=D.trend;
+  if(tr&&arr(tr.buckets).length){const trSec=document.createElement('section');trSec.innerHTML='<h2>近 '+esc(tr.days)+' 天变动 <span class="hint">'+esc(tr.note||'')+'</span></h2><div id="trendChart"></div><div class="drill" id="trendDrill"></div>';app.appendChild(trSec);
+    const buckets=arr(tr.buckets);
+    const lineData=buckets.map(b=>({label:b.label,value:b.added}));
+    charts.line(document.getElementById('trendChart'),lineData,{ondrill:i=>{const b=buckets[i];if(!b)return;const d=document.getElementById('trendDrill');d.innerHTML='<b>'+esc(b.label)+'</b> · 录入 '+esc(b.added)+' 件 · 废弃 '+esc(b.discarded)+' 件<ul>'+(b.added_items||[]).map(x=>'<li>➕ '+esc(x.name)+'</li>').join('')+(b.discarded_items||[]).map(x=>'<li>🗑️ '+esc(x.name)+'</li>').join('')+'</ul>';d.classList.add('open');}});
+  }
+  renderActions();
+}
+function bindInit(){
+  const b=document.getElementById('initBtn');
+  if(b)b.onclick=()=>{const txt='请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用)';doCopy(txt,'initBtn','初始化 prompt 已复制');};
+}
+function renderActions(){}
+render();
+</script>
+</body>
+</html>

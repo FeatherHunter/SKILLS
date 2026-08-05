@@ -14,7 +14,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from ._shared import SHARED_JS
+from ._shared import SHARED_JS, CHARTS_JS
 
 # SKILL_DIR: 从本文件位置向上 3 级 = 居家管家/
 SKILL_DIR = Path(__file__).parent.parent.parent
@@ -27,6 +27,7 @@ HTML_SUBDIR = f"{SKILL_SLUG}_html"
 
 DATA_PLACEHOLDER = "<!--INJECT-DATA-->"
 SHARED_PLACEHOLDER = "<!--SHARED-HELPERS-->"
+CHARTS_PLACEHOLDER = "<!--CHARTS-HELPERS-->"
 
 # template → command_cn 静态映射表(原则 12.A 中文前缀)
 # help_center 走 12.B 路径,不在此表
@@ -40,6 +41,35 @@ TEMPLATE_TO_COMMAND_CN = {
     "expiring_alert.html": "查过期",
     "outfit_picker.html": "穿什么",
     "travel_trip.html": "出行清单",
+    # ── SM4 统计总览域(T5)──
+    "stats/overview.html": "统物品",
+    "stats/idle.html": "查闲置",
+    "stats/expiring.html": "查过期",
+    "stats/inventory_stat.html": "盘点统计",
+    # ── SM7 家庭协作域(T8)──
+    "family_borrow.html": "借用",
+    "family_members.html": "家人档案",
+    # ── SM1 物品管理域(T2)──
+    "物品/add_form.html": "录物品",
+    "物品/receipt.html": "操作回执",
+    "物品/error.html": "操作失败",
+    "物品/search_list.html": "查物品",
+    "物品/detail.html": "看物品",
+    "物品/locate.html": "紧急定位",
+    "物品/browse.html": "筛选浏览",
+    "物品/duplicates.html": "查重复",
+    "物品/confirm.html": "确认操作",
+    "物品/undo_select.html": "撤销操作",
+    "物品/relations.html": "物品关联",
+    "物品/tag_manage.html": "管标签",
+    "物品/category_manage.html": "管分类",
+    "物品/photos.html": "查看照片",
+    "物品/photo_wall.html": "照片墙",
+    "物品/inventory_round.html": "盘物品",
+    "物品/inventory_diff.html": "差异处理",
+    "物品/inventory_records.html": "盘点记录",
+    "物品/move_checklist.html": "搬家盘点",
+    "物品/history.html": "历史",
 }
 
 
@@ -124,9 +154,20 @@ def render_page(template_name, payload, output_path=None, message=None):
             "message": f"模板 {template_name} {SHARED_PLACEHOLDER} 最多出现 1 次，实际 {shared_count} 次",
         }
 
-    # 先注入共享 JS (如有), 再注入数据
+    # CHARTS-HELPERS 占位符校验: 0 或 1 个(图表共享组件, T5 创建)
+    charts_count = html.count(CHARTS_PLACEHOLDER)
+    if charts_count > 1:
+        return {
+            "status": "error",
+            "data": {"template": template_name, "charts_count": charts_count},
+            "message": f"模板 {template_name} {CHARTS_PLACEHOLDER} 最多出现 1 次，实际 {charts_count} 次",
+        }
+
+    # 先注入共享 JS (如有), 再注入图表组件(如有), 最后注入数据
     if shared_count == 1:
         html = html.replace(SHARED_PLACEHOLDER, SHARED_JS.strip(), 1)
+    if charts_count == 1:
+        html = html.replace(CHARTS_PLACEHOLDER, CHARTS_JS.strip(), 1)
     payload_text = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
     html = html.replace(DATA_PLACEHOLDER, payload_text, 1)
 

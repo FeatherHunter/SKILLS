@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 搬家打包</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#fff8f2);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--orange);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.prog{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.bar{flex:1;height:10px;background:#ececf1;border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;background:var(--orange)}
+.item{border:1px solid #eef0f4;border-radius:14px;padding:12px;margin:8px 0;display:flex;align-items:center;gap:10px}
+.item .nm{flex:1;font-weight:600}
+.bin{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 16px;font-size:13px;cursor:pointer}.bin.on-take{background:var(--green);color:#fff;border-color:var(--green);font-weight:800}.bin.on-leave{background:var(--red);color:#fff;border-color:var(--red);font-weight:800}
+.pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;font-size:12px}
+.summary{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+.summary .s{font-size:14px}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.green{background:var(--green)}
+.actions{margin-top:14px;text-align:right}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};const s=d.scene||{};
+const hero=metaHeader(payload,{title:'搬家打包盘点',lead:'全屋清单(按位置分组)· 二态【带走/不带走】· 不带走后续走废弃/送人',stage:'标记 → 确认'});
+let html=hero;
+html+=`<section><div class="summary"><span class="s">共 <b id="total">${s.total||0}</b> 件</span><span class="s">带走 <b class="ok" id="takeCnt">0</b></span><span class="s">不带走 <b class="bad" id="leaveCnt">0</b></span></div>
+${(s.groups||[]).map(g=>`<h2>📍 ${esc(g.name)} <span class="pill">${g.items.length}</span></h2>${g.items.map(it=>`
+<div class="item" data-id="${it.id}"><div class="nm">${esc(it.name)} <span class="pill">ID ${it.id}</span></div>
+<button class="bin" data-v="带走" onclick="setBin(this)">带走</button><button class="bin" data-v="不带走" onclick="setBin(this)">不带走</button>
+</div>`).join('')}`).join('')}
+<div class="actions"><button class="copy green" onclick="copyText(collectMove())">统一确认(生成搬家清单)</button>
+<button class="copy ghost" onclick="copyText(collectJson())">复制数据(清单 JSON)</button></div></section>`;
+html+=`<section><h2>通用操作</h2>${actionBar(payload)}</section>`;
+app.innerHTML=html;
+updateCount();
+}
+function setBin(btn){const it=btn.closest('.item');it.querySelectorAll('.bin').forEach(x=>x.classList.remove('on-take','on-leave'));btn.classList.add(btn.dataset.v==='带走'?'on-take':'on-leave');updateCount();}
+function updateCount(){const items=document.querySelectorAll('.item');let t=0,l=0;items.forEach(it=>{if(it.querySelector('.bin.on-take'))t++;if(it.querySelector('.bin.on-leave'))l++;});document.getElementById('takeCnt').textContent=t;document.getElementById('leaveCnt').textContent=l;}
+function collectMove(){return '搬家打包(居家管家): '+collectJson();}
+function collectJson(){const take=[],leave=[];document.querySelectorAll('.item').forEach(it=>{const id=+it.dataset.id;if(it.querySelector('.bin.on-take'))take.push(id);else if(it.querySelector('.bin.on-leave'))leave.push(id);});return JSON.stringify({take,leave});}
+render();
+</script>
+</body>
+</html>

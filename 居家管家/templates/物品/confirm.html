@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 确认操作</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:56px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:34px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:32px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:16px}
+section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
+h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.compare{background:#f8f9fb;border-radius:14px;padding:14px}
+.compare.before{border:1.5px solid #ffd6d3}.compare.after{border:1.5px solid #cdeecd}
+.compare h3{font-size:14px;color:var(--fg2);margin-bottom:8px}
+.row{display:grid;grid-template-columns:120px 1fr;gap:10px;padding:7px 0;border-bottom:1px solid #ececf1}.k{color:var(--fg2)}.v{font-weight:600;word-break:break-word}
+.pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px}
+.tag{background:#eef5ff;color:#0a63ce;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px;display:inline-block}
+.impact{background:#f2f8ff;border-radius:12px;padding:10px 14px;margin:10px 0;font-size:14px}
+.ok{color:var(--green)}.warn{color:var(--orange)}.bad{color:var(--red)}.empty{color:var(--fg3)}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.red{background:var(--red)}
+.actions{margin-top:14px;text-align:right}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div id="app"></div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const app=document.getElementById('app');
+function render(){
+let payload;
+try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
+const d=payload.data||{};const s=d.scene||{};
+const hero=metaHeader(payload,{title:s.title||'确认操作',lead:s.lead||'核对影响范围后确认',stage:'确认'});
+let html=hero;
+if(s.impact){html+=`<div class="impact">${esc(s.impact)}</div>`;}
+if(s.before||s.after){
+  html+=`<section><div class="grid2">
+  ${s.before?`<div class="compare before"><h3>变更前</h3>${Object.entries(s.before).map(([k,v])=>`<div class="row"><div class="k">${esc(k)}</div><div class="v">${Array.isArray(v)?v.map(x=>'<span class="tag">'+esc(x)+'</span>').join(''):esc(String(v??''))}</div></div>`).join('')}</div>`:''}
+  ${s.after?`<div class="compare after"><h3>变更后</h3>${Object.entries(s.after).map(([k,v])=>`<div class="row"><div class="k">${esc(k)}</div><div class="v">${Array.isArray(v)?v.map(x=>'<span class="tag">'+esc(x)+'</span>').join(''):esc(String(v??''))}</div></div>`).join('')}</div>`:''}
+  </div></section>`;
+}
+(s.entries||[]).forEach(e=>{
+  html+=`<section><h2>${esc(e.name||'')} <span class="pill">${esc(e.sub||'')}</span></h2>${e.rows?e.rows.map(([k,v])=>`<div class="row"><div class="k">${esc(k)}</div><div class="v">${esc(String(v??''))}</div></div>`).join(''):''}</section>`;
+});
+html+=remindersBlock(payload);
+html+=`<section><h2>操作</h2>${actionBar(payload,(s.buttons||[]).map(b=>({label:b.label,text:b.text,kind:b.kind||'ghost'})))}</section>`;
+app.innerHTML=html;
+}
+render();
+</script>
+</body>
+</html>

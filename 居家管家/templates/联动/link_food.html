@@ -33,22 +33,13 @@ h2{font-size:19px;letter-spacing:-.02em;margin-bottom:14px}
 .actions-bar button{border:none;border-radius:12px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer}
 .copy{background:var(--blue);color:#fff}
 .copy.alt{background:#f2f2f7;color:var(--fg)}
-.copy.green{background:var(--green);color:#fff}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
-.err{background:#fff5f5;border:1px solid #ffd7d5;border-radius:18px;padding:24px;margin-bottom:16px}
-.err h2{color:var(--red);margin-bottom:8px}
-.err .reason{font-size:15px;margin-bottom:8px}
-.err .next{color:var(--fg2);font-size:14px}
 @media(max-width:720px){.wrap{padding:30px 14px 70px}section,article{padding:18px 14px}.photo{width:72px;height:72px}}
 </style>
 </head>
 <body>
 <div class="wrap">
-<header class="hero">
-<div class="eyebrow" id="eyebrow">Home Manager · 记到卡路里</div>
-<h1 id="title">食品联动</h1>
-<p class="lead" id="subtitle">把食品/饮品物品联动到卡路里技能</p>
-</header>
+<div id="heroBox"></div>
 <div id="app"></div>
 <p class="footer" style="color:var(--fg3);font-size:12px;text-align:center;margin-top:30px">复制 prompt 到卡路里技能 → 单工闭环执行</p>
 </div>
@@ -61,34 +52,40 @@ let p;
 try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
 const v=validate(p);
 if(!v.ok){app.innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
-const data=p.data;
-window.__data=data;
-if(p.status==='error'){
-  app.innerHTML='<div class="err"><h2>'+esc(data.operation||'操作失败')+'</h2><div class="reason">'+esc(data.reason||'')+'</div><div class="next">'+esc(data.next||'')+'</div></div>'+actionBar(p);
+const d=p.data;
+if(d.error){
+  const e=d.error||{};
+  document.getElementById('heroBox').innerHTML=metaHeader(p,{title:'食品联动',lead:e.suggest||'',stage:'失败'});
+  const kd=e.key_data||{};
+  app.innerHTML=`
+<section><h2 style="color:var(--red)">失败原因</h2><p style="font-weight:600">${esc(e.reason||'未知原因')}</p></section>
+${Object.keys(kd).length?`<section><h2>目标物品</h2><div class="item"><div class="it-meta"><div class="it-name">${esc(kd.name||'-')}</div><div class="it-sub">分类 ${esc(kd.category||'未分类')} · 状态 ${esc(kd.status||'')}</div></div></div></section>`:''}
+<section><h2>建议下一步</h2><p>${esc(e.suggest||'修正参数后重试')}</p>${actionBar(p,[{label:'修正重试',text:e.suggest?('修正后重试:'+e.suggest):'',kind:'ghost'}])}</section>`;
   return;
 }
-const it=data.item||{};
+document.getElementById('heroBox').innerHTML=metaHeader(p,{title:'食品联动',lead:'把食品/饮品物品联动到卡路里技能',stage:'选择'});
+const scene=d.scene||{};
+window.__sceneData=scene;
+const it=scene.item||{};
 const photo=it.photo_base64?'<img alt="'+esc(it.name||'')+'" src="data:image/jpeg;base64,'+it.photo_base64+'">':'无照片';
-const acts=arr(data.actions).map(a=>`<div class="act" data-id="${esc(a.id)}" onclick="pick(this,'${esc(a.id)}')"><div class="act-name">${esc(a.label)}</div><div class="act-desc">${esc(a.id==='log'?'复制后卡路里记一餐(热量食品库补全)':'复制后卡路里查食品热量')}</div></div>`).join('');
+const acts=arr(scene.actions).map(a=>`<div class="act" data-id="${esc(a.id)}" onclick="pick(this,'${esc(a.id)}')"><div class="act-name">${esc(a.label)}</div><div class="act-desc">${esc(a.id==='log'?'复制后卡路里记一餐(热量食品库补全)':'复制后卡路里查食品热量')}</div></div>`).join('');
 app.innerHTML=`
 <section><h2>目标物品确认</h2>
 <div class="item"><div class="photo">${photo}</div>
 <div class="it-meta"><div class="it-name">${esc(it.name||'未命名')}</div>
 <div class="it-sub">分类 ${esc(it.category||'未分类')} · 状态 ${esc(it.status||'')} · 数量 ${esc(it.quantity)}</div>
-<span class="reason">✓ ${esc(data.food_reason||'食品判定通过')} · 按分类/名称判断,可修正</span></div></div></section>
+<span class="reason">✓ ${esc(scene.food_reason||'食品判定通过')} · 按分类/名称判断,可修正</span></div></div></section>
 <section><h2>联动动作选择</h2><div class="actions">${acts}</div>
-<div class="prompt" id="promptBox">${esc(data.prompt||'')}</div>
+<div class="prompt" id="promptBox">${esc(scene.prompt||'')}</div>
 <div class="actions-bar">
 <button class="copy" id="btnCopy" onclick="copyPrompt()">复制 prompt 到卡路里</button>
-<button class="copy alt" onclick="copyText(JSON.stringify(window.__data.copy_data,null,2))">复制数据</button>
-<button class="copy alt" onclick="copyText(JSON.stringify(window.__data.copy_log||{},null,2))">复制日志</button>
 </div></section>
-`;
+`+actionBar(p);
 }
 function pick(el,id){
 el.parentNode.querySelectorAll('.act').forEach(a=>a.classList.remove('sel'));
 el.classList.add('sel');
-const a=arr(window.__data.actions).find(x=>x.id===id);
+const a=arr(window.__sceneData.actions).find(x=>x.id===id);
 document.getElementById('promptBox').textContent=a?esc(a.prompt):'';
 document.getElementById('btnCopy').dataset.t=a?a.prompt:'';
 }

@@ -19,7 +19,7 @@ if not shutil.which(_PY):
     _PY = "python"
 
 SCRIPTS_DIR = Path(__file__).parent.parent / "scripts"
-LINK_CLI = [_PY, "link_center.py"]
+LINK_CLI = [_PY, "-m", "联动.cli"]
 HOME_CLI = [_PY, "home_manager.py"]
 
 
@@ -67,7 +67,7 @@ def _load(path):
 def test_overview_ok(link_db):
     env, tmp = link_db
     out = tmp / "overview.html"
-    r = _run(env, ["overview", "--output", str(out)])
+    r = _run(env, ["sm9-overview", "--output", str(out)])
     assert r.returncode == 0, f"stderr={r.stderr}"
     assert out.exists()
     html = out.read_text(encoding="utf-8")
@@ -79,11 +79,10 @@ def test_overview_ok(link_db):
 
 def test_overview_default_prefs(link_db):
     env, tmp = link_db
-    r = _run(env, ["overview", "--output", str(tmp / "o2.html")])
-    data = _load(tmp / "o2.html") if False else None  # payload 在 JSON script 内,直接读 HTML 断言
+    r = _run(env, ["sm9-overview", "--output", str(tmp / "o2.html")])
     assert r.returncode == 0
     html = (tmp / "o2.html").read_text(encoding="utf-8")
-    assert "link_prefs" not in html  # 偏好 JSON 尚未创建 = 默认值渲染
+    assert "记住上次选择" in html  # 偏好 JSON 尚未创建 = 默认值渲染
 
 
 # ── SM9-2 食品联动 ────────────────────────────────────────────────────────────
@@ -92,7 +91,7 @@ def test_overview_default_prefs(link_db):
 def test_food_log_ok(link_db):
     env, tmp = link_db
     out = tmp / "food.html"
-    r = _run(env, ["food", "--item-id", "101", "--action", "log", "--output", str(out)])
+    r = _run(env, ["sm9-food", "--item-id", "101", "--action", "log", "--output", str(out)])
     assert r.returncode == 0, f"stderr={r.stderr}"
     assert out.exists()
     html = out.read_text(encoding="utf-8")
@@ -105,8 +104,8 @@ def test_food_log_ok(link_db):
 def test_food_non_food_error(link_db):
     env, tmp = link_db
     out = tmp / "food_err.html"
-    r = _run(env, ["food", "--item-id", "102", "--output", str(out)])
-    assert r.returncode == 0  # 业务失败 = 正常错误回执 HTML,进程不崩
+    r = _run(env, ["sm9-food", "--item-id", "102", "--output", str(out)])
+    assert r.returncode == 1  # 业务失败 = 非零退出(与 物品域 emit_error 同约),错误回执 HTML 正常生成
     assert out.exists()
     html = out.read_text(encoding="utf-8")
     assert "不是食品/饮品" in html
@@ -115,8 +114,8 @@ def test_food_non_food_error(link_db):
 def test_food_missing_item(link_db):
     env, tmp = link_db
     out = tmp / "food_miss.html"
-    r = _run(env, ["food", "--item-id", "99999", "--output", str(out)])
-    assert r.returncode == 0
+    r = _run(env, ["sm9-food", "--item-id", "99999", "--output", str(out)])
+    assert r.returncode == 1
     html = out.read_text(encoding="utf-8")
     assert "未找到" in html
 
@@ -127,7 +126,7 @@ def test_food_missing_item(link_db):
 def test_price_expense_ok(link_db):
     env, tmp = link_db
     out = tmp / "price.html"
-    r = _run(env, ["price", "--item-id", "101", "--direction", "expense", "--output", str(out)])
+    r = _run(env, ["sm9-price", "--item-id", "101", "--direction", "expense", "--output", str(out)])
     assert r.returncode == 0, f"stderr={r.stderr}"
     assert out.exists()
     html = out.read_text(encoding="utf-8")
@@ -140,7 +139,7 @@ def test_price_expense_ok(link_db):
 def test_price_income_ok(link_db):
     env, tmp = link_db
     out = tmp / "price_in.html"
-    r = _run(env, ["price", "--item-id", "101", "--direction", "income", "--output", str(out)])
+    r = _run(env, ["sm9-price", "--item-id", "101", "--direction", "income", "--output", str(out)])
     assert r.returncode == 0
     html = out.read_text(encoding="utf-8")
     assert "退货退款" in html
@@ -149,8 +148,8 @@ def test_price_income_ok(link_db):
 def test_price_no_price_error(link_db):
     env, tmp = link_db
     out = tmp / "price_err.html"
-    r = _run(env, ["price", "--item-id", "103", "--output", str(out)])
-    assert r.returncode == 0
+    r = _run(env, ["sm9-price", "--item-id", "103", "--output", str(out)])
+    assert r.returncode == 1
     html = out.read_text(encoding="utf-8")
     assert "没有价格信息" in html
 
@@ -160,7 +159,7 @@ def test_price_no_price_error(link_db):
 
 def test_prefs_set_and_read(link_db):
     env, tmp = link_db
-    r = _run(env, ["prefs", "--key", "food", "--value", "off"])
+    r = _run(env, ["sm9-prefs", "--key", "food", "--value", "off"])
     assert r.returncode == 0, f"stderr={r.stderr}"
     prefs_file = tmp / "link_prefs.json"
     assert prefs_file.exists()
@@ -170,7 +169,7 @@ def test_prefs_set_and_read(link_db):
 
     # 总览页反映新偏好
     out = tmp / "o3.html"
-    r2 = _run(env, ["overview", "--output", str(out)])
+    r2 = _run(env, ["sm9-overview", "--output", str(out)])
     assert r2.returncode == 0
     html = out.read_text(encoding="utf-8")
     assert "关闭" in html
@@ -178,5 +177,5 @@ def test_prefs_set_and_read(link_db):
 
 def test_prefs_invalid_value_ignored(link_db):
     env, tmp = link_db
-    r = _run(env, ["prefs", "--key", "food", "--value", "bogus"])
+    r = _run(env, ["sm9-prefs", "--key", "food", "--value", "bogus"])
     assert r.returncode != 0  # argparse 拒绝非法 value

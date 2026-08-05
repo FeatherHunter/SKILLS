@@ -87,6 +87,35 @@ def test_live_result_progress_math(goal_env):
     assert '极端目标' in data['one_line']
 
 
+def test_live_result_journey_and_est_date(goal_env):
+    """旅程进度条数据:起点→目标 完成% + 按 0.5kg/周 推算达成日(对抗审查 2026-08-05 补)"""
+    rgw = _rgw()
+    data = rgw.build_live_result(69.9, deadline='2026-10-30',
+                                 start_kg=86.1, start_date='2026-08-05')
+    j = data['journey']
+    assert j is not None
+    assert (j['start'], j['target'], j['current']) == (86.1, 69.9, 86.1)
+    assert j['total'] == 16.2
+    assert j['done'] == 0.0
+    assert j['pct'] == 0.0
+    assert data['est_date'] is not None
+    from datetime import timedelta
+    weeks = max(1, __import__('math').ceil(abs(data['gap']) / 0.5))
+    assert data['est_date'] == (date.today() + timedelta(days=weeks * 7)).isoformat()
+
+
+def test_live_result_journey_pct_after_loss(goal_env):
+    """有进展后:当前 < 起点 → 完成% > 0"""
+    rgw = _rgw()
+    import weight
+    weight.log_weight(85.0, target_date='2026-08-05')
+    data = rgw.build_live_result(69.9, deadline='2026-10-30',
+                                 start_kg=86.1, start_date='2026-08-05')
+    j = data['journey']
+    assert j['done'] == 1.1
+    assert round(j['pct'], 1) == round(1.1 / 16.2 * 100, 1)
+
+
 def test_live_result_without_deadline_no_rate(goal_env):
     """无截止日:rate=None(不产出孤立数字)"""
     rgw = _rgw()
@@ -111,6 +140,10 @@ def test_result_html_renders_written_and_warning(goal_env):
     assert '1.32 kg/周' in html
     assert '<div class="warn">' in html
     assert '写入时间' in html
+    assert 'heroNum' in html
+    assert 'journeyFill' in html
+    assert 'scene_id' in html
+    assert 'payload' in html
 
 
 def test_result_html_ok_case(goal_env):

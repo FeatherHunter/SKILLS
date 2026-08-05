@@ -17,6 +17,7 @@
 """
 import argparse
 import json
+import math
 import sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -175,10 +176,12 @@ def build_live_result(kg, deadline=None, start_kg=None, start_date=None):
 
     - 写库:weight_goal.set_weight_goal(起点缺省 = 最新体重快照 / 今日)
     - 进度:差距 / 剩余天数 / 建议速率(公式透明 + 极端目标警示,#78)
+    - 旅程:起点→目标 完成% + 按 0.5kg/周 推算达成日(对抗审查 2026-08-05 补)
     - 数字全部由代码计算,AI 只回显,禁止心算
 
     Returns:
-        dict: written(落库字段)/ current_weight / gap / days_left / rate / one_line
+        dict: written(落库字段)/ current_weight / gap / days_left / rate /
+              journey(起点→目标进度)/ est_date(0.5kg/周 推算达成日)/ one_line
     """
     import weight_goal as wg
     written = wg.set_weight_goal(kg, deadline=deadline, start_weight=start_kg, start_date=start_date)
@@ -186,6 +189,30 @@ def build_live_result(kg, deadline=None, start_kg=None, start_date=None):
     days_left = _days_until(deadline)
     gap = round(current - kg, 1) if current is not None else None
     rate = build_rate_info(current - kg, days_left) if gap is not None else None
+
+    # 旅程进度:起点 → 目标,当前体重所处位置(完成%)
+    journey = None
+    start = written['start_weight']
+    if start and written['weight_goal'] and current is not None:
+        total = abs(start - written['weight_goal'])
+        if total > 0:
+            done = abs(start - current)
+            pct = max(0.0, min(100.0, done / total * 100))
+            journey = {
+                'start': round(start, 1),
+                'target': round(written['weight_goal'], 1),
+                'current': round(current, 1),
+                'pct': round(pct, 1),
+                'done': round(min(done, total), 1),
+                'total': round(total, 1),
+            }
+
+    # 按 0.5kg/周 推算达成日(与填写页同口径)
+    est_date = None
+    if gap and days_left is not None and days_left > 0:
+        weeks = max(1, math.ceil(abs(gap) / 0.5))
+        est_date = (date.today() + timedelta(days=weeks * 7)).isoformat()
+
     parts = [f"已写入体重目标 {kg:g}kg"]
     if deadline:
         parts.append(f"截止 {deadline}")
@@ -201,6 +228,8 @@ def build_live_result(kg, deadline=None, start_kg=None, start_date=None):
         'gap': gap,
         'days_left': days_left,
         'rate': rate,
+        'journey': journey,
+        'est_date': est_date,
         'one_line': ' · '.join(parts),
     }
 
@@ -260,6 +289,12 @@ def main():
         'with_start': ('定体重目标(含起始日)', 'receipt'),
         'modify': ('改体重目标', 'receipt'),
     }
+    SCENE_ID = {
+        'basic': 'goal_set_weight',
+        'auto_deadline': 'goal_set_weight_auto_deadline',
+        'with_start': 'goal_set_weight_with_start',
+        'modify': 'goal_modify_weight',
+    }
 
     try:
         if args.live:
@@ -274,6 +309,7 @@ def main():
                 wake_word=scene_name,
                 source='weight_log + daily_goal(weight_goal/goal_deadline/start_weight/start_date) · 写库回执',
                 chain=args.chain,
+                extra={'scene_id': SCENE_ID[args.scene]},
             )
             html = render_result_html(data)
             out_path = Path(args.output) if args.output else scene_path(scene_name, 'result')

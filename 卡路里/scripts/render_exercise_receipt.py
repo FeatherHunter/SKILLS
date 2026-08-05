@@ -46,6 +46,8 @@ def render_html(data):
 _SKIP_KEYS = {'id', 'created_at', 'updated_at', 'is_deleted', 'xunji_localid', 'xunji_title',
               'intensity', 'period'}
 
+SKILL_VERSION = 'v1.0'
+
 
 def _disp(record: dict) -> dict:
     """记录 → 回执展示字段(去内部列 + None 过滤)"""
@@ -55,7 +57,7 @@ def _disp(record: dict) -> dict:
 
 def _receipt(op: str, record_id, old_record: dict, new_record: dict,
              entity_label: str, summary: str, action_at: str | None = None,
-             kpis: list | None = None) -> dict:
+             kpis: list | None = None, totals: list | None = None) -> dict:
     return {
         'status': 'ok',
         'data': {
@@ -63,7 +65,7 @@ def _receipt(op: str, record_id, old_record: dict, new_record: dict,
             'record_id': record_id,
             'old_record': old_record or {},
             'new_record': new_record or {},
-            'context': {'kpis': kpis or []},
+            'context': {'kpis': kpis or [], 'totals': totals or []},
             'meta': {
                 'action_at': action_at or datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'entity_type': entity_label,
@@ -76,6 +78,22 @@ def _receipt(op: str, record_id, old_record: dict, new_record: dict,
 
 def _fmt_strength(total_sets, load_kg, reps):
     return f"{total_sets} 组 × {load_kg}kg × {reps} 次"
+
+
+def _today_totals():
+    """今日累计(消耗/时长 vs 每日运动目标 exercise_goal) — 顺路提醒区数据"""
+    today = datetime.now().strftime('%Y-%m-%d')
+    conn = et.get_db()
+    row = conn.execute(
+        "SELECT COALESCE(SUM(calories_burned), 0), COALESCE(SUM(duration_minutes), 0) "
+        "FROM exercise_log WHERE date = ? AND COALESCE(is_deleted, 0) = 0", (today,)).fetchone()
+    goal = conn.execute("SELECT exercise_goal FROM daily_goal LIMIT 1").fetchone()
+    conn.close()
+    totals = [{'label': '今日消耗', 'value': row[0], 'unit': '卡',
+               'target': goal[0] if goal and goal[0] else None}]
+    if row[1]:
+        totals.append({'label': '今日时长', 'value': row[1], 'unit': '分钟'})
+    return totals
 
 
 def build_live_add(date, etype, calories, minutes=None, time_str=None, note='',
@@ -108,8 +126,6 @@ def build_live_add(date, etype, calories, minutes=None, time_str=None, note='',
         parts.append(f"最高心率 {rec['max_heart_rate']}")
     if rec.get('steps'):
         parts.append(f"{rec['steps']} 步")
-    if rec.get('note'):
-        parts.append(f"备注:{rec['note']}")
     label = '补记运动' if is_backfill else '记运动'
     summary = f"已记录:{'、'.join(parts)}{' · 补录' if is_backfill else ''}{conflict_note}"
     kpis = [{'label': '类型', 'value': rec['exercise_type']}]
@@ -121,10 +137,9 @@ def build_live_add(date, etype, calories, minutes=None, time_str=None, note='',
         kpis.append({'label': '补录标识', 'value': '补录'})
     if rec.get('time'):
         kpis.append({'label': '时间', 'value': rec['time']})
-    if rec.get('note'):
-        kpis.append({'label': '备注', 'value': rec['note']})
     return _receipt('add', rid, {}, _disp(rec), label, summary,
-                    rec['time'] and f"{date} {rec['time']}", kpis)
+                    rec['time'] and f"{date} {rec['time']}", kpis,
+                    totals=_today_totals())
 
 
 def build_live_add_strength(date, etype, sets, load_kg, reps, note=''):
@@ -144,7 +159,8 @@ def build_live_add_strength(date, etype, sets, load_kg, reps, note=''):
             {'label': '训练量', 'value': _fmt_strength(sets, load_kg, reps)},
             {'label': '总消耗', 'value': '0 卡'}]
     return _receipt('add', ids[0], {}, _disp(new), '记力量训练', summary,
-                    f"{date} {datetime.now().strftime('%H:%M:%S')}", kpis)
+                    f"{date} {datetime.now().strftime('%H:%M:%S')}", kpis,
+                    totals=_today_totals())
 
 
 def build_live_add_daily(date, etype, minutes, steps=None, period=None, calories=None):
@@ -169,7 +185,7 @@ def build_live_add_daily(date, etype, minutes, steps=None, period=None, calories
     if rec.get('time'):
         kpis.append({'label': '时间', 'value': rec['time']})
     return _receipt('add', rid, {}, _disp(rec), '记日常活动', f"已记录:{'、'.join(parts)}",
-                    f"{date} {rec['time']}", kpis)
+                    f"{date} {rec['time']}", kpis, totals=_today_totals())
 
 
 def build_live_batch_add(items):
@@ -184,7 +200,8 @@ def build_live_batch_add(items):
     kpis = [{'label': '写入', 'value': f"{result['written']} 条"},
             {'label': '跳过', 'value': f"{result['skipped']} 条"},
             {'label': '失败', 'value': f"{result['failed']} 条"}]
-    return _receipt('add', f"{result['written']} 条", {}, _disp(new), '批量补记运动', summary, kpis=kpis)
+    return _receipt('add', f"{result['written']} 条", {}, _disp(new), '批量补记运动', summary, kpis=kpis,
+                    totals=_today_totals())
 
 
 def build_live_copy(target):
@@ -197,7 +214,8 @@ def build_live_copy(target):
             {'label': '跳过条数', 'value': f"{skipped} 条"},
             {'label': '来源日期', 'value': source},
             {'label': '目标日期', 'value': target}]
-    return _receipt('add', f"{copied} 条", {}, _disp(new), '复制昨日运动', summary, kpis=kpis)
+    return _receipt('add', f"{copied} 条", {}, _disp(new), '复制昨日运动', summary, kpis=kpis,
+                    totals=_today_totals())
 
 
 def build_live_update(record_id, field_value_pairs):
@@ -233,7 +251,7 @@ def build_live_delete_day(date):
     kpis = [{'label': '删除条数', 'value': f"{count} 条"},
             {'label': '日期', 'value': date}]
     return _receipt('delete', f"{count} 条", {}, {'date': date, 'deleted_count': count},
-                    '删某日运动', summary, kpis=kpis)
+                    '删某日运动', summary, kpis=kpis, totals=_today_totals())
 
 
 def build_live_delete_range(from_date, to_date):
@@ -244,7 +262,7 @@ def build_live_delete_range(from_date, to_date):
             {'label': '删除条数', 'value': f"{count} 条"}]
     return _receipt('delete', f"{count} 条", {},
                     {'start_date': from_date, 'end_date': to_date, 'deleted_count': count},
-                    '批量删运动', summary, kpis=kpis)
+                    '批量删运动', summary, kpis=kpis, totals=_today_totals())
 
 
 def _scene_name_for(mode: str) -> str:
@@ -368,6 +386,14 @@ def main():
         # 思考链 + 自描述注入(复制日志带出 · R2/R3)
         data['data']['meta']['chain'] = args.chain.strip()
         data['data']['meta']['wake_word'] = scene
+        data['data']['meta']['scene_id'] = {
+            'add': 'exercise_add', 'add_strength': 'exercise_add_strength',
+            'add_daily': 'exercise_add_daily', 'backfill': 'exercise_backfill',
+            'batch_add': 'exercise_batch_add', 'copy': 'exercise_copy',
+            'update': 'exercise_update', 'update_day': 'exercise_update_day',
+            'delete': 'exercise_delete', 'delete_day': 'exercise_delete_day',
+            'delete_range': 'exercise_delete_range',
+        }[mode]
         argv = sys.argv[1:]
         if '--output' in argv:
             i = argv.index('--output')
@@ -375,6 +401,7 @@ def main():
         data['data']['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(
             _quote_arg(a) for a in argv)
         data['data']['meta']['source'] = 'exercise_log (写库回执)'
+        data['data']['meta']['skill_version'] = SKILL_VERSION
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

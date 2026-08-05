@@ -178,6 +178,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/goal_config_water.html` | 定饮水目标 / 改饮水目标 | `daily_goal` + `food_log` | `scripts/render_goal_config.py` |
 | `templates/goal_recommend.html` | 定营养目标(自动算) / 定饮水目标(自动算) / 一键定全套目标 | `recommend_nutrition_goal` / `recommend_water_goal` | `scripts/render_goal_recommend.py` |
 | `templates/goal_weight.html` | 定体重目标 / 定体重目标(自动算截止) / 定体重目标(含起始日) / 改体重目标 | `weight_goal` | `scripts/render_goal_weight.py` |
+| `templates/goal_weight_result.html` | 定体重目标 / 定体重目标(自动算截止) / 定体重目标(含起始日) / 改体重目标(写库后结果回执 · #79) | `daily_goal(weight_goal/goal_deadline/start_weight/start_date)` + `weight_log` | `scripts/render_goal_weight.py --live` |
 | `templates/goal_status.html` | 暂停所有目标 / 重启所有目标 | `goal_manager` | `scripts/render_goal_status.py` |
 | `templates/goal_progress.html` | 看今日目标 / 看本周目标 / 看营养目标进度 / 看饮水目标进度 / 看目标对比实际 / 看目标完成度 / 看即将到期的目标 / 看目标完成率(按周) / 看目标完成率(按月) / 看目标历史完成 / 看目标预测达成 | `daily_goal` + `food_log` 聚合 + `weight_goal` | `scripts/render_goal_progress.py` |
 | `templates/profile_setup.html` | (设置档案 · 配置辅助页) | `profile.get/set` | `scripts/render_profile_setup.py [--live]` |
@@ -462,13 +463,19 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 
 #### 定目标(8)
 
+> **体重目标闭环(#78/#79 · 2026-08-05)**:
+> `填 HTML(输入侧)` → 用户填表 → `复制 prompt 给 AI`(含页面预计算的「建议速率」行:公式透明 + 极端目标警示)→ `AI 写库 set_weight_goal` → `渲染结果 HTML(输出侧)` 回给用户(✅ 已写入 + 已写入字段 + 进度 KPI + 极端警示 + 一句话)。
+> - 速率一律用页面/脚本预计算值(`Δkg ÷ 天数 × 7`),**AI 禁止自行推算或编造数字**(算式透明,用户能反推验证)。
+> - 极端目标判定:建议速率 ≥ 1.0 kg/周 → 回执必须出现「⚠️ 这是极端目标,建议速率 X kg/周(健康带 0.25–1.0)」。
+> - 用户拿到结果 HTML 可:收藏对比、转发飞书、截图追踪;「复制数据」给任何 AI 复述口径一致。
+
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
 | 定营养目标 | 设 4 项宏量营养目标(热量/蛋白/碳水/脂肪)+ 饮水;热量低于 BMR 提示 | `python scripts/render_goal_config.py --live --chain <思考链>` |
 | 定营养目标(自动算) | 按档案 + 方向(减脂/维持/增肌)自动算 4 项,给依据与推荐理由 | `python scripts/render_goal_recommend.py --profile <减脂/维持/增肌> --chain <思考链>` |
-| 定体重目标 | 目标 kg + 可选截止日期,显示当前体重/Δkg/建议速率 | `python scripts/render_goal_weight.py --mode basic --chain <思考链>` |
-| 定体重目标(自动算截止) | 目标 kg + 期望速率 → 推算截止日 + 速率校验 | `python scripts/render_goal_weight.py --mode auto_deadline --chain <思考链>` |
-| 定体重目标(含起始日) | 完整 setup:目标 + 起始日 + 截止日 + 起点体重 | `python scripts/render_goal_weight.py --mode with_start --chain <思考链>` |
+| 定体重目标 | 目标 kg + 可选截止日期,显示当前体重/Δkg/建议速率;写库后渲染结果回执 | `python scripts/render_goal_weight.py --mode basic --chain <思考链>` → 写库后 `python scripts/render_goal_weight.py --live --kg <目标> [--deadline <日期>] --scene basic --chain <思考链>` |
+| 定体重目标(自动算截止) | 目标 kg + 期望速率 → 推算截止日 + 速率校验;写库后渲染结果回执 | `python scripts/render_goal_weight.py --mode auto_deadline --chain <思考链>` → 写库后 `python scripts/render_goal_weight.py --live --kg <目标> --deadline <日期> --scene auto_deadline --chain <思考链>` |
+| 定体重目标(含起始日) | 完整 setup:目标 + 起始日 + 截止日 + 起点体重;写库后渲染结果回执 | `python scripts/render_goal_weight.py --mode with_start --chain <思考链>` → 写库后 `python scripts/render_goal_weight.py --live --kg <目标> --deadline <日期> [--start-kg <起点>] [--start-date <起始日>] --scene with_start --chain <思考链>` |
 | 定饮水目标 | 每天饮水目标(ml) | `python scripts/render_goal_config.py --live --water-only --chain <思考链>` |
 | 定饮水目标(自动算) | 按体重 + 季节推推荐值,与旧值对比 | `python scripts/render_goal_recommend.py --water-only --chain <思考链>` |
 | 一键定全套目标 | 营养+体重+饮水 3 类一键自动算,展示后确认采纳 | `python scripts/render_goal_recommend.py --full-kit --profile <减脂/维持/增肌> --chain <思考链>` |
@@ -493,7 +500,7 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.d
 | 唤醒词 | 功能 | CLI |
 |--------|------|-----|
 | 改营养目标 | 改某项/多项营养目标,显示改前/改后 + 影响预估 | `python scripts/render_goal_config.py --modify-nutrition --chain <思考链>` |
-| 改体重目标 | 改体重目标值/截止日,显示改前/改后 + 新建议速率 | `python scripts/render_goal_weight.py --mode modify --chain <思考链>` |
+| 改体重目标 | 改体重目标值/截止日,显示改前/改后 + 新建议速率;写库后渲染结果回执 | `python scripts/render_goal_weight.py --mode modify --chain <思考链>` → 写库后 `python scripts/render_goal_weight.py --live --kg <新目标> [--deadline <新截止>] --scene modify --chain <思考链>` |
 | 改饮水目标 | 只改饮水目标,其他不变 | `python scripts/render_goal_config.py --modify-water --chain <思考链>` |
 | 暂停所有目标 | 临时冻结全部目标(记录照常),给恢复入口提示 | `python scripts/render_goal_status.py --status paused --chain <思考链>` |
 | 重启所有目标 | 从暂停恢复全部目标 | `python scripts/render_goal_status.py --status resumed --chain <思考链>` |

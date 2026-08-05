@@ -2228,31 +2228,31 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '定体重目标',     'desc': '设定体重目标值与可选截止日期',
             'main_prompt': {
-        'cli': 'python scripts/render_goal_weight.py --mode basic', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(目标 kg + 可选截止日期)。请显示我的当前体重、目标值、差值(Δkg)和建议速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n截止日期(选填):____'},
+        'cli': 'python scripts/render_goal_weight.py --mode basic --chain <思考链> → 写库后: python scripts/render_goal_weight.py --live --kg <目标> [--deadline <日期>] --scene basic --chain <思考链>(结果回执)', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(目标 kg + 可选截止日期)。请显示我的当前体重、目标值、差值(Δkg)和建议速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n截止日期(选填):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_weight', 'name': '定体重目标', 'subfunction': '定目标', 'output_type': 'receipt',
-            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode basic', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(目标 kg + 可选截止日期)。请显示我的当前体重、目标值、差值(Δkg)和建议速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n截止日期(选填):____',
+            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode basic --chain <思考链> → 写库后: python scripts/render_goal_weight.py --live --kg <目标> [--deadline <日期>] --scene basic --chain <思考链>(结果回执)', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标」。\n\n我想设定体重目标(目标 kg + 可选截止日期)。请显示我的当前体重、目标值、差值(Δkg)和建议速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n截止日期(选填):____',
             'user_intent': '设定体重目标值与可选截止日期', 'data_fields': ["current_weight", "target_weight", "deadline", "delta_kg", "suggested_rate"],
             'depends_on_external': False, 'order': 2},
     {
             'category': '目标管理',     'wake_word': '定体重目标(自动算截止)',     'desc': '按速率推算截止日期的体重目标',
             'main_prompt': {
-        'cli': 'python scripts/render_goal_weight.py --mode auto_deadline', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n我想设定体重目标(目标 kg + 期望每周减重速率),由你自动推算合理截止日期,并校验速率是否合理(不超安全范围)。请显示我的当前体重、目标值、推算截止日期和速率校验结果。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n期望每周减重速率(kg/周):____'},
+        'cli': 'python scripts/render_goal_weight.py --mode auto_deadline --chain <思考链> → 写库后: python scripts/render_goal_weight.py --live --kg <目标> --deadline <日期> --scene auto_deadline --chain <思考链>(结果回执)', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n我想设定体重目标(目标 kg + 期望每周减重速率),由你自动推算合理截止日期,并校验速率是否合理(不超安全范围)。请显示我的当前体重、目标值、推算截止日期和速率校验结果。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n期望每周减重速率(kg/周):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_weight_auto_deadline', 'name': '定体重目标(自动算截止)', 'subfunction': '定目标', 'output_type': 'receipt',
-            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode auto_deadline', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n我想设定体重目标(目标 kg + 期望每周减重速率),由你自动推算合理截止日期,并校验速率是否合理(不超安全范围)。请显示我的当前体重、目标值、推算截止日期和速率校验结果。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n期望每周减重速率(kg/周):____',
+            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode auto_deadline --chain <思考链> → 写库后: python scripts/render_goal_weight.py --live --kg <目标> --deadline <日期> --scene auto_deadline --chain <思考链>(结果回执)', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标(自动算截止)」。\n\n我想设定体重目标(目标 kg + 期望每周减重速率),由你自动推算合理截止日期,并校验速率是否合理(不超安全范围)。请显示我的当前体重、目标值、推算截止日期和速率校验结果。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n期望每周减重速率(kg/周):____',
             'user_intent': '按速率推算截止日期的体重目标', 'data_fields': ["current_weight", "target_weight", "est_deadline", "rate_check"],
             'depends_on_external': False, 'order': 3},
     {
             'category': '目标管理',     'wake_word': '定体重目标(含起始日)',     'desc': '完整 setup 体重目标含起始日',
             'main_prompt': {
-        'cli': 'python scripts/render_goal_weight.py --mode with_start', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n我想完整设定体重目标:目标 kg + 起始日 + 截止日 + 起点体重。请显示我的起始日、起点体重、当前体重、目标值、截止和差值。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n起始日:____\n截止日期:____\n起点体重(kg):____'},
+        'cli': 'python scripts/render_goal_weight.py --mode with_start --chain <思考链> → 写库后: python scripts/render_goal_weight.py --live --kg <目标> --deadline <日期> [--start-kg <起点>] [--start-date <起始日>] --scene with_start --chain <思考链>(结果回执)', 'text': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n我想完整设定体重目标:目标 kg + 起始日 + 截止日 + 起点体重。请显示我的起始日、起点体重、当前体重、目标值、截止和差值。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n起始日:____\n截止日期:____\n起点体重(kg):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_set_weight_with_start', 'name': '定体重目标(含起始日)', 'subfunction': '定目标', 'output_type': 'receipt',
-            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode with_start', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n我想完整设定体重目标:目标 kg + 起始日 + 截止日 + 起点体重。请显示我的起始日、起点体重、当前体重、目标值、截止和差值。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n起始日:____\n截止日期:____\n起点体重(kg):____',
+            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode with_start --chain <思考链> → 写库后: python scripts/render_goal_weight.py --live --kg <目标> --deadline <日期> [--start-kg <起点>] [--start-date <起始日>] --scene with_start --chain <思考链>(结果回执)', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「定体重目标(含起始日)」。\n\n我想完整设定体重目标:目标 kg + 起始日 + 截止日 + 起点体重。请显示我的起始日、起点体重、当前体重、目标值、截止和差值。完成后给 1 句话总结,不需要过多文字解释。\n\n我的体重目标(kg):____\n起始日:____\n截止日期:____\n起点体重(kg):____',
             'user_intent': '完整 setup 体重目标含起始日', 'data_fields': ["weight_goal", "goal_deadline", "start_date", "start_weight"],
             'depends_on_external': False, 'order': 4},
     {
@@ -2398,11 +2398,11 @@ TRIGGERS = [
     {
             'category': '目标管理',     'wake_word': '改体重目标',     'desc': '改体重目标含截止日',
             'main_prompt': {
-        'cli': 'python scripts/render_goal_weight.py --mode modify', 'text': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想修改体重目标值或截止日期。请显示改前值与改后值,并给出新的建议减重速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n体重目标(kg):____\n截止日期:____'},
+        'cli': 'python scripts/render_goal_weight.py --mode modify --chain <思考链> → 写库后: python scripts/render_goal_weight.py --live --kg <新目标> [--deadline <新截止>] --scene modify --chain <思考链>(结果回执)', 'text': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想修改体重目标值或截止日期。请显示改前值与改后值,并给出新的建议减重速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n体重目标(kg):____\n截止日期:____'},
         'fill_hints': [],
             'variants': [],
             'key': 'goal_modify_weight', 'name': '改体重目标', 'subfunction': '改目标', 'output_type': 'receipt',
-            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode modify', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想修改体重目标值或截止日期。请显示改前值与改后值,并给出新的建议减重速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n体重目标(kg):____\n截止日期:____',
+            'html_template': 'templates/goal_weight.html', 'data_source': 'python scripts/render_goal_weight.py --mode modify --chain <思考链> → 写库后: python scripts/render_goal_weight.py --live --kg <新目标> [--deadline <新截止>] --scene modify --chain <思考链>(结果回执)', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改体重目标」。\n\n我想修改体重目标值或截止日期。请显示改前值与改后值,并给出新的建议减重速率。完成后给 1 句话总结,不需要过多文字解释。\n\n我要改的项(每行一项,不改的留空):\n体重目标(kg):____\n截止日期:____',
             'user_intent': '改体重目标含截止日', 'data_fields': ["old_weight_goal", "new_weight_goal", "old_deadline", "new_deadline"],
             'depends_on_external': False, 'order': 19},
     {

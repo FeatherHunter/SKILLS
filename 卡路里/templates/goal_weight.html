@@ -100,16 +100,34 @@ function renderFields(){
     '<div class="field-row"><div class="name">'+f.label+'<span class="unit">'+f.unit+'</span></div>'+
     '<input type="text" data-key="'+f.key+'" placeholder="'+f.placeholder+'"></div>').join('');
 }
+// #78 2026-08-05:速率计算推广到全模式(含 with_start 用起点体重/起始日),
+// 公式透明 + 极端目标警示(>=1.0 kg/周),并注入复制 prompt 供 AI 回显(禁止 AI 心算)
 function renderResult(){
   const box=document.getElementById('resultBox');
-  if(D.rate_check){
-    if(D.rate_check.ok)box.innerHTML='<div class="check">✅ 速率校验通过: '+D.rate_check.text+'</div>';
-    else box.innerHTML='<div class="warn">⚠️ 速率校验: '+D.rate_check.text+'</div>';
-  }else if(D.note){
-    box.innerHTML='<div class="info">'+D.note+'</div>';
+  const est=computeEstimate();
+  let html='';
+  if(est&&est.deadlineOver){
+    html+='<div class="warn">⚠️ 截止日期已过,请修正</div>';
+  }else if(est&&est.rate!=null&&est.gap===0){
+    html+='<div class="check">✅ 目标与当前持平,无需增减</div>';
+  }else if(est&&est.rate!=null){
+    if(est.extreme)html+='<div class="warn">'+est.rateText+'</div>';
+    else if(est.rate>=0.25)html+='<div class="check">'+est.rateText+'</div>';
+    else html+='<div class="info">'+est.rateText+'</div>';
+    html+='<div class="info">按 0.5kg/周 推算达成: '+est.estDate+'</div>';
+  }else if(est){
+    html+='<div class="check">✅ 差距 '+est.gapText+'</div>';
+    html+='<div class="info">未设截止:按 0.5kg/周 约需 '+est.weeks+' 周,推算达成 '+est.estDate+'</div>';
   }
+  if(!html&&D.rate_check){
+    if(D.rate_check.extreme)html+='<div class="warn">'+D.rate_check.text+'</div>';
+    else if(D.rate_check.ok)html+='<div class="check">'+D.rate_check.text+'</div>';
+    else html+='<div class="info">'+D.rate_check.text+'</div>';
+  }
+  if(!html&&D.note)html+='<div class="info">'+D.note+'</div>';
+  box.innerHTML=html;
 }
-// 改体重目标(modify):改前状态 + 实时 diff 预估(2026-08-04 对抗审查补全)
+// 改体重目标(modify):改前状态(2026-08-04 对抗审查补全)
 const IS_MODIFY=D.old_goal!==undefined;
 function fmtNum(x){return Math.round(x*100)/100;}
 function fmtDate(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -132,41 +150,43 @@ function renderPrev(){
   if(old.deadline)k.insertAdjacentHTML('beforeend','<div class="kpi"><div class="label">改前截止</div><div class="value">'+old.deadline+'</div></div>');
 }
 function computeEstimate(){
-  if(!IS_MODIFY||D.current_weight==null)return null;
-  const w=parseFloat(document.querySelector('input[data-key="weight-goal"]').value);
-  if(!isFinite(w)||w<=0)return null;
-  const delta=fmtNum(w-D.current_weight);
-  const d=parseDate(document.querySelector('input[data-key="deadline"]').value);
+  // 全模式实时速率(#78):表单值 + 当前体重;with_start 用起点体重/起始日做计划速率
+  const current=parseFloat(D.current_weight);
+  const targetEl=document.querySelector('input[data-key="weight-goal"]');
+  const target=targetEl?parseFloat(targetEl.value):NaN;
+  if(!isFinite(current)||current<=0||!isFinite(target)||target<=0)return null;
+  const isStart=D.mode==='with_start';
+  const startEl=document.querySelector('input[data-key="start-weight"]');
+  const startW=startEl?parseFloat(startEl.value):NaN;
+  const sdEl=document.querySelector('input[data-key="start-date"]');
+  const sd=sdEl?parseDate(sdEl.value):null;
+  const dlEl=document.querySelector('input[data-key="deadline"]');
+  const dl=parseDate(dlEl?dlEl.value:'');
   const today=new Date();today.setHours(0,0,0,0);
-  const est={gap:delta,days:null,rate:null,estDate:null,weeks:null,deadlineOver:false};
-  if(d){
-    const days=Math.ceil((d-today)/86400000);
+  const fromW=isStart&&isFinite(startW)&&startW>0?startW:current;
+  const fromD=isStart&&sd?sd:today;
+  const delta=fmtNum(target-fromW);
+  const gap=Math.abs(delta);
+  const est={gap:delta,gapText:(delta<0?('需减 '+Math.abs(delta)+' kg'):(delta>0?('需增 '+delta+' kg'):'与当前持平')),days:null,rate:null,rateText:null,extreme:false,estDate:null,weeks:null,deadlineOver:false};
+  if(dl){
+    const days=Math.ceil((dl-fromD)/86400000);
     if(days<=0){est.deadlineOver=true;return est;}
-    est.days=days;est.rate=fmtNum(Math.abs(delta)/(days/7));
+    est.days=days;
+    const perWeek=gap/days*7;
+    est.rate=fmtNum(perWeek);
+    est.rateMonth=Math.round(perWeek*52/12*10)/10;
+    est.extreme=perWeek>=1.0-1e-9;
+    est.rateText=(est.extreme?'⚠️ 这是极端目标,建议速率 '+perWeek.toFixed(2)+' kg/周(健康带 0.25–1.0)':(perWeek>=0.25-1e-9?'✅ 建议速率 '+perWeek.toFixed(2)+' kg/周(健康带 0.25–1.0)':'ℹ️ 速率偏低 '+perWeek.toFixed(2)+' kg/周(健康带 0.25–1.0)'))+' · '+gap.toFixed(1)+'kg ÷ '+days+'天 × 7 = '+perWeek.toFixed(2)+' kg/周 ≈ '+est.rateMonth+' kg/月';
   }
-  const weeks=Math.ceil(Math.abs(delta)/0.5);
+  const weeks=Math.ceil(gap/0.5);
   est.weeks=weeks;
   est.estDate=fmtDate(new Date(today.getTime()+weeks*7*86400000));
   return est;
 }
-function updateEstimate(){
-  const box=document.getElementById('resultBox');
-  if(D.rate_check||D.note)return;
-  const est=computeEstimate();
-  if(!est){box.innerHTML='';return;}
-  const gapText=est.gap<0?('需减 '+Math.abs(est.gap)+' kg'):(est.gap>0?('需增 '+est.gap+' kg'):'与当前持平');
-  let html='';
-  if(est.deadlineOver){
-    html+='<div class="warn">⚠️ 截止日期已过,请修正</div>';
-  }else if(est.days!=null){
-    if(est.rate<=1.0)html+='<div class="check">✅ 建议速率 '+est.rate+' kg/周(差距 '+gapText+' · '+est.days+' 天)</div>';
-    else html+='<div class="warn">⚠️ 建议速率 '+est.rate+' kg/周 偏快(合理带 0.25-1.0,建议延长截止日)</div>';
-    html+='<div class="info">按 0.5kg/周 推算达成: '+est.estDate+'</div>';
-  }else{
-    html+='<div class="check">✅ 差距 '+gapText+'</div>';
-    html+='<div class="info">未设截止:按 0.5kg/周 约需 '+est.weeks+' 周,推算达成 '+est.estDate+'</div>';
-  }
-  box.innerHTML=html;
+function precomputedLine(est){
+  // #78:复制给 AI 的「建议速率」行(公式透明,AI 只回显不心算)
+  if(!est||est.rate==null||est.gap===0)return null;
+  return '建议速率(页面预计算): '+est.gapText+' ÷ '+est.days+'天 × 7 = '+est.rate.toFixed(2)+' kg/周 ≈ '+est.rateMonth+' kg/月'+(est.extreme?'(⚠️ 极端目标,健康带 0.25–1.0)':'');
 }
 function buildPrompt(){
   let p=D.promptHead||'我已确认体重目标,请帮我写入数据库。\n\n';
@@ -177,6 +197,8 @@ function buildPrompt(){
     const v=values[f.key]||f.placeholder;
     p+='  '+f.label+': '+v+(f.unit?' '+f.unit:'')+'\n';
   });
+  const rateLine=precomputedLine(computeEstimate());
+  if(rateLine)p+='\n'+rateLine+'\n';
   if(D.extraPrompt)p+='\n'+D.extraPrompt+'\n';
   return p;
 }
@@ -185,12 +207,11 @@ renderKpis();
 renderPrev();
 renderFields();
 renderResult();
-updateEstimate();
 document.getElementById('copyPreview').textContent=buildPrompt();
 document.querySelectorAll('#fields input').forEach(i=>{
   i.addEventListener('input',()=>{
     document.getElementById('copyPreview').textContent=buildPrompt();
-    if(IS_MODIFY)updateEstimate();
+    renderResult();
   });
 });
 
@@ -205,13 +226,10 @@ function buildDataText(){
   const values={};
   document.querySelectorAll('#fields input').forEach(i=>{values[i.dataset.key]=i.value.trim();});
   (D.fields||[]).forEach(f=>lines.push(`${f.label}: ${values[f.key]||f.placeholder}`));
+  const rateLine=precomputedLine(computeEstimate());
+  if(rateLine)lines.push(rateLine.replace('建议速率(页面预计算): ','建议速率: '));
   const est=computeEstimate();
-  if(est){
-    const gapText=est.gap<0?('需减 '+Math.abs(est.gap)+' kg'):(est.gap>0?('需增 '+est.gap+' kg'):'持平');
-    lines.push(`差距(新目标): ${gapText}`);
-    if(est.days!=null&&!est.deadlineOver)lines.push(`建议速率: ${est.rate} kg/周`);
-    if(est.estDate)lines.push(`推算达成: ${est.estDate}`);
-  }
+  if(est&&est.estDate&&est.rate!=null)lines.push(`推算达成(按 0.5kg/周): ${est.estDate}`);
   return lines.join('\n');
 }
 function buildLogText(){

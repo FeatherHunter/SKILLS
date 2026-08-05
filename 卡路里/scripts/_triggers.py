@@ -81,7 +81,8 @@ def _prompt_skeleton(wake: str, variant: str | None = None, body: str = '', fill
     )
     if fill_hints:
         body += '\n\n' + '\n'.join(fill_hints)
-    tail = "完成后给 1 句话总结,不需要过多文字解释。"
+    # 2026-08-05 用户拍板:旧「完成后给 1 句话总结」收尾作废,统一为 HTML 交付文字纪律
+    tail = "交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。"
     return f"{head}\n\n{body}\n\n{tail}"
 
 

@@ -701,7 +701,7 @@ def merge_items_v2(target_id, source_ids, cli_cmd=None):
             after = {"source_item_id": src_id, "target_quantity": tgt_before_qty + src_qty}
             ev.record_event(conn, target_id, ev.EVENT_MERGED,
                             f"合并「{src['name']}」→「{target['name']}」(数量+{src_qty})",
-                            payload=ev.diff_payload(before, after),
+                            payload={"before": before, "after": after},
                             scene_id=scene_id, cli_cmd=cli_cmd)
             results.append({"id": src_id, "ok": True, "message": f"已并入(数量+{src_qty})"})
             tgt_loc = _loc_row(conn, target_id)
@@ -921,41 +921,51 @@ def category_overview_payload():
         conn.close()
 
 
+def _validate_category_name(name, conn, parent_id=None):
+    """分类命名校验(违规抛 ValueError 已捕获;含同父唯一)"""
+    from category_manager import _validate_name
+    parent_name = None
+    if parent_id:
+        row = conn.execute("SELECT name FROM categories WHERE id = ?", (parent_id,)).fetchone()
+        if not row:
+            raise ValueError(f"父分类 {parent_id} 不存在")
+        parent_name = row["name"]
+    try:
+        return _validate_name(name, parent_name=parent_name, conn=conn), None
+    except ValueError as e:
+        return None, str(e)
+
+
 def category_add_v2(name, parent_id=None):
     """新建分类(4-2): 命名校验(禁数字前缀/禁emoji/同父唯一/1-30 字)"""
-    from category_manager import _validate_name
     conn = _conn()
     try:
-        err = _validate_name(name, conn=conn)
+        checked, err = _validate_category_name(name, conn, parent_id)
         if err:
             return False, err, None
-        if parent_id:
-            if conn.execute("SELECT id FROM categories WHERE id = ?", (parent_id,)).fetchone() is None:
-                return False, f"父分类 {parent_id} 不存在", None
         cur = conn.execute("SELECT MAX(sort_order) AS m FROM categories WHERE parent_id IS ?", (parent_id,)).fetchone()
         sort_order = (cur["m"] or 0) + 1
         conn.execute("INSERT INTO categories (parent_id, name, sort_order) VALUES (?, ?, ?)",
-                     (parent_id, name, sort_order))
+                     (parent_id, checked, sort_order))
         conn.commit()
-        return True, f"已新建分类「{name}」", {"name": name, "parent_id": parent_id}
+        return True, f"已新建分类「{checked}」", {"name": checked, "parent_id": parent_id}
     finally:
         conn.close()
 
 
 def category_rename_v2(cat_id, new_name):
     """重命名分类(4-2): 影响统计/导航/录入推荐(即全库引用自动生效)"""
-    from category_manager import _validate_name
     conn = _conn()
     try:
         row = conn.execute("SELECT * FROM categories WHERE id = ?", (cat_id,)).fetchone()
         if not row:
             return False, f"分类 {cat_id} 不存在", None
-        err = _validate_name(new_name, conn=conn)
+        checked, err = _validate_category_name(new_name, conn, row["parent_id"])
         if err:
             return False, err, None
-        conn.execute("UPDATE categories SET name = ? WHERE id = ?", (new_name, cat_id))
+        conn.execute("UPDATE categories SET name = ? WHERE id = ?", (checked, cat_id))
         conn.commit()
-        return True, f"已改名「{row['name']}」→「{new_name}」", {"old_name": row["name"], "new_name": new_name}
+        return True, f"已改名「{row['name']}」→「{checked}」", {"old_name": row["name"], "new_name": checked}
     finally:
         conn.close()
 
@@ -1380,13 +1390,19 @@ def history_payload(item_id):
                 e["payload"] = json.loads(e["payload_json"] or "{}")
             except ValueError:
                 e["payload"] = {}
-        # 位置轨迹: location_moved 事件串成 客厅→卧室→车里
+        # 位置轨迹: location_moved 事件串成 客厅→卧室→车里(含起点)
         trajectory = []
+        first = True
         for e in reversed(events):
             if e["event_type"] == ev.EVENT_LOCATION_MOVED:
-                after = (e["payload"].get("after") or {}).get("location")
-                if after:
-                    trajectory.append(after)
+                p = e.get("payload") or {}
+                before_loc = (p.get("before") or {}).get("location")
+                after_loc = (p.get("after") or {}).get("location")
+                if first and before_loc:
+                    trajectory.append(before_loc)
+                first = False
+                if after_loc:
+                    trajectory.append(after_loc)
         # 类型筛选选项
         filter_types = [
             {"key": ev.EVENT_CREATED, "label": "录入"},

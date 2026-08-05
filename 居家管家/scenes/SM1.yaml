@@ -1,0 +1,180 @@
+# scenes/SM1.yaml - SM1 物品管理域场景注册(域唯一事实源 · 合并器 = scripts/场景合并.py)
+# 与 references/scenarios.yaml 的关系: 合并器按 id 把本文件字段合并进总账(T2 公共层奠基产物)
+# 29 场景 = SM1 权威清单场景名总表(2026-08-04 定稿)
+version: "2.0"
+domain: items
+scenes:
+  - id: "1-1"
+    wake_word: 录物品
+    scenario_title: 录入一件新物品
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/add_form.html", command_cn: "录物品", data_source: "items"}
+  - id: "1-2"
+    wake_word: 拍物品
+    scenario_title: 拍照识别录入物品
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/add_form.html", command_cn: "拍物品", data_source: "items"}
+  - id: "1-3"
+    wake_word: 批量录入
+    scenario_title: 批量录入多件物品
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/add_form.html", command_cn: "批量录入", data_source: "items"}
+  - id: "1-4"
+    wake_word: 补录
+    scenario_title: 补录历史物品(指定日期)
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/add_form.html", command_cn: "补录", data_source: "items"}
+  - id: "2-1"
+    wake_word: 查物品
+    scenario_title: 搜索查找物品
+    type: 查看
+    status: ""
+    html: {template: "物品/search_list.html", command_cn: "查物品", data_source: "items"}
+  - id: "2-2"
+    wake_word: 看物品
+    scenario_title: 查看物品详情
+    type: 查看
+    status: ""
+    html: {template: "物品/detail.html", command_cn: "看物品", data_source: "items"}
+  - id: "2-3"
+    wake_word: 紧急定位
+    scenario_title: 紧急查找物品位置
+    type: 查看
+    status: ""
+    html: {template: "物品/locate.html", command_cn: "紧急定位", data_source: "items"}
+  - id: "2-4"
+    wake_word: 筛选浏览
+    scenario_title: 按条件筛选浏览物品
+    type: 查看
+    status: ""
+    html: {template: "物品/browse.html", command_cn: "筛选浏览", data_source: "items"}
+  - id: "2-5"
+    wake_word: 拍照找物品
+    scenario_title: 拍照反向查找物品
+    type: 查看
+    status: ""
+    html: {template: "物品/search_list.html", command_cn: "拍照找物品", data_source: "items"}
+  - id: "2-6"
+    wake_word: 查重复
+    scenario_title: 检查重复物品
+    type: 查看
+    status: ""
+    html: {template: "物品/duplicates.html", command_cn: "查重复", data_source: "items"}
+  - id: "3-1"
+    wake_word: 改物品
+    scenario_title: 修改物品信息
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/add_form.html", command_cn: "改物品", data_source: "items"}
+  - id: "3-2"
+    wake_word: 移物品
+    scenario_title: 移动物品位置
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/receipt.html", command_cn: "移物品", data_source: "items"}
+  - id: "3-3"
+    wake_word: 数量变更
+    scenario_title: 变更物品数量
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/receipt.html", command_cn: "数量变更", data_source: "items"}
+  - id: "3-4"
+    wake_word: 状态变更
+    scenario_title: 变更物品状态
+    type: 选择+回执
+    status: ""
+    html: {template: "物品/receipt.html", command_cn: "状态变更", data_source: "items"}
+  - id: "3-5"
+    wake_word: 合并物品
+    scenario_title: 合并重复物品
+    type: 选择+回执
+    status: ""
+    html: {template: "物品/confirm.html", command_cn: "合并物品", data_source: "items"}
+  - id: "3-6"
+    wake_word: 撤销操作
+    scenario_title: 撤销最近操作
+    type: 选择+回执
+    status: ""
+    html: {template: "物品/undo_select.html", command_cn: "撤销操作", data_source: "items"}
+  - id: "3-7"
+    wake_word: 物品关联
+    scenario_title: 设置物品关联
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/relations.html", command_cn: "物品关联", data_source: "items"}
+  - id: "3-8"
+    wake_word: 标物品
+    scenario_title: 修改物品标签
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/receipt.html", command_cn: "标物品", data_source: "items"}
+  - id: "4-1"
+    wake_word: 管标签
+    scenario_title: 管理标签(查看/重命名/合并/清理)
+    type: 查看+选择+回执
+    status: ""
+    html: {template: "物品/tag_manage.html", command_cn: "管标签", data_source: "items"}
+  - id: "4-2"
+    wake_word: 管分类
+    scenario_title: 管理分类(查看/新建/改名/合并/移动)
+    type: 查看+选择+回执
+    status: ""
+    html: {template: "物品/category_manage.html", command_cn: "管分类", data_source: "items"}
+  - id: "4-3"
+    wake_word: 整理建议
+    scenario_title: 标签分类整理建议(AI 检测)
+    type: 选择+回执
+    status: ""
+    html: {template: "物品/tag_manage.html", command_cn: "整理建议", data_source: "items"}
+  - id: "5-1"
+    wake_word: 查看照片
+    scenario_title: 查看物品照片(含类型筛选)
+    type: 查看
+    status: ""
+    html: {template: "物品/photos.html", command_cn: "查看照片", data_source: "items"}
+  - id: "5-2"
+    wake_word: 管照片
+    scenario_title: 管理物品照片(排序/换主图/加图/标记类型)
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/photos.html", command_cn: "管照片", data_source: "items"}
+  - id: "5-3"
+    wake_word: 照片墙
+    scenario_title: 浏览物品照片墙(分类/位置/类型)
+    type: 查看
+    status: ""
+    html: {template: "物品/photo_wall.html", command_cn: "照片墙", data_source: "items"}
+  - id: "6-1"
+    wake_word: 盘点
+    scenario_title: 盘点核对(按位置/分类/全屋)
+    type: 采集+回执
+    status: ""
+    html: {template: "物品/inventory_round.html", command_cn: "盘点", data_source: "items"}
+  - id: "6-2"
+    wake_word: 差异处理
+    scenario_title: 处理盘点差异(缺/多/异/待确认)
+    type: 选择+回执
+    status: ""
+    html: {template: "物品/inventory_diff.html", command_cn: "差异处理", data_source: "items"}
+  - id: "6-3"
+    wake_word: 盘点记录
+    scenario_title: 查看盘点记录(含复查)
+    type: 查看
+    status: ""
+    html: {template: "物品/inventory_records.html", command_cn: "盘点记录", data_source: "items"}
+  - id: "6-4"
+    wake_word: 搬家盘点
+    scenario_title: 搬家打包盘点(带走/不带走)
+    type: 向导+采集+回执
+    status: ""
+    html: {template: "物品/move_checklist.html", command_cn: "搬家盘点", data_source: "items"}
+  - id: "7-1"
+    wake_word: 历史
+    scenario_title: 查看物品历史(时间线/轨迹)
+    type: 查看
+    status: ""
+    html: {template: "物品/history.html", command_cn: "历史", data_source: "items"}

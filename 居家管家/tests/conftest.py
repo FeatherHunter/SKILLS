@@ -56,3 +56,11 @@ def cleanup_test_items(conn):
     # 兜底: 清理所有 TEST_ 前缀物品 (防漏)
     conn.execute("DELETE FROM items WHERE name LIKE 'TEST\\_%' ESCAPE '\\'")
     conn.commit()
+
+
+@pytest.fixture(autouse=True)
+def _tx_probe(request, conn):
+    yield
+    if conn.in_transaction:
+        print(f"\n[TX-OPEN] after {request.node.name}")
+        conn.rollback()

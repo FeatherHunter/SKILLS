@@ -599,8 +599,37 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 - 发现问题后列出清单，让用户勾选确认(HTML 勾选 → 复制修复引导)
 - **只建议不自动改**：AI 不得直接修改数据,只能复制对应场景 prompt 引导用户
 - 用户说"检查一下"时执行，不主动触发
-- 不要自动修改，只能建议
-- 用户说"检查一下"时执行，不主动触发
+
+---
+
+## 开始使用域流程(SM8 · 首次使用/备份导出/导入恢复)
+
+**唤醒词**：`首次使用` / `备份导出` / `导入恢复`
+
+### 首次使用(初始化工作流 · 6 步)
+
+1. 环境检测:`python3 scripts/开始使用/cli.py check`(OS/Python/目录可写/DB 状态)
+2. 路径确认:展示 check 输出的 `db_path`(AI 预填建议路径),**必须征求用户确认**,不静默
+3. 建库+建分类:`python3 scripts/开始使用/cli.py init`(幂等:已有库/已有分类 → 跳过)
+4. 状态确认:`python3 scripts/开始使用/cli.py init-status`(未初始化/库已建/已初始化)
+5. 渲染向导 HTML:`render_开始使用.emit_sm8("first_use_wizard.html", ...)`(6 步步骤条 + 环境信息 + 建库结果 + 下一步按钮)
+6. 完成:提示可录第一批(建议拍物品);失败 → `emit_error` 错误回执 HTML(步骤/原因/建议)+ 一键重试
+
+### 备份导出(数据资产)
+
+1. 查询历史:`cli.py backup-list [--keep-n N]`(备份文件/大小/时间/距上次备份天数)
+2. 确认备份:用户确认 → `cli.py backup`(db+照片全量打包 zip,自动保留 N 份清理最旧)
+3. 导出(可选):`cli.py export --format json|csv [--output 路径]`
+4. 渲染:`emit_sm8("backup_receipt.html", ...)`(备份结果 + 历史列表 + 距上次备份天数 + 导出按钮)
+5. 删除旧备份:确认式 `cli.py backup-delete --file 文件名`;失败 → 错误回执 + 重试
+
+### 导入恢复(迁移 · 预告式文件)
+
+1. 预告式:按钮复制「【导入文件即将发送:】」→ AI 进入等待态 → 用户发文件
+2. 校验+冲突预览:`cli.py import-preview --file X`(格式/版本兼容 + 同名冲突计数)
+3. 确认导入:`cli.py import --file X [--mode skip|overwrite]`(导入前自动备份,失败回滚数据不变)
+4. 渲染:`emit_sm8("import_restore.html", ...)`(步骤条 + 校验结果 + 冲突预览 + 确认/撤销按钮)
+5. 撤销:恢复导入前自动生成的备份文件(backup_file 在导入回执中)
 
 ---
 

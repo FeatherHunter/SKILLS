@@ -288,11 +288,11 @@ TRIGGERS = [
     {
             'category': '饮食',     'wake_word': '改某日饮食',     'desc': '改某日饮食',
             'main_prompt': {
-        'cli': 'python scripts/render_crud_receipt.py --live-diet-update-date <日期> [--字段 新值 ...] --chain "1.解析→2.写库→3.回执"', 'text': "请你加载技能 卡路里,执行唤醒词「改某日饮食」。\n\n我要改某一天的全部饮食记录(如那天的时间/克数/备注都记错了)。改之前先告诉我那天有几条记录,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n日期(YYYY-MM-DD):____\n要改的字段与新值(如 备注=修正):____"},
+        'cli': 'python scripts/render_crud_receipt.py --live-diet-update-date <日期> [--字段 新值 ...] --chain "1.解析→2.写库→3.回执"', 'text': "请你加载技能 卡路里,执行唤醒词「改某日饮食」。\n\n我要改某一天的全部饮食记录(如那天的时间/克数/备注都记错了)。改之前先告诉我那天有几条记录。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n日期(YYYY-MM-DD):____\n要改的字段与新值(如 备注=修正):____"},
         'fill_hints': [],
             'variants': [],
             'key': 'diet_update_by_date', 'name': '改某日饮食', 'subfunction': '改饮食', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-update-date <日期> [--字段 新值 ...] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某日饮食」。\n\n我要改某一天的全部饮食记录(如那天的时间/克数/备注都记错了)。改之前先告诉我那天有几条记录,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n日期(YYYY-MM-DD):____\n要改的字段与新值(如 备注=修正):____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-diet-update-date <日期> [--字段 新值 ...] --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某日饮食」。\n\n我要改某一天的全部饮食记录(如那天的时间/克数/备注都记错了)。改之前先告诉我那天有几条记录。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n日期(YYYY-MM-DD):____\n要改的字段与新值(如 备注=修正):____',
             'user_intent': '按日期批量修改当天饮食记录', 'data_fields': ["date", "matched", "updated", "changed_fields"],
             'depends_on_external': False, 'order': 1},
     {
@@ -922,11 +922,11 @@ TRIGGERS = [
     {
             'category': '体重',     'wake_word': '批量补录体重',     'desc': '一次补录多天体重',
             'main_prompt': {
-        'cli': 'python scripts/render_weight_receipt.py --live-batch --input <jsonl> --chain "1.解析→2.查冲突→3.批量写库→4.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「批量补录体重」。\n\n我要一次补录多天的体重。我会给你 日期+体重 的列表(每行一条),也可能只说连续天数加起始体重让你帮我生成。记录完成后交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n多天体重(每行一条: 日期 体重):____'},
+        'cli': 'python scripts/render_weight_receipt.py --live-batch --input <jsonl> --chain "1.解析→2.查冲突→3.批量写库→4.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「批量补录体重」。\n\n我要一次补录多天的体重。我会给你 日期+体重 的列表(每行一条),也可能只说连续天数加起始体重让你帮我生成。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n多天体重(每行一条: 日期 体重):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'w_backfill_batch', 'name': '批量补录体重', 'subfunction': '量体重', 'output_type': 'receipt',
-            'html_template': 'templates/weight_batch_receipt.html', 'data_source': 'python scripts/render_weight_receipt.py --live-batch --input <jsonl> --chain "1.解析→2.查冲突→3.批量写库→4.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「批量补录体重」。\n\n我要一次补录多天的体重。我会给你 日期+体重 的列表(每行一条),也可能只说连续天数加起始体重让你帮我生成。记录完成后交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n多天体重(每行一条: 日期 体重):____',
+            'html_template': 'templates/weight_batch_receipt.html', 'data_source': 'python scripts/render_weight_receipt.py --live-batch --input <jsonl> --chain "1.解析→2.查冲突→3.批量写库→4.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「批量补录体重」。\n\n我要一次补录多天的体重。我会给你 日期+体重 的列表(每行一条),也可能只说连续天数加起始体重让你帮我生成。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n多天体重(每行一条: 日期 体重):____',
             'user_intent': '一次补录多天体重', 'data_fields': ['wrote', 'skipped', 'failed', 'fail_details', 'items'],
             'depends_on_external': False, 'order': 3
     },
@@ -1748,21 +1748,21 @@ TRIGGERS = [
     {
             'category': '运动',     'wake_word': '看今日运动（vs 目标）',     'desc': '看今天运动目标达成情况(完成度/差额/判断)',
         'main_prompt': {
-        'cli': 'python scripts/render_exercise_goal_view.py --period today', 'text': '请你加载技能 卡路里,执行唤醒词「看今日运动（vs 目标）」。\n\n我想看今天的运动目标达成情况。如果还没设过每日运动消耗目标,先问我目标值,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
+        'cli': 'python scripts/render_exercise_goal_view.py --period today', 'text': '请你加载技能 卡路里,执行唤醒词「看今日运动（vs 目标）」。\n\n我想看今天的运动目标达成情况。如果还没设过每日运动消耗目标,先问我目标值。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
         'fill_hints': [],
             'variants': [],
             'key': 'exercise_view_today_vs_goal', 'name': '看今日运动（vs 目标）', 'subfunction': '看运动', 'output_type': 'result',
-            'html_template': 'templates/exercise_goal_view.html', 'data_source': 'python scripts/render_exercise_goal_view.py --period today', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日运动（vs 目标）」。\n\n我想看今天的运动目标达成情况。如果还没设过每日运动消耗目标,先问我目标值,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
+            'html_template': 'templates/exercise_goal_view.html', 'data_source': 'python scripts/render_exercise_goal_view.py --period today', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今日运动（vs 目标）」。\n\n我想看今天的运动目标达成情况。如果还没设过每日运动消耗目标,先问我目标值。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
             'user_intent': '看今天运动目标达成情况(完成度/差额/判断)', 'data_fields': ["exercise_goal", "actual", "completion_pct", "gap", "achieved", "summary"],
             'depends_on_external': False, 'order': 9},
     {
             'category': '运动',     'wake_word': '看本周运动（vs 目标）',     'desc': '看本周运动目标达成情况(完成度/差额/判断)',
         'main_prompt': {
-        'cli': 'python scripts/render_exercise_goal_view.py --period week', 'text': '请你加载技能 卡路里,执行唤醒词「看本周运动（vs 目标）」。\n\n我想看本周的运动目标达成情况。如果还没设过每日运动消耗目标,先问我目标值,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
+        'cli': 'python scripts/render_exercise_goal_view.py --period week', 'text': '请你加载技能 卡路里,执行唤醒词「看本周运动（vs 目标）」。\n\n我想看本周的运动目标达成情况。如果还没设过每日运动消耗目标,先问我目标值。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
         'fill_hints': [],
             'variants': [],
             'key': 'exercise_view_week_vs_goal', 'name': '看本周运动（vs 目标）', 'subfunction': '看运动', 'output_type': 'result',
-            'html_template': 'templates/exercise_goal_view.html', 'data_source': 'python scripts/render_exercise_goal_view.py --period week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周运动（vs 目标）」。\n\n我想看本周的运动目标达成情况。如果还没设过每日运动消耗目标,先问我目标值,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
+            'html_template': 'templates/exercise_goal_view.html', 'data_source': 'python scripts/render_exercise_goal_view.py --period week', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看本周运动（vs 目标）」。\n\n我想看本周的运动目标达成情况。如果还没设过每日运动消耗目标,先问我目标值。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
             'user_intent': '看本周运动目标达成情况(完成度/差额/判断)', 'data_fields': ["exercise_goal", "week_goal", "actual", "completion_pct", "gap", "achieved", "summary"],
             'depends_on_external': False, 'order': 10},
     {
@@ -2048,11 +2048,11 @@ TRIGGERS = [
     {
             'category': '健身计划',     'wake_word': '改某天训练',     'desc': '改某天训练安排(改前/改后)',
             'main_prompt': {
-        'cli': 'python scripts/render_plan_receipt.py --live-plan-update-day --week <W> --day <D> --session <S> [--label <L>] --chain "1.读现状→2.更新→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改某天训练」。\n\n我想改某一天的训练安排(时段、动作、组数等)。改交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n日期:____\n要改的内容:____'},
+        'cli': 'python scripts/render_plan_receipt.py --live-plan-update-day --week <W> --day <D> --session <S> [--label <L>] --chain "1.读现状→2.更新→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改某天训练」。\n\n我想改某一天的训练安排(时段、动作、组数等)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n日期:____\n要改的内容:____'},
         'fill_hints': [],
             'variants': [],
             'key': 'plan_update_day', 'name': '改某天训练', 'subfunction': '改训练计划', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_plan_receipt.py --live-plan-update-day --week <W> --day <D> --session <S> [--label <L>] --chain "1.读现状→2.更新→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某天训练」。\n\n我想改某一天的训练安排(时段、动作、组数等)。改交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n日期:____\n要改的内容:____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_plan_receipt.py --live-plan-update-day --week <W> --day <D> --session <S> [--label <L>] --chain "1.读现状→2.更新→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改某天训练」。\n\n我想改某一天的训练安排(时段、动作、组数等)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n日期:____\n要改的内容:____',
             'user_intent': '我想修改某一天的训练安排', 'data_fields': ["date", "field", "before", "after"],
             'depends_on_external': False, 'order': 1},
     {
@@ -2459,11 +2459,11 @@ TRIGGERS = [
     {
             'category': '基础信息',     'wake_word': '设置档案',     'desc': '设置基础档案(身高/年龄/性别/活动量)',
             'main_prompt': {
-        'cli': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____'},
+        'cli': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'profile_setup', 'name': '设置档案', 'subfunction': '设置资料', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。设置交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-set --age <A> --gender <G> --height <H> --activity <L> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「设置档案」。\n\n我想设置基础档案(身高/年龄/性别/活动量)。如果我没说全,请一项一项问我,并根据我的日常情况推荐合适的活动量。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n我的身高(cm):____\n年龄:____\n性别(男/女):____\n日常活动情况(选填,用于推荐活动量):____',
             'user_intent': '设置基础档案(身高/年龄/性别/活动量)', 'data_fields': ["height_cm", "age", "gender", "activity_level", "activity_factor", "created_at"],
             'depends_on_external': False, 'order': 0},
     {
@@ -2479,11 +2479,11 @@ TRIGGERS = [
     {
             'category': '基础信息',     'wake_word': '改档案',     'desc': '修改档案中的某个字段',
             'main_prompt': {
-        'cli': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____'},
+        'cli': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'profile_update', 'name': '改档案', 'subfunction': '改资料', 'output_type': 'receipt',
-            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____',
+            'html_template': 'templates/crud_receipt.html', 'data_source': 'python scripts/render_crud_receipt.py --live-profile-update --field <X> --value <Y> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改档案」。\n\n我要改档案里的字段(身高/年龄/性别/活动量/备注)。改之前请先确认我原来的值。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n我要改的字段(允许一行一条,可改多个):\n身高(新值):____\n年龄(新值):____\n性别(新值):____\n活动量(新值):____\n备注(新值):____',
             'user_intent': '修改档案中的某个字段', 'data_fields': ["height_cm", "age", "gender", "activity_level", "note", "bmi", "tdee"],
             'depends_on_external': False, 'order': 0},
     {
@@ -2701,11 +2701,11 @@ TRIGGERS = [
     {
             'category': '身材照片',     'wake_word': '改照片标签',     'desc': '标签覆盖整套(可多个,改前/改后对比)',
             'main_prompt': {
-        'cli': 'python scripts/render_body_photo_receipt.py --live-tag-set --id <ID> --tag-list <标签1,标签2> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改照片标签」。\n\n我要把某张照片的标签换成整套新标签(覆盖旧的,可多个)。请先确认这张照片原来的完整标签列表,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n照片(日期或编号):____\n新标签(可多个,如 正面,侧面):____'},
+        'cli': 'python scripts/render_body_photo_receipt.py --live-tag-set --id <ID> --tag-list <标签1,标签2> --chain "1.解析→2.写库→3.回执"', 'text': '请你加载技能 卡路里,执行唤醒词「改照片标签」。\n\n我要把某张照片的标签换成整套新标签(覆盖旧的,可多个)。请先确认这张照片原来的完整标签列表。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n照片(日期或编号):____\n新标签(可多个,如 正面,侧面):____'},
         'fill_hints': [],
             'variants': [],
             'key': 'body_photo_tag_set', 'name': '改照片标签', 'subfunction': '管身材照', 'output_type': 'receipt',
-            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-tag-set --id <ID> --tag-list <标签1,标签2> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改照片标签」。\n\n我要把某张照片的标签换成整套新标签(覆盖旧的,可多个)。请先确认这张照片原来的完整标签列表,交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n照片(日期或编号):____\n新标签(可多个,如 正面,侧面):____',
+            'html_template': 'templates/body_photo_receipt.html', 'data_source': 'python scripts/render_body_photo_receipt.py --live-tag-set --id <ID> --tag-list <标签1,标签2> --chain "1.解析→2.写库→3.回执"', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「改照片标签」。\n\n我要把某张照片的标签换成整套新标签(覆盖旧的,可多个)。请先确认这张照片原来的完整标签列表。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n照片(日期或编号):____\n新标签(可多个,如 正面,侧面):____',
             'user_intent': '把照片标签换成整套新标签', 'data_fields': ["tag_before", "tag_after", "tag_list"],
             'depends_on_external': False, 'order': 1},
     {
@@ -3701,21 +3701,21 @@ TRIGGERS = [
     {
             'category': '分析',     'wake_word': '诊断体重下降原因',     'desc': '诊断体重下降原因',
             'main_prompt': {
-        'cli': 'python scripts/render_analysis.py --view anomaly --diagnose weight_loss_cause --window 90d', 'text': '请你加载技能 卡路里,执行唤醒词「诊断体重下降原因」。\n\n我想诊断近期体重下降的原因:评估速度是否健康(0.5-1kg/周),区分来自饮食缺口还是运动,给原因假设。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
+        'cli': 'python scripts/render_analysis.py --view anomaly --diagnose weight_loss_cause --window 90d', 'text': '请你加载技能 卡路里,执行唤醒词「诊断体重下降原因」。\n\n我想诊断近期体重下降的原因:评估速度是否健康(0.5-1kg/周),区分来自饮食缺口还是运动。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
         'fill_hints': [],
             'variants': [],
             'key': 'diag_weight_loss_cause', 'name': '诊断体重下降原因', 'subfunction': '自动分析', 'output_type': 'result',
-            'html_template': 'templates/combined_analysis.html', 'data_source': 'python scripts/render_analysis.py --view anomaly --diagnose weight_loss_cause --window 90d', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「诊断体重下降原因」。\n\n我想诊断近期体重下降的原因:评估速度是否健康(0.5-1kg/周),区分来自饮食缺口还是运动,给原因假设。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
+            'html_template': 'templates/combined_analysis.html', 'data_source': 'python scripts/render_analysis.py --view anomaly --diagnose weight_loss_cause --window 90d', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「诊断体重下降原因」。\n\n我想诊断近期体重下降的原因:评估速度是否健康(0.5-1kg/周),区分来自饮食缺口还是运动。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
             'user_intent': '诊断: 诊断体重下降原因', 'data_fields': ['findings', 'confidence', 'degraded', 'insight'],
             'depends_on_external': False, 'order': 97},
     {
             'category': '分析',     'wake_word': '诊断体重异常点',     'desc': '诊断体重异常点',
             'main_prompt': {
-        'cli': 'python scripts/render_analysis.py --view anomaly --diagnose weight_anomaly --window 90d', 'text': '请你加载技能 卡路里,执行唤醒词「诊断体重异常点」。\n\n我想找出体重记录里的异常点(偏离均值过大的日期),交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
+        'cli': 'python scripts/render_analysis.py --view anomaly --diagnose weight_anomaly --window 90d', 'text': '请你加载技能 卡路里,执行唤醒词「诊断体重异常点」。\n\n我想找出体重记录里的异常点(偏离均值过大的日期)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
         'fill_hints': [],
             'variants': [],
             'key': 'diag_weight_anomaly', 'name': '诊断体重异常点', 'subfunction': '自动分析', 'output_type': 'result',
-            'html_template': 'templates/combined_analysis.html', 'data_source': 'python scripts/render_analysis.py --view anomaly --diagnose weight_anomaly --window 90d', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「诊断体重异常点」。\n\n我想找出体重记录里的异常点(偏离均值过大的日期),交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
+            'html_template': 'templates/combined_analysis.html', 'data_source': 'python scripts/render_analysis.py --view anomaly --diagnose weight_anomaly --window 90d', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「诊断体重异常点」。\n\n我想找出体重记录里的异常点(偏离均值过大的日期)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
             'user_intent': '诊断: 诊断体重异常点', 'data_fields': ['findings', 'confidence', 'degraded', 'insight'],
             'depends_on_external': False, 'order': 98},
     {

@@ -94,6 +94,7 @@ def list_add(conn, name, quantity=1, source=schema.SOURCE_MANUAL,
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (name, quantity, source, routine, schema.STATUS_PENDING, note, occurred, occurred),
     )
+    conn.commit()
     return cursor.lastrowid
 
 

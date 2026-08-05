@@ -1,0 +1,90 @@
+# SM5 快递购物域场景资产(域内权威 · 合并器接入前暂不并入 references/scenarios.yaml)
+#
+# 位置: 居家管家/scenes/SM5.yaml(隔离契约: 每域只写自己的 scenes/SM{n}.yaml)
+# 合并器 = 公共层产物(T2 奠基,2026-08-05 并发约定);落地后由合并器并入单源。
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# status 判定原则(07 §4/§6 五者对应):
+#   SKILL.md 唤醒词路由(待 T2+ 批次更新) + 场景资产 ✓ + prompt ✓ + 底层工作流 ✓ + HELP 映射 ✓
+#   → 本域 4 场景 HTML 模板已落地(templates/快递购物/),仍缺 SKILL.md 路由,
+#     故 status 暂保持「【待开发】」,SKILL.md 更新后由合并器翻转为 ""(与单源头部注释一致)。
+version: "2.0"
+
+domain:
+  key: express
+  name: 快递购物
+  icon: "📦"
+  sm: SM5
+
+scenes:
+  - id: "SM5-1"
+    domain: express
+    sub: 购物清单
+    wake_word: 购物清单
+    scenario_id: shopping_list
+    scenario_title: 购物清单(组织/例行/采购闭环)
+    dimensions: {}
+    type: 查看+选择+回执
+    status: "【待开发】"
+    prompt: |-
+      请加载「居家管家」技能,帮我列购物清单(唤醒词:购物清单):
+
+        条  目: _____________ (物品名+数量,一行一条;可留空查看现有清单)
+    result: "清单条目(含来源标注)+ 清单内查重 + 采购闭环(销项/录入/补数量)。"
+    html:
+      template: 快递购物/list.html
+      command_cn: 购物清单
+      data_source: shopping_items
+
+  - id: "SM5-2"
+    domain: express
+    sub: 缺货检测
+    wake_word: 缺货检测
+    scenario_id: shopping_missing
+    scenario_title: 缺货检测(自动进清单)
+    dimensions: {}
+    type: 查看+选择
+    status: "【待开发】"
+    prompt: |-
+      请加载「居家管家」技能,帮我检测缺货(唤醒词:缺货检测):
+
+        范  围: _____________ (全屋/某个分类,选填)
+    result: "检测结果(物品+当前数量+阈值+建议量),一键进购物清单。"
+    html:
+      template: 快递购物/missing.html
+      command_cn: 缺货检测
+      data_source: items + stock_thresholds
+
+  - id: "SM5-3"
+    domain: express
+    sub: 快递跟踪
+    wake_word: 查快递
+    scenario_id: search_express
+    scenario_title: 快递跟踪(查/超时/收货确认)
+    dimensions: {}
+    type: 查看+选择+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我查在途快递(唤醒词:查快递):
+    result: "快递中物品清单(已等 N 天)+ 超时提醒 + 收货确认闭环。"
+    html:
+      template: 快递购物/express.html
+      command_cn: 查快递
+      data_source: items
+
+  - id: "SM5-4"
+    domain: express
+    sub: 囤货盘点
+    wake_word: 囤货盘点
+    scenario_id: stock_check
+    scenario_title: 囤货盘点(库存/阈值/不足检测)
+    dimensions: {}
+    type: 查看+选择+回执
+    status: "【待开发】"
+    prompt: |-
+      请加载「居家管家」技能,帮我盘点囤货(唤醒词:囤货盘点):
+    result: "囤货清单(数量/阈值/库存状态)+ 阈值设置 + 数量修正。"
+    html:
+      template: 快递购物/stock.html
+      command_cn: 囤货盘点
+      data_source: items + stock_thresholds

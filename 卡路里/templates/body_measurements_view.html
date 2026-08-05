@@ -105,7 +105,25 @@
     body { padding: 18px 12px 96px; }
     .head h1 { font-size: 21px; }
     .table-scroll th, .table-scroll td { padding: 8px 7px; font-size: 12px; }
+    /* 手机端:宽表改卡片布局(2026-08-05 验收反馈:不要横向拖动) */
+    .table-scroll { display: none; }
+    .card-list { display: block; }
   }
+  @media (min-width: 641px) {
+    .card-list { display: none; }
+  }
+  .card-list .rec-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 10px; box-shadow: var(--shadow);
+  }
+  .card-list .rec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .card-list .rec-date { font-size: 14px; font-weight: 700; }
+  .card-list .rec-note { font-size: 11px; color: var(--fg3); max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card-list .rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+  .card-list .rec-item { display: flex; justify-content: space-between; font-size: 12.5px; padding: 4px 8px; background: var(--soft); border-radius: 7px; }
+  .card-list .rec-item .k { color: var(--fg3); }
+  .card-list .rec-item .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .card-list .rec-empty { color: var(--fg3); font-size: 12px; padding: 4px 0; }
 </style>
 </head>
 <body>
@@ -349,6 +367,7 @@ if (D.mode === 'list') {
       wrap.innerHTML = '<div class="empty">暂无记录<br><span class="go">→ 记围度:量了哪项填哪项,第一条就是基线</span></div>';
       return;
     }
+    // 桌面:宽表(横向滚动容器)
     let html = '<table><thead><tr><th>日期</th>';
     const cols = Object.keys(D.metric_labels);
     cols.forEach(c => { html += `<th>${D.metric_labels[c]}(cm)</th>`; });
@@ -359,7 +378,17 @@ if (D.mode === 'list') {
       html += `<td>${esc(r.note)}</td></tr>`;
     });
     html += '</tbody></table>';
-    wrap.innerHTML = `<div class="table-scroll">${html}</div>`;
+    // 手机:卡片布局(只展示已填部位,无横向拖动)
+    let cards = '';
+    rows.forEach(r => {
+      const items = cols
+        .filter(c => r[c] != null)
+        .map(c => `<div class="rec-item"><span class="k">${D.metric_labels[c]}</span><span class="v">${esc(r[c])}cm</span></div>`)
+        .join('');
+      const noteTxt = r.note ? `<span class="rec-note">${esc(r.note)}</span>` : '';
+      cards += `<div class="rec-card"><div class="rec-head"><span class="rec-date">${esc(r.date)}</span>${noteTxt}</div><div class="rec-grid">${items || '<div class="rec-empty">未填围度</div>'}</div></div>`;
+    });
+    wrap.innerHTML = `<div class="table-scroll">${html}</div><div class="card-list">${cards}</div>`;
   }
   renderHist();
 }

@@ -208,13 +208,13 @@
 <body>
 
 <h1 style="display:none">📏 记体脂</h1>
-<p class="sub" style="display:none">配置型向导 · 填好 7 处皮褶 + 体脂率后,复制 prompt 给 AI 写入数据库</p>
+<p class="sub" style="display:none">配置型向导 · 填好 7 处皮褶 + 体脂率后,复制 prompt 写入数据库</p>
 
 <div class="hero">
   <div class="hero-icon">📏</div>
   <div>
     <h1>记体脂</h1>
-    <p class="sub">填好 7 处皮褶 + 体脂率,复制 prompt 给 AI 写入数据库</p>
+    <p class="sub">填好 7 处皮褶 + 体脂率,复制 prompt 写入数据库</p>
     <div class="step-pills">
       <span class="step-pill">1️⃣ 基本信息</span>
       <span class="step-pill">2️⃣ 7 皮褶</span>
@@ -360,11 +360,11 @@
 
 <!-- ============== 4. 复制 prompt ============== -->
 <details open>
-  <summary>📋 复制 prompt 给 AI <span class="pill">必走</span></summary>
+  <summary>📋 复制 prompt <span class="pill">必走</span></summary>
   <div class="body">
     <div class="prompt-box" id="promptBox">// 完成上方表单后,prompt 自动生成</div>
     <div class="sticky-bar">
-      <button class="btn-copy" id="copyBtn">📋 复制 prompt 给 AI</button>
+      <button class="btn-copy" id="copyBtn">📋 复制 prompt</button>
     </div>
   </div>
 </details>
@@ -635,7 +635,7 @@ function updatePrompt() {
       navigator.clipboard.writeText(text).then(() => {
         this.textContent = '✓ 已复制'; this.classList.add('copied');
         toast('prompt 已复制,发给 AI 即可');
-        setTimeout(() => { this.textContent = '📋 复制 prompt 给 AI'; this.classList.remove('copied'); }, 2000);
+        setTimeout(() => { this.textContent = '📋 复制 prompt'; this.classList.remove('copied'); }, 2000);
       }, () => fallbackCopy(this, text));
     } else fallbackCopy(this, text);
   };
@@ -645,7 +645,7 @@ function updatePrompt() {
     ta.value = text; document.body.appendChild(ta); ta.select();
     try { document.execCommand('copy'); btn.textContent = '✓ 已复制'; btn.classList.add('copied');
       toast('prompt 已复制,发给 AI 即可');
-      setTimeout(() => { btn.textContent = '📋 复制 prompt 给 AI'; btn.classList.remove('copied'); }, 2000);
+      setTimeout(() => { btn.textContent = '📋 复制 prompt'; btn.classList.remove('copied'); }, 2000);
     } catch(e) { toast('复制失败,请手动复制'); }
     document.body.removeChild(ta);
   }

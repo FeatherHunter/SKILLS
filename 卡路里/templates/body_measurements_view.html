@@ -77,6 +77,40 @@
   .chart .dot.lo { fill: var(--green); }
   .chart .vlabel { font-size: 10px; fill: var(--fg3); }
   .chart .xlabel { font-size: 10px; fill: var(--fg3); }
+  .chart .line { animation: drawLine .8s ease-out forwards; }
+  @keyframes drawLine { from { stroke-dashoffset: var(--len, 600); } to { stroke-dashoffset: 0; } }
+
+  /* 当前值锚点(2026-08-05 图表价值提升) */
+  .current-anchor {
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(135deg, var(--accent-soft), #f7fbff);
+    border: 1px solid #cfe2ff; border-radius: 12px; padding: 12px 16px;
+  }
+  .ca-label { font-size: 11px; color: var(--fg3); }
+  .ca-value { font-size: 26px; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .ca-unit { font-size: 13px; color: var(--fg3); margin-left: 4px; font-weight: 500; }
+  .ca-delta { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ca-delta .delta { font-size: 15px; }
+  .ca-sub { font-size: 11px; color: var(--fg3); text-align: right; }
+
+  /* 点按 tooltip(移动端) */
+  .chart-tip {
+    position: absolute; background: rgba(29,29,31,.94); color: #fff; border-radius: 8px;
+    padding: 6px 10px; font-size: 12px; z-index: 20; pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2); white-space: nowrap;
+  }
+  .chart { position: relative; }
+
+  /* 叠加对比模式 */
+  .mode-toggle {
+    padding: 4px 12px; border: 1px solid var(--accent); background: #fff; color: var(--accent);
+    border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s;
+  }
+  .mode-toggle.on { background: var(--accent); color: #fff; }
+  .chart .dot.multi { stroke-width: 2; }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .legend .lg-item { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--fg2); }
+  .legend .lg-dot { width: 10px; height: 10px; border-radius: 3px; }
 
   /* 08 规范:复制数据/复制日志 + toast */
   .copy-bar {
@@ -150,22 +184,36 @@
 
 <div id="trendMode" style="display:none">
   <div class="card">
-    <h2>部位选择</h2>
+    <h2 style="display:flex;align-items:center;justify-content:space-between;">
+      <span>部位选择</span>
+      <button class="mode-toggle" id="multiToggle">🔀 叠加对比</button>
+    </h2>
     <div class="chips" id="trendMetricChips"></div>
+    <p class="note" id="trendSelNote"></p>
+  </div>
+  <div class="card" id="currentAnchorCard" style="display:none">
+    <div class="current-anchor">
+      <div>
+        <div class="ca-label" id="caLabel">当前值</div>
+        <div class="ca-value"><span id="caValue">—</span><span class="ca-unit" id="caUnit"></span></div>
+      </div>
+      <div class="ca-delta" id="caDelta"></div>
+    </div>
   </div>
   <div class="card">
     <h2>趋势 KPI</h2>
     <div class="kpi-row">
-      <div class="kpi"><div class="v" id="tDelta">—</div><div class="l">区间变化 Δ</div></div>
-      <div class="kpi"><div class="v" id="tAvg">—</div><div class="l">平均值</div></div>
-      <div class="kpi"><div class="v" id="tMin">—</div><div class="l">最低</div></div>
-      <div class="kpi"><div class="v" id="tMax">—</div><div class="l">最高</div></div>
+      <div class="kpi"><div class="v" id="tDelta">—</div><div class="l">📉 区间变化 Δ</div></div>
+      <div class="kpi"><div class="v" id="tAvg">—</div><div class="l">⚖️ 平均值</div></div>
+      <div class="kpi"><div class="v" id="tMin">—</div><div class="l">▾ 最低</div></div>
+      <div class="kpi"><div class="v" id="tMax">—</div><div class="l">▴ 最高</div></div>
     </div>
   </div>
   <div class="card">
     <h2>折线图</h2>
     <div class="chart" id="trendChart"></div>
     <p class="note" id="trendNote"></p>
+    <div class="chart-tip" id="chartTip" style="display:none"></div>
   </div>
 </div>
 
@@ -286,8 +334,18 @@ function fallbackCopy(text, ok) {
 document.getElementById('copyDataBtn').onclick = () => doCopy(buildDataText(), 'copyDataBtn', '数据已复制(JSON 5 段标准)');
 document.getElementById('copyLogBtn').onclick = () => doCopy(buildLogText(), 'copyLogBtn', '日志已复制(6 段标准)');
 
-// ---------- 图表:像素级渲染 ----------
-function renderLineChart(el, rows, unit) {
+// ---------- 图表:像素级渲染(多线/动画/点按 tooltip/当前值锚点) ----------
+const PALETTE = ['#0071e3', '#ff9500', '#34c759', '#af52de', '#ff3b30', '#00c7be', '#ff2d55', '#5e5ce6'];
+const chartTip = document.getElementById('chartTip');
+
+function showChartTip(text, x, y) {
+  chartTip.textContent = text;
+  chartTip.style.display = 'block';
+  chartTip.style.left = Math.min(x + 8, document.querySelector('.chart').clientWidth - 130) + 'px';
+  chartTip.style.top = Math.max(y - 34, 0) + 'px';
+}
+
+function renderLineChart(el, rows, unit, color, showTip) {
   const W = Math.max(240, el.clientWidth - 2);
   const H = el.clientWidth < 520 ? 180 : 220;
   const padL = 40, padR = 16, padT = 26, padB = 30;
@@ -300,11 +358,12 @@ function renderLineChart(el, rows, unit) {
   const x = i => rows.length === 1 ? (W - padL - padR) / 2 + padL
     : padL + i * (W - padL - padR) / (rows.length - 1);
   const y = v => padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB);
+  const c = color || PALETTE[0];
 
   let s = `<svg width="${W}" height="${H}" role="img" style="height:${H}px">`;
   s += `<defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#0071e3" stop-opacity=".22"/>
-        <stop offset="100%" stop-color="#0071e3" stop-opacity="0"/></linearGradient></defs>`;
+        <stop offset="0%" stop-color="${c}" stop-opacity=".22"/>
+        <stop offset="100%" stop-color="${c}" stop-opacity="0"/></linearGradient></defs>`;
   for (let g = 0; g <= 3; g++) {
     const gy = padT + g * (H - padT - padB) / 3;
     const gv = (yMax - (yMax - yMin) * g / 3).toFixed(1);
@@ -315,27 +374,89 @@ function renderLineChart(el, rows, unit) {
     const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.avg_val).toFixed(1)}`).join(' ');
     const areaPts = `${padL},${H - padB} ` + pts + ` ${x(rows.length - 1).toFixed(1)},${H - padB}`;
     s += `<polygon class="area" points="${areaPts}"/>`;
-    s += `<polyline class="line" points="${pts}"/>`;
+    s += `<path class="line" d="M${pts.replace(/ /g, ' L')}" stroke="${c}" style="--len:${W + H}"/>`;
   }
   const hiIdx = vals.indexOf(mx), loIdx = vals.indexOf(mn);
   rows.forEach((r, i) => {
     const cx = x(i), cy = y(r.avg_val);
-    s += `<circle class="dot ${i === hiIdx ? 'hl' : i === loIdx ? 'lo' : ''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4"><title>${r.date}: ${r.avg_val}${unit}</title></circle>`;
+    s += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="${c}"><title>${r.date}: ${r.avg_val}${unit}</title></circle>`;
     s += `<text class="vlabel" x="${cx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="middle">${r.avg_val}</text>`;
     const showX = rows.length <= 8 || i % Math.ceil(rows.length / 8) === 0;
     if (showX) s += `<text class="xlabel" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle">${r.date.slice(5)}</text>`;
   });
   s += '</svg>';
   el.innerHTML = s;
+  if (showTip) {
+    el.querySelectorAll('.dot').forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        const r = rows[i];
+        showChartTip(`${r.date} · ${r.avg_val}${unit}`, parseFloat(dot.getAttribute('cx')), parseFloat(dot.getAttribute('cy')));
+        setTimeout(() => { chartTip.style.display = 'none'; }, 2200);
+      });
+    });
+  }
+}
+
+// 多部位叠加图(2026-08-05)
+function renderMultiChart(el, seriesMap, unit) {
+  const W = Math.max(240, el.clientWidth - 2);
+  const H = el.clientWidth < 520 ? 180 : 220;
+  const padL = 40, padR = 16, padT = 26, padB = 30;
+  const keys = Object.keys(seriesMap);
+  if (!keys.length) { el.innerHTML = ''; return; }
+  const allVals = keys.flatMap(k => (seriesMap[k].rows || []).map(r => r.avg_val).filter(v => v != null));
+  const mx = Math.max(...allVals), mn = Math.min(...allVals);
+  const rng = (mx - mn) || 1;
+  const yMin = mn - rng * 0.12, yMax = mx + rng * 0.12;
+  const x = i => padL + i * (W - padL - padR) / (Math.max(...keys.map(k => (seriesMap[k].rows || []).length)) - 1 || 1);
+  const y = v => padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB);
+
+  let s = `<svg width="${W}" height="${H}" role="img" style="height:${H}px">`;
+  for (let g = 0; g <= 3; g++) {
+    const gy = padT + g * (H - padT - padB) / 3;
+    const gv = (yMax - (yMax - yMin) * g / 3).toFixed(1);
+    s += `<line class="grid" x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}"/>`;
+    s += `<text class="vlabel" x="${padL - 6}" y="${(gy + 3).toFixed(1)}" text-anchor="end">${gv}</text>`;
+  }
+  keys.forEach((k, ki) => {
+    const rows = seriesMap[k].rows || [];
+    const color = PALETTE[ki % PALETTE.length];
+    if (rows.length >= 2) {
+      const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.avg_val).toFixed(1)}`).join(' ');
+      s += `<path class="line" d="M${pts.replace(/ /g, ' L')}" stroke="${color}" style="--len:${W + H}"/>`;
+    }
+    rows.forEach((r, i) => {
+      s += `<circle class="dot multi" cx="${x(i).toFixed(1)}" cy="${y(r.avg_val).toFixed(1)}" r="3.5" fill="${color}"><title>${k}: ${r.date} ${r.avg_val}${unit}</title></circle>`;
+    });
+  });
+  s += '</svg>';
+  el.innerHTML = s;
+  el.insertAdjacentHTML('afterend', `<div class="legend">${keys.map((k, ki) => `<span class="lg-item"><span class="lg-dot" style="background:${PALETTE[ki % PALETTE.length]}"></span>${k}</span>`).join('')}</div>`);
 }
 
 function kpiHtml(kpi, ids) {
   const dEl = document.getElementById(ids.delta);
-  dEl.textContent = kpi.delta == null ? '—' : deltaSign(kpi.delta);
+  animateNum(dEl, kpi.delta, deltaSign);
   dEl.className = 'v ' + (kpi.delta != null ? deltaClass(kpi.delta) : '');
-  document.getElementById(ids.avg).textContent = kpi.avg == null ? '—' : kpi.avg;
-  document.getElementById(ids.min).textContent = kpi.min == null ? '—' : kpi.min;
-  document.getElementById(ids.max).textContent = kpi.max == null ? '—' : kpi.max;
+  animateNum(document.getElementById(ids.avg), kpi.avg);
+  animateNum(document.getElementById(ids.min), kpi.min);
+  animateNum(document.getElementById(ids.max), kpi.max);
+}
+// 数字滚动动画
+function animateNum(el, val, fmt) {
+  if (val == null) { el.textContent = '—'; return; }
+  const target = fmt ? fmt(val) : val;
+  const start = performance.now(), dur = 380;
+  const numeric = parseFloat(target);
+  function tick(now) {
+    const t = Math.min((now - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const cur = numeric * eased;
+    el.textContent = fmt ? fmt(cur) : (Math.round(cur * 100) / 100);
+    if (t < 1) requestAnimationFrame(tick);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(tick);
 }
 
 if (D.mode === 'list') {
@@ -399,18 +520,50 @@ if (D.mode === 'trend') {
   document.getElementById('trendMode').style.display = '';
   const chips = document.getElementById('trendMetricChips');
   const active = D.metric;
+  const selected = new Set([active]);
+  let multiMode = false;
+
   Object.keys(D.series || {}).forEach(cli => {
     const c = document.createElement('button');
     c.className = 'chip' + (cli === active ? ' active' : '');
     c.textContent = D.series[cli].label;
+    c.dataset.cli = cli;
     c.onclick = () => {
-      [...chips.children].forEach(x => x.classList.remove('active'));
-      c.classList.add('active');
-      renderMetric(cli);
+      if (multiMode) {
+        if (selected.has(cli)) selected.delete(cli); else selected.add(cli);
+        c.classList.toggle('active');
+        renderTrend();
+      } else {
+        selected.clear(); selected.add(cli);
+        [...chips.children].forEach(x => x.classList.remove('active'));
+        c.classList.add('active');
+        renderTrend();
+      }
     };
     chips.appendChild(c);
   });
+
+  const multiToggle = document.getElementById('multiToggle');
+  multiToggle.onclick = () => {
+    multiMode = !multiMode;
+    multiToggle.classList.toggle('on', multiMode);
+    multiToggle.textContent = multiMode ? '✓ 叠加中(点部位多选)' : '🔀 叠加对比';
+    if (multiMode) {
+      [...chips.children].forEach(x => x.classList.add('active'));
+      selected.clear();
+      Object.keys(D.series || {}).forEach(cli => selected.add(cli));
+    } else {
+      [...chips.children].forEach(x => x.classList.remove('active'));
+      selected.clear(); selected.add(active);
+      [...chips.children].forEach(x => { if (x.dataset.cli === active) x.classList.add('active'); });
+    }
+    renderTrend();
+  };
+
   const chart = document.getElementById('trendChart');
+  const selNote = document.getElementById('trendSelNote');
+  const anchorCard = document.getElementById('currentAnchorCard');
+
   function kpiFor(rows) {
     const values = rows.map(r => r.avg_val).filter(v => v != null);
     return {
@@ -421,21 +574,59 @@ if (D.mode === 'trend') {
       delta: values.length >= 2 ? Math.round((values[values.length - 1] - values[0]) * 100) / 100 : null,
     };
   }
-  function renderMetric(cli) {
+  function renderAnchor(rows, label, unit) {
+    if (!rows.length) { anchorCard.style.display = 'none'; return; }
+    const last = rows[rows.length - 1];
+    const prev = rows.length >= 2 ? rows[rows.length - 2] : null;
+    anchorCard.style.display = '';
+    document.getElementById('caLabel').textContent = label + ' · 当前';
+    document.getElementById('caValue').textContent = last.avg_val;
+    document.getElementById('caUnit').textContent = unit;
+    const dEl = document.getElementById('caDelta');
+    if (prev) {
+      const d = Math.round((last.avg_val - prev.avg_val) * 100) / 100;
+      dEl.innerHTML = `<span class="delta ${deltaClass(d)}">${deltaSign(d)}</span><div class="ca-sub">较上次(${prev.date.slice(5)})</div>`;
+    } else {
+      dEl.innerHTML = '<span class="delta">首次记录</span>';
+    }
+  }
+  function renderTrend() {
+    chart.innerHTML = '';
+    const legend = chart.parentElement.querySelector('.legend');
+    if (legend) legend.remove();
+    selNote.textContent = multiMode ? `已选 ${selected.size} 个部位,同图叠加对比` : '';
+    if (multiMode) {
+      const map = {};
+      selected.forEach(cli => { if (D.series[cli]) map[D.series[cli].label] = D.series[cli]; });
+      if (selected.size < 2) {
+        chart.innerHTML = '<div class="empty">叠加模式请至少选 2 个部位</div>';
+        anchorCard.style.display = 'none';
+        kpiHtml({delta: null, avg: null, min: null, max: null}, {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
+        return;
+      }
+      renderMultiChart(chart, map, 'cm');
+      anchorCard.style.display = 'none';
+      kpiHtml({delta: null, avg: null, min: null, max: null}, {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
+      document.getElementById('trendNote').textContent = '叠加对比:同图多部位走势,可比较变化节奏';
+      return;
+    }
+    const cli = [...selected][0];
     const s = D.series[cli] || {label: '', rows: []};
     const rows = s.rows || [];
     if (!rows.length) {
       chart.innerHTML = '<div class="empty">该部位暂无趋势数据</div>';
       document.getElementById('trendNote').textContent = '';
+      anchorCard.style.display = 'none';
       kpiHtml({delta: null, avg: null, min: null, max: null}, {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
       return;
     }
-    renderLineChart(chart, rows, 'cm');
+    renderLineChart(chart, rows, 'cm', PALETTE[0], true);
     kpiHtml(kpiFor(rows), {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
+    renderAnchor(rows, s.label, 'cm');
     document.getElementById('trendNote').textContent =
-      `${rows.length} 个测量日 · 最近 ${D.days} 天 · ${s.label} · 橙色=最高 绿色=最低`;
+      `${rows.length} 个测量日 · 最近 ${D.days} 天 · ${s.label}`;
   }
-  renderMetric(active);
+  renderTrend();
 }
 
 if (D.mode === 'compare') {
@@ -465,8 +656,18 @@ window.addEventListener('resize', () => {
   clearTimeout(_resizeTimer);
   _resizeTimer = setTimeout(() => {
     if (D.mode === 'trend') {
-      const s = D.series && D.series[D.metric] || {rows: []};
-      if (s.rows && s.rows.length) renderLineChart(document.getElementById('trendChart'), s.rows, 'cm');
+      const chartEl = document.getElementById('trendChart');
+      const legend = chartEl.parentElement.querySelector('.legend');
+      if (legend) legend.remove();
+      if (multiMode) {
+        const map = {};
+        selected.forEach(cli => { if (D.series[cli]) map[D.series[cli].label] = D.series[cli]; });
+        if (selected.size >= 2) renderMultiChart(chartEl, map, 'cm');
+      } else {
+        const cli = [...selected][0];
+        const s = D.series && D.series[cli] || {rows: []};
+        if (s.rows && s.rows.length) renderLineChart(chartEl, s.rows, 'cm', PALETTE[0], true);
+      }
     }
   }, 150);
 });

@@ -1236,6 +1236,8 @@ python scripts/render_body_photo_gif_planner.py --tag 正面 2>&1 | tail -1
 
 **禁止**:只跑 render 不主动 send(违背 V1.3 主动交付原则)。
 
+**失败回执(08 规范 §6.1 三层反馈 · 2026-08-05)**:写库失败 / 补记冲突 / 校验不过时,AI 必须渲染错误回执 HTML(python scripts/render_error_receipt.py --scene-name ... --op ... --reason ... --data ... --suggestion ... --fix-prompt ... --chain ...),含:操作名 / 失败原因(人类可读)/ 关键数据 / 建议下一步 + 修正重试(复制修正 prompt)/ 复制数据 / 复制日志。禁止只回文字报错。
+
 **图片预置(v2.3.3)**:HTML 默认 base64 嵌图(PIL 缩放到 800x1200 · q85),
 飞书 / IM / 任意环境打开都能看照片,不被本地路径限制。
 不嵌:加 (本地 Chrome 可选)。

@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>操作失败 · 卡路里</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #f5f5f7; --card: #fff; --border: #e3e3e8;
+    --red: #ff3b30; --red-soft: #ffe5e3; --accent: #0071e3; --accent-soft: #e3f0ff;
+    --green: #34c759; --orange: #ff9500; --soft: #f2f2f7;
+    --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.06);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; color: var(--fg); background: var(--bg);
+    max-width: 760px; margin: 0 auto; padding: 24px 16px 120px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+  .head .h-icon {
+    flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, #ff3b30, #ff7a45); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    box-shadow: 0 4px 10px rgba(255,59,48,.25);
+  }
+  .head h1 { font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.25; }
+  .head .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .head .chip {
+    font-size: 11px; color: var(--fg2); background: #fff; border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-family: ui-monospace, Menlo, monospace;
+  }
+  .head .chip.wake { color: var(--accent); border-color: #cfe2ff; background: var(--accent-soft); font-family: inherit; }
+  .head .chip.stage { color: var(--red); border-color: #ffc7c2; background: var(--red-soft); font-family: inherit; font-weight: 600; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 18px; margin-bottom: 14px; box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 10px; }
+  .fail-banner {
+    display: flex; gap: 12px; align-items: center;
+    background: var(--red-soft); border: 1px solid #ffc7c2; border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 14px;
+  }
+  .fail-banner .f-icon {
+    flex: 0 0 auto; width: 40px; height: 40px; border-radius: 50%;
+    background: var(--red); color: #fff; display: flex; align-items: center; justify-content: center;
+    font-size: 20px; font-weight: 700;
+  }
+  .fail-banner .f-op { font-size: 15px; font-weight: 700; }
+  .fail-banner .f-sub { font-size: 12.5px; color: var(--fg2); margin-top: 2px; }
+  .reason-box { background: #fff6f5; border: 1px dashed var(--red); border-radius: 10px; padding: 12px 14px; font-size: 14px; color: #8e1f17; line-height: 1.7; }
+  .reason-box b { color: var(--red); }
+  .data-box {
+    background: #1d1d1f; color: #f5f5f7; border-radius: 10px; padding: 12px 14px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px;
+    white-space: pre-wrap; word-break: break-word; line-height: 1.6;
+  }
+  .suggest-list { list-style: none; }
+  .suggest-list li {
+    display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px;
+    background: var(--soft); border-radius: 10px; margin-bottom: 8px; font-size: 13.5px;
+  }
+  .suggest-list li .n {
+    flex: 0 0 auto; width: 20px; height: 20px; border-radius: 50%; background: var(--accent);
+    color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 2px;
+  }
+  .fix-prompt {
+    background: #1d1d1f; color: #f5f5f7; padding: 14px 16px; border-radius: 12px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px;
+    white-space: pre-wrap; word-break: break-word; line-height: 1.7; margin-bottom: 10px; border: 1px solid #333;
+  }
+  .copy-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(255,255,255,.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border); padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  }
+  .copy-bar .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 8px; }
+  .copy-bar .btn {
+    flex: 1; min-height: 42px; border: 1px solid var(--border); background: var(--card);
+    border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--fg);
+    transition: all .15s;
+  }
+  .copy-bar .btn-fix { background: var(--red); color: #fff; border-color: var(--red); flex: 1.4; }
+  .copy-bar .btn-fix:hover { background: #e02e24; }
+  .copy-bar .btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+  #toast {
+    position: fixed; left: 50%; bottom: 76px; transform: translateX(-50%) translateY(8px);
+    background: rgba(29,29,31,.92); color: #fff; padding: 10px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; z-index: 99;
+    transition: opacity .25s, transform .25s; max-width: 86vw; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (max-width: 640px) {
+    body { padding: 18px 12px 110px; }
+    .head h1 { font-size: 21px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div class="h-icon">✕</div>
+  <div>
+    <h1 id="sceneTitle">操作失败</h1>
+    <div class="meta" id="metaBar"></div>
+  </div>
+</div>
+
+<div class="fail-banner">
+  <div class="f-icon">!</div>
+  <div>
+    <div class="f-op" id="failOp">—</div>
+    <div class="f-sub" id="failSub">—</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🔍 失败原因</h2>
+  <div class="reason-box" id="reasonBox">—</div>
+</div>
+
+<div class="card">
+  <h2>📋 关键数据</h2>
+  <div class="data-box" id="dataBox">—</div>
+</div>
+
+<div class="card">
+  <h2>💡 建议下一步</h2>
+  <ul class="suggest-list" id="suggestList"></ul>
+</div>
+
+<div class="card">
+  <h2>🔧 修正方案</h2>
+  <div class="fix-prompt" id="fixPrompt">// 修正 prompt 未生成</div>
+</div>
+
+<!--INJECT-DATA-->
+
+<div class="copy-bar">
+  <div class="inner">
+    <button class="btn btn-fix" id="copyFixBtn">🔧 修正重试(复制给 AI)</button>
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
+const D = DATA && DATA.data || {};
+const META = D.meta || {};
+
+function esc(s) { return String(s == null ? '' : s); }
+
+(function renderMeta() {
+  document.getElementById('sceneTitle').textContent = D.scene_name || '操作失败';
+  document.getElementById('metaBar').innerHTML = [
+    `<span class="chip wake">⚡ ${esc(META.wake_word || D.scene_name || '(未知)')}</span>`,
+    `<span class="chip stage">● 失败</span>`,
+    `<span class="chip">🕒 ${esc(META.fetched_at || '')}</span>`,
+  ].join('');
+})();
+
+document.getElementById('failOp').textContent = D.op || '操作未完成';
+document.getElementById('failSub').textContent = D.sub || (META.wake_word || '') + ' · 流程中断于「执行」阶段';
+document.getElementById('reasonBox').innerHTML = '<b>原因:</b> ' + esc(D.reason || '(未知)');
+document.getElementById('dataBox').textContent = D.data_text || '—';
+
+const sug = document.getElementById('suggestList');
+(D.suggestions || ['修正后重试', '更换参数/目标', '联系开发者']).forEach((s, i) => {
+  const li = document.createElement('li');
+  li.innerHTML = `<span class="n">${i + 1}</span><span>${esc(s)}</span>`;
+  sug.appendChild(li);
+});
+document.getElementById('fixPrompt').textContent = D.fix_prompt || '// 修正 prompt 未生成';
+
+// ---------- 复制:修正 prompt / 数据(5 段)/ 日志(6 段) ----------
+function payloadData() {
+  return {
+    op: D.op || null,
+    reason: D.reason || null,
+    data: D.data_text || null,
+    suggestions: D.suggestions || null,
+    fix_prompt: D.fix_prompt || null,
+  };
+}
+function buildDataText() {
+  return JSON.stringify({
+    scene_id: META.scene_id || 'error_receipt',
+    command_cn: (META.wake_word || D.scene_name || '操作') + ' 失败回执',
+    occurred_at: META.fetched_at || '',
+    target: '错误回执 · ' + (D.op || '(未知操作)'),
+    payload: payloadData(),
+  }, null, 2);
+}
+function buildLogText() {
+  const lines = [];
+  lines.push('① 场景标识');
+  lines.push(`  command_cn: ${META.wake_word || D.scene_name || '(未知)'} 失败回执`);
+  lines.push(`  唤醒词: ${META.wake_word || '(未知)'}`);
+  lines.push(`  场景名: ${D.scene_name || '(未知)'}(scene_id=${META.scene_id || 'error_receipt'})`);
+  lines.push('');
+  lines.push('② AI 思考链');
+  lines.push('  ' + (META.chain || '(未注入 · 渲染时未传 --chain)'));
+  lines.push('');
+  lines.push('③ 底层数据结构');
+  lines.push('  payload: ' + JSON.stringify(payloadData()));
+  lines.push('  DB 操作: 未执行(失败于写库前校验/执行中)');
+  lines.push('');
+  lines.push('④ 调用链');
+  lines.push('  渲染脚本: ' + (META.render_cmd || '(未知)'));
+  lines.push('  数据来源: ' + (META.source || '(未知)'));
+  lines.push('');
+  lines.push('⑤ 时间戳 + 版本');
+  lines.push('  本地时间: ' + (META.fetched_at || '(未知)'));
+  lines.push('  skill 版本: 卡路里 v1.0');
+  lines.push('');
+  lines.push('⑥ 异常信息');
+  lines.push('  ' + (D.reason || '无'));
+  return lines.join('\n');
+}
+let _toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.innerHTML = `<span style="color:#30d158;margin-right:6px">✓</span>${msg}`;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function doCopy(text, btnId, msg) {
+  const done = () => {
+    const b = document.getElementById(btnId);
+    if (b) { b.classList.add('copied'); setTimeout(() => b.classList.remove('copied'), 1600); }
+    showToast(msg);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, ok) {
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); ok(); } catch (e) { showToast('复制失败,请手动复制'); }
+  document.body.removeChild(ta);
+}
+document.getElementById('copyFixBtn').onclick = () => doCopy(D.fix_prompt || '', 'copyFixBtn', '修正 prompt 已复制,发给 AI 即可');
+document.getElementById('copyDataBtn').onclick = () => doCopy(buildDataText(), 'copyDataBtn', '数据已复制(JSON 5 段标准)');
+document.getElementById('copyLogBtn').onclick = () => doCopy(buildLogText(), 'copyLogBtn', '日志已复制(6 段标准)');
+</script>
+</body>
+</html>

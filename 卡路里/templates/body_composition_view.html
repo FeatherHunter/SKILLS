@@ -65,7 +65,24 @@
   .current { display: inline-block; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 2px 8px; font-size: 11px; margin-left: 6px; }
 
   /* 图表(2026-08-05 像素级渲染:手机可读 + 网格/面积/高低点) */
-  .chart { width: 100%; }
+  .chart { width: 100%; position: relative; }
+  .chart .line { animation: drawLine .8s ease-out forwards; }
+  @keyframes drawLine { from { stroke-dashoffset: var(--len, 600); } to { stroke-dashoffset: 0; } }
+  .chart-tip {
+    position: absolute; background: rgba(29,29,31,.94); color: #fff; border-radius: 8px;
+    padding: 6px 10px; font-size: 12px; z-index: 20; pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2); white-space: nowrap;
+  }
+  .current-anchor {
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(135deg, var(--accent-soft), #f7fbff);
+    border: 1px solid #cfe2ff; border-radius: 12px; padding: 12px 16px;
+  }
+  .ca-label { font-size: 11px; color: var(--fg3); }
+  .ca-value { font-size: 26px; font-weight: 700; color: var(--fg); font-variant-numeric: tabular-nums; }
+  .ca-unit { font-size: 13px; color: var(--fg3); margin-left: 4px; font-weight: 500; }
+  .ca-delta { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .ca-sub { font-size: 11px; color: var(--fg3); }
   .chart svg { width: 100%; display: block; }
   .chart .grid { stroke: #ececf1; stroke-width: 1; }
   .chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
@@ -145,19 +162,29 @@
     <h2>来源切换</h2>
     <div class="chips" id="trendSrcChips"></div>
   </div>
+  <div class="card" id="currentAnchorCard" style="display:none">
+    <div class="current-anchor">
+      <div>
+        <div class="ca-label" id="caLabel">当前值</div>
+        <div class="ca-value"><span id="caValue">—</span><span class="ca-unit" id="caUnit"></span></div>
+      </div>
+      <div class="ca-delta" id="caDelta"></div>
+    </div>
+  </div>
   <div class="card">
     <h2>趋势 KPI</h2>
     <div class="kpi-row">
-      <div class="kpi"><div class="v" id="tDelta">—</div><div class="l">区间变化 Δ</div></div>
-      <div class="kpi"><div class="v" id="tAvg">—</div><div class="l">平均值</div></div>
-      <div class="kpi"><div class="v" id="tMin">—</div><div class="l">最低</div></div>
-      <div class="kpi"><div class="v" id="tMax">—</div><div class="l">最高</div></div>
+      <div class="kpi"><div class="v" id="tDelta">—</div><div class="l">📉 区间变化 Δ</div></div>
+      <div class="kpi"><div class="v" id="tAvg">—</div><div class="l">⚖️ 平均值</div></div>
+      <div class="kpi"><div class="v" id="tMin">—</div><div class="l">▾ 最低</div></div>
+      <div class="kpi"><div class="v" id="tMax">—</div><div class="l">▴ 最高</div></div>
     </div>
   </div>
   <div class="card">
     <h2>折线图</h2>
     <div class="chart" id="trendChart"></div>
     <p class="note" id="trendNote"></p>
+    <div class="chart-tip" id="chartTip" style="display:none"></div>
   </div>
 </div>
 
@@ -292,8 +319,17 @@ function fallbackCopy(text, ok) {
 document.getElementById('copyDataBtn').onclick = () => doCopy(buildDataText(), 'copyDataBtn', '数据已复制(JSON 5 段标准)');
 document.getElementById('copyLogBtn').onclick = () => doCopy(buildLogText(), 'copyLogBtn', '日志已复制(6 段标准)');
 
-// ---------- 图表:像素级渲染(手机可读) ----------
-function renderLineChart(el, rows, unit) {
+// ---------- 图表:像素级渲染(动画/点按 tooltip/当前值锚点) ----------
+const PALETTE = ['#0071e3', '#ff9500', '#34c759', '#af52de', '#ff3b30', '#00c7be', '#ff2d55', '#5e5ce6'];
+const chartTip = document.getElementById('chartTip');
+function showChartTip(text, x, y) {
+  chartTip.textContent = text;
+  chartTip.style.display = 'block';
+  chartTip.style.left = Math.min(x + 8, document.querySelector('.chart').clientWidth - 130) + 'px';
+  chartTip.style.top = Math.max(y - 34, 0) + 'px';
+}
+
+function renderLineChart(el, rows, unit, color, showTip) {
   const W = Math.max(240, el.clientWidth - 2);
   const H = el.clientWidth < 520 ? 180 : 220;
   const padL = 40, padR = 16, padT = 26, padB = 30;
@@ -306,13 +342,12 @@ function renderLineChart(el, rows, unit) {
   const x = i => rows.length === 1 ? (W - padL - padR) / 2 + padL
     : padL + i * (W - padL - padR) / (rows.length - 1);
   const y = v => padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB);
+  const c = color || PALETTE[0];
 
   let s = `<svg width="${W}" height="${H}" role="img" style="height:${H}px">`;
-  // 渐变面积定义
   s += `<defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#0071e3" stop-opacity=".22"/>
-        <stop offset="100%" stop-color="#0071e3" stop-opacity="0"/></linearGradient></defs>`;
-  // 网格线(4 条水平)
+        <stop offset="0%" stop-color="${c}" stop-opacity=".22"/>
+        <stop offset="100%" stop-color="${c}" stop-opacity="0"/></linearGradient></defs>`;
   for (let g = 0; g <= 3; g++) {
     const gy = padT + g * (H - padT - padB) / 3;
     const gv = (yMax - (yMax - yMin) * g / 3).toFixed(1);
@@ -323,28 +358,51 @@ function renderLineChart(el, rows, unit) {
     const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.avg_pct).toFixed(1)}`).join(' ');
     const areaPts = `${padL},${H - padB} ` + pts + ` ${x(rows.length - 1).toFixed(1)},${H - padB}`;
     s += `<polygon class="area" points="${areaPts}"/>`;
-    s += `<polyline class="line" points="${pts}"/>`;
+    s += `<path class="line" d="M${pts.replace(/ /g, ' L')}" stroke="${c}" style="--len:${W + H}"/>`;
   }
-  // 高低点标记 + 数据点
-  const hiIdx = vals.indexOf(mx), loIdx = vals.indexOf(mn);
   rows.forEach((r, i) => {
     const cx = x(i), cy = y(r.avg_pct);
-    s += `<circle class="dot ${i === hiIdx ? 'hl' : i === loIdx ? 'lo' : ''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4"><title>${r.date}: ${r.avg_pct}${unit}</title></circle>`;
+    s += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="${c}"><title>${r.date}: ${r.avg_pct}${unit}</title></circle>`;
     s += `<text class="vlabel" x="${cx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="middle">${r.avg_pct}</text>`;
     const showX = rows.length <= 8 || i % Math.ceil(rows.length / 8) === 0;
     if (showX) s += `<text class="xlabel" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle">${r.date.slice(5)}</text>`;
   });
   s += '</svg>';
   el.innerHTML = s;
+  if (showTip) {
+    el.querySelectorAll('.dot').forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        const r = rows[i];
+        showChartTip(`${r.date} · ${r.avg_pct}${unit}`, parseFloat(dot.getAttribute('cx')), parseFloat(dot.getAttribute('cy')));
+        setTimeout(() => { chartTip.style.display = 'none'; }, 2200);
+      });
+    });
+  }
+}
+
+function animateNum(el, val, fmt) {
+  if (val == null) { el.textContent = '—'; return; }
+  const target = fmt ? fmt(val) : val;
+  const numeric = parseFloat(target);
+  const start = performance.now(), dur = 380;
+  function tick(now) {
+    const t = Math.min((now - start) / dur, 1);
+    const eased = 1 - Math.pow(1 - t, 3);
+    const cur = numeric * eased;
+    el.textContent = fmt ? fmt(cur) : (Math.round(cur * 100) / 100);
+    if (t < 1) requestAnimationFrame(tick);
+    else el.textContent = target;
+  }
+  requestAnimationFrame(tick);
 }
 
 function kpiHtml(kpi, ids) {
   const dEl = document.getElementById(ids.delta);
-  dEl.textContent = kpi.delta == null ? '—' : deltaSign(kpi.delta);
+  animateNum(dEl, kpi.delta, deltaSign);
   dEl.className = 'v ' + (kpi.delta != null ? deltaClass(kpi.delta) : '');
-  document.getElementById(ids.avg).textContent = kpi.avg == null ? '—' : kpi.avg;
-  document.getElementById(ids.min).textContent = kpi.min == null ? '—' : kpi.min;
-  document.getElementById(ids.max).textContent = kpi.max == null ? '—' : kpi.max;
+  animateNum(document.getElementById(ids.avg), kpi.avg);
+  animateNum(document.getElementById(ids.min), kpi.min);
+  animateNum(document.getElementById(ids.max), kpi.max);
 }
 
 if (D.mode === 'list') {
@@ -438,6 +496,23 @@ if (D.mode === 'trend') {
     chips.appendChild(c);
   });
   const chart = document.getElementById('trendChart');
+  const anchorCard = document.getElementById('currentAnchorCard');
+  function renderAnchor(rows, label, unit) {
+    if (!rows.length) { anchorCard.style.display = 'none'; return; }
+    const last = rows[rows.length - 1];
+    const prev = rows.length >= 2 ? rows[rows.length - 2] : null;
+    anchorCard.style.display = '';
+    document.getElementById('caLabel').textContent = label + ' · 当前';
+    document.getElementById('caValue').textContent = last.avg_pct;
+    document.getElementById('caUnit').textContent = unit;
+    const dEl = document.getElementById('caDelta');
+    if (prev) {
+      const d = Math.round((last.avg_pct - prev.avg_pct) * 100) / 100;
+      dEl.innerHTML = `<span class="delta ${deltaClass(d)}">${deltaSign(d)}</span><div class="ca-sub">较上次(${prev.date.slice(5)})</div>`;
+    } else {
+      dEl.innerHTML = '<span class="delta">首次记录</span>';
+    }
+  }
   function kpiFor(rows) {
     const values = rows.map(r => r.avg_pct).filter(v => v != null);
     return {
@@ -453,13 +528,15 @@ if (D.mode === 'trend') {
     if (!rows.length) {
       chart.innerHTML = '<div class="empty">该来源暂无趋势数据</div>';
       document.getElementById('trendNote').textContent = '';
+      anchorCard.style.display = 'none';
       kpiHtml({delta: null, avg: null, min: null, max: null}, {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
       return;
     }
-    renderLineChart(chart, rows, '体脂率 %');
+    renderLineChart(chart, rows, '体脂率 %', PALETTE[0], true);
     kpiHtml(kpiFor(rows), {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
+    renderAnchor(rows, SRC_LABELS[s] || s, '体脂率 %');
     document.getElementById('trendNote').textContent =
-      `${rows.length} 个测量日 · 最近 ${D.days} 天 · 来源 ${SRC_LABELS[s] || s} · 橙色=最高 绿色=最低`;
+      `${rows.length} 个测量日 · 最近 ${D.days} 天 · 来源 ${SRC_LABELS[s] || s}`;
   }
   renderSource(active);
 }

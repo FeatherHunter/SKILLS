@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 操作失败</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#fff5f5);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px;border:1px solid #ffd6d6}
+.eyebrow{color:var(--red);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:26px;letter-spacing:-.03em;line-height:1.2;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.stage{display:inline-block;background:#ffeaea;color:var(--red);border-radius:99px;padding:3px 12px;font-size:11px;font-weight:800;margin-top:10px}
+section{background:var(--card);border-radius:18px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px}
+section h2{font-size:15px;margin-bottom:12px}
+.fail{background:#fff5f5;border:1px solid #ffd6d6;border-radius:14px;padding:14px 16px;font-size:14px;font-weight:600;color:#c0392b;margin-bottom:10px}
+.kv{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0f3;font-size:13px}
+.kv:last-child{border-bottom:none}
+.kv b{flex:none;min-width:72px;color:var(--fg3);font-weight:600}
+.kv span{word-break:break-all}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap;position:sticky;bottom:14px}
+.btn{border:none;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;box-shadow:var(--shadow)}
+.btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.danger{background:var(--red)}
+.btn.copied{background:#34c759}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+.toast.show{opacity:1}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:22px}.actions{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow" id="eyebrow"></div>
+<h1 id="title">操作失败</h1>
+<p class="lead" id="subtitle"></p>
+<span class="stage">失败</span>
+</header>
+<div id="app"></div>
+<div class="actions">
+<button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
+<button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+<button class="btn" id="retryBtn" style="display:none">↻ 修正重试</button>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+let D=null,META={};
+let _toastTimer=null;
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function doCopy(text,btnId,msg){
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');b.textContent='✓ 已复制';setTimeout(()=>{b.classList.remove('copied');b.textContent='📋 复制'+(btnId==='copyDataBtn'?'数据':'日志');},1600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
+  else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+}
+function render(){
+  let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<section>数据解析失败:'+esc(e.message)+'</section>';return;}
+  const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<section>数据校验失败:'+esc(v.msg)+'</section>';return;}
+  D=p.data;META=D.meta||{};
+  const err=D.error||{};
+  document.getElementById('eyebrow').textContent=(META.command_cn||'')+' · 唤醒词「'+(META.wake_word||'')+'」 · '+(META.occurred_at||'');
+  document.getElementById('title').textContent=esc(err.action||'操作')+'失败';
+  const app=document.getElementById('app');
+  let html='<section><h2>🔍 失败原因</h2><div class="fail">'+esc(err.reason||'未知原因')+'</div></section>';
+  const kd=err.key_data||{};
+  const keys=Object.keys(kd);
+  if(keys.length){html+='<section><h2>📋 关键数据</h2>'+keys.map(k=>'<div class="kv"><b>'+esc(k)+'</b><span>'+esc(kd[k])+'</span></div>').join('')+'</section>';}
+  html+='<section><h2>💡 建议下一步</h2><div style="font-size:13px;color:var(--fg2)">'+esc(err.suggest||'修正参数后重试')+'</div></section>';
+  app.innerHTML=html;
+  const rb=document.getElementById('retryBtn');
+  if(err.suggest&&err.suggest.includes('修正')){
+    rb.style.display='';
+    rb.onclick=()=>{const kd2=err.key_data||{};const params=Object.keys(kd2).map(k=>'  '+k+': _____________').join('\n');doCopy('请加载「居家管家」技能,重试「'+(META.command_cn||'')+'」:\n'+params+'\n  说  明: 上一步失败原因「'+esc(err.reason||'')+'」','retryBtn','修正 prompt 已复制');};
+  }
+  const cd=D.copy_data||{},cl=D.copy_log||{};
+  document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(cd,null,2),'copyDataBtn','数据已复制');
+  document.getElementById('copyLogBtn').onclick=()=>doCopy(JSON.stringify(cl,null,2),'copyLogBtn','日志已复制');
+}
+render();
+</script>
+</body>
+</html>

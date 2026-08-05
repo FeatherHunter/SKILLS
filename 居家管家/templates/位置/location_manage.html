@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 位置管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:#eef4ff;color:var(--blue);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700}
+section{background:var(--card);border-radius:18px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px}
+section h2{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
+.trow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f0f0f3;font-size:13px}
+.trow:last-child{border-bottom:none}
+.trow .pad{flex:none;width:22px;height:1px}
+.trow .dot{flex:none;color:var(--fg3);font-size:10px}
+.trow .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trow .nm.empty{color:var(--fg3);font-weight:500}
+.trow .ct{color:var(--fg3);font-size:11px;flex:none}
+.trow .ops{flex:none;display:flex;gap:4px;margin-left:auto}
+.opb{border:none;border-radius:99px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#f2f4f8;color:var(--fg2)}
+.opb:hover{background:#eef4ff;color:var(--blue)}
+.opb.danger:hover{background:#ffeaea;color:var(--red)}
+.sim{border:1px solid #ffd9b3;background:#fff8f0;border-radius:14px;padding:14px 16px;margin-bottom:10px;font-size:13px}
+.sim .paths{color:#8a5a1a;font-weight:600}
+.sim .mig{color:var(--fg3);font-size:12px;margin-top:4px}
+.tip{background:#fff8e6;border:1px solid #f5d98f;color:#8a6d1a;border-radius:14px;padding:12px 16px;font-size:13px;margin-bottom:14px}
+.tip button{margin-left:8px}
+.empty{background:var(--card);border-radius:18px;padding:36px 20px;text-align:center;color:var(--fg3)}
+.empty h2{font-size:18px;color:var(--fg);margin-bottom:6px}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap;position:sticky;bottom:14px}
+.btn{border:none;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;box-shadow:var(--shadow)}
+.btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.warn{background:var(--orange)}
+.btn.copied{background:#34c759}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+.toast.show{opacity:1}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:24px}.actions{position:static}.trow .ops{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow" id="eyebrow"></div>
+<h1 id="title">位置体系管理</h1>
+<p class="lead" id="subtitle"></p>
+<div class="chips" id="metaBar"></div>
+</header>
+<div id="app"></div>
+<div class="actions">
+<button class="btn warn" id="newBtn">＋ 新建位置</button>
+<button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
+<button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+let D=null,META={};
+let _toastTimer=null;
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function doCopy(text,btn,msg){
+  const done=()=>{if(btn){btn.classList.add('copied');const old=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.classList.remove('copied');btn.textContent=old;},1600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
+  else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+}
+function render(){
+  let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
+  const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
+  D=p.data;META=D.meta||{};
+  document.getElementById('eyebrow').textContent=(META.command_cn||'')+' · 唤醒词「'+(META.wake_word||'')+'」 · '+(META.occurred_at||'');
+  document.getElementById('subtitle').textContent='位置树总览 + 相似位置检测,改名/合并影响一目了然';
+  const stage='查看';const chips=[`<span class="chip">⚡ ${esc(META.wake_word||'管位置')}</span>`,`<span class="chip">● ${stage}</span>`,`<span class="chip">🕒 ${esc(META.occurred_at||'')}</span>`];
+  document.getElementById('metaBar').innerHTML=chips.join('');
+  const app=document.getElementById('app');
+  const nodes=arr(D.nodes);
+  if(!nodes.length&&!arr(D.similar_groups).length){
+    app.innerHTML='<div class="empty"><h2>还没有位置 🗺️</h2>先建第一个位置(如「客厅/电视柜」),录物品时也能顺手建。</div>';
+    renderActions();return;
+  }
+  if(nodes.length){app.innerHTML+='<section><h2>🌳 位置树 <span class="hint">'+esc(nodes.length)+' 个位置 · 点按钮操作</span></h2><div id="tree"></div></section>';}
+  const sims=arr(D.similar_groups);
+  if(sims.length){app.innerHTML+='<section><h2>🔍 相似位置检测 <span class="hint">同位置两种写法,建议合并</span></h2>'+sims.map((s,i)=>'<div class="sim"><div class="paths">'+s.paths.map(esc).join(' ⇄ ')+'</div><div class="mig">涉及 '+esc(s.items_affected)+' 件物品 · 建议保留「'+esc(s.target)+'」</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="mg_'+i+'">确认合并</button><button class="btn ghost" id="ig_'+i+'">忽略</button></div></div>').join('')+'</section>';
+    sims.forEach((s,i)=>{const mb=document.getElementById('mg_'+i);const ib=document.getElementById('ig_'+i);
+      if(mb){const srcs=s.paths.filter(x=>x!==s.target).join('、');mb.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 合并\n  详  情: 把「'+srcs+'」合并到「'+s.target+'」',mb,'合并 prompt 已复制');}
+      if(ib)ib.onclick=()=>{ib.closest('.sim').style.display='none';showToast('已忽略本组');};});}
+  const tree=document.getElementById('tree');
+  if(tree){tree.innerHTML=nodes.map((n,i)=>'<div class="trow"><span class="pad" style="width:'+((n.depth-1)*22)+'px"></span><span class="dot">└</span><span class="nm'+(n.empty?' empty':'')+'">'+esc(n.name)+'</span><span class="ct">'+(n.empty?'空位置':n.count+' 件')+'</span><span class="ops"><button class="opb" id="rn_'+i+'">改名</button><button class="opb" id="dl_'+i+'">删除</button></span></div>').join('');
+    nodes.forEach((n,i)=>{const rn=document.getElementById('rn_'+i);const dl=document.getElementById('dl_'+i);
+      if(rn)rn.onclick=()=>{const newP=prompt('新路径(如:'+esc(n.path)+' → )',n.path);if(newP&&newP!==n.path)doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 改名\n  详  情: 「'+esc(n.path)+'」改名为「'+esc(newP)+'」',rn,'改名 prompt 已复制');else if(newP===n.path)showToast('路径未变化');};
+      if(dl)dl.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 删除\n  详  情: 删除「'+esc(n.path)+'」',dl,'删除 prompt 已复制');});}
+  renderActions();
+}
+function renderActions(){
+  const nb=document.getElementById('newBtn');
+  if(nb)nb.onclick=()=>{const path=prompt('新位置完整路径(如:客厅/电视柜,支持多级)','');if(path)doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 新建\n  详  情: '+esc(path),nb,'新建 prompt 已复制');};
+  const cd=D.copy_data||{},cl=D.copy_log||{};
+  document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(cd,null,2),document.getElementById('copyDataBtn'),'数据已复制');
+  document.getElementById('copyLogBtn').onclick=()=>doCopy(JSON.stringify(cl,null,2),document.getElementById('copyLogBtn'),'日志已复制');
+}
+render();
+</script>
+</body>
+</html>

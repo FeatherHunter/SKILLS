@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 空间视图</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:#eef4ff;color:var(--blue);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700}
+.bread{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin:14px 0;font-size:13px}
+.crumb{background:#fff;border:1px solid var(--line);border-radius:99px;padding:4px 12px;cursor:pointer;color:var(--fg2);font-size:12px;font-weight:600}
+.crumb:hover{border-color:var(--blue);color:var(--blue)}
+.crumb.home{background:#eef4ff;border-color:#cfe0ff;color:var(--blue)}
+.arrow{color:var(--fg3);font-size:11px}
+section{background:var(--card);border-radius:18px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px}
+section h2{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.loc{background:#f8fafc;border:1px solid #e8ecf1;border-radius:14px;padding:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s;position:relative}
+.loc:hover{border-color:var(--blue);box-shadow:0 4px 14px rgba(0,122,255,.12)}
+.loc .nm{font-weight:700;font-size:14px;margin-bottom:4px;padding-right:20px}
+.loc .ct{color:var(--fg3);font-size:11px}
+.loc .go{position:absolute;right:12px;top:12px;color:var(--fg3);font-size:13px}
+.loc.empty{border-style:dashed;opacity:.75;background:#fbfbfd}
+.loc.empty .nm{color:var(--fg3);font-weight:600}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.item{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid #eef0f3;border-radius:14px;padding:10px 12px}
+.item .ph{width:42px;height:42px;border-radius:10px;background:#eef1f5;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:9px;flex:none}
+.item .ph img{width:100%;height:100%;object-fit:cover}
+.item .inf{flex:1;min-width:0}
+.item .inf .n{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item .inf .s{color:var(--fg3);font-size:11px}
+.item .qa{display:flex;gap:4px;flex:none}
+.qb{border:none;border-radius:99px;padding:4px 9px;font-size:11px;font-weight:700;cursor:pointer;background:#eef4ff;color:var(--blue)}
+.qb.mv{background:#e8f9ee;color:#1d7a3f}
+.tip{background:#fff8e6;border:1px solid #f5d98f;color:#8a6d1a;border-radius:14px;padding:12px 16px;font-size:13px;margin-bottom:14px}
+.tip button{margin-left:8px}
+.empty{background:var(--card);border-radius:18px;padding:36px 20px;text-align:center;color:var(--fg3)}
+.empty h2{font-size:18px;color:var(--fg);margin-bottom:6px}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap;position:sticky;bottom:14px}
+.btn{border:none;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;box-shadow:var(--shadow)}
+.btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.copied{background:#34c759}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+.toast.show{opacity:1}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:24px}.actions{position:static}.items{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow" id="eyebrow"></div>
+<h1 id="title">空间视图</h1>
+<p class="lead" id="subtitle"></p>
+<div class="chips" id="metaBar"></div>
+</header>
+<div class="bread" id="bread"></div>
+<div id="app"></div>
+<div class="actions">
+<button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
+<button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+let D=null,META={};
+let _toastTimer=null;
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function doCopy(text,btn,msg){
+  const done=()=>{if(btn){btn.classList.add('copied');const old=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.classList.remove('copied');btn.textContent=old;},1600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
+  else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+}
+function drillPrompt(path){return '请加载「居家管家」技能,浏览空间视图(唤醒词:空间视图):\n  位  置: '+(path||'(顶层)');}
+function quickPrompt(kind,item){const labels={mv:'移物品',add:'补物品',sub:'减物品'};const texts={mv:'请加载「居家管家」技能,帮我移动物品位置(唤醒词:移物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  新位置: _____________\n  数  量: '+(item.quantity||1),add:'请加载「居家管家」技能,帮我补物品(唤醒词:补物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量: _____________',sub:'请加载「居家管家」技能,帮我减物品(唤醒词:减物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量: _____________'};return {label:labels[kind],text:texts[kind]};}
+function render(){
+  let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
+  const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
+  D=p.data;META=D.meta||{};
+  document.getElementById('eyebrow').textContent=(META.command_cn||'')+' · 唤醒词「'+(META.wake_word||'')+'」 · '+(META.occurred_at||'');
+  document.getElementById('subtitle').textContent=(D.current_name==='(全屋)'?'整个家的位置树,逐层逛下去':'当前位置:'+esc(D.current_path))+' · 共 '+esc(D.total_paths||0)+' 个位置';
+  const stage='查看';const chips=[`<span class="chip">⚡ ${esc(META.wake_word||'空间视图')}</span>`,`<span class="chip">● ${stage}</span>`,`<span class="chip">🕒 ${esc(META.occurred_at||'')}</span>`];
+  document.getElementById('metaBar').innerHTML=chips.join('');
+  const app=document.getElementById('app');
+  if((!D.children||!D.children.length)&&(!D.items||!D.items.length)){
+    app.innerHTML='<div class="empty"><h2>这里还没有东西 🏠</h2>'+(D.current_name==='(全屋)'?'还没有任何位置记录。录入物品时填位置,或先建位置体系。':'这个位置还没有物品,可先收纳建议或移入物品。')+'<div class="actions" style="position:static"><button class="btn" id="emptyBtn">复制「'+((D.current_name==='(全屋)')?'建位置':'收纳建议')+'」</button></div></div>';
+    const b=document.getElementById('emptyBtn');
+    b.onclick=()=>{const t=D.current_name==='(全屋)'?'请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 新建\n  详  情: _____________':'请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n  位  置: '+esc(D.current_path);doCopy(t,b,'prompt 已复制,发给 AI');};
+    renderActions();return;
+  }
+  const kids=arr(D.children);
+  if(kids.length){app.innerHTML+='<section><h2>📂 下一层 <span class="hint">点卡片 = 下钻</span></h2><div class="grid">'+kids.map((c,i)=>'<div class="loc '+(c.empty?'empty':'')+'" id="loc_'+i+'"><div class="nm">'+esc(c.name)+'</div><div class="ct">'+(c.empty?'空位置':c.count+' 件')+(c.has_children?' · 有下级':'')+'</div><div class="go">›</div></div>').join('')+'</div></section>';}
+  kids.forEach((c,i)=>{const el=document.getElementById('loc_'+i);if(el){el.onclick=()=>{const t=drillPrompt(c.path);doCopy(t,el,'下钻 prompt 已复制,发给 AI');};}});
+  const its=arr(D.items);
+  if(its.length){app.innerHTML+='<section><h2>📦 本层物品 <span class="hint">快捷操作:移/补/减</span></h2><div class="items">'+its.map((it,j)=>'<div class="item"><div class="ph">'+(it.photo?'<img alt="'+esc(it.name)+'" src="data:image/jpeg;base64,'+it.photo+'">':'无图')+'</div><div class="inf"><div class="n">'+esc(it.name)+'</div><div class="s">×'+esc(it.quantity||1)+' · '+esc(it.location_status||'在家')+'</div></div><div class="qa"><button class="qb mv" id="mv_'+j+'">移</button><button class="qb" id="add_'+j+'">补</button><button class="qb" id="sub_'+j+'">减</button></div></div>').join('')+'</div></section>';
+    its.forEach((it,j)=>{[['mv','mv_'],['add','add_'],['sub','sub_']].forEach(([k,pid])=>{const el=document.getElementById(pid+j);if(el){const q=quickPrompt(k,it);el.title=q.text;el.onclick=()=>doCopy(q.text,el,'prompt 已复制,发给 AI');}});});
+  }
+  const eh=arr(D.empty_hints);
+  if(eh.length){app.innerHTML+='<div class="tip">🏷️ 空位置节点:'+eh.map(h=>esc(h.path)).join('、')+' —— 可移入物品,或先收纳建议。<button class="btn ghost" id="tipBtn">复制收纳建议</button></div>';
+    const tb=document.getElementById('tipBtn');
+    if(tb)tb.onclick=()=>{const t='请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n  位  置: '+esc(D.current_path||'');doCopy(t,tb,'prompt 已复制');};}
+  const bd=document.getElementById('bread');
+  let bdHtml='<span class="crumb home" id="bc_home">🏠 全屋</span>';
+  arr(D.breadcrumbs).forEach((c,i)=>{bdHtml+='<span class="arrow">›</span><span class="crumb" id="bc_'+i+'">'+esc(c.name)+'</span>';});
+  bd.innerHTML=bdHtml;
+  document.getElementById('bc_home').onclick=()=>doCopy(drillPrompt(''),document.getElementById('bc_home'),'回顶层 prompt 已复制');
+  arr(D.breadcrumbs).forEach((c,i)=>{const el=document.getElementById('bc_'+i);if(el)el.onclick=()=>doCopy(drillPrompt(c.path),el,'返回 prompt 已复制');});
+  renderActions();
+}
+function renderActions(){
+  const cd=D.copy_data||{},cl=D.copy_log||{};
+  document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(cd,null,2),document.getElementById('copyDataBtn'),'数据已复制');
+  document.getElementById('copyLogBtn').onclick=()=>doCopy(JSON.stringify(cl,null,2),document.getElementById('copyLogBtn'),'日志已复制');
+}
+render();
+</script>
+</body>
+</html>

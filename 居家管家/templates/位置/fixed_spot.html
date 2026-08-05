@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 固定位</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{background:#eef4ff;color:var(--blue);border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700}
+section{background:var(--card);border-radius:18px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px}
+section h2{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
+.frow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #f0f0f3;font-size:13px}
+.frow:last-child{border-bottom:none}
+.frow .ph{width:42px;height:42px;border-radius:10px;background:#eef1f5;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:9px;flex:none}
+.frow .ph img{width:100%;height:100%;object-fit:cover}
+.frow .inf{flex:1;min-width:0}
+.frow .inf .n{font-weight:600}
+.frow .inf .p{color:var(--fg3);font-size:12px}
+.frow .inf .p b{color:var(--fg2)}
+.warnbad{display:inline-block;background:#ffeaea;color:#c0392b;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:800;margin-left:6px}
+.okbad{display:inline-block;background:#e8f9ee;color:#1d7a3f;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:800;margin-left:6px}
+.setrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+select,.inp{border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:13px;background:#fff;color:var(--fg);max-width:100%}
+select:focus,.inp:focus{outline:none;border-color:var(--blue)}
+.hint{color:var(--fg3);font-size:12px}
+.empty{background:var(--card);border-radius:18px;padding:36px 20px;text-align:center;color:var(--fg3)}
+.empty h2{font-size:18px;color:var(--fg);margin-bottom:6px}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap;position:sticky;bottom:14px}
+.btn{border:none;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;box-shadow:var(--shadow)}
+.btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.danger{background:var(--red)}
+.btn.copied{background:#34c759}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+.toast.show{opacity:1}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:24px}.actions{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow" id="eyebrow"></div>
+<h1 id="title">固定位</h1>
+<p class="lead" id="subtitle"></p>
+<div class="chips" id="metaBar"></div>
+</header>
+<div id="app"></div>
+<div class="actions">
+<button class="btn" id="setBtn">＋ 设置固定位</button>
+<button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
+<button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+let D=null,META={};
+let _toastTimer=null;
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function doCopy(text,btn,msg){
+  const done=()=>{if(btn){btn.classList.add('copied');const old=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.classList.remove('copied');btn.textContent=old;},1600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
+  else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+}
+function render(){
+  let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
+  const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
+  D=p.data;META=D.meta||{};
+  document.getElementById('eyebrow').textContent=(META.command_cn||'')+' · 唤醒词「'+(META.wake_word||'')+'」 · '+(META.occurred_at||'');
+  document.getElementById('subtitle').textContent='常用件锚定固定位置 · 紧急定位(重要物品)依赖本清单';
+  const stage='查看';const chips=[`<span class="chip">⚡ ${esc(META.wake_word||'固定位')}</span>`,`<span class="chip">● ${stage}</span>`,`<span class="chip">🕒 ${esc(META.occurred_at||'')}</span>`];
+  document.getElementById('metaBar').innerHTML=chips.join('');
+  const app=document.getElementById('app');
+  const items=arr(D.fixed_items);
+  if(!items.length){
+    app.innerHTML='<div class="empty"><h2>还没有固定位 📌</h2>常用件(钥匙/充电器/药箱…)设个固定位,紧急找东西一屏直达。';
+    renderActions();return;}
+  let html='<section><h2>📌 现有固定位 <span class="hint">'+esc(items.length)+' 件 · ⚠️= 当前位置不在固定位</span></h2>';
+  html+=items.map(it=>{
+    const cur=arr(it.currents).map(c=>esc(c.location)+'×'+esc(c.quantity)+(c.location_status!=='在家'?'['+esc(c.location_status)+']':'')).join('、')||'<span style="color:var(--fg3)">(无活跃位置记录)</span>';
+    return '<div class="frow"><div class="ph">'+(it.photo?'<img alt="'+esc(it.name)+'" src="data:image/jpeg;base64,'+it.photo+'">':'无图')+'</div><div class="inf"><div class="n">'+esc(it.name)+(it.warn?'<span class="warnbad">⚠️ 不在固定位</span>':'<span class="okbad">✓ 在固定位</span>')+'</div><div class="p">固定位 <b>'+esc(it.fixed||'')+'</b> · 当前:'+cur+'</div></div><button class="btn ghost" id="clr_'+it.id+'">解除</button></div>';
+  }).join('');
+  html+='</section>';
+  app.innerHTML=html;
+  items.forEach(it=>{const b=document.getElementById('clr_'+it.id);if(b)b.onclick=()=>doCopy('请加载「居家管家」技能,帮我设置固定位(唤醒词:固定位):\n  操  作: 解除\n  物  品: '+esc(it.name)+(it.id?' (ID '+it.id+')':'')+'',b,'解除 prompt 已复制');});
+  renderActions();
+}
+function renderActions(){
+  const sb=document.getElementById('setBtn');
+  if(sb)sb.onclick=()=>{const itemName=prompt('物品名(常用件,如:钥匙)');if(!itemName)return;const loc=prompt('固定位(如:玄关抽屉)');if(!loc)return;doCopy('请加载「居家管家」技能,帮我设置固定位(唤醒词:固定位):\n  操  作: 设置\n  物  品: '+esc(itemName)+'\n  固定位: '+esc(loc),sb,'设置 prompt 已复制');};
+  const cd=D.copy_data||{},cl=D.copy_log||{};
+  document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(cd,null,2),document.getElementById('copyDataBtn'),'数据已复制');
+  document.getElementById('copyLogBtn').onclick=()=>doCopy(JSON.stringify(cl,null,2),document.getElementById('copyLogBtn'),'日志已复制');
+}
+render();
+</script>
+</body>
+</html>

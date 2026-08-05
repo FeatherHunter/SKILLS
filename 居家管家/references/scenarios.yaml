@@ -693,7 +693,7 @@ scenarios:
     scenario_title: 管理位置体系(查看/新建/改名/合并/规范化)
     dimensions: {}
     type: 查看+选择+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):
 
@@ -701,9 +701,16 @@ scenarios:
         详  情: _____________ (如:合并「卧室/东南角」和「卧室东南角」)
     result: "位置树总览 + 相似位置检测 + 合并/重命名影响预览,确认后回执。"
     html:
-      template: ""
+      template: "位置/location_manage.html"
       command_cn: 管位置
-      data_source: ""
+      data_source: items
+    variants:
+      - direction: 同义
+        phrase: 位置管理
+      - direction: 口语
+        phrase: 整理一下家里的位置
+      - direction: 口语
+        phrase: 位置怎么分的
 
   - id: "SM2-2"
     domain: space
@@ -713,7 +720,7 @@ scenarios:
     scenario_title: 设置固定位(常用件锚定)
     dimensions: {}
     type: 采集+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我设置固定位(唤醒词:固定位):
 
@@ -722,9 +729,16 @@ scenarios:
         操  作: _____________ (设置/解除)
     result: "固定位选择 + 现有固定位清单(含位置对比警告),确认后回执。"
     html:
-      template: ""
+      template: "位置/fixed_spot.html"
       command_cn: 固定位
-      data_source: ""
+      data_source: items
+    variants:
+      - direction: 同义
+        phrase: 设置固定位
+      - direction: 口语
+        phrase: 钥匙固定放哪来着
+      - direction: 口语
+        phrase: 给我定个固定位置
 
   - id: "SM2-3"
     domain: space
@@ -734,16 +748,23 @@ scenarios:
     scenario_title: 收纳位置建议(AI 推荐)
     dimensions: {}
     type: 查看+选择
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):
 
         物  品: _____________ (可多件,选填;不填则找没有固定位的常用件)
     result: "AI 推荐位置 + 理由 + 备选,采纳后跳移物品流程。"
     html:
-      template: ""
+      template: "位置/suggest_storage.html"
       command_cn: 收纳建议
-      data_source: ""
+      data_source: items
+    variants:
+      - direction: 同义
+        phrase: 收纳位置建议
+      - direction: 口语
+        phrase: 这东西该放哪
+      - direction: 口语
+        phrase: 帮我找个地方放
 
   - id: "SM2-4"
     domain: space
@@ -753,16 +774,23 @@ scenarios:
     scenario_title: 空间视图浏览(位置树下钻)
     dimensions: {}
     type: 查看
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我浏览空间视图(唤醒词:空间视图):
 
         位  置: _____________ (从哪层开始,选填;不填则从顶层)
     result: "位置树逐层下钻 + 面包屑 + 当前层物品卡片。"
     html:
-      template: ""
+      template: "位置/space_view.html"
       command_cn: 空间视图
-      data_source: ""
+      data_source: items
+    variants:
+      - direction: 同义
+        phrase: 浏览空间视图
+      - direction: 口语
+        phrase: 看看家里每个地方都有啥
+      - direction: 口语
+        phrase: 客厅里都有什么
 
   # ═══════════ SM3 穿搭出行 ═══════════
   - id: "SM3-1"
@@ -1155,14 +1183,14 @@ scenarios:
     scenario_title: 首次使用(初始化工作流)
     dimensions: {}
     type: 向导+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用):
     result: "6 步向导(环境检测→配置→建库→建分类→引导→回执),幂等可重试。"
     html:
-      template: ""
+      template: "开始使用/first_use_wizard.html"
       command_cn: 首次使用
-      data_source: ""
+      data_source: "env + db + seed_categories.yaml"
 
   - id: "SM8-2"
     domain: setup
@@ -1175,9 +1203,9 @@ scenarios:
     status: ""
     prompt: |-
       请加载「居家管家」技能,帮我做数据健康检查(唤醒词:查异常):
-    result: "环境信息 + 检查项清单(标签/位置/状态/照片/价格等),修复引导只建议不自动改。"
+    result: "环境信息 + 8 检查项(标签/位置/状态/照片/价格/日期/相似位置),勾选复制修复引导,只建议不自动改。"
     html:
-      template: ""
+      template: "开始使用/health_report.html"
       command_cn: 查异常
       data_source: items
 
@@ -1189,17 +1217,17 @@ scenarios:
     scenario_title: 备份与导出(数据资产)
     dimensions: {}
     type: 采集+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我备份导出数据(唤醒词:备份导出):
 
         操  作: _____________ (备份/导出)
         格  式: _____________ (导出时:JSON/CSV,选填)
-    result: "备份(db+照片打包,保留 N 份)+ 导出(JSON/CSV),完成回执。"
+    result: "备份(db+照片打包,保留 N 份)+ 导出(JSON/CSV),完成回执 + 备份历史 + 距上次备份天数。"
     html:
-      template: ""
+      template: "开始使用/backup_receipt.html"
       command_cn: 备份导出
-      data_source: ""
+      data_source: "db + photos"
 
   - id: "SM8-4"
     domain: setup
@@ -1209,16 +1237,16 @@ scenarios:
     scenario_title: 导入与恢复(迁移)
     dimensions: {}
     type: 向导+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我导入恢复数据(唤醒词:导入恢复):
 
       【导入文件即将发送:】
-    result: "文件选择(预告式)→ 校验 → 冲突预览 → 确认导入,失败回滚。"
+    result: "文件选择(预告式)→ 校验 → 冲突预览 → 确认导入(导入前自动备份),失败回滚数据不变。"
     html:
-      template: ""
+      template: "开始使用/import_restore.html"
       command_cn: 导入恢复
-      data_source: ""
+      data_source: "json 导出/备份文件"
 
   # ═══════════ SM9 联动功能 ═══════════
   - id: "SM9-1"
@@ -1229,14 +1257,14 @@ scenarios:
     scenario_title: 联动功能总览(能力索引/偏好设置)
     dimensions: {}
     type: 查看+选择
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我看看能联动什么(唤醒词:联动总览):
     result: "联动条目列表(触发词/依赖技能/数据流/示例 prompt)+ 偏好频控设置。"
     html:
-      template: ""
+      template: "联动/link_overview.html"
       command_cn: 联动总览
-      data_source: ""
+      data_source: "LINK_CATALOG + link_prefs.json"
 
   - id: "SM9-2"
     domain: link
@@ -1246,7 +1274,7 @@ scenarios:
     scenario_title: 食品联动(记到卡路里/查热量)
     dimensions: {}
     type: 查看+选择+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我把食品记到卡路里(唤醒词:记到卡路里):
 
@@ -1254,9 +1282,9 @@ scenarios:
         操  作: _____________ (记到今日饮食/查热量)
     result: "目标物品确认 → 复制联动 prompt → 卡路里技能执行 → 回执。"
     html:
-      template: ""
+      template: "联动/link_food.html"
       command_cn: 记到卡路里
-      data_source: ""
+      data_source: "items + 启发式判定"
 
   - id: "SM9-3"
     domain: link
@@ -1266,7 +1294,7 @@ scenarios:
     scenario_title: 价格联动(记到记账)
     dimensions: {}
     type: 查看+选择+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       请加载「居家管家」技能,帮我把价格记到记账(唤醒词:记到记账):
 
@@ -1274,6 +1302,6 @@ scenarios:
         方  向: _____________ (支出/收入)
     result: "目标物品确认(含价格)→ 复制联动 prompt → 饼干记账执行 → 回执。"
     html:
-      template: ""
+      template: "联动/link_price.html"
       command_cn: 记到记账
-      data_source: ""
+      data_source: "items.purchase_price × quantity"

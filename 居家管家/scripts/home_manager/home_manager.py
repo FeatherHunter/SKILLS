@@ -43,6 +43,10 @@ def main():
     from 物品.cli import register as sm1_register
     from 物品.cli import run as sm1_run
 
+    # SM2 空间与位置域(T3: 位置管理/固定位/收纳建议/空间视图,域代码全在 scripts/位置/)
+    from 位置.cli import register as sm2_register
+    from 位置.cli import run as sm2_run
+
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -229,6 +233,8 @@ def main():
 
     # SM1 物品管理域子命令(T2 · 29 场景)
     sm1_register(subparsers)
+    # SM2 空间与位置域子命令(T3 · 4 场景)
+    sm2_register(subparsers)
 
     args = parser.parse_args()
 
@@ -751,6 +757,10 @@ def main():
     elif args.command and args.command.startswith("sm1-"):
         # SM1 物品管理域(T2 公共层奠基 · 分发到 物品.cli)
         return sm1_run(args)
+
+    elif args.command and args.command.startswith("sm2-"):
+        # SM2 空间与位置域(T3 · 分发到 位置.cli)
+        return sm2_run(args)
 
     else:
         parser.print_help()

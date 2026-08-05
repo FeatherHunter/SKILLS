@@ -49,6 +49,14 @@ TEMPLATE_TO_COMMAND_CN = {
     # ── SM7 家庭协作域(T8)──
     "family_borrow.html": "借用",
     "family_members.html": "家人档案",
+    # ── SM2 空间与位置域(T3)──
+    "位置/space_view.html": "空间视图",
+    "位置/location_manage.html": "管位置",
+    "位置/fixed_spot.html": "固定位",
+    "位置/suggest_storage.html": "收纳建议",
+    "位置/receipt.html": "位置回执",
+    "位置/confirm.html": "位置确认",
+    "位置/error.html": "位置错误",
     # ── SM1 物品管理域(T2)──
     "物品/add_form.html": "录物品",
     "物品/receipt.html": "操作回执",

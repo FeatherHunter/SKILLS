@@ -15,6 +15,8 @@ description: >
   查账号、存账号、改账号（账号密码管理）、
   借用、家人档案（家庭协作）、
   查闲置（闲置检测）、盘点统计（盘点统计与建议）、
+  联动总览、记到卡路里、记到记账（跨技能联动）、
+  首次使用（初始化工作流）、备份导出（数据资产）、导入恢复（迁移）、
   查异常（数据健康检查）。
   所有操作通过 Python CLI 执行数据库读写，AI 负责解析自然语言和交互确认；录物品/拍物品流程在写入前生成 HTML 预览供用户确认。
 metadata:
@@ -137,14 +139,24 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 28 | 查账号 | 查看账号 | accounts.py → show/list | 是（平台名，无则列全部） |
 | 29 | 存账号 | 新增账号 | accounts.py → add | 是 |
 | 30 | 改账号 | 更新账号 | accounts.py → show | 是（平台名） |
-| 31 | 查异常 | 数据健康检查 | SKILL.md → Lint 检查 | 否 |
+| 31 | 查异常 | 数据健康检查 | `python3 scripts/开始使用/cli.py lint` → 开始使用/health_report.html | 否 |
 | 32 | 查物品(HTML) | 物品搜索(默认输出 HTML) | features/search.md → Step 4 | 可选（无则列全部） |
 | 33 | 看物品(HTML) | 物品详情(默认输出 HTML) | features/search.md → Step 4 | 是（多件时先选） |
 | 34 | 统物品(HTML) | 总体统计(默认输出 HTML) | features/search.md → Step 4 | 否 |
 | 35 | 借用 | 借用管理（借出/借入/归还/催还） | `python3 scripts/home_manager.py family --action borrow-list` → family_borrow.html | 否（登记时选/填） |
 | 36 | 家人档案 | 家人档案（成员/物品归属标记） | `python3 scripts/home_manager.py family --action member-list` → family_members.html | 否 |
+| 37 | 管位置 | 位置管理（查看/新建/改名/合并） | features/位置.md → 管位置 | 否（操作+详情） |
+| 38 | 固定位 | 设置固定位（常用件锚定） | features/位置.md → 固定位 | 是（物品） |
+| 39 | 收纳建议 | 收纳位置建议（AI 推荐） | features/位置.md → 收纳建议 | 否（可多件/批量） |
+| 40 | 空间视图 | 空间视图浏览（位置树下钻） | features/位置.md → 空间视图 | 否（位置可选） |
 | 37 | 查闲置 | 闲置物品检测 | `python3 scripts/home_manager.py stats --type idle [--days 90|180|365] [--category-id N] --output` → stats/idle.html | 否 |
 | 38 | 盘点统计 | 盘点统计与建议 | `python3 scripts/home_manager.py stats --type inventory-stat --output` → stats/inventory_stat.html | 否 |
+| 39 | 联动总览 | 跨技能联动能力索引 + 偏好设置 | `python3 scripts/联动/cli.py sm9-overview` → 联动/link_overview.html（或 home_manager.py sm9-overview，T2 注册后） | 否 |
+| 40 | 记到卡路里 | 食品联动（记到今日饮食/查热量） | `python3 scripts/联动/cli.py sm9-food --item-id N [--action log\|query]` → 联动/link_food.html | 是（先查物品确认） |
+| 41 | 记到记账 | 价格联动（记支出/记收入） | `python3 scripts/联动/cli.py sm9-price --item-id N [--direction expense\|income]` → 联动/link_price.html | 是（先查物品确认） |
+| 42 | 首次使用 | 首次使用初始化（6 步向导，幂等可重试） | `python3 scripts/开始使用/cli.py check` / `init` / `init-status` → 开始使用/first_use_wizard.html | 是（路径确认，默认即确认） |
+| 43 | 备份导出 | 备份与导出（数据资产） | `python3 scripts/开始使用/cli.py backup` / `backup-list` / `export --format json\|csv` → 开始使用/backup_receipt.html | 是（操作/格式） |
+| 44 | 导入恢复 | 导入与恢复（迁移，预告式文件） | `python3 scripts/开始使用/cli.py import-preview --file X` / `import --file X [--mode skip\|overwrite]` → 开始使用/import_restore.html | 是（文件预告式） |
 
 ### 匹配规则
 
@@ -213,10 +225,17 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 查账号 | `account --action list` 或 `account --action show --platform "XX" --master-key "XX"` |
 | 存账号 | `account --action add --platform "XX" --user "XX" --pass "XX" --master-key "XX"` |
 | 改账号 | `account --action show --platform "XX" --master-key "XX"`（查看后重新录入） |
-| 查异常 | 无 CLI，AI 执行 Lint 检查逻辑（见下方） |
+| 查异常 | `python3 scripts/开始使用/cli.py lint` (数据检查 8 项, 走 开始使用/health_report.html) |
+| 首次使用 | `python3 scripts/开始使用/cli.py check` → `init`(建库+种子 60 节点)→ `init-status`(幂等) |
+| 备份导出 | `python3 scripts/开始使用/cli.py backup` / `backup-list` / `export --format json\|csv` |
+| 导入恢复 | `python3 scripts/开始使用/cli.py import-preview --file X` → `import --file X [--mode skip\|overwrite]` |
 | 查物品 | `search --name "XX"` 默认输出 HTML |
 | 看物品 | `detail --id {ID}` 默认输出 HTML |
 | 统物品 | `list` 默认输出 HTML |
+| 管位置 | `sm2-manage --action view`（查看）· `--action create --path "XX"`（新建）· `--action rename --old "XX" --new "YY"`（改名）· `--action merge --src "XX" --tgt "YY"`（合并）· `--action delete --path "XX"`（删除）· `--action similar`（相似检测） |
+| 固定位 | `sm2-fixed --action list`（清单）· `--action set --item-id N --location "XX"`（设置）· `--action clear --item-id N`（解除） |
+| 收纳建议 | `sm2-suggest --item-id N`（单件）· `--batch [--limit N]`（批量:没固定位的常用件） |
+| 空间视图 | `sm2-view [--path "XX"]`（缺省=顶层） |
 
 ---
 
@@ -300,6 +319,10 @@ $SKILLS_DATA_DIR  >  $SKILLS_DB_PATH  >  Skill 自带 fallback (Windows: D:\.db\
 | `expiring_alert.html` | 查过期（v1，已迁移至 stats/expiring.html） |
 | `outfit_picker.html` | 穿什么 |
 | `travel_trip.html` | 出行清单（涵盖带物品 pack + 归物品 return） |
+| `位置/space_view.html` | 空间视图 |
+| `位置/location_manage.html` | 管位置 |
+| `位置/fixed_spot.html` | 固定位 |
+| `位置/suggest_storage.html` | 收纳建议 |
 | `stats/overview.html` | 统物品（v2 物品总览，T5） |
 | `stats/idle.html` | 查闲置（T5） |
 | `stats/expiring.html` | 查过期（v2，T5） |
@@ -453,6 +476,10 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 | 查物品 | 物品搜索→HTML | features/search.md |
 | 看物品 | 物品详情→HTML | features/search.md |
 | 统物品 | 总体统计→HTML | features/search.md |
+| 管位置 | 位置管理→HTML | features/位置.md |
+| 固定位 | 固定位清单→HTML | features/位置.md |
+| 收纳建议 | 收纳建议→HTML | features/位置.md |
+| 空间视图 | 空间视图→HTML | features/位置.md |
 
 ---
 
@@ -470,7 +497,7 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 
 > 引用 [SKILL 开发总纲 §原则 11](../SKILL开发总纲V1.0/04-可视化与注入v2.md)：唤醒词命中 SKILL 后,若 SKILL 声明有 HTML 输出路径,**默认行为 = invoke HTML 工作流**。文字答是 fail mode,不是 fallback。与 §原则 10 互补(10 管出向 · 复制 prompt,11 管入向 · 默认 HTML)。
 
-### 必须 invoke HTML 的唤醒词（12 个）
+### 必须 invoke HTML 的唤醒词（16 个）
 
 命中下列唤醒词后,**必须** invoke HTML 工作流,文字答视为 fail mode:
 
@@ -478,8 +505,9 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 |------|--------|
 | 查看类 | `查物品` / `看物品` |
 | 盘点类 | `盘物品` / `盘全部` |
-| 统计类 | `统物品` / `查高频` / `查低频` / `查过期` / `查闲置` / `盘点统计` |
+| 统计类 | `统物品` / `查高频` / `查低频` / `查过期` |
 | 出行类 | `查快递` / `穿什么` / `带物品` / `归物品` |
+| 空间类 | `管位置` / `固定位` / `收纳建议` / `空间视图` |
 
 这些唤醒词的 HTML 输出路径见 [§📌 输出位置](#-输出位置) 的 `template → command_cn` 映射表。
 
@@ -527,33 +555,31 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 
 ---
 
-## Lint 检查（数据健康检查）
+## Lint 检查（数据健康检查 · SM8 开始使用域）
 
 **唤醒词**：`查异常`
 
-### 检查项
+### 执行方式(SM8 实施后 · 2026-08-05)
 
-**1. 标签完整性**
-- 物品是否缺少标签？标签太少（如少于2个）？
-- 重要属性是否遗漏（如品牌、颜色、型号）？
+`python3 scripts/开始使用/cli.py lint` → 结构化 JSON → 渲染 `templates/开始使用/health_report.html`(查看+选择)。
+输出 = 环境信息头部 + 8 检查项(问题/涉及数/严重度)+ 勾选复制修复引导。
 
-**2. 表利用率**
-- items 表：所有物品是否都有合理的分类、位置、状态？
-- item_tags 表：是否有物品完全没有标签？
-- item_locations 表：是否有相似位置路径未合并？（如 `卧室/东南角/小冰箱上/眼镜装扮抽屉` vs `卧室东南角/小冰箱上/眼镜装扮抽屉`）
+### 检查项(8 项 · v2.0)
 
-**3. 状态时效性**
-- `快递中` 的物品是否超过合理时限未收到？是否忘了更新状态？
-- `旅游中` 的物品是否长期未归位？
-- `洗护中`、`维修中` 的物品是否处理完毕未更新？
-
-**4. 位置规范性**
-- 位置路径是否至少两级（如 `客厅/电视柜`）？
-- 是否存在单级位置（如只有"客厅"）？
+1. **无标签物品** — item_tags 无记录 → 修复引导:改物品补标签
+2. **无位置物品** — 无 item_locations 行(盘点会漏)→ 修复引导:改物品补位置
+3. **状态长期未更新** — 快递中>7 天 / 旅游中>30 天 / 维修中>30 天 / 借用中>30 天
+4. **单级位置** — 位置路径不含 `/`(如只有"客厅")→ 修复引导:移物品规范化
+5. **无照片物品** — photo 为空 → 修复引导:拍物品补拍(预告式)
+6. **未录价格** — purchase_price 为空 → 修复引导:改物品补价格(联动 SM4 价格覆盖率)
+7. **无购买/过期日期** — item_locations 无日期 → 修复引导:改物品补日期
+8. **相似位置未合并** — 去掉分隔符后同名(如 `卧室/东南角` vs `卧室东南角`)→ 修复引导:移物品合并
 
 ### 处理原则
 
-- 发现问题后列出清单，让用户确认是否需要处理
+- 发现问题后列出清单，让用户勾选确认(HTML 勾选 → 复制修复引导)
+- **只建议不自动改**：AI 不得直接修改数据,只能复制对应场景 prompt 引导用户
+- 用户说"检查一下"时执行，不主动触发
 - 不要自动修改，只能建议
 - 用户说"检查一下"时执行，不主动触发
 
@@ -569,7 +595,10 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 | 补充库存时原物品状态为"已用完/已废弃" | 询问用户新状态是什么（在家/备用/快递中/其他） |
 | 用户输入模糊无法解析 | 追问确认 |
 | 数据库写入失败 | 告知用户失败原因，询问重试 |
-| 首次使用（无数据库） | 脚本自动建表，无需手动操作 |
+| 首次使用（无数据库） | 走 SM8 初始化工作流:`check` → 路径确认 → `init`(建库+种子 60 节点),失败=错误回执 HTML+重试 |
+| 初始化已存在库 | 幂等跳过建库建分类,提示「已初始化,直接使用」 |
+| 备份失败 | 错误回执 HTML(原因/建议)+ 一键重试;备份前不动原数据 |
+| 导入文件不兼容 | 校验失败 → 错误回执;导入失败自动回滚,数据不变 |
 | 盘点中途退出 | 已确认的已写入，未确认的保持原样 |
 | 穿搭推荐无匹配 | 告知无匹配衣物，建议扩展标签或录入 |
 | 天气数据获取失败 | 告知无法获取天气，改用纯标签筛选 |

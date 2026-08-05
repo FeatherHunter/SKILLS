@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 操作回执</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:680px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f6fbf7);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px;border:1px solid #d8f0e0}
+.eyebrow{color:var(--green);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:26px;letter-spacing:-.03em;line-height:1.2;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.stage{display:inline-block;background:#e8f9ee;color:var(--green);border-radius:99px;padding:3px 12px;font-size:11px;font-weight:800;margin-top:10px}
+section{background:var(--card);border-radius:18px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px}
+section h2{font-size:15px;margin-bottom:12px}
+.sum{background:#e8f9ee;border:1px solid #c8ecd5;border-radius:14px;padding:14px 16px;font-size:14px;font-weight:600;color:#1d7a3f;margin-bottom:10px}
+.kv{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0f3;font-size:13px}
+.kv:last-child{border-bottom:none}
+.kv b{flex:none;min-width:72px;color:var(--fg3);font-weight:600}
+.kv span{word-break:break-all}
+.tip{background:#fff8e6;border:1px solid #f5d98f;color:#8a6d1a;border-radius:14px;padding:12px 16px;font-size:13px;margin-bottom:14px}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap;position:sticky;bottom:14px}
+.btn{border:none;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;box-shadow:var(--shadow)}
+.btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
+.btn.danger{background:var(--red)}
+.btn.copied{background:#34c759}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+.toast.show{opacity:1}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:22px}.actions{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow" id="eyebrow"></div>
+<h1 id="title">操作完成</h1>
+<p class="lead" id="subtitle"></p>
+<span class="stage">已完成</span>
+</header>
+<div id="remind"></div>
+<div id="app"></div>
+<div class="actions" id="actions"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+let D=null,META=null;
+let _toastTimer=null;
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function doCopy(text,btn,msg){
+  const done=()=>{if(btn){btn.classList.add('copied');const old=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.classList.remove('copied');btn.textContent=old;},1600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
+  else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+}
+function render(){
+  let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<section>数据解析失败:'+esc(e.message)+'</section>';return;}
+  const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<section>数据校验失败:'+esc(v.msg)+'</section>';return;}
+  D=p.data;META=D.meta||{};
+  const scene=D.scene||{};
+  const rcp=(scene.receipt)||{};
+  document.getElementById('eyebrow').textContent=(META.command_cn||'')+' · 唤醒词「'+(META.wake_word||'')+'」 · '+(META.occurred_at||'');
+  document.getElementById('title').textContent=esc(rcp.action||META.command_cn||'操作')+'成功';
+  document.getElementById('subtitle').textContent=esc(rcp.summary||'');
+  const rem=D.reminders||[];
+  if(rem.length){document.getElementById('remind').innerHTML=rem.map(r=>'<div class="tip">'+(r.type==='danger'?'🔴':'⚠️ ')+esc(r.text)+'</div>').join('');}
+  const app=document.getElementById('app');
+  let html='<section><div class="sum">✅ '+esc(rcp.summary||'已完成')+'</div></section>';
+  const diffs=arr(rcp.diff);
+  if(diffs.length){html+='<section><h2>📝 变更明细</h2>'+diffs.map(d=>'<div class="kv"><b>'+esc(d.field||'')+'</b><span>'+esc(d.before)+' → <b style="color:var(--green)">'+esc(d.after)+'</b></span></div>').join('')+'</section>';}
+  const extra=rcp.extra;
+  if(extra&&typeof extra==='object'&&Object.keys(extra).length){html+='<section><h2>📋 详情</h2>'+Object.keys(extra).map(k=>'<div class="kv"><b>'+esc(k)+'</b><span>'+esc(typeof extra[k]==='object'?JSON.stringify(extra[k]):extra[k])+'</span></div>').join('')+'</section>';}
+  if(rcp.next){html+='<section><h2>👉 下一步</h2><div style="font-size:13px;color:var(--fg2)">'+esc(rcp.next)+'</div></section>';}
+  app.innerHTML=html;
+  const acts=document.getElementById('actions');
+  let btns='<button class="btn ghost" id="copyDataBtn">📋 复制数据</button><button class="btn ghost" id="copyLogBtn">📋 复制日志</button>';
+  const sbtns=arr(scene.buttons);
+  sbtns.forEach((b,i)=>{btns+='<button class="btn '+(b.kind||'')+'" id="sbtn_'+i+'" data-t="'+esc(b.text).replace(/"/g,'&quot;')+'">'+esc(b.label)+'</button>';});
+  acts.innerHTML=btns;
+  document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(D.copy_data||{},null,2),document.getElementById('copyDataBtn'),'数据已复制');
+  document.getElementById('copyLogBtn').onclick=()=>doCopy(JSON.stringify(D.copy_log||{},null,2),document.getElementById('copyLogBtn'),'日志已复制');
+  sbtns.forEach((b,i)=>{const el=document.getElementById('sbtn_'+i);if(el){el.onclick=()=>doCopy(b.text,el,'prompt 已复制,发给 AI');}});
+}
+render();
+</script>
+</body>
+</html>

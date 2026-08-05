@@ -18,8 +18,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .hero .hero-label{font-size:13px;color:var(--ink3)}
 .hero .deadline-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:600;white-space:nowrap}
 .hero .sub{font-size:13px;color:var(--ink3);margin-top:10px}
-.summary{background:var(--card);border-radius:16px;padding:16px 20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06);font-size:15px;font-weight:600;display:flex;gap:8px;align-items:flex-start}
-.summary .ico{color:var(--green);flex:none;margin-top:1px}
 .section{background:var(--card);border-radius:16px;padding:20px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
 .section-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
 .section-title h2{font-size:16px;font-weight:600;letter-spacing:-.2px}
@@ -27,7 +25,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px}
 .kpi{padding:12px 14px;background:var(--bg);border-radius:12px;border:1px solid rgba(60,60,67,.05)}
 .kpi .label{font-size:11px;color:var(--ink3);margin-bottom:4px}
-.kpi .value{font-size:20px;font-weight:700;font-feature-settings:"tnum"}
+.kpi .value{font-size:20px;font-weight:700;font-feature-settings:"tnum";white-space:nowrap}
 .kpi .value small{font-size:12px;color:var(--ink3);font-weight:400}
 .journey-track{position:relative;height:10px;border-radius:999px;background:var(--bg);border:1px solid rgba(60,60,67,.06);margin:18px 0 8px}
 .journey-fill{position:absolute;left:0;top:0;bottom:0;border-radius:999px;background:linear-gradient(90deg,var(--green),#30d158)}
@@ -46,7 +44,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .btn.primary{background:var(--ink);color:#fff}
 .btn.copied{background:var(--green)!important;color:#fff!important}
 footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;border-top:1px solid rgba(60,60,67,.08);margin-top:28px}
-@media(max-width:640px){.wrap{padding:16px 12px 48px}.hero{padding:22px 18px 16px}.hero .hero-num{font-size:36px}.section{padding:16px 14px}.journey-labels{font-size:11px}}
+@media(max-width:640px){.wrap{padding:16px 12px 48px}.hero{padding:22px 18px 16px}.hero .hero-num{font-size:36px}.section{padding:16px 14px}.journey-labels{font-size:11px}.kpi .value{font-size:17px}}
 </style>
 </head>
 <body>
@@ -57,7 +55,6 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;borde
 <div class="hero-meta"><span class="hero-label">目标体重</span><span class="deadline-pill" id="deadlinePill" style="display:none"></span></div>
 <div class="sub" id="subtitle">加载中…</div>
 </header>
-<div class="summary" id="oneLine"><span class="ico">✓</span><span>加载中…</span></div>
 <div class="section">
 <div class="section-title"><h2>已写入字段</h2><span class="hint">数据库 daily_goal 实际值</span></div>
 <div class="kpis" id="kpis"></div>
@@ -91,7 +88,6 @@ document.getElementById('heroNum').innerHTML=(W.weight_goal!=null?W.weight_goal:
 const pill=document.getElementById('deadlinePill');
 if(W.deadline){pill.style.display='inline-flex';pill.textContent='截止 '+W.deadline;}
 document.getElementById('subtitle').textContent=(META.wake_word?META.wake_word+' · ':'')+'写入时间 '+(META.fetched_at||'');
-document.getElementById('oneLine').querySelector('span:last-child').textContent=D.one_line||'';
 document.title=(W.weight_goal!=null?'体重目标已写入 '+W.weight_goal+'kg':'体重目标已写入')+' · 卡路里';
 
 // 起点行 #52 去重:起点==当前(刚设定默认态)时隐藏起点/起始日

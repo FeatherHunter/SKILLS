@@ -27,6 +27,7 @@ DB_PATH = SKILL_DIR / 'calorie_data.db'
 
 sys.path.insert(0, str(SKILL_DIR))
 from db import find_db_path
+from render_goal_common import build_meta  # noqa: E402 · 08 规范复制日志 META(R4 自描述)
 
 
 def fetch_recent_composition(limit: int = 1) -> list:
@@ -65,6 +66,11 @@ def render(output_path: Path, prefill: dict = None) -> Path:
             "fetched_at": datetime.now().isoformat(timespec='seconds'),
             "view": prefill.get("view", "form"),
             "current_tag": "体脂钳测",
+            "meta": build_meta(
+                wake_word='记体脂',
+                source='body_composition 表(wizard 采集 → AI 写库)',
+                extra={'scene_id': 'body_comp_add_caliper', 'wizard': True},
+            ),
             "recent_date": recent_dict.get("date"),
             "recent_body_fat_pct": recent_dict.get("body_fat_pct"),
             "recent_source": recent_dict.get("source"),

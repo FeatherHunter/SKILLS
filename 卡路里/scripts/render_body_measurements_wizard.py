@@ -26,6 +26,7 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'body_measurements_wizard.html'
 
 sys.path.insert(0, str(SKILL_DIR))
 from db import find_db_path
+from render_goal_common import build_meta  # noqa: E402 · 08 规范复制日志 META
 
 
 def fetch_recent_measurements(limit: int = 1) -> list:
@@ -67,6 +68,11 @@ def render(output_path: Path, prefill: dict = None) -> Path:
         "data": {
             "fetched_at": datetime.now().isoformat(timespec='seconds'),
             "current_tag": "围度测",
+            "meta": build_meta(
+                wake_word='记围度',
+                source='body_measurements 表(wizard 采集 → AI 写库)',
+                extra={'scene_id': 'body_meas_add', 'wizard': True},
+            ),
             "recent_date": recent_dict.get("date"),
             "recent_chest_cm": recent_dict.get("chest_cm"),
             "recent_waist_cm": recent_dict.get("waist_cm"),

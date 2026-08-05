@@ -31,17 +31,20 @@ from html_paths import html_scene_path  # noqa: E402
 from source_constants import SOURCE_LABELS  # noqa: E402
 from validators import MEASUREMENT_FIELDS  # noqa: E402
 from render_crud_view import _chain_valid  # noqa: E402 · 思考链校验单一来源(2026-08-02)
+from render_goal_common import build_meta  # noqa: E402 · 08 规范复制日志 META(R4 自描述)
 
 ENTITY = {
     'composition': {
         'table': 'body_composition',
         'scene': '删体脂',
+        'scene_id': 'body_comp_delete',
         'columns': ['id', 'date', 'source', 'body_fat_pct', 'note'],
         'labels': {'body_fat_pct': '体脂率(%)', 'source': '来源', 'note': '备注'},
     },
     'measurements': {
         'table': 'body_measurements',
         'scene': '删围度',
+        'scene_id': 'body_meas_delete',
         'columns': ['id', 'date'] + MEASUREMENT_FIELDS + ['note'],
         'labels': {
             'chest_cm': '胸围(cm)', 'waist_cm': '腰围(cm)', 'abdomen_cm': '腹围(cm)',
@@ -130,6 +133,8 @@ def build_delete(entity, record_id, _chain=''):
                 'wake_word': spec['scene'],
                 'source': f'{table} (删除前快照)',
                 'chain': _chain,
+                'scene_id': spec['scene_id'],
+                'render_cmd': f'render_body_delete_receipt.py --entity {entity} --id {record_id}',
             },
         },
         'message': f'已生成{spec["scene"]} 回执',

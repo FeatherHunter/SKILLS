@@ -32,12 +32,18 @@ from db import find_db_path  # noqa: E402
 from html_paths import html_scene_path  # noqa: E402
 from source_constants import SOURCE_CHOICES, SOURCE_LABELS, SOURCE_HOME_CALIPER  # noqa: E402
 from render_crud_view import _chain_valid  # noqa: E402 · 思考链校验单一来源(2026-08-02)
+from render_goal_common import build_meta  # noqa: E402 · 08 规范复制日志 META(R4 自描述)
 
 
 SCENE_NAME = {
     'list':    '看体脂',
     'trend':   '看体脂趋势',
     'compare': '对比体脂',
+}
+SCENE_ID = {
+    'list':    'body_comp_list',
+    'trend':   'body_comp_trend',
+    'compare': 'body_comp_compare',
 }
 
 
@@ -189,6 +195,14 @@ def main():
             data = build_compare(c, args.start1, args.end1, args.start2, args.end2, source=args.source)
     finally:
         c.close()
+
+    # 08 规范复制日志 META(R4 自描述 · meta 不进 UI,复制日志带出)
+    data['meta'] = build_meta(
+        wake_word=SCENE_NAME[args.mode],
+        source='body_composition 表(is_deprecated=0)',
+        chain=args.chain,
+        extra={'scene_id': SCENE_ID[args.mode]},
+    )
 
     html = render_html(data)
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, SCENE_NAME[args.mode], 'result')

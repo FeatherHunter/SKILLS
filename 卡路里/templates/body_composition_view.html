@@ -8,63 +8,115 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
-    --bg: #fafafa; --card: #fff; --border: #d2d2d7;
-    --accent: #0071e3; --accent-soft: #e3f0ff; --red: #ff3b30; --soft: #f5f5f7;
-    --green: #34c759;
+    --bg: #f5f5f7; --card: #fff; --border: #e3e3e8;
+    --accent: #0071e3; --accent-soft: #e3f0ff; --red: #ff3b30; --soft: #f2f2f7;
+    --green: #34c759; --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.06);
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
     line-height: 1.6; color: var(--fg); background: var(--bg);
-    max-width: 760px; margin: 0 auto; padding: 32px 20px 80px;
+    max-width: 760px; margin: 0 auto; padding: 24px 16px 96px;
     -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 28px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 4px; }
-  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 18px; }
-  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
-  .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+  /* 08 规范骨架:头部 = 场景名 + 唤醒词 + 时间戳 + 阶段指示 */
+  .head { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+  .head .h-icon {
+    flex: 0 0 auto; width: 44px; height: 44px; border-radius: 12px;
+    background: linear-gradient(135deg, #0071e3, #2aa4ff); color: #fff;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+    box-shadow: 0 4px 10px rgba(0,113,227,.25);
+  }
+  .head h1 { font-size: 24px; font-weight: 700; letter-spacing: -.02em; line-height: 1.25; }
+  .head .meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .head .chip {
+    font-size: 11px; color: var(--fg2); background: #fff; border: 1px solid var(--border);
+    border-radius: 999px; padding: 2px 10px; font-family: ui-monospace, Menlo, monospace;
+  }
+  .head .chip.wake { color: var(--accent); border-color: #cfe2ff; background: var(--accent-soft); font-family: inherit; }
+  .head .chip.stage { color: var(--green); border-color: #c9efd2; background: #eafaf0; font-family: inherit; }
+  .card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 18px; margin-bottom: 14px; box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
   .kpi-row { display: flex; gap: 10px; flex-wrap: wrap; }
-  .kpi { flex: 1; min-width: 90px; background: var(--soft); border-radius: 10px; padding: 10px 12px; text-align: center; }
-  .kpi .v { font-size: 20px; font-weight: 700; color: var(--accent); }
-  .kpi .l { font-size: 12px; color: var(--fg3); margin-top: 2px; }
+  .kpi { flex: 1; min-width: 88px; background: var(--soft); border-radius: 12px; padding: 12px; text-align: center; }
+  .kpi .v { font-size: 22px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+  .kpi .l { font-size: 11.5px; color: var(--fg3); margin-top: 2px; }
   .kpi .v.down { color: var(--green); }
   .kpi .v.up { color: var(--red); }
-  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-  .chip { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); font-size: 13px; cursor: pointer; color: var(--fg2); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .chip { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--card); font-size: 13px; cursor: pointer; color: var(--fg2); transition: all .15s; }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
   .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
-  th { color: var(--fg3); font-weight: 500; font-size: 12px; }
-  tr:last-child td { border-bottom: none; }
-  .empty { text-align: center; color: var(--fg3); padding: 24px 0; font-size: 14px; }
-  .tip { background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--fg2); }
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table-scroll table { min-width: 100%; border-collapse: collapse; font-size: 13px; }
+  .table-scroll th, .table-scroll td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .table-scroll th { color: var(--fg3); font-weight: 500; font-size: 12px; background: var(--soft); position: sticky; top: 0; }
+  .table-scroll tbody tr:hover { background: #f7f9ff; }
+  .table-scroll tr:last-child td { border-bottom: none; }
+  .empty { text-align: center; color: var(--fg3); padding: 28px 0; font-size: 13.5px; }
+  .empty .go { margin-top: 10px; display: inline-block; color: var(--accent); font-size: 13px; }
+  .tip { background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: var(--fg2); }
   .note { font-size: 12px; color: var(--fg3); margin-top: 6px; }
-  .delta { font-weight: 700; }
+  .delta { font-weight: 700; font-variant-numeric: tabular-nums; }
   .delta.neg { color: var(--green); }
   .delta.pos { color: var(--red); }
-  .current { display: inline-block; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 2px 8px; font-size: 12px; margin-left: 6px; }
-  canvas { width: 100%; height: 220px; display: block; }
-  .bar { display: flex; align-items: flex-end; gap: 3px; height: 180px; padding-top: 10px; }
-  .bar div { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; position: relative; }
-  .bar div span { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 10px; color: var(--fg3); }
+  .current { display: inline-block; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 2px 8px; font-size: 11px; margin-left: 6px; }
+
+  /* 图表(2026-08-05 像素级渲染:手机可读 + 网格/面积/高低点) */
   .chart { width: 100%; }
-  .chart svg { width: 100%; height: 200px; display: block; }
+  .chart svg { width: 100%; display: block; }
+  .chart .grid { stroke: #ececf1; stroke-width: 1; }
   .chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
-  .chart .dot { fill: var(--accent); }
+  .chart .area { fill: url(#chartGrad); }
+  .chart .dot { fill: var(--accent); stroke: #fff; stroke-width: 1.5; }
+  .chart .dot.hl { fill: var(--orange); }
+  .chart .dot.lo { fill: var(--green); }
   .chart .vlabel { font-size: 10px; fill: var(--fg3); }
   .chart .xlabel { font-size: 10px; fill: var(--fg3); }
-  .compare-summary { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
-  .compare-summary .cs-big { font-size: 16px; font-weight: 600; }
-  .compare-summary .cs-sub { font-size: 12px; color: var(--fg3); margin-top: 4px; }
+  .chart .tipbox { fill: rgba(29,29,31,.92); rx: 6; }
+  .chart .tiptext { fill: #fff; font-size: 11px; }
+
+  /* 08 规范:复制数据/复制日志(硬标准)+ toast */
+  .copy-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(255,255,255,.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border); padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  }
+  .copy-bar .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 8px; }
+  .copy-bar .btn {
+    flex: 1; min-height: 42px; border: 1px solid var(--border); background: var(--card);
+    border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--fg);
+    transition: all .15s;
+  }
+  .copy-bar .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .copy-bar .btn-primary:hover { background: #005bb0; }
+  .copy-bar .btn:hover { background: var(--soft); }
+  .copy-bar .btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+  #toast {
+    position: fixed; left: 50%; bottom: 76px; transform: translateX(-50%) translateY(8px);
+    background: rgba(29,29,31,.92); color: #fff; padding: 10px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; z-index: 99;
+    transition: opacity .25s, transform .25s; max-width: 86vw; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   @media (max-width: 640px) {
-    th, td { padding: 7px 6px; font-size: 12px; }
-    .chart svg { height: 170px; }
+    body { padding: 18px 12px 96px; }
+    .head h1 { font-size: 21px; }
+    .table-scroll th, .table-scroll td { padding: 8px 7px; font-size: 12px; }
   }
 </style>
 </head>
 <body>
 
-<h1 id="sceneTitle">体脂</h1>
-<p class="sub" id="sceneSub"></p>
+<div class="head">
+  <div class="h-icon">📏</div>
+  <div>
+    <h1 id="sceneTitle">体脂</h1>
+    <div class="meta" id="metaBar"></div>
+  </div>
+</div>
 
 <div id="listMode">
   <div class="card">
@@ -73,7 +125,9 @@
       <div class="kpi"><div class="v" id="curBf">—</div><div class="l">体脂率 %</div></div>
       <div class="kpi"><div class="v" id="curDate">—</div><div class="l">测量日期</div></div>
       <div class="kpi"><div class="v" id="curSrc">—</div><div class="l">来源</div></div>
+      <div class="kpi"><div class="v" id="curDelta">—</div><div class="l">距上次 Δ</div></div>
     </div>
+    <p class="note" id="curNote"></p>
   </div>
   <div class="card">
     <h2>来源筛选</h2>
@@ -118,6 +172,7 @@
   </div>
   <div class="card">
     <h2>两段时间</h2>
+    <div id="compareMini"></div>
     <table>
       <thead><tr><th></th><th>均值</th><th>最低</th><th>最高</th><th>记录数</th></tr></thead>
       <tbody id="cBody"></tbody>
@@ -126,16 +181,174 @@
 </div>
 
 <!--INJECT-DATA-->
+
+<div class="copy-bar">
+  <div class="inner">
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>
+  </div>
+</div>
+<div id="toast"></div>
+
 <script>
 const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
 const D = DATA && DATA.data || {};
+const META = D.meta || {};
 const SRC_LABELS = D.source_labels || {};
 
 function esc(s) { return String(s == null ? '—' : s); }
+function deltaClass(v) { return v < 0 ? 'neg' : (v > 0 ? 'pos' : ''); }
+function deltaSign(v) { return v > 0 ? '+' + v : v; }
+
+// ---------- 08 规范头部:唤醒词 + 时间戳 + 阶段指示 ----------
+(function renderMeta() {
+  const bar = document.getElementById('metaBar');
+  const stage = D.mode === 'list' ? '查看' : D.mode === 'trend' ? '趋势' : '对比';
+  const chips = [
+    `<span class="chip wake">⚡ ${esc(META.wake_word || '看体脂')}</span>`,
+    `<span class="chip stage">● ${stage}</span>`,
+    `<span class="chip">🕒 ${esc(META.fetched_at || '')}</span>`,
+  ];
+  bar.innerHTML = chips.join('');
+})();
+
+// ---------- 08 规范:复制数据(5 段 JSON)/复制日志(6 段) ----------
+function payloadData() {
+  return {
+    mode: D.mode,
+    rows: D.rows || null,
+    current: D.current || null,
+    filter: D.filter || null,
+    series: D.series || null,
+    source: D.source || null,
+    kpi: D.kpi || null,
+    period1: D.period1 || null,
+    period2: D.period2 || null,
+    delta: D.delta != null ? D.delta : null,
+    pct_change: D.pct_change != null ? D.pct_change : null,
+  };
+}
+function buildDataText() {
+  const data5 = {
+    scene_id: META.scene_id || 'body_comp_view',
+    command_cn: (META.wake_word || '看体脂') + ' 查询结果',
+    occurred_at: META.fetched_at || '',
+    target: 'body_composition 表 · ' + (D.mode === 'list' ? '历史+筛选+当前' : D.mode === 'trend' ? '单来源趋势+KPI' : '两段时间对比'),
+    payload: payloadData(),
+  };
+  return JSON.stringify(data5, null, 2);
+}
+function buildLogText() {
+  const lines = [];
+  lines.push('① 场景标识');
+  lines.push(`  command_cn: ${META.wake_word || '(未知)'} 查询结果`);
+  lines.push(`  唤醒词: ${META.wake_word || '(未知)'}`);
+  lines.push(`  场景名: ${META.wake_word || '(未知)'}(scene_id=${META.scene_id || 'body_comp_view'})`);
+  lines.push('');
+  lines.push('② AI 思考链');
+  lines.push('  ' + (META.chain || '(未注入 · 渲染时未传 --chain)'));
+  lines.push('');
+  lines.push('③ 底层数据结构');
+  lines.push('  payload: ' + JSON.stringify(payloadData()));
+  lines.push('  DB 操作: SELECT body_composition WHERE is_deprecated=0(只读查询)');
+  lines.push('');
+  lines.push('④ 调用链');
+  lines.push('  渲染脚本: ' + (META.render_cmd || '(未知)'));
+  lines.push('  数据来源: ' + (META.source || '(未知)'));
+  lines.push('');
+  lines.push('⑤ 时间戳 + 版本');
+  lines.push('  本地时间: ' + (META.fetched_at || '(未知)'));
+  lines.push('  skill 版本: 卡路里 v1.0');
+  lines.push('');
+  lines.push('⑥ 异常信息');
+  lines.push('  无');
+  return lines.join('\n');
+}
+let _toastTimer = null;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.innerHTML = `<span style="color:#30d158;margin-right:6px">✓</span>${msg}`;
+  t.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function doCopy(text, btnId, msg) {
+  const done = () => {
+    const b = document.getElementById(btnId);
+    if (b) { b.classList.add('copied'); b.textContent = b.id === 'copyDataBtn' ? '✓ 数据已复制' : '✓ 日志已复制';
+      setTimeout(() => { b.classList.remove('copied'); b.textContent = b.id === 'copyDataBtn' ? '📋 复制数据' : '📋 复制日志'; }, 1600); }
+    showToast(msg);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+  } else { fallbackCopy(text, done); }
+}
+function fallbackCopy(text, ok) {
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); ok(); } catch (e) { showToast('复制失败,请手动复制'); }
+  document.body.removeChild(ta);
+}
+document.getElementById('copyDataBtn').onclick = () => doCopy(buildDataText(), 'copyDataBtn', '数据已复制(JSON 5 段标准)');
+document.getElementById('copyLogBtn').onclick = () => doCopy(buildLogText(), 'copyLogBtn', '日志已复制(6 段标准)');
+
+// ---------- 图表:像素级渲染(手机可读) ----------
+function renderLineChart(el, rows, unit) {
+  const W = Math.max(240, el.clientWidth - 2);
+  const H = el.clientWidth < 520 ? 180 : 220;
+  const padL = 40, padR = 16, padT = 26, padB = 30;
+  const vals = rows.map(r => r.avg_pct).filter(v => v != null);
+  if (!vals.length) { el.innerHTML = ''; return; }
+  const mx = Math.max(...vals), mn = Math.min(...vals);
+  const rng = (mx - mn) || 1;
+  const pad = rng * 0.12;
+  const yMin = mn - pad, yMax = mx + pad;
+  const x = i => rows.length === 1 ? (W - padL - padR) / 2 + padL
+    : padL + i * (W - padL - padR) / (rows.length - 1);
+  const y = v => padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB);
+
+  let s = `<svg width="${W}" height="${H}" role="img" style="height:${H}px">`;
+  // 渐变面积定义
+  s += `<defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#0071e3" stop-opacity=".22"/>
+        <stop offset="100%" stop-color="#0071e3" stop-opacity="0"/></linearGradient></defs>`;
+  // 网格线(4 条水平)
+  for (let g = 0; g <= 3; g++) {
+    const gy = padT + g * (H - padT - padB) / 3;
+    const gv = (yMax - (yMax - yMin) * g / 3).toFixed(1);
+    s += `<line class="grid" x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}"/>`;
+    s += `<text class="vlabel" x="${padL - 6}" y="${(gy + 3).toFixed(1)}" text-anchor="end">${gv}</text>`;
+  }
+  if (rows.length >= 2) {
+    const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.avg_pct).toFixed(1)}`).join(' ');
+    const areaPts = `${padL},${H - padB} ` + pts + ` ${x(rows.length - 1).toFixed(1)},${H - padB}`;
+    s += `<polygon class="area" points="${areaPts}"/>`;
+    s += `<polyline class="line" points="${pts}"/>`;
+  }
+  // 高低点标记 + 数据点
+  const hiIdx = vals.indexOf(mx), loIdx = vals.indexOf(mn);
+  rows.forEach((r, i) => {
+    const cx = x(i), cy = y(r.avg_pct);
+    s += `<circle class="dot ${i === hiIdx ? 'hl' : i === loIdx ? 'lo' : ''}" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4"><title>${r.date}: ${r.avg_pct}${unit}</title></circle>`;
+    s += `<text class="vlabel" x="${cx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="middle">${r.avg_pct}</text>`;
+    const showX = rows.length <= 8 || i % Math.ceil(rows.length / 8) === 0;
+    if (showX) s += `<text class="xlabel" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle">${r.date.slice(5)}</text>`;
+  });
+  s += '</svg>';
+  el.innerHTML = s;
+}
+
+function kpiHtml(kpi, ids) {
+  const dEl = document.getElementById(ids.delta);
+  dEl.textContent = kpi.delta == null ? '—' : deltaSign(kpi.delta);
+  dEl.className = 'v ' + (kpi.delta != null ? deltaClass(kpi.delta) : '');
+  document.getElementById(ids.avg).textContent = kpi.avg == null ? '—' : kpi.avg;
+  document.getElementById(ids.min).textContent = kpi.min == null ? '—' : kpi.min;
+  document.getElementById(ids.max).textContent = kpi.max == null ? '—' : kpi.max;
+}
 
 if (D.mode === 'list') {
   document.getElementById('sceneTitle').textContent = '看体脂';
-  document.getElementById('sceneSub').textContent = '历史记录 + 来源筛选';
   document.getElementById('listMode').style.display = '';
   const chips = document.getElementById('srcChips');
   const groups = D.filter.groups || [];
@@ -154,24 +367,51 @@ if (D.mode === 'list') {
     if (chips.children[idx]) chips.children[idx].classList.add('active');
   }
   const wrap = document.getElementById('histTableWrap');
+  function daysBetween(a, b) {
+    return Math.round((new Date(b) - new Date(a)) / 86400000);
+  }
   function renderAll() {
     const rows = D.rows.filter(r => D.filter.active === 'all' || r.source === D.filter.active);
     const cur = rows[0] || null;
+    const prev = rows[1] || null;
     if (cur) {
       document.getElementById('curBf').textContent = cur.body_fat_pct;
       document.getElementById('curDate').textContent = cur.date;
       document.getElementById('curSrc').textContent = SRC_LABELS[cur.source] || cur.source;
       document.getElementById('curBadge').textContent = '最新';
+      if (prev && prev.body_fat_pct != null) {
+        const d = Math.round((cur.body_fat_pct - prev.body_fat_pct) * 100) / 100;
+        const el = document.getElementById('curDelta');
+        el.textContent = deltaSign(d);
+        el.className = 'v ' + deltaClass(d);
+        const gap = daysBetween(prev.date, cur.date);
+        document.getElementById('curNote').textContent = `距上次测量 ${gap} 天(${prev.date})· 体脂率 ${d > 0 ? '上升' : d < 0 ? '下降' : '持平'} ${Math.abs(d)}%`;
+      } else {
+        document.getElementById('curDelta').textContent = '—';
+        document.getElementById('curDelta').className = 'v';
+        document.getElementById('curNote').textContent = '首条记录,暂无对比基线';
+      }
     } else {
       document.getElementById('curBf').textContent = '—';
       document.getElementById('curDate').textContent = '—';
       document.getElementById('curSrc').textContent = '—';
       document.getElementById('curBadge').textContent = '';
+      document.getElementById('curDelta').textContent = '—';
+      document.getElementById('curNote').textContent = '';
     }
-    if (!rows.length) { wrap.innerHTML = '<div class="empty">暂无记录</div>'; return; }
-    let html = '<table><thead><tr><th>日期</th><th>体脂率</th><th>来源</th><th>备注</th></tr></thead><tbody>';
-    rows.forEach(r => {
-      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.body_fat_pct)}%</td><td>${esc(SRC_LABELS[r.source] || r.source)}</td><td>${esc(r.note)}</td></tr>`;
+    if (!rows.length) {
+      wrap.innerHTML = '<div class="empty">暂无记录<br><span class="go">→ 记体脂:皮褶钳或外部测量,第一条就是基线</span></div>';
+      return;
+    }
+    let html = '<table><thead><tr><th>日期</th><th>体脂率</th><th>来源</th><th>Δ 较上次</th><th>备注</th></tr></thead><tbody>';
+    rows.forEach((r, i) => {
+      const prevV = rows[i + 1];
+      let d = '';
+      if (prevV && prevV.body_fat_pct != null && r.body_fat_pct != null) {
+        const dv = Math.round((r.body_fat_pct - prevV.body_fat_pct) * 100) / 100;
+        d = `<td class="delta ${deltaClass(dv)}">${deltaSign(dv)}</td>`;
+      } else { d = '<td>—</td>'; }
+      html += `<tr><td>${esc(r.date)}</td><td>${esc(r.body_fat_pct)}%</td><td>${esc(SRC_LABELS[r.source] || r.source)}</td>${d}<td>${esc(r.note)}</td></tr>`;
     });
     html += '</tbody></table>';
     wrap.innerHTML = `<div class="table-scroll">${html}</div>`;
@@ -179,40 +419,8 @@ if (D.mode === 'list') {
   renderAll();
 }
 
-function renderLineChart(el, rows, unit) {
-  const W = 560, H = 200, padL = 36, padR = 14, padT = 20, padB = 26;
-  const vals = rows.map(r => r.avg_pct);
-  const mx = Math.max(...vals), mn = Math.min(...vals);
-  const rng = (mx - mn) || 1;
-  const x = i => rows.length === 1 ? (W - padL - padR) / 2 + padL
-    : padL + i * (W - padL - padR) / (rows.length - 1);
-  const y = v => padT + (1 - (v - mn) / rng) * (H - padT - padB);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img">`;
-  if (rows.length >= 2) {
-    const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.avg_pct).toFixed(1)}`).join(' ');
-    s += `<polyline class="line" points="${pts}"/>`;
-  }
-  rows.forEach((r, i) => {
-    s += `<circle class="dot" cx="${x(i).toFixed(1)}" cy="${y(r.avg_pct).toFixed(1)}" r="4"/>`;
-    s += `<text class="vlabel" x="${x(i).toFixed(1)}" y="${(y(r.avg_pct) - 9).toFixed(1)}" text-anchor="middle">${r.avg_pct}</text>`;
-    s += `<text class="xlabel" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="middle">${r.date.slice(5)}</text>`;
-  });
-  s += '</svg>';
-  el.innerHTML = s;
-}
-
-function kpiHtml(kpi, ids) {
-  const dEl = document.getElementById(ids.delta);
-  dEl.textContent = kpi.delta == null ? '—' : kpi.delta;
-  if (kpi.delta != null) { dEl.classList.add(kpi.delta < 0 ? 'down' : 'up'); }
-  document.getElementById(ids.avg).textContent = kpi.avg == null ? '—' : kpi.avg;
-  document.getElementById(ids.min).textContent = kpi.min == null ? '—' : kpi.min;
-  document.getElementById(ids.max).textContent = kpi.max == null ? '—' : kpi.max;
-}
-
 if (D.mode === 'trend') {
   document.getElementById('sceneTitle').textContent = '看体脂趋势';
-  document.getElementById('sceneSub').textContent = `折线(单来源: ${SRC_LABELS[D.source] || D.source}) + KPI`;
   document.getElementById('listMode').style.display = 'none';
   document.getElementById('trendMode').style.display = '';
   const chips = document.getElementById('trendSrcChips');
@@ -242,38 +450,73 @@ if (D.mode === 'trend') {
   }
   function renderSource(s) {
     const rows = (D.series[s] || []);
-    document.getElementById('sceneSub').textContent = `折线(单来源: ${SRC_LABELS[s] || s}) + KPI`;
     if (!rows.length) {
-      chart.innerHTML = '';
-      document.getElementById('trendNote').textContent = '该来源暂无趋势数据';
+      chart.innerHTML = '<div class="empty">该来源暂无趋势数据</div>';
+      document.getElementById('trendNote').textContent = '';
       kpiHtml({delta: null, avg: null, min: null, max: null}, {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
       return;
     }
     renderLineChart(chart, rows, '体脂率 %');
     kpiHtml(kpiFor(rows), {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
     document.getElementById('trendNote').textContent =
-      `${rows.length} 个测量日 · 最近 ${D.days} 天 · 来源 ${SRC_LABELS[s] || s}`;
+      `${rows.length} 个测量日 · 最近 ${D.days} 天 · 来源 ${SRC_LABELS[s] || s} · 橙色=最高 绿色=最低`;
   }
   renderSource(active);
 }
 
 if (D.mode === 'compare') {
   document.getElementById('sceneTitle').textContent = '对比体脂';
-  document.getElementById('sceneSub').textContent = D.same_source_note || '两次测量对比';
   document.getElementById('listMode').style.display = 'none';
   document.getElementById('compareMode').style.display = '';
   const dEl = document.getElementById('cDelta');
-  dEl.textContent = D.delta == null ? '—' : D.delta;
-  if (D.delta != null) { dEl.classList.add(D.delta < 0 ? 'down' : 'up'); }
-  document.getElementById('cPct').textContent = D.pct_change == null ? '—' : D.pct_change + '%';
+  dEl.textContent = D.delta == null ? '—' : deltaSign(D.delta);
+  dEl.className = 'v ' + (D.delta != null ? deltaClass(D.delta) : '');
+  document.getElementById('cPct').textContent = D.pct_change == null ? '—' : deltaSign(D.pct_change) + '%';
   document.getElementById('cNote').textContent =
     `第 1 段 ${D.period1.start} ~ ${D.period1.end} · 第 2 段 ${D.period2.start} ~ ${D.period2.end} · 来源: ${D.source === 'all' ? '全部(不可直接比)' : (SRC_LABELS[D.source] || D.source)}`;
+  // mini-bar:两段时间均值对比可视化
+  const mini = document.getElementById('compareMini');
+  if (D.period1.avg_pct != null && D.period2.avg_pct != null) {
+    const maxV = Math.max(D.period1.avg_pct, D.period2.avg_pct);
+    const bars = [['第 1 段', D.period1.avg_pct], ['第 2 段', D.period2.avg_pct]].map(([label, v]) =>
+      `<div class="mini-row"><span class="mini-label">${label}</span>
+       <div class="mini-track"><div class="mini-fill" style="width:${(v / maxV * 100).toFixed(1)}%"></div></div>
+       <span class="mini-val">${v}%</span></div>`).join('');
+    mini.innerHTML = `<div class="mini-title">两段均值对比</div>${bars}`;
+    mini.style.marginBottom = '12px';
+  }
   const body = document.getElementById('cBody');
   body.innerHTML = '';
   [['第 1 段', D.period1], ['第 2 段', D.period2]].forEach(([label, p]) => {
     body.innerHTML += `<tr><td><strong>${label}</strong></td><td>${esc(p.avg_pct)}</td><td>${esc(p.min_pct)}</td><td>${esc(p.max_pct)}</td><td>${esc(p.n)}</td></tr>`;
   });
 }
+
+// 窗口 resize → 图表像素级重绘
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => {
+    if (D.mode === 'trend') {
+      const rows = D.series && D.series[D.source] || [];
+      if (rows.length) renderLineChart(document.getElementById('trendChart'), rows, '体脂率 %');
+    }
+  }, 150);
+});
+
+// mini-bar 样式(动态注入一次)
+(function miniCss() {
+  const st = document.createElement('style');
+  st.textContent = `
+    .mini-title { font-size: 12px; color: var(--fg3); margin-bottom: 8px; }
+    .mini-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .mini-label { flex: 0 0 44px; font-size: 12px; color: var(--fg2); }
+    .mini-track { flex: 1; background: var(--soft); border-radius: 6px; height: 14px; overflow: hidden; }
+    .mini-fill { height: 100%; background: linear-gradient(90deg, #0071e3, #2aa4ff); border-radius: 6px; min-width: 2px; }
+    .mini-val { flex: 0 0 52px; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  `;
+  document.head.appendChild(st);
+})();
 </script>
 </body>
 </html>

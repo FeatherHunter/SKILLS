@@ -133,10 +133,12 @@ def test_measurements_view_trend(tmp_db, monkeypatch):
     import render_body_measurements_view as rv
     c = rv._get_conn()
     try:
-        data = rv.build_trend(c, 'waist-cm', days=90)
+        data = rv.build_trend_all(c, days=90, active_metric='waist-cm')
         assert data['mode'] == 'trend'
+        assert data['metric'] == 'waist-cm'
         assert len(data['rows']) == 2
         assert data['kpi']['delta'] == -2.0
+        assert 'waist-cm' in data['series']
     finally:
         c.close()
 

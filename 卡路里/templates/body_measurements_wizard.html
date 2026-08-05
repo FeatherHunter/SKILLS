@@ -8,116 +8,138 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
     --fg: #1d1d1d; --fg2: #6e6e73; --fg3: #86868b;
-    --bg: #fafafa; --card: #fff; --border: #d2d2d7;
-    --accent: #0071e3; --accent-soft: #e3f0ff; --red: #ff3b30; --soft: #f5f5f7;
-    --green: #34c759; --orange: #ff9500;
+    --bg: #f5f5f7; --card: #fff; --border: #e3e3e8;
+    --accent: #0071e3; --accent-soft: #e3f0ff; --red: #ff3b30; --soft: #f2f2f7;
+    --green: #34c759; --orange: #ff9500; --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 16px rgba(0,0,0,.06);
   }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
     line-height: 1.6; color: var(--fg); background: var(--bg);
-    max-width: 760px; margin: 0 auto; padding: 32px 20px 100px;
+    max-width: 760px; margin: 0 auto; padding: 24px 16px 120px;
     -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 30px; font-weight: 700; letter-spacing: -.025em; margin-bottom: 4px; }
-  .sub { font-size: 14px; color: var(--fg3); margin-bottom: 18px; }
-
-  .tip {
-    background: rgba(0,113,227,.06); border-left: 3px solid var(--accent); border-radius: 8px;
-    padding: 12px 16px; margin-bottom: 18px; font-size: 13px; color: var(--fg2); line-height: 1.7;
+  .hero {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 16px;
+    background: linear-gradient(135deg, #eaf3ff 0%, #f7fbff 55%, #f2f8ff 100%);
+    border: 1px solid #d3e6ff; border-radius: 16px; padding: 18px 20px;
   }
-  .tip strong { color: var(--accent); }
-  .tip code { background: var(--soft); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
-
-  /* details/summary — 飞书 webview 兼容(spec Q6 决策 · v2.3.5 教训) */
+  .hero .hero-icon {
+    flex: 0 0 auto; width: 52px; height: 52px; border-radius: 14px;
+    background: linear-gradient(135deg, #0071e3, #2aa4ff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; box-shadow: 0 6px 14px rgba(0,113,227,.28);
+  }
+  .hero h1 { font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
+  .hero .sub { font-size: 12.5px; color: var(--fg3); margin: 2px 0 0; }
+  .hero .step-pills { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .hero .step-pill { font-size: 11px; color: var(--accent); background: #fff; border: 1px solid #cfe2ff; border-radius: 999px; padding: 3px 10px; }
+  .flow-strip {
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 10px 14px; margin-bottom: 14px; box-shadow: var(--shadow);
+  }
+  .flow-strip .f-step {
+    display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--fg2);
+    background: var(--soft); border-radius: 999px; padding: 4px 12px 4px 5px;
+  }
+  .flow-strip .f-n {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: #fff;
+    font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;
+  }
+  .flow-strip .f-arrow { color: var(--fg3); font-size: 13px; }
   details {
     background: var(--card); border: 1px solid var(--border); border-radius: 14px;
-    margin-bottom: 12px; overflow: hidden;
+    margin-bottom: 12px; overflow: hidden; box-shadow: var(--shadow);
   }
   details > summary {
-    list-style: none; cursor: pointer; padding: 16px 22px; font-size: 15px; font-weight: 600;
+    list-style: none; cursor: pointer; padding: 15px 20px; font-size: 15px; font-weight: 600;
     display: flex; align-items: center; justify-content: space-between; user-select: none;
   }
   details > summary::-webkit-details-marker { display: none; }
-  details > summary::after {
-    content: '›'; font-size: 20px; color: var(--fg3); font-weight: 400;
-    transition: transform .2s; display: inline-block;
-  }
+  details > summary::after { content: '›'; font-size: 20px; color: var(--fg3); font-weight: 400; transition: transform .2s; display: inline-block; }
   details[open] > summary::after { transform: rotate(90deg); }
-  details > summary .pill {
-    background: var(--accent-soft); color: var(--accent); font-size: 11px;
-    padding: 2px 8px; border-radius: 999px; margin-left: 8px; font-weight: 600;
-  }
-  details > summary .badge {
-    background: var(--soft); color: var(--fg3); font-size: 11px;
-    padding: 2px 8px; border-radius: 999px; margin-left: 8px; font-weight: 500;
-  }
-  details > summary .count {
-    background: var(--accent-soft); color: var(--accent); font-size: 11px;
-    padding: 2px 8px; border-radius: 999px; margin-right: 8px; font-weight: 600;
-  }
-  .details-body { padding: 4px 22px 20px; }
-
-  .form-group { margin-bottom: 12px; }
+  details > summary .pill { background: var(--accent-soft); color: var(--accent); font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; font-weight: 600; }
+  details > summary .badge { background: var(--soft); color: var(--fg3); font-size: 11px; padding: 2px 8px; border-radius: 999px; margin-left: 8px; font-weight: 500; }
+  details > summary .count { background: var(--accent-soft); color: var(--accent); font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+  .details-body { padding: 4px 20px 18px; }
+  .form-group { margin-bottom: 14px; }
   .form-group:last-child { margin-bottom: 0; }
-  .form-group label { display: block; font-size: 13px; color: var(--fg2); margin-bottom: 5px; font-weight: 500; }
+  .form-group label { display: block; font-size: 13px; color: var(--fg2); margin-bottom: 6px; font-weight: 500; }
   .form-group label .required { color: var(--red); }
   .form-group label .en { color: var(--fg3); font-weight: 400; margin-left: 4px; font-size: 11.5px; }
-  .form-group input, .form-group select, .form-group textarea {
-    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px;
-    font-size: 14px; font-family: inherit; background: #fff; color: var(--fg);
+  .form-group input, .form-group textarea {
+    width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; font-family: inherit; background: #fbfdff; color: var(--fg);
     transition: border-color .15s, box-shadow .15s;
   }
-  .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  .form-group input:focus, .form-group textarea:focus {
     outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.12);
   }
   .form-group textarea { min-height: 60px; resize: vertical; font-family: inherit; }
-  .form-group .hint { font-size: 11px; color: var(--fg3); margin-top: 4px; line-height: 1.5; }
-
+  .form-group .hint { font-size: 11px; color: var(--fg3); margin-top: 4px; }
   .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
-
-  .tag-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
-  .tag-chip {
-    padding: 5px 12px; border: 1px solid var(--border); background: var(--card);
-    border-radius: 999px; font-size: 12px; cursor: pointer; user-select: none;
-  }
-  .tag-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .tag-chip:hover:not(.active) { background: var(--soft); }
-
-  .sum-box {
-    background: var(--soft); padding: 10px 14px; border-radius: 8px;
-    font-size: 12.5px; color: var(--fg2); margin-top: 12px; line-height: 1.6;
-  }
-  .sum-box strong { color: var(--fg); font-weight: 600; }
-
   .prompt-box {
     background: #1d1d1f; color: #f5f5f7; padding: 18px 22px; border-radius: 12px;
     font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px;
     line-height: 1.7; white-space: pre-wrap; word-break: break-word;
-    min-height: 140px; margin-bottom: 12px;
+    min-height: 120px; margin-bottom: 12px; border: 1px solid #333;
   }
-
-  .footer { margin-top: 24px; padding: 14px 18px; background: var(--soft); border-radius: 12px; font-size: 12px; color: var(--fg3); text-align: center; }
-
-  .btn-copy {
-    width: 100%; padding: 14px; border: none; background: var(--accent);
-    color: #fff; border-radius: 10px; font-size: 15px; font-weight: 600;
-    cursor: pointer; transition: all .15s;
+  .recent-bar {
+    background: linear-gradient(135deg, #e3f0ff, #f5f9ff); border: 1px solid #c2dafa;
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 14px;
+    font-size: 12.5px; color: var(--fg2); display: flex; flex-direction: column; gap: 8px;
   }
-  .btn-copy:hover { background: #005bb5; }
-  .btn-copy.copied { background: var(--green); }
+  .recent-bar .row1 { display: flex; align-items: center; gap: 8px; }
+  .recent-bar .row2 { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--fg3); }
+  .recent-bar .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+
+  /* 08 规范:复制数据/复制日志 + toast */
+  .copy-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+    background: rgba(255,255,255,.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-top: 1px solid var(--border); padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+  }
+  .copy-bar .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 8px; }
+  .copy-bar .btn {
+    flex: 1; min-height: 42px; border: 1px solid var(--border); background: var(--card);
+    border-radius: 10px; font-size: 13.5px; font-weight: 600; cursor: pointer; color: var(--fg);
+    transition: all .15s;
+  }
+  .copy-bar .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .copy-bar .btn-primary:hover { background: #005bb0; }
+  .copy-bar .btn.copied { background: var(--green); color: #fff; border-color: var(--green); }
+  #toast {
+    position: fixed; left: 50%; bottom: 76px; transform: translateX(-50%) translateY(8px);
+    background: rgba(29,29,31,.92); color: #fff; padding: 10px 18px; border-radius: 999px;
+    font-size: 13px; font-weight: 500; opacity: 0; pointer-events: none; z-index: 99;
+    transition: opacity .25s, transform .25s; max-width: 86vw; text-align: center;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #toast .t-ok { color: #30d158; margin-right: 6px; }
 </style>
 </head>
 <body>
 
-<h1>📏 记围度</h1>
-<p class="sub">配置型向导 · 13 部位围度分 3 组折叠(飞书 webview 兼容)· 填好至少 1 项后复制 prompt 给 AI</p>
+<div class="hero">
+  <div class="hero-icon">📐</div>
+  <div>
+    <h1>记围度</h1>
+    <p class="sub">13 部位围度分 3 组,量了哪项填哪项,至少 1 项必填</p>
+    <div class="step-pills">
+      <span class="step-pill">1️⃣ 日期</span>
+      <span class="step-pill">2️⃣ 上身 5 项</span>
+      <span class="step-pill">3️⃣ 下身 4 项</span>
+      <span class="step-pill">4️⃣ 手臂 4 项</span>
+      <span class="step-pill">5️⃣ 复制给 AI</span>
+    </div>
+  </div>
+</div>
 
 <div id="recentBar" class="recent-bar" style="display:none">
   <div class="row1">
     <span class="dot"></span>
     <span>最近一次:<strong id="recentDate">—</strong></span>
-    <button type="button" class="copy-prev-btn" id="copyPrevBtn">📋 复制上次 13 围度</button>
   </div>
   <div class="row2" id="recentMeasureRow" style="display:none">
     <span>胸 <strong id="rcChest">—</strong></span>
@@ -136,34 +158,14 @@
   </div>
 </div>
 
-<div class="tip">
-  <strong>ℹ️ 工作流</strong>:选 tag → 填日期 → 展开各组填围度(cm)→ 至少 1 项必填(记录级)→ 加备注 → 点底部"📋 复制 prompt 给 AI" → AI 调 <code>body_measurements.py add</code>。
-  <br><br>
-  <strong>ℹ️ 分组</strong>:上身围度(胸/腰/腹/臀/肩) · 下身围度(左/右大腿+小腿) · 手臂围度(左/右上臂+前臂)。
-  <br>
-  <strong>ℹ️ 不会算坐标?</strong>直接说"帮我裁左上 1/4 区域",AI 用 PIL crop。
-</div>
-
 <!-- ============== 1. 基本信息 ============== -->
 <details open>
-  <summary>1️⃣ 基本信息 <span class="badge">日期 / tag</span></summary>
+  <summary>1️⃣ 测量日期 <span class="badge">默认今天</span></summary>
   <div class="details-body">
     <div class="form-group">
       <label>测量日期<span class="required"> *</span><span class="en">date</span></label>
       <input type="date" id="measureDate">
-      <div class="hint">默认今天</div>
-    </div>
-    <div class="form-group">
-      <label>场景标签 tag</label>
-      <div class="tag-chips" id="tagChips">
-        <span class="tag-chip" data-tag="围度测">围度测</span>
-        <span class="tag-chip" data-tag="减脂期">减脂期</span>
-        <span class="tag-chip" data-tag="增肌期">增肌期</span>
-        <span class="tag-chip" data-tag="晨起空腹">晨起空腹</span>
-        <span class="tag-chip" data-tag="训练前">训练前</span>
-        <span class="tag-chip" data-tag="训练后">训练后</span>
-      </div>
-      <input type="text" id="customTag" placeholder="或自定义 tag (≤ 20 字符)" maxlength="20" style="margin-top:6px">
+      <div class="hint">默认今天;补记历史日期同样适用</div>
     </div>
   </div>
 </details>
@@ -268,21 +270,25 @@
   <summary>📋 复制 prompt 给 AI <span class="pill">必走</span> <span class="count" id="totalCount">0/13</span></summary>
   <div class="details-body">
     <div class="prompt-box" id="promptBox">// 完成上方表单后,prompt 自动生成</div>
-    <button class="btn-copy" id="copyBtn">📋 复制 prompt 给 AI</button>
+    <button class="btn-copy" id="copyBtn" style="width:100%;padding:14px;border:none;background:var(--accent);color:#fff;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(0,113,227,.25)">📋 复制 prompt 给 AI</button>
   </div>
 </details>
 
-<div class="footer">卡路里 · body_measurements_wizard v1.0 · 飞书 webview 兼容(<code>&lt;details&gt;</code> 分组)</div>
-
 <!--INJECT-DATA-->
+
+<div class="copy-bar">
+  <div class="inner">
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>
+  </div>
+</div>
+<div id="toast"></div>
 
 <script>
 (function(){
   'use strict';
   const $ = id => document.getElementById(id);
   const measureDate = $('measureDate');
-  const tagChips = $('tagChips');
-  const customTag = $('customTag');
   const noteEl = $('note');
   const promptBox = $('promptBox');
   const copyBtn = $('copyBtn');
@@ -291,34 +297,14 @@
   const LOWER = ['left_thigh_cm','right_thigh_cm','left_calf_cm','right_calf_cm'];
   const ARM = ['left_arm_cm','right_arm_cm','left_forearm_cm','right_forearm_cm'];
   const ALL = UPPER.concat(LOWER).concat(ARM);
-
-  let activeTag = '';
+  const LABELS = {
+    chest_cm:'胸围', waist_cm:'腰围', abdomen_cm:'腹围', hip_cm:'臀围', shoulder_cm:'肩围',
+    left_thigh_cm:'左大腿', right_thigh_cm:'右大腿', left_calf_cm:'左小腿', right_calf_cm:'右小腿',
+    left_arm_cm:'左上臂', right_arm_cm:'右上臂', left_forearm_cm:'左前臂', right_forearm_cm:'右前臂',
+  };
 
   // 默认今天
   measureDate.value = new Date().toISOString().slice(0, 10);
-
-  // tag chips
-  tagChips.querySelectorAll('.tag-chip').forEach(chip => {
-    chip.onclick = () => {
-      tagChips.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeTag = chip.dataset.tag;
-      customTag.value = '';
-      updatePrompt();
-    };
-  });
-
-  customTag.oninput = () => {
-    if (customTag.value) {
-      tagChips.querySelectorAll('.tag-chip').forEach(c => c.classList.remove('active'));
-      activeTag = customTag.value;
-      updatePrompt();
-    }
-  };
-
-  function getCurrentTag() {
-    return (customTag.value || activeTag || '').trim();
-  }
 
   function getFilledMetrics() {
     const out = {};
@@ -328,52 +314,34 @@
     });
     return out;
   }
-
   function countFilled(group) {
     return group.filter(f => $(f).value.trim() !== '').length;
   }
 
   function buildPrompt() {
     const date = measureDate.value;
-    const tag = getCurrentTag();
     const note = noteEl.value.trim();
     const metrics = getFilledMetrics();
     const filledKeys = Object.keys(metrics);
-
     if (!date) return '// 请填日期(上方第 1 步)';
     if (filledKeys.length === 0) return '// 请至少填 1 个围度(展开 2/3/4 组填至少 1 项)';
-
-    const argsList = [`--date ${date}`];
-    if (tag) argsList.push(`--tag "${tag.replace(/"/g, '\\"')}"`);
-    filledKeys.forEach(k => argsList.push(`--${k} ${metrics[k]}`));
-    if (note) argsList.push(`--note "${note.replace(/"/g, '\\"')}"`);
-
     const byGroup = (group, label) => {
       const items = group.filter(k => filledKeys.includes(k));
       if (!items.length) return '';
-      return `  ${label}: ` + items.map(k => `${k.replace(/_cm$/, '')} = ${metrics[k]} cm`).join(', ');
+      return `  ${label}: ` + items.map(k => `${LABELS[k]} ${metrics[k]}cm`).join(', ');
     };
     const groupsText = [
       byGroup(UPPER, '上身'),
       byGroup(LOWER, '下身'),
       byGroup(ARM, '手臂'),
     ].filter(Boolean).join('\n');
-
     return `请帮我记录围度到卡路里
 
 参数:
 - 日期:${date}
-${tag ? `- tag:${tag}` : ''}
 - 围度(${filledKeys.length} 项 / 共 13):
 ${groupsText}
-${note ? `- 备注:${note}` : ''}
-
-命令:
-\`\`\`bash
-python scripts/body_measurements.py add ${argsList.join(' ')}
-\`\`\`
-
-完成后用 crud_receipt.html 返回回执。`;
+${note ? `- 备注:${note}` : ''}`;
   }
 
   function updatePrompt() {
@@ -384,66 +352,111 @@ python scripts/body_measurements.py add ${argsList.join(' ')}
     $('totalCount').textContent = `${countFilled(ALL)}/${ALL.length}`;
   }
 
-  // 监听所有变化
   measureDate.oninput = updatePrompt;
   noteEl.oninput = updatePrompt;
-  ALL.forEach(f => {
-    $(f).addEventListener('input', updatePrompt);
-  });
+  ALL.forEach(f => { $(f).addEventListener('input', updatePrompt); });
+
+  // ---------- toast + 复制 ----------
+  let _toastTimer = null;
+  function showToast(msg) {
+    const t = $('toast');
+    t.innerHTML = `<span class="t-ok">✓</span>${msg}`;
+    t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+  }
+  function fallbackCopy(text, ok) {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); ok(); } catch (e) { showToast('复制失败,请手动复制'); }
+    document.body.removeChild(ta);
+  }
+  function doCopy(text, btnId, msg) {
+    const done = () => {
+      const b = $(btnId);
+      if (b) { b.classList.add('copied'); setTimeout(() => b.classList.remove('copied'), 1600); }
+      showToast(msg);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else { fallbackCopy(text, done); }
+  }
 
   copyBtn.onclick = function() {
     const text = promptBox.textContent;
-    if (text.startsWith('// 请')) {
-      alert('请先填好必填项');
-      return;
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        this.textContent = '✓ 已复制';
-        this.classList.add('copied');
-        setTimeout(() => {
-          this.textContent = '📋 复制 prompt 给 AI';
-          this.classList.remove('copied');
-        }, 2000);
-      }, () => fallbackCopy(this, text));
-    } else fallbackCopy(this, text);
+    if (text.startsWith('// 请')) { showToast('请先填好必填项'); return; }
+    doCopy(text, 'copyBtn', 'prompt 已复制,发给 AI 即可');
   };
 
-  function fallbackCopy(btn, text) {
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try {
-      document.execCommand('copy');
-      btn.textContent = '✓ 已复制'; btn.classList.add('copied');
-      setTimeout(() => { btn.textContent = '📋 复制 prompt 给 AI'; btn.classList.remove('copied'); }, 2000);
-    } catch(e) { alert('复制失败,请手动复制'); }
-    document.body.removeChild(ta);
-  }
-
-  // 注入数据(从 __DATA__ 渲染 — 顶部"上次"摘要 + 一键复制)
+  // ---------- 08 规范:复制数据(5 段)/复制日志(6 段) ----------
   const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
-  // (key, summary_id, label, input_id)
+  const META = (DATA && DATA.data && DATA.data.meta) || {};
+  function payloadData() {
+    return {
+      date: measureDate.value,
+      metrics: getFilledMetrics(),
+      note: noteEl.value.trim(),
+      prompt: promptBox.textContent,
+    };
+  }
+  function buildDataText() {
+    const data5 = {
+      scene_id: META.scene_id || 'body_meas_add',
+      command_cn: (META.wake_word || '记围度') + ' 采集表单',
+      occurred_at: META.fetched_at || '',
+      target: 'body_measurements 表(wizard 表单 · 待 AI 写库)',
+      payload: payloadData(),
+    };
+    return JSON.stringify(data5, null, 2);
+  }
+  function buildLogText() {
+    const lines = [];
+    lines.push('① 场景标识');
+    lines.push(`  command_cn: ${META.wake_word || '记围度'} 采集表单`);
+    lines.push(`  唤醒词: ${META.wake_word || '(未知)'}`);
+    lines.push(`  场景名: ${META.wake_word || '(未知)'}(scene_id=${META.scene_id || 'body_meas_add'})`);
+    lines.push('');
+    lines.push('② AI 思考链');
+    lines.push('  ' + (META.chain || '(本地采集表单 · 无 AI 链)'));
+    lines.push('');
+    lines.push('③ 底层数据结构');
+    lines.push('  payload: ' + JSON.stringify(payloadData()));
+    lines.push('  DB 操作: INSERT INTO body_measurements(写库前待 AI 确认)');
+    lines.push('');
+    lines.push('④ 调用链');
+    lines.push('  渲染脚本: ' + (META.render_cmd || '(未知)'));
+    lines.push('  数据来源: ' + (META.source || '(未知)'));
+    lines.push('');
+    lines.push('⑤ 时间戳 + 版本');
+    lines.push('  本地时间: ' + (META.fetched_at || '(未知)'));
+    lines.push('  skill 版本: 卡路里 v1.0');
+    lines.push('');
+    lines.push('⑥ 异常信息');
+    lines.push('  无');
+    return lines.join('\n');
+  }
+  $('copyDataBtn').onclick = () => doCopy(buildDataText(), 'copyDataBtn', '数据已复制(JSON 5 段标准)');
+  $('copyLogBtn').onclick = () => doCopy(buildLogText(), 'copyLogBtn', '日志已复制(6 段标准)');
+
+  // 注入数据:最近一次摘要(仅展示,2026-08-05 对齐:无复制上次按钮)
   const MEASURE_FIELDS = [
-    ['recent_chest_cm',        'rcChest',        '胸',     'chest_cm'],
-    ['recent_waist_cm',        'rcWaist',        '腰',     'waist_cm'],
-    ['recent_abdomen_cm',      'rcAbdomen',      '腹',     'abdomen_cm'],
-    ['recent_hip_cm',          'rcHip',          '臀',     'hip_cm'],
-    ['recent_shoulder_cm',     'rcShoulder',     '肩',     'shoulder_cm'],
-    ['recent_left_thigh_cm',   'rcLeftThigh',    'L 大腿', 'left_thigh_cm'],
-    ['recent_right_thigh_cm',  'rcRightThigh',   'R 大腿', 'right_thigh_cm'],
-    ['recent_left_calf_cm',    'rcLeftCalf',     'L 小腿', 'left_calf_cm'],
-    ['recent_right_calf_cm',   'rcRightCalf',    'R 小腿', 'right_calf_cm'],
-    ['recent_left_arm_cm',     'rcLeftArm',      'L 上臂', 'left_arm_cm'],
-    ['recent_right_arm_cm',    'rcRightArm',     'R 上臂', 'right_arm_cm'],
-    ['recent_left_forearm_cm', 'rcLeftForearm',  'L 前臂', 'left_forearm_cm'],
-    ['recent_right_forearm_cm','rcRightForearm', 'R 前臂', 'right_forearm_cm'],
+    ['recent_chest_cm', 'rcChest', 'chest_cm'],
+    ['recent_waist_cm', 'rcWaist', 'waist_cm'],
+    ['recent_abdomen_cm', 'rcAbdomen', 'abdomen_cm'],
+    ['recent_hip_cm', 'rcHip', 'hip_cm'],
+    ['recent_shoulder_cm', 'rcShoulder', 'shoulder_cm'],
+    ['recent_left_thigh_cm', 'rcLeftThigh', 'left_thigh_cm'],
+    ['recent_right_thigh_cm', 'rcRightThigh', 'right_thigh_cm'],
+    ['recent_left_calf_cm', 'rcLeftCalf', 'left_calf_cm'],
+    ['recent_right_calf_cm', 'rcRightCalf', 'right_calf_cm'],
+    ['recent_left_arm_cm', 'rcLeftArm', 'left_arm_cm'],
+    ['recent_right_arm_cm', 'rcRightArm', 'right_arm_cm'],
+    ['recent_left_forearm_cm', 'rcLeftForearm', 'left_forearm_cm'],
+    ['recent_right_forearm_cm', 'rcRightForearm', 'right_forearm_cm'],
   ];
   if (DATA && DATA.status === 'ok' && DATA.data && DATA.data.recent_date) {
-    const bar = $('recentBar');
     const d = DATA.data;
     $('recentDate').textContent = d.recent_date;
-
-    // 填充 13 围度详情(有数据时)
     const anyMeasure = MEASURE_FIELDS.some(([key]) => d[key] != null);
     if (anyMeasure) {
       let allSet = true;
@@ -454,59 +467,26 @@ python scripts/body_measurements.py add ${argsList.join(' ')}
       });
       $('recentMeasureRow').style.display = allSet ? 'flex' : 'none';
     }
-
-    // "📋 复制上次 13 围度" 按钮
-    const btn = $('copyPrevBtn');
-    if (anyMeasure) {
-      btn.disabled = false;
-      btn.onclick = () => {
-        MEASURE_FIELDS.forEach(([key, , , inputId]) => {
-          const v = d[key];
-          if (v == null) return;
-          const inp = document.getElementById(inputId);
-          if (inp) {
-            inp.value = v;
-            inp.dispatchEvent(new Event('input'));
-          }
-        });
-        updatePrompt();
-      };
-    } else {
-      btn.disabled = true;
-    }
-    bar.style.display = 'flex';
+    $('recentBar').style.display = 'flex';
   }
 
-  // 预填:场景 2(用户已告诉 AI 维度数字,AI 调 render 时传 args)
-  // wizard 打开时 input 已自动填好,用户只需 verify + 复制 prompt
+  // 预填(场景 2:用户已告诉 AI 数字)
   if (DATA && DATA.status === 'ok' && DATA.data) {
     const d = DATA.data;
-    // date input
-    if (d.prefill_date && $('measureDate')) {
-      $('measureDate').value = d.prefill_date;
-    }
-    // tag — 优先 customTag,否则激活 chip
-    if (d.prefill_note && $('note')) {
-      $('note').value = d.prefill_note;
-    }
-    // 13 围度 input
-    MEASURE_FIELDS.forEach(([recentKey, , , inputId]) => {
+    if (d.prefill_date && $('measureDate')) $('measureDate').value = d.prefill_date;
+    if (d.prefill_note && $('note')) $('note').value = d.prefill_note;
+    MEASURE_FIELDS.forEach(([recentKey, , inputId]) => {
       const prefillKey = recentKey.replace('recent_', 'prefill_');
       const v = d[prefillKey];
       if (v != null) {
         const inp = document.getElementById(inputId);
-        if (inp) {
-          inp.value = v;
-          inp.dispatchEvent(new Event('input'));
-        }
+        if (inp) { inp.value = v; inp.dispatchEvent(new Event('input')); }
       }
     });
   }
 
-  // 初始
   updatePrompt();
 })();
 </script>
-
 </body>
 </html>

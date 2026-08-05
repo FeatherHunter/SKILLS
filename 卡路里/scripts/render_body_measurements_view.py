@@ -32,6 +32,7 @@ from db import find_db_path  # noqa: E402
 from html_paths import html_scene_path  # noqa: E402
 from validators import MEASUREMENT_FIELDS, _caliper_cli_name  # noqa: E402
 from render_crud_view import _chain_valid  # noqa: E402 · 思考链校验单一来源(2026-08-02)
+from render_goal_common import build_meta  # noqa: E402 · 08 规范复制日志 META(R4 自描述)
 
 METRIC_CLI = {_caliper_cli_name(f): f for f in MEASUREMENT_FIELDS}
 METRIC_LABELS = {
@@ -47,6 +48,11 @@ SCENE_NAME = {
     'list':    '看围度',
     'trend':   '看围度趋势',
     'compare': '对比围度',
+}
+SCENE_ID = {
+    'list':    'body_meas_list',
+    'trend':   'body_meas_trend',
+    'compare': 'body_meas_compare',
 }
 
 
@@ -84,31 +90,48 @@ def build_list(c, metric=None):
     }
 
 
-def build_trend(c, metric, days=90):
-    if not metric or metric not in METRIC_CLI:
-        return None
-    col = METRIC_CLI[metric]
+def build_trend_all(c, days=90, active_metric=None):
+    """全部位序列(2026-08-05 客户端切换):默认最近有数据的部位 + 各部位 series"""
     since = (date.today() - timedelta(days=days)).isoformat()
-    rows = _rows(c, f"""
-        SELECT date, AVG({col}) AS avg_val, COUNT(*) AS n
-        FROM body_measurements
-        WHERE is_deprecated = 0 AND date >= ? AND {col} IS NOT NULL
-        GROUP BY date ORDER BY date ASC
-    """, (since,))
-    values = [r['avg_val'] for r in rows if r['avg_val'] is not None]
-    kpi = {
-        'count': len(values),
-        'avg': round(sum(values) / len(values), 2) if values else None,
-        'min': min(values) if values else None,
-        'max': max(values) if values else None,
-        'delta': round(values[-1] - values[0], 2) if len(values) >= 2 else None,
-    }
+    active = None
+    series = {}
+    for cli, col in METRIC_CLI.items():
+        rows = _rows(c, f"""
+            SELECT date, AVG({col}) AS avg_val, COUNT(*) AS n
+            FROM body_measurements
+            WHERE is_deprecated = 0 AND date >= ? AND {col} IS NOT NULL
+            GROUP BY date ORDER BY date ASC
+        """, (since,))
+        if rows:
+            series[cli] = {'label': METRIC_LABELS[col], 'rows': rows}
+            if active is None:
+                last = c.execute(
+                    f"SELECT date FROM body_measurements WHERE is_deprecated = 0 AND {col} IS NOT NULL "
+                    f"ORDER BY date DESC, id DESC LIMIT 1"
+                ).fetchone()
+                if last:
+                    active = cli
+
+    active = active_metric if active_metric in series else (active or (list(series.keys())[0] if series else None))
+
+    def _kpi(rows):
+        values = [r['avg_val'] for r in rows if r['avg_val'] is not None]
+        return {
+            'count': len(values),
+            'avg': round(sum(values) / len(values), 2) if values else None,
+            'min': min(values) if values else None,
+            'max': max(values) if values else None,
+            'delta': round(values[-1] - values[0], 2) if len(values) >= 2 else None,
+        }
+
+    rows = series.get(active, {}).get('rows', []) if active else []
     return {
         'mode': 'trend',
-        'metric': metric,
-        'metric_label': METRIC_LABELS.get(col, col),
+        'metric': active,
+        'metric_label': series.get(active, {}).get('label', ''),
+        'series': series,
         'rows': rows,
-        'kpi': kpi,
+        'kpi': _kpi(rows),
         'days': days,
     }
 
@@ -179,10 +202,7 @@ def main():
         if args.mode == 'list':
             data = build_list(c, metric=args.metric)
         elif args.mode == 'trend':
-            data = build_trend(c, args.metric, days=args.days)
-            if data is None:
-                print(f'❌ trend 模式需 --metric 且为: {", ".join(METRIC_CLI)}', file=sys.stderr)
-                return 1
+            data = build_trend_all(c, days=args.days, active_metric=args.metric)
         else:
             if not (args.date1 and args.date2):
                 print('❌ compare 模式需 --date1/--date2', file=sys.stderr)
@@ -190,6 +210,14 @@ def main():
             data = build_compare(c, args.date1, args.date2)
     finally:
         c.close()
+
+    # 08 规范复制日志 META(R4 自描述 · meta 不进 UI,复制日志带出)
+    data['meta'] = build_meta(
+        wake_word=SCENE_NAME[args.mode],
+        source='body_measurements 表(is_deprecated=0)',
+        chain=args.chain,
+        extra={'scene_id': SCENE_ID[args.mode]},
+    )
 
     html = render_html(data)
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, SCENE_NAME[args.mode], 'result')

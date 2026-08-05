@@ -54,6 +54,10 @@
   .kpi .label { font-size:11px; color:var(--fg2); margin-bottom:4px; }
   .kpi .value { font-size:18px; font-weight:700; }
   .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
+  /* 备注独立行(长文本不进 KPI 卡 · 2026-08-05 运动验收) */
+  .note-line { display:flex; gap:10px; align-items:flex-start; background:var(--soft); border-radius:12px; padding:12px 16px; margin-bottom:16px; font-size:13px; line-height:1.6; }
+  .note-label { color:var(--fg3); white-space:nowrap; font-weight:600; }
+  .note-text { color:var(--fg2); word-break:break-word; }
   /* 字段对比卡(改/删时显示)*/
   .diff-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .diff-card h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
@@ -214,6 +218,14 @@
         (k.extra ? `<div class="extra">${k.extra}</div>` : '') +
         `</div>`);
     });
+  }
+
+  // 备注独立展示(2026-08-05 运动验收:长文本不进 KPI 卡,独立浅灰行弱化呈现)
+  if (op === 'add' && new_record && new_record.note) {
+    const noteLine = document.createElement('div');
+    noteLine.className = 'note-line';
+    noteLine.innerHTML = `<span class="note-label">📝 备注</span><span class="note-text">${escapeHTML(String(new_record.note))}</span>`;
+    kpiGrid.after(noteLine);
   }
 
   // 1 句话总结(2026-08-02 用户拍板:prompt 承诺的总结必须在 HTML 有对应物)
@@ -451,70 +463,68 @@
     document.body.removeChild(ta);
   }
 
-  // 复制数据:用户关心信息的人类可读文本
-  function buildDataText() {
-    const lines = [`${opLabel}${meta.entity_type}成功 #${record_id} (${meta.action_at})`, ''];
-    if (D.data.summary) lines.push(`💬 ${D.data.summary}`, '');
-    if (context && context.kpis) {
-      context.kpis.forEach(k => lines.push(`${k.label}: ${k.value}${k.extra ? ' ' + k.extra : ''}`));
-      lines.push('');
-    }
+  // 复制数据(2026-08-05 08 规范:JSON 固定 5 段)
+  function payloadData() {
+    const payload = {
+      op: op,
+      record_id: record_id,
+      summary: D.data.summary || null,
+      record: new_record || old_record || null,
+    };
     if (op === 'update' && old_record && new_record) {
-      lines.push('字段变更:');
+      payload.diff = {};
       Object.keys(new_record).forEach(k => {
         if (k.startsWith('__impact_') || k === 'created_at' || k === 'updated_at') return;
         if (old_record[k] !== new_record[k]) {
-          lines.push(`  ${FIELD_LABELS[k] || k}: ${fmtVal(k, old_record[k])} → ${fmtVal(k, new_record[k])}`);
+          payload.diff[k] = { before: old_record[k], after: new_record[k] };
           const imp = new_record['__impact_' + k];
-          if (imp) lines.push(`    影响: ${imp}`);
+          if (imp) payload.diff[k].impact = imp;
         }
       });
     }
-    // #44 审查(用户第一性原理):复制数据包含明细(复制昨日饮食等)
-    if (context && context.items && context.items.length) {
-      lines.push('');
-      const nCopied = context.items.filter(it => it.label !== '已跳过').length;
-      const nSkipped = context.items.length - nCopied;
-      lines.push(`复制明细(已复制 ${nCopied} 条${nSkipped ? ` · 跳过 ${nSkipped} 条` : ''}):`);
-      context.items.forEach(it => {
-        lines.push(`  ${it.time || '—'} ${it.food_name} ${it.grams}g ${it.calories}卡${it.label === '已跳过' ? ' [已跳过]' : ''}`);
-      });
-    }
-    return lines.join('\n');
+    if (context && context.kpis) payload.kpis = context.kpis;
+    if (context && context.items && context.items.length) payload.items = context.items;
+    return payload;
+  }
+  function buildDataText() {
+    const data5 = {
+      scene_id: meta.scene_id || 'crud_receipt',
+      command_cn: (meta.wake_word || meta.entity_type || '操作') + ' 回执',
+      occurred_at: meta.fetched_at || meta.action_at || '',
+      target: (meta.source || '') + ' · ' + opLabel + ' #' + record_id,
+      payload: payloadData(),
+    };
+    return JSON.stringify(data5, null, 2);
   }
 
-  // 复制日志:排障信息(含思考链/改前改后/撤销指令/原始数据)
+  // 复制日志(2026-08-05 08 规范:6 段)
   function buildLogText() {
-    const lines = [`[${meta.entity_type} 排障日志]`, ''];
-    lines.push(`唤醒词: ${meta.wake_word || '(未知)'}`);
-    lines.push(`渲染命令: ${meta.render_cmd || '(未知)'}`);
-    lines.push(`数据来源: ${meta.source || '(未知)'}`);
-    lines.push(`操作时间: ${meta.action_at || '(未知)'}`);
+    const lines = [];
+    lines.push('① 场景标识');
+    lines.push(`  command_cn: ${meta.wake_word || meta.entity_type || '(未知)'} 回执`);
+    lines.push(`  唤醒词: ${meta.wake_word || '(未知)'}`);
+    lines.push(`  场景名: ${meta.entity_type || '(未知)'}(scene_id=${meta.scene_id || 'crud_receipt'})`);
     lines.push('');
-    if (meta.chain) {
-      lines.push(`AI 思考链:`);
-      lines.push(meta.chain);
-    } else {
-      lines.push(`AI 思考链: (未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)`);
-    }
-    if (old_record && new_record) {
-      lines.push('');
-      lines.push(`改前:`);
-      lines.push(JSON.stringify(old_record, null, 2));
-      lines.push(`改后:`);
-      lines.push(JSON.stringify(new_record, null, 2));
-    }
-    // #44 审查:日志带出明细原始数据(复制昨日饮食等)
-    if (context && context.items && context.items.length) {
-      lines.push('');
-      lines.push(`复制明细(原始):`);
-      lines.push(JSON.stringify(context.items, null, 2));
-    }
+    lines.push('② AI 思考链');
+    lines.push('  ' + (meta.chain || '(未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)'));
+    lines.push('');
+    lines.push('③ 底层数据结构');
+    lines.push('  payload: ' + JSON.stringify(payloadData()));
+    lines.push(`  DB 操作: ${opLabel} ${meta.entity_type || '(未知)'} #${record_id}(${meta.source || '(未知)'})`);
+    lines.push('');
+    lines.push('④ 调用链');
+    lines.push('  渲染脚本: ' + (meta.render_cmd || '(未知)'));
+    lines.push('  数据来源: ' + (meta.source || '(未知)'));
     if (meta.undo_cli) {
-      lines.push('');
-      lines.push(`撤销指令: 请撤销 ${opLabel} ${meta.entity_type} #${record_id} (${meta.action_at})`);
-      lines.push(`执行: ${meta.undo_cli}`);
+      lines.push('  撤销指令: ' + meta.undo_cli);
     }
+    lines.push('');
+    lines.push('⑤ 时间戳 + 版本');
+    lines.push('  本地时间: ' + (meta.action_at || meta.fetched_at || '(未知)'));
+    lines.push('  skill 版本: 卡路里 v1.0');
+    lines.push('');
+    lines.push('⑥ 异常信息');
+    lines.push('  无');
     return lines.join('\n');
   }
 

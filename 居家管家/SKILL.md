@@ -157,6 +157,25 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 42 | 首次使用 | 首次使用初始化（6 步向导，幂等可重试） | `python3 scripts/开始使用/cli.py check` / `init` / `init-status` → 开始使用/first_use_wizard.html | 是（路径确认，默认即确认） |
 | 43 | 备份导出 | 备份与导出（数据资产） | `python3 scripts/开始使用/cli.py backup` / `backup-list` / `export --format json\|csv` → 开始使用/backup_receipt.html | 是（操作/格式） |
 | 44 | 导入恢复 | 导入与恢复（迁移，预告式文件） | `python3 scripts/开始使用/cli.py import-preview --file X` / `import --file X [--mode skip\|overwrite]` → 开始使用/import_restore.html | 是（文件预告式） |
+| 45 | 批量录入 | 批量录入多件物品（清单/照片） | `python3 scripts/home_manager.py sm1-add-batch --json-file X [--commit]` → 物品/add_form.html | 否 |
+| 46 | 补录 | 补录历史物品（指定日期） | `python3 scripts/home_manager.py sm1-add --backfill-date YYYY-MM-DD` → 物品/add_form.html | 否（AI 解析描述） |
+| 47 | 紧急定位 | 紧急查找物品位置（一屏直达） | `python3 scripts/home_manager.py sm1-locate --name X` → 物品/locate.html | 是（名称/描述） |
+| 48 | 筛选浏览 | 按条件筛选浏览物品（分组/排序） | `python3 scripts/home_manager.py sm1-browse [--group-by] [--location] [--tag]` → 物品/browse.html | 否 |
+| 49 | 拍照找物品 | 拍照反向查找物品（图搜） | `python3 scripts/home_manager.py sm1-search --name X`（AI 图搜 → 关键词）→ 物品/search_list.html | 否（照片） |
+| 50 | 查重复 | 检查重复物品 | `python3 scripts/home_manager.py sm1-duplicates` → 物品/duplicates.html | 否 |
+| 51 | 合并物品 | 合并重复物品（保留主条/数量相加） | `python3 scripts/home_manager.py sm1-merge --target N --sources 1,2` → 物品/receipt.html | 是（target/源） |
+| 52 | 撤销操作 | 撤销最近操作（一次性回滚） | `python3 scripts/home_manager.py sm1-undo-list` / `sm1-undo --event-id N` → 物品/undo_select.html | 否 |
+| 53 | 物品关联 | 设置/解除物品关联（配件等） | `python3 scripts/home_manager.py sm1-relate --id N --related M [--action unlink]` → 物品/relations.html | 是 |
+| 54 | 管标签 | 标签管理（总览/改名/合并/清理） | `python3 scripts/home_manager.py sm1-tag-overview` / `tag-merge` → 物品/tag_manage.html | 否 |
+| 55 | 管分类 | 分类管理（树/新建/改名/合并） | `python3 scripts/home_manager.py sm1-category [--action add\|rename\|merge]` → 物品/category_manage.html | 否 |
+| 56 | 整理建议 | 标签分类整理建议（AI 检测相近） | `python3 scripts/home_manager.py sm1-similar-tags` → 物品/tag_manage.html | 否 |
+| 57 | 查看照片 | 查看物品照片（含类型筛选） | `python3 scripts/home_manager.py sm1-photos --id N` → 物品/photos.html | 是 |
+| 58 | 管照片 | 管理物品照片（排序/主图/类型） | `python3 scripts/home_manager.py sm1-photo-update --id N --json-file X` → 物品/photos.html | 是 |
+| 59 | 照片墙 | 照片墙浏览（分类/位置/类型） | `python3 scripts/home_manager.py sm1-photo-wall [--group-by] [--type]` → 物品/photo_wall.html | 否 |
+| 60 | 盘点记录 | 查看盘点记录（含复查入口） | `python3 scripts/home_manager.py sm1-inventory-records` → 物品/inventory_records.html | 否 |
+| 61 | 差异处理 | 处理盘点差异（缺/多/异/待确认） | `python3 scripts/home_manager.py sm1-inventory-diff [--record-id N]` / `sm1-inventory-resolve` → 物品/inventory_diff.html | 否（记录级） |
+| 62 | 搬家盘点 | 搬家打包盘点（带走/不带走） | `python3 scripts/home_manager.py sm1-move-checklist` / `sm1-move-commit` → 物品/move_checklist.html | 否 |
+| 63 | 历史 | 查看物品历史（时间线/轨迹） | `python3 scripts/home_manager.py sm1-history --id N` → 物品/history.html | 是 |
 
 ### 匹配规则
 

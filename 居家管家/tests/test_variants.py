@@ -6,8 +6,8 @@
 - 每 scenario 至少 2 个 direction(钩子 3 要求"2-3 变体")
 - phrase 非空 + 无禁用字符(正斜杠 反斜杠 冒号 星号 问号 引号 尖括号 竖线)
 
-TOP 5 核心(按 audit 使用频率,grilling Q7=audit):
-查物品 / 看物品 / 录物品 / 盘物品 / 统物品
+TOP 5 核心(按 audit 使用频率,grilling Q7=audit;v2.0 盘点场景合并 v1 盘物品/盘全部):
+查物品 / 看物品 / 录物品 / 盘点 / 统物品
 """
 import re
 from pathlib import Path
@@ -18,7 +18,7 @@ import yaml
 SKILL_DIR = Path(__file__).parent.parent
 SCENARIOS_YAML = SKILL_DIR / "references" / "scenarios.yaml"
 
-TOP5_WAKE_WORDS = ["查物品", "看物品", "录物品", "盘物品", "统物品"]
+TOP5_WAKE_WORDS = ["查物品", "看物品", "录物品", "盘点", "统物品"]
 VALID_DIRECTIONS = {"同义", "口语", "模糊"}
 FORBIDDEN_CHARS = re.compile(r'[/\\:*?"<>|]')
 

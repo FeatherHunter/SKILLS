@@ -25,10 +25,11 @@ def _generate_help_html() -> Path:
     import os
     env = os.environ.copy()
     env["HELP_FIXED_TIMESTAMP"] = "0000-00-00 00:00 (快照)"
+    env["HELP_INITIALIZED"] = "1"
     r = subprocess.run(
         [sys.executable, str(SKILL / "scripts" / "home_manager.py"),
          "help", "--output", str(HELP_TMP)],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
         cwd=str(SKILL / "scripts"),
         env=env,
     )

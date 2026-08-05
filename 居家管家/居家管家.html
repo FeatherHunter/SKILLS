@@ -1,219 +1,203 @@
 <!doctype html>
-<html lang="zh-CN"><head>
+<html lang="zh-CN">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>居家管家 · 能力速查</title>
+<title>居家管家 · 使用手册(HELP)</title>
 <style>
-:root{
-  --bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--muted:#86868b;
-  --line:#e6e6eb;--blue:#0071e3;--green:#34c759;--amber:#ff9f0a;
-  --warn:#fff8e6;--warn-line:#ff9f0a;--code-bg:#f0f0f2;
-  --shadow:0 1px 2px rgba(0,0,0,.04);
-}
 *{box-sizing:border-box;margin:0;padding:0}
-html{scroll-behavior:smooth}
-body{
-  background:var(--bg);color:var(--ink);
-  font:13px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
-  -webkit-font-smoothing:antialiased;
-  padding:0 0 80px;
-}
-.wrap{max-width:980px;margin:0 auto;padding:0 12px}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--ok:#34c759;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased;padding-bottom:48px}
+button{font-family:inherit}
+mark{background:#ffe08a;border-radius:3px;padding:0 2px;color:inherit}
 
-/* === HERO(对齐卡路里紧凑风) === */
-.hero{
-  background:linear-gradient(135deg,#fafbfc,#f0f4f8);
-  padding:10px 0 6px;
-}
-.hero h1{font-size:150%;font-weight:700;letter-spacing:-.3px;line-height:1.15;margin:0 0 1px}
-.hero .sub{color:var(--blue);font-size:100%;font-weight:500;margin:0 0 4px;line-height:1.4}
-.hero .stats{margin:2px 0 0;display:flex;gap:10px;flex-wrap:wrap;font-size:100%;color:var(--muted);line-height:1.3}
-.hero .stats b{color:var(--ink);font-weight:600}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 40px}
 
-/* === GROUP(L1 · 原生 details,对齐卡路里/作息管家) === */
-.group{background:var(--card);border:1px solid var(--line);border-radius:8px;margin:3px 0;box-shadow:var(--shadow);overflow:hidden}
-.group:first-of-type{margin-top:2px}
-.group > summary{
-  list-style:none;cursor:pointer;user-select:none;
-  display:flex;align-items:center;gap:6px;
-  padding:7px 12px;
-  background:#fafbfc;min-height:36px;
-  -webkit-tap-highlight-color:transparent;tap-highlight-color:transparent;
-  touch-action:manipulation;
-}
-.group > summary::-webkit-details-marker,
-.group > summary::marker{display:none}
-.group > summary::before{content:'▸';font-size:10px;color:var(--muted);transition:transform .12s;pointer-events:none}
-.group[open] > summary::before{transform:rotate(90deg)}
-.group > summary > *{pointer-events:none}
-.group > summary h2{margin:0;font-size:13px;font-weight:600}
-.group > summary .badge{margin-left:auto;font-size:10px;font-weight:500;color:var(--muted);background:#e5e5e7;padding:1px 6px;border-radius:999px}
-.scenarios{padding:4px 12px 10px}
+/* ===== Hero ===== */
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:24px;padding:28px 30px;margin-bottom:20px;box-shadow:var(--shadow)}
+.eyebrow{font-size:12px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.hero-mode{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+.hero-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hero-steps .step{background:var(--soft);border:1px solid #d7e6ff;color:var(--blue2);font-weight:700;font-size:13px;padding:6px 14px;border-radius:999px;box-shadow:0 1px 3px rgba(0,122,255,.10);white-space:nowrap}
+.hero-steps .arrow{color:var(--blue);font-weight:800;font-size:15px}
+.hero-stats{display:flex;gap:8px;margin-left:auto}
+.hero-stats .stat{background:#fff;border:1px solid var(--line);color:var(--fg2);font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap}
+.meta{margin-top:12px;color:var(--fg3);font-size:12.5px}
+@media(max-width:820px){.hero-mode{gap:8px}.hero-steps{order:-1;width:100%;gap:5px}.hero-steps .step{font-size:11.5px;padding:4px 7px}.hero-steps .arrow{font-size:12px;margin:0 -3px}.hero-stats{display:none}}
 
-/* === SCENARIO(L2 · 原生 details) === */
-.scenario{background:#fff;border:1px solid var(--line);border-radius:6px;margin:4px 0}
-.scenario > summary{
-  list-style:none;cursor:pointer;user-select:none;
-  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
-  padding:6px 10px;
-  -webkit-tap-highlight-color:transparent;
-}
-.scenario > summary::-webkit-details-marker,
-.scenario > summary::marker{display:none}
-.scenario > summary::before{content:'▸';font-size:9px;color:var(--muted);transition:transform .12s}
-.scenario[open] > summary::before{transform:rotate(90deg)}
-.scenario > summary > *{pointer-events:none}
-.s-title{font-weight:600;font-size:13px;color:var(--ink);flex:1}
-.s-ww{font-size:11px;color:var(--muted);background:#f0f0f2;padding:0 4px;border-radius:3px}
-.s-varcount{font-size:10px;color:var(--muted)}
-.s-body{padding:0 10px 8px}
-.s-desc{color:var(--muted);font-size:11.5px;margin:3px 0 5px}
-.s-dims{color:var(--muted);font-size:11px;margin-bottom:4px}
+/* ===== 首次使用横幅(状态驱动:初始化完成即消失) ===== */
+.init-banner{background:linear-gradient(135deg,#0a63ce,#007aff 55%,#34c759);color:#fff;border-radius:20px;padding:22px 24px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 12px 32px rgba(0,122,255,.25)}
+.init-banner .ib-text{flex:1;min-width:220px}
+.init-banner .ib-title{font-size:17px;font-weight:800;margin-bottom:2px}
+.init-banner .ib-sub{font-size:12.5px;opacity:.9}
+.init-banner .copy-btn{background:#fff;color:var(--blue);font-weight:700;padding:9px 16px}
+.init-banner .copy-btn.copied{background:var(--ok);color:#fff}
 
-/* === PROMPT(对齐卡路里蓝色左边框) === */
-.s-prompt{
-  background:#f0f7ff;border-left:2px solid var(--blue);
-  padding:6px 8px;border-radius:4px;margin:4px 0;
-  font-family:"SF Mono",Consolas,monospace;font-size:11.5px;
-  white-space:pre-wrap;word-break:break-word;line-height:1.35;
-}
-.s-result{color:var(--muted);font-size:11.5px;margin:6px 0 2px}
+/* ===== 搜索(sticky · 宽度与内容列一致) ===== */
+.search-wrap{position:sticky;top:0;z-index:40;background:rgba(245,245,247,.92);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);padding:8px 0;margin-bottom:6px}
+.search-box{position:relative}
+.search-box input{width:100%;border:1px solid var(--line);border-radius:999px;padding:10px 38px 10px 16px;font-size:14px;background:#fff;outline:none;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.search-box input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
+.search-box .s-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--fg3)}
+.hitcount{font-size:12.5px;color:var(--fg2);margin-bottom:10px;text-align:center}
+.search-empty{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:28px;text-align:center;color:var(--fg3);font-size:13px}
 
-/* === VARIANTS(L3 · 对齐卡路里变体折叠) === */
-.variants-section{margin-top:6px;border-top:1px dashed var(--line);padding-top:5px}
-.variants-header{font-size:10px;color:var(--muted);font-weight:600;margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
-.variant-block{border:1px solid var(--line);border-radius:5px;margin:3px 0;background:#fcfcfd}
-.variant-block > summary{
-  padding:4px 8px;cursor:pointer;list-style:none;
-  display:flex;align-items:center;gap:5px;font-size:12px;
-  -webkit-tap-highlight-color:transparent;
-}
-.variant-block > summary::-webkit-details-marker{display:none}
-.variant-block > summary::before{content:'▸';font-size:9px;color:var(--muted);transition:transform .12s}
-.variant-block[open] > summary::before{transform:rotate(90deg)}
-.variant-block > summary > *{pointer-events:none}
-.v-label{font-weight:500;color:var(--blue);font-size:12px}
-.v-phrase{color:var(--muted);font-size:11px;margin-left:auto}
-.v-content{padding:0 8px 6px}
+/* ===== 场景卡片(共享组件 · 整卡点击即展开,详情 = prompt 仅 · P1 裁决 #4) ===== */
+.copy-btn{display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--blue);color:#fff;border-radius:999px;padding:7px 13px;font-size:12.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
+.copy-btn:hover{background:var(--blue2)}
+.copy-btn.copied{background:var(--ok)}
+.copy-short{display:none}
+.scene{background:var(--bg);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;scroll-margin-top:120px;overflow:hidden}
+.scene:last-child{margin-bottom:0}
+.scene>summary.scene-head{padding:14px 16px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;list-style:none;transition:background .15s}
+.scene>summary.scene-head::-webkit-details-marker{display:none}
+.scene>summary.scene-head::before{content:"▸";font-size:11px;color:var(--fg3);transition:transform .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;line-height:1}
+.scene[open]>summary.scene-head::before{transform:rotate(90deg);color:var(--blue)}
+.scene>summary.scene-head:hover{background:var(--soft)}
+.scene-id{font-size:11px;color:var(--fg3);font-weight:700;font-family:ui-monospace,Menlo,monospace}
+.scene-title{font-size:15px;font-weight:600;flex:1;min-width:180px}
+.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;flex-shrink:0}
+.type-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;flex-shrink:0;background:#e9e9ee;color:#666}
+.type-badge.t-view{background:#e8f2ff;color:#0a63ce}
+.type-badge.t-collect{background:#e7f8ee;color:#1a7a3a}
+.type-badge.t-select{background:#fff1e2;color:#c2540a}
+.type-badge.t-wizard{background:#e2f7f5;color:#00897b}
+.type-badge.t-mixed{background:#f3e9fb;color:#8e3fc9}
+.scene-body{padding:0 16px 14px}
+.scene-type{display:flex;align-items:center;gap:6px;margin:10px 0 0}
+.scene-type .type-label{font-size:11px;color:var(--fg3)}
+.prompt-box{background:#1d1d1d;color:#f5f5f7;border-radius:12px;padding:12px 14px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;line-height:1.7;position:relative;margin-top:8px}
+.prompt-box .copy-inline{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer}
+.prompt-box .copy-inline:hover{background:rgba(255,255,255,.25)}
+.prompt-box .copy-inline.copied{background:var(--ok)}
+.dev-banner{margin-top:10px;padding:8px 12px;background:#fff7e8;color:#b25b00;border-radius:10px;font-size:12.5px;font-weight:700;display:flex;gap:8px;align-items:center}
+.dev-banner .mini{font-size:11px;font-weight:400;color:#c07a2a}
 
-/* === COPY BUTTON(v2 · 4 状态反馈 · 对齐卡路里) === */
-.copy-btn{
-  font:inherit;font-size:11px;padding:4px 8px;
-  border-radius:5px;border:1px solid var(--blue);
-  background:#fff;color:var(--blue);
-  cursor:pointer;margin:3px 0;
-  transition:background .12s,color .12s,transform .15s,box-shadow .25s;
-  white-space:nowrap;
-  -webkit-tap-highlight-color:transparent;
-}
-.copy-btn:hover{background:var(--blue);color:#fff}
-.copy-btn:active{transform:scale(0.94);background:var(--blue);color:#fff}
-.copy-btn.copied{
-  background:var(--green);border-color:var(--green);color:#fff;
-  transform:scale(1.05);
-  animation:copySuccess 0.45s cubic-bezier(0.34,1.56,0.64,1);
-}
-@keyframes copySuccess{
-  0%{transform:scale(0.94);box-shadow:0 0 0 0 rgba(52,199,89,0)}
-  50%{transform:scale(1.10);box-shadow:0 0 0 8px rgba(52,199,89,0.30)}
-  100%{transform:scale(1.05);box-shadow:0 0 0 4px rgba(52,199,89,0.18)}
-}
-.copy-main{margin-left:auto}
+/* ===== 分类模块折叠(域 → 子功能 → 场景) ===== */
+.module{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:12px;overflow:hidden}
+.module>summary{padding:9px 14px;cursor:pointer;font-size:14.5px;font-weight:700;color:var(--fg);user-select:none;display:flex;align-items:center;gap:10px;list-style:none;transition:background .15s}
+.module>summary::-webkit-details-marker{display:none}
+.module>summary::before{content:"▶";display:inline-flex;align-items:center;justify-content:center;width:12px;margin-right:-2px;font-size:9px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.module>summary:hover{background:var(--soft)}
+.module-body{padding:0 12px 8px}
+.module-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.module-head .m-icon{font-size:17px}
+.module-head .m-count{font-size:11.5px;color:var(--fg3);font-weight:600}
+.module-head .m-tag{font-size:10.5px;color:var(--ok);font-weight:700;background:#e7f8ee;border-radius:999px;padding:2px 8px}
+.sub-module{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;overflow:hidden}
+.sub-module>summary{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--fg2);user-select:none;list-style:none;display:flex;align-items:center;gap:8px;transition:background .15s}
+.sub-module>summary::-webkit-details-marker{display:none}
+.sub-module>summary::before{content:"▸";display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.sub-module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.sub-module>summary:hover{background:var(--soft)}
+.sub-module .module-body{padding:10px 12px 8px}
+.sub-head{display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%}
+.sub-head .scount{font-size:11px;color:var(--fg3)}
 
-/* === TOAST(iOS 通知风格 · 对齐卡路里) === */
-.toast{
-  position:fixed;left:50%;bottom:32px;
-  transform:translateX(-50%) scale(0.9);opacity:0;
-  background:rgba(28,28,30,0.94);
-  -webkit-backdrop-filter:blur(20px) saturate(180%);
-  backdrop-filter:blur(20px) saturate(180%);
-  color:#f0f0f0;border-radius:14px;
-  padding:13px 14px 13px 16px;
-  display:flex;align-items:flex-start;gap:12px;
-  max-width:480px;min-width:320px;
-  box-shadow:0 10px 32px rgba(0,0,0,0.32),0 0 0 0.5px rgba(255,255,255,0.08) inset;
-  pointer-events:none;
-  transition:opacity 0.22s ease-out,transform 0.22s cubic-bezier(0.34,1.56,0.64,1);
-  z-index:9999;
-}
+/* ===== 联系作者(仅 HELP · G7) ===== */
+.contact-box{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-top:22px;overflow:hidden}
+.contact-box>summary{padding:14px 18px;cursor:pointer;font-size:14px;font-weight:700;list-style:none;user-select:none;display:flex;align-items:center;gap:10px;transition:background .15s}
+.contact-box>summary::-webkit-details-marker{display:none}
+.contact-box>summary::before{content:"▶";font-size:9px;color:var(--fg3);transition:transform .15s}
+.contact-box[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.contact-box>summary:hover{background:var(--soft)}
+.contact-body{padding:0 18px 18px}
+.contact-item{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--fg2);padding:7px 0;border-bottom:1px dashed var(--line)}
+.contact-item:last-child{border-bottom:0}
+.contact-item .k{font-weight:700;color:var(--fg);min-width:64px}
+.contact-item a{color:var(--blue);text-decoration:none}
+.contact-copy{margin-top:12px}
+footer{text-align:center;color:var(--fg3);font-size:11px;padding:20px 0 0;margin-top:8px}
+
+/* ===== Toast ===== */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
 .toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
-.toast-icon{font-size:22px;line-height:1;padding-top:1px;flex-shrink:0}
+.toast-icon{font-size:20px;line-height:1;padding-top:1px;flex-shrink:0}
 .toast-body{flex:1;min-width:0}
-.toast-title{font-weight:600;font-size:13px;line-height:1.4;color:#fff;margin-bottom:3px}
-.toast-title em{font-style:normal;color:#4dd96b;font-weight:600}
-.toast-detail{font-size:11.5px;line-height:1.55;color:#c8c8cc}
-.toast-close{
-  background:rgba(255,255,255,0.10);color:#4dd96b;border:0;
-  border-radius:8px;padding:6px 10px;font-size:11px;font-weight:500;
-  font-family:inherit;cursor:pointer;white-space:nowrap;
-  margin-left:6px;flex-shrink:0;transition:background 0.12s;
-}
-.toast-close:hover{background:rgba(255,255,255,0.18)}
-.toast-close:active{transform:scale(0.96)}
+.toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}
+.toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}
+.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}
 
-/* === TOC + EMPTY === */
-.toc{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:6px 0;font-size:12px}
-.toc a{color:var(--ink);text-decoration:none;display:inline-block;padding:2px 6px;margin:2px 3px;background:var(--line);border-radius:4px;font-size:11px}
-.toc a:hover{background:var(--blue);color:#fff}
-.empty{text-align:center;padding:24px;color:var(--muted);font-size:13px}
-footer{text-align:center;color:var(--muted);font-size:10px;padding:12px 0 0;margin-top:16px}
-
-/* === MOBILE(≤600px · 对齐卡路里移动端) === */
-@media(max-width:600px){
-  body{font-size:12.5px}
-  .wrap{padding:0 8px 60px}
-  .hero{padding:10px 0 6px}
-  .hero h1{font-size:16px}
-  .hero .sub{font-size:10.5px}
-  .hero .stats{gap:8px;font-size:10.5px}
-  .group > summary{padding:8px 10px;font-size:12.5px}
-  .scenarios{padding:4px 10px 8px}
-  .scenario > summary{padding:7px 9px}
-  .s-body{padding:0 9px 7px}
-  .variant-block > summary{padding:6px 8px}
-  .copy-btn{padding:5px 9px;font-size:11.5px}
-  .toast{
-    left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));
-    transform:translateX(0) scale(0.95);max-width:none;min-width:0;
-    padding:12px 12px 12px 14px;
-  }
+  /* ===== 移动适配(390px) ===== */
+@media(max-width:820px){
+  .wrap{padding:18px 12px 60px}
+  h1{font-size:24px}
+  .hero{padding:20px 18px}
+  .prompt-box{padding-top:44px;padding-right:12px}
+  .toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}
   .toast.show{transform:translateX(0) scale(1)}
-  .toast-icon{font-size:20px}
-  .toast-title{font-size:12.5px}
-  .toast-detail{font-size:11px}
-  body{padding-bottom:env(safe-area-inset-bottom,0)}
-}
-@media(min-width:601px) and (max-width:900px){
-  .wrap{max-width:720px}
+  .init-banner{flex-direction:column;align-items:stretch;text-align:center}
+  .init-banner .copy-btn{width:100%}
+  /* 场景头部一行:隐藏低价值 id,标题截断,按钮紧凑 */
+  .scene>summary.scene-head{flex-wrap:nowrap;gap:4px;padding:9px 10px}
+  .scene-head .scene-id{display:none}
+  .scene-head .scene-title{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+  .scene-head .chip{font-size:10.5px;padding:1px 7px}
+  .scene-head .type-badge{font-size:10px;padding:1px 7px}
+  .scene-head .copy-btn{min-height:28px;min-width:56px;padding:0 10px;font-size:11px;margin-left:auto}
+  .copy-btn .copy-short{display:inline}
+  .copy-btn .copy-long{display:none}
 }
 </style>
 </head>
 <body>
 
-<script id="payload" type="application/json">{"status": "ok", "data": {"summary": {"title": "居家管家 · 能力速查", "subtitle": "由 references/scenarios.yaml 渲染(总纲 07 §唯一事实源) · 0000-00-00 00:00 (快照) 更新", "metrics": [{"label": "类别", "value": "11"}, {"label": "场景", "value": "32"}, {"label": "唤醒词", "value": "24"}, {"label": "变体", "value": "30"}]}, "groups": [{"category": "找东西", "wake_words": ["查物品", "看物品", "穿什么", "查过期", "看标签", "查快递"], "scenarios": [{"wake_word": "查物品", "scenario_id": "search_default", "scenario_title": "按名称搜物品", "dimensions": {"name_match": ["模糊", "精确"]}, "prompt": "我要查物品:\n\n请填入:\n  - 物品名: ___", "status": "", "result": "会列出名称匹配的物品(HTML 页面)。", "category": "找东西", "variants": [{"direction": "同义", "phrase": "搜索物品"}, {"direction": "同义", "phrase": "找一下物品"}, {"direction": "口语", "phrase": "帮我找找"}, {"direction": "口语", "phrase": "看看家里有啥"}, {"direction": "模糊", "phrase": "那个啥在哪"}, {"direction": "模糊", "phrase": "我之前放哪了"}]}, {"wake_word": "查物品", "scenario_id": "search_by_location", "scenario_title": "按位置搜物品", "dimensions": {"position": "任意位置路径片段"}, "prompt": "我要查这个位置上的物品:\n\n请填入:\n  - 位置(客厅/冰箱 等): ___", "status": "", "result": "会列出该位置上的所有物品(HTML)。", "category": "找东西"}, {"wake_word": "查物品", "scenario_id": "search_by_tag", "scenario_title": "按标签搜", "dimensions": {"tag": "任意标签"}, "prompt": "我要按标签查:\n\n请填入:\n  - 标签: ___", "status": "", "result": "列出有这个标签的物品。", "category": "找东西"}, {"wake_word": "查物品", "scenario_id": "search_by_status", "scenario_title": "按位置状态搜", "dimensions": {"status": "在家/备用/旅游中/洗护中/借用中/维修中/已用完/快递中/待处理/已废弃/穿着中"}, "prompt": "我要查当前状态是 X 的物品:\n\n请填入:\n  - 状态(在家/备用/旅游中等): ___", "status": "", "result": "列出该状态的所有物品。", "category": "找东西"}, {"wake_word": "看物品", "scenario_id": "detail_by_id", "scenario_title": "按 ID 看详情", "dimensions": {}, "prompt": "我要看这个物品的详情:\n\n请填入:\n  - ID: ___", "status": "", "result": "展示该物品全部字段(分类/位置/标签/购买日/过期日/备注等)。", "category": "找东西", "variants": [{"direction": "同义", "phrase": "查看物品"}, {"direction": "同义", "phrase": "物品详情"}, {"direction": "口语", "phrase": "给我看看这个"}, {"direction": "口语", "phrase": "这件东西啥情况"}, {"direction": "模糊", "phrase": "那个东西的信息"}, {"direction": "模糊", "phrase": "它具体是啥"}]}, {"wake_word": "穿什么", "scenario_id": "outfit_pick", "scenario_title": "今日穿搭选择", "dimensions": {"weather_source": "auto/fallback"}, "prompt": "今天穿什么?(请同时告诉我当地天气,或让 AI 自己获取)", "status": "", "result": "基于天气 + 衣物的季节/材质标签,推荐上装/下装/鞋帽组合(HTML)。", "category": "找东西"}, {"wake_word": "查过期", "scenario_id": "stats_expiring", "scenario_title": "过期预警", "dimensions": {"days": "1-365", "only_expired": "bool", "category": "任意分类"}, "prompt": "我要看过期预警:\n\n请填入:\n  - 天数窗口(默认 30): ___\n  - (可选)只看已过期:true/false: ___\n  - (可选)分类 ID: ___", "status": "", "result": "按 expiration_date 升序列出 + 紧急度颜色标识(HTML)。", "category": "找东西"}, {"wake_word": "看标签", "scenario_id": "tag_list", "scenario_title": "列出所有标签", "dimensions": {}, "prompt": "我要看所有标签:", "status": "", "result": "按使用次数降序。", "category": "找东西"}, {"wake_word": "查快递", "scenario_id": "search_express", "scenario_title": "在途快递", "dimensions": {}, "prompt": "我要看在途快递:", "status": "", "result": "列出 location_status='快递中' 的物品(HTML,带'收到/废弃/维修'按钮)。", "category": "找东西"}]}, {"category": "存东西", "wake_words": ["录物品", "拍物品"], "scenarios": [{"wake_word": "录物品", "scenario_id": "add_text", "scenario_title": "文字录入物品", "dimensions": {"item_type": "任意"}, "prompt": "我要录入新物品:\n\n请填入:\n  - 物品名: ___\n  - 位置(客厅/冰箱 等): ___\n  - 分类(衣物/食品/数码 等): ___\n  - 标签(逗号分隔,至少 10 个): ___\n  - 数量(默认 1): ___\n  - 备注: ___", "status": "", "result": "AI 走 7 步录入流程,生成预览 HTML 让用户确认,确认后写入。", "category": "存东西", "variants": [{"direction": "同义", "phrase": "登记物品"}, {"direction": "同义", "phrase": "添加物品"}, {"direction": "口语", "phrase": "帮我记一下"}, {"direction": "口语", "phrase": "家里又多了个东西"}, {"direction": "模糊", "phrase": "这个收进来"}, {"direction": "模糊", "phrase": "新到货了"}]}, {"wake_word": "拍物品", "scenario_id": "add_photo", "scenario_title": "拍照录入物品", "dimensions": {"item_type": "任意", "has_image": true}, "prompt": "我要按图片录入新物品:\n\n请填入:\n  - 图片(附图): ___\n  - 物品名: ___\n  - 分类(可由 AI 推测): ___\n  - 位置(客厅/冰箱 等): ___\n  - 标签(从图片识别,至少 10 个): ___", "status": "", "result": "AI 视觉识别标签 → 走规范化录入流程 → 一次 add 写入。", "category": "存东西"}]}, {"category": "改东西", "wake_words": ["改物品"], "scenarios": [{"wake_word": "改物品", "scenario_id": "update_generic", "scenario_title": "改物品(通用入口,涵盖以下变体)", "dimensions": {}, "prompt": "我要修改物品:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 要改的字段: ___\n  - 新值: ___", "status": "", "result": "通用 update;具体场景走下方变体。", "category": "改东西"}, {"wake_word": "改物品", "scenario_id": "move_variant", "scenario_title": "变体:移物品(移动到新位置)", "dimensions": {}, "prompt": "我要移动物品:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 旧位置: ___\n  - 新位置: ___", "status": "", "result": "更新 item_locations 表的位置记录。", "category": "改东西"}, {"wake_word": "改物品", "scenario_id": "plus_variant", "scenario_title": "变体:补物品(增加数量)", "dimensions": {}, "prompt": "我要补充物品库存:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 数量: ___\n  - 位置: ___", "status": "", "result": "对应 item_locations 行的 quantity +N。", "category": "改东西"}, {"wake_word": "改物品", "scenario_id": "minus_variant", "scenario_title": "变体:减物品(减少数量)", "dimensions": {}, "prompt": "我要减少物品:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 数量: ___", "status": "", "result": "对应 item_locations 行的 quantity -N;归零自动删该行。", "category": "改东西"}, {"wake_word": "改物品", "scenario_id": "tags_variant", "scenario_title": "变体:标物品(更新标签)", "dimensions": {"mode": ["覆盖", "追加", "删除", "混合"]}, "prompt": "我要修改物品标签:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 标签操作(覆盖/追加/删除): ___\n  - 标签值(逗号分隔): ___", "status": "", "result": "更新 item_tags 表。", "category": "改东西"}, {"wake_word": "改物品", "scenario_id": "status_variant", "scenario_title": "变体:状态变更(废/借/修/穿着中/快递中等)", "dimensions": {"new_status": "已废弃/借用中/维修中/快递中/穿着中/在家/..."}, "prompt": "我要更改物品状态:\n\n请填入:\n  - 物品(名称或 ID): ___\n  - 新状态(已废弃/借用中/维修中/快递中/穿着中/在家 等): ___", "status": "", "result": "location_status='[新状态]'。", "category": "改东西"}]}, {"category": "盘点", "wake_words": ["盘物品", "盘全部"], "scenarios": [{"wake_word": "盘物品", "scenario_id": "inventory_location", "scenario_title": "盘点指定位置", "dimensions": {}, "prompt": "我要盘点这个位置的物品:\n\n请填入:\n  - 位置: ___", "status": "", "result": "生成盘点 HTML,逐件确认状态/数量。", "category": "盘点", "variants": [{"direction": "同义", "phrase": "清点物品"}, {"direction": "同义", "phrase": "核对库存"}, {"direction": "口语", "phrase": "数数这里"}, {"direction": "口语", "phrase": "这堆对一下"}, {"direction": "模糊", "phrase": "看看齐不齐"}, {"direction": "模糊", "phrase": "还剩多少"}]}, {"wake_word": "盘全部", "scenario_id": "inventory_all", "scenario_title": "全屋盘点", "dimensions": {}, "prompt": "我要全屋盘点:", "status": "", "result": "生成全屋列表概览 HTML。", "category": "盘点"}]}, {"category": "出门", "wake_words": ["带物品", "推位置"], "scenarios": [{"wake_word": "带物品", "scenario_id": "travel_pack", "scenario_title": "出门打包", "dimensions": {}, "prompt": "我要出门,标记这些物品为'旅游中':\n\n请填入:\n  - 物品清单(逗号或换行分隔): ___", "status": "", "result": "location_status='旅游中',生成打包回执可发给 AI 执行 update。", "category": "出门"}, {"wake_word": "推位置", "scenario_id": "suggest_location", "scenario_title": "同类物品位置推荐(录物品子流程)", "dimensions": {}, "prompt": "[录物品子流程] 帮我推荐这个分类的常用位置:\n\n请填入:\n  - 分类(衣物/食品 等): ___", "status": "", "result": "列出同类物品所在位置 + 代表物品名。", "category": "出门"}]}, {"category": "回家", "wake_words": ["归物品", "找位置"], "scenarios": [{"wake_word": "归物品", "scenario_id": "travel_return", "scenario_title": "回家归位", "dimensions": {}, "prompt": "我回家了,把旅游中的物品标回'在家':", "status": "", "result": "列出所有旅游中物品,逐项确认归位。", "category": "回家"}, {"wake_word": "找位置", "scenario_id": "find_location", "scenario_title": "参考锚定(录物品子流程)", "dimensions": {}, "prompt": "[录物品子流程] 把新物品放在和这个参考物品相同位置:\n\n请填入:\n  - 参考物品名: ___", "status": "", "result": "通过参考物品 ID 定位到它的位置,然后复用。", "category": "回家"}]}, {"category": "看统计", "wake_words": ["统物品", "查高频", "查低频"], "scenarios": [{"wake_word": "统物品", "scenario_id": "stats_summary", "scenario_title": "总览统计", "dimensions": {}, "prompt": "我要看家里物品总览:", "status": "", "result": "总数 / 有价件数 / 总价值 / 状态分布 / 分类分布(HTML)。", "category": "看统计", "variants": [{"direction": "同义", "phrase": "统计物品"}, {"direction": "同义", "phrase": "物品总览"}, {"direction": "口语", "phrase": "家里都有啥"}, {"direction": "口语", "phrase": "给我个总数"}, {"direction": "模糊", "phrase": "一共多少件"}, {"direction": "模糊", "phrase": "整体啥情况"}]}, {"wake_word": "查高频", "scenario_id": "stats_frequent", "scenario_title": "高频物品", "dimensions": {"limit": "1-100"}, "prompt": "我要看最常用的物品 TOP:\n\n请填入:\n  - 数量(默认 20): ___", "status": "", "result": "按 access_count 降序 TOP N。", "category": "看统计"}, {"wake_word": "查低频", "scenario_id": "stats_dormant", "scenario_title": "长期未碰", "dimensions": {"limit": "1-100"}, "prompt": "我要看长期没碰的物品:\n\n请填入:\n  - 数量(默认 20): ___", "status": "", "result": "按 last_accessed_at 升序 TOP N。", "category": "看统计"}]}, {"category": "账号", "wake_words": ["查账号", "存账号", "改账号"], "scenarios": [{"wake_word": "查账号", "scenario_id": "account_list", "scenario_title": "列出所有账号", "dimensions": {}, "prompt": "我要看所有账号:", "status": "", "result": "列出平台 + 用户名(密码隐藏)。", "category": "账号"}, {"wake_word": "存账号", "scenario_id": "account_add", "scenario_title": "新增账号", "dimensions": {}, "prompt": "我要存账号:\n\n请填入:\n  - 平台(淘宝/微信 等): ___\n  - 用户名: ___\n  - 密码: ___\n  - 主密钥(至少 8 字符): ___", "status": "", "result": "密码用主密钥 Fernet 加密后存。", "category": "账号"}, {"wake_word": "改账号", "scenario_id": "account_show", "scenario_title": "查看账号(需主密钥)", "dimensions": {}, "prompt": "我要查看账号密码:\n\n请填入:\n  - 平台: ___\n  - 主密钥: ___", "status": "", "result": "解密并展示。", "category": "账号"}]}, {"category": "检查", "wake_words": ["查异常"], "scenarios": [{"wake_word": "查异常", "scenario_id": "lint_health", "scenario_title": "数据健康检查(Lint)", "dimensions": {}, "prompt": "我要做数据健康检查:", "status": "", "result": "检查标签完整性/位置规范性/状态时效性,列出问题。", "category": "检查"}]}, {"category": "标签", "wake_words": ["合标签"], "scenarios": [{"wake_word": "合标签", "scenario_id": "tag_merge", "scenario_title": "合并标签", "dimensions": {}, "prompt": "我要合并标签:\n\n请填入:\n  - 旧标签: ___\n  - 新标签: ___", "status": "", "result": "UPDATE 所有 item_tags,旧标签自动消失。", "category": "标签"}]}, {"category": "帮助", "wake_words": ["居家管家 帮助"], "scenarios": [{"wake_word": "居家管家 帮助", "scenario_id": "help_center", "scenario_title": "居家管家能力速查表", "dimensions": {}, "prompt": "我要看居家管家能做什么:", "status": "", "result": "会看到唤醒词 × 场景的清单,可一键复制 prompt 发送给 AI", "category": "帮助"}]}]}, "message": "HELP 中心"}</script>
+<script id="payload" type="application/json">{"status": "ok", "data": {"summary": {"title": "居家管家 · 使用手册(HELP)", "subtitle": "9 功能域 · 59 场景 · 版本 2.0 · 更新于 0000-00-00 00:00 (快照)", "metrics": [{"label": "功能域", "value": "9"}, {"label": "场景", "value": "59"}, {"label": "可用", "value": "13"}, {"label": "待开发", "value": "46"}], "version": "2.0", "generated_at": "0000-00-00 00:00 (快照)"}, "initialized": true, "domains": [{"key": "items", "name": "物品管理", "icon": "🏠", "sm": "SM1", "subs": [{"name": "录入", "scenes": [{"id": "1-1", "domain": "items", "sub": "录入", "wake_word": "录物品", "scenario_id": "add_text", "scenario_title": "录入一件新物品", "dimensions": {}, "type": "采集+回执", "status": "", "prompt": "请加载「居家管家」技能,帮我录入一件新物品(唤醒词:录物品):\n\n  名  称: _____________\n  分  类: _____________\n  数  量: _____________ (默认 1)\n  位  置: _____________ (选填,如:客厅/电视柜)\n  价  格: _____________ (选填)\n  标  签: _____________ (选填)", "result": "AI 走录入流程,生成预览 HTML 供确认,确认后写入并回执。", "html": {"template": "add_preview.html", "command_cn": "录物品", "data_source": "items"}, "variants": [{"direction": "同义", "phrase": "登记物品"}, {"direction": "同义", "phrase": "添加物品"}, {"direction": "口语", "phrase": "帮我记一下"}, {"direction": "口语", "phrase": "家里又多了个东西"}, {"direction": "模糊", "phrase": "这个收进来"}, {"direction": "模糊", "phrase": "新到货了"}]}, {"id": "1-2", "domain": "items", "sub": "录入", "wake_word": "拍物品", "scenario_id": "add_photo", "scenario_title": "拍照识别录入物品", "dimensions": {}, "type": "采集+回执", "status": "", "prompt": "请加载「居家管家」技能,帮我拍照录入一件物品(唤醒词:拍物品):\n\n【照片即将发送:】\n补充说明: _____________ (选填)", "result": "AI 识别照片字段 → 走录入流程 → 预览确认 → 写入回执。", "html": {"template": "add_preview.html", "command_cn": "拍物品", "data_source": "items"}}, {"id": "1-3", "domain": "items", "sub": "录入", "wake_word": "批量录入", "scenario_id": "add_batch", "scenario_title": "批量录入多件物品", "dimensions": {}, "type": "采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我批量录入多件物品(唤醒词:批量录入):\n\n  清  单: _____________ (文字逐行描述,或用照片/文件)\n  【资源即将发送:】 (如用照片)", "result": "批量清单总览 + 逐条解析预览,勾选确认后批量写入回执。", "html": {"template": "", "command_cn": "批量录入", "data_source": ""}}, {"id": "1-4", "domain": "items", "sub": "录入", "wake_word": "补录", "scenario_id": "add_backfill", "scenario_title": "补录历史物品(指定日期)", "dimensions": {}, "type": "采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我补录一件历史物品(唤醒词:补录):\n\n  名  称: _____________\n  分  类: _____________\n  录入日期: _____________ (YYYY-MM-DD)\n  购买日期: _____________ (选填)\n  其余字段: _____________ (同录物品,选填)", "result": "按指定日期补录历史物品,带日期回显与到期提醒预埋。", "html": {"template": "", "command_cn": "补录", "data_source": ""}}]}, {"name": "查找", "scenes": [{"id": "2-1", "domain": "items", "sub": "查找", "wake_word": "查物品", "scenario_id": "search_default", "scenario_title": "搜索查找物品", "dimensions": {}, "type": "查看", "status": "", "prompt": "请加载「居家管家」技能,帮我搜索一件物品(唤醒词:查物品):\n\n  描  述: _____________ (名字/颜色/特征/位置/时间,记得什么说什么)", "result": "命中列表卡片(照片/名称/位置/状态),未命中引导录入。", "html": {"template": "search_results.html", "command_cn": "查物品", "data_source": "items"}, "variants": [{"direction": "同义", "phrase": "搜索物品"}, {"direction": "同义", "phrase": "找一下物品"}, {"direction": "口语", "phrase": "帮我找找"}, {"direction": "口语", "phrase": "看看家里有啥"}, {"direction": "模糊", "phrase": "那个啥在哪"}, {"direction": "模糊", "phrase": "我之前放哪了"}]}, {"id": "2-2", "domain": "items", "sub": "查找", "wake_word": "看物品", "scenario_id": "detail_by_id", "scenario_title": "查看物品详情", "dimensions": {}, "type": "查看", "status": "", "prompt": "请加载「居家管家」技能,帮我查看物品详情(唤醒词:看物品):\n\n  物  品: _____________ (名称或描述)", "result": "完整详情(全字段/照片/位置/标签/备注)+ 相关物品 + 快捷操作入口。", "html": {"template": "item_detail.html", "command_cn": "看物品", "data_source": "items"}, "variants": [{"direction": "同义", "phrase": "查看物品"}, {"direction": "同义", "phrase": "物品详情"}, {"direction": "口语", "phrase": "给我看看这个"}, {"direction": "口语", "phrase": "这件东西啥情况"}, {"direction": "模糊", "phrase": "那个东西的信息"}, {"direction": "模糊", "phrase": "它具体是啥"}]}, {"id": "2-3", "domain": "items", "sub": "查找", "wake_word": "紧急定位", "scenario_id": "locate_urgent", "scenario_title": "紧急查找物品位置", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我紧急定位物品(唤醒词:紧急定位):", "result": "重要物品置顶卡片(大照片+位置+固定位),一屏直达只要位置。", "html": {"template": "", "command_cn": "紧急定位", "data_source": ""}}, {"id": "2-4", "domain": "items", "sub": "查找", "wake_word": "筛选浏览", "scenario_id": "browse_filter", "scenario_title": "按条件筛选浏览物品", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我按条件浏览物品(唤醒词:筛选浏览):\n\n  分  类: _____________ (选填)\n  位  置: _____________ (选填)\n  标  签: _____________ (选填)\n  价格区间: _____________ (选填)\n  含已废弃: _____________ (选填,是/否)", "result": "分组列表(分类/位置/标签/时间/价格),多条件组合 + 排序 + 计数。", "html": {"template": "", "command_cn": "筛选浏览", "data_source": ""}}, {"id": "2-5", "domain": "items", "sub": "查找", "wake_word": "拍照找物品", "scenario_id": "search_photo", "scenario_title": "拍照反向查找物品", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我拍照找一件物品(唤醒词:拍照找物品):\n\n【照片即将发送:】", "result": "相似物品匹配列表(匹配度标注),未匹配转录入闭环。", "html": {"template": "", "command_cn": "拍照找物品", "data_source": ""}}, {"id": "2-6", "domain": "items", "sub": "查找", "wake_word": "查重复", "scenario_id": "find_dupes", "scenario_title": "检查重复物品", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我检查重复物品(唤醒词:查重复):", "result": "重复物品组列表(名称/分类/数量/位置对比),可转合并建议。", "html": {"template": "", "command_cn": "查重复", "data_source": ""}}]}, {"name": "更新", "scenes": [{"id": "3-1", "domain": "items", "sub": "更新", "wake_word": "改物品", "scenario_id": "update_generic", "scenario_title": "修改物品信息", "dimensions": {}, "type": "采集+回执", "status": "", "prompt": "请加载「居家管家」技能,帮我修改物品信息(唤醒词:改物品):\n\n  物  品: _____________\n  修改项: _____________ (一行一条:名称/分类/备注/价格/标签…)", "result": "字段级 before→after 对比,预览确认后写入回执。", "html": {"template": "item_detail.html", "command_cn": "改物品", "data_source": "items"}}, {"id": "3-2", "domain": "items", "sub": "更新", "wake_word": "移物品", "scenario_id": "move_variant", "scenario_title": "移动物品位置", "dimensions": {}, "type": "采集+回执", "status": "", "prompt": "请加载「居家管家」技能,帮我移动物品位置(唤醒词:移物品):\n\n  物  品: _____________ (可多件)\n  新位置: _____________ (如:卧室/衣柜)", "result": "原位置→新位置路径 + 邻居列表,确认移动后写入回执。", "html": {"template": "item_detail.html", "command_cn": "移物品", "data_source": "items"}}, {"id": "3-3", "domain": "items", "sub": "更新", "wake_word": "数量变更", "scenario_id": "quantity_change", "scenario_title": "变更物品数量", "dimensions": {}, "type": "采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我变更物品数量(唤醒词:数量变更):\n\n  物  品: _____________\n  数  量: _____________ (绝对数量或 +N/-N)", "result": "变更前后数量对比,减到 0 提示已用完 + 补货建议。", "html": {"template": "", "command_cn": "数量变更", "data_source": ""}}, {"id": "3-4", "domain": "items", "sub": "更新", "wake_word": "状态变更", "scenario_id": "status_change", "scenario_title": "变更物品状态", "dimensions": {}, "type": "选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我变更物品状态(唤醒词:状态变更):\n\n  物  品: _____________\n  状  态: _____________ (在家/备用/维修中/快递中/旅游中/找不到/废弃/恢复)", "result": "状态机流转(废弃=软删除/恢复/非法流转拦截),确认后写入回执。", "html": {"template": "", "command_cn": "状态变更", "data_source": ""}}, {"id": "3-5", "domain": "items", "sub": "更新", "wake_word": "合并物品", "scenario_id": "merge_items", "scenario_title": "合并重复物品", "dimensions": {}, "type": "选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我合并重复物品(唤醒词:合并物品):\n\n  保  留: _____________ (主条物品)\n  并  入: _____________ (一条或多条)", "result": "合并预览(字段合并规则/数量相加),确认合并后回执。", "html": {"template": "", "command_cn": "合并物品", "data_source": ""}}, {"id": "3-6", "domain": "items", "sub": "更新", "wake_word": "撤销操作", "scenario_id": "undo_operation", "scenario_title": "撤销最近操作", "dimensions": {}, "type": "选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我撤销最近操作(唤醒词:撤销操作):\n\n  撤  销: _____________ (指定某次操作,如:刚才的录入)", "result": "可撤销操作列表(勾选),撤销影响范围提示,回滚后回执。", "html": {"template": "", "command_cn": "撤销操作", "data_source": ""}}, {"id": "3-7", "domain": "items", "sub": "更新", "wake_word": "物品关联", "scenario_id": "link_items", "scenario_title": "设置物品关联", "dimensions": {}, "type": "采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我设置物品关联(唤醒词:物品关联):\n\n  主物品: _____________\n  关联物品: _____________\n  关  系: _____________ (配件/配套/替代/相关…)", "result": "关联预览(主物品+关联物品+关系类型),确认后写入回执。", "html": {"template": "", "command_cn": "物品关联", "data_source": ""}}, {"id": "3-8", "domain": "items", "sub": "更新", "wake_word": "标物品", "scenario_id": "tags_variant", "scenario_title": "修改物品标签", "dimensions": {}, "type": "采集+回执", "status": "", "prompt": "请加载「居家管家」技能,帮我修改物品标签(唤醒词:标物品):\n\n  物  品: _____________ (可多件)\n  加标签: _____________ (选填,可多个)\n  去标签: _____________ (选填,可多个)", "result": "已有标签展示,加/去标签预览,确认后写入回执。", "html": {"template": "item_detail.html", "command_cn": "标物品", "data_source": "items"}}]}, {"name": "标签与分类", "scenes": [{"id": "4-1", "domain": "items", "sub": "标签与分类", "wake_word": "管标签", "scenario_id": "tag_manage", "scenario_title": "管理标签(查看/重命名/合并/清理)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我管理标签(唤醒词:管标签):\n\n  操  作: _____________ (查看/合并/重命名/清理)\n  详  情: _____________ (如:把「擦手巾」合并进「毛巾」)", "result": "标签总览列表 + 合并/重命名/删除影响预览,确认后回执。", "html": {"template": "", "command_cn": "管标签", "data_source": ""}}, {"id": "4-2", "domain": "items", "sub": "标签与分类", "wake_word": "管分类", "scenario_id": "category_manage", "scenario_title": "管理分类(查看/新建/改名/合并/移动)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我管理分类(唤醒词:管分类):\n\n  操  作: _____________ (新建/改名/合并/移动)\n  详  情: _____________ (如:新建二级分类「露营装备」)", "result": "分类树总览 + 新建/改名/合并影响预览,确认后回执。", "html": {"template": "", "command_cn": "管分类", "data_source": ""}}, {"id": "4-3", "domain": "items", "sub": "标签与分类", "wake_word": "整理建议", "scenario_id": "tag_tidy_suggest", "scenario_title": "标签分类整理建议(AI 检测)", "dimensions": {}, "type": "选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我做标签分类整理(唤醒词:整理建议):", "result": "相近标签/分类检测结果,逐条确认合并,一键批量执行。", "html": {"template": "", "command_cn": "整理建议", "data_source": ""}}]}, {"name": "照片档案", "scenes": [{"id": "5-1", "domain": "items", "sub": "照片档案", "wake_word": "查看照片", "scenario_id": "photo_view", "scenario_title": "查看物品照片(含类型筛选)", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我查看物品照片(唤醒词:查看照片):\n\n  物  品: _____________\n  只看说明书: _____________ (选填,是/否)", "result": "主图大图 + 多图缩略图,类型标记(普通/说明书-使用/安装/保养)。", "html": {"template": "", "command_cn": "查看照片", "data_source": ""}}, {"id": "5-2", "domain": "items", "sub": "照片档案", "wake_word": "管照片", "scenario_id": "photo_manage", "scenario_title": "管理物品照片(排序/换主图/加图/标记类型)", "dimensions": {}, "type": "采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我管理物品照片(唤醒词:管照片):\n\n  物  品: _____________\n  操  作: _____________ (如:新顺序 图3→图2→图1,主图变更为图3 / 加图 / 删图 / 标记类型)\n  【照片即将发送:】 (如补拍/加图)", "result": "照片列表 + 本地排序 + 加图/删图/类型标记,确认变更后回执。", "html": {"template": "", "command_cn": "管照片", "data_source": ""}}, {"id": "5-3", "domain": "items", "sub": "照片档案", "wake_word": "照片墙", "scenario_id": "photo_wall", "scenario_title": "浏览物品照片墙", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我浏览照片墙(唤醒词:照片墙):\n\n  分  组: _____________ (分类/位置,选填)\n  只看说明书: _____________ (选填,是/否)", "result": "照片网格墙 + 分组 + 类型筛选 + 空态补拍引导。", "html": {"template": "", "command_cn": "照片墙", "data_source": ""}}]}, {"name": "盘点", "scenes": [{"id": "6-1", "domain": "items", "sub": "盘点", "wake_word": "盘点", "scenario_id": "inventory_spot", "scenario_title": "盘点核对(按位置/分类/全屋)", "dimensions": {}, "type": "采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n\n  范  围: _____________ (全屋 / 某个位置 / 某个分类)", "result": "核对清单(在/不在/不确定三态 + 数量修正),确认完成产出差异集。", "html": {"template": "inventory_check.html", "command_cn": "盘点", "data_source": "items"}, "variants": [{"direction": "同义", "phrase": "清点物品"}, {"direction": "同义", "phrase": "核对库存"}, {"direction": "口语", "phrase": "数数这里"}, {"direction": "口语", "phrase": "这堆对一下"}, {"direction": "模糊", "phrase": "看看齐不齐"}, {"direction": "模糊", "phrase": "还剩多少"}]}, {"id": "6-2", "domain": "items", "sub": "盘点", "wake_word": "差异处理", "scenario_id": "inventory_diff", "scenario_title": "处理盘点差异(缺/多/异/待确认)", "dimensions": {}, "type": "选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我处理盘点差异(唤醒词:差异处理):", "result": "差异分组(缺/多/异/待确认),逐项指定处理,批量确认回执。", "html": {"template": "", "command_cn": "差异处理", "data_source": ""}}, {"id": "6-3", "domain": "items", "sub": "盘点", "wake_word": "盘点记录", "scenario_id": "inventory_records", "scenario_title": "查看盘点记录(含复查)", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我查看盘点记录(唤醒词:盘点记录):", "result": "盘点记录列表 + 单次详情 + 复查入口(上次缺的置顶)。", "html": {"template": "", "command_cn": "盘点记录", "data_source": ""}}, {"id": "6-4", "domain": "items", "sub": "盘点", "wake_word": "搬家盘点", "scenario_id": "inventory_move_house", "scenario_title": "搬家打包盘点(带走/不带走)", "dimensions": {}, "type": "向导+采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我做搬家盘点(唤醒词:搬家盘点):", "result": "全屋清单二态标记(带走/不带走),统一确认生成搬家清单。", "html": {"template": "", "command_cn": "搬家盘点", "data_source": ""}}]}, {"name": "物品历史", "scenes": [{"id": "7-1", "domain": "items", "sub": "物品历史", "wake_word": "历史", "scenario_id": "item_history", "scenario_title": "查看物品历史(时间线/轨迹)", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我查看物品历史(唤醒词:历史):\n\n  物  品: _____________", "result": "事件时间线(倒序)+ 类型筛选 + diff 展开 + 位置轨迹。", "html": {"template": "", "command_cn": "历史", "data_source": ""}}]}]}, {"key": "space", "name": "空间与位置", "icon": "🗺️", "sm": "SM2", "subs": [{"name": "位置管理", "scenes": [{"id": "SM2-1", "domain": "space", "sub": "位置管理", "wake_word": "管位置", "scenario_id": "location_manage", "scenario_title": "管理位置体系(查看/新建/改名/合并/规范化)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n\n  操  作: _____________ (查看/新建/改名/合并/规范化)\n  详  情: _____________ (如:合并「卧室/东南角」和「卧室东南角」)", "result": "位置树总览 + 相似位置检测 + 合并/重命名影响预览,确认后回执。", "html": {"template": "", "command_cn": "管位置", "data_source": ""}}]}, {"name": "固定位", "scenes": [{"id": "SM2-2", "domain": "space", "sub": "固定位", "wake_word": "固定位", "scenario_id": "fixed_spot", "scenario_title": "设置固定位(常用件锚定)", "dimensions": {}, "type": "采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我设置固定位(唤醒词:固定位):\n\n  物  品: _____________\n  固定位: _____________ (如:玄关抽屉)\n  操  作: _____________ (设置/解除)", "result": "固定位选择 + 现有固定位清单(含位置对比警告),确认后回执。", "html": {"template": "", "command_cn": "固定位", "data_source": ""}}]}, {"name": "收纳建议", "scenes": [{"id": "SM2-3", "domain": "space", "sub": "收纳建议", "wake_word": "收纳建议", "scenario_id": "suggest_storage", "scenario_title": "收纳位置建议(AI 推荐)", "dimensions": {}, "type": "查看+选择", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n\n  物  品: _____________ (可多件,选填;不填则找没有固定位的常用件)", "result": "AI 推荐位置 + 理由 + 备选,采纳后跳移物品流程。", "html": {"template": "", "command_cn": "收纳建议", "data_source": ""}}]}, {"name": "空间视图", "scenes": [{"id": "SM2-4", "domain": "space", "sub": "空间视图", "wake_word": "空间视图", "scenario_id": "space_view", "scenario_title": "空间视图浏览(位置树下钻)", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我浏览空间视图(唤醒词:空间视图):\n\n  位  置: _____________ (从哪层开始,选填;不填则从顶层)", "result": "位置树逐层下钻 + 面包屑 + 当前层物品卡片。", "html": {"template": "", "command_cn": "空间视图", "data_source": ""}}]}]}, {"key": "outfit", "name": "穿搭出行", "icon": "👕", "sm": "SM3", "subs": [{"name": "穿搭推荐", "scenes": [{"id": "SM3-1", "domain": "outfit", "sub": "穿搭推荐", "wake_word": "穿什么", "scenario_id": "outfit_pick", "scenario_title": "今日穿搭推荐(拼贴效果)", "dimensions": {}, "type": "查看+选择", "status": "", "prompt": "请加载「居家管家」技能,帮我推荐今日穿搭(唤醒词:穿什么):\n\n  场  合: _____________ (选填:上班/约会/运动/家居/正式/自定义)\n  天气: _____________ (选填,或让 AI 自己获取)", "result": "穿搭拼贴卡(多部位槽位 + 风格标签 + 理由),备选组合横滑。", "html": {"template": "outfit_picker.html", "command_cn": "穿什么", "data_source": "items"}}]}, {"name": "衣橱管理", "scenes": [{"id": "SM3-2", "domain": "outfit", "sub": "衣橱管理", "wake_word": "衣橱分析", "scenario_id": "wardrobe_analyze", "scenario_title": "衣橱闲置分析(结构诊断/断舍离建议)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我做衣橱分析(唤醒词:衣橱分析):", "result": "衣橱构成分布 + 闲置清单(诚实标注估算) + AI 建议一句 + 处理闭环。", "html": {"template": "", "command_cn": "衣橱分析", "data_source": ""}}, {"id": "SM3-3", "domain": "outfit", "sub": "衣橱管理", "wake_word": "换季", "scenario_id": "wardrobe_season", "scenario_title": "换季收纳(季节衣物批量收纳)", "dimensions": {}, "type": "采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我做换季收纳(唤醒词:换季):\n\n  季  节: _____________ (夏季/冬季)\n  操  作: _____________ (收纳/拿出)", "result": "季节衣物清单 + 收纳目标选择 + 批量勾选,确认后回执。", "html": {"template": "", "command_cn": "换季", "data_source": ""}}]}, {"name": "出行清单", "scenes": [{"id": "SM3-4", "domain": "outfit", "sub": "出行清单", "wake_word": "带物品/归物品", "scenario_id": "trip_pack", "scenario_title": "出行带物清单(带/归,联动健身计划,出发核对)", "dimensions": {}, "type": "查看+选择+回执", "status": "", "prompt": "请加载「居家管家」技能,帮我做出行带物清单(唤醒词:带物品):\n\n  行程类型: _____________ (健身/出差/旅行/超市/游泳/爬山/滑雪/自定义)\n  天  数: _____________\n  操  作: _____________ (带出 / 归位)", "result": "行程设置 → 清单生成(物品卡片+理由) → 带出标记旅游中 / 回家归位。", "html": {"template": "travel_trip.html", "command_cn": "出行清单", "data_source": "items"}}]}, {"name": "旅行穿搭计划", "scenes": [{"id": "SM3-5", "domain": "outfit", "sub": "旅行穿搭计划", "wake_word": "旅行穿搭", "scenario_id": "trip_outfit_plan", "scenario_title": "旅行穿搭计划(天数+天气)", "dimensions": {}, "type": "查看+选择", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我做旅行穿搭计划(唤醒词:旅行穿搭):\n\n  目的地: _____________\n  天  数: _____________", "result": "每日穿搭计划(日期+天气+组合)+ 行李汇总 + 冲突提示。", "html": {"template": "", "command_cn": "旅行穿搭", "data_source": ""}}]}]}, {"key": "stats", "name": "统计总览", "icon": "📊", "sm": "SM4", "subs": [{"name": "统计总览", "scenes": [{"id": "SM4-1", "domain": "stats", "sub": "统计总览", "wake_word": "统物品", "scenario_id": "stats_summary", "scenario_title": "物品总览", "dimensions": {}, "type": "查看", "status": "", "prompt": "请加载「居家管家」技能,帮我查看物品总览(唤醒词:统物品):", "result": "件数 + 总价/价格覆盖率 + 分类/位置分布 + 价值 TOP + 近 30 天变动。", "html": {"template": "list_overview.html", "command_cn": "统物品", "data_source": "items"}, "variants": [{"direction": "同义", "phrase": "统计物品"}, {"direction": "同义", "phrase": "物品总览"}, {"direction": "口语", "phrase": "家里都有啥"}, {"direction": "口语", "phrase": "给我个总数"}, {"direction": "模糊", "phrase": "一共多少件"}, {"direction": "模糊", "phrase": "整体啥情况"}]}, {"id": "SM4-2", "domain": "stats", "sub": "统计总览", "wake_word": "查闲置", "scenario_id": "stats_idle", "scenario_title": "闲置物品检测(AI 断舍离建议)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我检测闲置物品(唤醒词:查闲置):\n\n  闲置标准: _____________ (如 90 天未使用,选填)", "result": "闲置清单(时长排序,诚实标注估算)+ AI 断舍离建议 + 处理闭环。", "html": {"template": "", "command_cn": "查闲置", "data_source": ""}}, {"id": "SM4-3", "domain": "stats", "sub": "统计总览", "wake_word": "查过期", "scenario_id": "stats_expiring", "scenario_title": "过期检查与预告", "dimensions": {}, "type": "查看+选择+回执", "status": "", "prompt": "请加载「居家管家」技能,帮我检查过期物品(唤醒词:查过期):\n\n  预告参数: _____________ (提前 N 天算临期,选填)", "result": "已过期 + 未来 N 天预告(默认 30,可调),勾选处理闭环。", "html": {"template": "expiring_alert.html", "command_cn": "查过期", "data_source": "items"}}, {"id": "SM4-4", "domain": "stats", "sub": "统计总览", "wake_word": "盘点统计", "scenario_id": "stats_inventory", "scenario_title": "盘点统计与建议", "dimensions": {}, "type": "查看", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我查看盘点统计(唤醒词:盘点统计):", "result": "盘点完成率 + 历史趋势 + 差异遗留 + AI 建议优先盘点 X。", "html": {"template": "", "command_cn": "盘点统计", "data_source": ""}}]}]}, {"key": "express", "name": "快递购物", "icon": "📦", "sm": "SM5", "subs": [{"name": "购物清单", "scenes": [{"id": "SM5-1", "domain": "express", "sub": "购物清单", "wake_word": "购物清单", "scenario_id": "shopping_list", "scenario_title": "购物清单(组织/例行/采购闭环)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我列购物清单(唤醒词:购物清单):\n\n  条  目: _____________ (物品名+数量,一行一条;可留空查看现有清单)", "result": "清单条目(含来源标注)+ 清单内查重 + 采购闭环(销项/录入/补数量)。", "html": {"template": "", "command_cn": "购物清单", "data_source": ""}}]}, {"name": "缺货检测", "scenes": [{"id": "SM5-2", "domain": "express", "sub": "缺货检测", "wake_word": "缺货检测", "scenario_id": "shopping_missing", "scenario_title": "缺货检测(自动进清单)", "dimensions": {}, "type": "查看+选择", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我检测缺货(唤醒词:缺货检测):\n\n  范  围: _____________ (全屋/某个分类,选填)", "result": "检测结果(物品+当前数量+阈值+建议量),一键进购物清单。", "html": {"template": "", "command_cn": "缺货检测", "data_source": ""}}]}, {"name": "快递跟踪", "scenes": [{"id": "SM5-3", "domain": "express", "sub": "快递跟踪", "wake_word": "查快递", "scenario_id": "search_express", "scenario_title": "快递跟踪(查/超时/收货确认)", "dimensions": {}, "type": "查看+选择+回执", "status": "", "prompt": "请加载「居家管家」技能,帮我查在途快递(唤醒词:查快递):", "result": "快递中物品清单(已等 N 天)+ 超时提醒 + 收货确认闭环。", "html": {"template": "delivery_check.html", "command_cn": "查快递", "data_source": "items"}}]}, {"name": "囤货盘点", "scenes": [{"id": "SM5-4", "domain": "express", "sub": "囤货盘点", "wake_word": "囤货盘点", "scenario_id": "stock_check", "scenario_title": "囤货盘点(库存/阈值/不足检测)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我盘点囤货(唤醒词:囤货盘点):", "result": "囤货清单(数量/阈值/库存状态)+ 阈值设置 + 数量修正。", "html": {"template": "", "command_cn": "囤货盘点", "data_source": ""}}]}]}, {"key": "receipt", "name": "票据凭证", "icon": "🧾", "sm": "SM6", "subs": [{"name": "购买记录", "scenes": [{"id": "SM6-1", "domain": "receipt", "sub": "购买记录", "wake_word": "购买记录", "scenario_id": "purchase_records", "scenario_title": "购买记录(查询/统计/票据归档)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我查购买记录(唤醒词:购买记录):\n\n  物  品: _____________ (选填;不填按时间浏览)\n  时  间: _____________ (选填,如:上个月)", "result": "单物品购买信息(日期/价格/渠道/退货窗口)+ 消费统计 + 票据归档。", "html": {"template": "", "command_cn": "购买记录", "data_source": ""}}]}, {"name": "保修与保养", "scenes": [{"id": "SM6-2", "domain": "receipt", "sub": "保修与保养", "wake_word": "保修", "scenario_id": "warranty", "scenario_title": "保修与保养(登记/到期/维修记录)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我查保修与保养(唤醒词:保修):\n\n  物  品: _____________ (选填)", "result": "保修状态(在保/已过/即将到期)+ 维修记录 + 保养周期。", "html": {"template": "", "command_cn": "保修", "data_source": ""}}]}, {"name": "证件管理", "scenes": [{"id": "SM6-3", "domain": "receipt", "sub": "证件管理", "wake_word": "证件", "scenario_id": "certificates", "scenario_title": "证件管理(登记/到期/归档)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我管理证件(唤醒词:证件):\n\n  操  作: _____________ (查看/登记/归档)\n  证  件: _____________ (选填,如:护照)", "result": "证件清单(按到期排序)+ 登记(号码脱敏)+ 照片归档。", "html": {"template": "", "command_cn": "证件", "data_source": ""}}]}, {"name": "账号密码", "scenes": [{"id": "SM6-4", "domain": "receipt", "sub": "账号密码", "wake_word": "账号", "scenario_id": "account_manage", "scenario_title": "账号密码(加密存/查/改·脱敏)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我管理账号(唤醒词:账号):\n\n  操  作: _____________ (存/查/改)\n  平  台: _____________ (如:淘宝/微信)\n  用户名: _____________ (存/改时填)\n  主密钥: _____________ (验证用)", "result": "账号清单(密码脱敏 ****)+ 加密存储/查看/修改,复制数据默认不含密码。", "html": {"template": "", "command_cn": "账号", "data_source": ""}}]}]}, {"key": "family", "name": "家庭协作", "icon": "👨‍👩‍👧", "sm": "SM7", "subs": [{"name": "借用管理", "scenes": [{"id": "SM7-1", "domain": "family", "sub": "借用管理", "wake_word": "借用", "scenario_id": "borrow_manage", "scenario_title": "借用管理(借出/借入/归还/催还)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我管理借用(唤醒词:借用):\n\n  操  作: _____________ (借出/借入/归还/催还)\n  物  品: _____________\n  对  象: _____________ (家人或外部联系人,借出/借入时填)", "result": "借出/借入分区 + 超期标记 + 催还文案复制,归还确认回执。", "html": {"template": "", "command_cn": "借用", "data_source": ""}}]}, {"name": "家人档案", "scenes": [{"id": "SM7-2", "domain": "family", "sub": "家人档案", "wake_word": "家人档案", "scenario_id": "family_members", "scenario_title": "家人档案(成员/物品归属标记)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我管理家人档案(唤醒词:家人档案):\n\n  操  作: _____________ (查看/添加成员/移除成员/标记归属)\n  详  情: _____________", "result": "成员列表 + 增删 + 物品归属批量标记,确认后回执。", "html": {"template": "", "command_cn": "家人档案", "data_source": ""}}]}]}, {"key": "setup", "name": "开始使用", "icon": "🚀", "sm": "SM8", "subs": [{"name": "开始使用", "scenes": [{"id": "SM8-1", "domain": "setup", "sub": "开始使用", "wake_word": "首次使用", "scenario_id": "first_use", "scenario_title": "首次使用(初始化工作流)", "dimensions": {}, "type": "向导+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用):", "result": "6 步向导(环境检测→配置→建库→建分类→引导→回执),幂等可重试。", "html": {"template": "", "command_cn": "首次使用", "data_source": ""}}, {"id": "SM8-2", "domain": "setup", "sub": "开始使用", "wake_word": "查异常", "scenario_id": "lint_health", "scenario_title": "数据检查(健康报告)", "dimensions": {}, "type": "查看+选择", "status": "", "prompt": "请加载「居家管家」技能,帮我做数据健康检查(唤醒词:查异常):", "result": "环境信息 + 检查项清单(标签/位置/状态/照片/价格等),修复引导只建议不自动改。", "html": {"template": "", "command_cn": "查异常", "data_source": "items"}}, {"id": "SM8-3", "domain": "setup", "sub": "开始使用", "wake_word": "备份导出", "scenario_id": "backup_export", "scenario_title": "备份与导出(数据资产)", "dimensions": {}, "type": "采集+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我备份导出数据(唤醒词:备份导出):\n\n  操  作: _____________ (备份/导出)\n  格  式: _____________ (导出时:JSON/CSV,选填)", "result": "备份(db+照片打包,保留 N 份)+ 导出(JSON/CSV),完成回执。", "html": {"template": "", "command_cn": "备份导出", "data_source": ""}}, {"id": "SM8-4", "domain": "setup", "sub": "开始使用", "wake_word": "导入恢复", "scenario_id": "import_restore", "scenario_title": "导入与恢复(迁移)", "dimensions": {}, "type": "向导+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我导入恢复数据(唤醒词:导入恢复):\n\n【导入文件即将发送:】", "result": "文件选择(预告式)→ 校验 → 冲突预览 → 确认导入,失败回滚。", "html": {"template": "", "command_cn": "导入恢复", "data_source": ""}}]}]}, {"key": "link", "name": "联动功能", "icon": "🔗", "sm": "SM9", "subs": [{"name": "联动总览", "scenes": [{"id": "SM9-1", "domain": "link", "sub": "联动总览", "wake_word": "联动总览", "scenario_id": "link_overview", "scenario_title": "联动功能总览(能力索引/偏好设置)", "dimensions": {}, "type": "查看+选择", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我看看能联动什么(唤醒词:联动总览):", "result": "联动条目列表(触发词/依赖技能/数据流/示例 prompt)+ 偏好频控设置。", "html": {"template": "", "command_cn": "联动总览", "data_source": ""}}]}, {"name": "食品联动", "scenes": [{"id": "SM9-2", "domain": "link", "sub": "食品联动", "wake_word": "记到卡路里", "scenario_id": "link_calorie", "scenario_title": "食品联动(记到卡路里/查热量)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我把食品记到卡路里(唤醒词:记到卡路里):\n\n  物  品: _____________ (食品/饮品)\n  操  作: _____________ (记到今日饮食/查热量)", "result": "目标物品确认 → 复制联动 prompt → 卡路里技能执行 → 回执。", "html": {"template": "", "command_cn": "记到卡路里", "data_source": ""}}]}, {"name": "价格联动", "scenes": [{"id": "SM9-3", "domain": "link", "sub": "价格联动", "wake_word": "记到记账", "scenario_id": "link_accounting", "scenario_title": "价格联动(记到记账)", "dimensions": {}, "type": "查看+选择+回执", "status": "【待开发】", "prompt": "请加载「居家管家」技能,帮我把价格记到记账(唤醒词:记到记账):\n\n  物  品: _____________\n  方  向: _____________ (支出/收入)", "result": "目标物品确认(含价格)→ 复制联动 prompt → 饼干记账执行 → 回执。", "html": {"template": "", "command_cn": "记到记账", "data_source": ""}}]}]}], "contact": {"email": "975559549@qq.com", "github": "https://github.com/FeatherHunter/SKILLS", "issues": "https://github.com/FeatherHunter/SKILLS/issues", "phone": "17372067837"}}, "message": "HELP 中心"}</script>
 <script>function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function arr(v){return Array.isArray(v)?v:[];}
 function val(v){return v===null||v===undefined||v===''?'<span style="color:var(--fg3)">未填写</span>':esc(v);}
 function yes(v){return v?'<span class="ok">通过</span>':'<span class="bad">未通过</span>';}
 function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};return{ok:true};}</script>
 
-<div class="hero"><div class="wrap">
-  <h1>居家管家 · 能力速查</h1>
-  <div class="sub">💡 点 ▸ 类别 → 选场景 → 复制 prompt → 贴给 AI</div>
-  <div class="stats" id="heroStats"></div>
-</div></div>
-
 <div class="wrap">
-<div id="mainContent"><div class="empty">加载中…</div></div>
-<footer>居家管家技能 · 能力速查 · 对齐卡路里 HELP v2 风格</footer>
+
+  <header class="hero">
+    <div class="eyebrow">Home Manager Help</div>
+    <h1>居家管家 · 使用手册</h1>
+    <div class="hero-mode">
+      <div class="hero-steps">
+        <span class="step">🔍 找场景</span><span class="arrow">→</span>
+        <span class="step">📋 复制 prompt</span><span class="arrow">→</span>
+        <span class="step">💬 发给 AI</span>
+      </div>
+      <div class="hero-stats" id="heroStats"></div>
+    </div>
+    <p class="meta" id="heroMeta"></p>
+  </header>
+
+  <div class="init-banner" id="initBanner" hidden>
+    <div class="ib-text">
+      <div class="ib-title">🚀 第一次用居家管家?</div>
+      <div class="ib-sub">从「首次使用」开始 — 自动检测环境、建库建分类,全程零决策,一次成功。完成初始化后,本区域将不再出现。</div>
+    </div>
+    <button class="copy-btn" id="initCopy">📋 复制初始化 prompt</button>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <input id="sB" type="search" placeholder="输入即直达:搜索所有场景…" autocomplete="off">
+      <span class="s-icon">🔍</span>
+    </div>
+  </div>
+
+  <div id="mods"></div>
+
+  <details class="contact-box">
+    <summary>📮 联系作者(使用反馈 / 提 ISSUE / 报 Bug)</summary>
+    <div class="contact-body" id="contactBody"></div>
+  </details>
+
+  <footer id="footerLine"></footer>
 </div>
 
-<!-- Toast(iOS 通知风格 · 对齐卡路里) -->
 <div id="toast" class="toast" role="status" aria-live="polite">
   <div class="toast-icon">📋</div>
   <div class="toast-body">
-    <div class="toast-title">已复制 <em id="toastLabel">prompt</em></div>
-    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),居家管家技能会自动执行这个流程</div>
+    <div class="toast-title">已复制 <em id="toastWake" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+    <div class="toast-detail">粘贴给 AI,居家管家技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div>
   </div>
   <button class="toast-close" id="toastClose">✓ 知道了</button>
 </div>
@@ -222,192 +206,253 @@ function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未�
 (function(){
   const el = document.getElementById('payload');
   if (!el) return;
-  let data;
-  try { data = JSON.parse(el.textContent); } catch(e) { return; }
-  if (!data || data.status !== 'ok' || !data.data) return;
-  const d = data.data;
-  document.title = d.summary.title || '居家管家 · 能力速查';
-
-  const groups = arr(d.groups);
-  let html = '';
-  html += '<div class="hero-stats" id="heroStats"></div>';
-
-  // TOC
-  html += '<div class="toc"><strong>跳到</strong> ';
-  for (let i = 0; i < groups.length; i++) {
-    html += '<a href="#cat-' + i + '">' + esc(groups[i].category) + '</a>';
+  let payload;
+  try { payload = JSON.parse(el.textContent); } catch(e) { return; }
+  const v = validate(payload);
+  if (!v.ok) {
+    document.getElementById('mods').innerHTML = '<div class="search-empty">加载失败:' + esc(v.msg) + '</div>';
+    return;
   }
-  html += '</div>';
+  const d = payload.data;
+  const domains = arr(d.domains);
+  const contact = (d.contact && typeof d.contact === 'object') ? d.contact : {};
 
-  for (let i = 0; i < groups.length; i++) {
-    const g = groups[i];
-    const wwStr = arr(g.wake_words).join(' / ');
-    html += '<details class="group" id="cat-' + i + '" data-idx="' + i + '">';
-    html += '<summary>';
-    html += '<h2>' + esc(g.category) + '</h2>';
-    html += '<span class="badge">' + g.scenarios.length + ' 场景 · ' + arr(g.wake_words).length + ' 唤醒词</span>';
-    html += '</summary>';
-    html += '<div class="scenarios">';
-    for (const s of g.scenarios) {
-      html += renderScenario(i, s);
+  /* ===== 工具 ===== */
+  var copyTimer = null;
+  function flashBtn(btn,msg,ms){
+    if(!btn)return;
+    if(copyTimer){clearTimeout(copyTimer)}
+    var lbl = btn.querySelector('.copy-short');
+    if(!lbl || getComputedStyle(lbl).display==='none') lbl = btn.querySelector('.copy-long') || btn;
+    var old=lbl.textContent;lbl.textContent=msg;btn.classList.add('copied');
+    copyTimer=setTimeout(function(){lbl.textContent=old;btn.classList.remove('copied')},ms||1800);
+  }
+  function fallbackCopy(text){
+    try{
+      var ta=document.createElement('textarea');ta.value=text;
+      ta.style.cssText='position:fixed;left:-9999px;top:0';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      var ok=false;try{ok=document.execCommand('copy')}catch(e){ok=false}
+      document.body.removeChild(ta);return ok;
+    }catch(e){return false}
+  }
+  function safeWriteText(text){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(text).then(function(){return true}).catch(function(){return fallbackCopy(text)});
     }
-    html += '</div></details>';
+    return Promise.resolve(fallbackCopy(text));
   }
-
-  const mainEl = document.getElementById('mainContent');
-  mainEl.innerHTML = html;
-
-  // hero stats
-  const statsEl = document.getElementById('heroStats');
-  if (statsEl && d.summary.metrics) {
-    statsEl.innerHTML = d.summary.metrics.map(m =>
-      '<span><b>' + esc(m.value) + '</b> ' + esc(m.label) + '</span>'
-    ).join('');
+  var toastEl=document.getElementById('toast');
+  var toastWakeEl=document.getElementById('toastWake');
+  var toastTimer=null;
+  function toastText(t){
+    if(toastWakeEl)toastWakeEl.textContent=t;
+    if(toastEl)toastEl.classList.add('show');
+    if(toastTimer)clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){if(toastEl)toastEl.classList.remove('show')},4500);
   }
-
-  // 第二遍填 prompt(避免 attribute 转义问题)
-  for (let i = 0; i < groups.length; i++) {
-    const g = groups[i];
-    const groupEl = document.getElementById('cat-' + i);
-    if (!groupEl) continue;
-    const scenarioEls = groupEl.querySelectorAll('.scenario');
-    for (let j = 0; j < g.scenarios.length && j < scenarioEls.length; j++) {
-      const promptEl = scenarioEls[j].querySelector('.s-prompt[data-fill="main"]');
-      if (promptEl) {
-        promptEl.textContent = g.scenarios[j].prompt || '';
-      }
-      // 变体 prompt
-      const variantEls = scenarioEls[j].querySelectorAll('.v-prompt[data-fill]');
-      const variants = g.scenarios[j].variants || [];
-      for (let k = 0; k < variantEls.length && k < variants.length; k++) {
-        variantEls[k].textContent = variants[k].phrase || '';
-      }
-    }
-  }
-
-  bindInteractions();
-})();
-
-function renderScenario(groupIdx, s) {
-  const variants = arr(s.variants);
-  const dims = arr(s.dimensions);
-  const dimKeys = Object.keys(dims);
-  let html = '<details class="scenario" data-idx="' + groupIdx + '" data-sid="' + esc(s.scenario_id || '') + '">';
-  html += '<summary>';
-  html += '<span class="s-title">' + esc(s.scenario_title || s.scenario_id || '') + '</span>';
-  html += '<span class="s-ww">' + esc(s.wake_word || '') + '</span>';
-  if (variants.length) {
-    html += '<span class="s-varcount">' + variants.length + ' 变体</span>';
-  }
-  html += '</summary>';
-  html += '<div class="s-body">';
-  if (dimKeys.length) {
-    html += '<div class="s-dims">维度: ' + dimKeys.map(k =>
-      k + '=' + (typeof dims[k] === 'object' ? JSON.stringify(dims[k]) : esc(dims[k]))
-    ).join('; ') + '</div>';
-  }
-  html += '<div class="s-prompt" data-fill="main"></div>';
-  html += '<div class="s-result">预期结果: ' + esc(s.result || '') + '</div>';
-  html += '<button class="copy-btn copy-main" data-prompt-source="main" data-idx="' + groupIdx + '" data-sid="' + esc(s.scenario_id || '') + '">📋 复制 prompt</button>';
-  // 变体(对齐卡路里 L3 折叠)
-  if (variants.length) {
-    html += '<div class="variants-section"><div class="variants-header">变体 (' + variants.length + ')</div>';
-    for (const v of variants) {
-      html += '<details class="variant-block">';
-      html += '<summary><span class="v-label">' + esc(v.direction || '') + '</span>';
-      html += '<span class="v-phrase">' + esc(v.phrase || '') + '</span></summary>';
-      html += '<div class="v-content">';
-      html += '<div class="s-prompt v-prompt" data-fill="' + esc(v.phrase || '') + '"></div>';
-      html += '<button class="copy-btn" data-prompt-source="variant" data-phrase="' + esc(v.phrase || '') + '">📋 复制此变体 prompt</button>';
-      html += '</div></details>';
-    }
-    html += '</div>';
-  }
-  html += '</div></details>';
-  return html;
-}
-
-function bindInteractions() {
-  // 折叠交给原生 <details>/<summary>(对齐卡路里/作息管家);
-  // 此处只做复制按钮的事件委托,且绑在 #mainContent(正确容器,
-  // 旧版误绑到 .wrap 的第一个 = hero wrap,导致主内容区点击全失效)。
-  const mainEl = document.getElementById('mainContent');
-  if (!mainEl) return;
-  mainEl.addEventListener('click', (e) => {
-    const btn = e.target.closest('.copy-btn');
-    if (!btn) return;
-    e.preventDefault();
-    e.stopPropagation();
-    handleCopy(btn);
-  });
-  bindCopyButtons();
-}
-
-function handleCopy(btn) {
-  const source = btn.getAttribute('data-prompt-source');
-  let promptText = '';
-  let label = 'prompt';
-  if (source === 'main') {
-    const scenarioEl = btn.closest('.scenario');
-    const promptEl = scenarioEl ? scenarioEl.querySelector('.s-prompt[data-fill="main"]') : null;
-    promptText = promptEl ? promptEl.textContent : '';
-    // 找唤醒词作 label
-    const wwEl = scenarioEl ? scenarioEl.querySelector('.s-ww') : null;
-    if (wwEl) label = wwEl.textContent.trim();
-  } else if (source === 'variant') {
-    const phrase = btn.getAttribute('data-phrase') || '';
-    const variantEl = btn.closest('.variant-block');
-    const promptEl = variantEl ? variantEl.querySelector('.v-prompt[data-fill]') : null;
-    promptText = promptEl ? promptEl.textContent : phrase;
-    label = phrase;
-  }
-  copyText(btn, promptText, label);
-}
-
-function bindCopyButtons() {
-  // 兼容性:按钮 click 通过 event delegation 处理,这里不需要单独绑定
-}
-
-function copyText(btn, text, label) {
-  showToast(label || 'prompt');
-  const after = () => {
-    if (!btn) return;
-    const orig = btn.textContent;
-    btn.textContent = '✓ 已复制';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(after).catch(() => { fallback(text); after(); });
-  } else { fallback(text); after(); }
-}
-
-/* === Toast 控制器(对齐卡路里) === */
-const toastEl = document.getElementById('toast');
-const toastLabelEl = document.getElementById('toastLabel');
-const toastCloseEl = document.getElementById('toastClose');
-let toastTimer = null;
-
-function showToast(label) {
-  if (toastLabelEl) toastLabelEl.textContent = label;
-  toastEl.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4500);
-}
-if (toastCloseEl) {
-  toastCloseEl.addEventListener('click', () => {
+  document.getElementById('toastClose').addEventListener('click',function(){
     toastEl.classList.remove('show');
-    clearTimeout(toastTimer);
+    if(toastTimer)clearTimeout(toastTimer);
   });
-}
+  function copyPrompt(scene,btn){
+    toastText((scene.wake_word||'prompt')+' · '+(scene.scenario_title||''));
+    safeWriteText((scene.prompt||'').trim()).then(function(ok){flashBtn(btn,ok?'✓ 已复制':'✗ 复制失败',2000)});
+  }
 
-function fallback(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
-  document.body.appendChild(ta); ta.focus(); ta.select();
-  try { document.execCommand('copy'); } catch(e) {}
-  document.body.removeChild(ta);
-}
+  function typeClass(t){
+    if(!t)return 't-view';
+    if(t.indexOf('向导')>=0)return 't-wizard';
+    if(t.indexOf('采集')>=0)return 't-collect';
+    if(t.indexOf('选择')>=0)return 't-select';
+    if(t.indexOf('查看')>=0)return 't-view';
+    return 't-mixed';
+  }
+  function typeBadge(t){return '<span class="type-badge '+typeClass(t)+'">'+esc(t||'查看')+'</span>'}
+  function hl(text,q_){
+    if(!q_||!text)return esc(text);
+    var i=text.toLowerCase().indexOf(q_.toLowerCase());
+    if(i<0)return esc(text);
+    return esc(text.slice(0,i))+'<mark>'+esc(text.slice(i,i+q_.length))+'</mark>'+esc(text.slice(i+q_.length));
+  }
+  function sceneMatch(s,q_){
+    if(!q_)return true;
+    var hay=(s.wake_word+' '+s.scenario_title+' '+(s.sub||'')+' '+(s.id||'')+' '+(s.type||'')).toLowerCase();
+    return hay.indexOf(q_.toLowerCase())>=0;
+  }
+
+  /* ===== 场景卡片(L3 复制按钮 + L4 详情复制按钮双放 · P1 裁决 #5) ===== */
+  function buildSceneCard(s,q_){
+    var card=document.createElement('details');card.className='scene';card.id='s-'+s.scenario_id;
+    var head=document.createElement('summary');head.className='scene-head';
+    head.innerHTML='<span class="scene-id">'+esc(s.id)+'</span>'
+      +'<span class="chip">'+esc(s.wake_word)+'</span>'
+      +'<span class="scene-title">'+hl(s.scenario_title,q_)+'</span>';
+    var btn=document.createElement('button');btn.className='copy-btn';
+    var bl=document.createElement('span');bl.className='copy-long';bl.textContent='📋 复制 prompt';
+    var bs=document.createElement('span');bs.className='copy-short';bs.textContent='复制';
+    btn.appendChild(bl);btn.appendChild(bs);
+    btn.onclick=function(e){if(e){e.preventDefault();e.stopPropagation()};copyPrompt(s,btn)};
+    head.appendChild(btn);
+    card.appendChild(head);
+
+    var body=document.createElement('div');body.className='scene-body';
+    /* 类型徽章(08 流程类型)移入详情页:头部保持一行清爽,展开后可见 */
+    var tl=document.createElement('div');tl.className='scene-type';
+    tl.innerHTML='<span class="type-label">流程类型</span>'+typeBadge(s.type);
+    body.appendChild(tl);
+    var pb=document.createElement('div');pb.className='prompt-box';
+    pb.textContent=(s.prompt||'').trim();
+    var pin=document.createElement('button');pin.className='copy-inline';
+    var pl=document.createElement('span');pl.className='copy-long';pl.textContent='复制此 prompt';
+    var ps=document.createElement('span');ps.className='copy-short';ps.textContent='复制';
+    pin.appendChild(pl);pin.appendChild(ps);
+    pin.onclick=function(e){if(e)e.stopPropagation();copyPrompt(s,pin)};
+    pb.appendChild(pin);
+    body.appendChild(pb);
+
+    if(s.status){
+      var dev=document.createElement('div');dev.className='dev-banner';
+      dev.innerHTML='⚠️ '+esc(s.status)+'<span class="mini">· AI 收到此 prompt 必须停止执行并明确告知,不绕过/不假装/不降级(07 契约)</span>';
+      body.appendChild(dev);
+    }
+    card.appendChild(body);
+    return card;
+  }
+
+  /* ===== 分类模块(域 → 子功能 → 场景 · 4 层折叠) ===== */
+  function buildModule(domain){
+    var m=document.createElement('details');m.className='module';
+    var sum=document.createElement('summary');
+    var total=domain.subs.reduce(function(n,sub){return n+sub.scenes.length},0);
+    sum.innerHTML='<span class="module-head"><span class="m-icon">'+esc(domain.icon)+'</span>'+esc(domain.name)
+      +(total?'<span class="m-count">'+total+' 场景</span>':'');
+    m.appendChild(sum);
+    var body=document.createElement('div');body.className='module-body';
+    arr(domain.subs).forEach(function(sub){
+      var se=document.createElement('details');se.className='sub-module';
+      var ssum=document.createElement('summary');
+      ssum.innerHTML='<span class="sub-head"><span>'+esc(sub.name)+'</span><span class="scount">'+sub.scenes.length+' 场景</span></span>';
+      se.appendChild(ssum);
+      var sbody=document.createElement('div');sbody.className='module-body';
+      sub.scenes.forEach(function(s){sbody.appendChild(buildSceneCard(s,null))});
+      se.appendChild(sbody);
+      body.appendChild(se);
+    });
+    m.appendChild(body);
+    return m;
+  }
+
+  /* ===== 渲染 ===== */
+  var modsEl=document.getElementById('mods');
+  function renderMods(){
+    modsEl.innerHTML='';
+    /* 首次打开默认全部折叠(P1 裁决 #4 整卡展开 + 用户 2026-08-05 拍板:
+       不预展开任何域,目录保持一屏概览;#hash 直达时由 goToScene 展开目标链) */
+    domains.forEach(function(dom){modsEl.appendChild(buildModule(dom,false))});
+  }
+  renderMods();
+
+  /* hero meta + stats(用户友好文案:无 yaml 路径/总纲引用) */
+  var sum=(d.summary&&typeof d.summary==='object')?d.summary:{};
+  document.getElementById('heroStats').innerHTML=(arr(sum.metrics)||[]).map(function(m){
+    return '<span class="stat">'+esc(m.value)+' '+esc(m.label)+'</span>';
+  }).join('');
+  document.getElementById('heroMeta').textContent=
+    (sum.subtitle?esc(sum.subtitle):'');
+
+  /* 首次使用横幅(状态驱动 · P1 裁决 #3) */
+  var initBanner=document.getElementById('initBanner');
+  var initScene=null;
+  domains.forEach(function(dom){
+    arr(dom.subs).forEach(function(sub){
+      sub.scenes.forEach(function(s){if(s.scenario_id==='first_use')initScene=s});
+    });
+  });
+  if(!d.initialized&&initScene){
+    initBanner.hidden=false;
+    document.getElementById('initCopy').onclick=function(e){copyPrompt(initScene,this)};
+  }
+
+  /* 联系作者 */
+  var cb=document.getElementById('contactBody');
+  var contactItems=[];
+  if(contact.email)contactItems.push(['邮箱',contact.email]);
+  if(contact.github)contactItems.push(['GitHub',contact.github]);
+  if(contact.issues)contactItems.push(['Issues',contact.issues]);
+  if(contact.phone)contactItems.push(['手机号',contact.phone]);
+  contactItems.forEach(function(it){
+    var dd=document.createElement('div');dd.className='contact-item';
+    var href=/^https?:/.test(it[1])?('href="'+esc(it[1])+'" target="_blank" rel="noopener"'):'';
+    dd.innerHTML='<span class="k">'+esc(it[0])+'</span><span>'+(href?'<a '+href+'>'+esc(it[1])+'</a>':esc(it[1]))+'</span>';
+    cb.appendChild(dd);
+  });
+  var cbtn=document.createElement('button');cbtn.className='copy-btn contact-copy';cbtn.textContent='一键复制全部联系信息';
+  cbtn.onclick=function(){
+    var t=contactItems.map(function(it){return it[0]+': '+it[1]}).join('\n');
+    toastText('全部联系信息');safeWriteText(t).then(function(ok){flashBtn(cbtn,ok?'✓ 已复制':'✗ 复制失败',2000)});
+  };
+  cb.appendChild(cbtn);
+
+  document.getElementById('footerLine').textContent='居家管家 v2.0 HELP · 使用手册';
+
+  /* ===== 场景直达(#hash 导航 · 分享/收藏/回访) ===== */
+  function openChain(el){
+    var n=el.parentNode;
+    while(n&&n!==document.body){
+      if(n.tagName==='DETAILS'){n.open=true}
+      n=n.parentNode;
+    }
+  }
+  function goToScene(scenario_id){
+    var el=document.getElementById('s-'+scenario_id);
+    if(!el)return;
+    openChain(el);
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+    el.style.transition='box-shadow .6s, border-color .6s';
+    el.style.boxShadow='0 0 0 3px rgba(0,122,255,.35)';
+    setTimeout(function(){el.style.boxShadow=''},2000);
+  }
+
+  /* 启动:URL #s-{scenario_id} → 展开祖先链 + 定位 */
+  var initHash=(location.hash||'').replace(/^#/,'');
+  if(initHash.indexOf('s-')===0){
+    setTimeout(function(){goToScene(initHash.slice(2))},120);
+  }
+
+  /* ===== / 快捷键聚焦搜索(输入时忽略) ===== */
+  document.addEventListener('keydown',function(e){
+    var tag=(e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||e.target.isContentEditable)return;
+    if(e.key==='/'){
+      e.preventDefault();
+      document.getElementById('sB').focus();
+    }
+  });
+
+  /* ===== 搜索:有词 → 平铺命中结果;无词 → 目录(变体 B 一屏直达) ===== */
+  var inpB=document.getElementById('sB');
+  inpB.addEventListener('input',function(){
+    var q_=this.value.trim();
+    if(!q_){renderMods();return}
+    var hits=[];
+    domains.forEach(function(dom){
+      arr(dom.subs).forEach(function(sub){
+        sub.scenes.forEach(function(s){if(sceneMatch(s,q_))hits.push(s)});
+      });
+    });
+    modsEl.innerHTML='';
+    if(hits.length===0){
+      var em=document.createElement('div');em.className='search-empty';
+      em.textContent='没有找到匹配「'+q_+'」的场景,换个词试试(唤醒词 / 场景名 / 子功能)。';
+      modsEl.appendChild(em);
+      return;
+    }
+    var hc=document.createElement('div');hc.className='hitcount';hc.textContent='命中 '+hits.length+' 个场景';
+    modsEl.appendChild(hc);
+    hits.forEach(function(s){modsEl.appendChild(buildSceneCard(s,q_))});
+  });
+})();
 </script>
 </body>
 </html>

@@ -1,93 +1,126 @@
-"""居家管家 HELP 中心渲染器(总纲 07 §)
+"""居家管家 v2.0 HELP 中心渲染器(总纲 07 § · G8 规格 · 变体 B 生产化)
 
-输入: references/scenarios.yaml(场景资产唯一事实源)
-输出: help_center.html(总纲 04 §4 段式 + 07 §每场景独立复制按钮)
+输入: references/scenarios.yaml(场景资产唯一事实源 · 9 域 59 场景)
+输出: help_center.html(变体 B 一屏直达: hero + 首次使用横幅 + sticky 搜索 + 4 层折叠 + 联系作者)
 
-分组策略(P1-11b 用户拍板,2026-07-27):
-  一级 group = 人类语言任务导向(A 套,11 类)
-    找东西 / 存东西 / 改东西 / 盘点 / 出门 / 回家 / 看统计 / 账号 / 检查 / 标签 / 帮助
+分组策略(v2.0 · G1/G7 定稿):
+  一级 = 9 功能域(domains,顺序固定)
+  二级 = 子功能(sub,按场景出现顺序)
+  三级 = 场景卡片(scene)
+  四级 = prompt 详情(展开后可见)
+
+状态注入(P1 裁决 #3 · 2026-08-05):
+  首次使用横幅 = 状态驱动,初始化完成后整个区域消失。
+  生产 = render 时从库注入初始化状态:DB 文件存在 → 已初始化(横幅隐藏);
+  不存在 → 未初始化(横幅显示)。重装/换电脑重新出现。
 
 不展示 HELP 自身(07 §核心规则 2)。
 """
+import os
 import sys
 import yaml
 from pathlib import Path
 from datetime import datetime
-import os
 
 SKILL_DIR = Path(__file__).parent.parent
 SCENARIOS = SKILL_DIR / "references" / "scenarios.yaml"
 TEMPLATE = "help_center.html"
 
-# 11 类别 — A 套,人类语言任务导向
-CATEGORY_ORDER = [
-    "找东西", "存东西", "改东西", "盘点",
-    "出门", "回家",
-    "看统计", "账号", "检查", "标签",
-    "帮助",
-]
+# 联系作者(仅 HELP · G7 决策补充 2026-08-04)
+CONTACT = {
+    "email": "975559549@qq.com",
+    "github": "https://github.com/FeatherHunter/SKILLS",
+    "issues": "https://github.com/FeatherHunter/SKILLS/issues",
+    "phone": "17372067837",
+}
+
+
+def _is_initialized() -> bool:
+    """初始化状态判定:DB 文件存在 = 已初始化(首次使用横幅隐藏)。
+
+    env 覆盖:HELP_INITIALIZED=1/0 可强制指定(测试/镜像可重现性)。
+    函数内 import + 每次调用重算路径,确保读取当前环境变量(测试可 monkeypatch)。
+    """
+    env = os.environ.get("HELP_INITIALIZED")
+    if env is not None:
+        return env.strip().lower() in ("1", "true", "yes")
+    from home_manager.db import DB_FILENAME, _find_db_path
+    db_path = _find_db_path(SKILL_DIR, DB_FILENAME)
+    return db_path.exists()
 
 
 def build_help_payload() -> dict:
-    """读 scenarios.yaml → 渲染 payload(总纲 07 §2.1 场景资产 → HELP HTML)
+    """读 scenarios.yaml → 渲染 payload(v2.0 · 9 域结构)
 
     分组规则:
-      一级 group = scenario.category(A 套 11 类,顺序固定)
-      每个 group 内:列出该类别下所有场景(按 yaml 出现顺序)
-
-    variants 字段(round 2 · 2026-07-28):
-      每个 scenario 可选携带 variants(list of {direction, phrase})。
-      HELP HTML 展示变体 prompt + 独立复制按钮(对齐卡路里 HELP 风格)。
-      无 variants 的 scenario 只展示 main prompt。
+      一级 = domain(domains 列表顺序,9 域固定)
+      二级 = sub(按场景出现顺序去重)
+      三级 = 场景(按 yaml 出现顺序)
+    每场景携带: id / wake_word / scenario_title / type(08 流程类型徽章)/
+                status(二态)/ prompt / result / html 映射字段
     """
     data = yaml.safe_load(SCENARIOS.read_text(encoding="utf-8"))
+    domains_meta = data.get("domains", [])
     scenarios = data.get("scenarios", [])
 
     # 时间戳: 支持环境变量固定(构建时 / 测试时一致),默认当前时间
     ts = os.environ.get("HELP_FIXED_TIMESTAMP") or datetime.now().strftime('%Y-%m-%d %H:%M')
 
-    # 按 category 分组(P1-11b)
-    by_category = {}
-    total_wake_words = set()
-    total_variants = 0
-    for s in scenarios:
-        cat = s.get("category", "其他")
-        by_category.setdefault(cat, []).append(s)
-        total_wake_words.add(s["wake_word"])
-        if s.get("variants"):
-            total_variants += len(s["variants"])
+    # 域元信息索引
+    meta_by_key = {d["key"]: d for d in domains_meta}
 
-    groups = []
-    for cat in CATEGORY_ORDER:
-        if cat not in by_category:
-            continue
-        # 收集该 category 下的 wake_words(去重保插入序)
-        wake_words = []
+    # 按 domain 分组(保插入序)
+    by_domain = {}
+    for s in scenarios:
+        by_domain.setdefault(s.get("domain", "其他"), []).append(s)
+
+    domains = []
+    total_wake = set()
+    available = 0
+    pending = 0
+    for d in domains_meta:
+        key = d["key"]
+        scenes = by_domain.get(key, [])
+        # 子功能分组(保序)
+        subs = []
         seen = set()
-        for s in by_category[cat]:
-            if s["wake_word"] not in seen:
-                seen.add(s["wake_word"])
-                wake_words.append(s["wake_word"])
-        groups.append({
-            "category": cat,
-            "wake_words": wake_words,
-            "scenarios": by_category[cat],
+        for s in scenes:
+            sub = s.get("sub", "其他")
+            if sub not in seen:
+                seen.add(sub)
+                subs.append({"name": sub, "scenes": [s for s in scenes if s.get("sub") == sub]})
+        for s in scenes:
+            total_wake.add(s.get("wake_word", ""))
+            if s.get("status", "") == "":
+                available += 1
+            else:
+                pending += 1
+        domains.append({
+            "key": key,
+            "name": d["name"],
+            "icon": d.get("icon", "📦"),
+            "sm": d.get("sm", ""),
+            "subs": subs,
         })
 
     return {
         "status": "ok",
         "data": {
             "summary": {
-                "title": "居家管家 · 能力速查",
-                "subtitle": f"由 references/scenarios.yaml 渲染(总纲 07 §唯一事实源) · {ts} 更新",
+                "title": "居家管家 · 使用手册(HELP)",
+                "subtitle": f"9 功能域 · {len(scenarios)} 场景 · 版本 {data.get('version', '2.0')} · 更新于 {ts}",
                 "metrics": [
-                    {"label": "类别", "value": str(len(groups))},
+                    {"label": "功能域", "value": str(len(domains_meta))},
                     {"label": "场景", "value": str(len(scenarios))},
-                    {"label": "唤醒词", "value": str(len(total_wake_words))},
-                    {"label": "变体", "value": str(total_variants)},
+                    {"label": "可用", "value": str(available)},
+                    {"label": "待开发", "value": str(pending)},
                 ],
+                "version": data.get("version", "2.0"),
+                "generated_at": ts,
             },
-            "groups": groups,
+            "initialized": _is_initialized(),
+            "domains": domains,
+            "contact": CONTACT,
         },
         "message": "HELP 中心",
     }

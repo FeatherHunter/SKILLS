@@ -18,6 +18,9 @@ h1{font-size:26px;letter-spacing:-.02em;color:#4a3d28}
 .pager{display:flex;align-items:center;justify-content:center;gap:14px;margin:18px 0;color:#8a744f;font-size:14px}
 .pager button{border:1px solid #e4d9c2;background:#fdfaf4;border-radius:99px;padding:7px 16px;font:inherit;cursor:pointer;font-size:13px;color:#8a744f}
 .actions{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.occ{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.occ button{border:1px solid #e4d9c2;background:#fff;border-radius:99px;padding:5px 13px;font:inherit;font-size:12px;cursor:pointer;color:#8a744f}
+.occ button.on{background:#8a744f;border-color:#8a744f;color:#fff;font-weight:700}
 .btn{border:none;border-radius:999px;padding:10px 20px;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
 .btn.primary{background:#8a744f;color:#fff}
 .btn.ghost{background:#fff;border:1px solid #e4d9c2;color:#8a744f}
@@ -109,8 +112,9 @@ h1{font-size:26px;letter-spacing:-.02em;color:#4a3d28}
 <!--SHARED-HELPERS-->
 const SLOT_LABELS={hat:'帽子',inner:'内搭',outer:'外套',bottom:'下装',shoes:'鞋',acce:'配饰'};
 const SLOT_ORDER=['hat','inner','outer','bottom','shoes','acce'];
+const OCCASIONS=['上班','约会','运动','家居','正式','自定义'];
 let META={}, CD={}, CL={}, SCENE={};
-let sets=[], setIdx=0, layer='outer';
+let sets=[], setIdx=0, layer='outer', occasion='';
 
 function toast(msg){
   const t=document.getElementById('toast');
@@ -170,6 +174,7 @@ function renderApp(){
     <div class="vc-styles"><span>${esc(set.style||'日常')}</span><span>相册拼贴</span></div>
     <div class="vc-reason">${esc(set.reason||'')}</div>
   </div>
+  <div class="occ">${OCCASIONS.map(o=>`<button class="${occasion===o?'on':''}" onclick="setOccasion('${o}')">${o}</button>`).join('')}</div>
   ${hasLayers?`<div class="layerbar"><button class="${outerOn?'on':''}" onclick="setLayer('outer')">外层</button><button class="${!outerOn?'on':''}" onclick="setLayer('inner')">内搭</button></div>`:''}
   <div class="vc-pieces">${SLOT_ORDER.filter(k=>slots[k]).map(k=>`<div class="vc-piece" onclick="openAlbum('${k}')"><div class="pic">${fmtItem(slots[k])}</div><div class="nm">${esc(slots[k].name||'')}</div></div>`).join('')}</div>
 </div>
@@ -182,10 +187,11 @@ ${SCENE.gap&&SCENE.gap.length?`<div class="gap">衣橱缺口:<b>${esc(SCENE.gap.
 </div>`;
 }
 function setLayer(l){layer=l;renderApp();}
+function setOccasion(o){occasion=occasion===o?'':o;renderApp();}
 function pager(d){setIdx=(setIdx+d+sets.length)%sets.length;renderApp();}
 function adopt(){
   const set=sets[setIdx];
-  const lines=[`outfit_adopt:【今天穿这套 · ${set.style||'日常'}】`,''];
+  const lines=[`outfit_adopt:【今天穿这套 · ${set.style||'日常'}${occasion?' · '+occasion:''}】`,''];
   for(const k of SLOT_ORDER){
     const it=set.slots[k];
     if(it) lines.push(`- ID ${it.id}（${it.name}）：标记使用（${SLOT_LABELS[k]}）`);

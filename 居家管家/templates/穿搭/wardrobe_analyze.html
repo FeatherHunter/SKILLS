@@ -92,6 +92,7 @@ function render(){
     <button class="btn primary" onclick="handle('废弃')">标记废弃</button>
     <button class="btn ghost" onclick="handle('送人')">送人(废弃+备注)</button>
     <button class="btn ghost" onclick="handle('先不处理')">先不处理</button>
+    <button class="btn ghost" onclick="gapShopping()">缺口加入购物清单</button>
     <button class="btn ghost" onclick="copyData()">复制数据</button>
     <button class="btn ghost" onclick="copyLog()">复制日志</button>
   </div></div>`;
@@ -111,6 +112,11 @@ function handle(act){
 }
 function copyData(){copyText(JSON.stringify(CD,null,2));}
 function copyLog(){copyText(JSON.stringify(CL,null,2));}
+function gapShopping(){
+  const advice=SCENE.advice||'';
+  const need=(advice.match(/补充([上下]装|鞋子?|上装)/)||[])[1]||'';
+  copyText(need?`请帮我加入购物清单(唤醒词:购物清单):${need}`:`请帮我加入购物清单(唤醒词:购物清单):参考衣橱分析缺口建议「${advice}」`);
+}
 render();
 </script>
 </body>

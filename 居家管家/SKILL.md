@@ -132,9 +132,9 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 13 | 修物品 | 标记维修 | features/update.md → 状态变更 | 是 |
 | 14 | 盘物品 | 按位置盘点 | features/inventory.md | 是（位置） |
 | 15 | 盘全部 | 全屋盘点 | features/inventory.md | 否 |
-| 16 | 穿什么 | 穿搭推荐 | features/fashion.md | 否 |
-| 17 | 带物品 | 出门标记 | features/travel.md → 出门前 | 是 |
-| 18 | 归物品 | 回家归位 | features/travel.md → 回家后 | 否（查所有旅游中） |
+| 16 | 穿什么 | 穿搭推荐 | `python3 scripts/home_manager.py sm3-outfit [--temperature N] [--occasion X] [--limit N]` → 穿搭/outfit_picker.html（拼贴卡相册风） | 否 |
+| 17 | 带物品 | 出门标记 | `python3 scripts/home_manager.py sm3-trip [--trip-type X] [--days N] [--plan-type X] [--exercises X]` → 穿搭/travel_trip.html（行程规则/健身联动/出发核对） | 否 |
+| 18 | 归物品 | 回家归位 | `python3 scripts/home_manager.py sm3-trip --mode return` → 穿搭/travel_trip.html（旅游中清单逐个确认归位） | 否（查所有旅游中） |
 | 19 | 统物品 | 总体统计 | features/stats.md → summary | 否 |
 | 20 | 查高频 | 高频物品（并入物品总览） | features/stats.md → summary（T5 裁决：并入总览高频 TOP 区块） | 否 |
 | 21 | 查低频 | 低频物品（并入闲置检测） | features/stats.md → idle（T5 裁决：语义由查闲置承接） | 否 |
@@ -194,12 +194,9 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 75 | 保修 | 保修与保养（登记/到期/维修记录/保养周期） | `python3 scripts/票据凭证/cli.py warranty list [--status 在保\|即将到期\|已过\|全部]` / `register --item-id N --kind 保修\|保养` / `repair --warranty-id N` / `maintain --warranty-id N` → 票据凭证/warranty.html | 否（物品可选） |
 | 76 | 证件 | 证件管理（登记/到期/归档·号码脱敏） | `python3 scripts/票据凭证/cli.py cert list` / `add --type 护照\|身份证\|驾照\|签证\|保险单\|其他 --expires-at D` → 票据凭证/certificates.html | 否 |
 | 77 | 账号 | 账号密码（加密存/查/改·敏感复制分离） | `python3 scripts/票据凭证/cli.py account list` → 票据凭证/accounts.html（密码 ******；复制数据默认不含密码） | 否 |
-| 78 | 穿什么 | 穿搭推荐（拼贴卡·相册风） | `python3 scripts/home_manager.py sm3-outfit [--temperature N] [--occasion X] [--limit N]` → 穿搭/outfit_picker.html | 否 |
-| 79 | 衣橱分析 | 衣橱闲置分析（结构诊断/断舍离） | `python3 scripts/home_manager.py sm3-wardrobe` → 穿搭/wardrobe_analyze.html | 否 |
-| 80 | 换季 | 换季收纳（季节衣物批量收纳/拿出） | `python3 scripts/home_manager.py sm3-season [--season 夏季\|冬季\|春秋] [--action 收纳\|拿出]` → 穿搭/wardrobe_season.html | 否 |
-| 81 | 带物品 | 出行带物清单（行程规则/健身联动/出发核对） | `python3 scripts/home_manager.py sm3-trip [--trip-type X] [--days N] [--plan-type X] [--exercises X]` → 穿搭/travel_trip.html | 否 |
-| 82 | 归物品 | 回家归位（旅游中 → 在家） | `python3 scripts/home_manager.py sm3-trip --mode return` → 穿搭/travel_trip.html | 否 |
-| 83 | 旅行穿搭 | 旅行穿搭计划（天数+天气·每日组合） | `python3 scripts/home_manager.py sm3-trip-plan [--days N] [--destination X] [--temps N,N]` → 穿搭/trip_outfit_plan.html | 否 |
+| 78 | 衣橱分析 | 衣橱闲置分析（结构诊断/断舍离） | `python3 scripts/home_manager.py sm3-wardrobe` → 穿搭/wardrobe_analyze.html | 否 |
+| 79 | 换季 | 换季收纳（季节衣物批量收纳/拿出） | `python3 scripts/home_manager.py sm3-season [--season 夏季\|冬季\|春秋] [--action 收纳\|拿出]` → 穿搭/wardrobe_season.html | 否 |
+| 80 | 旅行穿搭 | 旅行穿搭计划（天数+天气·每日组合） | `python3 scripts/home_manager.py sm3-trip-plan [--days N] [--destination X] [--temps N,N]` → 穿搭/trip_outfit_plan.html | 否 |
 
 ### 匹配规则
 
@@ -251,9 +248,9 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 修物品 | `update --id {ID} --location-status "维修中"` |
 | 盘物品 | `inventory --location "位置" [--output PATH]` (--output 走 inventory_check.html) |
 | 盘全部 | `list`（无筛选条件） |
-| 穿什么 | `list --category-id 138 --status "在家"` (衣物顶级) + `list --category-id 148 --status "在家"` (鞋类二级) |
-| 带物品 | `update --id {ID} --location-status "旅游中"` |
-| 归物品 | `search --status "旅游中"` → 逐个 `update --id {ID} --location-status "在家"` |
+| 穿什么 | `sm3-outfit [--temperature N] [--occasion X] [--limit N]` → 穿搭/outfit_picker.html |
+| 带物品 | `sm3-trip [--trip-type X] [--days N] [--plan-type X] [--exercises X]` → 穿搭/travel_trip.html |
+| 归物品 | `sm3-trip --mode return` → 穿搭/travel_trip.html |
 | 统物品 | `stats --type overview --output`（物品总览 HTML，含状态/分类/位置/价值TOP/高频TOP/趋势） |
 | 查高频 | `stats --type overview --output`（T5 裁决：并入物品总览高频 TOP 区块） |
 | 查低频 | `stats --type idle [--days 90] --output`（T5 裁决：语义由闲置检测承接） |
@@ -520,9 +517,12 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 | 修物品 | 标记维修 | features/update.md |
 | 盘物品 | 按位置盘点 | features/inventory.md |
 | 盘全部 | 全屋盘点 | features/inventory.md |
-| 穿什么 | 穿搭推荐 | features/fashion.md |
-| 带物品 | 出门标记 | features/travel.md |
-| 归物品 | 回家归位 | features/travel.md |
+| 穿什么 | 穿搭推荐 | features/穿搭.md（拼贴卡相册风） |
+| 带物品 | 出门标记 | features/穿搭.md → 出行清单 |
+| 归物品 | 回家归位 | features/穿搭.md → 归位 |
+| 衣橱分析 | 衣橱闲置分析 | features/穿搭.md → 衣橱分析 |
+| 换季 | 换季收纳 | features/穿搭.md → 换季 |
+| 旅行穿搭 | 旅行穿搭计划 | features/穿搭.md → 旅行穿搭 |
 | 统物品 | 总体统计 | features/stats.md |
 | 查高频 | 高频物品 | features/stats.md |
 | 查低频 | 低频物品 | features/stats.md |
@@ -576,7 +576,7 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 | 查看类 | `查物品` / `看物品` |
 | 盘点类 | `盘物品` / `盘全部` |
 | 统计类 | `统物品` / `查高频` / `查低频` / `查过期` |
-| 出行类 | `查快递` / `穿什么` / `带物品` / `归物品` |
+| 出行类 | `查快递` / `穿什么` / `带物品` / `归物品` / `衣橱分析` / `换季` / `旅行穿搭` |
 | 空间类 | `管位置` / `固定位` / `收纳建议` / `空间视图` |
 | 票据凭证类 | `购买记录` / `保修` / `证件` / `账号`（SM6 域 CLI 默认输出 HTML） |
 

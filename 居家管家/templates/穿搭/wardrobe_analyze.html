@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 衣橱闲置分析</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f6f1e7;color:#4a3d28;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:70px}
+.wrap{max-width:760px;margin:0 auto;padding:36px 22px}
+.hero{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #eadfc8;border-radius:24px;padding:24px 26px;margin-bottom:18px;box-shadow:0 14px 40px rgba(90,70,40,.10)}
+.eyebrow{color:#8a744f;font-size:11px;font-weight:800;letter-spacing:.14em;margin-bottom:6px}
+h1{font-size:24px;color:#4a3d28}
+.lead{color:#8a744f;font-size:14px;margin-top:4px}
+.cards{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.cards span{background:#fff;border:1px solid #e4d9c2;border-radius:99px;padding:5px 12px;font-size:12px;color:#8a744f}
+.card{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #eadfc8;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 14px 40px rgba(90,70,40,.08)}
+.card h2{font-size:16px;margin-bottom:12px;color:#4a3d28}
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.bar-row .lbl{width:52px;font-size:12px;color:#8a744f;flex-shrink:0}
+.bar-row .track{flex:1;height:12px;background:#efe7d6;border-radius:99px;overflow:hidden}
+.bar-row .fill{height:100%;background:#8a744f;border-radius:99px}
+.bar-row .cnt{width:64px;font-size:12px;color:#8a744f;text-align:right}
+.advice{background:#f3ecdc;border:1px solid #e4d9c2;border-radius:12px;padding:10px 14px;font-size:13px;color:#6d5c3d}
+.dormant{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed #e4d9c2}
+.dormant:last-child{border-bottom:none}
+.thumb{width:52px;height:60px;border-radius:8px;overflow:hidden;background:#f0f3f8;flex-shrink:0}
+.thumb img,.thumb .ph{width:100%;height:100%;object-fit:cover}
+.thumb .ph{display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff}
+.dormant .nm{font-size:14px;font-weight:700}
+.dormant .meta{font-size:11px;color:#8a744f;margin-top:2px}
+.est{display:inline-block;background:#fdeee3;color:#b4552d;border-radius:99px;font-size:10px;padding:1px 8px;margin-left:6px;border:1px solid #f5d9c4}
+.dormant input{width:18px;height:18px;accent-color:#8a744f;flex-shrink:0}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.btn{border:none;border-radius:999px;padding:10px 20px;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
+.btn.primary{background:#8a744f;color:#fff}
+.btn.ghost{background:#fff;border:1px solid #e4d9c2;color:#8a744f}
+.empty{text-align:center;color:#8a744f;padding:20px 0}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#4a3d28;color:#fdfaf4;padding:9px 18px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:120}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:760px){.wrap{padding:24px 14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · <span id="wakeWord">衣橱分析</span> · <span id="sceneId">SM3-2</span></div>
+<h1 id="title">衣橱闲置分析</h1>
+<p class="lead" id="subtitle">结构诊断 · 断舍离建议(参考性)</p>
+<div class="cards" id="metrics"></div>
+</header>
+<div id="app"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+let META={},CD={},CL={},SCENE={};
+const PICK={};
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+function copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>toast('已复制 ✓')).catch(()=>toast('复制失败'));}else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('已复制 ✓');}}
+function fmt(it){return it&&it.photo_base64?`<img alt="${esc(it.name||'')}" src="data:image/jpeg;base64,${it.photo_base64}">`:`<div class="ph" style="background:linear-gradient(135deg,#c9c2b4,#a89f8c)">${esc((it.name||'无图').slice(0,6))}</div>`;}
+function render(){
+  let payload;
+  try{payload=JSON.parse(document.getElementById('payload').textContent);}catch(e){document.getElementById('app').innerHTML=`<div class="empty">数据解析失败</div>`;return;}
+  const v=validate(payload);
+  if(!v.ok){document.getElementById('app').innerHTML=`<div class="empty">${esc(v.msg)}</div>`;return;}
+  const d=payload.data||{};
+  META=d.meta||{};CD=d.copy_data||{};CL=d.copy_log||{};SCENE=d.scene||{};
+  const s=SCENE;
+  document.getElementById('sceneId').textContent=META.scene_id||'SM3-2';
+  document.getElementById('wakeWord').textContent=META.wake_word||'衣橱分析';
+  document.getElementById('title').textContent=(s.summary&&s.summary.title)||'衣橱闲置分析';
+  document.getElementById('subtitle').textContent=(s.summary&&s.summary.subtitle)||'';
+  document.getElementById('metrics').innerHTML=arr(s.summary&&s.summary.metrics).map(m=>`<span>${esc(m.label)}:${esc(m.value)}</span>`).join('');
+  const dist=arr(s.distribution), dormant=arr(s.dormant);
+  let html=`<div class="card"><h2>衣橱构成</h2>`;
+  if(!dist.length) html+=`<div class="empty">衣橱还没有在家衣物。</div>`;
+  else html+=dist.map(x=>`<div class="bar-row"><span class="lbl">${esc(x.label)}</span><div class="track"><div class="fill" style="width:${x.pct}%"></div></div><span class="cnt">${x.count} 件 · ${x.pct}%</span></div>`).join('');
+  html+=`</div>`;
+  html+=`<div class="card"><h2>AI 建议一句</h2><div class="advice">${esc(s.advice||'')}</div></div>`;
+  html+=`<div class="card"><h2>闲置清单<span style="font-size:12px;color:#a08a68;font-weight:400"> (勾选后处理)</span></h2>`;
+  if(!dormant.length) html+=`<div class="empty">衣橱状态良好,没有长期闲置衣物。</div>`;
+  else html+=dormant.map((x,i)=>`
+    <div class="dormant">
+      <input type="checkbox" data-i="${i}" onchange="pick(${i})">
+      <div class="thumb">${fmt(x)}</div>
+      <div style="flex:1"><div class="nm">${esc(x.name)}${x.estimated?'<span class="est">估算</span>':''}</div>
+      <div class="meta">${esc(x.slot||'')} · 闲置 ${x.days_idle!=null?x.days_idle+' 天':'?'} · 最后使用 ${esc(x.last_used||'从未')}</div></div>
+    </div>`).join('');
+  html+=`<div class="actions">
+    <button class="btn primary" onclick="handle('废弃')">标记废弃</button>
+    <button class="btn ghost" onclick="handle('送人')">送人(废弃+备注)</button>
+    <button class="btn ghost" onclick="handle('先不处理')">先不处理</button>
+    <button class="btn ghost" onclick="copyData()">复制数据</button>
+    <button class="btn ghost" onclick="copyLog()">复制日志</button>
+  </div></div>`;
+  html+=`<div class="gap"></div>`;
+  document.getElementById('app').innerHTML=html;
+}
+function pick(i){PICK[i]=!PICK[i];}
+function handle(act){
+  const picked=Object.keys(PICK).filter(k=>PICK[k]).map(k=>arr(SCENE.dormant)[Number(k)]).filter(Boolean);
+  if(!picked.length){toast('请先勾选衣物');return;}
+  const lines=[`wardrobe_handle:【${act}】`,''];
+  picked.forEach(x=>{
+    if(act==='送人') lines.push(`- ID ${x.id}（${x.name}）：标记废弃 + 备注"送人"`);
+    else lines.push(`- ID ${x.id}（${x.name}）：${act==='废弃'?'标记废弃':'暂不处理'}`);
+  });
+  copyText(lines.join('\n'));
+}
+function copyData(){copyText(JSON.stringify(CD,null,2));}
+function copyLog(){copyText(JSON.stringify(CL,null,2));}
+render();
+</script>
+</body>
+</html>

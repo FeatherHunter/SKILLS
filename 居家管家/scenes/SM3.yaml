@@ -1,0 +1,52 @@
+# scenes/SM3.yaml - SM3 穿搭出行域场景注册(域唯一事实源 · 合并器 = scripts/场景合并.py)
+# 与 references/scenarios.yaml 的关系: 合并器按 id 把本文件字段合并进总账(T2 公共层奠基产物)
+# 5 场景 = SM3 权威清单场景名总表(2026-08-04 定稿 · 拼贴组件 2026-08-06 用户裁定相册风)
+version: "2.0"
+domain: outfit
+scenes:
+  - id: "SM3-1"
+    wake_word: 穿什么
+    scenario_title: 今日穿搭推荐(拼贴效果)
+    type: 查看+选择
+    status: ""
+    html: {template: "穿搭/outfit_picker.html", command_cn: "穿什么", data_source: "items"}
+    prompt: |
+      请加载「居家管家」技能,帮我推荐今日穿搭(唤醒词:穿什么):
+
+        场  合: _____________ (选填:上班/约会/运动/家居/正式/自定义)
+        天气: _____________ (选填,或让 AI 自己获取)
+  - id: "SM3-2"
+    wake_word: 衣橱分析
+    scenario_title: 衣橱闲置分析(结构诊断/断舍离建议)
+    type: 查看+选择+回执
+    status: ""
+    html: {template: "穿搭/wardrobe_analyze.html", command_cn: "衣橱分析", data_source: "items"}
+  - id: "SM3-3"
+    wake_word: 换季
+    scenario_title: 换季收纳(季节衣物批量收纳)
+    type: 采集+回执
+    status: ""
+    html: {template: "穿搭/wardrobe_season.html", command_cn: "换季", data_source: "items"}
+  - id: "SM3-4"
+    wake_word: 带物品/归物品
+    scenario_title: 出行带物清单(带/归,联动健身计划,出发核对)
+    type: 查看+选择+回执
+    status: ""
+    html: {template: "穿搭/travel_trip.html", command_cn: "出行清单", data_source: "items"}
+    prompt: |
+      请加载「居家管家」技能,帮我做出行带物清单(唤醒词:带物品):
+
+        行程类型: _____________ (健身/出差/旅行/超市/游泳/爬山/滑雪/自定义)
+        天  数: _____________
+        操  作: _____________ (带出 / 归位)
+  - id: "SM3-5"
+    wake_word: 旅行穿搭
+    scenario_title: 旅行穿搭计划(天数+天气)
+    type: 查看+选择
+    status: ""
+    html: {template: "穿搭/trip_outfit_plan.html", command_cn: "旅行穿搭", data_source: "items"}
+    prompt: |
+      请加载「居家管家」技能,帮我做旅行穿搭计划(唤醒词:旅行穿搭):
+
+        目的地: _____________
+        天  数: _____________

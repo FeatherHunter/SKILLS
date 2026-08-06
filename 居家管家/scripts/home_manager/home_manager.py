@@ -47,6 +47,10 @@ def main():
     from 位置.cli import register as sm2_register
     from 位置.cli import run as sm2_run
 
+    # SM3 穿搭出行域(T4: 穿搭推荐拼贴/衣橱分析/换季/出行清单/旅行穿搭,域代码全在 scripts/穿搭/)
+    from 穿搭.cli import register as sm3_register
+    from 穿搭.cli import run as sm3_run
+
     import argparse
 
     parser = argparse.ArgumentParser(
@@ -235,6 +239,8 @@ def main():
     sm1_register(subparsers)
     # SM2 空间与位置域子命令(T3 · 4 场景)
     sm2_register(subparsers)
+    # SM3 穿搭出行域子命令(T4 · 5 场景)
+    sm3_register(subparsers)
 
     args = parser.parse_args()
 
@@ -781,6 +787,10 @@ def main():
     elif args.command and args.command.startswith("sm2-"):
         # SM2 空间与位置域(T3 · 分发到 位置.cli)
         return sm2_run(args)
+
+    elif args.command and args.command.startswith("sm3-"):
+        # SM3 穿搭出行域(T4 · 分发到 穿搭.cli)
+        return sm3_run(args)
 
     else:
         parser.print_help()

@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 出行带物清单</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f6f1e7;color:#4a3d28;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:70px}
+.wrap{max-width:760px;margin:0 auto;padding:36px 22px}
+.hero{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #eadfc8;border-radius:24px;padding:24px 26px;margin-bottom:18px;box-shadow:0 14px 40px rgba(90,70,40,.10)}
+.eyebrow{color:#8a744f;font-size:11px;font-weight:800;letter-spacing:.14em;margin-bottom:6px}
+h1{font-size:24px;color:#4a3d28}
+.lead{color:#8a744f;font-size:14px;margin-top:4px}
+.cards{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.cards span{background:#fff;border:1px solid #e4d9c2;border-radius:99px;padding:5px 12px;font-size:12px;color:#8a744f}
+.card{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #eadfc8;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 14px 40px rgba(90,70,40,.08)}
+.card h2{font-size:16px;margin-bottom:12px;color:#4a3d28}
+.progress{height:12px;background:#efe7d6;border-radius:99px;overflow:hidden;margin-bottom:12px}
+.progress .fill{height:100%;background:#8a744f;border-radius:99px;transition:width .2s}
+.progress-txt{font-size:12px;color:#8a744f;margin-bottom:12px}
+.item{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed #e4d9c2}
+.item:last-child{border-bottom:none}
+.thumb{width:52px;height:60px;border-radius:8px;overflow:hidden;background:#f0f3f8;flex-shrink:0}
+.thumb img,.thumb .ph{width:100%;height:100%;object-fit:cover}
+.thumb .ph{display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff}
+.item .nm{font-size:14px;font-weight:700}
+.item .meta{font-size:11px;color:#8a744f;margin-top:2px}
+.item .reason{font-size:11px;color:#a08a68;margin-top:2px}
+.unk{display:inline-block;background:#fdeee3;color:#b4552d;border-radius:99px;font-size:10px;padding:1px 8px;border:1px solid #f5d9c4}
+.src{display:inline-block;background:#f3ecdc;color:#8a744f;border-radius:99px;font-size:10px;padding:1px 8px;margin-left:6px}
+.item input{width:18px;height:18px;accent-color:#8a744f;flex-shrink:0}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.btn{border:none;border-radius:999px;padding:10px 20px;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
+.btn.primary{background:#8a744f;color:#fff}
+.btn.ghost{background:#fff;border:1px solid #e4d9c2;color:#8a744f}
+.empty{text-align:center;color:#8a744f;padding:20px 0}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#4a3d28;color:#fdfaf4;padding:9px 18px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:120}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:760px){.wrap{padding:24px 14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · <span id="wakeWord">带物品</span> · <span id="sceneId">SM3-4</span></div>
+<h1 id="title">出行带物清单</h1>
+<p class="lead" id="subtitle">勾选装箱 → 复制回执发给 AI 标'旅游中'</p>
+<div class="cards" id="metrics"></div>
+</header>
+<div id="app"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+let META={},CD={},CL={},SCENE={};
+const PICK={};
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+function copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>toast('已复制 ✓')).catch(()=>toast('复制失败'));}else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('已复制 ✓');}}
+function fmt(it){return it&&it.photo_base64?`<img alt="${esc(it.name||'')}" src="data:image/jpeg;base64,${it.photo_base64}">`:`<div class="ph" style="background:linear-gradient(135deg,#c9c2b4,#a89f8c)">${esc((it.name||'无图').slice(0,6))}</div>`;}
+function progress(){const items=arr(SCENE.items);const n=items.filter((_,i)=>PICK[i]).length;return {n,total:items.length};}
+function paintProgress(){
+  const p=progress();
+  const el=document.getElementById('prog');
+  if(!el) return;
+  el.innerHTML=`<div class="progress"><div class="fill" style="width:${p.total?p.n*100/p.total:0}%"></div></div><div class="progress-txt">已装 ${p.n}/${p.total} 件${p.total-p.n>0?` · 遗漏提示:「${esc((arr(SCENE.items).filter((_,i)=>!PICK[i])[0]||{}).name||'')}」没装`:''}</div>`;
+}
+function render(){
+  let payload;
+  try{payload=JSON.parse(document.getElementById('payload').textContent);}catch(e){document.getElementById('app').innerHTML=`<div class="empty">数据解析失败</div>`;return;}
+  const v=validate(payload);
+  if(!v.ok){document.getElementById('app').innerHTML=`<div class="empty">${esc(v.msg)}</div>`;return;}
+  const d=payload.data||{};
+  META=d.meta||{};CD=d.copy_data||{};CL=d.copy_log||{};SCENE=d.scene||{};
+  const s=SCENE;
+  const isReturn=(s.mode||'pack')==='return';
+  document.getElementById('sceneId').textContent=META.scene_id||'SM3-4';
+  document.getElementById('wakeWord').textContent=META.wake_word||'带物品';
+  document.getElementById('title').textContent=(s.summary&&s.summary.title)||'出行带物清单';
+  document.getElementById('subtitle').textContent=(s.summary&&s.summary.subtitle)||'';
+  document.getElementById('metrics').innerHTML=arr(s.summary&&s.summary.metrics).map(m=>`<span>${esc(m.label)}:${esc(m.value)}</span>`).join('');
+  const items=arr(s.items);
+  let html=`<div class="card"><h2>${isReturn?'归位确认':'出发核对'}</h2><div id="prog"></div>`;
+  if(!items.length) html+=`<div class="empty">${isReturn?'没有旅游中的物品。':'清单为空(行程规则未生成物品)。'}</div>`;
+  else html+=items.map((x,i)=>`
+    <div class="item"><input type="checkbox" data-i="${i}" onchange="pick(${i})">
+    <div class="thumb">${fmt(x)}</div>
+    <div style="flex:1">
+      <div class="nm">${esc(x.name||'')}${!x.registered?'<span class="unk">未录入</span>':''}<span class="src">${esc(x.source||'')}</span></div>
+      ${x.reason?`<div class="reason">${esc(x.reason)}</div>`:''}
+      ${isReturn?`<div class="meta">📍 ${esc(x.location||'(无位置)')} → 恢复在家</div>`:''}
+    </div></div>`).join('');
+  html+=`<div class="actions">
+    ${isReturn
+      ?`<button class="btn primary" onclick="confirmReturn()">确认归位</button>`
+      :`<button class="btn primary" onclick="confirmPack()">确认带出(标旅游中)</button>`}
+    <button class="btn ghost" onclick="copyData()">复制数据</button>
+    <button class="btn ghost" onclick="copyLog()">复制日志</button>
+  </div></div>`;
+  document.getElementById('app').innerHTML=html;
+  paintProgress();
+}
+function pick(i){PICK[i]=!PICK[i];paintProgress();}
+function confirmPack(){
+  const items=arr(SCENE.items);
+  const picked=items.filter((_,i)=>PICK[i]);
+  if(!picked.length){toast('请先勾选要带的物品');return;}
+  const lines=['trip_pack:【带出 N 件 · 标记旅游中】'.replace('N',picked.length),''];
+  picked.forEach(x=>lines.push(`- ID ${x.id}（${x.name}）：状态 → 旅游中`));
+  const unk=picked.filter(x=>!x.registered);
+  if(unk.length) lines.push('','未录入物品: '+unk.map(x=>x.name).join(' / ')+' → 可录入或加购物清单');
+  copyText(lines.join('\n'));
+}
+function confirmReturn(){
+  const items=arr(SCENE.items);
+  const picked=items.filter((_,i)=>PICK[i]);
+  if(!picked.length){toast('请先勾选要归位的物品');return;}
+  const lines=['trip_return:【归位 N 件 · 恢复在家】'.replace('N',picked.length),''];
+  picked.forEach(x=>lines.push(`- ID ${x.id}（${x.name}）：状态 → 在家（放回原位 ${x.location||''}）`));
+  copyText(lines.join('\n'));
+}
+function copyData(){copyText(JSON.stringify(CD,null,2));}
+function copyLog(){copyText(JSON.stringify(CL,null,2));}
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 今日穿搭推荐</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--paper1:#fdfaf4;--paper2:#f1ead9;--line:rgba(120,105,80,.20);--label:#8a744f;--border:rgba(255,255,255,.92);--accent:#8a744f;--tint:#f3ecdc;--note:rgba(253,250,244,.85);--ink:#4a3d28;--ink2:#8a744f}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f6f1e7;color:#4a3d28;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:70px}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 22px}
+.hero{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #eadfc8;border-radius:24px;padding:24px 26px;margin-bottom:18px;box-shadow:0 1px 2px rgba(90,70,40,.05),0 14px 40px rgba(90,70,40,.10)}
+.eyebrow{color:#8a744f;font-size:11px;font-weight:800;letter-spacing:.14em;margin-bottom:6px}
+h1{font-size:26px;letter-spacing:-.02em;color:#4a3d28}
+.lead{color:#8a744f;font-size:14px;margin-top:4px}
+.cards{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.cards span{background:#fff;border:1px solid #e4d9c2;border-radius:99px;padding:5px 12px;font-size:12px;color:#8a744f}
+.pager{display:flex;align-items:center;justify-content:center;gap:14px;margin:18px 0;color:#8a744f;font-size:14px}
+.pager button{border:1px solid #e4d9c2;background:#fdfaf4;border-radius:99px;padding:7px 16px;font:inherit;cursor:pointer;font-size:13px;color:#8a744f}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.btn{border:none;border-radius:999px;padding:10px 20px;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
+.btn.primary{background:#8a744f;color:#fff}
+.btn.ghost{background:#fff;border:1px solid #e4d9c2;color:#8a744f}
+.gap{color:#b4552d;background:#fdeee3;border:1px solid #f5d9c4;border-radius:12px;padding:10px 14px;font-size:13px;margin-top:14px}
+.gap b{color:#b4552d}
+.layerbar{display:flex;gap:6px;justify-content:center;margin-top:10px}
+.layerbar button{border:1px solid #e4d9c2;background:#fdfaf4;border-radius:99px;padding:5px 12px;font-size:12px;cursor:pointer;color:#8a744f}
+.layerbar button.on{background:#8a744f;border-color:#8a744f;color:#fff;font-weight:700}
+.ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.3);object-fit:cover}
+.vc-card{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #eadfc8;border-radius:20px;padding:16px;box-shadow:0 1px 2px rgba(90,70,40,.05),0 14px 40px rgba(90,70,40,.10);max-width:420px;margin:0 auto}
+.meta{display:flex;justify-content:space-between;align-items:center;margin:12px 4px 0;flex-wrap:wrap;gap:6px}
+.vc-styles{display:flex;gap:6px}
+.vc-styles span{background:#f3ecdc;color:#8a744f;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:600}
+.vc-reason{color:#8a744f;font-size:12px;font-family:Georgia,"Songti SC",serif;font-style:italic}
+.vc-pieces{display:flex;gap:10px;margin-top:14px;justify-content:center;flex-wrap:wrap}
+.vc-piece{width:74px;background:#fff;border-radius:8px;overflow:hidden;box-shadow:0 4px 12px rgba(80,60,30,.16);padding:4px 4px 14px;position:relative;cursor:pointer;transform:rotate(-2deg);transition:transform .15s}
+.vc-piece:nth-child(even){transform:rotate(2deg)}
+.vc-piece:hover{transform:rotate(0) translateY(-3px)}
+.vc-piece .pic{height:78px;border-radius:4px;overflow:hidden;background:#f0f3f8}
+.vc-piece img,.vc-piece .ph{width:100%;height:100%;object-fit:cover}
+.vc-piece .nm{position:absolute;bottom:1px;left:0;right:0;text-align:center;font-size:10.5px;color:#6d5c3d;font-family:"Kaiti SC","STKaiti","楷体",cursive;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px}
+.stage{position:relative;width:250px;height:360px;margin:0 auto;background:radial-gradient(ellipse at 50% 16%,var(--paper1),var(--paper2));border-radius:18px;overflow:hidden;box-shadow:0 24px 60px -20px rgba(90,70,40,.30),inset 0 0 46px rgba(120,100,70,.10);border:1px solid #eadfc8}
+.stage::before{content:'';position:absolute;left:50%;top:16px;bottom:14px;width:1px;background:repeating-linear-gradient(180deg,var(--line) 0 5px,transparent 5px 10px);transform:translateX(-50%)}
+.stage-label{position:absolute;top:8px;left:12px;font-size:9px;letter-spacing:.22em;color:var(--label);font-weight:600;z-index:5;font-family:Georgia,serif}
+.stage-page{position:absolute;right:12px;bottom:6px;font-size:9px;color:#b09a78;font-family:Georgia,serif;letter-spacing:.12em;z-index:5}
+.stage-hat,.stage-inner,.stage-outer,.stage-bottom,.stage-acce{cursor:pointer}
+.stage-hat::before,.stage-inner::before,.stage-outer::before,.stage-bottom::before,.stage-acce::before{content:'';position:absolute;top:0;left:0;width:0;height:0;border-top:11px solid rgba(138,116,79,.78);border-right:11px solid transparent;z-index:3}
+.stage-hat::after,.stage-inner::after,.stage-outer::after,.stage-bottom::after,.stage-acce::after{content:'';position:absolute;bottom:0;right:0;width:0;height:0;border-bottom:11px solid rgba(138,116,79,.78);border-left:11px solid transparent;z-index:3}
+.stage-hat{position:absolute;top:28px;left:50%;transform:translateX(-50%);width:60px;height:44px;border-radius:7px;overflow:hidden;box-shadow:0 12px 26px -10px rgba(60,50,30,.32);z-index:3;border:1.5px solid var(--border)}
+.stage-inner{position:absolute;top:76px;left:50%;transform:translateX(-50%);width:92px;height:84px;border-radius:8px;overflow:hidden;z-index:1;filter:brightness(.98);box-shadow:0 8px 20px -8px rgba(60,50,30,.24)}
+.stage-outer{position:absolute;top:92px;left:50%;transform:translateX(-50%);width:120px;height:118px;border-radius:8px;overflow:hidden;box-shadow:0 30px 60px -20px rgba(60,50,30,.42),0 10px 22px rgba(60,50,30,.14);z-index:2;border:1.5px solid var(--border)}
+.stage-bottom{position:absolute;top:214px;left:50%;transform:translateX(-50%);width:104px;height:86px;border-radius:8px;overflow:hidden;box-shadow:0 18px 38px -16px rgba(60,50,30,.34);z-index:1;border:1.5px solid var(--border)}
+.stage-shoes{position:absolute;top:302px;left:50%;transform:translateX(-50%);width:118px;height:40px;display:flex;gap:6px;z-index:2}
+.stage-shoes i{flex:1;border-radius:6px;overflow:hidden;box-shadow:0 10px 20px -8px rgba(60,50,30,.34);position:relative;border:1.5px solid var(--border);cursor:pointer}
+.stage-shoes i::before{content:'';position:absolute;top:0;left:0;width:0;height:0;border-top:7px solid rgba(138,116,79,.7);border-right:7px solid transparent;z-index:3}
+.stage-shoes i::after{content:'';position:absolute;bottom:0;right:0;width:0;height:0;border-bottom:7px solid rgba(138,116,79,.7);border-left:7px solid transparent;z-index:3}
+.stage-acce{position:absolute;right:14px;top:110px;width:44px;height:50px;border-radius:8px;overflow:hidden;box-shadow:0 12px 24px -10px rgba(60,50,30,.32);z-index:4;border:1.5px solid var(--border)}
+.stage img,.stage .ph{width:100%;height:100%;object-fit:cover}
+.stage .ph{font-size:8px}
+.stage-note{position:absolute;left:0;right:0;bottom:0;text-align:center;font-size:10px;color:#8a744f;background:linear-gradient(180deg,rgba(253,250,244,.92),rgba(248,242,229,.92));padding:3px 0;letter-spacing:.14em;font-family:"Kaiti SC","STKaiti","楷体",cursive}
+.empty{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #eadfc8;border-radius:20px;padding:36px 20px;text-align:center;color:#8a744f;max-width:420px;margin:0 auto;box-shadow:0 14px 40px rgba(90,70,40,.10)}
+.footer{color:#a08a68;font-size:12px;text-align:center;margin-top:22px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#4a3d28;color:#fdfaf4;padding:9px 18px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:120}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:760px){.wrap{padding:24px 14px}.hero{padding:20px}h1{font-size:22px}}
+
+/* 相册弹窗 */
+.album-overlay{position:fixed;inset:0;background:rgba(24,20,14,.58);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:100;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .22s}
+.album-overlay.show{opacity:1;pointer-events:auto}
+.album-card{background:linear-gradient(180deg,#fdfaf4,#f4efe4);border-radius:14px;padding:18px 16px 16px;box-shadow:0 30px 80px rgba(20,14,6,.5);transform:scale(.94) rotate(-.6deg);transition:transform .22s;max-width:min(88vw,430px);width:100%;position:relative;max-height:86vh;overflow:auto}
+.album-overlay.show .album-card{transform:scale(1) rotate(-.6deg)}
+.album-tape{position:absolute;top:-12px;left:50%;transform:translateX(-50%) rotate(-5deg);width:96px;height:22px;background:rgba(240,205,140,.75);border-radius:3px;box-shadow:0 2px 6px rgba(60,45,20,.2)}
+.album-close{position:absolute;top:10px;right:12px;border:none;background:rgba(120,100,70,.14);color:#6d5c3d;width:28px;height:28px;border-radius:50%;font-size:14px;cursor:pointer;z-index:3;line-height:1}
+.album-photo{background:#fff;padding:8px;border-radius:6px;box-shadow:0 10px 26px rgba(60,45,20,.28);text-align:center;position:relative}
+.album-photo img{display:block;max-width:100%;max-height:54vh;width:auto;height:auto;margin:0 auto;border-radius:2px}
+.album-photo .ph-grad{width:100%;height:180px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.3)}
+.album-stamp{position:absolute;right:-10px;bottom:34px;border:2px solid rgba(138,116,79,.55);color:rgba(138,116,79,.8);font-size:10px;font-weight:800;letter-spacing:.18em;padding:3px 8px;border-radius:3px;transform:rotate(7deg);background:rgba(253,250,244,.6);font-family:Georgia,serif}
+.album-body{padding:14px 6px 4px;text-align:center}
+.album-name{font-size:19px;font-weight:800;color:#4a3d28;font-family:"Kaiti SC","STKaiti","楷体",cursive}
+.album-role{display:inline-block;margin-top:8px;background:#8a744f;color:#fff;font-size:11px;font-weight:700;border-radius:99px;padding:3px 12px;letter-spacing:.1em}
+.album-tags{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.album-tags span{background:#fff;border:1px solid #e4d9c2;color:#8a744f;border-radius:99px;padding:2px 10px;font-size:11px}
+.album-cap{color:#a08a68;font-size:11px;margin-top:10px;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · <span id="wakeWord">穿什么</span> · <span id="sceneId">SM3-1</span></div>
+<h1 id="title">今日穿搭推荐</h1>
+<p class="lead" id="subtitle">相册拼贴 · 点击任意照片看原图</p>
+<div class="cards" id="metrics"></div>
+</header>
+<div id="app"></div>
+<p class="footer" id="footHint"></p>
+</div>
+
+<div class="album-overlay" id="album">
+<div class="album-card">
+<div class="album-tape"></div>
+<button class="album-close" onclick="closeAlbum()">✕</button>
+<div id="albumContent"></div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const SLOT_LABELS={hat:'帽子',inner:'内搭',outer:'外套',bottom:'下装',shoes:'鞋',acce:'配饰'};
+const SLOT_ORDER=['hat','inner','outer','bottom','shoes','acce'];
+let META={}, CD={}, CL={}, SCENE={};
+let sets=[], setIdx=0, layer='outer';
+
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1600);
+}
+function copyText(txt){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(()=>toast('已复制 ✓')).catch(()=>toast('复制失败'));
+  }else{
+    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('已复制 ✓');
+  }
+}
+function fmtItem(it){
+  return it&&it.photo_base64?`<img class="ph" alt="${esc(it.name||'')}" src="data:image/jpeg;base64,${it.photo_base64}">`
+    :`<div class="ph" style="background:${gradOf(it)}">${esc(it?it.name:'(无)')}</div>`;
+}
+function gradOf(it){
+  if(!it) return 'linear-gradient(135deg,#d8d3c8,#c2bba9)';
+  const palettes=['linear-gradient(135deg,#c9c2b4,#a89f8c)','linear-gradient(135deg,#b9c4b6,#93a394)','linear-gradient(135deg,#c4b6c0,#a08e9c)','linear-gradient(135deg,#bcc3ce,#94a0b4)','linear-gradient(135deg,#d3c0a8,#b49c7a)'];
+  let h=0; for(const ch of String(it.name||it.id||'')) h=(h*31+ch.charCodeAt(0))>>>0;
+  return palettes[h%palettes.length];
+}
+
+function renderApp(){
+  const app=document.getElementById('app');
+  if(!sets.length){
+    app.innerHTML=`<div class="empty"><b>衣橱还没有可搭配的衣物。</b><br><br>去「录物品/拍物品」先录入几件,再来穿什么。</div>`;
+    return;
+  }
+  const set=sets[setIdx];
+  const slots=set.slots||{};
+  const hasLayers=slots.outer&&slots.inner;
+  const outerOn=layer==='outer';
+  const slotHTML=k=>{
+    const it=slots[k];
+    if(!it) return '';
+    return `<div class="stage-${k}" onclick="openAlbum('${k}')">${fmtItem(it)}</div>`;
+  };
+  const shoesHTML=slots.shoes?`<div class="stage-shoes"><i onclick="openAlbum('shoes')">${fmtItem(slots.shoes)}</i><i onclick="openAlbum('shoes')">${fmtItem(slots.shoes)}</i></div>`:'';
+  app.innerHTML=`
+<div class="vc-card">
+  <div class="stage">
+    <span class="stage-label">OUTFIT · PAPER</span>
+    ${slotHTML('hat')}
+    ${hasLayers?(outerOn?`<div class="stage-inner" onclick="openAlbum('inner')">${fmtItem(slots.inner)}</div><div class="stage-outer" onclick="openAlbum('outer')">${fmtItem(slots.outer)}</div>`
+      :`<div class="stage-inner" onclick="openAlbum('inner')">${fmtItem(slots.inner)}</div><div class="stage-outer" style="opacity:.15" onclick="openAlbum('outer')">${fmtItem(slots.outer)}</div>`)
+      :(slots.inner?`<div class="stage-inner" onclick="openAlbum('inner')">${fmtItem(slots.inner)}</div>`
+        :(slots.outer?`<div class="stage-outer" onclick="openAlbum('outer')">${fmtItem(slots.outer)}</div>`:''))}
+    ${slotHTML('bottom')}
+    ${shoesHTML}
+    ${slotHTML('acce')}
+    <div class="stage-note">示意效果 · 从帽到鞋</div>
+    <span class="stage-page">P.0${setIdx+1}</span>
+  </div>
+  <div class="meta">
+    <div class="vc-styles"><span>${esc(set.style||'日常')}</span><span>相册拼贴</span></div>
+    <div class="vc-reason">${esc(set.reason||'')}</div>
+  </div>
+  ${hasLayers?`<div class="layerbar"><button class="${outerOn?'on':''}" onclick="setLayer('outer')">外层</button><button class="${!outerOn?'on':''}" onclick="setLayer('inner')">内搭</button></div>`:''}
+  <div class="vc-pieces">${SLOT_ORDER.filter(k=>slots[k]).map(k=>`<div class="vc-piece" onclick="openAlbum('${k}')"><div class="pic">${fmtItem(slots[k])}</div><div class="nm">${esc(slots[k].name||'')}</div></div>`).join('')}</div>
+</div>
+${SCENE.gap&&SCENE.gap.length?`<div class="gap">衣橱缺口:<b>${esc(SCENE.gap.join(' / '))}</b> 暂无匹配 → 可引导录入或加入购物清单</div>`:''}
+<div class="pager"><button onclick="pager(-1)">‹ 上一套</button><span>第 ${setIdx+1}/${sets.length} 套</span><button onclick="pager(1)">换一套 ›</button></div>
+<div class="actions">
+  <button class="btn primary" onclick="adopt()">今天穿这套</button>
+  <button class="btn ghost" onclick="copyData()">复制数据</button>
+  <button class="btn ghost" onclick="copyLog()">复制日志</button>
+</div>`;
+}
+function setLayer(l){layer=l;renderApp();}
+function pager(d){setIdx=(setIdx+d+sets.length)%sets.length;renderApp();}
+function adopt(){
+  const set=sets[setIdx];
+  const lines=[`outfit_adopt:【今天穿这套 · ${set.style||'日常'}】`,''];
+  for(const k of SLOT_ORDER){
+    const it=set.slots[k];
+    if(it) lines.push(`- ID ${it.id}（${it.name}）：标记使用（${SLOT_LABELS[k]}）`);
+  }
+  copyText(lines.join('\n'));
+}
+function copyData(){copyText(JSON.stringify(CD,null,2));}
+function copyLog(){copyText(JSON.stringify(CL,null,2));}
+function openAlbum(k){
+  const set=sets[setIdx];
+  const it=set.slots[k];
+  if(!it) return;
+  const photo=it.photo_base64
+    ?`<img alt="${esc(it.name)}" src="data:image/jpeg;base64,${it.photo_base64}">`
+    :`<div class="ph-grad" style="background:${gradOf(it)}">${esc(it.name||'(无照片)')}</div>`;
+  document.getElementById('albumContent').innerHTML=`
+<div class="album-photo">${photo}<span class="album-stamp">SM3-1 · 原图</span></div>
+<div class="album-body">
+  <div class="album-name">${esc(it.name||'')}</div>
+  <span class="album-role">${SLOT_LABELS[k]}</span>
+  <div class="album-tags">${arr(it.tags).map(t=>`<span>${esc(t)}</span>`).join('')||'<span>无标签</span>'}</div>
+  <div class="album-cap">示意效果 · 照片原图完整展示(未裁切)</div>
+</div>`;
+  document.getElementById('album').classList.add('show');
+}
+function closeAlbum(){document.getElementById('album').classList.remove('show');}
+document.getElementById('album').addEventListener('click',e=>{if(e.target.id==='album')closeAlbum();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeAlbum();});
+
+function render(){
+  let payload;
+  try{payload=JSON.parse(document.getElementById('payload').textContent);}catch(e){document.getElementById('app').innerHTML=`<div class="empty">数据解析失败:${esc(e.message)}</div>`;return;}
+  const v=validate(payload);
+  if(!v.ok){document.getElementById('app').innerHTML=`<div class="empty">数据校验失败:${esc(v.msg)}</div>`;return;}
+  const d=payload.data||{};
+  META=d.meta||{};CD=d.copy_data||{};CL=d.copy_log||{};SCENE=d.scene||{};sets=arr(SCENE.sets);
+  setIdx=0;layer='outer';
+  document.getElementById('sceneId').textContent=META.scene_id||'SM3-1';
+  document.getElementById('wakeWord').textContent=META.wake_word||'穿什么';
+  document.getElementById('title').textContent=(SCENE.summary&&SCENE.summary.title)||'今日穿搭推荐';
+  document.getElementById('subtitle').textContent=(SCENE.summary&&SCENE.summary.subtitle)||'';
+  document.getElementById('metrics').innerHTML=arr(SCENE.summary&&SCENE.summary.metrics).map(m=>`<span>${esc(m.label)}:${esc(m.value)}</span>`).join('');
+  document.getElementById('footHint').textContent='复制「今天穿这套」发给 AI 标记使用(积累穿搭历史)';
+  renderApp();
+}
+render();
+</script>
+</body>
+</html>

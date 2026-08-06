@@ -194,6 +194,12 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 75 | 保修 | 保修与保养（登记/到期/维修记录/保养周期） | `python3 scripts/票据凭证/cli.py warranty list [--status 在保\|即将到期\|已过\|全部]` / `register --item-id N --kind 保修\|保养` / `repair --warranty-id N` / `maintain --warranty-id N` → 票据凭证/warranty.html | 否（物品可选） |
 | 76 | 证件 | 证件管理（登记/到期/归档·号码脱敏） | `python3 scripts/票据凭证/cli.py cert list` / `add --type 护照\|身份证\|驾照\|签证\|保险单\|其他 --expires-at D` → 票据凭证/certificates.html | 否 |
 | 77 | 账号 | 账号密码（加密存/查/改·敏感复制分离） | `python3 scripts/票据凭证/cli.py account list` → 票据凭证/accounts.html（密码 ******；复制数据默认不含密码） | 否 |
+| 78 | 穿什么 | 穿搭推荐（拼贴卡·相册风） | `python3 scripts/home_manager.py sm3-outfit [--temperature N] [--occasion X] [--limit N]` → 穿搭/outfit_picker.html | 否 |
+| 79 | 衣橱分析 | 衣橱闲置分析（结构诊断/断舍离） | `python3 scripts/home_manager.py sm3-wardrobe` → 穿搭/wardrobe_analyze.html | 否 |
+| 80 | 换季 | 换季收纳（季节衣物批量收纳/拿出） | `python3 scripts/home_manager.py sm3-season [--season 夏季\|冬季\|春秋] [--action 收纳\|拿出]` → 穿搭/wardrobe_season.html | 否 |
+| 81 | 带物品 | 出行带物清单（行程规则/健身联动/出发核对） | `python3 scripts/home_manager.py sm3-trip [--trip-type X] [--days N] [--plan-type X] [--exercises X]` → 穿搭/travel_trip.html | 否 |
+| 82 | 归物品 | 回家归位（旅游中 → 在家） | `python3 scripts/home_manager.py sm3-trip --mode return` → 穿搭/travel_trip.html | 否 |
+| 83 | 旅行穿搭 | 旅行穿搭计划（天数+天气·每日组合） | `python3 scripts/home_manager.py sm3-trip-plan [--days N] [--destination X] [--temps N,N]` → 穿搭/trip_outfit_plan.html | 否 |
 
 ### 匹配规则
 

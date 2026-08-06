@@ -651,10 +651,10 @@ scenarios:
   type: 查看+选择
   status: ''
   prompt: "请加载「居家管家」技能,帮我推荐今日穿搭(唤醒词:穿什么):\n\n  场  合: _____________ (选填:上班/约会/运动/家居/正式/自定义)\n\
-    \  天气: _____________ (选填,或让 AI 自己获取)"
+    \  天气: _____________ (选填,或让 AI 自己获取)\n"
   result: 穿搭拼贴卡(多部位槽位 + 风格标签 + 理由),备选组合横滑。
   html:
-    template: outfit_picker.html
+    template: 穿搭/outfit_picker.html
     command_cn: 穿什么
     data_source: items
 - id: SM3-2
@@ -665,13 +665,13 @@ scenarios:
   scenario_title: 衣橱闲置分析(结构诊断/断舍离建议)
   dimensions: {}
   type: 查看+选择+回执
-  status: 【待开发】
+  status: ''
   prompt: '请加载「居家管家」技能,帮我做衣橱分析(唤醒词:衣橱分析):'
   result: 衣橱构成分布 + 闲置清单(诚实标注估算) + AI 建议一句 + 处理闭环。
   html:
-    template: ''
+    template: 穿搭/wardrobe_analyze.html
     command_cn: 衣橱分析
-    data_source: ''
+    data_source: items
 - id: SM3-3
   domain: outfit
   sub: 衣橱管理
@@ -680,14 +680,14 @@ scenarios:
   scenario_title: 换季收纳(季节衣物批量收纳)
   dimensions: {}
   type: 采集+回执
-  status: 【待开发】
+  status: ''
   prompt: "请加载「居家管家」技能,帮我做换季收纳(唤醒词:换季):\n\n  季  节: _____________ (夏季/冬季)\n  操  作:\
     \ _____________ (收纳/拿出)"
   result: 季节衣物清单 + 收纳目标选择 + 批量勾选,确认后回执。
   html:
-    template: ''
+    template: 穿搭/wardrobe_season.html
     command_cn: 换季
-    data_source: ''
+    data_source: items
 - id: SM3-4
   domain: outfit
   sub: 出行清单
@@ -698,10 +698,10 @@ scenarios:
   type: 查看+选择+回执
   status: ''
   prompt: "请加载「居家管家」技能,帮我做出行带物清单(唤醒词:带物品):\n\n  行程类型: _____________ (健身/出差/旅行/超市/游泳/爬山/滑雪/自定义)\n\
-    \  天  数: _____________\n  操  作: _____________ (带出 / 归位)"
+    \  天  数: _____________\n  操  作: _____________ (带出 / 归位)\n"
   result: 行程设置 → 清单生成(物品卡片+理由) → 带出标记旅游中 / 回家归位。
   html:
-    template: travel_trip.html
+    template: 穿搭/travel_trip.html
     command_cn: 出行清单
     data_source: items
 - id: SM3-5
@@ -712,13 +712,13 @@ scenarios:
   scenario_title: 旅行穿搭计划(天数+天气)
   dimensions: {}
   type: 查看+选择
-  status: 【待开发】
-  prompt: "请加载「居家管家」技能,帮我做旅行穿搭计划(唤醒词:旅行穿搭):\n\n  目的地: _____________\n  天  数: _____________"
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我做旅行穿搭计划(唤醒词:旅行穿搭):\n\n  目的地: _____________\n  天  数: _____________\n"
   result: 每日穿搭计划(日期+天气+组合)+ 行李汇总 + 冲突提示。
   html:
-    template: ''
+    template: 穿搭/trip_outfit_plan.html
     command_cn: 旅行穿搭
-    data_source: ''
+    data_source: items
 - id: SM4-1
   domain: stats
   sub: 统计总览

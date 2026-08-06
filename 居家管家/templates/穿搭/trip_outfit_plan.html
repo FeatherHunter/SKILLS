@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 旅行穿搭计划</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f6f1e7;color:#4a3d28;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:70px}
+.wrap{max-width:860px;margin:0 auto;padding:36px 22px}
+.hero{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #eadfc8;border-radius:24px;padding:24px 26px;margin-bottom:18px;box-shadow:0 14px 40px rgba(90,70,40,.10)}
+.eyebrow{color:#8a744f;font-size:11px;font-weight:800;letter-spacing:.14em;margin-bottom:6px}
+h1{font-size:24px;color:#4a3d28}
+.lead{color:#8a744f;font-size:14px;margin-top:4px}
+.cards{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.cards span{background:#fff;border:1px solid #e4d9c2;border-radius:99px;padding:5px 12px;font-size:12px;color:#8a744f}
+.card{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #eadfc8;border-radius:20px;padding:18px;margin-bottom:14px;box-shadow:0 14px 40px rgba(90,70,40,.08)}
+.card h2{font-size:16px;margin-bottom:12px;color:#4a3d28}
+.days{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.days button{border:1px solid #e4d9c2;background:#fff;border-radius:99px;padding:6px 14px;font:inherit;font-size:13px;cursor:pointer;color:#8a744f}
+.days button.on{background:#8a744f;border-color:#8a744f;color:#fff;font-weight:700}
+.day-head{display:flex;gap:10px;align-items:baseline;margin-bottom:12px;flex-wrap:wrap}
+.day-head .d{font-size:18px;font-weight:800}
+.day-head .w{font-size:13px;color:#a08a68}
+.slot-line{display:flex;gap:10px;align-items:center;padding:6px 0}
+.slot-line .lbl{width:44px;font-size:12px;color:#8a744f;flex-shrink:0}
+.slot-line .thumb{width:44px;height:52px;border-radius:8px;overflow:hidden;background:#f0f3f8;flex-shrink:0}
+.slot-line .thumb img,.slot-line .thumb .ph{width:100%;height:100%;object-fit:cover}
+.slot-line .thumb .ph{display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#fff}
+.slot-line .nm{font-size:13px;font-weight:600}
+.conflict{background:#fdeee3;border:1px solid #f5d9c4;border-radius:12px;padding:10px 14px;font-size:13px;color:#b4552d;margin-bottom:10px}
+.conflict b{color:#b4552d}
+.lug{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0}
+.lug .thumb{width:40px;height:46px;border-radius:8px;overflow:hidden;background:#f0f3f8}
+.lug .thumb img,.lug .thumb .ph{width:100%;height:100%;object-fit:cover}
+.lug .thumb .ph{display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#fff}
+.lug .nm{font-size:12px}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.btn{border:none;border-radius:999px;padding:10px 20px;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
+.btn.primary{background:#8a744f;color:#fff}
+.btn.ghost{background:#fff;border:1px solid #e4d9c2;color:#8a744f}
+.empty{text-align:center;color:#8a744f;padding:20px 0}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#4a3d28;color:#fdfaf4;padding:9px 18px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:120}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:760px){.wrap{padding:24px 14px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · <span id="wakeWord">旅行穿搭</span> · <span id="sceneId">SM3-5</span></div>
+<h1 id="title">旅行穿搭计划</h1>
+<p class="lead" id="subtitle">每日组合(拼贴卡) + 行李汇总</p>
+<div class="cards" id="metrics"></div>
+</header>
+<div id="app"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const SLOT_LABELS={hat:'帽子',inner:'内搭',outer:'外套',bottom:'下装',shoes:'鞋',acce:'配饰'};
+const SLOT_ORDER=['hat','inner','outer','bottom','shoes','acce'];
+let META={},CD={},CL={},SCENE={};
+let dayIdx=0;
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+function copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>toast('已复制 ✓')).catch(()=>toast('复制失败'));}else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('已复制 ✓');}}
+function fmt(it,cls){return it&&it.photo_base64?`<img alt="${esc(it.name||'')}" src="data:image/jpeg;base64,${it.photo_base64}">`:`<div class="ph" style="background:linear-gradient(135deg,#c9c2b4,#a89f8c)">${esc((it.name||'无图').slice(0,6))}</div>`;}
+function render(){
+  let payload;
+  try{payload=JSON.parse(document.getElementById('payload').textContent);}catch(e){document.getElementById('app').innerHTML=`<div class="empty">数据解析失败</div>`;return;}
+  const v=validate(payload);
+  if(!v.ok){document.getElementById('app').innerHTML=`<div class="empty">${esc(v.msg)}</div>`;return;}
+  const d=payload.data||{};
+  META=d.meta||{};CD=d.copy_data||{};CL=d.copy_log||{};SCENE=d.scene||{};
+  const s=SCENE;
+  const plans=arr(s.day_plans);
+  document.getElementById('sceneId').textContent=META.scene_id||'SM3-5';
+  document.getElementById('wakeWord').textContent=META.wake_word||'旅行穿搭';
+  document.getElementById('title').textContent=(s.summary&&s.summary.title)||'旅行穿搭计划';
+  document.getElementById('subtitle').textContent=(s.summary&&s.summary.subtitle)||'';
+  document.getElementById('metrics').innerHTML=arr(s.summary&&s.summary.metrics).map(m=>`<span>${esc(m.label)}:${esc(m.value)}</span>`).join('');
+  let html='';
+  html+=`<div class="card"><h2>每日穿搭</h2>`;
+  if(!plans.length){html+=`<div class="empty">没有可计划的衣物。</div>`;}
+  else{
+    dayIdx=Math.min(dayIdx,plans.length-1);
+    html+=`<div class="days">${plans.map((p,i)=>`<button class="${i===dayIdx?'on':''}" onclick="dayIdx=${i};render();">D${p.day}${p.temp!=null?` ${p.temp}°`:''}</button>`).join('')}</div>`;
+    const plan=plans[dayIdx];
+    html+=`<div class="day-head"><span class="d">第 ${plan.day} 天</span>${plan.temp!=null?`<span class="w">天气 ${plan.temp}°C</span>`:'<span class="w">按季节估算(天气获取失败)</span>'}</div>`;
+    html+=SLOT_ORDER.filter(k=>plan.slots[k]).map(k=>`
+      <div class="slot-line"><span class="lbl">${SLOT_LABELS[k]}</span>
+      <div class="thumb">${fmt(plan.slots[k])}</div>
+      <span class="nm">${esc(plan.slots[k].name||'')}</span></div>`).join('');
+  }
+  html+=`<div class="actions"><button class="btn primary" onclick="adoptDay()">采纳这天</button><button class="btn ghost" onclick="copyData()">复制数据</button><button class="btn ghost" onclick="copyLog()">复制日志</button></div></div>`;
+  html+=`<div class="card"><h2>冲突提示</h2>`;
+  const conflicts=arr(s.conflicts);
+  if(!conflicts.length) html+=`<div class="empty">衣物数量充足,无重复冲突。</div>`;
+  else html+=conflicts.map(c=>`<div class="conflict"><b>${esc(c.hint||'')}</b> → 可补录或加入购物清单</div>`).join('');
+  html+=`</div>`;
+  html+=`<div class="card"><h2>行李汇总<span style="font-size:12px;color:#a08a68;font-weight:400"> (计划涉及 · 去重)</span></h2>`;
+  const lug=arr(s.luggage);
+  if(!lug.length) html+=`<div class="empty">无</div>`;
+  else html+=`<div class="lug">${lug.map(x=>`<div style="text-align:center"><div class="thumb">${fmt(x)}</div><div class="nm">${esc(x.name||'')}</div></div>`).join('')}</div>`;
+  html+=`<div class="actions"><button class="btn ghost" onclick="genLuggage()">生成行李清单(→出行清单)</button></div></div>`;
+  document.getElementById('app').innerHTML=html;
+}
+function adoptDay(){
+  const plan=arr(SCENE.day_plans)[dayIdx];
+  if(!plan) return;
+  const lines=[`trip_outfit_adopt:【采纳第 ${plan.day} 天穿搭】`,''];
+  SLOT_ORDER.forEach(k=>{const it=plan.slots[k];if(it)lines.push(`- ID ${it.id}（${it.name}）：标记使用`);});
+  copyText(lines.join('\n'));
+}
+function genLuggage(){
+  copyText('请帮我生成出行行李清单(唤醒词:带物品),行程类型:旅行,天数:'+(SCENE.days||'')+' 天。计划涉及衣物:'+arr(SCENE.luggage).map(x=>x.name).join('、'));
+}
+function copyData(){copyText(JSON.stringify(CD,null,2));}
+function copyLog(){copyText(JSON.stringify(CL,null,2));}
+render();
+</script>
+</body>
+</html>

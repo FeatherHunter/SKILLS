@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 操作失败</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f6f1e7;color:#4a3d28;line-height:1.6;-webkit-font-smoothing:antialiased;padding-bottom:60px}
+.wrap{max-width:560px;margin:0 auto;padding:40px 22px}
+.card{background:linear-gradient(180deg,#fdfaf4,#f6efe0);border:1px solid #f5d9c4;border-radius:20px;padding:24px;box-shadow:0 14px 40px rgba(90,70,40,.10)}
+.eyebrow{color:#b4552d;font-size:11px;font-weight:800;letter-spacing:.14em;margin-bottom:6px}
+h1{font-size:22px;color:#b4552d;margin-bottom:8px}
+.stage{display:inline-block;background:#fdeee3;color:#b4552d;border-radius:99px;font-size:11px;font-weight:700;padding:3px 12px;margin-bottom:14px}
+.block{background:#fff;border:1px solid #efe5d2;border-radius:12px;padding:12px 14px;margin-bottom:12px}
+.block .t{font-size:11px;color:#a08a68;margin-bottom:4px}
+.block .c{font-size:14px}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:16px;flex-wrap:wrap}
+.btn{border:none;border-radius:999px;padding:10px 20px;font:inherit;font-weight:700;cursor:pointer;font-size:14px}
+.btn.primary{background:#8a744f;color:#fff}
+.btn.ghost{background:#fff;border:1px solid #e4d9c2;color:#8a744f}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#4a3d28;color:#fdfaf4;padding:9px 18px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:.25s;z-index:120}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+<div class="eyebrow">Home Manager · <span id="wakeWord">穿搭</span></div>
+<div class="stage">操作失败</div>
+<h1 id="action">操作未完成</h1>
+<div class="block"><div class="t">失败原因</div><div class="c" id="reason"></div></div>
+<div class="block"><div class="t">关键数据</div><div class="c" id="keyData"></div></div>
+<div class="block"><div class="t">建议下一步</div><div class="c" id="suggest"></div></div>
+<div class="actions">
+<button class="btn primary" onclick="retry()">修正重试</button>
+<button class="btn ghost" onclick="copyData()">复制数据</button>
+<button class="btn ghost" onclick="copyLog()">复制日志</button>
+</div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+let ERR={},CD={},CL={};
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1600);}
+function copyText(t){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(()=>toast('已复制 ✓')).catch(()=>toast('复制失败'));}else{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('已复制 ✓');}}
+function render(){
+  let payload;
+  try{payload=JSON.parse(document.getElementById('payload').textContent);}catch(e){document.getElementById('reason').textContent='数据解析失败';return;}
+  const d=payload.data||{};
+  ERR=d.error||{};CD=d.copy_data||{};CL=d.copy_log||{};
+  document.getElementById('wakeWord').textContent=(d.meta&&d.meta.wake_word)||'穿搭';
+  document.getElementById('action').textContent=ERR.action||'操作未完成';
+  document.getElementById('reason').textContent=ERR.reason||'未知原因';
+  document.getElementById('keyData').textContent=JSON.stringify(ERR.key_data||{});
+  document.getElementById('suggest').textContent=ERR.suggest||'修正参数后重试';
+}
+function retry(){copyText('请修正后重试: '+(ERR.reason||''));}
+function copyData(){copyText(JSON.stringify(CD,null,2));}
+function copyLog(){copyText(JSON.stringify(CL,null,2));}
+render();
+</script>
+</body>
+</html>

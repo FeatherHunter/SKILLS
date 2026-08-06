@@ -41,6 +41,13 @@ TEMPLATE_TO_COMMAND_CN = {
     "expiring_alert.html": "查过期",
     "outfit_picker.html": "穿什么",
     "travel_trip.html": "出行清单",
+    # ── SM3 穿搭出行域(T4)──
+    "穿搭/outfit_picker.html": "穿什么",
+    "穿搭/wardrobe_analyze.html": "衣橱分析",
+    "穿搭/wardrobe_season.html": "换季",
+    "穿搭/travel_trip.html": "出行清单",
+    "穿搭/trip_outfit_plan.html": "旅行穿搭",
+    "穿搭/error.html": "穿搭错误",
     # ── SM4 统计总览域(T5)──
     "stats/overview.html": "统物品",
     "stats/idle.html": "查闲置",

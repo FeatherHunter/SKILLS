@@ -1,0 +1,50 @@
+# scenes/SM2.yaml - SM2 空间与位置域场景注册(域唯一事实源 · 合并器 = scripts/场景合并.py)
+# 与 references/scenarios.yaml 的关系: 合并器按 id 把本文件字段合并进总账(T2 公共层奠基产物)
+# 4 场景 = SM2 权威清单(2026-08-04 定稿)+ 实施细化(2026-08-05 T3)
+# prompt 字段(合并器会覆盖总账): 操作选项含 删除(对抗式审查 2026-08-06 修复——删除有按钮/CLI/拦截,无路由即空头)
+version: "2.0"
+domain: space
+scenes:
+  - id: "SM2-1"
+    wake_word: 管位置
+    scenario_title: 管理位置体系(查看/新建/改名/合并/规范化)
+    type: 查看+选择+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):
+
+        操  作: _____________ (查看/新建/改名/合并/删除/规范化)
+        详  情: _____________ (如:合并「卧室/东南角」和「卧室东南角」)
+    html: {template: "位置/location_manage.html", command_cn: "管位置", data_source: "items"}
+  - id: "SM2-2"
+    wake_word: 固定位
+    scenario_title: 设置固定位(常用件锚定)
+    type: 采集+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我设置固定位(唤醒词:固定位):
+
+        物  品: _____________
+        固定位: _____________ (如:玄关抽屉)
+        操  作: _____________ (设置/解除)
+    html: {template: "位置/fixed_spot.html", command_cn: "固定位", data_source: "items"}
+  - id: "SM2-3"
+    wake_word: 收纳建议
+    scenario_title: 收纳位置建议(AI 推荐)
+    type: 查看+选择
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):
+
+        物  品: _____________ (可多件,选填;不填则找没有固定位的常用件)
+    html: {template: "位置/suggest_storage.html", command_cn: "收纳建议", data_source: "items"}
+  - id: "SM2-4"
+    wake_word: 空间视图
+    scenario_title: 空间视图浏览(位置树下钻)
+    type: 查看
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我浏览空间视图(唤醒词:空间视图):
+
+        位  置: _____________ (从哪层开始,选填;不填则从顶层)
+    html: {template: "位置/space_view.html", command_cn: "空间视图", data_source: "items"}

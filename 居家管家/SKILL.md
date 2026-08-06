@@ -269,7 +269,7 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 统物品 | `list` 默认输出 HTML |
 | 管位置 | `sm2-manage --action view`（查看）· `--action create --path "XX"`（新建）· `--action rename --old "XX" --new "YY"`（改名）· `--action merge --src "XX" --tgt "YY"`（合并）· `--action delete --path "XX"`（删除）· `--action similar`（相似检测） |
 | 固定位 | `sm2-fixed --action list`（清单）· `--action set --item-id N --location "XX"`（设置）· `--action clear --item-id N`（解除） |
-| 收纳建议 | `sm2-suggest --item-id N`（单件）· `--batch [--limit N]`（批量:没固定位的常用件） |
+| 收纳建议 | `sm2-suggest --item-id N`（单件）· `--item-ids "1,2"`（指定多件）· `--batch [--limit N]`（批量:没固定位的常用件） |
 | 空间视图 | `sm2-view [--path "XX"]`（缺省=顶层） |
 | 联动总览 | `python3 scripts/联动/cli.py sm9-overview`（能力索引+偏好 HTML；`sm9-prefs --key food\|price --value ask\|remember\|off` 设偏好） |
 | 记到卡路里 | `python3 scripts/联动/cli.py sm9-food --item-id N [--action log\|query]`（log=记到今日饮食, query=查热量） |

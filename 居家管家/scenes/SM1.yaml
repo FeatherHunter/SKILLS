@@ -46,6 +46,10 @@ scenes:
     type: 查看
     status: ""
     html: {template: "物品/locate.html", command_cn: "紧急定位", data_source: "items"}
+    prompt: |
+      请加载「居家管家」技能,帮我紧急定位物品(唤醒词:紧急定位):
+
+        物  品: _____________ (名称/描述,如:钥匙)
   - id: "2-4"
     wake_word: 筛选浏览
     scenario_title: 按条件筛选浏览物品
@@ -88,6 +92,11 @@ scenes:
     type: 选择+回执
     status: ""
     html: {template: "物品/receipt.html", command_cn: "状态变更", data_source: "items"}
+    prompt: |
+      请加载「居家管家」技能,帮我变更物品状态(唤醒词:状态变更):
+
+        物  品: _____________
+        状  态: _____________ (如:在家/备用/借用中/维修中/已用完/快递中/找不到/已废弃,废弃=软删除可恢复)
   - id: "3-5"
     wake_word: 合并物品
     scenario_title: 合并重复物品
@@ -106,6 +115,12 @@ scenes:
     type: 采集+回执
     status: ""
     html: {template: "物品/relations.html", command_cn: "物品关联", data_source: "items"}
+    prompt: |
+      请加载「居家管家」技能,帮我设置物品关联(唤醒词:物品关联):
+
+        主物品: _____________
+        关联物品: _____________
+        关  系: _____________ (配件/配套/替代/同捆/常用搭配)
   - id: "3-8"
     wake_word: 标物品
     scenario_title: 修改物品标签
@@ -160,6 +175,10 @@ scenes:
     type: 选择+回执
     status: ""
     html: {template: "物品/inventory_diff.html", command_cn: "差异处理", data_source: "items"}
+    prompt: |
+      请加载「居家管家」技能,帮我处理盘点差异(唤醒词:差异处理):
+
+        记  录: _____________ (选填,指定某次盘点,默认最近一次)
   - id: "6-3"
     wake_word: 盘点记录
     scenario_title: 查看盘点记录(含复查)

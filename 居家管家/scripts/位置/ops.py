@@ -495,6 +495,19 @@ def recommend_batch(conn, limit=50):
     return [recommend_item(conn, i) for i in ids]
 
 
+def recommend_items(conn, item_ids, top_n=3):
+    """指定多件建议(prompt「可多件」的落地:sm2-suggest --item-ids)
+
+    逐件推荐(每件独立决策规则);跳过不存在的 ID。
+    """
+    out = []
+    for iid in item_ids:
+        rec = recommend_item(conn, iid, top_n=top_n)
+        if rec:
+            out.append(rec)
+    return out
+
+
 def _category_location_hits(conn, category_id, exclude_item=None, limit=10):
     """同类物品位置分布: [(location, 件数, [示例物品]), ...]"""
     if not category_id:

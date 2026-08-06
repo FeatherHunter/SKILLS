@@ -354,6 +354,25 @@ def test_suggest_batch_only_used_items(seeded):
     assert all(r["item"]["name"] != "TEST_钥匙" for r in recs2)
 
 
+def test_suggest_items_multi(seeded):
+    """指定多件(prompt「可多件」落地):一页逐件建议"""
+    from 位置 import ops
+    recs = ops.recommend_items(seeded, [2, 3])
+    assert [r["item"]["name"] for r in recs] == ["TEST_牛奶", "TEST_旧毛衣"]
+    assert all(r["recommend"] is not None or r["keep"] is not None for r in recs)
+    # 不存在的 ID 跳过
+    assert ops.recommend_items(seeded, [2, 9999])[0]["item"]["name"] == "TEST_牛奶"
+
+
+def test_suggest_e2e_cli_multi(tmp_db, tmp_path, seeded):
+    """端到端: --item-ids 一页多卡"""
+    r = _run_cli("sm2-suggest", "--item-ids", "2,4", "--output", str(tmp_path / "sgm.html"))
+    result, code = _load_output(r)
+    assert code == 0 and result["status"] == "ok"
+    html = (tmp_path / "sgm.html").read_text(encoding="utf-8")
+    assert "TEST_牛奶" in html and "TEST_酱油" in html
+
+
 def test_suggest_e2e_cli(tmp_db, tmp_path, seeded):
     _seed_item(seeded, 5, "TEST_薯片", 3, "厨房/调味区")
     _seed_item(seeded, 6, "TEST_饼干", 3, "厨房/调味区")

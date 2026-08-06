@@ -28,6 +28,7 @@ def register(subparsers):
 
     p = subparsers.add_parser("sm2-suggest", help="收纳位置建议(AI 推荐 · SM2-3)")
     p.add_argument("--item-id", type=int, default=None, help="单件建议(优先)")
+    p.add_argument("--item-ids", default=None, help="指定多件(逗号分隔,prompt「可多件」落地)")
     p.add_argument("--batch", action="store_true", help="批量:没有固定位的常用件")
     p.add_argument("--limit", type=int, default=50, help="批量上限")
     p.add_argument("--output", default=None)
@@ -208,16 +209,23 @@ def run(args):
             if args.batch:
                 recs = ops.recommend_batch(conn, limit=args.limit)
                 recs = [r for r in recs if r]
-                data = {"batch": True, "recommendations": recs,
+                data = {"batch": True, "mode": "batch", "recommendations": recs,
                         "total": len(recs),
-                        "hint": "没有固定位的常用件全部列出;逐条采纳后建议去设置固定位"}
+                        "hint": "没有固定位的常用件全部列出;逐条确认后建议去设置固定位"}
+                return _emit("suggest_storage.html", data, "SM2-3", "收纳建议", "收纳建议",
+                             target=f"{len(recs)} 件", output_path=args.output)
+            if args.item_ids:
+                ids = [int(x) for x in args.item_ids.split(",") if x.strip()]
+                recs = ops.recommend_items(conn, ids)
+                data = {"batch": False, "mode": "multi", "recommendations": recs,
+                        "total": len(recs), "hint": f"指定 {len(ids)} 件逐条给建议"}
                 return _emit("suggest_storage.html", data, "SM2-3", "收纳建议", "收纳建议",
                              target=f"{len(recs)} 件", output_path=args.output)
             rec = ops.recommend_item(conn, args.item_id)
             if not rec:
                 return _emit_err("收纳建议", "收纳建议", f"未找到 ID={args.item_id} 的物品",
                                  {"item_id": args.item_id}, output_path=args.output)
-            data = {"batch": False, "recommendations": [rec], "total": 1}
+            data = {"batch": False, "mode": "single", "recommendations": [rec], "total": 1}
             return _emit("suggest_storage.html", data, "SM2-3", "收纳建议", "收纳建议",
                          target=rec["item"]["name"], output_path=args.output)
         finally:

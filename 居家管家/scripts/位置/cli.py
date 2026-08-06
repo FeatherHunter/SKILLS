@@ -63,8 +63,8 @@ def _receipt_scene(ok, msg, payload, scene_id, wake_word, command_cn,
         "steps": payload.get("steps"),
         "next": payload.get("next"),
     }
-    data = {"scene": {"receipt": receipt, "buttons": buttons or []},
-            **payload}
+    # 注意: 不再包内层 scene 键(信封 data.scene 即本数据;双重嵌套会让模板读不到)
+    data = {"receipt": receipt, "buttons": buttons or [], **payload}
     for k in ("diff", "extra", "steps", "next"):
         data.pop(k, None)
     return _emit("receipt.html", data, scene_id, wake_word, command_cn,

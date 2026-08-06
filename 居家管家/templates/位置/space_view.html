@@ -86,7 +86,7 @@ function quickPrompt(kind,item){const labels={mv:'移物品',add:'补物品',sub
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
   const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
-  D=p.data;META=D.meta||{};
+  const _d=p.data||{};D=_d.scene||{};META=_d.meta||{};
   document.getElementById('eyebrow').textContent=(META.command_cn||'')+' · 唤醒词「'+(META.wake_word||'')+'」 · '+(META.occurred_at||'');
   document.getElementById('subtitle').textContent=(D.current_name==='(全屋)'?'整个家的位置树,逐层逛下去':'当前位置:'+esc(D.current_path))+' · 共 '+esc(D.total_paths||0)+' 个位置';
   const stage='查看';const chips=[`<span class="chip">⚡ ${esc(META.wake_word||'空间视图')}</span>`,`<span class="chip">● ${stage}</span>`,`<span class="chip">🕒 ${esc(META.occurred_at||'')}</span>`];

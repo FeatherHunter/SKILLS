@@ -65,7 +65,7 @@ function modeInfo(){
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<section>数据解析失败:'+esc(e.message)+'</section>';return;}
   const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<section>数据校验失败:'+esc(v.msg)+'</section>';return;}
-  D=p.data;META=D.meta||{};
+  const _d=p.data||{};D=_d.scene||{};META=_d.meta||{};
   const mi=modeInfo();
   document.getElementById('eyebrow').textContent=(META.command_cn||'')+' · 唤醒词「'+(META.wake_word||'')+'」 · '+(META.occurred_at||'');
   document.getElementById('title').textContent=mi.title;

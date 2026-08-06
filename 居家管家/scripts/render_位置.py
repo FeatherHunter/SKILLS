@@ -16,7 +16,12 @@ def now_str():
 
 def build_envelope(data, scene_id, wake_word, command_cn, target=None,
                    copy_log=None, reminders=None):
-    """组装标准 payload 信封(与 render_物品 同构)"""
+    """组装标准 payload 信封(与 render_物品 同构)
+
+    ⚠️ 模板读取契约:场景数据在 `data.scene` 下,模板必须 `p.data.scene` 读取
+    (与 T2 物品域模板一致:`const d=payload.data||{};const s=d.scene||{}`)。
+    复制数据/复制日志在 `data.copy_data` / `data.copy_log`,meta 在 `data.meta`。
+    """
     occurred = now_str()
     copy_data = {
         "scene_id": scene_id,

@@ -89,7 +89,7 @@ function fixedPrompt(rec){
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
   const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
-  D=p.data;META=D.meta||{};
+  const _d=p.data||{};D=_d.scene||{};META=_d.meta||{};
   document.getElementById('eyebrow').textContent=(META.command_cn||'')+' · 唤醒词「'+(META.wake_word||'')+'」 · '+(META.occurred_at||'');
   document.getElementById('subtitle').textContent=(D.batch?('没有固定位的常用件 '+esc(D.total||0)+' 件,逐条确认'):(D.mode==='multi'?('指定 '+esc(D.total||0)+' 件物品,逐条建议'):'按分类常用位置/关联物品给出 AI 推荐,采纳后跳移物品流程'));
   const stage='查看';const chips=[`<span class="chip">⚡ ${esc(META.wake_word||'收纳建议')}</span>`,`<span class="chip">● ${stage}</span>`,`<span class="chip">🕒 ${esc(META.occurred_at||'')}</span>`];

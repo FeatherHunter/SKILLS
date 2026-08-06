@@ -329,3 +329,35 @@ def test_cli_inventory_stat_e2e(cli_env, tmp_path):
     html = out.read_text(encoding="utf-8")
     assert "盘点统计" in html
     assert "首次盘点" in html
+
+
+# ═══════════ 对抗式: 非法参数优雅降级(08 规范 §6,无裸 traceback) ═══════════
+
+def test_cli_idle_invalid_threshold_graceful(cli_env, tmp_path):
+    """闲置阈值非法(如 7 天)→ 结构化 error JSON,不裸 traceback(08 §6)"""
+    out = tmp_path / "idle_bad.html"
+    r = _run_cli(cli_env, "stats", "--type", "idle", "--days", "7", "--output", str(out))
+    assert r.returncode == 1
+    assert "Traceback" not in r.stdout and "Traceback" not in r.stderr
+    data = json.loads(r.stdout)
+    assert data["status"] == "error"
+    assert "90/180/365" in data["message"]
+
+
+def test_cli_expiring_invalid_days_graceful(cli_env, tmp_path):
+    """预告天数非法(如 14 天)→ 结构化 error JSON,不裸 traceback(08 §6)"""
+    out = tmp_path / "exp_bad.html"
+    r = _run_cli(cli_env, "stats", "--type", "expiring", "--days", "14", "--output", str(out))
+    assert r.returncode == 1
+    assert "Traceback" not in r.stdout and "Traceback" not in r.stderr
+    data = json.loads(r.stdout)
+    assert data["status"] == "error"
+    assert "7/30/90" in data["message"]
+
+
+def test_cli_html_type_requires_output(cli_env):
+    """HTML 类型无 --output → 明确提示,非「未知统计类型」误导"""
+    r = _run_cli(cli_env, "stats", "--type", "idle")
+    assert r.returncode == 1
+    assert "Traceback" not in r.stdout and "Traceback" not in r.stderr
+    assert "--output" in r.stdout

@@ -179,3 +179,57 @@ def test_prefs_invalid_value_ignored(link_db):
     env, tmp = link_db
     r = _run(env, ["sm9-prefs", "--key", "food", "--value", "bogus"])
     assert r.returncode != 0  # argparse 拒绝非法 value
+
+
+# ── 双入口顺路建议(1-1/1-2 回执后 · 规格硬要求)────────────────────────────────
+
+
+def test_entry_reminders_food_and_price(link_db):
+    """食品+有价格物品: 默认偏好(remember)下给出卡路里 + 记账两条建议"""
+    import sys as _sys
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    os.environ["SKILLS_DB_PATH"] = str(link_db[1])
+    from 联动.ops import build_entry_reminders, load_prefs
+    item = {
+        "id": 1, "name": "牛奶", "category": "食物与饮品",
+        "purchase_price": 5.9,
+        "locations": [{"quantity": 2, "location_status": "在家"}],
+        "photo_base64": None,
+    }
+    rems = build_entry_reminders(item, load_prefs())
+    keys = [r["key"] for r in rems]
+    assert "food" in keys and "price" in keys
+    food_r = next(r for r in rems if r["key"] == "food")
+    assert "记一餐" in food_r["prompt"] and "牛奶" in food_r["prompt"]
+    price_r = next(r for r in rems if r["key"] == "price")
+    assert "饼干记账" in price_r["prompt"] and "¥11.8" in price_r["prompt"]
+
+
+def test_entry_reminders_pref_off(link_db):
+    """偏好 off → 顺路建议为空(防打扰底线)"""
+    import sys as _sys
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    os.environ["SKILLS_DB_PATH"] = str(link_db[1])
+    from 联动.ops import build_entry_reminders
+    item = {
+        "id": 1, "name": "牛奶", "category": "食物与饮品",
+        "purchase_price": 5.9,
+        "locations": [{"quantity": 2, "location_status": "在家"}],
+        "photo_base64": None,
+    }
+    prefs = {"food": "off", "price": "off"}
+    assert build_entry_reminders(item, prefs) == []
+
+
+def test_entry_reminders_non_food_no_price(link_db):
+    """非食品 + 无价格物品 → 顺路建议为空"""
+    import sys as _sys
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    os.environ["SKILLS_DB_PATH"] = str(link_db[1])
+    from 联动.ops import build_entry_reminders
+    item = {"id": 2, "name": "螺丝刀", "category": "工具与器材",
+            "purchase_price": None,
+            "locations": [{"quantity": 1, "location_status": "在家"}],
+            "photo_base64": None}
+    prefs = {"food": "ask", "price": "ask"}
+    assert build_entry_reminders(item, prefs) == []

@@ -245,6 +245,38 @@ def _qty_str(item: dict) -> str:
     return f"{total} 件/个(单位未录入,请按实际修正)"
 
 
+def build_entry_reminders(item: dict, prefs: dict | None = None) -> list[dict]:
+    """双入口顺路建议(SM9 规格): 录物品/拍物品(1-1/1-2)回执后调用。
+
+    按联动偏好(ask=每次询问 / remember=记住上次 / off=关闭)生成顺路提醒:
+      - 食品/饮品物品 → 建议「记到卡路里」(含复制 prompt)
+      - 有价格物品 → 建议「记到记账」(含复制 prompt)
+    off 状态或物品不适用 → 返回空列表(防打扰底线)。
+    返回 [{type: "link", key, label, prompt}],AI 附到回执 HTML 顺路提醒区。
+    """
+    prefs = prefs or load_prefs()
+    reminders = []
+    is_food, reason = is_food_item(item)
+    if is_food and prefs.get("food") != PREF_OFF:
+        reminders.append({
+            "type": "link",
+            "key": "food",
+            "label": "记到卡路里",
+            "prompt": build_calorie_prompt(item, "log"),
+            "reason": reason,
+        })
+    info = item_price_info(item)
+    if info["has_price"] and prefs.get("price") != PREF_OFF:
+        reminders.append({
+            "type": "link",
+            "key": "price",
+            "label": "记到记账",
+            "prompt": build_accounting_prompt(item, "expense"),
+            "reason": f"单价 ¥{info['unit_price']} × {info['quantity']} = ¥{info['total_price']}",
+        })
+    return reminders
+
+
 # ── 场景数据(render 信封的 data.scene 部分)───────────────────────────────────
 
 

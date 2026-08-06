@@ -442,46 +442,66 @@ def main():
         return 0
 
     elif args.command == "stats":
-        if args.output and args.type in ("expiring", "overview", "idle", "inventory-stat"):
+        _html_stat_types = ("expiring", "overview", "idle", "inventory-stat")
+        if args.type in _html_stat_types and not args.output:
+            # 08 规范 §6: 失败回执 = 结构化文本,不裸 traceback
+            import json as _json
+            print(_json.dumps({
+                "status": "error",
+                "data": {},
+                "message": f"统计类型 {args.type} 为 HTML 类型,请加 --output 指定输出路径",
+            }, ensure_ascii=False))
+            return 1
+        if args.output and args.type in _html_stat_types:
             from render import emit
-            if args.type == "expiring":
-                from stats.expiring import expiring_payload
-                conn = get_conn()
-                try:
-                    payload_data = expiring_payload(
-                        conn, limit=args.limit, days=args.days or 30,
-                        expired_only=args.expired_only, category_id=args.category_id
-                    )
-                finally:
-                    conn.close()
-                template_name, msg = "stats/expiring.html", "过期预警 HTML 已生成"
-            elif args.type == "overview":
-                from stats.overview import overview_payload
-                conn = get_conn()
-                try:
-                    payload_data = overview_payload(conn)
-                finally:
-                    conn.close()
-                template_name, msg = "stats/overview.html", "物品总览 HTML 已生成"
-            elif args.type == "idle":
-                from stats.idle import idle_payload
-                conn = get_conn()
-                try:
-                    payload_data = idle_payload(
-                        conn, days=args.days or 90,
-                        category_id=args.category_id
-                    )
-                finally:
-                    conn.close()
-                template_name, msg = "stats/idle.html", "闲置检测 HTML 已生成"
-            else:  # inventory-stat
-                from stats.inventory_stat import inventory_stat_payload
-                conn = get_conn()
-                try:
-                    payload_data = inventory_stat_payload(conn)
-                finally:
-                    conn.close()
-                template_name, msg = "stats/inventory_stat.html", "盘点统计 HTML 已生成"
+            import json as _json
+            try:
+                if args.type == "expiring":
+                    from stats.expiring import expiring_payload
+                    conn = get_conn()
+                    try:
+                        payload_data = expiring_payload(
+                            conn, limit=args.limit, days=args.days or 30,
+                            expired_only=args.expired_only, category_id=args.category_id
+                        )
+                    finally:
+                        conn.close()
+                    template_name, msg = "stats/expiring.html", "过期预警 HTML 已生成"
+                elif args.type == "overview":
+                    from stats.overview import overview_payload
+                    conn = get_conn()
+                    try:
+                        payload_data = overview_payload(conn)
+                    finally:
+                        conn.close()
+                    template_name, msg = "stats/overview.html", "物品总览 HTML 已生成"
+                elif args.type == "idle":
+                    from stats.idle import idle_payload
+                    conn = get_conn()
+                    try:
+                        payload_data = idle_payload(
+                            conn, days=args.days or 90,
+                            category_id=args.category_id
+                        )
+                    finally:
+                        conn.close()
+                    template_name, msg = "stats/idle.html", "闲置检测 HTML 已生成"
+                else:  # inventory-stat
+                    from stats.inventory_stat import inventory_stat_payload
+                    conn = get_conn()
+                    try:
+                        payload_data = inventory_stat_payload(conn)
+                    finally:
+                        conn.close()
+                    template_name, msg = "stats/inventory_stat.html", "盘点统计 HTML 已生成"
+            except ValueError as _e:
+                # 08 规范 §6: 参数校验失败 = 结构化错误回执,不裸 traceback
+                print(_json.dumps({
+                    "status": "error",
+                    "data": {},
+                    "message": str(_e),
+                }, ensure_ascii=False))
+                return 1
             payload = {
                 "status": "ok",
                 "data": payload_data,

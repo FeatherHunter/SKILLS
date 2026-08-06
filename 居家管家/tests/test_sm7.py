@@ -264,7 +264,8 @@ def test_no_due_date_never_overdue(fam_db):
 def test_days_borrowed_counts_from_borrowed_at(fam_db):
     r = family_ops.borrow_add(fam_db, direction="借入", item_name="电钻",
                               object_name="老王", borrowed_at="2026-07-20")
-    assert r["days_borrowed"] == 16
+    expected = (date.today() - date(2026, 7, 20)).days
+    assert r["days_borrowed"] == expected
 
 
 # ── 借用管理 · 催还文案 ────────────────────────────────────────────────────

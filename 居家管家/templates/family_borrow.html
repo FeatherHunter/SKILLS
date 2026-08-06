@@ -24,6 +24,8 @@ h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
 .record.returned{opacity:.62}
 .record .top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .record .name{font-size:16px;font-weight:700}
+.thumb{width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid var(--line);flex-shrink:0}
+.thumb.ph{display:inline-flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#e8f1ff,#f0e9ff);color:var(--blue);font-weight:800;font-size:16px}
 .record .meta{color:var(--fg2);font-size:13px;margin-top:4px}
 .badge{font-size:12px;font-weight:700;padding:2px 10px;border-radius:99px;background:#eaf3ff;color:var(--blue)}
 .badge.warn{background:#fff4e5;color:#c76a00}
@@ -79,9 +81,10 @@ const meta=[
 '约定归还: '+esc(r.due_date||'未约定'),
 '已借 '+r.days_borrowed+' 天',
 ].join(' · ');
+const thumb=r.photo_base64?'<img class="thumb" src="data:image/jpeg;base64,'+esc(r.photo_base64)+'" alt="">':'<span class="thumb ph">'+esc((r.item_name||'?').slice(0,1))+'</span>';
 const buttons=returned?'<span class="muted">已还清</span>':
 '<div class="btns"><button class="btn primary" onclick="copy('+JSON.stringify(returnPrompt)+')">确认归还</button><button class="btn" onclick="copy('+JSON.stringify(r.remind)+')">复制催还文案</button></div>';
-return '<div class="record'+(returned?' returned':'')+'"><div class="top"><span class="name">'+esc(r.item_name)+'</span>'+badge(r.status)+'</div>'+
+return '<div class="record'+(returned?' returned':'')+'"><div class="top">'+thumb+'<span class="name">'+esc(r.item_name)+'</span>'+badge(r.status)+'</div>'+
 '<div class="meta">'+meta+(r.remark?' · '+esc(r.remark):'')+'</div>'+buttons+'</div>';
 }
 function section(title,list){

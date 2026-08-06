@@ -68,7 +68,7 @@ def _today_str(today=None):
 
 
 def _enrich_record(conn, row, today=None):
-    """借用记录 dict 富化: 已借天数 + 状态 + 催还文案"""
+    """借用记录 dict 富化: 已借天数 + 状态 + 催还文案 + 物品照片(规格: 物品(照片+名称))"""
     r = dict(row)
     t = today or date.today()
     try:
@@ -79,7 +79,20 @@ def _enrich_record(conn, row, today=None):
     status, _ = borrow_status(r, today=t)
     r["status"] = status
     r["remind"] = remind_text(r, today=t)
+    r["photo_base64"] = _item_photo_base64(conn, r.get("item_id"))
     return r
+
+
+def _item_photo_base64(conn, item_id):
+    """库内物品主图 → base64(照片缺失返回空串,不阻断清单)"""
+    if not item_id:
+        return ""
+    try:
+        from home_manager.item_ops import _get_photo_base64
+        row = conn.execute("SELECT photo FROM items WHERE id = ?", (item_id,)).fetchone()
+        return _get_photo_base64(row["photo"]) if row and row["photo"] else ""
+    except Exception:
+        return ""
 
 
 # ── 家人档案 · 成员 ────────────────────────────────────────────────────────

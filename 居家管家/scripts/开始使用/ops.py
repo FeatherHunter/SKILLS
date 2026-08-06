@@ -452,11 +452,75 @@ def backup_payload(keep_n=BACKUP_KEEP_N):
     _prune_backups(keep_n)
     return {
         "status": "ok",
+        "keep_n": keep_n,
         "file": str(file),
         "size": file.stat().st_size,
         "created_at": _now_str(),
         "history": backup_list_payload(keep_n=keep_n)["history"],
         "days_since_last": _days_since_backup(),
+    }
+
+
+def import_undo_payload(backup_file):
+    """撤销导入:用导入前自动备份中的 home.db 覆盖当前库(恢复到导入前状态)
+
+    安全网(第一性:数据安全优先于便捷):
+      1. 校验备份文件存在 + 是 home_backup_*.zip + zip 内含 home.db
+      2. 覆盖前先把当前库再备份一次(防误撤销后找不回导入后状态)
+      3. 从 zip 提取 home.db → 覆盖 DB_PATH
+      4. 返回恢复结果(来源备份 + 当前物品数)
+    """
+    src = Path(backup_file or "")
+    if not src.exists() or not src.name.startswith("home_backup_") or src.suffix != ".zip":
+        return {
+            "status": "error", "error": "bad_backup",
+            "reason": f"备份文件无效: {backup_file}",
+            "suggest": "从导入回执的「导入前备份」行复制正确文件名",
+        }
+
+    try:
+        with zipfile.ZipFile(src) as zf:
+            names = zf.namelist()
+            if "home.db" not in names:
+                return {
+                    "status": "error", "error": "no_db_in_backup",
+                    "reason": "备份内未找到 home.db,无法恢复数据库",
+                    "suggest": "该备份可能损坏,请换用其他备份",
+                }
+            # 先读内存再写盘:备份文件只读,不依赖其可写
+            db_bytes = zf.read("home.db")
+    except Exception as e:
+        return {
+            "status": "error", "error": "read_failed",
+            "reason": f"读取备份失败: {e}",
+            "suggest": "检查备份文件完整性后重试",
+        }
+
+    # 安全网:覆盖前先备份当前状态(防误撤销)
+    safety = _do_backup()
+
+    try:
+        DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+        DB_PATH.write_bytes(db_bytes)
+    except OSError as e:
+        return {
+            "status": "error", "error": "restore_failed",
+            "reason": f"写回数据库失败: {e}",
+            "suggest": "检查数据库目录可写性后重试",
+        }
+
+    conn = get_conn()
+    try:
+        items_total = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
+    finally:
+        conn.close()
+
+    return {
+        "status": "ok",
+        "restored_from": str(src),
+        "safety_backup": str(safety),
+        "items_total": items_total,
+        "message": "已恢复到导入前状态",
     }
 
 

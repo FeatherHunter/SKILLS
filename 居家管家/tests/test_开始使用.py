@@ -278,6 +278,16 @@ def test_backup_list_and_delete(sm8_env):
     assert bad["status"] == "error"
 
 
+def test_backup_payload_exposes_keep_n(sm8_env):
+    """备份回执 payload 应带 keep_n(模板 UI 展示「保留 N 份」数据源)"""
+    ops.init_db_and_seed()
+    p = ops.backup_payload(keep_n=3)
+    assert p["status"] == "ok"
+    assert p["keep_n"] == 3, "payload 缺 keep_n(模板保留份数显示会退化)"
+    p2 = ops.backup_payload()
+    assert p2["keep_n"] == ops.BACKUP_KEEP_N
+
+
 def test_export_json_roundtrip(sm8_env):
     """导出 JSON:全表可解析,含 schema_version"""
     ops.init_db_and_seed()
@@ -422,6 +432,56 @@ def test_import_failure_rolls_back(sm8_env):
         conn.close()
 
 
+# ── 导入撤销(08 规范: 撤销 = 单工闭环,必须有 CLI 承接)───────────────
+
+def test_import_undo_restores_pre_import_state(sm8_env):
+    """撤销导入:用导入前备份恢复 db(导入的 2 件消失,回到导入前)"""
+    ops.init_db_and_seed()
+    conn = sqlite3.connect(str(sm8_env / "home.db"))
+    try:
+        conn.execute("INSERT INTO items (name, category) VALUES ('TEST_原有物', '分类')")
+        conn.commit()
+    finally:
+        conn.close()
+    f = _make_export_file(sm8_env)
+    imp = ops.import_execute_payload(str(f), mode="skip", auto_backup=True)
+    assert imp["status"] == "ok" and imp["imported"] == 2
+    backup_file = imp["backup_file"]
+    assert backup_file and Path(backup_file).exists(), "导入应自动备份"
+
+    # 撤销 → 恢复到导入前(导入的 2 件消失,原有物仍在)
+    p = ops.import_undo_payload(backup_file)
+    assert p["status"] == "ok", f"撤销失败: {p.get('reason')}"
+    assert p["safety_backup"] and Path(p["safety_backup"]).exists(), "覆盖前应留安全网备份"
+    conn = sqlite3.connect(str(sm8_env / "home.db"))
+    try:
+        conn.row_factory = sqlite3.Row
+        names = {r["name"] for r in conn.execute("SELECT name FROM items")}
+        assert "TEST_原有物" in names, "原有物应保留"
+        assert "TEST_导入A" not in names and "TEST_导入B" not in names, "导入物应已撤销"
+    finally:
+        conn.close()
+
+
+def test_import_undo_bad_backup_returns_error(sm8_env):
+    """撤销:非法/不存在备份 → 错误(不碰库)"""
+    ops.init_db_and_seed()
+    p = ops.import_undo_payload(str(sm8_env / "nope.zip"))
+    assert p["status"] == "error"
+    # 存在但不是备份格式
+    bad = sm8_env / "not_a_backup.zip"
+    bad.write_bytes(b"xx")
+    p2 = ops.import_undo_payload(str(bad))
+    assert p2["status"] == "error"
+    # 备份 zip 但无 home.db
+    import zipfile
+    empty = sm8_env / "home_backup_empty.zip"
+    with zipfile.ZipFile(empty, "w") as zf:
+        zf.writestr("readme.txt", "no db")
+    p3 = ops.import_undo_payload(str(empty))
+    assert p3["status"] == "error"
+
+
 # ── CLI 端到端(G6: 每场景 ≥1 端到端)─────────────────────────────────
 
 def _run_cli(tmp_path, *args):
@@ -453,6 +513,7 @@ def test_cli_backup_export_import(tmp_path):
     _run_cli(tmp_path, "init")
     p = _run_cli(tmp_path, "backup")
     assert p["status"] == "ok"
+    assert p["keep_n"] == ops.BACKUP_KEEP_N, "CLI backup 应带 keep_n"
     p = _run_cli(tmp_path, "backup-list")
     assert p["count"] == 1
     p = _run_cli(tmp_path, "export", "--format", "json")
@@ -460,6 +521,34 @@ def test_cli_backup_export_import(tmp_path):
     # 导入预览(空库 → 无冲突)
     p = _run_cli(tmp_path, "import-preview", "--file", p["file"])
     assert p["status"] == "ok"
+
+
+def test_cli_import_undo_end_to_end(tmp_path):
+    """CLI:init → export → import → import-undo 端到端(撤销闭环)"""
+    _run_cli(tmp_path, "init")
+    # 造一条原有物品
+    import sqlite3
+    conn = sqlite3.connect(str(tmp_path / "home.db"))
+    conn.execute("INSERT INTO items (name, category) VALUES ('TEST_原有', '分类')")
+    conn.commit(); conn.close()
+    # 导出 → 导入(导入 1 条)
+    exp = _run_cli(tmp_path, "export", "--format", "json")
+    exp_data = json.loads(Path(exp["file"]).read_text(encoding="utf-8"))
+    exp_data["items"].append({"id": 99, "name": "TEST_导入件", "category": "分类"})
+    Path(exp["file"]).write_text(json.dumps(exp_data, ensure_ascii=False), encoding="utf-8")
+    imp = _run_cli(tmp_path, "import", "--file", exp["file"])
+    assert imp["status"] == "ok" and imp["imported"] == 1
+    assert imp["backup_file"], "导入应生成备份"
+    # 撤销
+    p = _run_cli(tmp_path, "import-undo", "--file", imp["backup_file"])
+    assert p["status"] == "ok"
+    conn = sqlite3.connect(str(tmp_path / "home.db"))
+    try:
+        names = {r[0] for r in conn.execute("SELECT name FROM items")}
+        assert "TEST_导入件" not in names, "撤销后导入件应消失"
+        assert "TEST_原有" in names, "原有物品应保留"
+    finally:
+        conn.close()
 
 
 # ── HTML 模板结构(08 对齐 · fixture 无浏览器)─────────────────────────

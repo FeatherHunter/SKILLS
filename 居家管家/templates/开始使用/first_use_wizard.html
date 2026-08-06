@@ -81,7 +81,7 @@ var stepsHtml=steps.length?('<div class="steps">'+steps.map(function(st,i){
 var hint='';
 if(stage==='pending'){hint='<section><p class="ok" style="font-weight:650">✅ 环境就绪。确认下方路径(默认即可)后点击「开始初始化」。</p></section>';}
 else if(stage==='need_path'){hint='<section><p class="warn" style="font-weight:650">请确认数据保存路径(预填为建议值,可直接确认)。</p></section>';}
-else if(stage==='done'){hint='<section><p class="ok" style="font-weight:650">✅ 初始化完成,可以开始使用了。</p></section>';}
+else if(stage==='done'){hint='<section><p class="ok" style="font-weight:650">✅ 初始化完成,可以开始使用了。</p><p class="warn" style="margin-top:8px">💡 顺路提醒:建议先跑一次「查异常」数据检查,验证空库健康。</p></section>';}
 else if(stage==='already'){hint='<section><p class="ok" style="font-weight:650">✅ 已初始化,直接使用。</p></section>';}
 else if(stage==='error'){hint='<section><h2 class="bad">'+esc(err.action||'初始化失败')+'</h2><p class="bad" style="font-weight:600">'+esc(err.reason||'未知原因')+'</p></section>';}
 var envHtml=env.os?('<section><h2>环境检测</h2><div class="env-grid">'

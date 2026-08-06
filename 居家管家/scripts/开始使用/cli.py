@@ -41,6 +41,8 @@ def main():
     p_lint.add_argument("--days-status", default=None, help="状态时效阈值 JSON,如 '{\"快递中\":7}'")
 
     sub.add_parser("backup", help="备份:db+照片全量打包(保留 N 份)")
+    p_bk = sub.add_parser("backup-keep", help="备份并指定保留份数")
+    p_bk.add_argument("--keep-n", type=int, default=None, help="保留份数(默认 5)")
     p_bl = sub.add_parser("backup-list", help="备份历史列表")
     p_bl.add_argument("--keep-n", type=int, default=None, help="保留份数(默认 5)")
     p_bd = sub.add_parser("backup-delete", help="删除旧备份(确认式)")
@@ -57,6 +59,8 @@ def main():
     p_ie.add_argument("--mode", default="skip", choices=["skip", "overwrite"],
                       help="同名冲突处理:skip=跳过(默认) / overwrite=覆盖")
     p_ie.add_argument("--no-backup", action="store_true", help="跳过导入前自动备份")
+    p_iu = sub.add_parser("import-undo", help="撤销导入:从导入前备份恢复(覆盖前自动再备份)")
+    p_iu.add_argument("--file", required=True, help="导入前备份文件(home_backup_*.zip)")
 
     args = parser.parse_args()
     if not args.command:
@@ -79,6 +83,8 @@ def main():
         return _emit(ops.lint_health_payload(days_status=days))
     if args.command == "backup":
         return _emit(ops.backup_payload())
+    if args.command == "backup-keep":
+        return _emit(ops.backup_payload(keep_n=args.keep_n or ops.BACKUP_KEEP_N))
     if args.command == "backup-list":
         return _emit(ops.backup_list_payload(keep_n=args.keep_n or ops.BACKUP_KEEP_N))
     if args.command == "backup-delete":
@@ -90,6 +96,8 @@ def main():
     if args.command == "import":
         return _emit(ops.import_execute_payload(
             args.file, mode=args.mode, auto_backup=not args.no_backup))
+    if args.command == "import-undo":
+        return _emit(ops.import_undo_payload(args.file))
     parser.print_help()
     return 0
 

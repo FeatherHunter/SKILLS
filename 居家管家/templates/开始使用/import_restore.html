@@ -95,7 +95,7 @@ if(imp.imported!=null){
     +'<div class="row"><div class="k">覆盖</div><div class="v">'+esc(String(imp.overwritten||0))+'</div></div>'
     +(imp.backup_file?'<div class="row"><div class="k">导入前备份</div><div class="v">'+esc(imp.backup_file)+'</div></div>':'')
     +'<div class="actions">'
-    +'<button class="copy ghost" onclick="safeWriteText(\'请撤销刚才的导入(恢复到导入前状态)。\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">撤销导入</button>'
+    +(imp.backup_file?'<button class="copy ghost" onclick="safeWriteText(\'请撤销刚才的导入,用导入前备份恢复:\'+this.dataset.f+\'。\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))" data-f="'+esc(imp.backup_file)+'">撤销导入(恢复导入前状态)</button>':'')
     +'</div></section>';
 }
 if(err.action){app.innerHTML='<section><h2 class="bad">'+esc(err.action)+'失败</h2><p class="bad" style="font-weight:600">'+esc(err.reason||'')+'</p><p>'+esc(err.suggest||'')+'</p></section>';return;}

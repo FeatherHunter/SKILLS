@@ -25,7 +25,7 @@ def _generate_help_html() -> Path:
     import os
     env = os.environ.copy()
     env["HELP_FIXED_TIMESTAMP"] = "0000-00-00 00:00 (快照)"
-    env["HELP_INITIALIZED"] = "1"
+    # 与 build_manual.py 一致:不强制 HELP_INITIALIZED,镜像 = 构造时检测本地真实状态
     r = subprocess.run(
         [sys.executable, str(SKILL / "scripts" / "home_manager.py"),
          "help", "--output", str(HELP_TMP)],

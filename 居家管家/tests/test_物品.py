@@ -1,10 +1,16 @@
 """SM1 物品管理域测试(T2 · 29 场景)
 
-隔离: TEST_ 前缀 + fixture 清理(物品/事件/照片/关联/盘点记录)
+隔离: 独立临时库(模块级 conn 覆盖 conftest)+ TEST_ 前缀清理
+  - 进程内: monkeypatch home_manager.db.DB_PATH/PHOTOS_DIR → 临时目录
+  - 子进程: env SKILLS_DB_PATH → 临时目录(继承)
+  - categories 种子从生产库复制(保持 id,item 引用 category_id 不变)
+  根治: 共享生产库 + 并行 session 并发清理导致的偶发闪断(2026-08-06 归责成立)
 覆盖: 录入4/查找6/更新8/标签分类3/照片3/盘点4/历史1 + 记录契约
 """
 import json
+import os
 import shutil
+import sqlite3
 import subprocess
 import sys
 import uuid
@@ -18,6 +24,50 @@ if not shutil.which(_PY):
 
 CLI = [_PY, "home_manager.py"]
 CWD = str(Path(__file__).parent.parent / "scripts")
+
+
+@pytest.fixture(scope="module")
+def conn(tmp_path_factory):
+    """SM1 独立测试库(模块级覆盖 conftest 的 session conn)
+
+    setup: 临时目录 + 改 db 常量 + env + init_db + 复制 categories 种子
+    teardown: 恢复 db 常量/env,删除临时目录(不影响其他模块)
+    """
+    from home_manager import db as hm_db
+
+    prod_db_path = os.environ.get("SKILLS_DB_PATH") or "D:/.db"
+    data_dir = tmp_path_factory.mktemp("sm1_test_db")
+    photos_dir = data_dir / "photos"
+    photos_dir.mkdir(exist_ok=True)
+
+    os.environ["SKILLS_DB_PATH"] = str(data_dir)
+    mp = pytest.MonkeyPatch()
+    mp.setattr(hm_db, "DB_PATH", data_dir / "home.db")
+    mp.setattr(hm_db, "PHOTOS_DIR", photos_dir)
+
+    c = hm_db.get_conn()
+    # 复制生产库 categories 种子(保持 id;临时关 FK 避免父子插入顺序问题)
+    c.execute("PRAGMA foreign_keys = OFF")
+    prod = sqlite3.connect(str(Path(prod_db_path) / "home.db"))
+    prod.row_factory = sqlite3.Row
+    try:
+        rows = prod.execute("SELECT * FROM categories ORDER BY id").fetchall()
+    finally:
+        prod.close()
+    for r in rows:
+        c.execute(
+            "INSERT OR REPLACE INTO categories (id, parent_id, name, description, sort_order, is_active, created_at, updated_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (r["id"], r["parent_id"], r["name"], r["description"], r["sort_order"],
+             r["is_active"], r["created_at"], r["updated_at"]))
+    c.commit()
+
+    yield c
+    c.close()
+    mp.undo()
+    if "SKILLS_DB_PATH" in os.environ:
+        del os.environ["SKILLS_DB_PATH"]
+    shutil.rmtree(str(data_dir), ignore_errors=True)
 
 
 def _run(*args):

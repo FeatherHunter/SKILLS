@@ -23,8 +23,8 @@ TARGET = SKILL / "居家管家.html"
 import os
 env = os.environ.copy()
 env["HELP_FIXED_TIMESTAMP"] = "0000-00-00 00:00 (快照)"
-# 镜像 = 已初始化状态(不显示首次使用横幅),保证 git 镜像跨机器可重现
-env["HELP_INITIALIZED"] = "1"
+# 不强制 HELP_INITIALIZED:镜像 = 构造时检测本地真实初始化状态注入
+# (用户 2026-08-05 拍板:HTML 快照无法运行时检测,必须生成时检测本地并注入)
 r = subprocess.run(
     [sys.executable, str(SKILL / "scripts" / "home_manager.py"),
      "help", "--output", str(TEMP)],

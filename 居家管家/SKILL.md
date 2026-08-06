@@ -140,7 +140,7 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 22 | 查过期 | 过期检查 | features/stats.md → expiring | 否 |
 | 23 | 看标签 | 列出标签 | features/tags.md → 列表 | 否 |
 | 24 | 合标签 | 合并标签 | features/tags.md → 合并 | 是（from/to） |
-| 25 | 查快递 | 快递查询 | features/search.md → 快递 | 否 |
+| 25 | 查快递 | 快递跟踪（查/超时/收货确认） | `python3 scripts/快递购物/cli.py express [--timeout-days 7]` → 快递购物/express.html | 否 |
 | 26 | 推位置 | 位置推荐 | features/add.md → Step 2.5 | 是（category-id 整数） |
 | 27 | 找位置 | 参考锚定 | features/add.md → Step 2.6 | 是（reference） |
 | 28 | 查账号 | 查看账号 | accounts.py → show/list | 是（平台名，无则列全部） |
@@ -158,9 +158,6 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 40 | 空间视图 | 空间视图浏览（位置树下钻） | features/位置.md → 空间视图 | 否（位置可选） |
 | 37 | 查闲置 | 闲置物品检测 | `python3 scripts/home_manager.py stats --type idle [--days 90|180|365] [--category-id N] --output` → stats/idle.html | 否 |
 | 38 | 盘点统计 | 盘点统计与建议 | `python3 scripts/home_manager.py stats --type inventory-stat --output` → stats/inventory_stat.html | 否 |
-| 39 | 联动总览 | 跨技能联动能力索引 + 偏好设置 | `python3 scripts/联动/cli.py sm9-overview` → 联动/link_overview.html（或 home_manager.py sm9-overview，T2 注册后） | 否 |
-| 40 | 记到卡路里 | 食品联动（记到今日饮食/查热量） | `python3 scripts/联动/cli.py sm9-food --item-id N [--action log\|query]` → 联动/link_food.html | 是（先查物品确认） |
-| 41 | 记到记账 | 价格联动（记支出/记收入） | `python3 scripts/联动/cli.py sm9-price --item-id N [--direction expense\|income]` → 联动/link_price.html | 是（先查物品确认） |
 | 42 | 首次使用 | 首次使用初始化（6 步向导，幂等可重试） | `python3 scripts/开始使用/cli.py check` / `init` / `init-status` → 开始使用/first_use_wizard.html | 是（路径确认，默认即确认） |
 | 43 | 备份导出 | 备份与导出（数据资产） | `python3 scripts/开始使用/cli.py backup` / `backup-list` / `export --format json\|csv` → 开始使用/backup_receipt.html | 是（操作/格式） |
 | 44 | 导入恢复 | 导入与恢复（迁移，预告式文件） | `python3 scripts/开始使用/cli.py import-preview --file X` / `import --file X [--mode skip\|overwrite]` → 开始使用/import_restore.html | 是（文件预告式） |
@@ -186,6 +183,12 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 64 | 数量变更 | 变更物品数量（补充/消耗/用完） | `python3 scripts/home_manager.py sm1-qty --id N [--plus\|--minus\|--set]` → 物品/receipt.html | 是 |
 | 65 | 状态变更 | 变更物品状态（废弃/借出/维修/恢复，状态机守卫） | `python3 scripts/home_manager.py sm1-status --id N --status X` → 物品/receipt.html | 是 |
 | 66 | 盘点 | 盘点核对（按位置/分类/全屋，产生差异集） | `python3 scripts/home_manager.py sm1-inventory-round [--scope location\|category\|all]` → 物品/inventory_round.html | 否（可指定范围） |
+| 67 | 购物清单 | 购物清单（组织/例行/采购闭环） | `python3 scripts/快递购物/cli.py list` → 快递购物/list.html | 否（可带条目） |
+| 68 | 缺货检测 | 缺货检测（自动进清单） | `python3 scripts/快递购物/cli.py missing [--category-id N]` → 快递购物/missing.html | 否（可选范围） |
+| 69 | 囤货盘点 | 囤货盘点（库存/阈值/不足检测） | `python3 scripts/快递购物/cli.py stock` → 快递购物/stock.html | 否 |
+| 70 | 联动总览 | 跨技能联动能力索引 + 偏好设置 | `python3 scripts/联动/cli.py sm9-overview` → 联动/link_overview.html（或 home_manager.py sm9-overview，T2 注册后） | 否 |
+| 71 | 记到卡路里 | 食品联动（记到今日饮食/查热量） | features/联动.md → 食品联动 | 是（先查物品确认） |
+| 72 | 记到记账 | 价格联动（记支出/记收入） | features/联动.md → 价格联动 | 是（先查物品确认） |
 
 ### 匹配规则
 
@@ -248,7 +251,10 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 盘点统计 | `stats --type inventory-stat [--output PATH]` (--output 走 stats/inventory_stat.html) |
 | 看标签 | `tag-list` |
 | 合标签 | `tag-merge --from "旧" --to "新"` |
-| 查快递 | `search --status "快递中" [--output PATH]` (auto 走 delivery_check.html) |
+| 查快递 | `python3 scripts/快递购物/cli.py express [--timeout-days 7] [--output PATH]` → 快递购物/express.html（含超时提醒/收货确认闭环） |
+| 购物清单 | `python3 scripts/快递购物/cli.py list`（HTML 视图）\| `list-add --name "XX" --quantity N [--routine 每周\|每月]` \| `list-check --ids 1,2` |
+| 缺货检测 | `python3 scripts/快递购物/cli.py missing [--category-id N]`（HTML 视图）\| `missing-to-list --ids 1,2` |
+| 囤货盘点 | `python3 scripts/快递购物/cli.py stock`（HTML 视图）\| `stock-set-threshold --id N --threshold M` \| `stock-fix --id N --quantity M` |
 | 推位置 | `suggest-locations --category-id N [--with-examples]` |
 | 找位置 | `find-location --reference "XX"` |
 | 查账号 | `account --action list` 或 `account --action show --platform "XX" --master-key "XX"` |
@@ -265,6 +271,9 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 固定位 | `sm2-fixed --action list`（清单）· `--action set --item-id N --location "XX"`（设置）· `--action clear --item-id N`（解除） |
 | 收纳建议 | `sm2-suggest --item-id N`（单件）· `--batch [--limit N]`（批量:没固定位的常用件） |
 | 空间视图 | `sm2-view [--path "XX"]`（缺省=顶层） |
+| 联动总览 | `python3 scripts/联动/cli.py sm9-overview`（能力索引+偏好 HTML；`sm9-prefs --key food\|price --value ask\|remember\|off` 设偏好） |
+| 记到卡路里 | `python3 scripts/联动/cli.py sm9-food --item-id N [--action log\|query]`（log=记到今日饮食, query=查热量） |
+| 记到记账 | `python3 scripts/联动/cli.py sm9-price --item-id N [--direction expense\|income]`（expense=支出, income=收入/退货退款） |
 | 借用 | `family --action borrow-list [--output PATH]`(清单 HTML·双向区隔/超期/催还) · `--action borrow-add --direction 借出\|借入 --item-id N 或 --item-name "XX" --object "XX" [--borrowed-at D] [--due-date D]`(登记·借出自动改状态借用中) · `--action borrow-return --borrow-id N`(归还·状态回在家) · `--action borrow-remind --borrow-id N`(催还文案纯文本) |
 | 家人档案 | `family --action member-list [--output PATH]`(成员 HTML·归属统计) · `--action member-add --name "XX" [--relation "XX"] [--note "XX"]`(添加) · `--action member-remove --name "XX"`(移除·归属回使用者) · `--action member-assign --name "XX" --item-ids "1,2,3"`(批量标记归属) |
 
@@ -497,7 +506,10 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 | 查过期 | 过期检查 | features/stats.md |
 | 看标签 | 列出标签 | features/tags.md |
 | 合标签 | 合并标签 | features/tags.md |
-| 查快递 | 快递查询 | features/search.md |
+| 查快递 | 快递跟踪 | scripts/快递购物/cli.py |
+| 购物清单 | 购物清单管理 | scripts/快递购物/cli.py |
+| 缺货检测 | 缺货自动进清单 | scripts/快递购物/cli.py |
+| 囤货盘点 | 库存阈值管理 | scripts/快递购物/cli.py |
 | 推位置 | 位置推荐 | features/add.md |
 | 找位置 | 参考锚定 | features/add.md |
 | 查账号 | 查看账号 | accounts.py |
@@ -580,9 +592,29 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 
 ---
 
-## 联动说明
+## 联动说明（SM9 联动功能域 · 双入口单实现）
 
 联动逻辑已集中到技能路由器（`图片路由/SKILL.md`），本技能不再单独维护联动规则。完成主操作后请检查路由器的联动规则表。
+
+**SM9 场景**（3 个，流程详见 `features/联动.md`）：
+
+| 唤醒词 | 场景 | CLI | 说明 |
+|--------|------|-----|------|
+| 联动总览 | 联动功能总览 | `sm9-overview` | 能力索引（食品→卡路里/价格→饼干记账/健身→出行清单）+ 偏好频控 |
+| 记到卡路里 | 食品联动 | `sm9-food --item-id N [--action log\|query]` | 物品确认 → 动作选择 → 复制 prompt 到卡路里（单工闭环） |
+| 记到记账 | 价格联动 | `sm9-price --item-id N [--direction expense\|income]` | 物品确认（含价格）→ 方向选择 → 复制 prompt 到饼干记账 |
+
+**双入口顺路建议（G6 第 3 层 · 规格硬要求）**：
+
+- **独立触发**：用户直接说「记到卡路里 / 记到记账 / 联动总览」→ 按上表路由
+- **录入顺路建议**：完成「录物品/拍物品」（1-1/1-2）回执后，AI 检查联动偏好（`sm9-prefs` 设置，存 `$SKILLS_DB_PATH/link_prefs.json`）：
+  - `ask`（每次询问）→ 始终在回执顺路提醒区给出联动建议
+  - `remember`（记住上次选择）→ 按上次用户是否接受联动决定
+  - `off`（关闭）→ 不打扰，不回执建议
+  - 食品/饮品物品 → 建议「记到卡路里」（查热量或记一餐）；有价格物品 → 建议「记到记账」（记支出/收入）
+  - 建议内容 = 调用 `sm9-food / sm9-price` 生成的 prompt，附在回执 HTML 顺路提醒区
+
+**执行边界**：联动执行 = 复制 prompt 到对应技能（卡路里/饼干记账），居家管家不直接调用对方 CLI（跨技能物理隔离，单工闭环）。
 
 ---
 
@@ -641,7 +673,41 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 2. 校验+冲突预览:`cli.py import-preview --file X`(格式/版本兼容 + 同名冲突计数)
 3. 确认导入:`cli.py import --file X [--mode skip|overwrite]`(导入前自动备份,失败回滚数据不变)
 4. 渲染:`emit_sm8("import_restore.html", ...)`(步骤条 + 校验结果 + 冲突预览 + 确认/撤销按钮)
-5. 撤销:恢复导入前自动生成的备份文件(backup_file 在导入回执中)
+5. 撤销(确认式):`python3 scripts/开始使用/cli.py import-undo --file <导入前备份>`(覆盖前自动再备份当前库为安全网;非法备份 → 错误回执)
+
+---
+
+## 快递购物域流程(SM5 · 购物清单/缺货检测/快递跟踪/囤货盘点)
+
+**唤醒词**：`购物清单` / `缺货检测` / `查快递` / `囤货盘点`
+
+### 购物清单(组织/例行/采购闭环)
+
+1. 视图:`python3 scripts/快递购物/cli.py list` → 快递购物/list.html（条目 + 来源标注:手动/缺货检测/例行+周期 + 清单内查重提示 + 例行到期顺路提醒）
+2. 添加:`cli.py list-add --name "XX" --quantity N [--source 手动|缺货检测|例行] [--routine 每周|每月]`（同名「待买」重复添加 → 拒绝并提示合并）
+3. 销项(勾选已买):`cli.py list-check --ids 1,2`（例行条目记 last_done_at,超周期自动重新激活为待买 + 顺路提醒「本周采购清单已生成」）
+4. 采购闭环(按钮复制 prompt → AI 引导):新物品 → 录物品(1-1);已有物品 → 补数量(3-3)
+5. 空态:引导缺货检测自动填清单
+
+### 缺货检测(自动进清单)
+
+1. 检测:`cli.py missing [--category-id N]` → 快递购物/missing.html（当前数量+阈值+建议量「当前 0/阈值 1/建议买 2」）
+2. 阈值来源:囤货设置(`stock-set-threshold`);未设置 → 默认 1 估算并标注「默认」
+3. 一键进清单(勾选):`cli.py missing-to-list --ids 1,2`（按建议量入清单;已在待买 → 跳过并提示合并）
+4. 空态:库存充足
+
+### 快递跟踪(查/超时/收货确认)
+
+1. 视图:`cli.py express [--timeout-days 7]` → 快递购物/express.html（照片+名称+数量+「快递中」+已等 N 天+超时红色徽章+顺路提醒）
+2. 确认收货(勾选):`cli.py express-receive --id N [--to 在家|备用]`（状态变更 + 写 item_events）
+3. 超时处理:按钮复制 prompt → AI 联系卖家/标记遗失
+
+### 囤货盘点(库存/阈值/不足检测)
+
+1. 视图:`cli.py stock` → 快递购物/stock.html（名称+当前数量+阈值+库存状态:充足/低/空）
+2. 设置阈值:`cli.py stock-set-threshold --id N --threshold M`（缺货检测的阈值数据源）
+3. 修正数量(勾选 → 3-3):`cli.py stock-fix --id N --quantity M`（写数量变更事件）
+4. 空态:引导为常用物品设阈值（高频无阈值物品提示）
 
 ---
 
@@ -663,3 +729,6 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 | 穿搭推荐无匹配 | 告知无匹配衣物，建议扩展标签或录入 |
 | 天气数据获取失败 | 告知无法获取天气，改用纯标签筛选 |
 | 标签合并不存在 | 脚本输出"标签不存在"，AI 告知用户 |
+| 购物清单添加重复条目 | 脚本拒绝并提示「已在购物清单中,可改数量」,AI 转告用户,不自动合并 |
+| 收货确认时无快递中记录 | 脚本报错「没有快递中位置记录」,AI 告知无需确认收货 |
+| 囤货修正无库存位置 | 脚本报错,AI 提示先录入或确认收货后再修正 |

@@ -1,20 +1,16 @@
-# SM5 快递购物域场景资产(域内权威 · 合并器接入前暂不并入 references/scenarios.yaml)
+﻿# SM5 快递购物域场景资产(域内权威 · 合并器接入前暂不并入 references/scenarios.yaml)
 #
 # 位置: 居家管家/scenes/SM5.yaml(隔离契约: 每域只写自己的 scenes/SM{n}.yaml)
 # 合并器 = 公共层产物(T2 奠基,2026-08-05 并发约定);落地后由合并器并入单源。
 # 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
 #
 # status 判定原则(07 §4/§6 五者对应):
-#   SKILL.md 唤醒词路由(待 T2+ 批次更新) + 场景资产 ✓ + prompt ✓ + 底层工作流 ✓ + HELP 映射 ✓
-#   → 本域 4 场景 HTML 模板已落地(templates/快递购物/),仍缺 SKILL.md 路由,
+#   SKILL.md 唤醒词路由 ✓(2026-08-05 补) + 场景资产 ✓ + prompt ✓ + 底层工作流 ✓ + HELP 映射 ✓
+#   → 本域 4 场景 HTML 模板已落地(templates/快递购物/),SKILL.md 路由已补齐,
 #     故 status 暂保持「【待开发】」,SKILL.md 更新后由合并器翻转为 ""(与单源头部注释一致)。
 version: "2.0"
 
-domain:
-  key: express
-  name: 快递购物
-  icon: "📦"
-  sm: SM5
+domain: express
 
 scenes:
   - id: "SM5-1"
@@ -25,7 +21,7 @@ scenes:
     scenario_title: 购物清单(组织/例行/采购闭环)
     dimensions: {}
     type: 查看+选择+回执
-    status: "【待开发】"
+    status: ''
     prompt: |-
       请加载「居家管家」技能,帮我列购物清单(唤醒词:购物清单):
 
@@ -44,7 +40,7 @@ scenes:
     scenario_title: 缺货检测(自动进清单)
     dimensions: {}
     type: 查看+选择
-    status: "【待开发】"
+    status: ''
     prompt: |-
       请加载「居家管家」技能,帮我检测缺货(唤醒词:缺货检测):
 
@@ -80,7 +76,7 @@ scenes:
     scenario_title: 囤货盘点(库存/阈值/不足检测)
     dimensions: {}
     type: 查看+选择+回执
-    status: "【待开发】"
+    status: ''
     prompt: |-
       请加载「居家管家」技能,帮我盘点囤货(唤醒词:囤货盘点):
     result: "囤货清单(数量/阈值/库存状态)+ 阈值设置 + 数量修正。"

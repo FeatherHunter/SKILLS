@@ -185,7 +185,7 @@ scenarios:
   dimensions: {}
   type: 查看
   status: ''
-  prompt: '请加载「居家管家」技能,帮我紧急定位物品(唤醒词:紧急定位):'
+  prompt: "请加载「居家管家」技能,帮我紧急定位物品(唤醒词:紧急定位):\n\n  物  品: _____________ (名称/描述,如:钥匙)\n"
   result: 重要物品置顶卡片(大照片+位置+固定位),一屏直达只要位置。
   html:
     template: 物品/locate.html
@@ -299,7 +299,7 @@ scenarios:
   type: 选择+回执
   status: ''
   prompt: "请加载「居家管家」技能,帮我变更物品状态(唤醒词:状态变更):\n\n  物  品: _____________\n  状  态: _____________\
-    \ (在家/备用/维修中/快递中/旅游中/找不到/废弃/恢复)"
+    \ (如:在家/备用/借用中/维修中/已用完/快递中/找不到/已废弃,废弃=软删除可恢复)\n"
   result: 状态机流转(废弃=软删除/恢复/非法流转拦截),确认后写入回执。
   html:
     template: 物品/receipt.html
@@ -346,7 +346,7 @@ scenarios:
   type: 采集+回执
   status: ''
   prompt: "请加载「居家管家」技能,帮我设置物品关联(唤醒词:物品关联):\n\n  主物品: _____________\n  关联物品: _____________\n\
-    \  关  系: _____________ (配件/配套/替代/相关…)"
+    \  关  系: _____________ (配件/配套/替代/同捆/常用搭配)\n"
   result: 关联预览(主物品+关联物品+关系类型),确认后写入回执。
   html:
     template: 物品/relations.html
@@ -500,7 +500,7 @@ scenarios:
   dimensions: {}
   type: 选择+回执
   status: ''
-  prompt: '请加载「居家管家」技能,帮我处理盘点差异(唤醒词:差异处理):'
+  prompt: "请加载「居家管家」技能,帮我处理盘点差异(唤醒词:差异处理):\n\n  记  录: _____________ (选填,指定某次盘点,默认最近一次)\n"
   result: 差异分组(缺/多/异/待确认),逐项指定处理,批量确认回执。
   html:
     template: 物品/inventory_diff.html
@@ -800,13 +800,13 @@ scenarios:
   scenario_title: 购物清单(组织/例行/采购闭环)
   dimensions: {}
   type: 查看+选择+回执
-  status: 【待开发】
+  status: ''
   prompt: "请加载「居家管家」技能,帮我列购物清单(唤醒词:购物清单):\n\n  条  目: _____________ (物品名+数量,一行一条;可留空查看现有清单)"
   result: 清单条目(含来源标注)+ 清单内查重 + 采购闭环(销项/录入/补数量)。
   html:
-    template: ''
+    template: 快递购物/list.html
     command_cn: 购物清单
-    data_source: ''
+    data_source: shopping_items
 - id: SM5-2
   domain: express
   sub: 缺货检测
@@ -815,13 +815,13 @@ scenarios:
   scenario_title: 缺货检测(自动进清单)
   dimensions: {}
   type: 查看+选择
-  status: 【待开发】
+  status: ''
   prompt: "请加载「居家管家」技能,帮我检测缺货(唤醒词:缺货检测):\n\n  范  围: _____________ (全屋/某个分类,选填)"
   result: 检测结果(物品+当前数量+阈值+建议量),一键进购物清单。
   html:
-    template: ''
+    template: 快递购物/missing.html
     command_cn: 缺货检测
-    data_source: ''
+    data_source: items + stock_thresholds
 - id: SM5-3
   domain: express
   sub: 快递跟踪
@@ -834,7 +834,7 @@ scenarios:
   prompt: '请加载「居家管家」技能,帮我查在途快递(唤醒词:查快递):'
   result: 快递中物品清单(已等 N 天)+ 超时提醒 + 收货确认闭环。
   html:
-    template: delivery_check.html
+    template: 快递购物/express.html
     command_cn: 查快递
     data_source: items
 - id: SM5-4
@@ -845,13 +845,13 @@ scenarios:
   scenario_title: 囤货盘点(库存/阈值/不足检测)
   dimensions: {}
   type: 查看+选择+回执
-  status: 【待开发】
+  status: ''
   prompt: '请加载「居家管家」技能,帮我盘点囤货(唤醒词:囤货盘点):'
   result: 囤货清单(数量/阈值/库存状态)+ 阈值设置 + 数量修正。
   html:
-    template: ''
+    template: 快递购物/stock.html
     command_cn: 囤货盘点
-    data_source: ''
+    data_source: items + stock_thresholds
 - id: SM6-1
   domain: receipt
   sub: 购买记录

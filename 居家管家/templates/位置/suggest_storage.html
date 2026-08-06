@@ -91,7 +91,7 @@ function render(){
   const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
   D=p.data;META=D.meta||{};
   document.getElementById('eyebrow').textContent=(META.command_cn||'')+' · 唤醒词「'+(META.wake_word||'')+'」 · '+(META.occurred_at||'');
-  document.getElementById('subtitle').textContent=D.batch?('没有固定位的常用件 '+esc(D.total||0)+' 件,逐条采纳'):'按分类常用位置/关联物品给出 AI 推荐,采纳后跳移物品流程';
+  document.getElementById('subtitle').textContent=D.batch?('没有固定位的常用件 '+esc(D.total||0)+' 件,逐条确认'):'按分类常用位置/关联物品给出 AI 推荐,采纳后跳移物品流程';
   const stage='查看';const chips=[`<span class="chip">⚡ ${esc(META.wake_word||'收纳建议')}</span>`,`<span class="chip">● ${stage}</span>`,`<span class="chip">🕒 ${esc(META.occurred_at||'')}</span>`];
   document.getElementById('metaBar').innerHTML=chips.join('');
   const app=document.getElementById('app');
@@ -103,12 +103,14 @@ function render(){
   recs.forEach((rec,i)=>{
     const it=rec.item||{};
     const rec2=rec.recommend;
+    const keep2=rec.keep;
     html+='<section><h2>'+(D.batch?'📦 '+esc(it.name)+' <span class="hint">'+(it.category_name||'')+(it.current_location?' · 当前 '+esc(it.current_location):'')+'</span>':'💡 建议')+'</h2>';
     if(!D.batch)html+='<div class="meta2">物品:<b>'+esc(it.name)+'</b>'+(it.category_name?' · 分类:'+esc(it.category_name):'')+(it.current_location?' · 当前:'+esc(it.current_location):'')+'</div>';
-    if(rec2){html+='<div class="rec"><div class="main"><span class="tag">推荐放置</span><div class="loc">'+esc(rec2.location)+'</div><div class="why">'+esc(rec2.reason||'')+'</div><div class="acts"><button class="btn" id="ad_'+i+'">采纳(去移物品)</button>'+(it.fixed_location?'':'<button class="btn warn" id="fx_'+i+'">设为固定位</button>')+'<button class="btn ghost" id="ch_'+i+'">换一个建议</button></div></div>';
-      const alts=arr(rec.alternates);
-      html+='<div class="alt"><h4>备选位置</h4>'+(alts.length?alts.map(a=>'<div class="altrow">'+esc(a.location)+' <span style="color:var(--fg3)">· '+esc(a.reason||'')+'</span></div>').join(''):'<div class="altrow" style="color:var(--fg3)">暂无其他备选</div>')+'</div></div>';}
-    else{html+='<div class="tip">暂无推荐依据(该分类没有位置数据),可先在「空间视图」看全屋布局</div>';}
+    if(rec2){html+='<div class="rec"><div class="main"><span class="tag">推荐放置</span><div class="loc">'+esc(rec2.location)+'</div><div class="why">'+esc(rec2.reason||'')+'</div><div class="acts"><button class="btn" id="ad_'+i+'">采纳(去移物品)</button>'+(it.fixed_location?'':'<button class="btn warn" id="fx_'+i+'">设为固定位</button>')+'<button class="btn ghost" id="ch_'+i+'">换一个建议</button></div></div>';}
+    else if(keep2){html+='<div class="rec"><div class="main" style="border-color:#c8ecd5;background:linear-gradient(180deg,#f2fbf5,#fff)"><span class="tag" style="background:#34c759">✅ 保持现状</span><div class="loc">'+esc(keep2.location)+'</div><div class="why">'+esc(keep2.reason||'')+'</div><div class="acts">'+(it.fixed_location?'':'<button class="btn warn" id="fx_'+i+'">设为固定位</button>')+'</div></div>';}
+    else{html+='<div class="rec"><div class="main"><span class="tag" style="background:var(--fg3)">暂无依据</span><div class="loc" style="font-size:15px;color:var(--fg3)">该物品还没有位置记录</div><div class="why">先录位置,或用「空间视图」看全屋布局后手动移入</div></div>';}
+    const alts=arr(rec.alternates);
+    html+='<div class="alt"><h4>备选位置</h4>'+(alts.length?alts.map(a=>'<div class="altrow">'+esc(a.location)+' <span style="color:var(--fg3)">· '+esc(a.reason||'')+'</span></div>').join(''):'<div class="altrow" style="color:var(--fg3)">暂无其他备选</div>')+'</div></div>';
     html+='</section>';});
   app.innerHTML=html;
   recs.forEach((rec,i)=>{

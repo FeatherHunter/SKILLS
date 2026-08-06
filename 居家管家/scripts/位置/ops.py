@@ -394,7 +394,13 @@ def fixed_list_payload(conn):
 def recommend_item(conn, item_id, top_n=3):
     """单件收纳建议:分类常用位置(用户数据优先)+ 关联物品位置 + 种子冷启动
 
-    返回: {item, recommend, alternates, reason, seed_used}
+    决策规则(对抗式审查定稿 2026-08-06):
+      1. 强证据 = 同分类 ≥2 件共用某位置(排除自身)→ 推荐搬移(当前已是热门位则保持)
+      2. 弱证据(1/1/1 分布或无同类)→ 当前位置存在则「保持现状」(理由诚实标注)
+      3. 关联证据(关联物品所在位置,即使 1 件)→ 可推荐(关系是明确意图)
+      4. 冷启动(无当前位置 + 无证据)→ 种子;种子 == 当前 → 确认「符合分类默认」
+
+    返回: {item, recommend, keep, alternates, seed_used}
     """
     ensure_schema(conn)
     from 物品.events import ensure_tables
@@ -404,6 +410,10 @@ def recommend_item(conn, item_id, top_n=3):
         return None
     cur = _loc_row(conn, item_id)
     current = cur["location"] if cur else None
+    current_n = normalize_path(current) if current else None
+
+    cat = _category_name(conn, item["category_id"])
+    cat_name = cat["name"] if cat else "?"
 
     # ① 分类常用位置(同类活跃物品分布,排除自身)
     cat_hits = _category_location_hits(conn, item["category_id"], exclude_item=item_id)
@@ -414,38 +424,61 @@ def recommend_item(conn, item_id, top_n=3):
 
     ranked = []
     for loc, cnt, examples in cat_hits:
-        if current and normalize_path(loc) == normalize_path(current):
+        ln = normalize_path(loc)
+        if not ln or (current_n and ln == current_n):
             continue
-        ranked.append({"location": loc, "score": cnt,
-                       "reason": f"分类「{_category_name(conn, item['category_id'])['name'] if _category_name(conn, item['category_id']) else '?'}」常用位置,{cnt} 件同类在此(如 {'、'.join(examples[:2])})"})
+        ranked.append({"location": ln, "score": cnt,
+                       "reason": f"分类「{cat_name}」常用位置,{cnt} 件同类在此(如 {'、'.join(examples[:2])})"})
     for loc, names in rel_hits:
-        if current and normalize_path(loc) == normalize_path(current):
+        ln = normalize_path(loc)
+        if not ln or (current_n and ln == current_n):
             continue
-        if any(r["location"] == loc for r in ranked):
+        if any(r["location"] == ln for r in ranked):
             continue
-        ranked.append({"location": loc, "score": 0.5,
+        ranked.append({"location": ln, "score": 0.5,
                        "reason": f"关联物品「{'、'.join(names[:2])}」在此"})
 
     recommend = None
+    keep = None
     alternates = []
-    if ranked:
-        ranked.sort(key=lambda r: -r["score"])
-        recommend = ranked[0]
-        alternates = ranked[1:top_n]
+
+    strong = [r for r in ranked if r["score"] >= 2]
+    if strong:
+        strong.sort(key=lambda r: -r["score"])
+        recommend = strong[0]
+        alternates = [r for r in strong[1:] if r["location"] != recommend["location"]]
+        alternates += [r for r in ranked if r["score"] < 2][:top_n]
+    elif any(r["score"] == 0.5 for r in ranked):
+        # 关联证据(弱分类证据时的明确意图)
+        rel = [r for r in ranked if r["score"] == 0.5]
+        recommend = rel[0]
+        alternates = [r for r in ranked if r["score"] != 0.5][:top_n]
     else:
-        if seed:
+        # 弱证据 → 现状优先
+        if current_n:
+            if seed and seed["path"] == current_n:
+                keep = {"location": current_n,
+                        "reason": f"已在常用位置:「{current_n}」正是「{cat_name}」类默认位置,无需移动"}
+            elif current_n in {normalize_path(h[0]) for h in cat_hits}:
+                keep = {"location": current_n,
+                        "reason": f"已在常用位置:分类「{cat_name}」的物品目前分布在此,无需移动"}
+            else:
+                keep = {"location": current_n,
+                        "reason": "暂无强依据,保持现状(同分类没有更集中的位置)"}
+            alternates = ranked[:top_n]
+        elif seed:
             recommend = {"location": seed["path"], "score": 0,
                          "reason": f"冷启动建议(「{seed['category']}」类默认):{seed['path']}"}
-            alternates = []
 
     return {
         "item": {"id": item["id"], "name": item["name"],
-                 "category_name": (_category_name(conn, item["category_id"]) or {}).get("name"),
+                 "category_name": cat_name,
                  "current_location": current,
                  "fixed_location": _fixed_of(conn, item_id)},
         "recommend": recommend,
+        "keep": keep,
         "alternates": alternates,
-        "seed_used": bool(not ranked and seed),
+        "seed_used": bool(not ranked and not current_n and seed),
     }
 
 

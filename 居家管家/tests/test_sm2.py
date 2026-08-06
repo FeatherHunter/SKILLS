@@ -275,13 +275,29 @@ def test_fixed_e2e_cli(tmp_db, tmp_path, seeded):
 
 # ═══════════════ SM2-3 收纳建议 ═══════════════
 
-def test_suggest_category_hits(seeded):
-    """分类常用位置优先: 食物与饮品(零食/食品)物品 2 件在厨房"""
+def test_suggest_weak_evidence_keeps_current(seeded):
+    """弱证据(同类 1/1 分布):保持现状,不推荐搬家(对抗审查定稿规则)"""
     from 位置 import ops
+    rec = ops.recommend_item(seeded, 2)   # TEST_牛奶(厨房/冰箱),同类仅酱油在调味区
+    assert rec["recommend"] is None
+    assert rec["keep"] is not None
+    assert rec["keep"]["location"] == "厨房/冰箱"
+    assert "保持现状" in rec["keep"]["reason"]
+
+
+def test_suggest_strong_evidence_recommends(seeded):
+    """强证据(同分类 ≥2 件共用某位置):推荐搬移到热门位"""
+    from 位置 import ops
+    _seed_item(seeded, 5, "TEST_薯片", 3, "厨房/调味区")
+    _seed_item(seeded, 6, "TEST_饼干", 3, "厨房/调味区")
     rec = ops.recommend_item(seeded, 2)   # TEST_牛奶(厨房/冰箱)
     assert rec["recommend"] is not None
-    assert rec["recommend"]["location"] == "厨房/调味区"   # 同类其他位置
-    assert "常用位置" in rec["recommend"]["reason"]
+    assert rec["recommend"]["location"] == "厨房/调味区"
+    assert "3 件同类" in rec["recommend"]["reason"]
+    # 已在热门位的调味区物品 → 保持
+    rec2 = ops.recommend_item(seeded, 4)  # TEST_酱油(厨房/调味区)
+    assert rec2["recommend"] is None
+    assert rec2["keep"]["location"] == "厨房/调味区"
 
 
 def test_suggest_related_location(seeded):
@@ -303,13 +319,26 @@ def test_suggest_related_location(seeded):
 
 
 def test_suggest_seed_cold_start(tmp_db):
-    """冷启动:该分类无任何位置数据 → 种子兜底"""
+    """冷启动:物品无任何位置记录 → 种子兜底"""
     from 位置 import ops
-    _seed_item(tmp_db, 7, "TEST_米", 3, "厨房/粮桶")
+    c = tmp_db.cursor()
+    c.execute("INSERT INTO items (id, name, category_id, created_at, updated_at) "
+              "VALUES (7, 'TEST_米', 3, '2026-08-01 09:00:00', '2026-08-01 09:00:00')")
+    tmp_db.commit()
     rec = ops.recommend_item(tmp_db, 7)
     assert rec["seed_used"] is True
     assert rec["recommend"]["location"] == "厨房/食品柜"
     assert "冷启动" in rec["recommend"]["reason"]
+
+
+def test_suggest_keep_matches_seed(tmp_db):
+    """当前位置 == 种子默认 → 确认「符合分类默认」"""
+    from 位置 import ops
+    _seed_item(tmp_db, 8, "TEST_盐", 3, "厨房/食品柜")   # 零食种子 = 食品柜
+    rec = ops.recommend_item(tmp_db, 8)
+    assert rec["recommend"] is None
+    assert rec["keep"] is not None
+    assert "默认位置" in rec["keep"]["reason"]
 
 
 def test_suggest_batch_only_used_items(seeded):
@@ -326,6 +355,8 @@ def test_suggest_batch_only_used_items(seeded):
 
 
 def test_suggest_e2e_cli(tmp_db, tmp_path, seeded):
+    _seed_item(seeded, 5, "TEST_薯片", 3, "厨房/调味区")
+    _seed_item(seeded, 6, "TEST_饼干", 3, "厨房/调味区")
     r = _run_cli("sm2-suggest", "--item-id", "2", "--output", str(tmp_path / "sg.html"))
     result, code = _load_output(r)
     assert code == 0 and result["status"] == "ok"

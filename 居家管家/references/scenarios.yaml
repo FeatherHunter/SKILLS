@@ -860,14 +860,14 @@ scenarios:
   scenario_title: 购买记录(查询/统计/票据归档)
   dimensions: {}
   type: 查看+选择+回执
-  status: 【待开发】
+  status: ''
   prompt: "请加载「居家管家」技能,帮我查购买记录(唤醒词:购买记录):\n\n  物  品: _____________ (选填;不填按时间浏览)\n\
     \  时  间: _____________ (选填,如:上个月)"
   result: 单物品购买信息(日期/价格/渠道/退货窗口)+ 消费统计 + 票据归档。
   html:
-    template: ''
+    template: 票据凭证/purchase_records.html
     command_cn: 购买记录
-    data_source: ''
+    data_source: receipt
 - id: SM6-2
   domain: receipt
   sub: 保修与保养
@@ -876,13 +876,13 @@ scenarios:
   scenario_title: 保修与保养(登记/到期/维修记录)
   dimensions: {}
   type: 查看+选择+回执
-  status: 【待开发】
+  status: ''
   prompt: "请加载「居家管家」技能,帮我查保修与保养(唤醒词:保修):\n\n  物  品: _____________ (选填)"
   result: 保修状态(在保/已过/即将到期)+ 维修记录 + 保养周期。
   html:
-    template: ''
+    template: 票据凭证/warranty.html
     command_cn: 保修
-    data_source: ''
+    data_source: receipt
 - id: SM6-3
   domain: receipt
   sub: 证件管理
@@ -891,14 +891,14 @@ scenarios:
   scenario_title: 证件管理(登记/到期/归档)
   dimensions: {}
   type: 查看+选择+回执
-  status: 【待开发】
+  status: ''
   prompt: "请加载「居家管家」技能,帮我管理证件(唤醒词:证件):\n\n  操  作: _____________ (查看/登记/归档)\n  证  件:\
     \ _____________ (选填,如:护照)"
   result: 证件清单(按到期排序)+ 登记(号码脱敏)+ 照片归档。
   html:
-    template: ''
+    template: 票据凭证/certificates.html
     command_cn: 证件
-    data_source: ''
+    data_source: receipt
 - id: SM6-4
   domain: receipt
   sub: 账号密码
@@ -907,14 +907,14 @@ scenarios:
   scenario_title: 账号密码(加密存/查/改·脱敏)
   dimensions: {}
   type: 查看+选择+回执
-  status: 【待开发】
+  status: ''
   prompt: "请加载「居家管家」技能,帮我管理账号(唤醒词:账号):\n\n  操  作: _____________ (存/查/改)\n  平  台: _____________\
     \ (如:淘宝/微信)\n  用户名: _____________ (存/改时填)\n  主密钥: _____________ (验证用)"
   result: 账号清单(密码脱敏 ****)+ 加密存储/查看/修改,复制数据默认不含密码。
   html:
-    template: ''
+    template: 票据凭证/accounts.html
     command_cn: 账号
-    data_source: ''
+    data_source: receipt
 - id: SM7-1
   domain: family
   sub: 借用管理

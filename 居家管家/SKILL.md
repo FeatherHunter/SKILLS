@@ -13,6 +13,7 @@ description: >
   看标签、合标签（标签管理）、
   查快递（快递查询）、
   查账号、存账号、改账号（账号密码管理）、
+  购买记录（购买记录查询/统计）、保修（保修与保养）、证件（证件管理）、账号（账号密码·脱敏）、
   批量录入、补录（批量/历史录入）、
   紧急定位、筛选浏览、拍照找物品、查重复（查找进阶）、
   数量变更、状态变更、合并物品、撤销操作、物品关联（更新进阶）、
@@ -143,9 +144,9 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 25 | 查快递 | 快递跟踪（查/超时/收货确认） | `python3 scripts/快递购物/cli.py express [--timeout-days 7]` → 快递购物/express.html | 否 |
 | 26 | 推位置 | 位置推荐 | features/add.md → Step 2.5 | 是（category-id 整数） |
 | 27 | 找位置 | 参考锚定 | features/add.md → Step 2.6 | 是（reference） |
-| 28 | 查账号 | 查看账号 | accounts.py → show/list | 是（平台名，无则列全部） |
-| 29 | 存账号 | 新增账号 | accounts.py → add | 是 |
-| 30 | 改账号 | 更新账号 | accounts.py → show | 是（平台名） |
+| 28 | 查账号 | 查看账号（密码脱敏·类型组织） | `python3 scripts/票据凭证/cli.py account list` / `show --platform "XX" --master-key "XX"` → 票据凭证/accounts.html | 是（平台名，无则列全部） |
+| 29 | 存账号 | 新增账号（密码加密存储） | `python3 scripts/票据凭证/cli.py account add --platform "XX" --user "XX" --pass "XX" --master-key "XX" [--type 购物\|银行\|社交\|其他]` | 是 |
+| 30 | 改账号 | 更新账号（重新录入语义） | `python3 scripts/票据凭证/cli.py account update --platform "XX" --master-key "XX" [--user] [--pass] [--type]` | 是（平台名） |
 | 31 | 查异常 | 数据健康检查 | `python3 scripts/开始使用/cli.py lint` → 开始使用/health_report.html | 否 |
 | 32 | 查物品(HTML) | 物品搜索(默认输出 HTML) | features/search.md → Step 4 | 可选（无则列全部） |
 | 33 | 看物品(HTML) | 物品详情(默认输出 HTML) | features/search.md → Step 4 | 是（多件时先选） |
@@ -189,6 +190,10 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 70 | 联动总览 | 跨技能联动能力索引 + 偏好设置 | `python3 scripts/联动/cli.py sm9-overview` → 联动/link_overview.html（或 home_manager.py sm9-overview，T2 注册后） | 否 |
 | 71 | 记到卡路里 | 食品联动（记到今日饮食/查热量） | features/联动.md → 食品联动 | 是（先查物品确认） |
 | 72 | 记到记账 | 价格联动（记支出/记收入） | features/联动.md → 价格联动 | 是（先查物品确认） |
+| 73 | 购买记录 | 购买记录（查询/统计/票据归档·退货窗口） | `python3 scripts/票据凭证/cli.py purchase list [--item-id N] [--year YYYY] [--month MM]` / `stats [--year YYYY]` → 票据凭证/purchase_records.html | 否（物品/时间可选） |
+| 74 | 保修 | 保修与保养（登记/到期/维修记录/保养周期） | `python3 scripts/票据凭证/cli.py warranty list [--status 在保\|即将到期\|已过\|全部]` / `register --item-id N --kind 保修\|保养` / `repair --warranty-id N` / `maintain --warranty-id N` → 票据凭证/warranty.html | 否（物品可选） |
+| 75 | 证件 | 证件管理（登记/到期/归档·号码脱敏） | `python3 scripts/票据凭证/cli.py cert list` / `add --type 护照\|身份证\|驾照\|签证\|保险单\|其他 --expires-at D` → 票据凭证/certificates.html | 否 |
+| 76 | 账号 | 账号密码（加密存/查/改·敏感复制分离） | `python3 scripts/票据凭证/cli.py account list` → 票据凭证/accounts.html（密码 ******；复制数据默认不含密码） | 否 |
 
 ### 匹配规则
 
@@ -257,9 +262,9 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 囤货盘点 | `python3 scripts/快递购物/cli.py stock`（HTML 视图）\| `stock-set-threshold --id N --threshold M` \| `stock-fix --id N --quantity M` |
 | 推位置 | `suggest-locations --category-id N [--with-examples]` |
 | 找位置 | `find-location --reference "XX"` |
-| 查账号 | `account --action list` 或 `account --action show --platform "XX" --master-key "XX"` |
-| 存账号 | `account --action add --platform "XX" --user "XX" --pass "XX" --master-key "XX"` |
-| 改账号 | `account --action show --platform "XX" --master-key "XX"`（查看后重新录入） |
+| 查账号 | `python3 scripts/票据凭证/cli.py account list`（清单 HTML·密码脱敏）或 `account show --platform "XX" --master-key "XX"`（敏感回显） |
+| 存账号 | `python3 scripts/票据凭证/cli.py account add --platform "XX" --user "XX" --pass "XX" --master-key "XX" [--type 购物\|银行\|社交\|其他]`（加密存储） |
+| 改账号 | `python3 scripts/票据凭证/cli.py account update --platform "XX" --master-key "XX" [--user] [--pass] [--type]`（重新录入语义） |
 | 查异常 | `python3 scripts/开始使用/cli.py lint` (数据检查 8 项, 走 开始使用/health_report.html) |
 | 首次使用 | `python3 scripts/开始使用/cli.py check` → `init`(建库+种子 60 节点)→ `init-status`(幂等) |
 | 备份导出 | `python3 scripts/开始使用/cli.py backup` / `backup-list` / `export --format json\|csv` |
@@ -276,6 +281,10 @@ AI 收到用户输入后，按以下表匹配唤醒词，命中即加载对应�
 | 记到记账 | `python3 scripts/联动/cli.py sm9-price --item-id N [--direction expense\|income]`（expense=支出, income=收入/退货退款） |
 | 借用 | `family --action borrow-list [--output PATH]`(清单 HTML·双向区隔/超期/催还) · `--action borrow-add --direction 借出\|借入 --item-id N 或 --item-name "XX" --object "XX" [--borrowed-at D] [--due-date D]`(登记·借出自动改状态借用中) · `--action borrow-return --borrow-id N`(归还·状态回在家) · `--action borrow-remind --borrow-id N`(催还文案纯文本) |
 | 家人档案 | `family --action member-list [--output PATH]`(成员 HTML·归属统计) · `--action member-add --name "XX" [--relation "XX"] [--note "XX"]`(添加) · `--action member-remove --name "XX"`(移除·归属回使用者) · `--action member-assign --name "XX" --item-ids "1,2,3"`(批量标记归属) |
+| 购买记录 | `python3 scripts/票据凭证/cli.py purchase list [--item-id N] [--year YYYY] [--month MM] [--output PATH]`（清单 HTML·退货窗口计算）· `purchase add --item-id N --date D [--price X] [--channel] [--merchant-contact] [--receipt-photo] [--return-window N]`（登记·票据照片预告式）· `purchase stats [--year YYYY]`（消费统计） |
+| 保修 | `python3 scripts/票据凭证/cli.py warranty list [--status 在保\|即将到期\|已过\|到期未做\|全部] [--output PATH]`（清单 HTML·状态徽章·维修记录）· `warranty register --item-id N --kind 保修\|保养 --start-date D --duration-days N`（登记）· `warranty repair --warranty-id N --date D [--cost X]`（维修记录）· `warranty maintain --warranty-id N --date D`（保养执行·刷新下次日） |
+| 证件 | `python3 scripts/票据凭证/cli.py cert list [--output PATH]`（清单 HTML·号码 ****后4位·按到期排序）· `cert add --type 护照\|身份证\|驾照\|签证\|保险单\|其他 --expires-at D [--holder] [--number] [--photo]`（登记·脱敏存储） |
+| 账号 | `python3 scripts/票据凭证/cli.py account list [--output PATH]`（清单 HTML·密码 ******·类型分组）· `account init-master --master-key M`（首设主密钥）· `account add`（加密存储）· `account show`（敏感回显）· `account update`（修改）· `account set-master`（换密钥） |
 
 ---
 
@@ -367,6 +376,10 @@ $SKILLS_DATA_DIR  >  $SKILLS_DB_PATH  >  Skill 自带 fallback (Windows: D:\.db\
 | `stats/idle.html` | 查闲置（T5） |
 | `stats/expiring.html` | 查过期（v2，T5） |
 | `stats/inventory_stat.html` | 盘点统计（T5） |
+| `票据凭证/purchase_records.html` | 购买记录（T7 · 域内渲染器命名） |
+| `票据凭证/warranty.html` | 保修（T7 · 域内渲染器命名） |
+| `票据凭证/certificates.html` | 证件（T7 · 域内渲染器命名） |
+| `票据凭证/accounts.html` | 账号（T7 · 域内渲染器命名） |
 
 例子：`home_manager_html/查物品_20260728_171500.html`
 
@@ -474,6 +487,10 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 - **频率统计**：区分高频/低频物品，识别长期未用物品
 - **标签管理**：合并相似标签
 - **照片管理**：支持配置照片存储路径（环境变量 `HOME_PHOTOS_DIR`，默认为技能目录/photos）
+- **购买记录**：购买日期/价格/渠道/商家客服/退货窗口计算/票据照片归档 + 消费统计（按年/分类聚合）
+- **保修与保养**：保修期登记与状态计算（在保/即将到期/已过）+ 维修记录 + 保养周期与执行状态
+- **证件管理**：证件登记（护照/身份证/驾照/签证/保险单）按到期排序，号码脱敏显示，照片归档
+- **账号密码**：主密钥 Fernet 加密存储，类型组织（购物/银行/社交/其他），密码全脱敏，复制数据默认不含密码
 - **🖼 单图架构**：一件物品 = 一张照片（`item.photo` 是单字段）。
   - **多图录入**：用户发多张图时，**第 1 张 = DB 主图（必须存 photos 目录）**，**后续图 = 只读不复制**（信息整合到 `tags` + `remark`，不再重复存档到文件系统）
   - **套装共享**：多件商品共用 1 张图时，每件复制一份并分别命名，各自 DB 存 1 个主图
@@ -512,9 +529,13 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 | 囤货盘点 | 库存阈值管理 | scripts/快递购物/cli.py |
 | 推位置 | 位置推荐 | features/add.md |
 | 找位置 | 参考锚定 | features/add.md |
-| 查账号 | 查看账号 | accounts.py |
-| 存账号 | 新增账号 | accounts.py |
-| 改账号 | 更新账号 | accounts.py |
+| 查账号 | 查看账号（密码脱敏） | scripts/票据凭证/cli.py |
+| 存账号 | 新增账号（加密存储） | scripts/票据凭证/cli.py |
+| 改账号 | 更新账号（重新录入） | scripts/票据凭证/cli.py |
+| 购买记录 | 购买记录查询/统计/票据归档 | scripts/票据凭证/cli.py |
+| 保修 | 保修与保养（到期/维修/保养） | scripts/票据凭证/cli.py |
+| 证件 | 证件管理（到期/归档·号码脱敏） | scripts/票据凭证/cli.py |
+| 账号 | 账号密码（加密存/查/改·脱敏） | scripts/票据凭证/cli.py |
 | 查异常 | 数据健康检查 | SKILL.md（Lint 检查） |
 | 查物品 | 物品搜索→HTML | features/search.md |
 | 看物品 | 物品详情→HTML | features/search.md |
@@ -551,6 +572,7 @@ commit message 必含 `Tested-By:` 字段,分级如下:
 | 统计类 | `统物品` / `查高频` / `查低频` / `查过期` |
 | 出行类 | `查快递` / `穿什么` / `带物品` / `归物品` |
 | 空间类 | `管位置` / `固定位` / `收纳建议` / `空间视图` |
+| 票据凭证类 | `购买记录` / `保修` / `证件` / `账号`（SM6 域 CLI 默认输出 HTML） |
 
 这些唤醒词的 HTML 输出路径见 [§📌 输出位置](#-输出位置) 的 `template → command_cn` 映射表。
 

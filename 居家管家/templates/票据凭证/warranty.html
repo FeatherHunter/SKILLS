@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 保修与保养</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.stamp{color:var(--fg3);font-size:12px;margin-top:4px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.card.warn{border-left-color:var(--orange)}.card.danger{border-left-color:var(--red)}.card.info{border-left-color:var(--blue)}
+.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}
+.card span{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.chip{border:none;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#eef1f5;color:var(--fg2)}
+.chip.on{background:var(--blue);color:#fff}
+.item{background:var(--card);border-radius:18px;padding:16px 18px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.item.danger{border-left-color:var(--red);background:#fff8f8}
+.item.warn{border-left-color:var(--orange)}
+.item.info{border-left-color:var(--blue)}
+.name{font-weight:700;font-size:15px;margin-bottom:3px}
+.meta{color:var(--fg2);font-size:12px;margin-bottom:4px}
+.badge{display:inline-block;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;margin:2px 6px 2px 0}
+.badge.ok{background:#e5f7ea;color:var(--green)}.badge.warn{background:#fff0d9;color:var(--orange)}
+.badge.danger{background:#ffe5e5;color:var(--red)}.badge.off{background:#eef1f5;color:var(--fg2)}
+.kind{font-size:11px;font-weight:800;color:var(--fg3);letter-spacing:.05em}
+.events{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;font-size:12px;color:var(--fg2)}
+.events summary{cursor:pointer;font-weight:700;color:var(--fg)}
+.ev{display:flex;gap:10px;padding:3px 0}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{border:none;border-radius:999px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2)}
+.btn:hover{background:#e5e9ef}
+.btn.primary{background:var(--blue);color:#fff}
+.remind{background:#fff8ec;border:1px solid #f5d9a8;border-radius:16px;padding:14px 18px;margin:14px 0;font-size:13px;color:#8a5b00}
+.remind b{color:#6b4700}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
+.actions{margin-top:14px}
+.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copy.log{background:#6e6e73}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.fixed{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · SM6 票据凭证</div>
+<h1 id="title">保修与保养</h1>
+<p class="lead" id="subtitle">在保 / 即将到期 / 维修记录 / 保养周期</p>
+<p class="stamp" id="stamp"></p>
+</header>
+<div class="cards" id="cards"></div>
+<div class="chips" id="chips"></div>
+<div id="reminders"></div>
+<div class="section" id="secTitle">权益清单</div>
+<div id="app"></div>
+<div class="actions">
+<button class="btn primary" id="addBtn">登记保修 / 保养</button>
+</div>
+<div class="fixed">
+<button class="copy" id="copyData">复制数据</button>
+<button class="copy log" id="copyLog">复制日志</button>
+</div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const $=id=>document.getElementById(id);
+let DATA={items:[],summary:{},meta:{}};
+let FILTER='全部';
+const STATUSES=['全部','在保','即将到期','已过','到期未做'];
+function badgeOf(st){
+  if(st==='在保'||st==='已做')return '<span class="badge ok">'+esc(st)+'</span>';
+  if(st==='即将到期')return '<span class="badge warn">'+esc(st)+'</span>';
+  return '<span class="badge danger">'+esc(st)+'</span>';
+}
+function render(){
+let payload;
+try{payload=JSON.parse($('payload').textContent)}catch(e){$('app').innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(payload);
+if(!v.ok){$('app').innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=payload.data;
+DATA=data;
+$('title').textContent=data.summary.title||'保修与保养';
+$('subtitle').textContent=(data.meta.subtitle||'')+' · 唤醒词「'+data.meta.wake_word+'」';
+$('stamp').textContent='生成于 '+data.occurred_at+' · v'+data.version;
+$('cards').innerHTML=arr(data.summary.metrics).map(m=>{
+  const sev=m.severity||'info';
+  return `<div class="card ${esc(sev)}"><b>${esc(m.label)}</b><span>${esc(m.value)}</span></div>`;
+}).join('');
+$('chips').innerHTML=STATUSES.map(s=>`<button class="chip${FILTER===s?' on':''}" data-k="${esc(s)}">${esc(s)}</button>`).join('');
+$('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{FILTER=b.getAttribute('data-k');render();});
+const rem=arr(data.reminders);
+$('reminders').innerHTML=rem.length?('<div class="remind">⏰ <b>顺路提醒：</b>'+rem.map(r=>esc(r.cert_type+' · '+r.holder+' '+r.status+(r.days_left<0?' '+(-r.days_left)+' 天':' '+r.days_left+' 天后'))).join('；')+'</div>'):'';
+const items=arr(data.items).filter(it=>FILTER==='全部'||it.status===FILTER);
+$('secTitle').textContent='权益清单 · '+items.length+' 项';
+if(!items.length){$('app').innerHTML='<div class="empty">'+esc(data.empty_hint||'暂无登记')+'</div>';return}
+$('app').innerHTML=items.map(it=>{
+  const dl=it.days_left;
+  const dlTxt=dl<0?'已过 '+(-dl)+' 天':(dl===0?'今天到期':dl+' 天后到期');
+  const events=arr(it.events);
+  const evHtml=events.length?`<details class="events"><summary>${esc(it.kind==='保养'?'执行/维修记录':'维修记录')} · ${events.length} 条</summary>${events.map(e=>`<div class="ev">📅 ${esc(e.occurred_at)} · ${esc(e.event_type)}${e.cost?' · ¥'+Number(e.cost).toFixed(2):''} ${esc(e.note||'')}</div>`).join('')}</details>`:'<div class="events" style="border:none;padding:0"><span class="kind">暂无记录</span></div>';
+  const repairBtn=it.kind==='保修'?`<button class="btn" data-p="${esc('【记录维修：保修ID '+it.id+' · 物品 '+it.item_name+'，维修日期: _____ 花费: _____ 备注: _____】')}">记录维修</button>`:'';
+  const maintainBtn=it.kind==='保养'?`<button class="btn primary" data-p="${esc('【执行保养：保养ID '+it.id+' · 物品 '+it.item_name+'，执行日期: _____】')}">✓ 执行保养</button>`:'';
+  return `<div class="item ${esc(it.severity||'info')}">
+<div class="name">${esc(it.item_name||('#'+it.item_id))} <span class="kind">${esc(it.kind)} · ID ${it.id}</span></div>
+<div class="meta">${badgeOf(it.status)} 到期 ${esc(it.end_date||'-')} · ${esc(dlTxt)}</div>
+<div class="meta">${esc(it.note||'')}</div>
+${evHtml}
+<div class="btnrow">${repairBtn}${maintainBtn}</div>
+</div>`;
+}).join('');
+$('app').querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>copyText(b.getAttribute('data-p')));
+}
+function buildCopyData(){
+const items=arr(DATA.items).map(it=>({id:it.id,item_id:it.item_id,item_name:it.item_name,kind:it.kind,status:it.status,days_left:it.days_left,end_date:it.end_date,last_done_date:it.last_done_date,repair_count:it.repair_count,events:arr(it.events).map(e=>({occurred_at:e.occurred_at,event_type:e.event_type,cost:e.cost,note:e.note}))}));
+return JSON.stringify({scene_id:DATA.meta.scene_id,command_cn:DATA.meta.command_cn,occurred_at:DATA.occurred_at,target:'保修与保养',payload:{items}},null,2);
+}
+function buildCopyLog(){
+const lines=[];
+lines.push('① 场景标识: '+DATA.meta.command_cn+' · 唤醒词「'+DATA.meta.wake_word+'」 · '+DATA.meta.title);
+lines.push('② AI 思考链: 意图理解(查保修状态/维修/保养) → 决策点(状态筛选/保修卡定位) → 关键判断(保修到期=起始日+时长; 保养下次=上次执行+周期)');
+lines.push('③ 底层数据结构: warranties + service_events(维修/保养执行) · DB 读(warranties LEFT JOIN items)');
+lines.push('④ 调用链: '+DATA.cli_chain+' ; 写: warranty register/repair/maintain');
+lines.push('⑤ 时间戳+版本: '+DATA.occurred_at+' · v'+DATA.version);
+lines.push('⑥ 异常信息: (无)');
+return lines.join('\n');
+}
+function copyText(txt){
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>flash('已复制 ✓'));}
+else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();flash('已复制 ✓');}
+}
+let flashTimer=null;
+function flash(msg){const b=$('copyData');b.textContent=msg;clearTimeout(flashTimer);flashTimer=setTimeout(()=>b.textContent='复制数据',1500);}
+$('copyData').onclick=()=>copyText(buildCopyData());
+$('copyLog').onclick=()=>copyText(buildCopyLog());
+$('addBtn').onclick=()=>copyText('请登记保修/保养(唤醒词:保修):\n\n  物品 ID: _____________\n  类  型: _____________ (保修 / 保养)\n  起始日: _____________ (YYYY-MM-DD; 保修=购买日, 保养=上次保养日)\n  时  长: _____________ 天 (保修期/保养周期)\n  备  注: _____________ (选填)\n\n  (复制本段发给 AI, AI 将调用 scripts/票据凭证/cli.py warranty register 登记)');
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+# SM6 票据凭证域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 居家管家/scenes/SM6.yaml(隔离契约: 每域只写自己的 scenes/SM{n}.yaml)
+# 合并器 = scripts/场景合并.py(公共层产物);改总账的唯一通道 = 合并器。
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# status 判定原则(07 §4/§6 五者对应):
+#   SKILL.md 唤醒词路由 + 场景资产 ✓ + prompt ✓ + 底层工作流 ✓ + HELP 映射 ✓
+#   → SM6 4 场景 CLI+模板已落地(scripts/票据凭证/ + templates/票据凭证/)+ SKILL.md 路由更新
+#   → status 全部转 ""(可用)
+#
+# 安全契约(08 敏感脱敏): 证件号/密码永不出现在 payload/HTML;复制数据默认不含敏感字段;
+#   密码查看/复制 = 独立敏感操作(经 AI 中转,主密钥验证)。
+version: "2.0"
+
+domain: receipt
+
+scenes:
+  - id: "SM6-1"
+    domain: receipt
+    sub: 购买记录
+    wake_word: 购买记录
+    scenario_id: purchase_records
+    scenario_title: 购买记录(查询/统计/票据归档)
+    dimensions: {}
+    type: 查看+选择+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我查购买记录(唤醒词:购买记录):
+
+        物  品: _____________ (选填;不填按时间浏览)
+        时  间: _____________ (选填,如:上个月)
+    result: "单物品购买信息(日期/价格/渠道/退货窗口)+ 消费统计 + 票据归档。"
+    html:
+      template: 票据凭证/purchase_records.html
+      command_cn: 购买记录
+      data_source: receipt
+
+  - id: "SM6-2"
+    domain: receipt
+    sub: 保修与保养
+    wake_word: 保修
+    scenario_id: warranty
+    scenario_title: 保修与保养(登记/到期/维修记录)
+    dimensions: {}
+    type: 查看+选择+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我查保修与保养(唤醒词:保修):
+
+        物  品: _____________ (选填)
+    result: "保修状态(在保/已过/即将到期)+ 维修记录 + 保养周期。"
+    html:
+      template: 票据凭证/warranty.html
+      command_cn: 保修
+      data_source: receipt
+
+  - id: "SM6-3"
+    domain: receipt
+    sub: 证件管理
+    wake_word: 证件
+    scenario_id: certificates
+    scenario_title: 证件管理(登记/到期/归档)
+    dimensions: {}
+    type: 查看+选择+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我管理证件(唤醒词:证件):
+
+        操  作: _____________ (查看/登记/归档)
+        证  件: _____________ (选填,如:护照)
+    result: "证件清单(按到期排序)+ 登记(号码脱敏)+ 照片归档。"
+    html:
+      template: 票据凭证/certificates.html
+      command_cn: 证件
+      data_source: receipt
+
+  - id: "SM6-4"
+    domain: receipt
+    sub: 账号密码
+    wake_word: 账号
+    scenario_id: account_manage
+    scenario_title: 账号密码(加密存/查/改·脱敏)
+    dimensions: {}
+    type: 查看+选择+回执
+    status: ""
+    prompt: |-
+      请加载「居家管家」技能,帮我管理账号(唤醒词:账号):
+
+        操  作: _____________ (存/查/改)
+        平  台: _____________ (如:淘宝/微信)
+        用户名: _____________ (存/改时填)
+        主密钥: _____________ (验证用)
+    result: "账号清单(密码脱敏 ****)+ 加密存储/查看/修改,复制数据默认不含密码。"
+    html:
+      template: 票据凭证/accounts.html
+      command_cn: 账号
+      data_source: receipt

@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 购买记录</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.stamp{color:var(--fg3);font-size:12px;margin-top:4px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.card.warn{border-left-color:var(--orange)}.card.danger{border-left-color:var(--red)}.card.info{border-left-color:var(--blue)}
+.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}
+.card span{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.chip{border:none;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#eef1f5;color:var(--fg2)}
+.chip.on{background:var(--blue);color:#fff}
+.item{background:var(--card);border-radius:18px;padding:16px 18px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.item.ret{background:#f3fbf5;border-left-color:var(--green)}
+.grid{display:grid;grid-template-columns:1fr auto;gap:8px 16px}
+.name{font-weight:700;font-size:15px}
+.meta{color:var(--fg2);font-size:13px}
+.price{font-weight:800;font-size:17px;color:var(--fg);text-align:right}
+.badge{display:inline-block;border-radius:99px;padding:2px 10px;font-size:11px;font-weight:700;margin:2px 4px 2px 0}
+.badge.ok{background:#e5f7ea;color:var(--green)}.badge.warn{background:#fff0d9;color:var(--orange)}.badge.off{background:#eef1f5;color:var(--fg2)}
+.photo{display:inline-flex;margin-top:8px;max-width:120px;border-radius:10px;overflow:hidden}
+.photo img{width:100%;display:block}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin:14px 0}
+.cat{background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);cursor:pointer;border:1px solid var(--line)}
+.cat b{font-size:13px}.cat span{font-size:12px;color:var(--fg2)}
+.section{font-size:13px;font-weight:800;color:var(--fg3);letter-spacing:.08em;margin:22px 0 10px}
+.remind{background:#fff8ec;border:1px solid #f5d9a8;border-radius:16px;padding:14px 18px;margin:14px 0;font-size:13px;color:#8a5b00}
+.remind b{color:#6b4700}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
+.actions{display:flex;flex-direction:column;gap:8px}
+.btn{border:none;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2)}
+.btn:hover{background:#e5e9ef}
+.btn.primary{background:var(--blue);color:#fff}
+.btn.sensitive{background:var(--red);color:#fff}
+.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copy.log{background:#6e6e73}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.grid{grid-template-columns:1fr}.price{text-align:left}.fixed{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · SM6 票据凭证</div>
+<h1 id="title">购买记录</h1>
+<p class="lead" id="subtitle">购买时间 / 价格 / 渠道 / 退货窗口 / 票据归档</p>
+<p class="stamp" id="stamp"></p>
+</header>
+<div class="cards" id="cards"></div>
+<div class="chips" id="chips"></div>
+<div id="reminders"></div>
+<div class="section">消费统计 · 按分类</div>
+<div class="catgrid" id="catgrid"></div>
+<div class="section">购买记录</div>
+<div id="app"></div>
+<div class="actions">
+<button class="btn primary" id="addBtn">登记购买记录</button>
+</div>
+<div class="fixed">
+<button class="copy" id="copyData">复制数据</button>
+<button class="copy log" id="copyLog">复制日志</button>
+</div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const $=id=>document.getElementById(id);
+let DATA={items:[],summary:{},meta:{},category_stats:[]};
+let FILTER={year:'all'};
+
+function yearFilter(data){
+  if(FILTER.year==='all') return data.items;
+  if(FILTER.year==='ret') return data.items.filter(it=>it.return_days_left!==null&&it.return_days_left>=0);
+  return data.items.filter(it=>String(it.purchased_at||'').startsWith(FILTER.year));
+}
+
+function render(){
+let payload;
+try{payload=JSON.parse($('payload').textContent)}catch(e){$('app').innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(payload);
+if(!v.ok){$('app').innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=payload.data;
+DATA=data;
+$('title').textContent=data.summary.title||'购买记录';
+$('subtitle').textContent=(data.meta.subtitle||'')+' · 唤醒词「'+data.meta.wake_word+'」';
+$('stamp').textContent='生成于 '+data.occurred_at+' · v'+data.version;
+$('cards').innerHTML=arr(data.summary.metrics).map(m=>{
+  const sev=m.severity||'info';
+  return `<div class="card ${esc(sev)}"><b>${esc(m.label)}</b><span>${esc(m.value)}</span></div>`;
+}).join('');
+const years=[...new Set(arr(data.items).map(i=>(i.purchased_at||'').slice(0,4)).filter(Boolean))].sort().reverse();
+const chips=[{k:'all',t:'全部'},{k:'ret',t:'可退货'}].concat(years.map(y=>({k:y,t:y+'年'})));
+$('chips').innerHTML=chips.map(c=>`<button class="chip${FILTER.year===c.k?' on':''}" data-k="${esc(c.k)}">${esc(c.t)}</button>`).join('');
+$('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{FILTER.year=b.getAttribute('data-k');render();});
+const rem=arr(data.reminders);
+$('reminders').innerHTML=rem.length?('<div class="remind">⏰ <b>顺路提醒：</b>'+rem.map(r=>esc(r.cert_type+' · '+r.holder+' '+r.status+(r.days_left<0?' '+(-r.days_left)+' 天':' '+r.days_left+' 天后'))).join('；')+'</div>'):'';
+$('catgrid').innerHTML=arr(data.category_stats).length?arr(data.category_stats).map(c=>`<div class="cat" data-cat="${esc(c.category)}"><b>${esc(c.category)}</b><br><span>${c.count} 笔 · ¥${c.total.toFixed?c.total.toFixed(2):c.total}</span></div>`).join(''):'<div class="cat"><b>暂无分类统计</b></div>';
+$('catgrid').querySelectorAll('.cat').forEach(c=>c.onclick=function(){copyText('【下钻统计：分类「'+this.getAttribute('data-cat')+'」的购买明细】');});
+const items=yearFilter(data);
+if(!items.length){$('app').innerHTML='<div class="empty">'+esc(data.empty_hint||'暂无记录')+'</div>';return}
+$('app').innerHTML=items.map(it=>{
+  const dl=it.return_days_left;
+  let badge='';
+  if(dl!==null&&dl<0) badge='<span class="badge warn">已过退货期 '+(-dl)+' 天</span>';
+  else if(dl!==null&&dl===0) badge='<span class="badge warn">今天最后可退</span>';
+  else if(dl!==null&&dl<=3) badge='<span class="badge ok">可退 · 剩 '+dl+' 天</span>';
+  else if(dl!==null) badge='<span class="badge ok">可退 · 剩 '+dl+' 天</span>';
+  else badge='<span class="badge off">未设退货</span>';
+  const photo=it.photo_base64?'<span class="photo"><img alt="票据" src="data:image/jpeg;base64,'+it.photo_base64+'"></span>':'';
+  return `<div class="item ${dl!==null&&dl>=0?'ret':''}">
+<div class="grid">
+<div>
+<div class="name">${esc(it.item_name||('#'+it.item_id))} <span class="badge off">ID ${it.item_id}</span></div>
+<div class="meta">🛒 ${esc(it.purchased_at||'-')} · 渠道 ${esc(it.channel||'未填写')}</div>
+<div class="meta">🏷 ${esc(it.merchant_contact||'未填商家/客服')}</div>
+<div class="meta">退货窗口：${esc(it.return_end||'未设')} ${badge}</div>
+${photo}
+</div>
+<div class="price">¥${it.price!==null&&it.price!==undefined?Number(it.price).toFixed(2):'未填'}</div>
+</div>
+</div>`;
+}).join('');
+}
+
+function buildCopyData(){
+const items=yearFilter(DATA).map(it=>({item_id:it.item_id,item_name:it.item_name,purchased_at:it.purchased_at,price:it.price,channel:it.channel,merchant_contact:it.merchant_contact,return_end:it.return_end,return_days_left:it.return_days_left,note:it.note}));
+return JSON.stringify({scene_id:DATA.meta.scene_id,command_cn:DATA.meta.command_cn,occurred_at:DATA.occurred_at,target:'购买记录',payload:{items,category_stats:DATA.category_stats}},null,2);
+}
+function buildCopyLog(){
+const lines=[];
+lines.push('① 场景标识: '+DATA.meta.command_cn+' · 唤醒词「'+DATA.meta.wake_word+'」 · '+DATA.meta.title);
+lines.push('② AI 思考链: 意图理解(查购买记录/统计) → 决策点(时间筛选/物品筛选) → 关键判断(退货窗口=购买日+窗口天数)');
+lines.push('③ 底层数据结构: '+JSON.stringify({items:arr(DATA.items).length+' 条, category_stats: '+arr(DATA.category_stats).length+' 类'})+' · DB 读(purchase_records LEFT JOIN items)');
+lines.push('④ 调用链: '+DATA.cli_chain);
+lines.push('⑤ 时间戳+版本: '+DATA.occurred_at+' · v'+DATA.version);
+lines.push('⑥ 异常信息: (无)');
+return lines.join('\n');
+}
+function copyText(txt){
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>flash('已复制 ✓'));}
+else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();flash('已复制 ✓');}
+}
+let flashTimer=null;
+function flash(msg){const b=$('copyData');b.textContent=msg;clearTimeout(flashTimer);flashTimer=setTimeout(()=>b.textContent='复制数据',1500);}
+$('copyData').onclick=()=>copyText(buildCopyData());
+$('copyLog').onclick=()=>copyText(buildCopyLog());
+$('addBtn').onclick=()=>copyText('请登记购买记录(唤醒词:购买记录):\n\n  物品 ID: _____________\n  购买日期: _____________ (YYYY-MM-DD)\n  价  格: _____________ (选填)\n  渠  道: _____________ (选填,如:京东/山姆)\n  商家/客服: _____________ (选填)\n  退货窗口: _____________ 天 (默认 7)\n  【票据照片即将发送:】\n\n  (复制本段发给 AI, AI 将调用 scripts/票据凭证/cli.py purchase add 登记)');
+render();
+</script>
+</body>
+</html>

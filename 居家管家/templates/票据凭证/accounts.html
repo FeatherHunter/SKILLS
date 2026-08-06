@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 账号密码</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.stamp{color:var(--fg3);font-size:12px;margin-top:4px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.card.warn{border-left-color:var(--orange)}.card.danger{border-left-color:var(--red)}.card.info{border-left-color:var(--blue)}
+.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}
+.card span{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.group{margin-bottom:18px}
+.gtitle{font-size:13px;font-weight:800;color:var(--fg3);letter-spacing:.08em;margin:22px 0 10px}
+.item{background:var(--card);border-radius:18px;padding:14px 18px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:grid;grid-template-columns:1fr auto;gap:8px 16px;align-items:center}
+.name{font-weight:700;font-size:15px}
+.meta{color:var(--fg2);font-size:12px}
+.masked{font-family:ui-monospace,Consolas,monospace;letter-spacing:.15em;font-weight:800;color:var(--fg3)}
+.badge{display:inline-block;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;background:#eef1f5;color:var(--fg2)}
+.notice{background:#f3f6fa;border:1px solid var(--line);border-radius:14px;padding:12px 16px;font-size:12px;color:var(--fg2);margin:14px 0}
+.notice b{color:var(--fg)}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
+.actions{margin-top:14px}
+.btn{border:none;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2)}
+.btn:hover{background:#e5e9ef}
+.btn.primary{background:var(--blue);color:#fff}
+.btn.sensitive{background:var(--red);color:#fff}
+.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copy.log{background:#6e6e73}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.fixed{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · SM6 票据凭证</div>
+<h1 id="title">账号密码</h1>
+<p class="lead" id="subtitle">密码加密存储 · 清单全脱敏 · 复制数据默认不含密码</p>
+<p class="stamp" id="stamp"></p>
+</header>
+<div class="cards" id="cards"></div>
+<div class="notice" id="notice"></div>
+<div id="groups"></div>
+<div id="app"></div>
+<div class="actions">
+<button class="btn primary" id="addBtn">存账号</button>
+</div>
+<div class="fixed">
+<button class="copy" id="copyData">复制数据</button>
+<button class="copy log" id="copyLog">复制日志</button>
+</div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const $=id=>document.getElementById(id);
+let DATA={groups:[],summary:{},meta:{}};
+function render(){
+let payload;
+try{payload=JSON.parse($('payload').textContent)}catch(e){$('app').innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(payload);
+if(!v.ok){$('app').innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=payload.data;
+DATA=data;
+$('title').textContent=data.summary.title||'账号密码';
+$('subtitle').textContent=(data.meta.subtitle||'')+' · 唤醒词「'+data.meta.wake_word+'」';
+$('stamp').textContent='生成于 '+data.occurred_at+' · v'+data.version;
+$('cards').innerHTML=arr(data.summary.metrics).map(m=>{
+  const sev=m.severity||'info';
+  return `<div class="card ${esc(sev)}"><b>${esc(m.label)}</b><span>${esc(m.value)}</span></div>`;
+}).join('');
+$('notice').innerHTML='🔒 <b>敏感操作说明：</b>本页不含任何明文密码。查看/复制密码需经 AI 中转(主密钥验证),复制数据默认不含密码。';
+const groups=arr(data.groups);
+const total=groups.reduce((s,g)=>s+arr(g.accounts).length,0);
+if(!total){$('app').innerHTML='<div class="empty">'+esc(data.empty_hint||'暂无账号')+'</div>';$('groups').innerHTML='';return}
+$('groups').innerHTML=groups.map(g=>{
+  const accounts=arr(g.accounts).map(acc=>{
+    return `<div class="item">
+<div>
+<div class="name">${esc(acc.platform)} <span class="badge">${esc(acc.type)}</span></div>
+<div class="meta">用户名 ${esc(acc.username||'未填')} · 密码 <span class="masked">${esc(acc.password_masked)}</span></div>
+<div class="meta">${esc(acc.note||'')}</div>
+</div>
+<div class="actions">
+<button class="btn" data-p="${esc('【查看密码：平台 '+acc.platform+'】')}">查看密码</button>
+<button class="btn sensitive" data-copy="${esc('【复制密码：平台 '+acc.platform+'，请回复该账号的明文密码】')}">复制密码</button>
+</div>
+</div>`;
+  }).join('');
+  return `<div class="group"><div class="gtitle">${esc(g.type)} · ${accounts.length} 个</div>${accounts}</div>`;
+}).join('');
+$('groups').querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>copyText(b.getAttribute('data-p')));
+$('groups').querySelectorAll('button[data-copy]').forEach(b=>b.onclick=function(){
+  if(!confirm('密码为敏感信息,确认要复制吗?(将复制取密码指令,明文仅经 AI 对话回显)'))return;
+  copyText(this.getAttribute('data-copy'));
+});
+}
+function buildCopyData(){
+const groups=arr(DATA.groups).map(g=>({type:g.type,accounts:arr(g.accounts).map(a=>({platform:a.platform,username:a.username,type:a.type,note:a.note}))}));
+return JSON.stringify({scene_id:DATA.meta.scene_id,command_cn:DATA.meta.command_cn,occurred_at:DATA.occurred_at,target:'账号密码',payload:{groups}},null,2);
+}
+function buildCopyLog(){
+const lines=[];
+lines.push('① 场景标识: '+DATA.meta.command_cn+' · 唤醒词「'+DATA.meta.wake_word+'」 · '+DATA.meta.title);
+lines.push('② AI 思考链: 意图理解(查账号/存账号/改账号) → 决策点(类型分组/脱敏展示) → 关键判断(密码 Fernet 加密落库, payload 永不含明文)');
+lines.push('③ 底层数据结构: accounts 表(encrypted_password Fernet 密文) · DB 读(account_list 不含密码列)');
+lines.push('④ 调用链: '+DATA.cli_chain+' ; 写: account add / 敏感: account show(仅 stdout 回显)');
+lines.push('⑤ 时间戳+版本: '+DATA.occurred_at+' · v'+DATA.version);
+lines.push('⑥ 异常信息: (无)');
+return lines.join('\n');
+}
+function copyText(txt){
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>flash('已复制 ✓'));}
+else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();flash('已复制 ✓');}
+}
+let flashTimer=null;
+function flash(msg){const b=$('copyData');b.textContent=msg;clearTimeout(flashTimer);flashTimer=setTimeout(()=>b.textContent='复制数据',1500);}
+$('copyData').onclick=()=>copyText(buildCopyData());
+$('copyLog').onclick=()=>copyText(buildCopyLog());
+$('addBtn').onclick=()=>copyText('请存账号(唤醒词:账号):\n\n  平  台: _____________ (如:淘宝/微信)\n  用户名: _____________\n  密  码: _____________ (将加密存储)\n  类  型: _____________ (购物/银行/社交/其他)\n  主密钥: _____________ (验证用)\n\n  (复制本段发给 AI, AI 将调用 scripts/票据凭证/cli.py account add 加密存储)');
+render();
+</script>
+</body>
+</html>

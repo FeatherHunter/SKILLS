@@ -233,3 +233,31 @@ def test_entry_reminders_non_food_no_price(link_db):
             "photo_base64": None}
     prefs = {"food": "ask", "price": "ask"}
     assert build_entry_reminders(item, prefs) == []
+
+
+# ── 跨技能契约对齐(票面 #114: 与对应技能实施协商 + SM3 契约统一)───────────────
+
+
+def test_fitness_prompt_sm3_contract_alignment(link_db):
+    """健身联动 prompt 必须与 SM3-4 权威枚举一致(行程类型: 健身)"""
+    import sys as _sys
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    os.environ["SKILLS_DB_PATH"] = str(link_db[1])
+    from 联动.ops import build_fitness_prompt
+    p = build_fitness_prompt()
+    assert "行程类型: 健身" in p  # SM3-4 枚举 = 健身/出差/旅行/超市/游泳/爬山/滑雪/自定义
+    assert "健身联动" not in p.split("行程类型:")[1].split("\n")[0]  # 不是枚举外值
+    assert "带物品" in p  # SM3-4 唤醒词
+
+
+def test_catalog_cross_skill_trigger_words(link_db):
+    """契约表 data_flow 必须指向对方技能真实触发词(卡路里/饼干记账 SKILL.md 实测)"""
+    import sys as _sys
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    os.environ["SKILLS_DB_PATH"] = str(link_db[1])
+    from 联动.ops import LINK_CATALOG
+    entries = {e["id"]: e for e in LINK_CATALOG}
+    assert "记一餐" in entries["food"]["data_flow"] or "记一餐" in LINK_CATALOG[0]["data_flow"]
+    assert "查食品" in LINK_CATALOG[0]["data_flow"]
+    assert "记支出" in LINK_CATALOG[1]["data_flow"]
+    assert "看今天练什么" in entries["fitness"]["data_flow"] or "看本周计划" in entries["fitness"]["data_flow"]

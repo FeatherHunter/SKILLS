@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 证件管理</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.stamp{color:var(--fg3);font-size:12px;margin-top:4px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.card.warn{border-left-color:var(--orange)}.card.danger{border-left-color:var(--red)}.card.info{border-left-color:var(--blue)}
+.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}
+.card span{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.item{background:var(--card);border-radius:18px;padding:16px 18px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue);display:grid;grid-template-columns:1fr auto;gap:8px 16px}
+.item.danger{border-left-color:var(--red);background:#fff8f8}
+.item.warn{border-left-color:var(--orange)}
+.item.info{border-left-color:var(--blue)}
+.name{font-weight:700;font-size:15px;margin-bottom:3px}
+.meta{color:var(--fg2);font-size:12px;margin-bottom:3px}
+.masked{font-family:ui-monospace,Consolas,monospace;letter-spacing:.08em;font-weight:700;color:var(--fg)}
+.badge{display:inline-block;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;margin:2px 6px 2px 0}
+.badge.ok{background:#e5f7ea;color:var(--green)}.badge.warn{background:#fff0d9;color:var(--orange)}
+.badge.danger{background:#ffe5e5;color:var(--red)}.badge.off{background:#eef1f5;color:var(--fg2)}
+.photo{margin-top:8px;max-width:120px;border-radius:10px;overflow:hidden}
+.photo img{width:100%;display:block}
+.remind{background:#fff8ec;border:1px solid #f5d9a8;border-radius:16px;padding:14px 18px;margin:14px 0;font-size:13px;color:#8a5b00}
+.remind b{color:#6b4700}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
+.actions{margin-top:14px}
+.btn{border:none;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2)}
+.btn:hover{background:#e5e9ef}
+.btn.primary{background:var(--blue);color:#fff}
+.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copy.log{background:#6e6e73}
+.copy.sens{background:var(--red)}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.fixed{position:static}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · SM6 票据凭证</div>
+<h1 id="title">证件管理</h1>
+<p class="lead" id="subtitle">按到期排序 · 号码脱敏 · 复制数据不含证件号</p>
+<p class="stamp" id="stamp"></p>
+</header>
+<div class="cards" id="cards"></div>
+<div id="reminders"></div>
+<div class="section" id="secTitle">证件清单</div>
+<div id="app"></div>
+<div class="actions">
+<button class="btn primary" id="addBtn">登记证件</button>
+</div>
+<div class="fixed">
+<button class="copy" id="copyData">复制数据</button>
+<button class="copy log" id="copyLog">复制日志</button>
+</div>
+</div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+<!--SHARED-HELPERS-->
+const $=id=>document.getElementById(id);
+let DATA={items:[],summary:{},meta:{}};
+function badgeOf(st){
+  if(st==='有效')return '<span class="badge ok">'+esc(st)+'</span>';
+  if(st==='即将到期')return '<span class="badge warn">'+esc(st)+'</span>';
+  return '<span class="badge danger">'+esc(st)+'</span>';
+}
+function render(){
+let payload;
+try{payload=JSON.parse($('payload').textContent)}catch(e){$('app').innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(payload);
+if(!v.ok){$('app').innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=payload.data;
+DATA=data;
+$('title').textContent=data.summary.title||'证件管理';
+$('subtitle').textContent=(data.meta.subtitle||'')+' · 唤醒词「'+data.meta.wake_word+'」';
+$('stamp').textContent='生成于 '+data.occurred_at+' · v'+data.version;
+$('cards').innerHTML=arr(data.summary.metrics).map(m=>{
+  const sev=m.severity||'info';
+  return `<div class="card ${esc(sev)}"><b>${esc(m.label)}</b><span>${esc(m.value)}</span></div>`;
+}).join('');
+const rem=arr(data.reminders);
+$('reminders').innerHTML=rem.length?('<div class="remind">⏰ <b>顺路提醒：</b>'+rem.map(r=>esc(r.kind+' · '+r.item_name+' '+r.status+(r.days_left<0?' '+(-r.days_left)+' 天':' '+r.days_left+' 天后'))).join('；')+'</div>'):'';
+const items=arr(data.items);
+$('secTitle').textContent='证件清单 · '+items.length+' 本(按到期排序)';
+if(!items.length){$('app').innerHTML='<div class="empty">'+esc(data.empty_hint||'暂无登记')+'</div>';return}
+$('app').innerHTML=items.map(it=>{
+  const dl=it.days_left;
+  const dlTxt=dl<0?'已过期 '+(-dl)+' 天':(dl===0?'今天到期':dl+' 天后到期');
+  const photo=it.photo_base64?'<div class="photo"><img alt="证件照片" src="data:image/jpeg;base64,'+it.photo_base64+'"></div>':'';
+  return `<div class="item ${esc(it.cert_status==='已过期'?'danger':(it.cert_status==='即将到期'?'warn':'info'))}">
+<div>
+<div class="name">${esc(it.cert_type)} ${esc(it.holder?('· '+it.holder):'')} <span class="badge off">ID ${it.id}</span></div>
+<div class="meta">号码 <span class="masked">${esc(it.number_masked||'未登记')}</span></div>
+<div class="meta">到期 ${esc(it.expires_at||'-')} ${badgeOf(it.cert_status)} · ${esc(dlTxt)}</div>
+${photo}
+</div>
+<div class="actions">
+<button class="btn" data-p="${esc('【更新证件 '+it.id+' '+it.cert_type+'，到期日改为: _____ 或补充照片: 【照片即将发送:】】')}">补录 / 更新</button>
+</div>
+</div>`;
+}).join('');
+$('app').querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>copyText(b.getAttribute('data-p')));
+}
+function buildCopyData(){
+const items=arr(DATA.items).map(it=>({id:it.id,cert_type:it.cert_type,holder:it.holder,number_masked:it.number_masked,issued_at:it.issued_at,expires_at:it.expires_at,days_left:it.days_left,cert_status:it.cert_status,note:it.note}));
+return JSON.stringify({scene_id:DATA.meta.scene_id,command_cn:DATA.meta.command_cn,occurred_at:DATA.occurred_at,target:'证件管理',payload:{items}},null,2);
+}
+function buildCopyLog(){
+const lines=[];
+lines.push('① 场景标识: '+DATA.meta.command_cn+' · 唤醒词「'+DATA.meta.wake_word+'」 · '+DATA.meta.title);
+lines.push('② AI 思考链: 意图理解(查证件到期/登记) → 决策点(到期排序/脱敏展示) → 关键判断(剩余天数=到期日-今天; 号码只给 ****后4位)');
+lines.push('③ 底层数据结构: certificates 表 · DB 读(certificates ORDER BY expires_at) · 敏感字段: cert_number 明文仅落库, payload 只有 number_masked');
+lines.push('④ 调用链: '+DATA.cli_chain+' ; 写: cert add');
+lines.push('⑤ 时间戳+版本: '+DATA.occurred_at+' · v'+DATA.version);
+lines.push('⑥ 异常信息: (无)');
+return lines.join('\n');
+}
+function copyText(txt){
+if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>flash('已复制 ✓'));}
+else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();flash('已复制 ✓');}
+}
+let flashTimer=null;
+function flash(msg){const b=$('copyData');b.textContent=msg;clearTimeout(flashTimer);flashTimer=setTimeout(()=>b.textContent='复制数据',1500);}
+$('copyData').onclick=()=>copyText(buildCopyData());
+$('copyLog').onclick=()=>copyText(buildCopyLog());
+$('addBtn').onclick=()=>copyText('请登记证件(唤醒词:证件):\n\n  类  型: _____________ (护照/身份证/驾照/签证/保险单/其他)\n  持有人: _____________ (选填)\n  号  码: _____________ (选填, 将脱敏显示)\n  签发日: _____________ (选填, YYYY-MM-DD)\n  到期日: _____________ (YYYY-MM-DD)\n  归档照片: 【照片即将发送:】\n\n  (复制本段发给 AI, AI 将调用 scripts/票据凭证/cli.py cert add 登记)');
+render();
+</script>
+</body>
+</html>

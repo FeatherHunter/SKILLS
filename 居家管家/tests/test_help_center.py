@@ -106,6 +106,20 @@ def test_help_html_no_internal_info():
     assert "更新于" in sub, "subtitle 应有用户可读的更新时间"
 
 
+def test_help_html_init_banner_hidden_css():
+    """首次使用横幅状态驱动守护(2026-08-06 修复)
+
+    BUG 根因:.init-banner{display:flex} 覆盖 hidden 属性 UA 样式 display:none,
+    导致横幅无论 initialized 与否都显示(用户反馈:HELP 一直提示第一次使用)。
+    修复:.init-banner[hidden]{display:none} 恢复 hidden 语义。
+    """
+    h = HELP_HTML.read_text(encoding="utf-8")
+    assert ".init-banner[hidden]{display:none}" in h, \
+        "必须显式 .init-banner[hidden]{display:none}(防 display:flex 覆盖 hidden)"
+    assert 'id="initBanner" hidden' in h, "横幅元素默认必须带 hidden 属性"
+    assert "initBanner.hidden=false" in h, "仅未初始化时移除 hidden"
+
+
 def test_help_html_deep_link():
     """#hash 场景直达:展开祖先链 + 定位(体验增强 · 对抗式审查 #1)"""
     h = HELP_HTML.read_text(encoding="utf-8")

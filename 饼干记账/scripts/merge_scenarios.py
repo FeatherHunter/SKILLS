@@ -68,15 +68,34 @@ PROMPT_HEAD_PREFIX = "请加载「饼干记账」技能"
 
 
 def load_domain_yaml(domain_key: str) -> dict | None:
-    """读单个域 yaml;文件不存在返回 None"""
+    """读单个域 yaml;文件不存在返回 None,语法错误抛 ValueError(友好信息)"""
     path = SCENES_DIR / f"{domain_key}.yaml"
     if not path.exists():
         return None
-    with open(path, encoding="utf-8") as f:
-        data = yaml.safe_load(f)
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except yaml.YAMLError as e:
+        raise ValueError(f"域文件 yaml 语法错误: {path.name} — {e}") from e
     if data is None:
         return None
     return data
+
+
+class _BlockDumper(yaml.SafeDumper):
+    """SafeDumper 子类:多行字符串用 block 标量(|)输出,保证汇总人类可读"""
+
+    def _represent_str(self, data):
+        style = "|" if "\n" in data else None
+        return self.represent_scalar("tag:yaml.org,2002:str", data, style=style)
+
+
+_BlockDumper.add_representer(str, _BlockDumper._represent_str)
+
+
+def dump_summary(summary: dict) -> str:
+    """序列化汇总(block 标量保持 prompt 可读)"""
+    return yaml.dump(summary, Dumper=_BlockDumper, allow_unicode=True, sort_keys=False, width=120)
 
 
 def validate(data: dict, domain_key: str, errors: list) -> int:
@@ -264,7 +283,7 @@ def main():
     if args.check:
         if SUMMARY_PATH.exists():
             existing = SUMMARY_PATH.read_text(encoding="utf-8")
-            new = yaml.safe_dump(summary, allow_unicode=True, sort_keys=False, width=120)
+            new = dump_summary(summary)
             if existing.rstrip("\n") == new.rstrip("\n"):
                 print(f"✓ 与现有汇总无 diff(一致性保持)")
                 return 0
@@ -275,10 +294,7 @@ def main():
 
     output_path = Path(args.out) if args.out else SUMMARY_PATH
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(
-        yaml.safe_dump(summary, allow_unicode=True, sort_keys=False, width=120),
-        encoding="utf-8",
-    )
+    output_path.write_text(dump_summary(summary), encoding="utf-8")
     print(f"✓ 已生成汇总: {output_path}")
     return 0
 

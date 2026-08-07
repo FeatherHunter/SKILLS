@@ -183,3 +183,65 @@ class TestIdempotency:
         d1 = ms.yaml.safe_dump(summary, allow_unicode=True, sort_keys=False, width=120)
         d2 = ms.yaml.safe_dump(summary, allow_unicode=True, sort_keys=False, width=120)
         assert d1 == d2
+
+
+# ── 健壮性 / 产物质量(对抗审查补充) ───────────────────────────────────────────
+
+
+class TestRobustness:
+    def test_bad_yaml_raises_friendly_error(self, tmp_path, monkeypatch):
+        """域文件 yaml 语法错误 → 友好 ValueError(而非 traceback)"""
+        monkeypatch.setattr(ms, "SCENES_DIR", tmp_path)
+        bad = tmp_path / "setup.yaml"
+        bad.write_text("subs: [unclosed\n  bad: [", encoding="utf-8")
+        with pytest.raises(ValueError, match="yaml 语法错误"):
+            ms.load_domain_yaml("setup")
+
+    def test_dump_uses_block_scalar_for_multiline_prompt(self):
+        """多行 prompt 序列化为 block 标量(|),汇总人类可读"""
+        summary = ms.build_summary({"setup": _domain("setup")})
+        dumped = ms.dump_summary(summary)
+        assert "prompt: |" in dumped
+        # 数据保真:读回后 prompt 内容一致
+        reloaded = ms.yaml.safe_load(dumped)
+        assert (
+            reloaded["scenes"][0]["subs"][0]["wake_words"][0]["scenes"][0]["prompt"]
+            == _scene()["prompt"]
+        )
+
+
+class TestCheckMode:
+    def _setup(self, tmp_path, monkeypatch):
+        scenes_dir = tmp_path / "scenes"
+        scenes_dir.mkdir()
+        (scenes_dir / "setup.yaml").write_text(
+            ms.yaml.safe_dump(_domain("setup"), allow_unicode=True, sort_keys=False),
+            encoding="utf-8",
+        )
+        monkeypatch.setattr(ms, "SCENES_DIR", scenes_dir)
+        monkeypatch.setattr(ms, "SUMMARY_PATH", tmp_path / "scenarios.yaml")
+        return scenes_dir
+
+    def test_check_ok_when_no_diff(self, tmp_path, monkeypatch, capsys):
+        self._setup(tmp_path, monkeypatch)
+        monkeypatch.setattr(sys, "argv", ["merge_scenarios.py"])  # 先正常生成
+        assert ms.main() == 0
+        monkeypatch.setattr(sys, "argv", ["merge_scenarios.py", "--check"])
+        assert ms.main() == 0
+        assert "无 diff" in capsys.readouterr().out
+
+    def test_check_fails_on_diff(self, tmp_path, monkeypatch, capsys):
+        scenes_dir = self._setup(tmp_path, monkeypatch)
+        monkeypatch.setattr(sys, "argv", ["merge_scenarios.py"])
+        assert ms.main() == 0  # 生成基线汇总
+        # 修改域文件(新增一个场景)→ 汇总应有 diff
+        extra = _domain("setup")
+        extra["subs"][0]["wake_words"][0]["scenes"].append(
+            _scene(id="t-9", scenario_id="test_scene_2", prompt="请加载「饼干记账」技能,帮我测(唤醒词:测试词):\n")
+        )
+        (scenes_dir / "setup.yaml").write_text(
+            ms.yaml.safe_dump(extra, allow_unicode=True, sort_keys=False), encoding="utf-8"
+        )
+        monkeypatch.setattr(sys, "argv", ["merge_scenarios.py", "--check"])
+        assert ms.main() == 1
+        assert "有 diff" in capsys.readouterr().out

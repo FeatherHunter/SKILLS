@@ -1,7 +1,7 @@
 """v1.1.4 · HELP 唤醒词 + 场景资产 + 渲染器守护
 
 总纲 §07-HELP与场景完备性.md 契约验证:
-- 场景资产 schema(7 字段齐全、ID 唯一、prompt 无实现细节)
+- 场景资产 schema(8 字段齐全、ID 唯一、prompt 无实现细节)
 - 场景数量 = SKILL.md 唤醒词数(28 + 备忘改分类批量重复 = 29)
 - render_help 产出合法 HTML(占位符、转义)
 - skill 根目录 备忘录.html 被覆盖(用户额外要求)
@@ -38,8 +38,10 @@ def scenarios():
 
 
 @pytest.fixture(scope="module")
-def rendered(tmp_path_factory):
-    """真实跑一次 render_help,产出 2 份文件"""
+def rendered():
+    """真实跑一次 render_help,产出 2 份文件。
+    initialized 由 conftest 会话级 HELP_INITIALIZED=1 固定(对抗审查 N1:
+    测试不得把 skill 根镜像写成 initialized:false 版污染工作区)。"""
     from memo_render import render_help
     return render_help()
 
@@ -47,7 +49,7 @@ def rendered(tmp_path_factory):
 # ==================== 场景资产 schema(#31 Q7 · 共享校验模块) ====================
 
 class TestScenariosSchema:
-    """§07 §2.2 契约:7 字段必填 + #31/#32/#33 新约束。
+    """§07 §2.2 契约:8 字段必填 + #31/#32/#33 新约束。
 
     校验实现单一真相 = script/validate_scenarios.py(测试与生产共用)。
     本类只做「消费方」断言:共享模块的 errors 为空,且其错误信息可读。
@@ -270,8 +272,10 @@ class TestRenderHelp:
 class TestHelpCLI:
     def test_help_subcommand_runs(self, tmp_path, monkeypatch):
         """CLI `help` 子命令可执行,默认必生成 HTML"""
-        # 隔离 SKILLS_DB_PATH 避免污染真实 DB
+        # 隔离 SKILLS_DB_PATH 避免污染真实 DB;HELP_INITIALIZED=1 保持镜像 initialized=true
+        # (否则子进程渲染会把 skill 根镜像写成 initialized:false 版,污染工作区)
         monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+        monkeypatch.setenv("HELP_INITIALIZED", "1")
         r = subprocess.run(
             [sys.executable, str(SCRIPT_DIR / "memo_cli.py"), "help"],
             capture_output=True, text=True, encoding='utf-8', timeout=30,
@@ -611,6 +615,7 @@ class TestHelpThreeLevelCollapse:
             sub_modules = page.locator("details.sub-module").count()
             scenarios = page.locator("details.scene").count()
             copy_btns = page.locator(".copy-btn").count()
+            banner_visible = page.locator("#initBanner").is_visible()
             toast = page.locator("#toast").count()
             backtop = page.locator("#backToTop").count()
             names = page.locator("details.module > summary").all_text_contents()
@@ -620,12 +625,39 @@ class TestHelpThreeLevelCollapse:
         assert modules == 8, f"应 8 个分类,实际 {modules}"
         assert sub_modules == 13, f"应 13 个子功能,实际 {sub_modules}"
         assert scenarios == 30, f"应 30 场景卡,实际 {scenarios}"
-        assert copy_btns == 32, f"应 32 复制按钮(30 场景头 + 1 联系作者 + 1 初始化横幅),实际 {copy_btns}"
+        assert copy_btns == 32, f"应 32 复制按钮(30 场景头 + 1 联系作者 + 1 init 横幅按钮,元素恒在 DOM),实际 {copy_btns}"
+        assert not banner_visible, "已初始化(HELP_INITIALIZED=1)时 init 横幅应隐藏"
         assert deps_boxes == 1, f"应 1 个依赖清单块(Init),实际 {deps_boxes}"
         assert toast == 1 and backtop == 1, "toast / back-to-top 元素应在"
         joined = " ".join(names)
         for cn in ["备忘类", "查找类", "提醒类", "心愿类", "打卡类", "情绪类", "同步类", "初始化类"]:
             assert cn in joined, f"分类 {cn} 未渲染"
+
+    def test_init_banner_visible_when_uninitialized(self, tmp_path, monkeypatch):
+        """对抗审查 N1 补充:未初始化(HELP_INITIALIZED=0)时 init 横幅显示 + 复制按钮在位。
+
+        渲染隔离:monkeypatch memo_render.SKILL_DIR → tmp(不污染真实 skill 根镜像)。"""
+        import memo_render
+        monkeypatch.setattr(memo_render, "SKILL_DIR", tmp_path)
+        monkeypatch.setenv("HELP_INITIALIZED", "0")
+        from memo_render import render_help
+        r = render_help()
+        html_path = Path(r["skill_root_path"]).as_uri()
+        pytest.importorskip("playwright.sync_api")
+        from playwright.sync_api import sync_playwright
+        with sync_playwright() as p:
+            browser = p.chromium.launch()
+            page = browser.new_page()
+            js_errors = []
+            page.on("pageerror", lambda e: js_errors.append(str(e)))
+            page.goto(html_path)
+            page.wait_for_timeout(300)
+            banner_visible = page.locator("#initBanner").is_visible()
+            init_copy = page.locator("#initCopy").count()
+            browser.close()
+        assert not js_errors, f"JS 错误: {js_errors}"
+        assert banner_visible, "未初始化(HELP_INITIALIZED=0)时 init 横幅应显示"
+        assert init_copy == 1, "init 横幅应有复制 prompt 按钮"
 
 # ==================== prompt 填写友好性(用户反馈) ====================
 

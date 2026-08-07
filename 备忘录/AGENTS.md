@@ -8,7 +8,7 @@
 - 入口规范:`SKILL.md`(AI 决策用完整规范,1038 行)
 - 元数据:`_meta.json`(版本号镜像,SoT 为 SKILL.md frontmatter)
 - 脚本:`script/`(5 个 Python 模块:memo_cli / memo_render / injector / feishu_sync / reminder_scheduler)
-- 场景资产:`references/scenarios.yaml`(HELP HTML 唯一事实源,29 场景 × 7 字段)
+- 场景资产:`references/scenarios.yaml`(HELP HTML 唯一事实源,30 场景 × 8 字段)
 - 参考文档:`references/`(schema.md / examples.md / cron.md)
 - HTML 模板:`templates/`(6 个:1 HELP + 1 结果型查询 + 1 同步报告 + 3 过程型向导)
 - 测试:`tests/`(基线 pytest 入口 `pytest tests/`)

@@ -53,8 +53,9 @@ def _inject_body(template: str, payload: dict) -> str:
     safe_payload = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
     injected = template.replace("<body>", f"<body>\n<script>window.__DATA__ = {safe_payload};</script>", 1)
     # v1.1.5:共享 clipboard helper 注入(单一真相源:script/_shared/clipboard.js)
+    # 路径由 __file__ 推导,不依赖 SKILL_DIR(测试隔离 monkeypatch SKILL_DIR 时不中断)
     if "<!--INJECT-SHARED-->" in injected:
-        shared_code = (SKILL_DIR / "script" / "_shared" / "clipboard.js").read_text(encoding="utf-8")
+        shared_code = (Path(__file__).parent / "_shared" / "clipboard.js").read_text(encoding="utf-8")
         injected = inject_shared_js(injected, shared_code)
     return injected
 
@@ -155,12 +156,14 @@ def _help_summary(scenarios_data):
 
 def _help_initialized():
     """初始化状态判定(对齐居家管家 · #179):DB 文件存在 = 已初始化。
-    env 覆盖:HELP_INITIALIZED=1/0 可强制指定(测试/镜像可重现性)。"""
+    env 覆盖:HELP_INITIALIZED=1/0 可强制指定(测试/镜像可重现性)。
+    注意:现算 DB 路径(每次调用读当前 env),不依赖 memo_cli 首次 import 的缓存常量
+    (测试会话可能先以 tmp env 导入 memo_cli,缓存 DB_PATH 会误导判定 · 对抗审查 N2)。"""
     env = os.environ.get("HELP_INITIALIZED")
     if env is not None:
         return env.strip().lower() in ("1", "true", "yes")
-    from memo_cli import DB_PATH  # noqa: F401 · 复用 DB 路径计算
-    return DB_PATH.exists()
+    from memo_cli import DB_FILENAME, _find_db_path  # noqa: F401 · 复用路径计算(现算)
+    return _find_db_path(Path(__file__).parent.parent, DB_FILENAME).exists()
 
 
 def _help_contact():

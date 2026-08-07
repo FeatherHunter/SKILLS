@@ -1109,12 +1109,13 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
 
 ### 场景资产契约(§07 §2.2)
 
-每条场景必含 7 字段:
+每条场景必含 8 字段:
 | 字段 | 含义 |
 |---|---|
 | `wake_word` | 关联业务唤醒词(唯一展示名;别名在 SKILL.md 匹配层 #31 Q1) |
 | `scenario_id` | 稳定 ID,跨版本不变 |
 | `scenario_title` | 用户可读标题 |
+| `type` | 流程类型徽章(08-HTML交互规范 · 与居家管家同词汇,白名单见 validate_scenarios.py) |
 | `dimensions` | 合法维度字典 |
 | `prompt` | 稳定用户意图(**不暴露** CLI / DB / Python / 模板路径) |
 | `status` | `""`(可用)或 `"【待开发】"`(禁用) |
@@ -1134,7 +1135,7 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
 ### 守门测试
 
 `tests/test_help.py` 22 用例守护:
-- scenarios.yaml schema(7 字段齐全、ID 唯一、prompt 无实现细节)
+- scenarios.yaml schema(8 字段齐全、ID 唯一、prompt 无实现细节)
 - 场景数 = SKILL.md 唤醒词数
 - render_help 产出合法 HTML(占位符、转义)
 - **skill 根目录 `备忘录.html` 被覆盖**

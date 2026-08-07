@@ -12,6 +12,17 @@ SCRIPT_DIR = SKILL_DIR / "script"
 sys.path.insert(0, str(SCRIPT_DIR))
 
 
+@pytest.fixture(scope="session", autouse=True)
+def _pin_help_initialized():
+    """对抗审查 N1 修复(2026-08-07):测试会话内所有 help 渲染固定 initialized=true,
+    保证 skill 根镜像 备忘录.html 不被测试写成 initialized:false 版(污染工作区)。
+    需要验证横幅逻辑的测试自行用 HELP_INITIALIZED=0 覆盖。"""
+    import os
+    os.environ["HELP_INITIALIZED"] = "1"
+    yield
+    os.environ.pop("HELP_INITIALIZED", None)
+
+
 @pytest.fixture
 def env_with_tmp_db(tmp_path):
     """用 tmp 目录建库,环境变量隔离不污染真实 D:/.db。

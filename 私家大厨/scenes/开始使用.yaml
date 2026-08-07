@@ -1,0 +1,48 @@
+# 开始使用域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 私家大厨/scenes/开始使用.yaml
+# 合并器 = scripts/场景合并.py(实施期接入,对齐居家管家契约;改总账的唯一通道 = 合并器)
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# 域收敛(G1 grilling 拍板 · 2026-08-07):
+#   G0 原拟开始使用域 5 场景(环境自检/env 引导/建库/示例数据/偏好档案),
+#   G1 从第一性原理 + 对齐居家管家 SM8 实证收敛为 **1 场景「首次使用」4 步向导**:
+#     步骤 1 环境检测(缺失自动安装) / 步骤 2 环境变量配置(持久化) / 步骤 3 建库(幂等) / 步骤 4 完成回执
+#   示例数据、偏好档案砍除(居家管家无此流程;空库直接录第一道菜即 onboarding)。
+#   跨技能一致性: 所有技能「首次使用」流程对齐,减少开发成本(用户指令)。
+#
+# status 判定原则(07 §4/§6 五者对应):
+#   唤醒词路由 + 场景资产 ✓ + prompt ✓ + 底层工作流(scripts/开始使用/ 未建)+ HELP 映射
+#   → 当前 status = 【待开发】;实施 map 落地后转 ""(可用)
+#
+# 实施要点(写进规格,不入字段契约):
+#   - env 未设置 → 引导持久化设置(Windows 脚本 / Linux 直接设);用户跳过则走默认目录,非阻塞
+#   - Windows 设置环境变量后当前进程不生效 → 建库用目标路径而非已改 env
+#   - 老库(17 表齐全)视为已初始化,跳过建库;仅提示迁移命令,不自动迁移
+#   - 自动安装: 装前展示命令 → 确认 → 执行 → 重检;pyyaml 用 pip install --user,Python 缺失装用户目录
+version: "1.0"
+
+domain:
+  key: setup
+  name: 开始使用
+  icon: "🚀"
+  g: G1
+
+scenes:
+  - id: "setup-1"
+    domain: setup
+    sub: 开始使用
+    wake_word: 首次使用
+    scenario_id: first_use
+    scenario_title: 首次使用(初始化工作流)
+    dimensions: {}
+    type: 向导+回执
+    status: "【待开发】"
+    prompt: |-
+      请加载「私家大厨」技能,帮我完成首次使用初始化(唤醒词:首次使用):
+    result: "4 步向导(环境检测→环境变量配置→建库→回执),幂等可重试,已有库不重置。"
+    html:
+      template: 开始使用/first_use_wizard.html
+      command_cn: 首次使用
+      data_source: env + db
+    variants: []

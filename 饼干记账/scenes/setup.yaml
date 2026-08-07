@@ -58,7 +58,7 @@ subs:
               请加载「饼干记账」技能,帮我看看有哪些备份(唤醒词:备份):
             result: "HTML 备份列表(时间/大小/内容);无备份 → 空态引导一键备份"
 
-      - wake_word: 恢复
+      - wake_word: 恢复备份
         scenes:
           - id: setup-2-3
             scenario_id: setup_restore
@@ -67,7 +67,7 @@ subs:
             status: ""
             html: {template: "开始使用/restore.html", command_cn: "从备份恢复", data_source: "备份文件"}
             prompt: |
-              请加载「饼干记账」技能,帮我从备份恢复数据(唤醒词:恢复):
+              请加载「饼干记账」技能,帮我从备份恢复数据(唤醒词:恢复备份):
 
                 备  份: ____ (选填,默认最新备份)
             result: "HTML 恢复向导(备份详情预览→确认→恢复→验证);恢复前自动备份现状;失败 → 错误回执(5 状态契约)"

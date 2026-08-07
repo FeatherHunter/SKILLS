@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS notes (
 );
 
 -- 全文搜索虚拟表 (FTS5)
+-- ⚠️ #180(2026-08-07):FTS5 已停用为关键词查询路径 —— unicode61 分词器不切分中文,
+--     MATCH 对中文关键词(尤其 2 字词)100% 失效,查询已改走 notes 三字段 LIKE 子串检索。
+--     本表 + 触发器保留:① 兼容存量库(触发器继续同步,数据一致) ② 数据量 >10 万条时
+--     可重建为 tokenize='trigram' 作为 LIKE 的加速索引(SQLite trigram 官方用途 = 加速 LIKE/GLOB)。
 CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
     content,
     category,

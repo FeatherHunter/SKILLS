@@ -187,6 +187,12 @@ def add_note(args):
     finally:
         conn.close()
 
+def _like_escape(s):
+    """LIKE 通配符转义(#180 · 2026-08-07):用户输入中的 \\ % _ 按字面匹配,
+    防止把通配符当任意字符导致结果膨胀。"""
+    return (s or "").replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def search_notes(args):
     keyword = args.keyword
     category = args.category
@@ -198,13 +204,18 @@ def search_notes(args):
     conn = get_conn()
     try:
         if keyword:
-            # 使用FTS5全文搜索
+            # 关键词检索 = content + category + sub_category 三字段子串匹配(#180 · 2026-08-07)
+            # 背景:FTS5 unicode61 分词器不切分中文,MATCH 对中文关键词(尤其 2 字词)100% 失效;
+            #       旧 MATCH 还带 "malformed MATCH expression" 语法炸点(搜 a OR b / - 等)。
+            # 改为 LIKE 子串检索:任意中文子串可命中,三字段任一命中即返回;
+            #       语义与用户直觉一致(搜「打卡」= 内容含或分类是;搜「跑步」= 子分类命中)。
+            # 性能:全表扫 O(n),本地量级(<10 万条)<100ms;超限出路 = trigram 索引加速 LIKE(init.sql 注释)。
+            esc = "%" + _like_escape(keyword) + "%"  # % 包裹 = 子串匹配(LIKE 无包裹是精确匹配)
             sql = """
                 SELECT n.* FROM notes n
-                JOIN notes_fts f ON n.id = f.rowid
-                WHERE notes_fts MATCH ?
+                WHERE (n.content LIKE ? ESCAPE '\\' OR n.category LIKE ? ESCAPE '\\' OR n.sub_category LIKE ? ESCAPE '\\')
             """
-            params = [keyword]
+            params = [esc, esc, esc]
             if category:
                 sql += " AND n.category = ?"
                 params.append(category)

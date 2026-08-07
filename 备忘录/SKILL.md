@@ -521,8 +521,9 @@ sub_category 是**自由文本字段**,AI 智能从用户原话推断:
 <summary>🔍 搜备忘/查备忘(search)</summary>
 
 - CLI: `memo_cli.py search "关键词" [-c 分类] [-s 子分类] [--html]`
-- 底层: FTS5 全文搜索(`notes_fts MATCH ?`),无关键字时按分类列
-- SQL: `SELECT n.* FROM notes n JOIN notes_fts f ON n.id = f.rowid WHERE notes_fts MATCH ? ...`
+- 底层: 三字段子串检索(2026-08-07 #180:content + category + sub_category 任一命中,LIKE + ESCAPE 通配符转义)。背景:FTS5 unicode61 分词器不切分中文,MATCH 对中文关键词 100% 失效,已停用为查询路径(表结构保留)。无关键字时按分类列
+- SQL: `SELECT n.* FROM notes n WHERE (n.content LIKE ? ESCAPE '\' OR n.category LIKE ? ESCAPE '\' OR n.sub_category LIKE ? ESCAPE '\') ...`
+- 语义: 搜「打卡」= 内容含「打卡」或分类是「打卡」;搜「跑步」= 子分类命中。与 HTML 页内过滤框(仅 content,决策 4)层级不同:CLI 是检索,HTML 是结果内筛选
 - HTML: 加 `--html` 触发 `memo_query.html` 渲染(`<media>` 交付)
 </details>
 - 子唤醒词:查心愿、查打卡、查情绪日记(自动带 `-c 顶层分类` 过滤)

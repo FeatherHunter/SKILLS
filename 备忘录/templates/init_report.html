@@ -66,6 +66,11 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 .verify-card .verify-title{font-size:13.5px;font-weight:700;margin-bottom:6px}
 .verify-item{display:flex;gap:8px;align-items:flex-start;padding:6px 0;font-size:13px;color:var(--fg2)}
 .verify-item input{margin-top:3px}
+/* 三态徽章(#197 · 飞书权限已实测:已实测 ✓ / 跳过 / 未通过 ✗) */
+.verify-badge{font-size:11px;font-weight:800;border-radius:999px;padding:1px 10px;margin-left:auto;white-space:nowrap;flex:none}
+.verify-badge.ok{background:var(--ok-soft);color:var(--ok-fg)}
+.verify-badge.skip{background:#f0f0f3;color:var(--fg3)}
+.verify-badge.fail{background:var(--err-soft);color:var(--err-fg)}
 
 /* ===== 4 状态 fallback ===== */
 .state-banner{display:none;padding:18px;border-radius:14px;margin:16px 0;text-align:center;font-weight:600}
@@ -170,8 +175,22 @@ try{
     verify.forEach(function(v){
       var vi=document.createElement('label');vi.className='verify-item';
       var cb=document.createElement('input');cb.type='checkbox';
-      var tx=document.createElement('span');tx.textContent=esc(v);
+      var tx=document.createElement('span');
+      // 兼容两种形态(#197):str = 旧契约; {text, status: ok|skip|fail} = 三态(飞书权限已实测)
+      var status='';
+      if(v&&typeof v==='object'){
+        status=v.status||'';
+        tx.textContent=esc(v.text||'');
+      }else{
+        tx.textContent=esc(v);
+      }
       vi.appendChild(cb);vi.appendChild(tx);
+      if(status){
+        var badge=document.createElement('span');badge.className='verify-badge '+status;
+        var labelMap={ok:'已实测',skip:'跳过',fail:'未通过'};
+        badge.textContent=labelMap[status]||status;
+        vi.appendChild(badge);
+      }
       vc.appendChild(vi);
     });
     main.appendChild(vc);

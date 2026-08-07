@@ -10,6 +10,30 @@
 
 ---
 
+## [1.2.2] · 2026-08-08
+
+### Added
+- **权限编排(常驻 sync check · #46 实施)**:`feishu_sync.py check` 扩 `permissions` 字段 —— `required`(REQUIRED_SCOPES 单一真值源:task 2 + calendar 3 写权限)/ `granted` / `missing`(差集,优先 `auth status --json`,退化逐项 `auth check`)/ `app_scopes`(应用侧提示层,非硬门禁)/ `sentinel_write_test`(真打 6 项:task create/update/complete + calendar create/update/delete,带「[备忘录测试]」前缀,必清协议)
+  - check 状态机:CLI 不可用/未登录 → `skipped`;差集缺失 → `missing_scopes`(不白跑 sentinel);差集全过 → 真打 sentinel → `ok` / `sentinel_failed`
+  - 授权形态:split-flow `--domain task,calendar` 一次授权多域(research #195 实证);**禁止只用 `--recommend`**(语义=自动审批低风险权限,不含写权限)
+  - 运行时排障同一入口:任何「同步失败」先跑 check 看差集与 sentinel
+
+### Changed
+- **SKILL.md 首次使用 step 3 授权段重写**:旧「auth: true + get-my-tasks 探测」升级为完整权限编排流程(差集 → 一次性授权 → sentinel 实测 → 后台引导);报告页「完成验证清单」飞书项改三态(`{text, status: ok|skip|fail}`,模板渲染带色徽章)
+- **init_report.html verify 支持对象形态**:str(旧契约)与 `{text, status}`(三态徽章)并存
+- 版本 SoT 三处一致对齐 1.2.2(SKILL.md frontmatter / _meta.json / scenarios.yaml)
+
+### Fixed
+- **B1**:`_find_lark_cli` Windows `where` 多行输出优先 `.cmd`;`_run_lark` / `_get_user_open_id` 在 `.cmd` 场景切 `cwd` 为 wrapper 所在目录(WinError 193 类失败根治)
+- **B1 子**:`_backfill_local_wishes` 补建时读 `due` 列透传 `due_iso`(本地排期日期是 SoT,补建的飞书 task 带上)
+- **B3**:新增 `reset_user_open_id_cache()`,check 每次先重置 —— 登录成功后不再被进程内失败标志卡死(仍报未登录)
+- **B4**:5 处 sync 函数(`add/update/complete_wish_sync` + `update/clear_due_sync`)加 `_traceback_guard` 外层防御,异常返回结构化 error + 完整 traceback(不再「同步失败」四个字)
+- 测试:新增 `tests/test_feishu_sync.py` 21 用例(mock lark-cli,零真实调用);全量 363 全绿
+
+> 遗留(用户侧跟进 · HITL 实测 4 点):① `--domain task,calendar --no-wait --json` 返回 URL 数/确认次数;② `auth status --json` 的 `identities.user.scope` 结构;③ `auth scopes` 与 REQUIRED_SCOPES 对照;④ 备忘录应用后台已开通 scope 清单。见 #197。
+
+---
+
 ## [1.2.1] · 2026-08-04
 
 ### Changed

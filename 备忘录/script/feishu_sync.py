@@ -18,6 +18,7 @@
 - Windows: %APPDATA%\\npm\\lark-cli.cmd
 - WSL/Linux/Mac: which lark-cli
 """
+import functools
 import json
 import time
 import os
@@ -25,6 +26,7 @@ import shutil
 import sqlite3
 import subprocess
 import sys
+import traceback
 from pathlib import Path
 from typing import Optional
 from memo_cli import DB_PATH
@@ -40,6 +42,35 @@ from memo_cli import DB_PATH
 # open_id 缓存
 _USER_OPEN_ID_CACHE: Optional[str] = None
 _USER_OPEN_ID_FAILED = False
+
+
+# ==================== 权限编排(#46 · 2026-08-08 · 单一真值源) ====================
+# 备忘录飞书联动需要的最小写权限集合。check 差集 / 授权引导 / sentinel 实测 全部以此为准。
+# 来源:lark-cli research 实证(#195)——task/calendar 写权限 scope 标识符,与开发者后台批量导出一致。
+# 注意:这些写权限属飞书开放平台「需审核权限」,必须先应用后台申请+审核+发布版本,授权页才会出现。
+REQUIRED_SCOPES = [
+    # task 域:心愿 → 飞书任务(创建/更新/完成)
+    "task:task:write",
+    "task:tasklist:write",
+    # calendar 域:日程(创建/更新/删除)
+    "calendar:calendar.event:create",
+    "calendar:calendar.event:update",
+    "calendar:calendar.event:delete",
+]
+
+# sentinel 实测前缀(必清协议标识):所有测试任务/日程必须带此前缀,用户可识别并手动删除
+SENTINEL_PREFIX = "[备忘录测试]"
+
+
+def reset_user_open_id_cache() -> None:
+    """重置 open_id 缓存与失败标志(B3 修复)。
+
+    #46 B3:进程内失败标志不重置 → 用户 auth login 成功后仍报未登录。
+    登录/授权流程完成后调用本函数,下一次读取即重新探测(反映最新登录状态)。
+    """
+    global _USER_OPEN_ID_CACHE, _USER_OPEN_ID_FAILED
+    _USER_OPEN_ID_CACHE = None
+    _USER_OPEN_ID_FAILED = False
 
 
 def _get_user_open_id() -> Optional[str]:
@@ -65,9 +96,13 @@ def _get_user_open_id() -> Optional[str]:
     cli = get_lark_cli_path()
     try:
         # lark-cli auth status 默认就输出 JSON 到 stdout
+        # B1 修复:Windows .cmd 包装器以自身所在目录为 cwd 执行,避免相对路径/环境问题
+        kwargs = {}
+        if sys.platform == "win32" and str(cli).lower().endswith(".cmd"):
+            kwargs["cwd"] = os.path.dirname(str(cli))
         proc = subprocess.run(
             [cli, "auth", "status"],
-            capture_output=True, timeout=5,
+            capture_output=True, timeout=5, **kwargs,
         )
         raw = proc.stdout
         if raw.startswith(b"\xef\xbb\xbf"):
@@ -102,7 +137,13 @@ def _find_lark_cli() -> Optional[str]:
             r = subprocess.run(["where", "lark-cli"], capture_output=True, timeout=5)
             if r.returncode == 0:
                 encoding = sys.getdefaultencoding()
-                return r.stdout.decode(encoding, errors="replace").strip().split("\n")[0].strip()
+                lines = [l.strip() for l in r.stdout.decode(encoding, errors="replace").split("\n") if l.strip()]
+                # B1 修复:多行输出优先选 .cmd(Windows npm 包装器),避免选到 .exe 导致命令行为差异
+                cmd_lines = [l for l in lines if l.lower().endswith(".cmd")]
+                if cmd_lines:
+                    return cmd_lines[0]
+                if lines:
+                    return lines[0]
         except Exception:
             pass
     else:
@@ -158,10 +199,14 @@ def _run_lark(args: list, timeout: int = 30) -> dict:
     if not cli:
         return {"ok": False, "error": "lark-cli not available"}
     try:
+        # B1 修复:Windows .cmd 包装器以自身所在目录为 cwd 执行
+        kwargs = {}
+        if sys.platform == "win32" and str(cli).lower().endswith(".cmd"):
+            kwargs["cwd"] = os.path.dirname(str(cli))
         proc = subprocess.run(
             [cli] + args,
             capture_output=True, encoding="utf-8", errors="replace",
-            timeout=timeout,
+            timeout=timeout, **kwargs,
         )
         out = (proc.stdout or proc.stderr or "").strip()
         try:
@@ -175,6 +220,27 @@ def _run_lark(args: list, timeout: int = 30) -> dict:
 
 
 # ==================== 同步操作 ====================
+
+def _traceback_guard(fn):
+    """B4 防御(B4 修复 · #46):sync 函数任何未捕获异常 → 结构化 error + traceback。
+
+    用户视角:以前同步失败只看到「同步失败」四个字;现在 error 字段带完整 traceback,
+    可自助排查(文档要求)。返回值兼容 add_wish_sync / update_* / complete_* 等所有调用方
+    (外部只读 ok / task_guid / error;existed 仅模块内部使用)。
+    """
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        try:
+            return fn(*args, **kwargs)
+        except Exception as e:
+            return {
+                "ok": False,
+                "task_guid": None,
+                "existed": False,
+                "error": f"{e}\n{traceback.format_exc()}",
+            }
+    return wrapper
+
 
 def _search_feishu_task_by_due_and_summary(due_iso: str, summary: str) -> Optional[str]:
     """查飞书 task 列表,找同 summary + due 的 task,返回 guid;没有返回 None。
@@ -202,10 +268,13 @@ def _search_feishu_task_by_due_and_summary(due_iso: str, summary: str) -> Option
     return None
 
 
+@_traceback_guard
 def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
                   tasklist_guid: Optional[str] = None,
                   due_iso: Optional[str] = None) -> dict:
     """新建飞书 task,返回 {ok, task_guid, error, existed}
+
+    B4 修复:函数体异常由 _traceback_guard 兜底,error 带完整 traceback。
 
     第一性原则：
     - lark-cli auth 身份 = assignee 真值源,自动检测（不读 env）
@@ -276,6 +345,7 @@ def add_wish_sync(memo_id: int, content: str, category: str = "心愿",
         return {"ok": False, "task_guid": None, "error": r.get("error") or r.get("_raw", "unknown"), "existed": False}
 
 
+@_traceback_guard
 def update_wish_sync(task_guid: str, content: str) -> dict:
     """更新飞书 task 标题
 
@@ -289,6 +359,7 @@ def update_wish_sync(task_guid: str, content: str) -> dict:
     return {"ok": r.get("ok", False), "error": r.get("error") if not r.get("ok") else None}
 
 
+@_traceback_guard
 def complete_wish_sync(task_guid: str) -> dict:
     """标飞书 task 完成
 
@@ -298,6 +369,7 @@ def complete_wish_sync(task_guid: str) -> dict:
     return {"ok": r.get("ok", False), "error": r.get("error") if not r.get("ok") else None}
 
 
+@_traceback_guard
 def update_due_sync(task_guid: str, due_iso: str) -> dict:
     """更新飞书 task due 日期
 
@@ -322,6 +394,7 @@ def update_due_sync(task_guid: str, due_iso: str) -> dict:
     return {"ok": r.get("ok", False), "error": r.get("error") if not r.get("ok") else None}
 
 
+@_traceback_guard
 def clear_due_sync(task_guid: str) -> dict:
     """清除飞书 task due（与本地 notes.due=null 镜像）
 
@@ -438,15 +511,16 @@ def _backfill_local_wishes(conn) -> int:
     返回: 成功补建的 note 数
     """
     rows = conn.execute(
-        "SELECT id, content FROM notes WHERE category = '心愿' AND feishu_task_guid IS NULL ORDER BY id"
+        "SELECT id, content, due FROM notes WHERE category = '心愿' AND feishu_task_guid IS NULL ORDER BY id"
     ).fetchall()
     if not rows:
         return 0
 
     n_synced = 0
     for r in rows:
-        memo_id, content = r["id"], r["content"]
-        rr = add_wish_sync(memo_id, content, "心愿")
+        memo_id, content, due = r["id"], r["content"], r["due"]
+        # B1 子问题修复(#46):补建时透传 due —— 本地排期日期是 SoT,补建的飞书 task 应带上
+        rr = add_wish_sync(memo_id, content, "心愿", due_iso=due)
         if rr.get("ok") and rr.get("task_guid"):
             conn.execute(
                 "UPDATE notes SET feishu_task_guid = ?, updated_at = datetime('now','localtime') WHERE id = ?",
@@ -644,6 +718,205 @@ def sync_from_feishu(db_path: str = None) -> dict:
     return result
 
 
+# ==================== 权限编排(#46 · 常驻 sync check 能力) ====================
+
+def _check_scope_via_cli(scope: str) -> bool:
+    """lark-cli auth check --scope <s> → exit 0 = 已授权, 1 = 缺失。"""
+    cli = get_lark_cli_path()
+    if not cli:
+        return False
+    try:
+        proc = subprocess.run(
+            [cli, "auth", "check", "--scope", scope],
+            capture_output=True, timeout=10,
+        )
+        return proc.returncode == 0
+    except Exception:
+        return False
+
+
+def get_granted_scopes() -> list:
+    """读取已授权 scope 清单(差集检查用)。
+
+    优先 `auth status --json` 的 identities.user.scope(一次调用拿全量);
+    该字段输出结构未实证(#195 HITL 点 2),解析失败时**退化**为逐项 `auth check --scope`。
+    返回 [] 表示无法读取(未登录 / CLI 不可用 / 结构未知)。
+    """
+    cli = get_lark_cli_path()
+    if not cli:
+        return []
+    try:
+        kwargs = {}
+        if sys.platform == "win32" and str(cli).lower().endswith(".cmd"):
+            kwargs["cwd"] = os.path.dirname(str(cli))
+        proc = subprocess.run(
+            [cli, "auth", "status", "--json"],
+            capture_output=True, timeout=10, encoding="utf-8", errors="replace",
+            **kwargs,
+        )
+        raw = proc.stdout
+        if raw.startswith("\ufeff"):
+            raw = raw[3:]
+        d = json.loads(raw)
+        scopes = (d.get("identities") or {}).get("user", {}).get("scope")
+        if isinstance(scopes, list) and all(isinstance(s, str) for s in scopes):
+            return list(scopes)
+    except Exception:
+        pass
+    # 退化:逐项 auth check(结构不可用时仍能给出差集)
+    return [s for s in REQUIRED_SCOPES if _check_scope_via_cli(s)]
+
+
+def get_app_scopes() -> list:
+    """读取应用可用 scope 清单(`auth scopes`)。
+
+    **提示层,非硬门禁**(D6 定案):能发现「应用没申请」,但发现不了「申请了没审核/没发布」;
+    真正的硬门禁是 sentinel 实测。解析失败返回 [] 表示无法读取。
+    """
+    cli = get_lark_cli_path()
+    if not cli:
+        return []
+    try:
+        kwargs = {}
+        if sys.platform == "win32" and str(cli).lower().endswith(".cmd"):
+            kwargs["cwd"] = os.path.dirname(str(cli))
+        proc = subprocess.run(
+            [cli, "auth", "scopes"],
+            capture_output=True, timeout=10, encoding="utf-8", errors="replace",
+            **kwargs,
+        )
+        raw = (proc.stdout or "").strip()
+        if raw.startswith("\ufeff"):
+            raw = raw[3:]
+        d = json.loads(raw)
+        # 输出结构未实证:兼容 list / data.items[].scope / data.scopes 等形态
+        if isinstance(d, list):
+            return [s for s in d if isinstance(s, str)]
+        if isinstance(d, dict):
+            for key in ("scopes", "items", "data"):
+                v = d.get(key)
+                if isinstance(v, list):
+                    return [s for s in v if isinstance(s, str)]
+                if isinstance(v, dict) and isinstance(v.get("scopes"), list):
+                    return [s for s in v["scopes"] if isinstance(s, str)]
+        return []
+    except Exception:
+        return []
+
+
+def check_permissions() -> dict:
+    """计算 required/granted/missing + app_scopes 提示(差集检查,不跑 sentinel)。
+
+    返回结构:
+      required / granted / missing / app_scopes{readable, missing_in_app} / note
+    """
+    granted = get_granted_scopes()
+    missing = [s for s in REQUIRED_SCOPES if s not in granted]
+    app_scopes = get_app_scopes()
+    return {
+        "required": list(REQUIRED_SCOPES),
+        "granted": granted,
+        "missing": missing,
+        "app_scopes": {
+            "readable": bool(app_scopes),
+            "missing_in_app": [s for s in REQUIRED_SCOPES if s not in app_scopes] if app_scopes else None,
+        },
+        "note": (
+            "写权限属飞书开放平台「需审核权限」:若 missing 授权后仍存在,请先到开发者后台"
+            "确认应用已申请对应 scope 并提交审核、发布版本(否则授权页不会出现这些选项)。"
+        ) if missing else None,
+    }
+
+
+def _sentinel_task(prefix: str) -> list:
+    """task 域 sentinel:create → update → complete(真打一遍)。
+
+    必清协议:task 无 +delete shortcut,以 complete 为终态(完成即关闭,不留待办)。
+    """
+    results = []
+    ts = time.strftime("%H%M%S")
+    summary = f"{prefix} 任务权限验证 {ts}"
+    user_open_id = _get_user_open_id()
+    r = _run_lark(["task", "+create", "--summary", summary, "--assignee", user_open_id])
+    data = r.get("data") or {}
+    guid = data.get("task", {}).get("guid") or data.get("guid")
+    results.append({
+        "name": "task_create",
+        "ok": bool(r.get("ok") and guid),
+        "error": r.get("error") if not r.get("ok") else None,
+    })
+    if not guid:
+        return results  # 创建失败短路,后续步骤无对象可测
+
+    r = _run_lark(["task", "+update", "--task-id", guid, "--summary", summary + "(已更新)"])
+    results.append({
+        "name": "task_update",
+        "ok": r.get("ok", False),
+        "error": r.get("error") if not r.get("ok") else None,
+    })
+
+    r = _run_lark(["task", "+complete", "--task-id", guid])
+    results.append({
+        "name": "task_complete",
+        "ok": r.get("ok", False),
+        "error": r.get("error") if not r.get("ok") else None,
+        "note": "测试任务已标记完成(终态,无待办残留);如想彻底移除可到飞书删除",
+    })
+    return results
+
+
+def _sentinel_calendar(prefix: str) -> list:
+    """calendar 域 sentinel:create → update → delete(真打一遍)。
+
+    必清协议:日程必须删除(会出现在用户日历);删除失败 → note 明示资源位置。
+    """
+    results = []
+    ts = time.strftime("%H%M%S")
+    from datetime import datetime, timedelta
+    start = datetime.now() + timedelta(days=1)
+    start = start.replace(hour=12, minute=0, second=0, microsecond=0)
+    start_iso = start.strftime("%Y-%m-%dT%H:%M+08:00")
+    end_iso = (start + timedelta(minutes=30)).strftime("%Y-%m-%dT%H:%M+08:00")
+    summary = f"{prefix} 日程权限验证 {ts}"
+
+    r = _run_lark(["calendar", "+create", "--summary", summary, "--start", start_iso, "--end", end_iso])
+    data = r.get("data") or {}
+    event_id = data.get("event", {}).get("event_id") or data.get("event_id")
+    results.append({
+        "name": "calendar_create",
+        "ok": bool(r.get("ok") and event_id),
+        "error": r.get("error") if not r.get("ok") else None,
+    })
+    if not event_id:
+        return results  # 创建失败短路
+
+    r = _run_lark(["calendar", "+update", "--event-id", event_id, "--summary", summary + "(已更新)"])
+    results.append({
+        "name": "calendar_update",
+        "ok": r.get("ok", False),
+        "error": r.get("error") if not r.get("ok") else None,
+    })
+
+    r = _run_lark(["calendar", "events", "delete", "--calendar-id", "primary", "--event-id", event_id])
+    ok = r.get("ok", False)
+    results.append({
+        "name": "calendar_delete",
+        "ok": ok,
+        "error": r.get("error") if not ok else None,
+        "note": None if ok else f"删除失败!测试日程仍存在于飞书日历,请手动删除(标题: {summary})",
+    })
+    return results
+
+
+def run_sentinel_write_test() -> list:
+    """真打一遍 6 项写操作(task 3 + calendar 3),带强制前缀。
+
+    用户会看到短暂出现的测试任务/日程 —— 文案告知「这是自动验证」。
+    """
+    prefix = SENTINEL_PREFIX
+    return _sentinel_task(prefix) + _sentinel_calendar(prefix)
+
+
 # ==================== CLI 入口 ====================
 
 def main():
@@ -672,11 +945,39 @@ def main():
     args = parser.parse_args()
 
     if args.command == "check":
-        ok = is_feishu_available()
-        # auth:是否已授权用户身份(auth status 有 openId = 已授权)
+        # 权限编排(#46):check 是常驻诊断入口。先重置 open_id 缓存(B3),
+        # 强制重探测 CLI 路径,再跑差集检查 + sentinel 实测。
+        reset_user_open_id_cache()
+        ok = is_feishu_available(force_refresh=True)
         auth = bool(_get_user_open_id())
-        print(json.dumps({"available": ok, "cli_path": get_lark_cli_path(), "auth": auth},
-                         ensure_ascii=False, indent=2))
+        out = {"available": ok, "cli_path": get_lark_cli_path(), "auth": auth}
+        if ok and auth:
+            perms = check_permissions()
+            if perms["missing"]:
+                # 差集未通过 → 先授权,不跑 sentinel(没权限白跑报错)
+                perms["status"] = "missing_scopes"
+                perms["sentinel_write_test"] = {"skipped": True,
+                                                "reason": "存在缺失权限,先完成授权再实测"}
+                perms["verdict"] = "飞书权限未实测:先补齐缺失权限"
+            else:
+                # 差集通过 → 真打一遍 6 项写操作(sentinel 是唯一硬门禁)
+                sent = run_sentinel_write_test()
+                perms["sentinel_write_test"] = sent
+                all_ok = all(it.get("ok") for it in sent)
+                perms["status"] = "ok" if all_ok else "sentinel_failed"
+                perms["verdict"] = "飞书权限已实测" if all_ok else "飞书权限实测未通过"
+            out["permissions"] = perms
+        elif not ok:
+            out["permissions"] = {
+                "status": "skipped", "skipped_reason": "cli_not_available",
+                "required": list(REQUIRED_SCOPES), "granted": [], "missing": [],
+            }
+        else:
+            out["permissions"] = {
+                "status": "skipped", "skipped_reason": "not_logged_in",
+                "required": list(REQUIRED_SCOPES), "granted": [], "missing": [],
+            }
+        print(json.dumps(out, ensure_ascii=False, indent=2))
     elif args.command == "add":
         result = add_wish_sync(args.memo_id, args.content, args.category, args.tasklist_guid)
         print(json.dumps(result, ensure_ascii=False, indent=2))

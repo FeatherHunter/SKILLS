@@ -114,7 +114,7 @@ class TestScenariosSchema:
 
     def test_skill_and_version_keys(self, scenarios):
         assert scenarios.get("skill") == "备忘录"
-        assert scenarios.get("version") == "1.2.1"
+        assert scenarios.get("version") == "1.2.2"
 
     def test_29_wake_words_minimum(self, scenarios):
         """§07 §4:每个业务唤醒词必穷举所有合法场景(下限 29, 含 首次使用)"""

@@ -1,14 +1,15 @@
 ---
 name: 备忘录
-version: 1.2.1
+version: 1.2.2
 status: active
 description: 跨设备随手记录 · 结构化备忘 + 心愿 + 打卡 + 情绪追踪
-last_updated: 2026-08-07
+last_updated: 2026-08-08
 ---
 
 # 备忘录 (Memorandum)
 
-> **当前版本:1.2.1**(2026-08-07 · git tag `v1.2.1` · SoT 对齐:1.2.0 元数据欠账修复,内容与 CHANGELOG 1.2.1 一致)
+> **当前版本:1.2.2**(2026-08-08 · 权限编排 + 4 BUG 修复 · #197)
+> v1.2.1:HELP UI 全量对齐居家管家 + 中文搜索修复 + 开源就绪(wayfinder #152 map)
 > v1.2.0:HELP HTML 4 级重构 + 首次使用模块(wayfinder #30 map · ADR-0007)
 > v1.1.5:整体重构(规范合规化 · B+A+D 三阶段 23 决策落地 · 术语统一 + 结构文件 + 工程仪式)
 > v1.1.4:备忘录 HELP 唤醒词(总纲 §07 契约 · 场景资产 + HELP HTML + skill 根目录覆盖)
@@ -352,7 +353,7 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
    - FTS5 不可用 → 指引重装/换发行版(Python 官方构建含 FTS5)
 3. **飞书 CLI(@larksuite/cli ≥1.0.59)**(默认安装 + **强烈建议配置**,不默认跳过):
    - **官方文档(遇到问题先查)**:https://open.feishu.cn/document/mcp_open_tools/feishu-cli-let-ai-actually-do-your-work-in-feishu(安装/授权/FAQ 全在;官方安装指南:https://open.feishu.cn/document/no_class/mcp-archive/feishu-cli-installation-guide.md)
-   - 检测:`python ${SKILL_DIR}/script/feishu_sync.py check`(输出 JSON:available/cli_path/auth)
+   - 检测:`python ${SKILL_DIR}/script/feishu_sync.py check`(输出 JSON:available/cli_path/auth/permissions)
    - ⚠️ **包名陷阱**:官方包是 **`@larksuite/cli`**(bin 名恰为 `lark-cli`);npm registry 上的 `lark-cli` 是 2017 年僵尸包(0.1.0,无 auth 命令),**严禁指引安装 `lark-cli`**
    - **先说明为什么强烈建议配**:飞书联动是备忘录的核心能力 —— 心愿自动生成飞书任务、备忘录同步(双向对账)。**不配 = 这两个核心功能不可用**
    - 未安装 → **直接引导安装**(默认路径,不问「要不要装」):
@@ -392,13 +393,15 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
       - **执行**(强制非阻塞,与配置 app 同理):
         - AI 调 `init_app()`(如果还没创建 app)→ `generate_qr()` → 发用户 → 等"好了" → `poll_auth(device_code, "task")`
         - **必须传 `--device-code`**,不能直接 `lark-cli auth login --domain task` 同步跑(会卡死)
-        - `--domain` 按需授予对应域权限;`--recommend` 在 poll_auth 调用前由 `init_app` 后的 user 决定
-      - **备忘录需要的权限域**:`task`(心愿→飞书任务、备忘录同步,必授)+ `calendar`(日程,若用户要用飞书日历);缺哪个域补哪个:重新走一遍 `init_app` + `poll_auth(domain="calendar")`
+        - **禁止只用 `--recommend`**:它的语义是「自动审批的低风险权限」,不含写权限(#46 实证)——必须显式 `--domain task,calendar` 或 `--scope` 精确清单
+      - **备忘录需要的权限域**:`task`(必授,心愿→飞书任务、备忘录同步)+ `calendar`(必授,心愿排期写日历);**一次授权两个域**(`--domain task,calendar`,research #195 实证官方支持多域),不需要的域不授
       - **对用户讲清**:「这一步让备忘录以你的身份在飞书创建/同步任务;跳过则心愿→飞书、备忘录同步不可用」
-      - 授权验证:
-        a. `python ${SKILL_DIR}/script/feishu_sync.py check` → `auth: true`
-        b. 真实 API 探测:`lark-cli task +get-my-tasks`,返回 `ok: true` = 授权真实可用;报错(如 token 过期/权限不足)→ 重新走 `init_app` + `poll_auth(device_code, "task")`
-      - 权限不足:重跑 `init_app` + `poll_auth(device_code, domain="<缺失权限>")`
+      - **权限编排(常驻 sync check · #46)**:装完 CLI + 完成授权后,**不能只停在 `auth: true`** —— 授权 ≠ 写权限就绪(写权限需应用侧审核+发布)。必须跑完整权限编排:
+        a. `python ${SKILL_DIR}/script/feishu_sync.py check` → 输出 `permissions` 字段:`required`(REQUIRED_SCOPES 单一真值源)/ `granted` / `missing` / `app_scopes`(应用侧提示层)/ `sentinel_write_test`(真打结果)
+        b. `missing` 非空 → 引导用户**一次性**授权缺失域:`lark-cli auth login --domain task,calendar`(走 split-flow 非阻塞:init_app 拿 URL → 发用户 → 用户确认后 poll_auth 完成;多个域共用一个 device_code,一次授权)
+        c. 重跑 check → `missing` 空 → 自动真打 sentinel 6 项写操作(task create/update/complete + calendar create/update/delete,带「[备忘录测试]」前缀,测完即清)
+        d. `permissions.status == "ok"` → 报告页「飞书权限已实测 ✓」;`sentinel_failed` → 引导用户到飞书开放平台开发者后台确认应用已申请对应 scope + 提交审核 + 发布版本(写权限属需审核权限,授权页才会出现)
+        e. **运行时排障也用同一入口**:以后任何「同步失败」先跑 `check`,看 permissions 差集与 sentinel 结果(常驻能力,不只在首次使用用)
       - 授权码过期(默认 10 分钟):重跑 `init_app` 拿新 device_code,旧 device_code 自动作废
    - **只有用户明确拒绝**(如「不用飞书」「跳过」)才标 warn 跳过 —— 但必须**醒目告知功能残缺**:心愿→飞书、备忘录同步 两个核心功能不可用,后续想用时说「配置飞书」即可补装
 4. **环境变量 + 数据位置**(SKILLS_DB_PATH / MEMO_MEDIA_DIR) —— **主动告知,不强制配置**:
@@ -423,7 +426,10 @@ AI 命中「首次使用 / 初始化 / 新手」时,按以下规则执行。**�
 7. **过程 HTML + 回执**:以上全部完成后,调用 `${SKILL_DIR}/script/memo_cli.py init-report --data '<诊断结果 JSON>'` 生成初始化报告页(items 检查清单 + todos 待办 + verify 完成验证清单),发给用户;再给一句话总结
    - `--data` 数据契约:`{"items":[{name,status(ok/warn/err),desc,action}], "todos":[{title,steps:[str]}], "verify":[str]}`
     - status 取值:ok=就绪 / warn=可选缺失(cron 未验证等)/ err=必装缺失(Python、数据库等);**用户拒绝飞书 → 标 err 级醒目提示(核心功能残缺),但流程不阻断**
-   - 报告页「完成验证清单」= 用户可勾选:Python 可运行 / 数据库已建 / 飞书已授权(强烈建议,用户明确拒绝才可不勾)/ 数据位置已确认(默认或自定义)/ HELP 页面可打开
+   - 报告页「完成验证清单」= 用户可勾选:Python 可运行 / 数据库已建 / 数据位置已确认(默认或自定义)/ HELP 页面可打开;**飞书项按权限编排结果填三态**(#46 · verify 支持 `{"text","status"}` 对象,模板渲染带色徽章):
+     - `{"text": "飞书权限已实测", "status": "ok"}` —— check `permissions.status == "ok"`(绿)
+     - `{"text": "飞书权限已实测", "status": "skip"}` —— 用户拒绝飞书 / 未启用(灰,不误报缺失)
+     - `{"text": "飞书权限已实测", "status": "fail"}` —— sentinel 未通过(红,报告页给应用后台引导)
 8. **承诺↔兑现**:prompt 说的每项 → 报告页必须有对应物(检查项/待办/验证清单);缺失即流程断裂
 9. **飞书强烈建议 + 拒绝不阻断**:飞书是核心联动能力,默认引导安装;**只有用户明确拒绝才跳过**,且报告页醒目标注「心愿→飞书、备忘录同步 不可用」,后续想用说「配置飞书」即可补装
 

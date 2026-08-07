@@ -22,7 +22,7 @@
 # 编辑本文件后,需重新跑 `memo_cli.py help` 刷新 HELP HTML。
 
 skill: 备忘录
-version: 1.2.1
+version: 1.2.2
 categories:
 - key: memo
   name: 备忘类

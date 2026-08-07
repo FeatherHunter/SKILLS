@@ -1,6 +1,6 @@
 {
   "name": "备忘录",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "私人多功能备忘录，支持文字记录、分类、媒体附件、全文搜索和定时提醒",
   "author": "Feather",
   "tags": ["productivity", "notes", "reminder"],

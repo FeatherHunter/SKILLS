@@ -315,7 +315,7 @@ scenes:
       scenes:
       - id: query-1-1
         scenario_id: query_today
-        scenario_title: 今日收支摘要
+        scenario_title: 查今天收支
         type: 查看
         status: ''
         html:
@@ -323,103 +323,112 @@ scenes:
           command_cn: 今日摘要
           data_source: bills
         prompt: |
-          请加载「饼干记账」技能,帮我看今天的收支摘要(唤醒词:查今天):
-        result: HTML 展示 4 KPI + 洞察 + 今日明细;空数据 → 空态引导
-    - wake_word: 查日期
+          请加载「饼干记账」技能,帮我看今天的收支(唤醒词:查今天):
+        result: 结果型 HTML:4 KPI(支出/收入/净额/笔数)+ 今日明细 + 分类聚合;空数据 → 空态
+    - wake_word: 查昨天
       scenes:
       - id: query-2-1
-        scenario_id: query_date_yesterday
-        scenario_title: 查昨天
+        scenario_id: query_yesterday
+        scenario_title: 查昨天收支
         type: 查看
         status: ''
         html:
           template: 查询/list.html
-          command_cn: 查日期
+          command_cn: 昨日收支
           data_source: bills
         prompt: |
-          请加载「饼干记账」技能,帮我查昨天的账(唤醒词:查日期):
-        result: HTML 展示昨日记录
-      - id: query-2-2
-        scenario_id: query_date_specific
-        scenario_title: 查某一天(指定日期)
-        type: 查看
-        status: ''
-        html:
-          template: 查询/list.html
-          command_cn: 查日期
-          data_source: bills
-        prompt: |
-          请加载「饼干记账」技能,帮我查某天的账(唤醒词:查日期):
-
-            日  期: ____ (例如:5月1号 / 昨天 / 上周五)
-        result: HTML 展示指定日期记录;相对表达由 routing.py 换算
-      - id: query-2-3
-        scenario_id: query_date_relative
-        scenario_title: 查相对日期(如上周五)
-        type: 查看
-        status: ''
-        html:
-          template: 查询/list.html
-          command_cn: 查日期
-          data_source: bills
-        prompt: |
-          请加载「饼干记账」技能,帮我查某个相对日期的账(唤醒词:查日期):
-
-            日  期: ____ (例如:上周五 / 前天)
-        result: 相对时间换算(routing.py)→ HTML
-    - wake_word: 查范围
+          请加载「饼干记账」技能,帮我看昨天的收支(唤醒词:查昨天):
+        result: 结果型 HTML:4 KPI + 昨日明细;start=end=昨天;空 → 空态
+    - wake_word: 查某天
       scenes:
       - id: query-3-1
-        scenario_id: query_range_week
-        scenario_title: 查某周(本周/上周)
+        scenario_id: query_date
+        scenario_title: 查某一天的账
         type: 查看
         status: ''
         html:
           template: 查询/list.html
-          command_cn: 查范围
+          command_cn: 查某天
           data_source: bills
         prompt: |
-          请加载「饼干记账」技能,帮我查某周的账(唤醒词:查范围):
+          请加载「饼干记账」技能,帮我查某天的账(唤醒词:查某天):
 
-            周: ____ (例如:本周 / 上周)
-        result: HTML 展示该周记录(周一~周日)
-      - id: query-3-2
-        scenario_id: query_range_custom
-        scenario_title: 查自定义区间
+            日  期: ____ (如:5月1号 / 上周五 / 2026-05-01)
+        result: 相对日期换算 → start=end=该天 → 结果型 HTML:4 KPI + 明细;空 → 空态
+    - wake_word: 查最近
+      scenes:
+      - id: query-4-1
+        scenario_id: query_recent
+        scenario_title: 查最近记录
         type: 查看
         status: ''
         html:
           template: 查询/list.html
-          command_cn: 查范围
+          command_cn: 最近记录
           data_source: bills
         prompt: |
-          请加载「饼干记账」技能,帮我查某段时间的账(唤醒词:查范围):
+          请加载「饼干记账」技能,帮我看最近的记录(唤醒词:查最近):
 
-            开始日期: ____ (例如:2026-05-01)
-            结束日期: ____ (例如:2026-05-10)
-        result: HTML 展示区间记录;跨月/跨年正确计算
-      - id: query-3-3
-        scenario_id: query_range_double_compare
-        scenario_title: 双区间对比
+            条  数: ____ (选填,默认 10)
+            排  序: ____ (选填,如:金额从大到小)
+            近几天: ____ (选填,如:近7天 / 近30天;与条数二选一)
+        result: 结果型 HTML:笔数/总金额 KPI + 明细(排序);空 → 空态
+    - wake_word: 查周
+      scenes:
+      - id: query-5-1
+        scenario_id: query_week
+        scenario_title: 查某周的账
         type: 查看
         status: ''
         html:
           template: 查询/list.html
-          command_cn: 查范围
+          command_cn: 查周
           data_source: bills
         prompt: |
-          请加载「饼干记账」技能,帮我对比两段时间的账(唤醒词:查范围):
+          请加载「饼干记账」技能,帮我查某周的账(唤醒词:查周):
 
-            区间一: ____ (例如:5 月)
-            区间二: ____ (例如:6 月)
-        result: HTML 双列并排对比 + 变化率
+            周: ____ (如:本周 / 上周 / 5月第2周 / 2026-05-11那一周)
+        result: start=周一,end=周日 → 结果型 HTML:4 KPI + 明细 + 分类聚合;空 → 空态
+    - wake_word: 查月
+      scenes:
+      - id: query-6-1
+        scenario_id: query_month
+        scenario_title: 查某个月的账
+        type: 查看
+        status: ''
+        html:
+          template: 查询/list.html
+          command_cn: 查月
+          data_source: bills
+        prompt: |
+          请加载「饼干记账」技能,帮我查某个月的账(唤醒词:查月):
+
+            月: ____ (如:本月 / 上月 / 3月 / 2026-03)
+        result: start=1日,end=末日 → 结果型 HTML:4 KPI + 明细 + 分类聚合;空 → 空态
+    - wake_word: 查区间
+      scenes:
+      - id: query-7-1
+        scenario_id: query_range
+        scenario_title: 查任意时间段
+        type: 查看
+        status: ''
+        html:
+          template: 查询/list.html
+          command_cn: 查区间
+          data_source: bills
+        prompt: |
+          请加载「饼干记账」技能,帮我查某段时间的账(唤醒词:查区间):
+
+            开始日期: ____ (如:5月1号 / 2026-05-01)
+            结束日期: ____ (如:5月10号 / 2026-05-10;某年填 12月31日)
+        result: start→end 自定义(几天/几月/某年/跨年)→ 结果型 HTML:4 KPI + 区间标注 + 明细 + 分类聚合
   - name: 按条件
     wake_words:
     - wake_word: 查分类
       scenes:
-      - id: query-4-1
+      - id: query-8-1
         scenario_id: query_category
-        scenario_title: 查某分类记录
+        scenario_title: 查某分类的账
         type: 查看
         status: ''
         html:
@@ -427,46 +436,33 @@ scenes:
           command_cn: 查分类
           data_source: bills
         prompt: |
-          请加载「饼干记账」技能,帮我查某分类的记录(唤醒词:查分类):
+          请加载「饼干记账」技能,帮我查某分类的账(唤醒词:查分类):
 
-            分  类: ____ (例如:餐饮 / 出行 / 奶茶)
-        result: HTML 展示分类记录;多级分类/组合筛选由 AI 解析
-    - wake_word: 查最近
-      scenes:
-      - id: query-5-1
-        scenario_id: query_recent
-        scenario_title: 查最近记录(可排序)
-        type: 查看
-        status: ''
-        html:
-          template: 查询/list.html
-          command_cn: 查最近
-          data_source: bills
-        prompt: |
-          请加载「饼干记账」技能,帮我看最近的记录(唤醒词:查最近):
-
-            条  数: ____ (选填,默认 10)
-            排  序: ____ (选填,如:金额从大到小)
-        result: HTML 展示最近 N 条;排序可选
+            分  类: ____ (如:餐饮 / 出行 / 奶茶)
+            时  间: ____ (选填,如:本月 / 5月 / 5月1到10号)
+            账  户: ____ (选填,如:支付宝)
+            账  本: ____ (选填)
+            收  支: ____ (选填,支出/收入/全部,默认全部)
+        result: 结果型 HTML:该分类 KPI(支出/笔数/占比)+ 明细 + 时间跨度提示;组合参数(时间/账户/账本)由 AI 解析
     - wake_word: 搜备注
       scenes:
-      - id: query-6-1
+      - id: query-9-1
         scenario_id: query_search
         scenario_title: 搜索备注关键词
         type: 查看
         status: ''
         html:
           template: 查询/list.html
-          command_cn: 搜备注
+          command_cn: 备注搜索
           data_source: bills
         prompt: |
           请加载「饼干记账」技能,帮我搜备注关键词(唤醒词:搜备注):
 
             关键词: ____
-        result: HTML 展示命中记录;零命中 → 空态
+        result: 结果型 HTML:命中条数 + 明细;零命中 → 空态
     - wake_word: 查标签
       scenes:
-      - id: query-7-1
+      - id: query-10-1
         scenario_id: query_tag
         scenario_title: 查标签(#tag 聚合)
         type: 查看
@@ -476,31 +472,15 @@ scenes:
           command_cn: 查标签
           data_source: bills
         prompt: |
-          请加载「饼干记账」技能,帮我查某个标签的记录(唤醒词:查标签):
+          请加载「饼干记账」技能,帮我查标签(唤醒词:查标签):
 
-            标  签: ____ (例如:#旅行)
-        result: HTML 展示标签命中记录 + 聚合统计
-    - wake_word: 查账本
-      scenes:
-      - id: query-8-1
-        scenario_id: query_ledger
-        scenario_title: 查某账本记录
-        type: 查看
-        status: ''
-        html:
-          template: 查询/list.html
-          command_cn: 查账本
-          data_source: bills
-        prompt: |
-          请加载「饼干记账」技能,帮我查某个账本的记录(唤醒词:查账本):
-
-            账  本: ____ (例如:旅行 / 生活)
-        result: HTML 展示账本记录 + 汇总
+            标  签: ____ (如:#旅行 / #待报销)
+        result: 结果型 HTML:标签聚合卡(总笔数/总金额)+ 明细
     - wake_word: 查账户
       scenes:
-      - id: query-9-1
+      - id: query-11-1
         scenario_id: query_account
-        scenario_title: 查某账户记录
+        scenario_title: 查某账户流水
         type: 查看
         status: ''
         html:
@@ -508,10 +488,76 @@ scenes:
           command_cn: 查账户
           data_source: bills
         prompt: |
-          请加载「饼干记账」技能,帮我查某个账户的记录(唤醒词:查账户):
+          请加载「饼干记账」技能,帮我查某账户的流水(唤醒词:查账户):
 
-            账  户: ____ (例如:支付宝 / 微信)
-        result: HTML 展示账户记录 + 汇总
+            账  户: ____ (如:支付宝 / 微信 / 招行)
+            时  间: ____ (选填,如:本月 / 上月)
+        result: 结果型 HTML:账户流水 KPI(支出/收入/净额)+ 明细
+    - wake_word: 查账本
+      scenes:
+      - id: query-12-1
+        scenario_id: query_ledger
+        scenario_title: 查某账本的记录
+        type: 查看
+        status: ''
+        html:
+          template: 查询/list.html
+          command_cn: 查账本
+          data_source: bills
+        prompt: |
+          请加载「饼干记账」技能,帮我查某账本的记录(唤醒词:查账本):
+
+            账  本: ____ (如:生活 / 旅行 / 借贷)
+            时  间: ____ (选填)
+        result: 结果型 HTML:账本汇总 KPI + 明细
+  - name: 按状态
+    wake_words:
+    - wake_word: 查欠款
+      scenes:
+      - id: query-13-1
+        scenario_id: query_debt
+        scenario_title: 查未还欠款(借贷状态)
+        type: 查看
+        status: ''
+        html:
+          template: 查询/debt.html
+          command_cn: 查欠款
+          data_source: bills(#未还)
+        prompt: |
+          请加载「饼干记账」技能,帮我查欠款(唤醒词:查欠款):
+
+            对  象: ____ (选填,如:小明;不填查全部)
+        result: '结果型 HTML:借出未还总额 + 借入未还总额 + 未还列表(对象/方向/金额/期限);查 #未还 聚合;无欠款 → 空态'
+    - wake_word: 查待报销
+      scenes:
+      - id: query-14-1
+        scenario_id: query_pending_reimburse
+        scenario_title: 查待报销
+        type: 查看
+        status: ''
+        html:
+          template: 查询/reimburse.html
+          command_cn: 查待报销
+          data_source: bills(#待报销)
+        prompt: |
+          请加载「饼干记账」技能,帮我查待报销(唤醒词:查待报销):
+        result: 结果型 HTML:#待报销 列表(金额/分类/日期)+ 总额;无 → 空态
+    - wake_word: 查分期
+      scenes:
+      - id: query-15-1
+        scenario_id: query_installment
+        scenario_title: 查进行中的分期
+        type: 查看
+        status: ''
+        html:
+          template: 查询/installment.html
+          command_cn: 查分期
+          data_source: bills(#分期)
+        prompt: |
+          请加载「饼干记账」技能,帮我查分期(唤醒词:查分期):
+
+            名  目: ____ (选填,如:手机;不填查全部)
+        result: '结果型 HTML:分期卡(名目/总额/每期/期数/已还期数/剩余期数+金额)+ #分期 记录明细;无 → 空态'
 - key: setup
   name: 开始使用
   icon: 🚀

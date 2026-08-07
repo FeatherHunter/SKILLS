@@ -1,6 +1,6 @@
 # Triage 标签 · 备忘录
 
-本目录的 triage 标签按仓库根协议统一映射到 GitHub Issues（详见 `D:\2Study\StudyNotes\SKILLS\docs\agents\triage-labels.md`）。
+本目录的 triage 标签按仓库根协议统一映射到 GitHub Issues（详见 `../../docs/agents/triage-labels.md`）。
 
 ## 分类（每个 issue 必带 1 个）
 

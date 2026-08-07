@@ -21,14 +21,15 @@ lark-cli 已提供非阻塞多轮协议:
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Optional, Dict, Any
 
 # lark-cli 路径(假定在 PATH)
 LARK_CLI = "lark-cli"
 
-# QR code 默认输出目录(AI 工作区 scratch)
-DEFAULT_QR_DIR = Path(r"C:\Users\辰辰洋洋\.minimax\agents\mavis\.scratch")
+# QR code 默认输出目录(通用临时目录,不绑定任何用户机器;AI 工作区可用 env 覆盖)
+DEFAULT_QR_DIR = Path(tempfile.gettempdir()) / "memo_feishu_qr"
 
 
 def init_app(brand: str = "feishu") -> Dict[str, Any]:

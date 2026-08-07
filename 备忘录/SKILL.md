@@ -201,8 +201,8 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 4. **正确做法**(并行交付,举例):
    ```
    找到 3 条心愿。
-   [html 路径: /mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/心愿排期_20260724_HHMMSS.html]
-   <media src="/mnt/d/2Study/StudyNotes/SKILLS/备忘录/output/心愿排期_20260724_HHMMSS.html" type="file" />
+   [html 路径: ${SKILL_DIR}/output/心愿排期_20260724_HHMMSS.html]
+   <media src="${SKILL_DIR}/output/心愿排期_20260724_HHMMSS.html" type="file" />
    + AI 同步:用系统默认浏览器(Chrome 等)打开同一文件
    ```
 
@@ -1054,7 +1054,7 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
 请读取 ${SKILL_DIR}/SKILL.md 并执行提醒检查流程
 ```
 
-**说明**:`${SKILL_DIR}` 是占位符,部署时替换为技能实际目录的绝对路径(如 `/mnt/d/2Study/StudyNotes/SKILLS/备忘录` 或 `D:\2Study\StudyNotes\SKILLS\备忘录`)。Payload 只负责触发 skill 执行,不描述"有提醒/无提醒"的判断逻辑,该逻辑由 SKILL 内部决定。
+**说明**:`${SKILL_DIR}` 是占位符,部署时替换为技能实际目录的绝对路径(你的宿主环境实际安装位置)。Payload 只负责触发 skill 执行,不描述"有提醒/无提醒"的判断逻辑,该逻辑由 SKILL 内部决定。
 
 ## 参考文档
 

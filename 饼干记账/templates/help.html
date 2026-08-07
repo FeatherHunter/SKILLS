@@ -1,680 +1,455 @@
-﻿<!--
-  ============================================================================
-  饼干记账 · HELP HTML 模板 · v2.4
-  5 类分门别类 + 3 层折叠 + Toast + 移动端 fallback
-  ============================================================================
-  使用:
-    1. 复制此文件
-    2. render_help.py 读 scenarios.json → 注入 payload → 替换 INJECT-DATA 占位符
-    3. 输出到 D:/Downloads/饼干记账_HELP_<timestamp>.html (跨平台 fallback)
-  ============================================================================
--->
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>📚 饼干记账 · 唤醒词速查台</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>饼干记账 · 使用手册(HELP)</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  :root {
-    --bg: #f5f6f7; --card: #fff; --text: #1c1c1e; --sub: #6b6b6f;
-    --accent: #0071e3; --green: #34c759; --orange: #ff9500;
-    --code-bg: #f0f0f2; --border: #e5e5e7; --shadow: 0 1px 2px rgba(0,0,0,.04);
-  }
-  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
-  body {
-    background: var(--bg); color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
-    font-size: 13px; line-height: 1.4; -webkit-font-smoothing: antialiased;
-    min-height: 100vh; padding: 0 0 80px;
-  }
-  .container { max-width: 960px; margin: 0 auto; padding: 0 12px 40px; }
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--ok:#34c759;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased;padding-bottom:48px}
+button{font-family:inherit}
+mark{background:#ffe08a;border-radius:3px;padding:0 2px;color:inherit}
 
-  /* ===== HERO (紧凑 · 对齐卡路里 v2.4.12) ===== */
-  .hero {
-    background: #f4f4f6;                  /* v11 保留 v9/v10 极淡灰,作为整块背景容纳标题+搜索栏 */
-    padding: 24px 0 16px;                 /* v10 24/0/0 → v11 24/0/16:搜索栏下方给 16px 留白再出 hero */
-    border-bottom: 0;
-  }
-  .hero .container { padding-bottom: 0; }  /* v10 关键修复:v11 search 已在 container 内,无需再设 container 底 padding */
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 40px}
 
-  .hero h1 {
-    font-size: 190%; font-weight: 700; letter-spacing: -.4px;
-    line-height: 1.18; margin: 0 0 4px;                         /* v8: 1.15→1.18, 2px→4px */
-  }
-  .hero .sub {
-    color: var(--accent); font-size: 12.5px; font-weight: 500;
-    margin: 0 0 6px;                                             /* v8: 4px→6px */
-    line-height: 1.45;
-    word-spacing: 4px;
-  }
-  .hero .sub .arrow {                  /* 新增:箭头单独样式 */
-    display: inline-block;
-    margin: 0 2px;
-    color: var(--orange);
-    font-weight: 600;
-  }
-  .hero .stats {
-    margin: 2px 0 0; display: flex; gap: 8px; flex-wrap: wrap;  /* v7: 4px→2px */
-    font-size: 12px; color: var(--sub);
-    line-height: 1.3;
-  }
-  .hero .stats span {                   /* 数字卡片化,深底更明显 */
-    background: rgba(0,0,0,.05);
-    border: 1px solid rgba(0,0,0,.06);
-    padding: 3px 9px;
-    border-radius: 999px;
-  }
-  .hero .stats b { color: var(--text); font-weight: 700; font-size: 13px; }   /* ↑ 600→700 加粗,加 13px */
+/* ===== Hero ===== */
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:24px;padding:28px 30px;margin-bottom:20px;box-shadow:var(--shadow)}
+.eyebrow{font-size:12px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.hero-mode{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+.hero-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hero-steps .step{background:var(--soft);border:1px solid #d7e6ff;color:var(--blue2);font-weight:700;font-size:13px;padding:6px 14px;border-radius:999px;box-shadow:0 1px 3px rgba(0,122,255,.10);white-space:nowrap}
+.hero-steps .arrow{color:var(--blue);font-weight:800;font-size:15px}
+.hero-stats{display:flex;gap:8px;margin-left:auto}
+.hero-stats .stat{background:#fff;border:1px solid var(--line);color:var(--fg2);font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap}
+.meta{margin-top:12px;color:var(--fg3);font-size:12.5px}
+@media(max-width:820px){.hero-mode{gap:8px}.hero-steps{order:-1;width:100%;gap:5px}.hero-steps .step{font-size:11.5px;padding:4px 7px}.hero-steps .arrow{font-size:12px;margin:0 -3px}.hero-stats{display:none}}
 
-  /* ===== CONTROLS (紧凑 · 对齐卡路里 v2.4.12) ===== */
-  .controls {
-    display: flex; gap: 6px; align-items: center; flex-wrap: wrap;
-    margin: 14px 0 0;                              /* v11: 合并到 hero 内,只保留顶部 14px 间距,去掉 sticky/独立色块/边框/负 margin */
-  }
-  .controls input[type="search"] {
-    flex: 1; min-width: 160px; padding: 7px 10px;
-    border: 1px solid var(--border); border-radius: 8px;
-    font-size: 12.5px; background: var(--card); color: var(--text);
-    outline: none; transition: border-color .15s;
-    font-family: inherit;
-  }
-  .controls input[type="search"]:focus { border-color: var(--accent); }
-  .controls button {
-    border: 1px solid var(--border); border-radius: 8px;
-    background: var(--card); color: var(--text); padding: 7px 10px;
-    font-size: 11px; font-weight: 600; cursor: pointer;
-    transition: background .12s, color .12s, transform .15s, box-shadow .25s;
-    font-family: inherit;
-    -webkit-tap-highlight-color: transparent;
-    tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-  .controls button:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-  .controls button:active { transform: scale(0.96); }
+/* ===== 首次使用横幅(状态驱动:初始化完成即消失) ===== */
+.init-banner{background:linear-gradient(135deg,#0a63ce,#007aff 55%,#34c759);color:#fff;border-radius:20px;padding:22px 24px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 12px 32px rgba(0,122,255,.25)}
+.init-banner[hidden]{display:none}
+.init-banner .ib-text{flex:1;min-width:220px}
+.init-banner .ib-title{font-size:17px;font-weight:800;margin-bottom:2px}
+.init-banner .ib-sub{font-size:12.5px;opacity:.9}
+.init-banner .copy-btn{background:#fff;color:var(--blue);font-weight:700;padding:9px 16px}
+.init-banner .copy-btn.copied{background:var(--ok);color:#fff}
 
-  /* ===== L1 CATEGORY (紧凑 · 对齐卡路里 v2.4.12) ===== */
-  .cat-block {
-    background: var(--card); border-radius: 8px;
-    margin: 3px 0; box-shadow: var(--shadow); overflow: hidden;
-  }
-  .cat-block:first-of-type { margin-top: 0; }
-  .cat-block:last-of-type { margin-bottom: 0; }
-  .cat-block > summary {
-    cursor: pointer; list-style: none;
-    display: flex; align-items: center; gap: 6px;
-    padding: 7px 12px; font-size: 13px; font-weight: 600;
-    background: #fafbfc; min-height: 36px;
-    -webkit-tap-highlight-color: transparent;
-    tap-highlight-color: transparent;
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  .cat-block > summary::-webkit-details-marker { display: none; }
-  .cat-block > summary::before {
-    content: '▸'; font-size: 11px; color: var(--sub);
-    transition: transform .12s; flex-shrink: 0; pointer-events: none;
-  }
-  .cat-block[open] > summary::before { transform: rotate(90deg); }
-  .cat-block > summary > * { pointer-events: none; }
-  .cat-name { flex: 1; }
-  .cat-desc { font-size: 11px; color: var(--sub); font-weight: 400; }
-  .cat-count-pill {
-    font-size: 10px; font-weight: 500;
-    color: var(--sub); background: #e5e5e7;
-    padding: 1px 6px; border-radius: 999px;
-  }
-  .cat-content { padding: 4px 12px 10px; }
+/* ===== 搜索(sticky · 宽度与内容列一致) ===== */
+.search-wrap{position:sticky;top:0;z-index:40;background:rgba(245,245,247,.92);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);padding:8px 0;margin-bottom:6px}
+.search-box{position:relative}
+.search-box input{width:100%;border:1px solid var(--line);border-radius:999px;padding:10px 38px 10px 16px;font-size:14px;background:#fff;outline:none;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.search-box input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
+.search-box .s-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--fg3)}
+.hitcount{font-size:12.5px;color:var(--fg2);margin-bottom:10px;text-align:center}
+.search-empty{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:28px;text-align:center;color:var(--fg3);font-size:13px}
 
-  /* ===== L2 WAKE WORD (紧凑 · 对齐卡路里 v2.4.12) ===== */
-  .ww-block {
-    background: #fff; border: 1px solid var(--border);
-    border-radius: 6px; margin: 4px 0;
-  }
-  .ww-block > summary {
-    padding: 6px 10px; cursor: pointer; list-style: none;
-    display: flex; align-items: center; gap: 8px;
-    font-size: 13px; font-weight: 600;
-    -webkit-tap-highlight-color: transparent;
-    tap-highlight-color: transparent;
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  .ww-block > summary::-webkit-details-marker { display: none; }
-  .ww-block > summary::before {
-    content: '▸'; font-size: 10px; color: var(--sub);
-    transition: transform .12s; flex-shrink: 0; pointer-events: none;
-  }
-  .ww-block[open] > summary::before { transform: rotate(90deg); }
-  .ww-block > summary > * { pointer-events: none; }
-  .ww-name { color: var(--text); }
-  .ww-count {
-    margin-left: auto; font-size: 11px; color: var(--sub);
-    font-weight: 400;
-  }
-  .ww-content { padding: 0 10px 8px; }
+/* ===== 场景卡片(共享组件 · 整卡点击即展开,详情 = prompt 仅 · P1 裁决 #4) ===== */
+.copy-btn{display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--blue);color:#fff;border-radius:999px;padding:7px 13px;font-size:12.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
+.copy-btn:hover{background:var(--blue2)}
+.copy-btn.copied{background:var(--ok)}
+.copy-short{display:none}
+.scene{background:var(--bg);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;scroll-margin-top:120px;overflow:hidden}
+.scene:last-child{margin-bottom:0}
+.scene>summary.scene-head{padding:14px 16px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;list-style:none;transition:background .15s}
+.scene>summary.scene-head::-webkit-details-marker{display:none}
+.scene>summary.scene-head::before{content:"▸";font-size:11px;color:var(--fg3);transition:transform .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;line-height:1}
+.scene[open]>summary.scene-head::before{transform:rotate(90deg);color:var(--blue)}
+.scene>summary.scene-head:hover{background:var(--soft)}
+.scene-id{font-size:11px;color:var(--fg3);font-weight:700;font-family:ui-monospace,Menlo,monospace}
+.scene-title{font-size:15px;font-weight:600;flex:1;min-width:180px}
+.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;flex-shrink:0}
+.type-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;flex-shrink:0;background:#e9e9ee;color:#666}
+.type-badge.t-view{background:#e8f2ff;color:#0a63ce}
+.type-badge.t-collect{background:#e7f8ee;color:#1a7a3a}
+.type-badge.t-select{background:#fff1e2;color:#c2540a}
+.type-badge.t-wizard{background:#e2f7f5;color:#00897b}
+.type-badge.t-mixed{background:#f3e9fb;color:#8e3fc9}
+.scene-body{padding:0 16px 14px}
+.scene-type{display:flex;align-items:center;gap:6px;margin:10px 0 0}
+.scene-type .type-label{font-size:11px;color:var(--fg3)}
+.prompt-box{background:#1d1d1d;color:#f5f5f7;border-radius:12px;padding:12px 14px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;line-height:1.7;position:relative;margin-top:8px}
+.prompt-box .copy-inline{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer}
+.prompt-box .copy-inline:hover{background:rgba(255,255,255,.25)}
+.prompt-box .copy-inline.copied{background:var(--ok)}
+.dev-banner{margin-top:10px;padding:8px 12px;background:#fff7e8;color:#b25b00;border-radius:10px;font-size:12.5px;font-weight:700;display:flex;gap:8px;align-items:center}
+.dev-banner .mini{font-size:11px;font-weight:400;color:#c07a2a}
 
-  /* ===== L3 SCENARIO ===== */
-  .sc-block {
-    border: 1px solid var(--border); border-radius: 6px;
-    margin: 3px 0; background: #fcfcfd;
-  }
-  .sc-block.pending { border-left: 3px solid var(--orange); }
-  .sc-block > summary {
-    padding: 4px 8px; cursor: pointer; list-style: none;
-    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-    font-size: 12px;
-    -webkit-tap-highlight-color: transparent;
-    tap-highlight-color: transparent;
-    touch-action: manipulation;
-    -webkit-user-select: none;
-    user-select: none;
-  }
-  .sc-block > summary::-webkit-details-marker { display: none; }
-  .sc-block > summary::before {
-    content: '▸'; font-size: 9px; color: var(--sub);
-    transition: transform .12s; flex-shrink: 0; pointer-events: none;
-  }
-  .sc-block[open] > summary::before { transform: rotate(90deg); }
-  .sc-block > summary > * { pointer-events: none; }
-  .sc-title { font-weight: 500; color: var(--accent); font-size: 13px; flex: 1; }
-  .sc-dim {
-    font-size: 10px; color: var(--sub); background: var(--bg);
-    padding: 1px 6px; border-radius: 4px;
-  }
-  .sc-pending-tag {
-    font-size: 9px; font-weight: 700; padding: 2px 6px;
-    border-radius: 4px; background: #fff7e6; color: #ff9500;
-  }
-  .sc-content { padding: 0 8px 6px; }
-  .sc-prompt {
-    background: #f0f7ff; border-left: 2px solid var(--accent);
-    padding: 6px 8px; border-radius: 4px; margin: 4px 0;
-    font-family: "SF Mono", Consolas, monospace; font-size: 11.5px;
-    word-break: break-word; line-height: 1.35;
-    white-space: pre-wrap;
-  }
-  .sc-prompt::before { content: "💬 "; }
-  .sc-result {
-    font-size: 12px; color: var(--sub); margin: 6px 0 8px;
-    padding-left: 4px;
-  }
-  .sc-result::before { content: "→ "; color: var(--sub); }
+/* ===== 分类模块折叠(域 → 子功能 → 场景) ===== */
+.module{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:12px;overflow:hidden}
+.module>summary{padding:9px 14px;cursor:pointer;font-size:14.5px;font-weight:700;color:var(--fg);user-select:none;display:flex;align-items:center;gap:10px;list-style:none;transition:background .15s}
+.module>summary::-webkit-details-marker{display:none}
+.module>summary::before{content:"▶";display:inline-flex;align-items:center;justify-content:center;width:12px;margin-right:-2px;font-size:9px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.module>summary:hover{background:var(--soft)}
+.module-body{padding:0 12px 8px}
+.module-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.module-head .m-icon{font-size:17px}
+.module-head .m-count{font-size:11.5px;color:var(--fg3);font-weight:600}
+.module-head .m-tag{font-size:10.5px;color:var(--ok);font-weight:700;background:#e7f8ee;border-radius:999px;padding:2px 8px}
+.sub-module{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;overflow:hidden}
+.sub-module>summary{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--fg2);user-select:none;list-style:none;display:flex;align-items:center;gap:8px;transition:background .15s}
+.sub-module>summary::-webkit-details-marker{display:none}
+.sub-module>summary::before{content:"▸";display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.sub-module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.sub-module>summary:hover{background:var(--soft)}
+.sub-module .module-body{padding:10px 12px 8px}
+.sub-head{display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%}
+.sub-head .scount{font-size:11px;color:var(--fg3)}
 
-  /* ===== COPY BUTTON (4 状态反馈 · 对齐卡路里 v2.4.12) ===== */
-  .copy-btn {
-    font: inherit; font-size: 11px; padding: 4px 8px;
-    border-radius: 5px; border: 1px solid var(--accent);
-    background: #fff; color: var(--accent);
-    cursor: pointer; margin: 3px 0;
-    transition: background .12s, color .12s, transform .15s, box-shadow .25s;
-    white-space: nowrap;
-    -webkit-tap-highlight-color: transparent;
-    tap-highlight-color: transparent;
-  }
-  .copy-btn:hover { background: var(--accent); color: #fff; }
-  .copy-btn:active { transform: scale(0.94); background: var(--accent); color: #fff; }
-  .copy-btn.copied {
-    background: var(--green); border-color: var(--green); color: #fff;
-    transform: scale(1.05);
-    animation: copySuccess 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  /* sc-block summary 折叠态复制按钮(v12 需求:按钮在名字右边,展开后不显示) */
-  .sc-block > summary .copy-btn {
-    background: var(--accent); color: #fff; border: none;
-    padding: 3px 9px; border-radius: 6px; font-size: 11px;
-    cursor: pointer; margin-left: auto; flex-shrink: 0;
-    pointer-events: auto;        /* 覆盖 summary > * 的 pointer-events: none */
-  }
-  .sc-block > summary .copy-btn:hover { opacity: 0.85; }
-  .sc-block[open] > summary .copy-btn { display: none; }   /* 展开后整行没有复制按钮 */
+/* ===== 联系作者(仅 HELP · G7) ===== */
+.contact-box{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-top:22px;overflow:hidden}
+.contact-box>summary{padding:14px 18px;cursor:pointer;font-size:14px;font-weight:700;list-style:none;user-select:none;display:flex;align-items:center;gap:10px;transition:background .15s}
+.contact-box>summary::-webkit-details-marker{display:none}
+.contact-box>summary::before{content:"▶";font-size:9px;color:var(--fg3);transition:transform .15s}
+.contact-box[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.contact-box>summary:hover{background:var(--soft)}
+.contact-body{padding:0 18px 18px}
+.contact-item{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--fg2);padding:7px 0;border-bottom:1px dashed var(--line)}
+.contact-item:last-child{border-bottom:0}
+.contact-item .k{font-weight:700;color:var(--fg);min-width:64px}
+.contact-item a{color:var(--blue);text-decoration:none}
+.contact-copy{margin-top:12px}
+footer{text-align:center;color:var(--fg3);font-size:11px;padding:20px 0 0;margin-top:8px}
 
-  /* ===== HELP 唤醒词速查列表（4 条 HELP 唤醒词） ===== */
-  .help-ww-list { padding: 6px 0; }
-  .help-ww-item {
-    display: flex; align-items: center; gap: 10px;
-    padding: 8px 12px; margin: 4px 0;
-    background: var(--code-bg); border-radius: 6px;
-  }
-  .help-ww-code {
-    flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-size: 14px; color: var(--accent); font-weight: 600;
-    word-break: break-all;
-  }
-  @keyframes copySuccess {
-    0%   { transform: scale(0.94); box-shadow: 0 0 0 0 rgba(52,199,89,0); }
-    50%  { transform: scale(1.10); box-shadow: 0 0 0 8px rgba(52,199,89,0.30); }
-    100% { transform: scale(1.05); box-shadow: 0 0 0 4px rgba(52,199,89,0.18); }
-  }
+/* ===== Toast ===== */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+.toast-icon{font-size:20px;line-height:1;padding-top:1px;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}
+.toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}
+.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}
 
-  /* ===== TOAST (iOS 风格通知) ===== */
-  .toast {
-    position: fixed; left: 50%; bottom: 32px;
-    transform: translateX(-50%) scale(0.9);
-    opacity: 0;
-    background: rgba(28,28,30,0.94);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
-    color: #f0f0f0;
-    border-radius: 14px;
-    padding: 13px 14px 13px 16px;
-    display: flex; align-items: flex-start; gap: 12px;
-    max-width: 480px; min-width: 320px;
-    box-shadow: 0 10px 32px rgba(0,0,0,0.32), 0 0 0 0.5px rgba(255,255,255,0.08) inset;
-    pointer-events: none;
-    transition: opacity 0.22s ease-out, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 9999;
-  }
-  .toast.show {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
-    pointer-events: auto;
-  }
-  .toast-icon { font-size: 22px; line-height: 1; padding-top: 1px; flex-shrink: 0; }
-  .toast-body { flex: 1; min-width: 0; }
-  .toast-title {
-    font-weight: 600; font-size: 13px; line-height: 1.4;
-    color: #fff; margin-bottom: 3px;
-  }
-  .toast-title em {
-    font-style: normal; color: #4dd96b; font-weight: 600;
-  }
-  .toast-detail { font-size: 11.5px; line-height: 1.55; color: #c8c8cc; }
-  .toast-close {
-    background: rgba(255,255,255,0.10);
-    color: #4dd96b;
-    border: 0; border-radius: 8px;
-    padding: 6px 10px; font-size: 11px; font-weight: 500;
-    font-family: inherit; cursor: pointer;
-    white-space: nowrap;
-    margin-left: 6px; flex-shrink: 0;
-    transition: background 0.12s;
-    -webkit-tap-highlight-color: transparent;
-  }
-  .toast-close:hover { background: rgba(255,255,255,0.18); }
-  .toast-close:active { transform: scale(0.96); }
-
-  /* ===== EMPTY / NO MATCH / FOOTER (紧凑 · 对齐卡路里 v2.4.12) ===== */
-  .empty, .no-match {
-    text-align: center; padding: 24px; color: var(--sub); font-size: 13px;
-    background: var(--card); border-radius: 8px;
-    box-shadow: var(--shadow); margin: 12px 0;
-  }
-  footer {
-    text-align: center; color: var(--sub); font-size: 10px;
-    padding: 12px 0 0; margin-top: 16px;
-  }
-
-  /* Hidden (search filter) */
-  .cat-block.hidden, .ww-block.hidden, .sc-block.hidden { display: none; }
-
-  /* === MOBILE (≤600px) === */
-  @media (max-width: 600px) {
-    body { font-size: 12.5px; }
-    .container { padding: 0 8px 60px; }
-    .hero { padding: 20px 0 14px; }           /* v11: 20/0/0 → 20/0/14 搜索栏下加 14px 留白 */
-    .hero .container { padding-bottom: 0; }   /* v10: 移动 container 内部 padding-bottom 60px → 0 */
-    .hero h1 { font-size: 21px; }
-    .hero .sub { font-size: 12px; }
-    .hero .stats { gap: 6px; font-size: 11.5px; }
-    .controls { margin: 12px 0 0; }                                /* v11: 合并到 hero 内,顶部 12px 间距 */
-    .controls input[type="search"] { font-size: 12.5px; padding: 7px 10px; }
-    .controls button { font-size: 11px; padding: 7px 8px; }
-    .cat-block > summary { padding: 8px 10px; font-size: 12.5px; }
-    .cat-content { padding: 4px 10px 8px; }
-    .ww-block > summary { padding: 7px 9px; }
-    .ww-content { padding: 0 9px 7px; }
-    .sc-block > summary {
-      display: flex;                                      /* v15: 去掉 dims 后回到 flex 布局,3 个元素就够 */
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 4px 6px;
-      padding: 8px 10px;                                  /* v13: 加大内边距,手指好按 */
-    }
-    .sc-title {
-      flex: 1 1 0%;                                       /* 标题吃满中间剩余宽度 */
-      min-width: 0;
-      font-size: 12.5px;
-      text-align: left;                                   /* v15: 明确左对齐 */
-    }
-    .sc-pending-tag {
-      font-size: 9px; padding: 1px 5px;                  /* 跟在标题右边 */
-      flex: 0 0 auto;
-    }
-    .sc-block > summary .copy-btn {
-      flex: 0 0 auto;
-      margin-left: auto;                                  /* 推到最右 */
-      padding: 5px 10px; font-size: 11px;
-    }
-    .sc-content { padding: 0 10px 8px; text-align: left; }              /* v15: 明确左对齐 */
-    .sc-prompt { font-size: 11px; line-height: 1.4; padding: 6px 9px; text-align: left; }
-    .sc-result { font-size: 11.5px; line-height: 1.4; margin: 6px 0 6px; text-align: left; }
-    .toast {
-      left: 12px; right: 12px;
-      bottom: calc(12px + env(safe-area-inset-bottom, 0));
-      transform: translateX(0) scale(0.95);
-      max-width: none; min-width: 0;
-      padding: 12px 12px 12px 14px;
-    }
-    .toast.show { transform: translateX(0) scale(1); }
-    .toast-icon { font-size: 20px; }
-    .toast-title { font-size: 12.5px; }
-    .toast-detail { font-size: 11px; }
-    body { padding-bottom: env(safe-area-inset-bottom, 0); }
-  }
-
-  /* === TABLET (601-900px) === */
-  @media (min-width: 601px) and (max-width: 900px) {
-    .container { max-width: 720px; }
-  }
+  /* ===== 移动适配(390px) ===== */
+@media(max-width:820px){
+  .wrap{padding:18px 12px 60px}
+  h1{font-size:24px}
+  .hero{padding:20px 18px}
+  .prompt-box{padding-top:44px;padding-right:12px}
+  .toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}
+  .toast.show{transform:translateX(0) scale(1)}
+  .init-banner{flex-direction:column;align-items:stretch;text-align:center}
+  .init-banner .copy-btn{width:100%}
+  /* 场景头部一行:隐藏低价值 id,标题截断,按钮紧凑 */
+  .scene>summary.scene-head{flex-wrap:nowrap;gap:4px;padding:9px 10px}
+  .scene-head .scene-id{display:none}
+  .scene-head .scene-title{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+  .scene-head .chip{font-size:10.5px;padding:1px 7px}
+  .scene-head .type-badge{font-size:10px;padding:1px 7px}
+  .scene-head .copy-btn{min-height:28px;min-width:56px;padding:0 10px;font-size:11px;margin-left:auto}
+  .copy-btn .copy-short{display:inline}
+  .copy-btn .copy-long{display:none}
+}
 </style>
 </head>
 <body>
 
-<div class="hero"><div class="container">
-  <h1>📚 饼干记账 · 唤醒词速查台</h1>
-  <div class="sub">💡 类别<span class="arrow">→</span>选唤醒词<span class="arrow">→</span>展开场景<span class="arrow">→</span>复制 prompt<span class="arrow">→</span>贴给 AI</div>
-  <div class="stats" id="heroStats"></div>
-  <div class="controls">
-    <input type="search" id="searchInput" placeholder="🔍 搜索唤醒词 / 场景标题 / prompt..." />
-    <button id="expandAll" type="button">📂 全部展开</button>
-    <button id="collapseAll" type="button">📁 全部折叠</button>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script><!--SHARED-HELPERS--></script>
+
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">Biscuit Accounting Help</div>
+    <h1>饼干记账 · 使用手册</h1>
+    <div class="hero-mode">
+      <div class="hero-steps">
+        <span class="step">🔍 找场景</span><span class="arrow">→</span>
+        <span class="step">📋 复制 prompt</span><span class="arrow">→</span>
+        <span class="step">💬 发给 AI</span>
+      </div>
+      <div class="hero-stats" id="heroStats"></div>
+    </div>
+    <p class="meta" id="heroMeta"></p>
+  </header>
+
+  <div class="init-banner" id="initBanner" hidden>
+    <div class="ib-text">
+      <div class="ib-title">🚀 第一次用饼干记账?</div>
+      <div class="ib-sub">从「初始化」开始 — 自动检测环境、确认数据目录、建库、验证,全程零决策。完成初始化后,本区域将不再出现。</div>
+    </div>
+    <button class="copy-btn" id="initCopy">📋 复制初始化 prompt</button>
   </div>
-</div></div>
 
-<div class="container">
-  <main id="mainContent"><div class="empty">加载中…</div></main>
+  <div class="search-wrap">
+    <div class="search-box">
+      <input id="sB" type="search" placeholder="输入即直达:搜索所有场景…" autocomplete="off">
+      <span class="s-icon">🔍</span>
+    </div>
+  </div>
 
-  <footer>
-    由 <code>references/scenarios.json</code> 派生 ·
-    <code>scripts/render_help.py</code> 渲染 · v2.4
-    <div id="generatedAt" style="margin-top:4px;"></div>
-  </footer>
+  <div id="mods"></div>
+
+  <details class="contact-box">
+    <summary>📮 联系作者(使用反馈 / 提 ISSUE / 报 Bug)</summary>
+    <div class="contact-body" id="contactBody"></div>
+  </details>
+
+  <footer id="footerLine"></footer>
 </div>
 
-<!-- ===== TOAST (iOS 风格) ===== -->
 <div id="toast" class="toast" role="status" aria-live="polite">
   <div class="toast-icon">📋</div>
   <div class="toast-body">
-    <div class="toast-title">已复制 <em id="toastWake">prompt</em></div>
-    <div class="toast-detail">粘贴给 AI（微信/飞书/任何 AI 工具），饼干记账技能会自动执行</div>
+    <div class="toast-title">已复制 <em id="toastWake" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+    <div class="toast-detail">粘贴给 AI,饼干记账技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div>
   </div>
   <button class="toast-close" id="toastClose">✓ 知道了</button>
 </div>
 
-
-
-<!--INJECT-DATA-->
-
-
-
 <script>
-// ===== XSS 防护 =====
-function esc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  })[c]);
-}
-
-// ===== 主流程: 读 payload =====
-function getPayload() {
-  // 兼容 §04 渲染器标准 + 本 skill 注入器模式
-  let data = window.__DATA__;
-  if (typeof data !== 'object' || data === null) {
-    const el = document.getElementById('payload');
-    if (el && el.textContent) {
-      try { data = JSON.parse(el.textContent); } catch(e) { return null; }
-    }
+(function(){
+  const el = document.getElementById('payload');
+  if (!el) return;
+  let payload;
+  try { payload = JSON.parse(el.textContent); } catch(e) { return; }
+  const v = validate(payload);
+  if (!v.ok) {
+    document.getElementById('mods').innerHTML = '<div class="search-empty">加载失败:' + esc(v.msg) + '</div>';
+    return;
   }
-  return data && data.data ? data.data : null;
-}
+  const d = payload.data;
+  const domains = arr(d.domains);
+  const contact = (d.contact && typeof d.contact === 'object') ? d.contact : {};
 
-// ===== Toast 控制器 =====
-const toastEl = document.getElementById('toast');
-const toastWakeEl = document.getElementById('toastWake');
-const toastCloseEl = document.getElementById('toastClose');
-let toastTimer = null;
-function showToast(wake) {
-  if (toastWakeEl) toastWakeEl.textContent = wake;
-  toastEl.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4500);
-}
-if (toastCloseEl) {
-  toastCloseEl.addEventListener('click', () => {
+  /* ===== 工具 ===== */
+  var copyTimer = null;
+  function flashBtn(btn,msg,ms){
+    if(!btn)return;
+    if(copyTimer){clearTimeout(copyTimer)}
+    var lbl = btn.querySelector('.copy-short');
+    if(!lbl || getComputedStyle(lbl).display==='none') lbl = btn.querySelector('.copy-long') || btn;
+    var old=lbl.textContent;lbl.textContent=msg;btn.classList.add('copied');
+    copyTimer=setTimeout(function(){lbl.textContent=old;btn.classList.remove('copied')},ms||1800);
+  }
+  function fallbackCopy(text){
+    try{
+      var ta=document.createElement('textarea');ta.value=text;
+      ta.style.cssText='position:fixed;left:-9999px;top:0';
+      document.body.appendChild(ta);ta.focus();ta.select();
+      var ok=false;try{ok=document.execCommand('copy')}catch(e){ok=false}
+      document.body.removeChild(ta);return ok;
+    }catch(e){return false}
+  }
+  function safeWriteText(text){
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      return navigator.clipboard.writeText(text).then(function(){return true}).catch(function(){return fallbackCopy(text)});
+    }
+    return Promise.resolve(fallbackCopy(text));
+  }
+  var toastEl=document.getElementById('toast');
+  var toastWakeEl=document.getElementById('toastWake');
+  var toastTimer=null;
+  function toastText(t){
+    if(toastWakeEl)toastWakeEl.textContent=t;
+    if(toastEl)toastEl.classList.add('show');
+    if(toastTimer)clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){if(toastEl)toastEl.classList.remove('show')},4500);
+  }
+  document.getElementById('toastClose').addEventListener('click',function(){
     toastEl.classList.remove('show');
-    clearTimeout(toastTimer);
+    if(toastTimer)clearTimeout(toastTimer);
   });
-}
-
-// ===== 复制 =====
-function fallbackCopy(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text;
-  ta.style.cssText = 'position:fixed;opacity:0';
-  document.body.appendChild(ta);
-  ta.focus(); ta.select();
-  try { document.execCommand('copy'); } catch(e) {}
-  document.body.removeChild(ta);
-}
-function doCopy(btn) {
-  const prompt = btn.getAttribute('data-prompt') || '';
-  const card = btn.closest('.sc-block');
-  let wake = '';
-  if (card) {
-    const ww = card.closest('.ww-block');
-    if (ww) wake = ww.querySelector('.ww-name')?.textContent.trim() || '';
-  }
-  showToast(wake || 'prompt');
-  const after = () => {
-    const orig = btn.textContent;
-    btn.textContent = '✓ 已复制';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(prompt).then(after).catch(() => { fallbackCopy(prompt); after(); });
-  } else {
-    fallbackCopy(prompt);
-    after();
-  }
-}
-
-// 供 summary 层 onclick 调用(对齐卡路里 ticket 07)
-function doCopyBtn(btn) {
-  const prompt = btn.getAttribute('data-prompt') || '';
-  const wwBlock = btn.closest('.ww-block');
-  let wake = '';
-  if (wwBlock) wake = wwBlock.querySelector('.ww-name')?.textContent.trim() || '';
-  showToast(wake || 'prompt');
-  const after = () => {
-    const orig = btn.textContent;
-    btn.textContent = '✓ 已复制';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
-  };
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(prompt).then(after).catch(() => { fallbackCopy(prompt); after(); });
-  } else {
-    fallbackCopy(prompt);
-    after();
-  }
-}
-
-// ===== 渲染 =====
-function render() {
-  const data = getPayload();
-  const mainEl = document.getElementById('mainContent');
-  const statsEl = document.getElementById('heroStats');
-
-  if (!data || !data.categories) {
-    mainEl.innerHTML = '<div class="empty">❌ 数据加载失败</div>';
-    return;
+  function copyPrompt(scene,btn){
+    toastText((scene.wake_word||'prompt')+' · '+(scene.scenario_title||''));
+    safeWriteText((scene.prompt||'').trim()).then(function(ok){flashBtn(btn,ok?'✓ 已复制':'✗ 复制失败',2000)});
   }
 
-  statsEl.innerHTML =
-    '<span><b>' + esc(data.categories.length) + '</b> 类别</span>' +
-    '<span><b>' + esc(data.wake_words_total) + '</b> 唤醒词</span>' +
-    '<span><b>' + esc(data.scenarios_total) + '</b> 场景</span>';
-
-  document.getElementById('generatedAt').textContent = '生成时间: ' + esc(data.generated_at || '');
-
-  if (!data.categories.length) {
-    mainEl.innerHTML = '<div class="empty">📭 暂无类别</div>';
-    return;
+  function typeClass(t){
+    if(!t)return 't-view';
+    if(t.indexOf('向导')>=0)return 't-wizard';
+    if(t.indexOf('采集')>=0)return 't-collect';
+    if(t.indexOf('选择')>=0)return 't-select';
+    if(t.indexOf('查看')>=0)return 't-view';
+    return 't-mixed';
+  }
+  function typeBadge(t){return '<span class="type-badge '+typeClass(t)+'">'+esc(t||'查看')+'</span>'}
+  function hl(text,q_){
+    if(!q_||!text)return esc(text);
+    var i=text.toLowerCase().indexOf(q_.toLowerCase());
+    if(i<0)return esc(text);
+    return esc(text.slice(0,i))+'<mark>'+esc(text.slice(i,i+q_.length))+'</mark>'+esc(text.slice(i+q_.length));
+  }
+  function sceneMatch(s,q_){
+    if(!q_)return true;
+    var hay=(s.wake_word+' '+s.scenario_title+' '+(s.sub||'')+' '+(s.id||'')+' '+(s.type||'')).toLowerCase();
+    return hay.indexOf(q_.toLowerCase())>=0;
   }
 
-  mainEl.innerHTML = data.categories.map(function(cat) {
-    return renderCategory(cat, data);
-  }).join('');
+  /* ===== 场景卡片(L3 复制按钮 + L4 详情复制按钮双放 · P1 裁决 #5) ===== */
+  function buildSceneCard(s,q_){
+    var card=document.createElement('details');card.className='scene';card.id='s-'+s.scenario_id;
+    var head=document.createElement('summary');head.className='scene-head';
+    head.innerHTML='<span class="scene-id">'+esc(s.id)+'</span>'
+      +'<span class="chip">'+esc(s.wake_word)+'</span>'
+      +'<span class="scene-title">'+hl(s.scenario_title,q_)+'</span>';
+    var btn=document.createElement('button');btn.className='copy-btn';
+    var bl=document.createElement('span');bl.className='copy-long';bl.textContent='📋 复制 prompt';
+    var bs=document.createElement('span');bs.className='copy-short';bs.textContent='复制';
+    btn.appendChild(bl);btn.appendChild(bs);
+    btn.onclick=function(e){if(e){e.preventDefault();e.stopPropagation()};copyPrompt(s,btn)};
+    head.appendChild(btn);
+    card.appendChild(head);
 
-  // 绑定复制按钮
-  mainEl.querySelectorAll('.copy-btn').forEach(b => {
-    if (b.__bound) return;
-    b.__bound = true;
-    b.addEventListener('click', () => doCopy(b));
-  });
+    var body=document.createElement('div');body.className='scene-body';
+    /* 类型徽章(08 流程类型)移入详情页:头部保持一行清爽,展开后可见 */
+    var tl=document.createElement('div');tl.className='scene-type';
+    tl.innerHTML='<span class="type-label">流程类型</span>'+typeBadge(s.type);
+    body.appendChild(tl);
+    var pb=document.createElement('div');pb.className='prompt-box';
+    pb.textContent=(s.prompt||'').trim();
+    var pin=document.createElement('button');pin.className='copy-inline';
+    var pl=document.createElement('span');pl.className='copy-long';pl.textContent='复制此 prompt';
+    var ps=document.createElement('span');ps.className='copy-short';ps.textContent='复制';
+    pin.appendChild(pl);pin.appendChild(ps);
+    pin.onclick=function(e){if(e)e.stopPropagation();copyPrompt(s,pin)};
+    pb.appendChild(pin);
+    body.appendChild(pb);
 
-  // 移动端 fallback toggle (部分 Android WebView 兼容)
-  bindFallbackToggle(mainEl);
-}
-
-// ===== L1 类别 =====
-function renderCategory(cat, payload) {
-  const wws = cat.wake_words || [];
-  // HELP 类别（第 5 类）特殊处理：cat.wake_words=[] 但应展示 4 条 HELP 唤醒词
-  // 来自 payload.help_wake_words（scenarios.json._meta.help_wake_words，与 SKILL.md §唤醒词总表同步）
-  if (cat.key === 'help') {
-    return '';
-  }
-  if (!wws.length) {
-    return '';  // 跳过其他空类别
-  }
-  const scCount = cat.scenario_count || 0;
-  const desc = cat.desc ? ' · <span class="cat-desc">' + esc(cat.desc) + '</span>' : '';
-  return '<details class="cat-block">' +
-    '<summary>' +
-      '<span class="cat-name">' + esc(cat.icon || '') + ' ' + esc(cat.name) + '</span>' +
-      desc +
-      '<span class="cat-count-pill">' + wws.length + '</span>' +
-    '</summary>' +
-    '<div class="cat-content">' + wws.map(renderWakeWord).join('') + '</div>' +
-    '</details>';
-}
-
-// ===== L2 唤醒词 =====
-function renderWakeWord(ww) {
-  const scs = ww.scenarios || [];
-  return '<details class="ww-block">' +
-    '<summary>' +
-      '<span class="ww-name">' + esc(ww.name) + '</span>' +
-      '<span class="ww-count">' + scs.length + '</span>' +
-    '</summary>' +
-    '<div class="ww-content">' + scs.map(renderScenario).join('') + '</div>' +
-    '</details>';
-}
-
-// ===== L3 场景 =====
-function renderScenario(sc) {
-  const isPending = sc.status === '【待开发】';
-  return '<details class="sc-block' + (isPending ? ' pending' : '') + '" data-search="' +
-    esc((sc.scenario_title || '') + ' ' + (sc.prompt || '')) + '">' +
-    '<summary>' +
-      '<span class="sc-title">' + esc(sc.scenario_title || '') + '</span>' +
-      (isPending ? '<span class="sc-pending-tag">【待开发】</span>' : '') +
-      '<button type="button" class="copy-btn copy-sc" data-prompt="' + esc(sc.prompt || '') + '" onclick="event.preventDefault(); event.stopPropagation(); doCopyBtn(this)">📋 复制</button>' +
-    '</summary>' +
-    '<div class="sc-content">' +
-      '<div class="sc-prompt">' + esc(sc.prompt || '') + '</div>' +
-      '<div class="sc-result">' + esc(sc.result || '') + '</div>' +
-    '</div>' +
-    '</details>';
-}
-
-// ===== 全部展开 / 折叠 =====
-function setAllDetails(open) {
-  document.querySelectorAll('#mainContent details').forEach(d => { d.open = open; });
-}
-document.getElementById('expandAll').addEventListener('click', () => setAllDetails(true));
-document.getElementById('collapseAll').addEventListener('click', () => setAllDetails(false));
-
-// ===== 搜索过滤 =====
-document.getElementById('searchInput').addEventListener('input', function() {
-  const q = this.value.trim().toLowerCase();
-  const cats = document.querySelectorAll('.cat-block');
-  let anyVisible = false;
-  cats.forEach(cat => {
-    const wws = cat.querySelectorAll('.ww-block');
-    let catHasVisible = false;
-    wws.forEach(ww => {
-      const scs = ww.querySelectorAll('.sc-block');
-      let wwHasVisible = false;
-      scs.forEach(sc => {
-        let match = q === '';
-        if (!match) {
-          const text = sc.getAttribute('data-search') || '';
-          match = text.toLowerCase().indexOf(q) !== -1;
-        }
-        sc.classList.toggle('hidden', !match);
-        if (match) wwHasVisible = true;
-      });
-      ww.classList.toggle('hidden', !wwHasVisible);
-      if (wwHasVisible) catHasVisible = true;
-    });
-    cat.classList.toggle('hidden', !catHasVisible);
-    if (catHasVisible) anyVisible = true;
-  });
-  let noMatch = document.getElementById('noMatch');
-  if (!anyVisible && q !== '') {
-    if (!noMatch) {
-      noMatch = document.createElement('div');
-      noMatch.id = 'noMatch';
-      noMatch.className = 'no-match';
-      document.getElementById('mainContent').appendChild(noMatch);
+    if(s.status){
+      var dev=document.createElement('div');dev.className='dev-banner';
+      dev.innerHTML='⚠️ '+esc(s.status)+'<span class="mini">· AI 收到此 prompt 必须停止执行并明确告知,不绕过/不假装/不降级(07 契约)</span>';
+      body.appendChild(dev);
     }
-    noMatch.textContent = '🔍 无匹配: "' + q + '"';
-  } else if (noMatch) {
-    noMatch.remove();
+    card.appendChild(body);
+    return card;
   }
-});
 
-// ===== 移动端 fallback toggle (§卡路里 v2.4.10 抗审查修) =====
-// 部分 Android WebView / 旧 iOS Safari 上 native <details> 因 tap-highlight / 子元素吞噬
-// 偶发不响应。监听 click, 50ms 后若状态没翻, 则强制翻。
-function bindFallbackToggle(scope) {
-  scope.querySelectorAll('.cat-block > summary, .ww-block > summary, .sc-block > summary').forEach(sum => {
-    if (sum.__bound_fb) return;
-    sum.__bound_fb = true;
-    sum.addEventListener('click', () => {
-      const det = sum.parentElement;
-      const wasOpen = det.open;
-      setTimeout(() => {
-        if (det.open === wasOpen) det.open = !wasOpen;
-      }, 50);
-    }, { passive: true });
+  /* ===== 分类模块(域 → 子功能 → 场景 · 4 层折叠) ===== */
+  function buildModule(domain){
+    var m=document.createElement('details');m.className='module';
+    var sum=document.createElement('summary');
+    var total=domain.subs.reduce(function(n,sub){return n+sub.scenes.length},0);
+    sum.innerHTML='<span class="module-head"><span class="m-icon">'+esc(domain.icon)+'</span>'+esc(domain.name)
+      +(total?'<span class="m-count">'+total+' 场景</span>':'');
+    m.appendChild(sum);
+    var body=document.createElement('div');body.className='module-body';
+    arr(domain.subs).forEach(function(sub){
+      var se=document.createElement('details');se.className='sub-module';
+      var ssum=document.createElement('summary');
+      ssum.innerHTML='<span class="sub-head"><span>'+esc(sub.name)+'</span><span class="scount">'+sub.scenes.length+' 场景</span></span>';
+      se.appendChild(ssum);
+      var sbody=document.createElement('div');sbody.className='module-body';
+      sub.scenes.forEach(function(s){sbody.appendChild(buildSceneCard(s,null))});
+      se.appendChild(sbody);
+      body.appendChild(se);
+    });
+    m.appendChild(body);
+    return m;
+  }
+
+  /* ===== 渲染 ===== */
+  var modsEl=document.getElementById('mods');
+  function renderMods(){
+    modsEl.innerHTML='';
+    /* 首次打开默认全部折叠(P1 裁决 #4 整卡展开 + 用户 2026-08-05 拍板:
+       不预展开任何域,目录保持一屏概览;#hash 直达时由 goToScene 展开目标链) */
+    domains.forEach(function(dom){modsEl.appendChild(buildModule(dom,false))});
+  }
+  renderMods();
+
+  /* hero meta + stats(用户友好文案:无 yaml 路径/总纲引用) */
+  var sum=(d.summary&&typeof d.summary==='object')?d.summary:{};
+  document.getElementById('heroStats').innerHTML=(arr(sum.metrics)||[]).map(function(m){
+    return '<span class="stat">'+esc(m.value)+' '+esc(m.label)+'</span>';
+  }).join('');
+  document.getElementById('heroMeta').textContent=
+    (sum.subtitle?esc(sum.subtitle):'');
+
+  /* 首次使用横幅(状态驱动 · P1 裁决 #3) */
+  var initBanner=document.getElementById('initBanner');
+  var initScene=null;
+  domains.forEach(function(dom){
+    arr(dom.subs).forEach(function(sub){
+      sub.scenes.forEach(function(s){if(s.scenario_id==='setup_init_wizard')initScene=s});
+    });
   });
-}
+  if(!d.initialized&&initScene){
+    initBanner.hidden=false;
+    document.getElementById('initCopy').onclick=function(e){copyPrompt(initScene,this)};
+  }
 
-// ===== 启动 =====
-try {
-  render();
-} catch (err) {
-  document.getElementById('mainContent').innerHTML =
-    '<div class="empty">❌ 渲染失败: ' + esc(err.message || '') + '</div>';
-  console.error(err);
-}
+  /* 联系作者 */
+  var cb=document.getElementById('contactBody');
+  var contactItems=[];
+  if(contact.email)contactItems.push(['邮箱',contact.email]);
+  if(contact.github)contactItems.push(['GitHub',contact.github]);
+  if(contact.issues)contactItems.push(['Issues',contact.issues]);
+  if(contact.phone)contactItems.push(['手机号',contact.phone]);
+  contactItems.forEach(function(it){
+    var dd=document.createElement('div');dd.className='contact-item';
+    var href=/^https?:/.test(it[1])?('href="'+esc(it[1])+'" target="_blank" rel="noopener"'):'';
+    dd.innerHTML='<span class="k">'+esc(it[0])+'</span><span>'+(href?'<a '+href+'>'+esc(it[1])+'</a>':esc(it[1]))+'</span>';
+    cb.appendChild(dd);
+  });
+  var cbtn=document.createElement('button');cbtn.className='copy-btn contact-copy';cbtn.textContent='一键复制全部联系信息';
+  cbtn.onclick=function(){
+    var t=contactItems.map(function(it){return it[0]+': '+it[1]}).join('\n');
+    toastText('全部联系信息');safeWriteText(t).then(function(ok){flashBtn(cbtn,ok?'✓ 已复制':'✗ 复制失败',2000)});
+  };
+  cb.appendChild(cbtn);
 
-// ===== 离线检测 =====
-window.addEventListener('offline', () => {
-  const t = document.createElement('div');
-  t.textContent = '📡 当前离线,页面可能过期';
-  t.style.cssText = 'position:fixed;top:0;left:0;right:0;padding:8px;background:#fff7e6;color:#ff9500;text-align:center;font-size:12px;z-index:9999;';
-  document.body.appendChild(t);
-});
+  document.getElementById('footerLine').textContent='饼干记账 v2.0 HELP · 使用手册';
+
+  /* ===== 场景直达(#hash 导航 · 分享/收藏/回访) ===== */
+  function openChain(el){
+    var n=el.parentNode;
+    while(n&&n!==document.body){
+      if(n.tagName==='DETAILS'){n.open=true}
+      n=n.parentNode;
+    }
+  }
+  function goToScene(scenario_id){
+    var el=document.getElementById('s-'+scenario_id);
+    if(!el)return;
+    openChain(el);
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+    el.style.transition='box-shadow .6s, border-color .6s';
+    el.style.boxShadow='0 0 0 3px rgba(0,122,255,.35)';
+    setTimeout(function(){el.style.boxShadow=''},2000);
+  }
+
+  /* 启动:URL #s-{scenario_id} → 展开祖先链 + 定位 */
+  var initHash=(location.hash||'').replace(/^#/,'');
+  if(initHash.indexOf('s-')===0){
+    setTimeout(function(){goToScene(initHash.slice(2))},120);
+  }
+
+  /* ===== / 快捷键聚焦搜索(输入时忽略) ===== */
+  document.addEventListener('keydown',function(e){
+    var tag=(e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||e.target.isContentEditable)return;
+    if(e.key==='/'){
+      e.preventDefault();
+      document.getElementById('sB').focus();
+    }
+  });
+
+  /* ===== 搜索:有词 → 平铺命中结果;无词 → 目录(变体 B 一屏直达) ===== */
+  var inpB=document.getElementById('sB');
+  inpB.addEventListener('input',function(){
+    var q_=this.value.trim();
+    if(!q_){renderMods();return}
+    var hits=[];
+    domains.forEach(function(dom){
+      arr(dom.subs).forEach(function(sub){
+        sub.scenes.forEach(function(s){if(sceneMatch(s,q_))hits.push(s)});
+      });
+    });
+    modsEl.innerHTML='';
+    if(hits.length===0){
+      var em=document.createElement('div');em.className='search-empty';
+      em.textContent='没有找到匹配「'+q_+'」的场景,换个词试试(唤醒词 / 场景名 / 子功能)。';
+      modsEl.appendChild(em);
+      return;
+    }
+    var hc=document.createElement('div');hc.className='hitcount';hc.textContent='命中 '+hits.length+' 个场景';
+    modsEl.appendChild(hc);
+    hits.forEach(function(s){modsEl.appendChild(buildSceneCard(s,q_))});
+  });
+})();
 </script>
-
 </body>
 </html>

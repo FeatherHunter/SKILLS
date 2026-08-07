@@ -98,7 +98,7 @@ def _assert_html_well_formed(html_path: Path, *, allow_error_state: bool = False
     # query_view.html 用 escapeHTML()，help.html 用 esc() —— 都是 XSS 守卫
     assert "escapeHTML" in text or ("function esc(" in text and "esc(" in text), \
         "缺 XSS 守卫函数（escapeHTML 或 esc）"
-    assert "error-card" in text or "renderError" in text or "渲染失败" in text, \
+    assert "error-card" in text or "renderError" in text or "渲染失败" in text or "加载失败" in text, \
         "缺错误态 fallback"
 
 
@@ -274,13 +274,16 @@ class TestHelpHtmlRender:
             f"HELP 文件名不应含 '能力速查'，实际: {fname}"
 
     def test_help_html_no_sc_dim(self, tmp_db_dir):
-        """v15 落地契约：渲染输出不含 .sc-dim（维度标签不再渲染）"""
+        """B2 契约(G4)：渲染输出无 .sc-dim(v15 遗留维度标签),含 B2 四级折叠类名"""
         rc, out, err, html_path = _run_render_help(tmp_db_dir)
         text = html_path.read_text(encoding="utf-8-sig")
         assert 'class="sc-dim"' not in text, \
-            "v15 模板应不再渲染 .sc-dim 维度标签（v15 设计契约）"
-        assert 'class="sc-title"' in text, \
-            "v15 模板应继续渲染 .sc-title 场景标题（防止模板被破坏到不渲染）"
+            "B2 模板不应再渲染 .sc-dim 维度标签(v15 设计契约)"
+        # G4 轮次 1:类名 .module/.sub-module/.scene 兼容 tools/双浏览器审查.py
+        assert ".module" in text and ".sub-module" in text and ".scene{" in text, \
+            "B2 模板应含四级折叠类名 .module/.sub-module/.scene(G4 契约)"
+        assert "scene-title" in text, \
+            "B2 模板应渲染 .scene-title 场景标题"
 
     def test_help_html_root_mirror_synced(self, tmp_db_dir):
         """v15 落地契约：render_help.py 末尾 auto-copy 把同一份 HTML 写到 SKILL 根目录的 饼干记账.html

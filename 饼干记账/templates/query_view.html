@@ -109,8 +109,8 @@
   .error-card h3 { color: var(--red); margin-bottom: 8px; font-size: 18px; }
   .error-card p { color: var(--fg2); font-size: 14px; }
 
-  /* 模板能力接口(08 §4 硬标准 · G4):toolbar / 弹层三选一 / B1 toast / 离线态 */
-  .toolbar { display: flex; gap: 10px; margin: -8px 0 16px; flex-wrap: wrap; }
+  /* 模板能力接口(08 §4 硬标准 · G4):toolbar 动作区 / 弹层三选一 / B1 toast / 离线态 */
+  .toolbar { display: flex; gap: 10px; margin: 4px 0 16px; flex-wrap: wrap; }
   .btn { display: inline-flex; align-items: center; justify-content: center; border: 0; background: var(--blue); color: #fff; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
   .btn:hover { background: #0a63ce; }
   .btn.ghost { background: #fff; color: var(--fg); border: 1px solid var(--border); }
@@ -147,11 +147,12 @@
 <body>
 <div class="container">
   <header class="header" id="header"></header>
+  <main id="app"></main>
+  <!-- 动作区(08 §2 通用骨架:内容区下方,页面底部) -->
   <div class="toolbar">
     <button class="btn" id="copyDataBtn">📋 复制数据</button>
     <button class="btn ghost" id="copyLogBtn">🛠 复制日志</button>
   </div>
-  <main id="app"></main>
   <footer class="footer" id="footer"></footer>
 </div>
 

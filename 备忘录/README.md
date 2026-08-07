@@ -1,84 +1,81 @@
 # 备忘录 (Memorandum)
 
-> 跨设备随手记录 · 结构化备忘 + 心愿 + 打卡 + 情绪追踪。
-> 29 个业务唤醒词 + 1 个 HELP 唤醒词,SQLite 持久化 + 飞书 task 双向联动。
+> 跨设备随手记录 · 首个「备忘 + 心愿 + 打卡 + 情绪」四分类一体、飞书 task 双向联动、开箱即用的 AI 备忘录技能。
+
+## 30 秒开始(安装)
+
+把下面这段话**原样复制**发给你的人工智能(Claude / opencode / 其他支持技能的 AI),它就会帮你把技能装好:
+
+```text
+请帮我安装「备忘录」技能。这是一个跨设备随手记录、支持备忘/心愿/打卡/情绪日记四类分类、
+心愿自动同步飞书任务的 AI 技能。请按以下步骤操作:
+1. 在 https://github.com/FeatherHunter/SKILLS 仓库中找到「备忘录」目录(含 script/memo_cli.py 的目录)
+2. 把整个「备忘录」目录复制到你本机的技能目录:
+   - Claude Code: ~/.claude/skills/备忘录
+   - opencode: ~/.config/opencode/skill/备忘录
+3. 复制完成后告诉我「安装完成」,然后我会说「首次使用」,请你按首次使用流程帮我完成初始化
+```
+
+安装完成后,对你的 AI 说 **「首次使用」**,它会引导你完成全部初始化——检测环境、安装依赖、初始化数据库、配置飞书联动(可选),全程零手动配置,并生成一份初始化报告。
 
 ## 这是什么
 
-备忘录是一个私人随手记录技能,把"想到就记"做到极致:你说口语化的一句,AI 帮你结构化成笔记 + 分类 + 子分类,需要时还能挂提醒、排期、媒体附件。它不是待办清单,不是笔记软件,而是"想到 - 说出 - 落地"的最短路径。
+备忘录是「想到 - 说出 - 落地」最短路径的随手记录技能:你说一句口语化的话,AI 帮你结构化成笔记 + 分类 + 子分类,需要时还能挂提醒、排期、媒体附件、跨设备同步。它不是待办清单,不是笔记软件,而是随手一记的私人助手。
 
-支持四类顶层分类:**备忘**(默认,日常记录)/ **心愿**(未来想做)/ **打卡**(已做到的事)/ **情绪日记**(情绪复盘)。每类下面可挂自由文本子分类(AI 智能推断 2 字)。心愿可自动同步飞书 task,完成时原子转换为打卡记录。
+**四大独有能力**(公开生态中独一无二):
 
-## 何时使用
+| 能力 | 说明 |
+|---|---|
+| 四分类一体 | 备忘(默认)/ 心愿(未来想做)/ 打卡(已做到)/ 情绪日记(情绪复盘),一句话自动归类,子分类由 AI 智能推断 |
+| 飞书 task 双向联动 | 心愿自动创建飞书任务,完成/改期双向对账(飞书优先四象限),生态内无对应物 |
+| 开箱即用 | 「首次使用」自动检测/安装/授权,零基础用户不用手动装任何东西 |
+| 零第三方依赖 | 纯 Python 标准库 + 本地 SQLite/FTS5,数据只存在你自己的设备上 |
 
-**适合**:
-- 通勤、走路、睡前想到一句话,不想打开 app 点 5 层菜单
-- 心愿/想法需要排期、提醒、跨设备同步
-- 习惯打卡、情绪周期复盘
-- 跨 Skill 联动(卡路里训练完记一条、记账后记备注、作息日程归档)
+## 功能速览
 
-**不适合**:
-- 长文档写作(用笔记软件)
-- 项目管理(用待办工具)
-- 复杂数据分析(用表格)
-- 需要团队协作的记录
+说 **「备忘录 HELP」** 查看完整功能手册(HTML 版,含全部 29 个业务唤醒词的用法)。常用唤醒词:
 
-对照卡路里(饮食) / 饼干记账(财务) / 居家管家(物品) / 作息管家(日程) — 各自独立 skill,通过共同唤醒词约定触发联动,不共享代码。
+| 类别 | 唤醒词 |
+|---|---|
+| 记录 | 记备忘、记心愿、记打卡、记情绪 |
+| 查找 | 搜备忘、看备忘、按时间搜备忘、查心愿、查打卡、查情绪 |
+| 修改 | 改备忘、删备忘、备忘改分类、备忘改子分类 |
+| 心愿 | 完成心愿、心愿排期(自动同步飞书) |
+| 提醒 | 记提醒、设提醒、看提醒、查已提醒备忘 |
+| 同步 | 备忘录同步(飞书双向对账) |
 
-## 快速开始
+> 口语化变体也能触发,如「帮我记一下:今天开了个会」「心愿:想学 Python」「明早 9 点叫我」。
 
-1. **读 SKILL.md** — AI 决策用完整规范(1038 行),Agent 必读
-2. **跑测试** — `cd 备忘录 && python -m pytest`(185 用例 · 17 秒 · 全过即可用)
-3. **看帮助** — `python script/memo_cli.py help` 生成可视化 HTML 手册(覆盖 skill 根 `备忘录.html`)
+## 数据与隐私
 
-新维护者:先读 `AGENTS.md`(26 行精炼入口) → 读 `README.md`(本文档) → 跑 `.scratch/grilling-alignment/verify.ps1` 一键验收。
+- **全部数据 = 1 个 SQLite 文件(memo.db)+ 媒体目录**,存在你自己的设备上,不经过任何云服务器
+- **默认位置**:Windows `D:\.db\memo.db` · Linux/macOS `~/.local/share/memo/memo.db`(WSL 有 /mnt/d 则 `/mnt/d/.db`)
+- **可选环境变量**:
+  - `SKILLS_DB_PATH`:数据库根目录(多技能共用)
+  - `MEMO_MEDIA_DIR`:媒体文件目录(默认 `media`)
+- **飞书联动**:可选。需要安装 lark-cli 并授权,只用于你授权的任务创建/同步操作;不配置则心愿→飞书、备忘录同步两个功能不可用,其余功能不受影响
 
 ## 文件清单
 
 ```
 备忘录/
-├── SKILL.md              # AI 决策用完整规范(1038 行 · SoT)
-├── AGENTS.md             # Agent 入口(26 行 · 项目定位/路径/决策/commit/HTML)
-├── README.md             # 本文档(新人 onboarding)
-├── CONTEXT.md            # 术语表(唤醒词/场景/4 元/4 段 prompt 等)
-├── CHANGELOG.md          # 变更日志(每个版本含 Tested-By)
-├── _meta.json            # 版本号镜像(SoT 为 SKILL.md frontmatter)
-├── pytest.ini            # pytest 配置(6 项 · --strict-markers)
-├── 备忘录.html            # SKILL.md 镜像(memo_cli help 自动生成)
-├── script/               # 5 个 Python 模块
-│   ├── memo_cli.py       # CLI 入口(add/search/update/delete/.../help)
-│   ├── memo_render.py    # HTML 渲染器(6 个 render_* 函数)
-│   ├── injector.py       # HTML 注入器(私有 · v1.1.0 教训)
-│   ├── feishu_sync.py    # 飞书 task 双向对账
-│   └── reminder_scheduler.py  # Cron 提醒调度
-├── templates/            # 6 个 HTML 模板
-│   ├── memo_help.html        # HELP 手册(4 状态 fallback)
-│   ├── memo_query.html       # 结果型查询页(复制按钮 + 富内容)
-│   ├── sync_report.html      # 同步报告(11 字段 + 3 步折叠)
-│   ├── wish_plan.html        # 过程型:心愿排期向导
-│   ├── wish_complete.html   # 过程型:心愿完成向导
-│   └── change_category.html # 过程型:批量改分类向导
-├── references/           # 场景资产 + 参考文档
-│   ├── scenarios.yaml    # 唯一事实源(29 场景 × 7 字段)
-│   ├── schema.md         # 数据库结构
-│   ├── examples.md       # 对话示例
-│   └── cron.md           # Cron 配置
-├── tests/                # 13 个 test_*.py(185 pytest · CLI 子进程主 seam)
-├── docs/adr/             # 5 个永久 ADR(B/A/D 各阶段决策归档)
-│   ├── 0001-version-sot.md
-│   ├── 0002-skill-md-dedup-and-dir-merge.md
-│   ├── 0003-b-execution-fallback.md
-│   ├── 0004-a-structure-files.md
-│   └── 0005-d-exemptions-and-rituals.md
-└── .scratch/<feature>/  # 临时工作目录(A.4 5 文件范式)
-    └── grilling-alignment/  # v1.1.5 整体重构工作目录
+├── SKILL.md              # AI 决策用完整规范(SoT)
+├── AGENTS.md             # Agent 入口(维护者指南)
+├── README.md             # 本文件(零基础用户入口)
+├── CONTEXT.md            # 术语表
+├── CHANGELOG.md          # 变更日志
+├── LICENSE               # MIT 许可证
+├── script/               # 5 个 Python 模块(memo_cli / memo_render / injector / feishu_sync / reminder_scheduler)
+├── templates/            # 6 个 HTML 模板(HELP / 查询 / 同步报告 / 3 个过程型向导)
+├── references/           # 场景资产(scenarios.yaml)+ schema / examples / cron
+├── tests/                # pytest 测试(326 用例 · pytest tests/)
+└── docs/adr/             # 架构决策记录(ADR-0001 ~ 0007)
 ```
 
-## 状态
+## 维护
 
-- **版本**:1.1.5(2026-07-28 发布 · git tag `v1.1.5`)
-- **测试基线**:185 passed + 1 xfailed(README.md 落地后转 pass)
-- **commit 格式**:全中文硬规则(`[备忘录] <主题> · <细节>` + `Tested-By:` 行末,详见 `docs/adr/0003` + `0005`)
-- **FAT 协议**:`exempt`(无 fresh agent,详见 `docs/adr/0005` D.1)
-- **已知问题**:无(v1.1.5 整体重构后无回归)
-- **HTML 镜像**:`备忘录.html` 由 `memo_cli.py help` 自动生成,`.githooks/pre-commit` 自动还原测试副产物
+维护者入口见 `AGENTS.md`(项目定位 / 路径约定 / 决策文件位置 / commit 规范)。跑测试:`cd 备忘录 && python -m pytest tests/`。
+
+## License
+
+MIT © FeatherHunter。详见 [LICENSE](./LICENSE)。

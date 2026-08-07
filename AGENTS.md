@@ -4,7 +4,7 @@
 
 ## 项目结构
 
-跨技能集装仓库，根目录并排放置多个独立技能（`备忘录/`、`卡路里/`、`居家管家/`、`饼干记账/`、`智剪工坊/`、`作息管家/`、`SKILL开发总纲V1.0/` 等）。每个技能是一个独立产品，各自维护 `AGENTS.md`、`CONTEXT.md`、`docs/adr/` 和 `.scratch/<feature>/` 工作目录。
+跨技能集装仓库，根目录并排放置多个独立技能（`备忘录/`、`卡路里/`、`居家管家/`、`私家大厨/`、`饼干记账/`、`智剪工坊/`、`作息管家/`、`SKILL开发总纲V1.0/` 等）。每个技能是一个独立产品，各自维护 `AGENTS.md`、`CONTEXT.md`、`docs/adr/` 和 `.scratch/<feature>/` 工作目录。
 
 ## 跨技能规范（任何技能的设计/规划/开发必读）
 
@@ -15,6 +15,7 @@
 - `04-可视化与注入v2.md` —— HTML 模板与注入原则
 - `07-HELP与场景完备性.md` —— HELP 契约
 - `05-工程仪式.md` —— FAT / Tested-By / hooks
+- **跨技能「首次使用」流程对齐**（2026-08-07 新增）—— 各技能的首次使用/初始化流程应跨技能保持一致（参考居家管家 `SM8.yaml` 实证，减少开发成本）；**该原则可能存在特例，应用前与用户确认**。
 
 ## Git 与远端
 
@@ -39,7 +40,7 @@ Tested-By: exempt(无 fresh agent · 详见 ADR-0005)
 
 ### Issue tracker
 
-GitHub Issues（`FeatherHunter/SKILLS`），按技能前缀分区：`[备忘录]` / `[卡路里]` / `[居家管家]` / `[饼干记账]` / `[智剪工坊]` / `[作息管家]` / `[SKILL开发总纲V1.0]`。详见 `docs/agents/issue-tracker.md`。
+GitHub Issues（`FeatherHunter/SKILLS`），按技能前缀分区：`[备忘录]` / `[卡路里]` / `[居家管家]` / `[私家大厨]` / `[饼干记账]` / `[智剪工坊]` / `[作息管家]` / `[SKILL开发总纲V1.0]`。详见 `docs/agents/issue-tracker.md`。
 
 ### Triage labels
 

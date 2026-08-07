@@ -1,0 +1,373 @@
+# scenes/analysis.yaml — 分析域场景注册(域唯一事实源 · 合并器 = 公共层脚本)
+# 场景 = 用户「想看/想分析的每一件事」(直达式 · 2026-08-08 人类裁定)
+# 场景名 = 用户视角功能描述(一看就懂);唤醒词 = 入口 chip
+# 边界:查询域 = 查记录/明细/状态;分析域 = 汇总/占比/对比/趋势/统计/洞察
+# 数据维度:category(多级)/time/amount(正收负支)/account/ledger/currency/note(#tag)
+# 交互:分析类 = 结果型 HTML(图表:SVG 环形/柱/折线/直方,离线可用)+ 复制数据/日志 + 5 状态
+version: "2.0"
+domain: analysis
+subs:
+  - name: 汇总
+    wake_words:
+      - wake_word: 看月度
+        scenes:
+          - id: analysis-1-1
+            scenario_id: monthly_summary
+            scenario_title: 某月收支汇总
+            type: 查看
+            status: ""
+            html: {template: "分析/monthly.html", command_cn: "月度汇总", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看某个月的收支汇总(唤醒词:看月度):
+
+                月: ____ (如:本月 / 上月 / 3月 / 2026-03)
+            result: "结果型 HTML:KPI4(支出/收入/净额/笔数)+ 分类排行条 + 区间标注;空 → 空态"
+
+      - wake_word: 看年度
+        scenes:
+          - id: analysis-2-1
+            scenario_id: yearly_summary
+            scenario_title: 年度收支汇总
+            type: 查看
+            status: ""
+            html: {template: "分析/yearly.html", command_cn: "年度汇总", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看某年的收支汇总(唤醒词:看年度):
+
+                年: ____ (如:今年 / 2026 / 去年)
+            result: "结果型 HTML:总 KPI(全年支出/收入/净额/笔数)+ 逐月趋势表 + 大额分类 TOP"
+
+      - wake_word: 看总览
+        scenes:
+          - id: analysis-3-1
+            scenario_id: range_overview
+            scenario_title: 时间段收支总览
+            type: 查看
+            status: ""
+            html: {template: "分析/overview.html", command_cn: "收支总览", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看某段时间的收支总览(唤醒词:看总览):
+
+                开始日期: ____ (选填,默认本月1号)
+                结束日期: ____ (选填,默认今天)
+            result: "结果型 HTML:4 KPI + 日均支出 + 区间标注;空 → 空态"
+
+      - wake_word: 看周报
+        scenes:
+          - id: analysis-4-1
+            scenario_id: week_brief
+            scenario_title: 本周简报(对比上周)
+            type: 查看
+            status: ""
+            html: {template: "分析/week.html", command_cn: "周报", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看本周简报(唤醒词:看周报):
+
+                周: ____ (选填,本周 / 上周)
+            result: "结果型 HTML:本周 KPI + 本周 vs 上周双卡简报(支出变化率)+ 本周大额支出"
+
+  - name: 结构
+    wake_words:
+      - wake_word: 看分类
+        scenes:
+          - id: analysis-5-1
+            scenario_id: category_breakdown
+            scenario_title: 钱花在哪些分类
+            type: 查看
+            status: ""
+            html: {template: "分析/category.html", command_cn: "分类占比", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看钱花在哪些分类(唤醒词:看分类):
+
+                时  间: ____ (选填,如:本月 / 5月 / 5月1到10号)
+                账  户: ____ (选填,如:支付宝)
+                收  支: ____ (选填,支出/收入/全部,默认支出)
+            result: "结果型 HTML:SVG 环形图 + 排行(总额/占比/笔数/均值);点分类 → 下钻明细(本地只读)"
+
+      - wake_word: 看账户
+        scenes:
+          - id: analysis-6-1
+            scenario_id: account_breakdown
+            scenario_title: 各账户花销情况
+            type: 查看
+            status: ""
+            html: {template: "分析/account.html", command_cn: "账户占比", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看各账户的花销情况(唤醒词:看账户):
+
+                时  间: ____ (选填,如:本月 / 上月)
+            result: "结果型 HTML:账户占比条 + 各账户汇总(支出/收入/净额)"
+
+      - wake_word: 看账本
+        scenes:
+          - id: analysis-7-1
+            scenario_id: ledger_summary
+            scenario_title: 各账本收支汇总
+            type: 查看
+            status: ""
+            html: {template: "分析/ledger.html", command_cn: "账本汇总", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看各账本的收支汇总(唤醒词:看账本):
+
+                时  间: ____ (选填,如:本月)
+            result: "结果型 HTML:各账本汇总卡(生活/旅行/借贷:支出/收入/净额)+ 占比"
+
+      - wake_word: 看结构
+        scenes:
+          - id: analysis-8-1
+            scenario_id: income_expense_structure
+            scenario_title: 收入支出来源去向
+            type: 查看
+            status: ""
+            html: {template: "分析/structure.html", command_cn: "收支结构", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看收入和支出的结构(唤醒词:看结构):
+
+                时  间: ____ (选填,如:本月 / 5月)
+            result: "结果型 HTML:双环形图(收入来源结构 + 支出去向结构)"
+
+  - name: 对比
+    wake_words:
+      - wake_word: 看对比
+        scenes:
+          - id: analysis-9-1
+            scenario_id: period_compare
+            scenario_title: 本期和上期对比
+            type: 查看
+            status: ""
+            html: {template: "分析/compare.html", command_cn: "周期对比", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看本期和上期对比(唤醒词:看对比):
+
+                周  期: ____ (如:本周vs上周 / 本月vs上月 / 今年vs去年)
+            result: "结果型 HTML:双卡(本期/上期:笔数/支出/收入/净额)+ 变化率徽章(↑↓→)"
+
+      - wake_word: 看双区间
+        scenes:
+          - id: analysis-10-1
+            scenario_id: range_compare
+            scenario_title: 两段时间对比
+            type: 查看
+            status: ""
+            html: {template: "分析/compare.html", command_cn: "双区间对比", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我对比两段时间(唤醒词:看双区间):
+
+                区间一: ____ (如:5月 / 5月1到10号)
+                区间二: ____ (如:6月 / 6月1到10号)
+            result: "结果型 HTML:双卡并排(区间一/区间二)+ 变化率 + 分类差异提示"
+
+      - wake_word: 看同比
+        scenes:
+          - id: analysis-11-1
+            scenario_id: year_over_year
+            scenario_title: 今年和去年同比
+            type: 查看
+            status: ""
+            html: {template: "分析/compare.html", command_cn: "同比", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看同比对比(唤醒词:看同比):
+
+                月: ____ (如:本月 / 6月)
+            result: "结果型 HTML:今年 vs 去年同月双卡 + 变化率"
+
+      - wake_word: 看分类对比
+        scenes:
+          - id: analysis-12-1
+            scenario_id: category_compare
+            scenario_title: 两段时间分类差异
+            type: 查看
+            status: ""
+            html: {template: "分析/cat_compare.html", command_cn: "分类对比", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看两段时间的分类差异(唤醒词:看分类对比):
+
+                区间一: ____ (如:5月)
+                区间二: ____ (如:6月)
+            result: "结果型 HTML:分类差异 TOP(金额变化最大/笔数变化最大)对比条形"
+
+  - name: 趋势
+    wake_words:
+      - wake_word: 看趋势
+        scenes:
+          - id: analysis-13-1
+            scenario_id: monthly_trend
+            scenario_title: 每月收支走势
+            type: 查看
+            status: ""
+            html: {template: "分析/trend.html", command_cn: "收支趋势", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看每月的收支走势(唤醒词:看趋势):
+
+                月  数: ____ (选填,近 6 / 12 个月,默认 12)
+            result: "结果型 HTML:SVG 双线折线(支出/收入逐月)+ 峰值标注 + 月均;点某月 → 下钻月度汇总"
+
+      - wake_word: 看分类趋势
+        scenes:
+          - id: analysis-14-1
+            scenario_id: category_trend
+            scenario_title: 某分类的月度变化
+            type: 查看
+            status: ""
+            html: {template: "分析/cat_trend.html", command_cn: "分类趋势", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看某分类的月度变化(唤醒词:看分类趋势):
+
+                分  类: ____ (如:餐饮 / 出行)
+                月  数: ____ (选填,近 6 / 12 个月,默认 12)
+            result: "结果型 HTML:折线/柱状(该分类逐月支出)+ 月均 + 峰值月"
+
+  - name: 金额
+    wake_words:
+      - wake_word: 看大额
+        scenes:
+          - id: analysis-15-1
+            scenario_id: top_expense
+            scenario_title: 大额支出排行
+            type: 查看
+            status: ""
+            html: {template: "分析/top.html", command_cn: "大额排行", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看大额支出排行(唤醒词:看大额):
+
+                条  数: ____ (选填,默认 10)
+                时  间: ____ (选填,如:本月 / 5月)
+            result: "结果型 HTML:支出 TOP N 排行(金额/分类/日期/备注);空 → 空态"
+
+      - wake_word: 看高频
+        scenes:
+          - id: analysis-16-1
+            scenario_id: top_frequency
+            scenario_title: 高频消费排行
+            type: 查看
+            status: ""
+            html: {template: "分析/top.html", command_cn: "高频排行", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看高频消费排行(唤醒词:看高频):
+
+                时  间: ____ (选填,如:本月 / 近30天)
+                条  数: ____ (选填,默认 10)
+            result: "结果型 HTML:分类笔数 TOP(笔数/总金额/单均)+ 最近一笔时间"
+
+      - wake_word: 看分布
+        scenes:
+          - id: analysis-17-1
+            scenario_id: amount_distribution
+            scenario_title: 金额区间分布
+            type: 查看
+            status: ""
+            html: {template: "分析/distribution.html", command_cn: "金额分布", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看金额区间分布(唤醒词:看分布):
+
+                时  间: ____ (选填,如:本月 / 5月)
+                收  支: ____ (选填,支出/收入,默认支出)
+            result: "结果型 HTML:SVG 直方图(区间:<10 / 10-50 / 50-100 / 100-500 / 500+)+ 各区间笔数/占比"
+
+  - name: 统计洞察
+    wake_words:
+      - wake_word: 做统计
+        scenes:
+          - id: analysis-18-1
+            scenario_id: stats
+            scenario_title: 记账情况统计
+            type: 查看
+            status: ""
+            html: {template: "分析/stats.html", command_cn: "记账统计", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看记账情况统计(唤醒词:做统计):
+            result: "结果型 HTML:总笔数/记账天数/日均笔数/首末记录时间 + 月度分布"
+
+      - wake_word: 看活跃
+        scenes:
+          - id: analysis-19-1
+            scenario_id: activity
+            scenario_title: 记账活跃度
+            type: 查看
+            status: ""
+            html: {template: "分析/activity.html", command_cn: "活跃度", data_source: "bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看记账活跃度(唤醒词:看活跃):
+            result: "结果型 HTML:周几分布柱状(哪天记最多)+ 时段分布(几点记)"
+
+      - wake_word: 看洞察
+        scenes:
+          - id: analysis-20-1
+            scenario_id: insight
+            scenario_title: AI 消费洞察
+            type: 查看
+            status: ""
+            html: {template: "分析/insight.html", command_cn: "消费洞察", data_source: "bills + 洞察生成器"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看 AI 消费洞察(唤醒词:看洞察):
+
+                时  间: ____ (选填,如:本月 / 近90天,默认近30天)
+            result: "结果型 HTML:洞察卡(AI 分析:消费习惯/异常波动/省钱建议);接洞察生成器(公共层)"
+
+      - wake_word: 看异常
+        scenes:
+          - id: analysis-21-1
+            scenario_id: anomaly
+            scenario_title: 异常波动检测
+            type: 查看
+            status: ""
+            html: {template: "分析/anomaly.html", command_cn: "异常检测", data_source: "bills + 洞察生成器"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看异常波动(唤醒词:看异常):
+
+                时  间: ____ (选填,近 N 个月,默认 6)
+            result: "结果型 HTML:突增月/暴涨分类检测列表(幅度/对比/建议核对);接洞察生成器"
+
+  - name: 状态聚合
+    wake_words:
+      - wake_word: 看借贷
+        scenes:
+          - id: analysis-22-1
+            scenario_id: debt_summary
+            scenario_title: 借贷总览
+            type: 查看
+            status: ""
+            html: {template: "分析/debt.html", command_cn: "借贷总览", data_source: "bills(#借贷)"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看借贷总览(唤醒词:看借贷):
+            result: "结果型 HTML:借出未还总额 + 借入未还总额 + 对象列表 + 已还/未还统计;查 #未还/#已还 聚合"
+
+      - wake_word: 看报销
+        scenes:
+          - id: analysis-23-1
+            scenario_id: reimburse_summary
+            scenario_title: 报销汇总
+            type: 查看
+            status: ""
+            html: {template: "分析/reimburse.html", command_cn: "报销汇总", data_source: "bills(#待报销)"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看报销汇总(唤醒词:看报销):
+
+                时  间: ____ (选填,如:本月)
+            result: "结果型 HTML:待报销总额 + 已到账总额 + 历史报销列表;查 #待报销/#报销到账 聚合"
+
+      - wake_word: 看分期
+        scenes:
+          - id: analysis-24-1
+            scenario_id: installment_summary
+            scenario_title: 分期总览
+            type: 查看
+            status: ""
+            html: {template: "分析/installment.html", command_cn: "分期总览", data_source: "bills(#分期)"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看分期总览(唤醒词:看分期):
+            result: "结果型 HTML:进行中分期卡(名目/总额/每期/期数/已还/剩余期数+金额)+ 历史分期;查 #分期 聚合"
+
+      - wake_word: 看退款
+        scenes:
+          - id: analysis-25-1
+            scenario_id: refund_summary
+            scenario_title: 退款统计
+            type: 查看
+            status: ""
+            html: {template: "分析/refund.html", command_cn: "退款统计", data_source: "bills(#退款)"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看退款统计(唤醒词:看退款):
+
+                时  间: ____ (选填,如:本月)
+            result: "结果型 HTML:退款总额/次数 + 月份分布 + 退款明细;查 #退款/#已退款 聚合"

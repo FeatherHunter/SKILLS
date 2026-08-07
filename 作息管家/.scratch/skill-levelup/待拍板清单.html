@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>待拍板 · 作息管家 L 级重构（规格阶段）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #fafafa;
+    --card: #ffffff;
+    --line: #e4e7ec;
+    --line-soft: #eef0f4;
+    --text: #14171e;
+    --text-2: #3a4256;
+    --muted: #7c7a72;
+    --accent: #3b82f6;
+    --accent-soft: rgba(59,130,246,.08);
+    --ok: #10b981;
+    --ok-soft: rgba(16,185,129,.10);
+    --warn: #f59e0b;
+    --warn-soft: rgba(245,158,11,.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Outfit', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 40px 24px 64px; }
+
+  /* header */
+  .kicker {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; letter-spacing: .02em;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 4px 12px; border-radius: 999px;
+  }
+  h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 8px; }
+  .sub { color: var(--text-2); font-size: 14px; max-width: 620px; }
+
+  /* summary strip */
+  .strip {
+    margin: 22px 0 26px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 14px; padding: 12px 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .strip .stat { display: flex; align-items: baseline; gap: 8px; }
+  .strip .num { font-size: 20px; font-weight: 700; color: var(--ok); }
+  .strip .hint { color: var(--muted); font-size: 12.5px; }
+  .pills { display: flex; gap: 8px; }
+  .pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: var(--line-soft); color: var(--text-2); }
+  .pill.done { background: var(--ok-soft); color: var(--ok); }
+
+  /* decision cards */
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 16px; padding: 20px 22px 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+    transition: box-shadow .2s;
+  }
+  .card:hover { box-shadow: 0 4px 16px -2px rgba(0,0,0,.06); }
+  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+  .card-idx {
+    flex: none; width: 26px; height: 26px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft); color: var(--accent);
+    font-weight: 700; font-size: 13px;
+  }
+  .card-title { font-size: 16.5px; font-weight: 700; }
+  .card .ctx { color: var(--text-2); font-size: 13.5px; margin: 6px 0 4px; }
+  .card .ctx b { color: var(--text); font-weight: 600; }
+  .files {
+    display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 4px;
+  }
+  .file {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    font-size: 11.5px; color: var(--text-2);
+    background: var(--line-soft); border-radius: 6px; padding: 2px 8px;
+  }
+  .impact { font-size: 12.5px; color: var(--muted); margin: 6px 0 12px; }
+  .impact::before { content: "影响 "; color: var(--warn); font-weight: 600; }
+
+  .opts { display: flex; gap: 10px; flex-wrap: wrap; }
+  .opt {
+    flex: 1; min-width: 200px;
+    border: 1.5px solid var(--line); border-radius: 12px;
+    padding: 10px 14px; cursor: pointer;
+    transition: all .15s;
+    display: flex; align-items: flex-start; gap: 10px;
+    background: var(--card);
+  }
+  .opt:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .opt .tag {
+    flex: none; font-size: 12px; font-weight: 700;
+    width: 22px; height: 22px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--line-soft); color: var(--text-2);
+  }
+  .opt .txt { font-size: 13.5px; color: var(--text-2); }
+  .opt .txt b { display: block; font-size: 13.5px; color: var(--text); margin-bottom: 1px; }
+  .opt.sel { border-color: var(--ok); background: var(--ok-soft); }
+  .opt.sel .tag { background: var(--ok); color: #fff; }
+  .opt.rec .tag::after { content: ""; }
+  .opt .rec-badge {
+    margin-left: auto; align-self: flex-start;
+    font-size: 10.5px; font-weight: 700; color: var(--ok);
+    background: var(--ok-soft); padding: 2px 8px; border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  /* fixed section */
+  .done-box {
+    margin-top: 30px;
+    background: var(--card); border: 1px dashed var(--line);
+    border-radius: 16px; padding: 20px 22px;
+  }
+  .done-box h3 { font-size: 15px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .done-item {
+    display: flex; gap: 10px; padding: 7px 0;
+    border-bottom: 1px dashed var(--line-soft); font-size: 13.5px; color: var(--text-2);
+  }
+  .done-item:last-child { border-bottom: none; }
+  .done-item .ok {
+    flex: none; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--ok-soft); color: var(--ok);
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px;
+  }
+
+  footer {
+    margin-top: 34px; text-align: center; color: var(--muted); font-size: 12.5px;
+  }
+  footer code {
+    background: var(--line-soft); padding: 2px 8px; border-radius: 6px;
+    font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px;
+  }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 25px; }
+    .wrap { padding: 28px 16px 48px; }
+    .opt { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <span class="kicker">规格阶段 · wayfinder map #190</span>
+  <h1>待你拍板的 5 件事</h1>
+  <p class="sub">作息管家 L 级重构，规格阶段已产出 map + 4 张票，R2 处置清单已定稿。剩下 5 个决策等你点头——每项都有我的建议，全按推荐就是 5 个 A。</p>
+
+  <div class="strip">
+    <div class="stat"><span class="num" id="cnt">0</span><span class="hint">/ 5 已按推荐</span></div>
+    <div class="pills"><span class="pill" id="pillA">A 全部采纳</span><span class="pill" id="pillB">B 有异议</span></div>
+  </div>
+
+  <!-- 1 -->
+  <div class="card" data-idx="1">
+    <div class="card-head"><span class="card-idx">1</span><span class="card-title">R2 处置清单整体采纳</span></div>
+    <p class="ctx">16 项开源清仓处置清单已定稿（commit <b>61ddcd8</b> + issue #191）：删 3 个直连脚本 / 收敛 batch-add / 路径统一解析器 / 白名单迁移 / 新增 MIT LICENSE / 文档 8 处清理。这是实施阶段的直接输入。</p>
+    <div class="impact">采纳 = 实施阶段按清单逐项执行；有异议趁现在提，进了实施阶段就不改了。</div>
+    <div class="opts">
+      <div class="opt rec sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>采纳</b>清单整体为规格定稿，实施阶段照做</span>
+        <span class="rec-badge">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>先改再采纳</b>逐条过，有异议的现在说</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2 -->
+  <div class="card" data-idx="2">
+    <div class="card-head"><span class="card-idx">2</span><span class="card-title">`.notes/` 内部过程产物</span></div>
+    <p class="ctx">5 个文件已跟踪：<b>一次性脚本</b>（docstring 自述"生成后废弃"）+ 4 份内部审查/过程 HTML。</p>
+    <div class="files"><span class="file">_gen_scenarios.py</span><span class="file">fat-skill-optimize-2026-07-29.md</span><span class="file">grilling-session.html</span><span class="file">issues-summary.html</span><span class="file">review-html-改造方案.html</span></div>
+    <div class="impact">仓库开源后这些内部过程痕迹全部可见，无保留价值。</div>
+    <div class="opts">
+      <div class="opt rec sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>删除</b>整目录 git rm + 忽略 .notes/</span>
+        <span class="rec-badge">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>保留</b>不动，开源照常暴露</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card" data-idx="3">
+    <div class="card-head"><span class="card-idx">3</span><span class="card-title">`.out-of-scope/README.md`</span></div>
+    <p class="ctx">triage wontfix 记录机制的<b>规范说明文件</b>（仓库统一结构，7 个技能各一份）。不含敏感内容。</p>
+    <div class="impact">开源后可见，属于仓库内部工作流协议的一部分，但对使用者无价值也无害。</div>
+    <div class="opts">
+      <div class="opt rec sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>保留</b>作为仓库规范的一部分，不特殊处理</span>
+        <span class="rec-badge">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>移出</b>仓库（git rm），内部流程不再留痕</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card" data-idx="4">
+    <div class="card-head"><span class="card-idx">4</span><span class="card-title">仓库级 3 个 `__pycache__`</span></div>
+    <p class="ctx">属于<b>其他技能</b>目录的已跟踪 .pyc：根 .gitignore:33 本有 `__pycache__/` 规则，属"规则与实际不符"漂移，与本 effort 无关。</p>
+    <div class="files"><span class="file">iflytek-ocr-to-en-word/.../pdf_ocr.cpython-313.pyc</span><span class="file">iflytek-ocr-to-en-word/.../ocr_translate.pyc</span><span class="file">学习系统/.../progress_api.pyc</span></div>
+    <div class="impact">超出"只处理作息管家"的 scope（Out of scope 已定）；顺手清是一条命令，但越了界。</div>
+    <div class="opts">
+      <div class="opt rec sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>不动</b>留给各技能自己重构时处理</span>
+        <span class="rec-badge">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>顺手清</b>git rm -r --cached 一次到位（跨技能动刀）</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5 -->
+  <div class="card" data-idx="5">
+    <div class="card-head"><span class="card-idx">5</span><span class="card-title">Frontier 先开哪张票</span></div>
+    <p class="ctx">map frontier 两张可认领：#192 <b>R3 onboarding 设计</b>（prototype · 对应优先级第二"零基础用户"）和 #193 <b>G1 领域第一功能定标</b>（grilling · 对应优先级第三"领域第一"）。互不阻塞，先开哪张决定下一 session 干什么。</p>
+    <div class="impact">R3 = agent 出 onboarding 原型给你看（快）；G1 = 你和我一起 grill 定功能清单（费神）。按 Q1 优先级顺序，先啃零基础更顺。</div>
+    <div class="opts">
+      <div class="opt rec sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>先 R3</b>onboarding 三段式设计出原型</span>
+        <span class="rec-badge">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>先 G1</b>领域第一功能定标（深度+广度清单）</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="done-box">
+    <h3>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      已定案 · 无需再拍板
+    </h3>
+    <div class="done-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>migrate_plan_to_events.py：<b>保留</b>——已查证走 schedule_db 统一 DB 路径 + 幂等设计，无硬编码无风险，不违反任何约定</div>
+    <div class="done-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>git 历史：<b>不清理、不提及</b>（Q10 拍板，README 不存在所以零动作）</div>
+    <div class="done-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>交互铁律 v2：<b>已定</b>（Q11，HTML + 复制 prompt 闭环，一步直达/多轮过程/多轮变种）</div>
+  </div>
+
+  <footer>
+    回复格式：数字 + 选项，如 <code>1A 2A 3A 4A 5A</code>；全按推荐直接说 <code>全A</code>
+  </footer>
+</div>
+
+<script>
+  const cards = document.querySelectorAll('.card');
+  const cnt = document.getElementById('cnt');
+  const pillA = document.getElementById('pillA');
+  const pillB = document.getElementById('pillB');
+
+  function refresh() {
+    const chosen = [];
+    cards.forEach(c => {
+      const sel = c.querySelector('.opt.sel');
+      if (sel) chosen.push(c.dataset.idx + sel.dataset.v);
+    });
+    cnt.textContent = chosen.length;
+    if (chosen.length === cards.length && chosen.every(v => v.endsWith('A'))) {
+      pillA.style.background = 'var(--ok-soft)'; pillA.style.color = 'var(--ok)';
+      pillB.style.background = 'var(--line-soft)'; pillB.style.color = 'var(--text-2)';
+    } else if (chosen.length === cards.length) {
+      pillB.style.background = 'var(--warn-soft)'; pillB.style.color = 'var(--warn)';
+      pillA.style.background = 'var(--line-soft)'; pillA.style.color = 'var(--text-2)';
+    } else {
+      pillA.style.background = 'var(--line-soft)'; pillA.style.color = 'var(--text-2)';
+      pillB.style.background = 'var(--line-soft)'; pillB.style.color = 'var(--text-2)';
+    }
+  }
+
+  cards.forEach(card => {
+    card.querySelectorAll('.opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        card.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+        opt.classList.add('sel');
+        refresh();
+      });
+    });
+  });
+
+  refresh();
+</script>
+</body>
+</html>

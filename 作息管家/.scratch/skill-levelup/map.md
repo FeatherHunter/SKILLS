@@ -24,7 +24,7 @@
 
 ## Decisions so far
 
-<!-- 规格阶段刚开，暂无 closed ticket；每关一张票在此补一行：票名 — 答案 gist -->
+- [R2 开源准备处置](https://github.com/FeatherHunter/SKILLS/issues/191) — 16 项清仓清单定稿并**人类采纳**（2026-08-07）：删 direct_add/batch_add_morning/plan_*.json；batch_add 收敛为 CLI `batch-add`；路径统一 `get_db_base_dir()` 解析器；白名单迁出 .db/；新增 MIT 子 LICENSE；文档 8 处清理。观察项：`.notes/` 删、`.out-of-scope/README.md` 留、跨技能 pycache 不动、migrate_plan_to_events.py 保留（已走统一路径）。
 
 ## Not yet specified
 
@@ -47,9 +47,9 @@
 
 | # | 票名 | 类型 | 状态 | 阻塞 |
 |---|---|---|---|---|
-| #191 | [R2 开源准备处置](https://github.com/FeatherHunter/SKILLS/issues/191) | wayfinder:research | open | — |
-| #192 | [R3 onboarding 三段式设计](https://github.com/FeatherHunter/SKILLS/issues/192) | wayfinder:prototype | open | — |
+| #191 | [R2 开源准备处置](https://github.com/FeatherHunter/SKILLS/issues/191) | wayfinder:research | ✅ closed | — |
+| #192 | [R3 onboarding 三段式设计](https://github.com/FeatherHunter/SKILLS/issues/192) | wayfinder:prototype | 🔵 claimed（先开） | — |
 | #193 | [G1 领域第一功能定标](https://github.com/FeatherHunter/SKILLS/issues/193) | wayfinder:grilling | open | — |
 | #194 | [G2 场景枚举定标](https://github.com/FeatherHunter/SKILLS/issues/194) | wayfinder:task | open | ← G1(#193) + R3(#192) |
 
-Frontier（可认领）：#191 R2 / #192 R3 / #193 G1。
+Frontier（可认领）：#193 G1（grilling，需人类参与）。#192 R3 已按人类拍板认领优先开。

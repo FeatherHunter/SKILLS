@@ -72,6 +72,22 @@ QUERY_TYPES = {
     "stats":     {"title": "记账统计",        "subtitle": "总笔数 / 天数 / 首末时间"},
 }
 
+# 模板能力接口(08 §4 硬标准 · 复制数据/复制日志数据源):query_type → 场景标识/唤醒词
+# scene_id 对齐 scenes/query.yaml 的场景(基础映射;细粒度由调用方覆盖)
+QUERY_META = {
+    "summary":   {"scene_id": "query_today",     "wake_word": "查今天"},
+    "list":      {"scene_id": "query_list",      "wake_word": "查日期"},
+    "recent":    {"scene_id": "query_recent",    "wake_word": "查最近"},
+    "search":    {"scene_id": "query_search",    "wake_word": "搜备注"},
+    "monthly":   {"scene_id": "monthly_current", "wake_word": "看月度"},
+    "compare":   {"scene_id": "compare_month",   "wake_word": "看对比"},
+    "breakdown": {"scene_id": "breakdown_current_month", "wake_word": "看分类"},
+    "overview":  {"scene_id": "overview_current", "wake_word": "看总览"},
+    "stats":     {"scene_id": "stats_long_term", "wake_word": "做统计"},
+}
+
+SKILL_VERSION = "2.0"
+
 
 def run_cli_json(query_type: str, extra_args: list) -> dict:
     """调用 <域>/cli.py <query_type> --json <extra_args>...，解析 JSON 输出"""
@@ -117,12 +133,22 @@ def build_payload(cli_json: dict, query_type: str, extra_args: list) -> dict:
         }
 
     data = cli_json.get("data") or {}
-    # 注入 type / title / subtitle / generated_at / extra_args
+    # 注入 type / title / subtitle / generated_at / extra_args / meta(复制数据日志数据源)
     enriched = dict(data)
     enriched["type"] = query_type
     enriched["title"] = meta["title"]
     enriched["subtitle"] = meta["subtitle"] + (f" · 参数: {' '.join(extra_args)}" if extra_args else "")
     enriched["generated_at"] = now
+    m = QUERY_META.get(query_type, {"scene_id": query_type, "wake_word": query_type})
+    enriched["meta"] = {
+        "scene_id": m["scene_id"],
+        "command_cn": meta["title"] + " 结果",
+        "wake_word": m["wake_word"],
+        "occurred_at": now,
+        "chain": "(未注入 · AI 可在日志覆盖)",
+        "render_cmd": f"bill_inject.py {query_type} {' '.join(extra_args)}".strip(),
+        "version": SKILL_VERSION,
+    }
 
     return {
         "status": cli_json.get("status", "ok"),

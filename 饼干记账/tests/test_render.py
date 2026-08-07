@@ -362,3 +362,59 @@ class TestHelpHtmlRender:
                 root_html.write_bytes(backup.read_bytes())
             elif root_html.exists():
                 root_html.unlink()
+
+
+# ── 模板能力接口(08 §4 硬标准 · G4 决议)─────────────────────────────────────
+
+class TestTemplateCapability:
+    """业务 HTML 交互标准:复制数据弹层三选一 + 复制日志 + B1 toast + meta 注入"""
+
+    def test_query_html_has_copy_actions(self, tmp_db_dir):
+        """query_view 输出含:复制数据/日志按钮 + 弹层三选一 + B1 toast"""
+        rc, out, err, html_path = _run_bill_inject(tmp_db_dir, "summary")
+        text = html_path.read_text(encoding="utf-8-sig")
+        assert 'id="copyDataBtn"' in text, "缺复制数据按钮(08 §4 硬标准)"
+        assert 'id="copyLogBtn"' in text, "缺复制日志按钮(08 §4 硬标准)"
+        # 弹层三选一(G4 轮次 2):纯文本/JSON/CSV 三选项
+        assert 'data-f="text"' in text and 'data-f="json"' in text and 'data-f="csv"' in text, \
+            "缺复制数据弹层三选一(纯文本/JSON/CSV)"
+        # B1 toast:知道了按钮 + 4.5s 自动消失
+        assert 'id="toastClose"' in text and "4500" in text, "缺 B1 toast(知道了按钮/4.5s)"
+        # 5 段/6 段组装函数
+        assert "buildData5" in text and "buildLogText" in text, "缺 5 段数据/6 段日志组装"
+        # 5 状态之离线态兜底
+        assert "data.offline" in text, "缺离线态分支(5 状态契约)"
+
+    def test_bill_inject_injects_meta(self, tmp_db_dir):
+        """bill_inject payload 注入 meta(复制数据/日志数据源:scene_id/command_cn/wake_word/version)"""
+        import json
+        import re
+        rc, out, err, html_path = _run_bill_inject(tmp_db_dir, "summary")
+        text = html_path.read_text(encoding="utf-8-sig")
+        m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+        assert m, "缺 payload 注入点"
+        payload = json.loads(m.group(1))
+        meta = payload["data"].get("meta", {})
+        assert meta.get("scene_id") == "query_today", f"scene_id 期望 query_today,实际 {meta.get('scene_id')}"
+        assert meta.get("wake_word") == "查今天", f"wake_word 期望 查今天,实际 {meta.get('wake_word')}"
+        assert meta.get("version") == "2.0"
+        assert meta.get("command_cn") and meta.get("occurred_at") and meta.get("render_cmd"), \
+            "meta 缺 command_cn/occurred_at/render_cmd"
+
+    def test_meta_present_in_all_query_types(self, tmp_db_dir):
+        """9 类 query_type:正常态注入 meta;错误态(如 list 无参数)仍带复制按钮(08 硬标准)"""
+        import json
+        import re
+        for qt in ["summary", "list", "recent", "search", "monthly", "compare", "breakdown", "overview", "stats"]:
+            rc, out, err, html_path = _run_bill_inject(tmp_db_dir, qt)
+            text = html_path.read_text(encoding="utf-8-sig")
+            m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+            payload = json.loads(m.group(1))
+            if payload.get("status") == "error":
+                # 错误回执页也必带复制数据/日志按钮(08 §6.1 错误回执 HTML)
+                assert 'id="copyDataBtn"' in text and 'id="copyLogBtn"' in text, \
+                    f"{qt} 错误页缺复制按钮(08 硬标准)"
+                continue
+            meta = payload["data"].get("meta", {})
+            assert meta.get("scene_id"), f"{qt} 缺 meta.scene_id"
+            assert meta.get("wake_word"), f"{qt} 缺 meta.wake_word"

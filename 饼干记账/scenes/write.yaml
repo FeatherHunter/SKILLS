@@ -1,0 +1,154 @@
+# scenes/write.yaml — 写入域场景注册(域唯一事实源 · 合并器 = 公共层脚本)
+# 场景 = 用户使用场景(语义条目;参数 = 填空区)
+# prompt 规则(定稿 · #144 补充决议 4):
+#   1. 结构 = head 一行 + 字段区
+#   2. head = 「请加载「饼干记账」技能,帮我<场景人话>(唤醒词:<唤醒词>):」
+#   3. 字段 = 「  字段名: ____(提示)」;必填无提示,选填(选填[,如:示例]),默认(默认 X)
+#   4. 禁写流程/呈现清单/反问/总结约束(全部下沉 SKILL.md 通用规则)
+version: "2.0"
+domain: write
+subs:
+  - name: 记账
+    wake_words:
+      - wake_word: 记支出
+        scenes:
+          - id: write-1-1
+            scenario_id: write_expense
+            scenario_title: 记一笔支出
+            type: 写入
+            status: ""
+            html: {template: "写入/confirm.html", command_cn: "记支出", data_source: "输入参数"}
+            prompt: |
+              请加载「饼干记账」技能,帮我记一笔支出(唤醒词:记支出):
+
+                金  额: ____
+                分  类: ____ (选填,如:餐饮 / 出行 / 奶茶)
+                备  注: ____ (选填)
+                时  间: ____ (选填,默认现在;补记昨天写「昨天」)
+                账  户: ____ (选填,如:支付宝 / 微信)
+                账  本: ____ (选填,如:旅行 / 生活)
+            result: "过程型 HTML 确认(字段预览)→ 文字回执;缺金额 → AI 反问(不猜测)"
+
+      - wake_word: 记收入
+        scenes:
+          - id: write-2-1
+            scenario_id: write_income
+            scenario_title: 记一笔收入
+            type: 写入
+            status: ""
+            html: {template: "写入/confirm.html", command_cn: "记收入", data_source: "输入参数"}
+            prompt: |
+              请加载「饼干记账」技能,帮我记一笔收入(唤醒词:记收入):
+
+                金  额: ____
+                分  类: ____ (选填,如:工资 / 奖金 / 红包)
+                备  注: ____ (选填)
+                时  间: ____ (选填,默认现在)
+                账  户: ____ (选填,如:银行卡 / 微信)
+            result: "过程型 HTML 确认(字段预览)→ 文字回执;缺金额 → AI 反问(不猜测)"
+
+      - wake_word: 拍账单
+        scenes:
+          - id: write-3-1
+            scenario_id: write_bill_photo
+            scenario_title: 拍账单记账(图片识别)
+            type: 写入
+            status: ""
+            html: {template: "写入/confirm.html", command_cn: "拍账单", data_source: "图片识别"}
+            prompt: |
+              请加载「饼干记账」技能,帮我拍账单记账(唤醒词:拍账单):
+            result: "识别金额(优先实付/合计)→ 过程型 HTML 确认 → 文字回执;模糊/非账单 → AI 描述所见 + 询问(5 状态契约)"
+
+      - wake_word: 批量录入
+        scenes:
+          - id: write-4-1
+            scenario_id: write_batch
+            scenario_title: 批量录入多笔
+            type: 写入
+            status: ""
+            html: {template: "写入/batch_confirm.html", command_cn: "批量录入", data_source: "输入参数"}
+            prompt: |
+              请加载「饼干记账」技能,帮我批量记几笔账(唤醒词:批量录入):
+
+                条  目: ____ (每行一笔,如:午饭35 / 奶茶25 / 打车20)
+                账  本: ____ (选填,如:旅行)
+            result: "逐笔解析 → 过程型 HTML 批量确认(可改) → 文字回执;缺参条目 → AI 反问"
+
+  - name: 修正
+    wake_words:
+      - wake_word: 改记录
+        scenes:
+          - id: write-5-1
+            scenario_id: write_update
+            scenario_title: 修改已有记录
+            type: 写入
+            status: ""
+            html: {template: "写入/update_confirm.html", command_cn: "改记录", data_source: "bills + 输入参数"}
+            prompt: |
+              请加载「饼干记账」技能,帮我改一条记录(唤醒词:改记录):
+
+                目  标: ____ (如:最近一笔 / 某天的某条 / ID)
+                要改的字段: ____ (如:金额改成 38 / 分类改成交通 / 备注加牛奶)
+            result: "定位候选 → diff 预览(原值→新值)确认 → 文字回执;定位不到 → AI 反问"
+
+      - wake_word: 撤销
+        scenes:
+          - id: write-6-1
+            scenario_id: write_undo
+            scenario_title: 撤销一条记录(软删)
+            type: 写入
+            status: ""
+            html: {template: "写入/confirm.html", command_cn: "撤销", data_source: "bills + 输入参数"}
+            prompt: |
+              请加载「饼干记账」技能,帮我撤销一条记录(唤醒词:撤销):
+
+                目  标: ____ (默认最近一笔;或描述某条)
+            result: "目标确认(默认最近一笔)→ 软删(deleted_at)→ 文字回执;可再撤销(恢复)"
+
+      - wake_word: 恢复
+        scenes:
+          - id: write-7-1
+            scenario_id: write_restore
+            scenario_title: 恢复已撤销记录
+            type: 写入
+            status: ""
+            html: {template: "写入/confirm.html", command_cn: "恢复", data_source: "bills + 输入参数"}
+            prompt: |
+              请加载「饼干记账」技能,帮我恢复一条已撤销的记录(唤醒词:恢复):
+
+                目  标: ____ (描述被撤销的记录,如:昨天撤销的午饭)
+            result: "定位已删记录 → 恢复(deleted_at = NULL)→ 文字回执"
+
+  - name: 报销
+    wake_words:
+      - wake_word: 记报销
+        scenes:
+          - id: write-8-1
+            scenario_id: write_reimburse
+            scenario_title: 记一笔报销支出(#待报销)
+            type: 写入
+            status: ""
+            html: {template: "写入/confirm.html", command_cn: "记报销", data_source: "输入参数"}
+            prompt: |
+              请加载「饼干记账」技能,帮我记一笔报销支出(唤醒词:记报销):
+
+                金  额: ____
+                分  类: ____ (选填,如:餐饮 / 差旅)
+                备  注: ____ (选填,自动加 #待报销)
+                时  间: ____ (选填,默认现在)
+            result: "记支出 + 备注自动 #待报销 → 过程型 HTML 确认 → 文字回执"
+
+      - wake_word: 报销到账
+        scenes:
+          - id: write-9-1
+            scenario_id: write_reimburse_done
+            scenario_title: 报销到账(记收入 + 流转标签)
+            type: 写入
+            status: ""
+            html: {template: "写入/confirm.html", command_cn: "报销到账", data_source: "输入参数"}
+            prompt: |
+              请加载「饼干记账」技能,帮我记录报销到账(唤醒词:报销到账):
+
+                金  额: ____
+                关  联: ____ (选填,如:哪一笔 #待报销)
+            result: "记收入 + 关联记录 #待报销 标签流转 → 确认 → 文字回执"

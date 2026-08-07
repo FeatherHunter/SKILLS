@@ -30,15 +30,17 @@ class ValidationError(ValueError):
 
 # ── 白名单（与 references/categories.md 同步）────────────────────────────────
 
-# 支出 L1（10 个，来自 categories.md §一）
+# 支出 L1（12 个，来自 categories.md §一;+借贷/分期 2026-08-07 人类裁定）
 EXPENSE_L1 = frozenset({
     "餐饮", "居家", "穿着", "出行", "玩乐",
     "学习", "健康", "社交", "宠物", "其他",
+    "借贷", "分期",
 })
 
-# 收入 L1（5 个，来自 categories.md §二）
+# 收入 L1（7 个，来自 categories.md §二;+借贷/退款 2026-08-07 人类裁定）
 INCOME_L1 = frozenset({
     "工资", "奖金", "兼职", "投资", "其他收入",
+    "借贷", "退款",
 })
 
 ALL_L1 = EXPENSE_L1 | INCOME_L1
@@ -128,8 +130,7 @@ def validate_category(category: Any) -> str:
     if l1 not in ALL_L1:
         raise ValidationError(
             f"字段「category/分类」当前值={category!r}（L1='{l1}'），"
-            f"期望=L1 在白名单内（餐饮/居家/穿着/出行/玩乐/学习/健康/社交/宠物/其他/"
-            f"工资/奖金/兼职/投资/其他收入），"
+            f"期望=L1 在白名单内（{'/'.join(sorted(ALL_L1))}），"
             f"建议=把 L1 改为上述合法值之一，或在前面加上正确的 L1（如 '出行/网约车'）"
         )
 

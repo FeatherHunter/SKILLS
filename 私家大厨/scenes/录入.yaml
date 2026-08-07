@@ -1,0 +1,138 @@
+# 录入域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 私家大厨/scenes/录入.yaml
+# 合并器 = scripts/场景合并.py(实施期接入,对齐居家管家契约;改总账的唯一通道 = 合并器)
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# G2 grilling 定案(2026-08-07 · 两轮):
+#   1. 场景清单 = 6 场景卡 + 1 详情层条目(同名冲突处置,不占场景卡)
+#   2. 唤醒词维持现状 2 个(录入食谱 / 导入食谱),不新增;variants 全部留空
+#      (用户拍板: 场景 = HELP 展示的入口,用户只会说看到的唤醒词,不做变体扩展)
+#   3. 导入缺字段 = 拒绝 + 报错清单 → AI 问用户补齐/汇报;不做替代值自动填
+#      (用户拍板: 不录入没有意义的菜谱;R1 F1 断点 a/b/d 由「校验前置一次列全」解,
+#       断点 c step 级 tip 关联缺失同样进缺失清单,由 AI 问用户)
+#   4. 三态采集表单(用户拍板 HTML 交互): AI 确认字段(正常) / AI 推测字段(标色+角标)
+#      / 缺失字段(红色必补);确认写入按钮在缺失未补全时置灰禁用
+#   5. L1 衔接: 必问用户字段缺失 → 表单红色待补;必推算 → AI 算;可补常识 → AI 补并标「AI 补」;
+#      可显式 null 仅限 3 个显式可空字段(step_ingredients.unit / tips.step_id / tips.ingredient_id)
+#   6. 必填字段无真实值(如无照片)时,AI 必须问用户;用户显式确认后才可用占位图并注明——非系统自动
+#
+# 详情层条目(四层结构第四层 · 不占场景卡):
+#   - 同名冲突处置(scenario 分支): 录入/导入时检测到同名菜 → 提示已有菜(名称/难度/时间),
+#     用户选「派生新变体」(AI 建议 new_name)或「取消」;数据不变
+version: "1.0"
+
+domain:
+  key: add
+  name: 录入
+  icon: "📝"
+  g: G2
+
+scenes:
+  - id: "add-1"
+    domain: add
+    sub: 录入
+    wake_word: 录入食谱
+    scenario_id: add_from_conversation
+    scenario_title: 对话录入(逐步收集)
+    dimensions: {input: 对话逐步补充}
+    type: 采集+回执
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我录入一道新菜(唤醒词:录入食谱):
+    result: "AI 逐步收集信息,生成表单供你核对,确认后入库。"
+    html:
+      template: 录入/采集.html
+      command_cn: 录入食谱
+      data_source: recipes
+    variants: []
+
+  - id: "add-2"
+    domain: add
+    sub: 录入
+    wake_word: 录入食谱
+    scenario_id: add_from_image
+    scenario_title: 图片录入(识别图片)
+    dimensions: {input: 图片}
+    type: 采集+回执
+    status: ""
+    prompt: |-
+      [发送图片] 录入这道菜。
+    result: "AI 识别图片内容,整理成表单供你核对,确认后入库。"
+    html:
+      template: 录入/采集.html
+      command_cn: 录入食谱
+      data_source: recipes
+    variants: []
+
+  - id: "add-3"
+    domain: add
+    sub: 录入
+    wake_word: 录入食谱
+    scenario_id: add_from_markdown
+    scenario_title: MD 文件录入
+    dimensions: {input: MD 文件}
+    type: 采集+回执
+    status: ""
+    prompt: |-
+      [发送 MD 文件] 录入。
+    result: "AI 解析文件内容,整理成表单供你核对,确认后入库。"
+    html:
+      template: 录入/采集.html
+      command_cn: 录入食谱
+      data_source: recipes
+    variants: []
+
+  - id: "add-4"
+    domain: add
+    sub: 录入
+    wake_word: 录入食谱
+    scenario_id: add_from_template
+    scenario_title: 结构化模板录入(表单)
+    dimensions: {input: 表单}
+    type: 采集+回执
+    status: "【待开发】"
+    prompt: |-
+      用表单方式录入这道菜。
+    result: "生成填写表单:AI 已填的标注、缺失的标红,你补全后确认入库。"
+    html:
+      template: 录入/采集.html
+      command_cn: 录入食谱
+      data_source: recipes
+    variants: []
+
+  - id: "add-5"
+    domain: add
+    sub: 导入
+    wake_word: 导入食谱
+    scenario_id: import_from_json
+    scenario_title: JSON 文件导入
+    dimensions: {input: JSON 文件}
+    type: 采集+回执
+    status: ""
+    prompt: |-
+      导入食谱 [JSON 文件]。
+    result: "校验数据完整性;缺失字段列给你补齐,确认后写入并返回回执。"
+    html:
+      template: 录入/采集.html
+      command_cn: 导入食谱
+      data_source: recipes
+    variants: []
+
+  - id: "add-6"
+    domain: add
+    sub: 导入
+    wake_word: 导入食谱
+    scenario_id: import_validation_failed
+    scenario_title: 导入校验失败(补齐后重试)
+    dimensions: {input: JSON 有缺字段}
+    type: 采集+回执
+    status: ""
+    prompt: |-
+      导入这个 JSON。
+    result: "缺失字段在表单中标红,你补齐后重新导入。"
+    html:
+      template: 录入/采集.html
+      command_cn: 导入食谱
+      data_source: recipes
+    variants: []

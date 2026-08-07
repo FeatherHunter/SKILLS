@@ -68,7 +68,7 @@
 ├── script/               # 5 个 Python 模块(memo_cli / memo_render / injector / feishu_sync / reminder_scheduler)
 ├── templates/            # 6 个 HTML 模板(HELP / 查询 / 同步报告 / 3 个过程型向导)
 ├── references/           # 场景资产(scenarios.yaml)+ schema / examples / cron
-├── tests/                # pytest 测试(326 用例 · pytest tests/)
+├── tests/                # pytest 测试(342 用例 · pytest tests/)
 └── docs/adr/             # 架构决策记录(ADR-0001 ~ 0007)
 ```
 

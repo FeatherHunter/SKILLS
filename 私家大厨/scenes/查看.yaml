@@ -1,0 +1,171 @@
+# 查看域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 私家大厨/scenes/查看.yaml
+# 合并器 = scripts/场景合并.py(实施期接入,对齐居家管家契约;改总账的唯一通道 = 合并器)
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# G3 grilling 定案(2026-08-08 · 一轮 + 第一性原理审查):
+#   1. 场景清单 = 现状 8 场景 0 增 0 删 0 改名(B5 4 视图保留);唤醒词维持 5 个
+#   2. 第一性原理: 查看域 = 用户看菜谱三动作——全览(完整)/ 聚焦(只看 X)/ 假设(替换食材),
+#      8 场景 + 4 增强全部回归此本质
+#   3. HTML 增强 4 项(全部用户认可):
+#      a. 每步内联本步食材(step_ingredients 真数据);炊具为菜级数据 → 菜级清单在步骤区顶部展示
+#         (R2 原文「每步内联食材+炊具」经数据核查修正: 炊具无 step 级表,schema 冻结不加表)
+#      b. 营养随份量重算(每份营养不变,总量 × 倍数,JS 基于 data-base-servings)
+#      c. 替换食材预览(查看域 = 临时假设不落库;真改走修改域): 原→替换对照行 + 用量换算 + 用户调整确认
+#      d. 「只看 X」= 隐藏其他 section(真聚焦),锚点 id 保留(section-ingredients/steps/nutrition/background)
+#   4. 08 对齐: 查看页补「复制数据(5 段 JSON)+ 复制日志(6 段)」硬标准 + 双通道(文字回执+HTML);
+#      现有快捷复制(食材/做菜/采购)保留
+#   5. 实施期: recipe_view.html 由 Jinja2 迁移占位符注入(G0 已拍板)
+version: "1.0"
+
+domain:
+  key: view
+  name: 查看
+  icon: "👀"
+  g: G3
+
+scenes:
+  - id: "view-1"
+    domain: view
+    sub: 全览
+    wake_word: 查看食谱
+    scenario_id: view_full_recipe
+    scenario_title: 完整食谱
+    dimensions: {recipe: 指定菜名}
+    type: 查看
+    status: ""
+    prompt: |-
+      看看{{菜名}}怎么做。
+    result: "展示该菜全貌:基本信息/食材/步骤(每步内联本步食材)/营养/背景/历史/派生关系。"
+    html:
+      template: 查看/recipe_view.html
+      command_cn: 查看食谱
+      data_source: recipes
+    variants: []
+
+  - id: "view-2"
+    domain: view
+    sub: 全览
+    wake_word: 查看食谱
+    scenario_id: view_for_beginner
+    scenario_title: 新手强调(关键成功点)
+    dimensions: {recipe: 指定菜名, user_state: 新手}
+    type: 查看
+    status: ""
+    prompt: |-
+      我是新手,{{菜名}}的关键点是什么？
+    result: "HTML 顶部突出「关键成功点」汇总,新手不会遗漏核心步骤。"
+    html:
+      template: 查看/recipe_view.html
+      command_cn: 查看食谱
+      data_source: recipes
+    variants: []
+
+  - id: "view-3"
+    domain: view
+    sub: 全览
+    wake_word: 查看食谱
+    scenario_id: view_recipe_with_substitution
+    scenario_title: 替换食材预览(临时假设)
+    dimensions: {recipe: 指定菜名, ingredient_swap: 替换某食材}
+    type: 查看+选择
+    status: "【待开发】"
+    prompt: |-
+      {{菜名}}里没有 X,能用 Y 代替吗？
+    result: "查看页出现「原食材 → 替换食材」对照行,AI 建议替换+用量换算,你可调整,确认后展示替换后的食材清单(不落库)。"
+    html:
+      template: 查看/recipe_view.html
+      command_cn: 查看食谱
+      data_source: recipes
+    variants: []
+
+  - id: "view-4"
+    domain: view
+    sub: 局部聚焦
+    wake_word: 查看食材
+    scenario_id: view_ingredients_only
+    scenario_title: 只看食材
+    dimensions: {recipe: 指定菜名, focus: 食材}
+    type: 查看
+    status: ""
+    prompt: |-
+      {{菜名}}需要哪些食材？
+    result: "只显示食材 section(其他隐藏):食材清单与用量。"
+    html:
+      template: 查看/recipe_view.html
+      command_cn: 查看食材
+      data_source: recipes
+    variants: []
+
+  - id: "view-5"
+    domain: view
+    sub: 局部聚焦
+    wake_word: 查看食材
+    scenario_id: view_ingredients_grouped
+    scenario_title: 食材分组(11 大类)
+    dimensions: {recipe: 指定菜名, group_by: 分类}
+    type: 查看
+    status: ""
+    prompt: |-
+      {{菜名}}的食材按肉/菜/调料分组给我。
+    result: "食材按 11 大类分组显示,采购备菜一目了然。"
+    html:
+      template: 查看/recipe_view.html
+      command_cn: 查看食材
+      data_source: recipes
+    variants: []
+
+  - id: "view-6"
+    domain: view
+    sub: 局部聚焦
+    wake_word: 查看步骤
+    scenario_id: view_steps_only
+    scenario_title: 只看步骤
+    dimensions: {recipe: 指定菜名, focus: 步骤}
+    type: 查看
+    status: ""
+    prompt: |-
+      {{菜名}}怎么做？详细步骤。
+    result: "只显示步骤 section(其他隐藏):烹饪步骤+时间火候+每步内联本步食材。"
+    html:
+      template: 查看/recipe_view.html
+      command_cn: 查看步骤
+      data_source: recipes
+    variants: []
+
+  - id: "view-7"
+    domain: view
+    sub: 局部聚焦
+    wake_word: 查看营养
+    scenario_id: view_nutrition_only
+    scenario_title: 只看营养
+    dimensions: {recipe: 指定菜名, focus: 营养}
+    type: 查看
+    status: ""
+    prompt: |-
+      {{菜名}}的热量和蛋白质多少？
+    result: "只显示营养 section(其他隐藏):热量/蛋白/脂肪/碳水,随份量重算。"
+    html:
+      template: 查看/recipe_view.html
+      command_cn: 查看营养
+      data_source: recipes
+    variants: []
+
+  - id: "view-8"
+    domain: view
+    sub: 局部聚焦
+    wake_word: 查看背景
+    scenario_id: view_background_only
+    scenario_title: 只看背景文化
+    dimensions: {recipe: 指定菜名, focus: 背景}
+    type: 查看
+    status: ""
+    prompt: |-
+      {{菜名}}有什么历史典故？
+    result: "只显示背景 section(其他隐藏):起源故事/历史背景/文化意义。"
+    html:
+      template: 查看/recipe_view.html
+      command_cn: 查看背景
+      data_source: recipes
+    variants: []

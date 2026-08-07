@@ -1,4 +1,4 @@
----
+﻿---
 name: 饼干记账
 description: 记账技能。写入类：记支出、记收入、拍账单、改记录。查询/分析类：查今天、查日期、查范围、查分类、查最近、搜备注、看月度、看对比、看分类、看总览、做统计。**所有查询/分析类唤醒词默认 invoke HTML 工作流**（scripts/bill_inject.py + templates/query_view.html），写入类保持文字回执。能力速查：说「饼干记账 HELP」/「查帮助」/「能做什么」。
 ---
@@ -15,7 +15,7 @@ description: 记账技能。写入类：记支出、记收入、拍账单、改�
 
 ## 操作规范（强制）
 
-- 所有数据操作通过 CLI（`scripts/record_bill.py`），禁止直连数据库
+- 所有数据操作通过 CLI（`scripts/write|query|analysis/cli.py` 三域入口），禁止直连数据库
 - 只读操作（查询/分析/统计）不需确认；写入操作（记支出/记收入/拍账单/改记录）需用户确认
 - 不支持删除已有记录；修改功能见「改记录」流程
 - 金额必须明确，不能猜测
@@ -287,51 +287,51 @@ description: 记账技能。写入类：记支出、记收入、拍账单、改�
 
 ```bash
 # 记支出(多级分类:L1/L2/L3 用 / 分隔)
-python3 scripts/record_bill.py add --category 餐饮/外卖/午餐 --amount -35.0 --note "午饭"
-python3 scripts/record_bill.py add --category 餐饮/咖啡奶茶/奶茶 --amount -25.0
+python3 scripts/scripts/write/cli.py add --category 餐饮/外卖/午餐 --amount -35.0 --note "午饭"
+python3 scripts/scripts/write/cli.py add --category 餐饮/咖啡奶茶/奶茶 --amount -25.0
 
 # 改记录(按 ID)
-python3 scripts/record_bill.py update --id 123 --note "午饭+牛奶"
-python3 scripts/record_bill.py update --id 123 --amount -38.0 --category 餐饮
-python3 scripts/record_bill.py update --id 123 --amount -50 --account 微信 --ledger 餐饮
+python3 scripts/scripts/write/cli.py update --id 123 --note "午饭+牛奶"
+python3 scripts/scripts/write/cli.py update --id 123 --amount -38.0 --category 餐饮
+python3 scripts/scripts/write/cli.py update --id 123 --amount -50 --account 微信 --ledger 餐饮
 
 # 记收入
-python3 scripts/record_bill.py add --category 工资/基本工资 --amount 8000.0 --note "5月工资"
+python3 scripts/scripts/write/cli.py add --category 工资/基本工资 --amount 8000.0 --note "5月工资"
 
 # 查今天
-python3 scripts/record_bill.py summary
+python3 scripts/scripts/query/cli.py summary
 
 # 查日期
-python3 scripts/record_bill.py list --date 2026-05-27
+python3 scripts/scripts/query/cli.py list --date 2026-05-27
 
 # 查范围
-python3 scripts/record_bill.py list --from 2026-05-01 --to 2026-05-31
+python3 scripts/scripts/query/cli.py list --from 2026-05-01 --to 2026-05-31
 
 # 查分类
-python3 scripts/record_bill.py list --category 餐饮
+python3 scripts/scripts/query/cli.py list --category 餐饮
 
 # 查最近
-python3 scripts/record_bill.py recent --limit 10
+python3 scripts/scripts/query/cli.py recent --limit 10
 
 # 搜备注
-python3 scripts/record_bill.py search "午饭"
+python3 scripts/scripts/query/cli.py search "午饭"
 
 # 看月度
-python3 scripts/record_bill.py monthly --month 2026-05
+python3 scripts/scripts/analysis/cli.py monthly --month 2026-05
 
 # 看对比
-python3 scripts/record_bill.py compare --period week
+python3 scripts/scripts/analysis/cli.py compare --period week
 
 # 看分类
-python3 scripts/record_bill.py breakdown
-python3 scripts/record_bill.py breakdown --from 2026-05-01 --to 2026-05-31
+python3 scripts/scripts/analysis/cli.py breakdown
+python3 scripts/scripts/analysis/cli.py breakdown --from 2026-05-01 --to 2026-05-31
 
 # 看总览
-python3 scripts/record_bill.py overview
-python3 scripts/record_bill.py overview --month 2026-05
+python3 scripts/scripts/analysis/cli.py overview
+python3 scripts/scripts/analysis/cli.py overview --month 2026-05
 
 # 做统计
-python3 scripts/record_bill.py stats
+python3 scripts/scripts/analysis/cli.py stats
 ```
 
 ### Step 5：回复用户
@@ -372,7 +372,7 @@ python3 scripts/bill_inject.py search "咖啡"
 **错误处理（§04 原则 11 反模式 #3）：**
 - HTML 生成失败 → **保留错误页 HTML** 交付给用户（bill_inject.py 自动处理）
 - ❌ **禁止**降级为文字答（这是 fail mode,不是 fallback）
-- 用户明确要文字 → 才走 `python3 scripts/record_bill.py summary`（无 --json）
+- 用户明确要文字 → 才走 `python3 scripts/scripts/query/cli.py summary`（无 --json）
 
 **默认输出路径（v2.5 同步卡路里 §4.1）**：`$DATA_DIR/biscuit_accountant_html/<command_zh>_<YYYYMMDD>_<HHMMSS>[_N].html`
   - `DATA_DIR` 跟随 `SKILLS_DB_PATH` 环境变量（fallback `D:/.db/`）
@@ -456,7 +456,7 @@ python3 scripts/render_help.py --check
 
 ## 与其他工具的边界
 
-本 Skill 的 **5 层骨架**（数据层 `db.py` / 操作层 `analyze.py` / 规则层 `validators.py` / 接口层 `record_bill.py` / 文档层 `references/`+`templates/`）**不含** `config-cookie-accounting.ts`。
+本 Skill 的 **5 层骨架**（数据层 `db.py` / 操作层 `analyze.py` / 规则层 `validators.py` / 接口层 `write|query|analysis/cli.py`(三域) / 文档层 `references/`+`templates/`）**不含** `config-cookie-accounting.ts`。
 
 | 文件 | 归属 | 维护方 | 与本 Skill 的关系 |
 |------|------|--------|-------------------|

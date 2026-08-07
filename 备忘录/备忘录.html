@@ -6,87 +6,167 @@
 <title>备忘录 · HELP 使用手册</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-.back-to-top{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:40px;height:40px;border:0;border-radius:50%;background:rgba(28,28,30,.78);color:#fff;font-size:18px;cursor:pointer;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;box-shadow:0 6px 16px rgba(0,0,0,.18);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);z-index:9000}
-.back-to-top.show{opacity:1;transform:translateY(0)}
-.back-to-top:hover{background:rgba(28,28,30,.92)}
-:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
-.wrap{max-width:980px;margin:0 auto;padding:48px 22px 90px}
-.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:24px;box-shadow:var(--shadow)}
-.eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
-h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
-.lead{color:var(--fg2);font-size:17px}
-.meta{margin-top:16px;color:var(--fg3);font-size:13px}
-.panel{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:18px}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--ok:#34c759;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased;padding-bottom:48px}
+button{font-family:inherit}
+mark{background:#ffe08a;border-radius:3px;padding:0 2px;color:inherit}
 
-/* ===== Level 1:功能模块(可折叠,默认折叠) ===== */
-.module{background:var(--card);border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px;overflow:hidden}
-.module>summary{padding:18px 22px;cursor:pointer;font-size:15px;font-weight:700;color:var(--fg);user-select:none;display:flex;align-items:center;gap:10px;transition:background .15s;list-style:none}
-.module>summary::-webkit-details-marker{display:none}
-.module>summary::before{content:"▶";display:inline-block;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
-.module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
-.module>summary:hover{background:var(--soft)}
-.module>summary:hover::before{color:var(--blue)}
-.module-body{padding:0 22px 18px}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 40px}
 
-/* ===== Level 2:场景卡片 ===== */
-.scenario{background:var(--bg);border-radius:14px;padding:16px 18px;margin-bottom:10px;border:1px solid var(--line)}
-.scenario:last-child{margin-bottom:0}
-.scenario-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;flex-shrink:0}
-.title{font-size:16px;font-weight:600;flex:1;min-width:200px}
-.copy-btn{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.copy-btn:hover{background:var(--blue2)}
-.copy-btn.copied{background:var(--ok)}
+/* ===== Hero(对齐居家管家) ===== */
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:24px;padding:28px 30px;margin-bottom:20px;box-shadow:var(--shadow)}
+.eyebrow{font-size:12px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.hero-mode{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+.hero-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hero-steps .step{background:var(--soft);border:1px solid #d7e6ff;color:var(--blue2);font-weight:700;font-size:13px;padding:6px 14px;border-radius:999px;box-shadow:0 1px 3px rgba(0,122,255,.10);white-space:nowrap}
+.hero-steps .arrow{color:var(--blue);font-weight:800;font-size:15px}
+.hero-stats{display:flex;gap:8px;margin-left:auto}
+.hero-stats .stat{background:#fff;border:1px solid var(--line);color:var(--fg2);font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap}
+.meta{margin-top:12px;color:var(--fg3);font-size:12.5px}
+@media(max-width:820px){.hero-mode{gap:8px}.hero-steps{order:-1;width:100%;gap:5px}.hero-steps .step{font-size:11.5px;padding:4px 7px}.hero-steps .arrow{font-size:12px;margin:0 -3px}.hero-stats{display:none}}
 
-/* ===== Level 2:子功能(4 级架构 #34) ===== */
-.sub-module{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
-.sub-module>summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;color:var(--fg2);user-select:none;list-style:none;display:flex;align-items:center;gap:8px;transition:background .15s}
-.sub-module>summary::-webkit-details-marker{display:none}
-.sub-module>summary::before{content:"▸";font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
-.sub-module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
-.sub-module>summary:hover{background:var(--soft)}
-.sub-module .module-body{padding:10px 12px 12px}
-
-/* ===== Level 4:详情子块(#34) ===== */
-.detail-body{padding-top:2px}
-.deps-box{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:10px 14px;margin-top:10px}
-.deps-title{font-size:12px;font-weight:700;color:var(--fg3);letter-spacing:.05em;margin-bottom:6px}
-.deps-list{margin:0;padding-left:18px}
-.deps-list li{font-size:13px;color:var(--fg2);margin-bottom:3px;line-height:1.55}
-
-/* ===== Level 3:场景细节(可折叠,默认折叠) ===== */
-.details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
-.details summary{cursor:pointer;font-size:13px;color:var(--fg2);user-select:none;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px}
-.details summary::-webkit-details-marker{display:none}
-.details summary::before{content:"▸";font-size:10px;color:var(--fg3);transition:transform .15s}
-.details[open] summary::before{transform:rotate(90deg);color:var(--blue)}
-.details summary:hover{color:var(--blue)}
-.dim{color:var(--fg2);font-size:13.5px;margin:8px 0;padding-left:14px;border-left:3px solid var(--line)}
-.dim b{color:var(--fg3);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
-.prompt-box{background:#1d1d1d;color:#f5f5f7;border-radius:14px;padding:14px 16px;margin-top:8px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;line-height:1.7}
-.result-box{background:var(--soft);color:var(--fg);border-radius:14px;padding:12px 14px;margin-top:8px;white-space:pre-wrap;font-size:13.5px}
-
-.empty{text-align:center;color:var(--fg2);padding:60px 20px}
+/* ===== 4 状态 fallback(备忘录保留 · §07 §5 · B.9) ===== */
 .state-banner{display:none;padding:18px;border-radius:14px;margin-bottom:18px;text-align:center;font-weight:600}
 .state-banner.success{background:#e8f7e8;color:#1a7a3a}
 .state-banner.empty{background:#fff7e8;color:#b25b00}
 .state-banner.missing{background:#fde8e8;color:#c7254e}
 .state-banner.error{background:#fde8e8;color:#c7254e}
 
-/* === TOAST(学习卡路里 help_center · iOS 通知风格) === */
-.toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:320px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
-.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
-.toast-icon{font-size:22px;line-height:1;padding-top:1px;flex-shrink:0}
-.toast-body{flex:1;min-width:0}
-.toast-title{font-weight:600;font-size:13px;line-height:1.4;color:#fff;margin-bottom:3px}
-.toast-title em{font-style:normal;color:#34c759;font-weight:600}
-.toast-detail{font-size:11.5px;line-height:1.55;color:#c8c8cc}
-.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0;transition:background .12s}
-.toast-close:hover{background:rgba(255,255,255,.18)}
-.toast-close:active{transform:scale(.96)}
+/* ===== 首次使用横幅(状态驱动 · 对齐居家管家) ===== */
+.init-banner{background:linear-gradient(135deg,#0a63ce,#007aff 55%,#34c759);color:#fff;border-radius:20px;padding:22px 24px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 12px 32px rgba(0,122,255,.25)}
+.init-banner[hidden]{display:none}
+.init-banner .ib-text{flex:1;min-width:220px}
+.init-banner .ib-title{font-size:17px;font-weight:800;margin-bottom:2px}
+.init-banner .ib-sub{font-size:12.5px;opacity:.9}
+.init-banner .copy-btn{background:#fff;color:var(--blue);font-weight:700;padding:9px 16px}
+.init-banner .copy-btn.copied{background:var(--ok);color:#fff}
 
-@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}h1{font-size:30px}.scenario-head{flex-direction:column;align-items:stretch}.copy-btn{width:100%}.module-body{padding:0 16px 16px}.module>summary{padding:16px 18px}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0;padding:12px 12px 12px 14px}.toast.show{transform:translateX(0) scale(1)}.toast-icon{font-size:20px}.toast-title{font-size:12.5px}.toast-detail{font-size:11px}body{padding-bottom:env(safe-area-inset-bottom,0)}}
+/* ===== 搜索(sticky · 对齐居家管家) ===== */
+.search-wrap{position:sticky;top:0;z-index:40;background:rgba(245,245,247,.92);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);padding:8px 0;margin-bottom:6px}
+.search-box{position:relative}
+.search-box input{width:100%;border:1px solid var(--line);border-radius:999px;padding:10px 38px 10px 16px;font-size:14px;background:#fff;outline:none;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.search-box input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
+.search-box .s-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--fg3)}
+.hitcount{font-size:12.5px;color:var(--fg2);margin-bottom:10px;text-align:center}
+.search-empty{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:28px;text-align:center;color:var(--fg3);font-size:13px}
+
+/* ===== 场景卡片(整卡点击展开 · 对齐居家管家) ===== */
+.copy-btn{display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--blue);color:#fff;border-radius:999px;padding:7px 13px;font-size:12.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
+.copy-btn:hover{background:var(--blue2)}
+.copy-btn.copied{background:var(--ok)}
+.copy-short{display:none}
+.scene{background:var(--bg);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;scroll-margin-top:120px;overflow:hidden}
+.scene:last-child{margin-bottom:0}
+.scene>summary.scene-head{padding:14px 16px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;list-style:none;transition:background .15s}
+.scene>summary.scene-head::-webkit-details-marker{display:none}
+.scene>summary.scene-head::before{content:"▸";font-size:11px;color:var(--fg3);transition:transform .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;line-height:1}
+.scene[open]>summary.scene-head::before{transform:rotate(90deg);color:var(--blue)}
+.scene>summary.scene-head:hover{background:var(--soft)}
+.scene-id{font-size:11px;color:var(--fg3);font-weight:700;font-family:ui-monospace,Menlo,monospace}
+.scene-title{font-size:15px;font-weight:600;flex:1;min-width:180px}
+.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;flex-shrink:0}
+.scene-body{padding:0 16px 14px}
+.scene-type{display:flex;align-items:center;gap:6px;margin:10px 0 0}
+.scene-type .type-label{font-size:11px;color:var(--fg3)}
+.type-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;flex-shrink:0;background:#e9e9ee;color:#666}
+.type-badge.t-view{background:#e8f2ff;color:#0a63ce}
+.type-badge.t-collect{background:#e7f8ee;color:#1a7a3a}
+.type-badge.t-select{background:#fff1e2;color:#c2540a}
+.type-badge.t-wizard{background:#e2f7f5;color:#00897b}
+.type-badge.t-mixed{background:#f3e9fb;color:#8e3fc9}
+.prompt-box{background:#1d1d1d;color:#f5f5f7;border-radius:12px;padding:12px 14px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;line-height:1.7;position:relative;margin-top:8px}
+.prompt-box .copy-inline{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer}
+.prompt-box .copy-inline:hover{background:rgba(255,255,255,.25)}
+.prompt-box .copy-inline.copied{background:var(--ok)}
+.dev-banner{margin-top:10px;padding:8px 12px;background:#fff7e8;color:#b25b00;border-radius:10px;font-size:12.5px;font-weight:700;display:flex;gap:8px;align-items:center}
+.dev-banner .mini{font-size:11px;font-weight:400;color:#c07a2a}
+
+/* ===== L4 详情子折叠(备忘录保留 · #34 4 级架构) ===== */
+.details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.details summary{cursor:pointer;font-size:12.5px;color:var(--fg2);user-select:none;padding:2px 0;list-style:none;display:flex;align-items:center;gap:6px}
+.details summary::-webkit-details-marker{display:none}
+.details summary::before{content:"▸";font-size:10px;color:var(--fg3);transition:transform .15s}
+.details[open] summary::before{transform:rotate(90deg);color:var(--blue)}
+.details summary:hover{color:var(--blue)}
+.detail-body{padding-top:8px}
+.dim{color:var(--fg2);font-size:12.5px;margin:6px 0;padding-left:12px;border-left:3px solid var(--line)}
+.dim b{color:var(--fg3);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.result-box{background:var(--soft);color:var(--fg);border-radius:12px;padding:10px 12px;margin-top:8px;white-space:pre-wrap;font-size:12.5px}
+.deps-box{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.deps-title{font-size:11.5px;font-weight:700;color:var(--fg3);letter-spacing:.05em;margin-bottom:5px}
+.deps-list{margin:0;padding-left:18px}
+.deps-list li{font-size:12.5px;color:var(--fg2);margin-bottom:3px;line-height:1.55}
+
+/* ===== 分类模块折叠(域 → 子功能 → 场景 · 对齐居家管家) ===== */
+.module{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:12px;overflow:hidden}
+.module>summary{padding:9px 14px;cursor:pointer;font-size:14.5px;font-weight:700;color:var(--fg);user-select:none;display:flex;align-items:center;gap:10px;list-style:none;transition:background .15s}
+.module>summary::-webkit-details-marker{display:none}
+.module>summary::before{content:"▶";display:inline-flex;align-items:center;justify-content:center;width:12px;margin-right:-2px;font-size:9px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.module>summary:hover{background:var(--soft)}
+.module-body{padding:0 12px 8px}
+.module-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.module-head .m-icon{font-size:17px}
+.module-head .m-count{font-size:11.5px;color:var(--fg3);font-weight:600}
+.sub-module{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;overflow:hidden}
+.sub-module>summary{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--fg2);user-select:none;list-style:none;display:flex;align-items:center;gap:8px;transition:background .15s}
+.sub-module>summary::-webkit-details-marker{display:none}
+.sub-module>summary::before{content:"▸";display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.sub-module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.sub-module>summary:hover{background:var(--soft)}
+.sub-module .module-body{padding:10px 12px 8px}
+.sub-head{display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%}
+.sub-head .scount{font-size:11px;color:var(--fg3)}
+
+/* ===== 联系作者(对齐居家管家) ===== */
+.contact-box{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-top:22px;overflow:hidden}
+.contact-box>summary{padding:14px 18px;cursor:pointer;font-size:14px;font-weight:700;list-style:none;user-select:none;display:flex;align-items:center;gap:10px;transition:background .15s}
+.contact-box>summary::-webkit-details-marker{display:none}
+.contact-box>summary::before{content:"▶";font-size:9px;color:var(--fg3);transition:transform .15s}
+.contact-box[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.contact-box>summary:hover{background:var(--soft)}
+.contact-body{padding:0 18px 18px}
+.contact-item{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--fg2);padding:7px 0;border-bottom:1px dashed var(--line)}
+.contact-item:last-child{border-bottom:0}
+.contact-item .k{font-weight:700;color:var(--fg);min-width:64px}
+.contact-item a{color:var(--blue);text-decoration:none}
+.contact-copy{margin-top:12px}
+footer{text-align:center;color:var(--fg3);font-size:11px;padding:20px 0 0;margin-top:8px}
+
+/* ===== Toast(备忘录保留 · iOS 通知风格) ===== */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+.toast-icon{font-size:20px;line-height:1;padding-top:1px;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}
+.toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}
+.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}
+
+/* ===== 回到顶部(备忘录保留) ===== */
+.back-to-top{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:40px;height:40px;border:0;border-radius:50%;background:rgba(28,28,30,.78);color:#fff;font-size:18px;cursor:pointer;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;box-shadow:0 6px 16px rgba(0,0,0,.18);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);z-index:9000}
+.back-to-top.show{opacity:1;transform:translateY(0)}
+.back-to-top:hover{background:rgba(28,28,30,.92)}
+
+/* ===== 移动适配(820px · 对齐居家管家) ===== */
+@media(max-width:820px){
+  .wrap{padding:18px 12px 60px}
+  h1{font-size:24px}
+  .hero{padding:20px 18px}
+  .prompt-box{padding-top:44px;padding-right:12px}
+  .toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}
+  .toast.show{transform:translateX(0) scale(1)}
+  .init-banner{flex-direction:column;align-items:stretch;text-align:center}
+  .init-banner .copy-btn{width:100%}
+  .scene>summary.scene-head{flex-wrap:nowrap;gap:4px;padding:9px 10px}
+  .scene-head .scene-id{display:none}
+  .scene-head .scene-title{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+  .scene-head .chip{font-size:10.5px;padding:1px 7px}
+  .scene-head .copy-btn{min-height:28px;min-width:56px;padding:0 10px;font-size:11px;margin-left:auto}
+  .copy-btn .copy-short{display:inline}
+  .copy-btn .copy-long{display:none}
+}
 </style>
 <script>/* 共享 clipboard helper · 单一真相源
  *
@@ -153,227 +233,353 @@ function flashBtn(btn, msg, ms) {
 }</script>
 </head>
 <body>
-<script>window.__DATA__ = {"status": "ok", "data": {"title": "备忘录 · HELP 使用手册", "command": "help", "generated_at": "2026-08-07 11:29:37", "version": "1.2.1", "skill": "备忘录", "categories": [{"key": "memo", "name": "备忘类", "icon": "📝"}, {"key": "search", "name": "查找类", "icon": "🔍"}, {"key": "remind", "name": "提醒类", "icon": "⏰"}, {"key": "wish", "name": "心愿类", "icon": "🎯"}, {"key": "checkin", "name": "打卡类", "icon": "✅"}, {"key": "mood", "name": "情绪类", "icon": "💭"}, {"key": "sync", "name": "同步类", "icon": "🔄"}, {"key": "init", "name": "初始化类", "icon": "🚀"}], "scenarios": [{"wake_word": "记备忘", "scenario_id": "memo_add_basic", "scenario_title": "添加一条备忘笔记", "dimensions": {"category": "备忘(默认) / 心愿 / 打卡 / 情绪日记", "sub_category": "自由文本,AI 智能推断 1 个 2 字", "media": "可选附件(图片/音频/视频)", "due": "仅心愿生效,YYYY-MM-DD"}, "prompt": "请帮我记一条备忘(唤醒词:记备忘):\n\n请按以下格式填写你的参数:\n\n  内  容: _____________ (你想记的话)\n  分  类: _____________ (选填,备忘/心愿/打卡/情绪日记)\n  子分类: _____________ (选填,2 字简短描述,如\"工作\")\n  附  件: _____________ (选填,文件名,如 receipt.jpg)\n\n期望效果:\n  AI 创建一条备忘,告诉你 ID 和创建时间。心愿类还会自动建飞书任务。", "status": "", "result": "创建一条笔记,告诉你 ID、分类、创建时间。心愿类还会自动建飞书任务。\n", "category": "memo", "subfunction": "基础记录"}, {"wake_word": "改备忘", "scenario_id": "memo_update_basic", "scenario_title": "修改已有笔记", "dimensions": {"id": "必填,数字 ID", "content": "新内容(可选)", "category": "新顶层分类(可选)", "sub_category": "新子分类(可选)"}, "prompt": "请帮我修改一条已有的备忘(唤醒词:改备忘):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n  新内容: _____________ (改后的话)\n  新分类: _____________ (选填,备忘/心愿/打卡/情绪日记)\n  新子分类: _____________ (选填,2 字简短)\n\n期望效果:\n  AI 更新这条备忘的字段,告诉你修改后的内容。心愿类会同步飞书任务标题。", "status": "", "result": "更新笔记内容/分类/子分类,告诉你更新后的字段。心愿类会同步更新飞书任务标题。\n", "category": "memo", "subfunction": "基础记录"}, {"wake_word": "删备忘", "scenario_id": "memo_delete_basic", "scenario_title": "删除笔记", "dimensions": {"id": "必填,数字 ID,可多个", "with_reminders": "是否级联删关联提醒(默认否,有提醒则报错)", "true": "跳过二次确认(自动化用)"}, "prompt": "请帮我删除一条或多条备忘(唤醒词:删备忘):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (可多个,空格分隔,如\"15 18 22\")\n\n期望效果:\n  AI 删除这些备忘并告知影响行数;有关联提醒时 AI 会先确认。", "status": "", "result": "删除笔记并告知影响行数;有关联提醒时提示用户确认是否级联删除。\n", "category": "memo", "subfunction": "基础记录"}, {"wake_word": "备忘改分类", "scenario_id": "memo_change_category_single", "scenario_title": "修改单条笔记的顶层分类", "dimensions": {"id": "必填,数字 ID", "category": "目标分类(备忘/心愿/打卡/情绪日记)", "bulk_indicator": "原话含'都/全部/多个 ID' → 走批量版"}, "prompt": "请帮我修改单条备忘的顶层分类(唤醒词:备忘改分类,单条):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n  新分类: _____________ (备忘/心愿/打卡/情绪日记)\n\n期望效果:\n  AI 改这条备忘的顶层分类;子分类不会被改动(它是内容维度的二阶属性)。", "status": "", "result": "改顶层分类。子分类不变(它是内容维度的二阶属性)。\n批量场景走\"批量改分类向导\",见同名条目。\n", "category": "memo", "subfunction": "分类调整"}, {"wake_word": "备忘改子分类", "scenario_id": "memo_change_subcategory", "scenario_title": "修改单条笔记的子分类", "dimensions": {"id": "必填,数字 ID", "sub_category": "新子分类(2 字自由文本,'null' 清除)"}, "prompt": "请帮我修改单条备忘的子分类(唤醒词:备忘改子分类):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n  新子分类: _____________ (2 字简短,如\"工作\";留空=清除)\n\n期望效果:\n  AI 修改或清除这条备忘的子分类,适用于所有顶层分类。", "status": "", "result": "修改/清除子分类,适用于所有顶层分类(子分类是自由文本)。\n", "category": "memo", "subfunction": "分类调整"}, {"wake_word": "搜备忘", "scenario_id": "memo_search_keyword", "scenario_title": "按关键词搜索笔记", "dimensions": {"keyword": "搜索词(全文索引)", "category": "顶层分类过滤(可选)", "sub_category": "子分类过滤(可选)", "due": "按排期日期过滤(可选,YYYY-MM-DD)", "html": "生成可视化结果页"}, "prompt": "请帮我搜备忘录(唤醒词:搜备忘):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (搜的内容,如\"咖啡\")\n  分  类: _____________ (选填,备忘/心愿/打卡/情绪日记)\n  子分类: _____________ (选填,2 字简短)\n  排  期: _____________ (选填,YYYY-MM-DD,按排期日期过滤)\n\n期望效果:\n  AI 列出含关键词的所有笔记。带 --html 时生成可视化搜索结果页。", "status": "", "result": "列出匹配的笔记,告诉你结果数。带 --html 时生成可视化页(含筛选/复制 ID/复制回执)。\n", "category": "search", "subfunction": "基础查找"}, {"wake_word": "查备忘", "scenario_id": "memo_search_alias", "scenario_title": "搜备忘的别名(同义触发)", "dimensions": {"keyword": "搜索词"}, "prompt": "请帮我查备忘录(唤醒词:查备忘):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (搜的内容)\n\n期望效果:\n  AI 搜索含关键词的笔记,并生成可视化结果页。", "status": "", "result": "同\"搜备忘\"。走相同命令。\n", "category": "search", "subfunction": "基础查找"}, {"wake_word": "看备忘", "scenario_id": "memo_get_detail", "scenario_title": "查看单条笔记详情", "dimensions": {"id": "必填,数字 ID", "html": "生成详情页"}, "prompt": "请帮我查看某条备忘的详情(唤醒词:看备忘):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n\n期望效果:\n  AI 显示这条备忘的全部字段。带 --html 时生成详情页。", "status": "", "result": "显示单条笔记全部字段。带 --html 时生成详情页。\n", "category": "search", "subfunction": "基础查找"}, {"wake_word": "按时间搜备忘", "scenario_id": "memo_search_by_date", "scenario_title": "按日期范围搜索笔记", "dimensions": {"start": "开始日期 YYYY-MM-DD", "end": "结束日期 YYYY-MM-DD", "category": "顶层分类过滤", "html": "生成可视化结果页"}, "prompt": "请帮我按时间范围搜索备忘录(唤醒词:按时间搜备忘):\n\n请按以下格式填写你的参数:\n\n  开始日期: _____________ (YYYY-MM-DD,如 2026-07-01)\n  结束日期: _____________ (YYYY-MM-DD,如 2026-07-07)\n  分  类:    _____________ (选填,备忘/心愿/打卡/情绪日记)\n\n期望效果:\n  AI 列出该日期范围内的所有笔记,按创建时间倒序。", "status": "", "result": "列出日期范围内的笔记,按创建时间倒序。\n", "category": "search", "subfunction": "时间查找"}, {"wake_word": "查心愿", "scenario_id": "memo_search_wish", "scenario_title": "查所有心愿(自动带分类过滤)", "dimensions": {"keyword": "搜索词(可选)", "due": "按排期日期过滤", "html": "生成可视化页"}, "prompt": "请帮我查看心愿(唤醒词:查心愿):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (选填,搜的内容)\n  排  期: _____________ (选填,YYYY-MM-DD,按排期日期过滤)\n\n期望效果:\n  AI 自动按\"心愿\"分类过滤,等同搜备忘 -c 心愿。", "status": "", "result": "自动按\"心愿\"分类过滤,等同 `搜备忘 -c 心愿`。\n", "category": "search", "subfunction": "分类查找"}, {"wake_word": "查打卡", "scenario_id": "memo_search_checkin", "scenario_title": "查所有打卡记录", "dimensions": {"keyword": "搜索词(可选)", "html": "生成可视化页"}, "prompt": "请帮我查看打卡记录(唤醒词:查打卡):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (选填,搜的内容)\n\n期望效果:\n  AI 自动按\"打卡\"分类过滤,列出结果。", "status": "", "result": "自动按\"打卡\"分类过滤。\n", "category": "search", "subfunction": "分类查找"}, {"wake_word": "查情绪", "scenario_id": "memo_search_mood", "scenario_title": "查所有情绪日记", "dimensions": {"keyword": "搜索词(可选)", "html": "生成可视化页"}, "prompt": "请帮我查看情绪日记(唤醒词:查情绪):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (选填,搜的内容)\n\n期望效果:\n  AI 自动按\"情绪日记\"分类过滤,列出结果。", "status": "", "result": "自动按\"情绪日记\"分类过滤。\n", "category": "search", "subfunction": "分类查找"}, {"wake_word": "记提醒", "scenario_id": "memo_remind_with_note", "scenario_title": "添加笔记 + 设置提醒(两步合一)", "dimensions": {"content": "笔记内容", "remind_at": "提醒时间 YYYY-MM-DD HH:MM", "repeat_type": "一次性(默认)/每天/每周/每月/每年", "repeat_rule": "重复规则(每天:HH:MM / 每周:W HH:MM / 每月:D HH:MM / 每年:MM-DD HH:MM)"}, "prompt": "请帮我记一条提醒(唤醒词:记提醒 · 两步合一:添笔记 + 设提醒):\n\n请按以下格式填写你的参数:\n\n  笔记内容: _____________ (要提醒的事)\n  提醒时间: _____________ (YYYY-MM-DD HH:MM,如 2026-07-25 09:00)\n  重复类型: _____________ (选填,一次性/每天/每周/每月/每年)\n  重复规则: _____________ (选填,如每天=\"09:00\",每周=\"5 17:00\")\n\n期望效果:\n  AI 先创建笔记,再创建关联提醒,Cron 到点触发推送。", "status": "", "result": "先创建笔记,再创建关联提醒。Cron 到点触发推送。\n", "category": "remind", "subfunction": "创建提醒"}, {"wake_word": "设提醒", "scenario_id": "memo_remind_existing", "scenario_title": "给已有笔记加提醒", "dimensions": {"note_id": "笔记 ID(可选,可不关联具体笔记)", "remind_at": "提醒时间", "content": "提醒内容", "repeat_type": "重复类型(默认一次性)", "repeat_rule": "重复规则"}, "prompt": "请帮我给已有笔记加提醒(唤醒词:设提醒):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n  提醒时间: _____________ (YYYY-MM-DD HH:MM,如 2026-07-25 09:00)\n  提醒内容: _____________ (选填,如\"该跑步了\")\n  重复类型: _____________ (选填,默认\"一次性\")\n  重复规则: _____________ (选填,见格式说明)\n\n期望效果:\n  AI 创建提醒,可关联或独立存在。", "status": "", "result": "创建提醒,可关联或独立存在。\n", "category": "remind", "subfunction": "创建提醒"}, {"wake_word": "看提醒", "scenario_id": "memo_reminders_active", "scenario_title": "查看所有有效提醒", "dimensions": {"status": "active(默认)/dismissed", "html": "生成可视化页"}, "prompt": "请帮我查看有效提醒(唤醒词:看提醒):\n\n请按以下格式填写你的参数:\n\n  状  态: _____________ (选填,active=默认/dismissed)\n\n期望效果:\n  AI 按时间排序列出提醒。带 --html 时生成可筛选的可视化页。", "status": "", "result": "按时间排序的提醒列表。带 --html 时生成可筛选页。\n", "category": "remind", "subfunction": "查看提醒"}, {"wake_word": "查已提醒备忘", "scenario_id": "memo_completed_reminders", "scenario_title": "查询已触发的提醒与对应打卡", "dimensions": {"html": "生成可视化页"}, "prompt": "请帮我查看已提醒过的备忘(唤醒词:查已提醒备忘):\n\n无需参数,直接发送。\n\n期望效果:\n  AI 列出已触发的提醒 + 关联打卡笔记 + 触发时间。", "status": "", "result": "列出已触发的提醒 + 关联打卡笔记 + 触发时间。匹配逻辑:\n一次性已通知 + 关联打卡 / 重复型有关联打卡。\n", "category": "remind", "subfunction": "查看提醒"}, {"wake_word": "完成心愿", "scenario_id": "memo_complete_wish", "scenario_title": "把心愿标记为已完成(原子操作)", "dimensions": {"ids": "心愿 ID 列表(单条或多条)", "content": "打卡内容(默认拷贝心愿原文)", "html": "过程型 HTML 向导(批量场景推荐)"}, "prompt": "请帮我把心愿标记为已完成(唤醒词:完成心愿):\n\n请按以下格式填写你的参数:\n\n  心愿 ID: _____________ (数字,如 15)\n  打卡内容: _____________ (选填,默认拷贝心愿原文)\n\n期望效果:\n  AI 执行原子操作:删除该心愿 + 新建打卡 note(同事务)。\n  批量场景:先 wish-complete --html 生成向导,你在 HTML 勾选 + 填打卡内容。", "status": "", "result": "原子操作:删除心愿 + 新建打卡 note(同事务)。\n批量场景:先 wish-complete --html 生成向导,用户在 HTML 勾选 + 填打卡内容,采纳复制后 AI 逐条执行。\n", "category": "wish", "subfunction": "心愿推进"}, {"wake_word": "心愿排期", "scenario_id": "memo_wish_schedule", "scenario_title": "给心愿设排期日期(同步飞书 due)", "dimensions": {"ids": "心愿 ID 列表", "due": "期望完成日期 YYYY-MM-DD", "html": "过程型 HTML 向导(批量场景推荐)"}, "prompt": "请帮我给心愿设排期日期(唤醒词:心愿排期):\n\n请按以下格式填写你的参数:\n\n  心愿 ID: _____________ (数字,可多个,空格分隔,如\"15 18 22\")\n  排期日期: _____________ (YYYY-MM-DD,如 2026-07-30)\n\n期望效果:\n  AI 设置本地 notes.due + 飞书 task 同步 due。\n  批量场景:先 wish-batch-plan --suggest-due X --html 生成向导,你在 HTML 微调。", "status": "", "result": "本地设置 due + 飞书 task 同步 due(失败降级,本地优先)。\n批量场景:先 wish-batch-plan --suggest-due X --html 生成向导,用户在 HTML 微调,采纳复制后 AI 执行。\n", "category": "wish", "subfunction": "心愿推进"}, {"wake_word": "备忘改分类", "scenario_id": "memo_batch_change_category", "scenario_title": "批量改分类(过程型 HTML 向导)", "dimensions": {"from_category": "原分类", "to_category": "建议目标分类(HTML 可改)", "bulk_indicator": "原话含'都/全部/多个 ID'", "html": "过程型 HTML(必须)"}, "prompt": "请帮我批量改分类(唤醒词:备忘改分类 · 批量场景):\n\n请按以下格式填写你的参数:\n\n  原分类: _____________ (备忘/心愿/打卡/情绪日记)\n  目标分类: _____________ (建议目标,可在 HTML 改)\n\n期望效果:\n  AI 生成批量改分类向导 HTML,你在 UI 勾选 + 选目标分类 → 采纳复制 → 调多条 update-category。\n  注:子分类不会被改动。", "status": "", "result": "生成批量改分类向导 HTML,用户在 UI 勾选 + 选目标分类 → 采纳复制 → AI 调多条 update-category。\n注:子分类不改(它是内容维度的二阶属性)。\n", "category": "memo", "subfunction": "分类调整"}, {"wake_word": "备忘录同步", "scenario_id": "memo_sync_feishu", "scenario_title": "备忘录 ↔ 飞书双向对账", "dimensions": {"html": "生成同步报告页"}, "prompt": "请帮我跑备忘录和飞书的双向对账(唤醒词:备忘录同步):\n\n无需参数,直接发送。\n\n期望效果:\n  AI 执行 3 步对账:\n  1. 本地补建(本地心愿无飞书 task → 自动建)\n  2. 反向同步 done(飞书已完成 → 本地 complete-wish)\n  3. 反向同步 due(飞书 due 改 → 本地 notes.due 跟)\n  带 --html 时生成同步报告页(含 11 统计字段)。", "status": "", "result": "3 步对账:\n1. 本地补建:本地心愿无飞书 task → 自动建\n2. 反向同步 done:飞书已完成 → 本地 complete-wish\n3. 反向同步 due:飞书 due 改 → 本地 notes.due 跟(飞书优先)\n带 --html 时生成同步报告页(11 统计字段 + 3 步折叠 + errors 高亮)。\n", "category": "sync"}, {"wake_word": "记心愿", "scenario_id": "memo_add_wish", "scenario_title": "快速添加心愿(自动心愿分类)", "dimensions": {"content": "心愿内容", "sub_category": "自由文本", "due": "排期日期(可选)", "tasklist_guid": "飞书任务清单 GUID(可选)"}, "prompt": "请帮我快速添加心愿(唤醒词:记心愿 · 子唤醒词自动带心愿分类):\n\n请按以下格式填写你的参数:\n\n  内  容: _____________ (心愿内容,如\"想学 Python\")\n  子分类: _____________ (选填,2 字简短)\n  排  期: _____________ (选填,YYYY-MM-DD,放哪天完成)\n  飞书任务清单: _____________ (选填,tasklist GUID,留空=我的任务)\n\n期望效果:\n  AI 创建心愿 note,自动建飞书 task 并写回 task_guid。", "status": "", "result": "创建心愿 note,自动建飞书 task 并写回 task_guid。\n顶层分类已确定,跳过分类确认。\n", "category": "wish", "subfunction": "心愿管理"}, {"wake_word": "删心愿", "scenario_id": "memo_delete_wish", "scenario_title": "删心愿(自动心愿分类过滤)", "dimensions": {"id": "心愿 ID"}, "prompt": "请帮我删除心愿(唤醒词:删心愿 · 子唤醒词自动带心愿过滤):\n\n请按以下格式填写你的参数:\n\n  心愿 ID: _____________ (数字,如 15)\n\n期望效果:\n  AI 删除这条心愿;若有飞书 task,会自动标完成。", "status": "", "result": "走通用删笔记流程。心愿关联的飞书 task 自动标完成。\n", "category": "wish", "subfunction": "心愿管理"}, {"wake_word": "改心愿", "scenario_id": "memo_update_wish", "scenario_title": "改心愿(自动心愿分类过滤)", "dimensions": {"id": "心愿 ID", "content": "新内容"}, "prompt": "请帮我改心愿(唤醒词:改心愿 · 子唤醒词自动带心愿过滤):\n\n请按以下格式填写你的参数:\n\n  心愿 ID: _____________ (数字,如 15)\n  新内容: _____________ (改后的话)\n\n期望效果:\n  AI 更新内容,飞书 task 标题同步更新。", "status": "", "result": "走通用改笔记流程。飞书 task 标题自动同步。\n", "category": "wish", "subfunction": "心愿管理"}, {"wake_word": "记打卡", "scenario_id": "memo_add_checkin", "scenario_title": "快速添加打卡(自动打卡分类)", "dimensions": {"content": "打卡内容", "sub_category": "自由文本", "reminder_id": "关联提醒 ID(可选,溯源用)"}, "prompt": "请帮我快速添加打卡(唤醒词:记打卡 · 子唤醒词自动带打卡分类):\n\n请按以下格式填写你的参数:\n\n  内  容: _____________ (打卡内容,如\"跑了 5 公里\")\n  子分类: _____________ (选填,2 字简短,如\"跑步\")\n  关联提醒: _____________ (选填,提醒 ID,溯源用)\n\n期望效果:\n  AI 创建打卡 note。", "status": "", "result": "创建打卡 note。可选关联 reminder_id(提醒触发后自动打卡时由系统填)。\n", "category": "checkin"}, {"wake_word": "删打卡", "scenario_id": "memo_delete_checkin", "scenario_title": "删打卡(自动打卡分类过滤)", "dimensions": {"id": "打卡 ID"}, "prompt": "请帮我删除打卡(唤醒词:删打卡 · 子唤醒词自动带打卡过滤):\n\n请按以下格式填写你的参数:\n\n  打卡 ID: _____________ (数字,如 20)\n\n期望效果:\n  AI 删除这条打卡记录。", "status": "", "result": "走通用删笔记流程。\n", "category": "checkin"}, {"wake_word": "改打卡", "scenario_id": "memo_update_checkin", "scenario_title": "改打卡(自动打卡分类过滤)", "dimensions": {"id": "打卡 ID", "content": "新内容"}, "prompt": "请帮我改打卡(唤醒词:改打卡 · 子唤醒词自动带打卡过滤):\n\n请按以下格式填写你的参数:\n\n  打卡 ID: _____________ (数字,如 20)\n  新内容: _____________ (改后的话)\n\n期望效果:\n  AI 更新这条打卡的内容。", "status": "", "result": "走通用改笔记流程。\n", "category": "checkin"}, {"wake_word": "记情绪", "scenario_id": "memo_add_mood", "scenario_title": "快速添加情绪日记(自动情绪日记分类)", "dimensions": {"content": "情绪内容", "sub_category": "自由文本"}, "prompt": "请帮我快速添加情绪日记(唤醒词:记情绪 · 子唤醒词自动带情绪日记分类):\n\n请按以下格式填写你的参数:\n\n  内  容: _____________ (情绪内容)\n  子分类: _____________ (选填,2 字简短)\n\n期望效果:\n  AI 创建情绪日记 note。", "status": "", "result": "创建情绪日记 note。\n", "category": "mood"}, {"wake_word": "删情绪", "scenario_id": "memo_delete_mood", "scenario_title": "删情绪(自动情绪日记分类过滤)", "dimensions": {"id": "情绪日记 ID"}, "prompt": "请帮我删除情绪日记(唤醒词:删情绪 · 子唤醒词自动带情绪日记过滤):\n\n请按以下格式填写你的参数:\n\n  情绪日记 ID: _____________ (数字,如 25)\n\n期望效果:\n  AI 删除这条情绪日记。", "status": "", "result": "走通用删笔记流程。\n", "category": "mood"}, {"wake_word": "改情绪", "scenario_id": "memo_update_mood", "scenario_title": "改情绪(自动情绪日记分类过滤)", "dimensions": {"id": "情绪日记 ID", "content": "新内容"}, "prompt": "请帮我改情绪日记(唤醒词:改情绪 · 子唤醒词自动带情绪日记过滤):\n\n请按以下格式填写你的参数:\n\n  情绪日记 ID: _____________ (数字,如 25)\n  新内容: _____________ (改后的话)\n\n期望效果:\n  AI 更新这条情绪日记的内容。", "status": "", "result": "走通用改笔记流程。", "category": "mood"}, {"wake_word": "首次使用", "scenario_id": "memo_init_setup", "scenario_title": "初始化备忘录(首次使用引导)", "dimensions": {}, "dependencies": "Python 3.10+: 必装(全部命令由 Python 驱动)\nSQLite(含 FTS5): Python 内置免装,需确认 FTS5 可用(全文搜索依赖)\n@larksuite/cli(飞书 CLI,bin 名 lark-cli) >=1.0.59: 强烈建议(核心联动:心愿→飞书、备忘录同步);安装 npm install -g @larksuite/cli,授权 lark-cli auth login;用户明确拒绝才可跳过,跳过则上述两个功能不可用\nSKILLS_DB_PATH: 可选环境变量,数据库根目录(多技能共用)。不设时默认:Windows D:/.db / Linux(含 WSL)~/.local/share/memo(或 /mnt/d/.db)\nMEMO_MEDIA_DIR: 可选环境变量,媒体文件目录(不设默认 media)\nCron 提醒调度: 可选,宿主平台定时调提醒检查;推送渠道(QQ/飞书/微信)由宿主选择\n浏览器: 系统自带,查看 HELP/查询/向导 HTML 用默认浏览器", "prompt": "请帮我初始化备忘录,我是第一次使用(唤醒词:首次使用):\n\n无需参数,直接发送。\n\n请按步骤帮我搭建好环境:检查并配置 Python、数据存储(全文搜索)、飞书 CLI(未安装则引导我安装并授权)、环境变量,初始化数据库,配置提醒调度;每步缺什么就告诉我怎么装/怎么配,完成后生成初始化报告页给我,并带我浏览一遍全部功能。\n\n期望效果:\n  AI 逐步引导我从零搭建环境(检测→安装/配置→验证),缺什么给具体指引,初始化数据库,生成初始化报告页,报告就绪情况。", "status": "", "result": "AI 从零逐步搭建环境:检查并配置 Python/SQLite/飞书 CLI/环境变量,缺什么给安装与配置指引(飞书未装会引导安装并授权),初始化数据库,配置提醒调度,生成初始化报告页;完成后带你浏览全部功能。", "category": "init"}]}, "message": "共 30 个场景"};</script>
+<script>window.__DATA__ = {"status": "ok", "data": {"title": "备忘录 · HELP 使用手册", "command": "help", "generated_at": "2026-08-07 14:04:47", "version": "1.2.1", "skill": "备忘录", "categories": [{"key": "memo", "name": "备忘类", "icon": "📝"}, {"key": "search", "name": "查找类", "icon": "🔍"}, {"key": "remind", "name": "提醒类", "icon": "⏰"}, {"key": "wish", "name": "心愿类", "icon": "🎯"}, {"key": "checkin", "name": "打卡类", "icon": "✅"}, {"key": "mood", "name": "情绪类", "icon": "💭"}, {"key": "sync", "name": "同步类", "icon": "🔄"}, {"key": "init", "name": "初始化类", "icon": "🚀"}], "scenarios": [{"wake_word": "记备忘", "scenario_id": "memo_add_basic", "scenario_title": "添加一条备忘笔记", "type": "采集+回执", "dimensions": {"category": "备忘(默认) / 心愿 / 打卡 / 情绪日记", "sub_category": "自由文本,AI 智能推断 1 个 2 字", "media": "可选附件(图片/音频/视频)", "due": "仅心愿生效,YYYY-MM-DD"}, "prompt": "请帮我记一条备忘(唤醒词:记备忘):\n\n请按以下格式填写你的参数:\n\n  内  容: _____________ (你想记的话)\n  分  类: _____________ (选填,备忘/心愿/打卡/情绪日记)\n  子分类: _____________ (选填,2 字简短描述,如\"工作\")\n  附  件: _____________ (选填,文件名,如 receipt.jpg)\n\n期望效果:\n  AI 创建一条备忘,告诉你 ID 和创建时间。心愿类还会自动建飞书任务。", "status": "", "result": "创建一条笔记,告诉你 ID、分类、创建时间。心愿类还会自动建飞书任务。\n", "category": "memo", "subfunction": "基础记录"}, {"wake_word": "改备忘", "scenario_id": "memo_update_basic", "scenario_title": "修改已有笔记", "type": "采集+回执", "dimensions": {"id": "必填,数字 ID", "content": "新内容(可选)", "category": "新顶层分类(可选)", "sub_category": "新子分类(可选)"}, "prompt": "请帮我修改一条已有的备忘(唤醒词:改备忘):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n  新内容: _____________ (改后的话)\n  新分类: _____________ (选填,备忘/心愿/打卡/情绪日记)\n  新子分类: _____________ (选填,2 字简短)\n\n期望效果:\n  AI 更新这条备忘的字段,告诉你修改后的内容。心愿类会同步飞书任务标题。", "status": "", "result": "更新笔记内容/分类/子分类,告诉你更新后的字段。心愿类会同步更新飞书任务标题。\n", "category": "memo", "subfunction": "基础记录"}, {"wake_word": "删备忘", "scenario_id": "memo_delete_basic", "scenario_title": "删除笔记", "type": "采集+回执", "dimensions": {"id": "必填,数字 ID,可多个", "with_reminders": "是否级联删关联提醒(默认否,有提醒则报错)", "true": "跳过二次确认(自动化用)"}, "prompt": "请帮我删除一条或多条备忘(唤醒词:删备忘):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (可多个,空格分隔,如\"15 18 22\")\n\n期望效果:\n  AI 删除这些备忘并告知影响行数;有关联提醒时 AI 会先确认。", "status": "", "result": "删除笔记并告知影响行数;有关联提醒时提示用户确认是否级联删除。\n", "category": "memo", "subfunction": "基础记录"}, {"wake_word": "备忘改分类", "scenario_id": "memo_change_category_single", "scenario_title": "修改单条笔记的顶层分类", "type": "采集+回执", "dimensions": {"id": "必填,数字 ID", "category": "目标分类(备忘/心愿/打卡/情绪日记)", "bulk_indicator": "原话含'都/全部/多个 ID' → 走批量版"}, "prompt": "请帮我修改单条备忘的顶层分类(唤醒词:备忘改分类,单条):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n  新分类: _____________ (备忘/心愿/打卡/情绪日记)\n\n期望效果:\n  AI 改这条备忘的顶层分类;子分类不会被改动(它是内容维度的二阶属性)。", "status": "", "result": "改顶层分类。子分类不变(它是内容维度的二阶属性)。\n批量场景走\"批量改分类向导\",见同名条目。\n", "category": "memo", "subfunction": "分类调整"}, {"wake_word": "备忘改子分类", "scenario_id": "memo_change_subcategory", "scenario_title": "修改单条笔记的子分类", "type": "采集+回执", "dimensions": {"id": "必填,数字 ID", "sub_category": "新子分类(2 字自由文本,'null' 清除)"}, "prompt": "请帮我修改单条备忘的子分类(唤醒词:备忘改子分类):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n  新子分类: _____________ (2 字简短,如\"工作\";留空=清除)\n\n期望效果:\n  AI 修改或清除这条备忘的子分类,适用于所有顶层分类。", "status": "", "result": "修改/清除子分类,适用于所有顶层分类(子分类是自由文本)。\n", "category": "memo", "subfunction": "分类调整"}, {"wake_word": "搜备忘", "scenario_id": "memo_search_keyword", "scenario_title": "按关键词搜索笔记", "type": "查看+回执", "dimensions": {"keyword": "搜索词(全文索引)", "category": "顶层分类过滤(可选)", "sub_category": "子分类过滤(可选)", "due": "按排期日期过滤(可选,YYYY-MM-DD)", "html": "生成可视化结果页"}, "prompt": "请帮我搜备忘录(唤醒词:搜备忘):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (搜的内容,如\"咖啡\")\n  分  类: _____________ (选填,备忘/心愿/打卡/情绪日记)\n  子分类: _____________ (选填,2 字简短)\n  排  期: _____________ (选填,YYYY-MM-DD,按排期日期过滤)\n\n期望效果:\n  AI 列出含关键词的所有笔记。带 --html 时生成可视化搜索结果页。", "status": "", "result": "列出匹配的笔记,告诉你结果数。带 --html 时生成可视化页(含筛选/复制 ID/复制回执)。\n", "category": "search", "subfunction": "基础查找"}, {"wake_word": "查备忘", "scenario_id": "memo_search_alias", "scenario_title": "搜备忘的别名(同义触发)", "type": "查看+回执", "dimensions": {"keyword": "搜索词"}, "prompt": "请帮我查备忘录(唤醒词:查备忘):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (搜的内容)\n\n期望效果:\n  AI 搜索含关键词的笔记,并生成可视化结果页。", "status": "", "result": "同\"搜备忘\"。走相同命令。\n", "category": "search", "subfunction": "基础查找"}, {"wake_word": "看备忘", "scenario_id": "memo_get_detail", "scenario_title": "查看单条笔记详情", "type": "查看+回执", "dimensions": {"id": "必填,数字 ID", "html": "生成详情页"}, "prompt": "请帮我查看某条备忘的详情(唤醒词:看备忘):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n\n期望效果:\n  AI 显示这条备忘的全部字段。带 --html 时生成详情页。", "status": "", "result": "显示单条笔记全部字段。带 --html 时生成详情页。\n", "category": "search", "subfunction": "基础查找"}, {"wake_word": "按时间搜备忘", "scenario_id": "memo_search_by_date", "scenario_title": "按日期范围搜索笔记", "type": "查看+回执", "dimensions": {"start": "开始日期 YYYY-MM-DD", "end": "结束日期 YYYY-MM-DD", "category": "顶层分类过滤", "html": "生成可视化结果页"}, "prompt": "请帮我按时间范围搜索备忘录(唤醒词:按时间搜备忘):\n\n请按以下格式填写你的参数:\n\n  开始日期: _____________ (YYYY-MM-DD,如 2026-07-01)\n  结束日期: _____________ (YYYY-MM-DD,如 2026-07-07)\n  分  类:    _____________ (选填,备忘/心愿/打卡/情绪日记)\n\n期望效果:\n  AI 列出该日期范围内的所有笔记,按创建时间倒序。", "status": "", "result": "列出日期范围内的笔记,按创建时间倒序。\n", "category": "search", "subfunction": "时间查找"}, {"wake_word": "查心愿", "scenario_id": "memo_search_wish", "scenario_title": "查所有心愿(自动带分类过滤)", "type": "查看+回执", "dimensions": {"keyword": "搜索词(可选)", "due": "按排期日期过滤", "html": "生成可视化页"}, "prompt": "请帮我查看心愿(唤醒词:查心愿):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (选填,搜的内容)\n  排  期: _____________ (选填,YYYY-MM-DD,按排期日期过滤)\n\n期望效果:\n  AI 自动按\"心愿\"分类过滤,等同搜备忘 -c 心愿。", "status": "", "result": "自动按\"心愿\"分类过滤,等同 `搜备忘 -c 心愿`。\n", "category": "search", "subfunction": "分类查找"}, {"wake_word": "查打卡", "scenario_id": "memo_search_checkin", "scenario_title": "查所有打卡记录", "type": "查看+回执", "dimensions": {"keyword": "搜索词(可选)", "html": "生成可视化页"}, "prompt": "请帮我查看打卡记录(唤醒词:查打卡):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (选填,搜的内容)\n\n期望效果:\n  AI 自动按\"打卡\"分类过滤,列出结果。", "status": "", "result": "自动按\"打卡\"分类过滤。\n", "category": "search", "subfunction": "分类查找"}, {"wake_word": "查情绪", "scenario_id": "memo_search_mood", "scenario_title": "查所有情绪日记", "type": "查看+回执", "dimensions": {"keyword": "搜索词(可选)", "html": "生成可视化页"}, "prompt": "请帮我查看情绪日记(唤醒词:查情绪):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (选填,搜的内容)\n\n期望效果:\n  AI 自动按\"情绪日记\"分类过滤,列出结果。", "status": "", "result": "自动按\"情绪日记\"分类过滤。\n", "category": "search", "subfunction": "分类查找"}, {"wake_word": "记提醒", "scenario_id": "memo_remind_with_note", "scenario_title": "添加笔记 + 设置提醒(两步合一)", "type": "采集+回执", "dimensions": {"content": "笔记内容", "remind_at": "提醒时间 YYYY-MM-DD HH:MM", "repeat_type": "一次性(默认)/每天/每周/每月/每年", "repeat_rule": "重复规则(每天:HH:MM / 每周:W HH:MM / 每月:D HH:MM / 每年:MM-DD HH:MM)"}, "prompt": "请帮我记一条提醒(唤醒词:记提醒 · 两步合一:添笔记 + 设提醒):\n\n请按以下格式填写你的参数:\n\n  笔记内容: _____________ (要提醒的事)\n  提醒时间: _____________ (YYYY-MM-DD HH:MM,如 2026-07-25 09:00)\n  重复类型: _____________ (选填,一次性/每天/每周/每月/每年)\n  重复规则: _____________ (选填,如每天=\"09:00\",每周=\"5 17:00\")\n\n期望效果:\n  AI 先创建笔记,再创建关联提醒,Cron 到点触发推送。", "status": "", "result": "先创建笔记,再创建关联提醒。Cron 到点触发推送。\n", "category": "remind", "subfunction": "创建提醒"}, {"wake_word": "设提醒", "scenario_id": "memo_remind_existing", "scenario_title": "给已有笔记加提醒", "type": "采集+回执", "dimensions": {"note_id": "笔记 ID(可选,可不关联具体笔记)", "remind_at": "提醒时间", "content": "提醒内容", "repeat_type": "重复类型(默认一次性)", "repeat_rule": "重复规则"}, "prompt": "请帮我给已有笔记加提醒(唤醒词:设提醒):\n\n请按以下格式填写你的参数:\n\n  笔记 ID: _____________ (数字,如 15)\n  提醒时间: _____________ (YYYY-MM-DD HH:MM,如 2026-07-25 09:00)\n  提醒内容: _____________ (选填,如\"该跑步了\")\n  重复类型: _____________ (选填,默认\"一次性\")\n  重复规则: _____________ (选填,见格式说明)\n\n期望效果:\n  AI 创建提醒,可关联或独立存在。", "status": "", "result": "创建提醒,可关联或独立存在。\n", "category": "remind", "subfunction": "创建提醒"}, {"wake_word": "看提醒", "scenario_id": "memo_reminders_active", "scenario_title": "查看所有有效提醒", "type": "查看+回执", "dimensions": {"status": "active(默认)/dismissed", "html": "生成可视化页"}, "prompt": "请帮我查看有效提醒(唤醒词:看提醒):\n\n请按以下格式填写你的参数:\n\n  状  态: _____________ (选填,active=默认/dismissed)\n\n期望效果:\n  AI 按时间排序列出提醒。带 --html 时生成可筛选的可视化页。", "status": "", "result": "按时间排序的提醒列表。带 --html 时生成可筛选页。\n", "category": "remind", "subfunction": "查看提醒"}, {"wake_word": "查已提醒备忘", "scenario_id": "memo_completed_reminders", "scenario_title": "查询已触发的提醒与对应打卡", "type": "查看+回执", "dimensions": {"html": "生成可视化页"}, "prompt": "请帮我查看已提醒过的备忘(唤醒词:查已提醒备忘):\n\n无需参数,直接发送。\n\n期望效果:\n  AI 列出已触发的提醒 + 关联打卡笔记 + 触发时间。", "status": "", "result": "列出已触发的提醒 + 关联打卡笔记 + 触发时间。匹配逻辑:\n一次性已通知 + 关联打卡 / 重复型有关联打卡。\n", "category": "remind", "subfunction": "查看提醒"}, {"wake_word": "完成心愿", "scenario_id": "memo_complete_wish", "scenario_title": "把心愿标记为已完成(原子操作)", "type": "向导+采集+回执", "dimensions": {"ids": "心愿 ID 列表(单条或多条)", "content": "打卡内容(默认拷贝心愿原文)", "html": "过程型 HTML 向导(批量场景推荐)"}, "prompt": "请帮我把心愿标记为已完成(唤醒词:完成心愿):\n\n请按以下格式填写你的参数:\n\n  心愿 ID: _____________ (数字,如 15)\n  打卡内容: _____________ (选填,默认拷贝心愿原文)\n\n期望效果:\n  AI 执行原子操作:删除该心愿 + 新建打卡 note(同事务)。\n  批量场景:先 wish-complete --html 生成向导,你在 HTML 勾选 + 填打卡内容。", "status": "", "result": "原子操作:删除心愿 + 新建打卡 note(同事务)。\n批量场景:先 wish-complete --html 生成向导,用户在 HTML 勾选 + 填打卡内容,采纳复制后 AI 逐条执行。\n", "category": "wish", "subfunction": "心愿推进"}, {"wake_word": "心愿排期", "scenario_id": "memo_wish_schedule", "scenario_title": "给心愿设排期日期(同步飞书 due)", "type": "向导+采集+回执", "dimensions": {"ids": "心愿 ID 列表", "due": "期望完成日期 YYYY-MM-DD", "html": "过程型 HTML 向导(批量场景推荐)"}, "prompt": "请帮我给心愿设排期日期(唤醒词:心愿排期):\n\n请按以下格式填写你的参数:\n\n  心愿 ID: _____________ (数字,可多个,空格分隔,如\"15 18 22\")\n  排期日期: _____________ (YYYY-MM-DD,如 2026-07-30)\n\n期望效果:\n  AI 设置本地 notes.due + 飞书 task 同步 due。\n  批量场景:先 wish-batch-plan --suggest-due X --html 生成向导,你在 HTML 微调。", "status": "", "result": "本地设置 due + 飞书 task 同步 due(失败降级,本地优先)。\n批量场景:先 wish-batch-plan --suggest-due X --html 生成向导,用户在 HTML 微调,采纳复制后 AI 执行。\n", "category": "wish", "subfunction": "心愿推进"}, {"wake_word": "备忘改分类", "scenario_id": "memo_batch_change_category", "scenario_title": "批量改分类(过程型 HTML 向导)", "type": "向导+采集+回执", "dimensions": {"from_category": "原分类", "to_category": "建议目标分类(HTML 可改)", "bulk_indicator": "原话含'都/全部/多个 ID'", "html": "过程型 HTML(必须)"}, "prompt": "请帮我批量改分类(唤醒词:备忘改分类 · 批量场景):\n\n请按以下格式填写你的参数:\n\n  原分类: _____________ (备忘/心愿/打卡/情绪日记)\n  目标分类: _____________ (建议目标,可在 HTML 改)\n\n期望效果:\n  AI 生成批量改分类向导 HTML,你在 UI 勾选 + 选目标分类 → 采纳复制 → 调多条 update-category。\n  注:子分类不会被改动。", "status": "", "result": "生成批量改分类向导 HTML,用户在 UI 勾选 + 选目标分类 → 采纳复制 → AI 调多条 update-category。\n注:子分类不改(它是内容维度的二阶属性)。\n", "category": "memo", "subfunction": "分类调整"}, {"wake_word": "备忘录同步", "scenario_id": "memo_sync_feishu", "scenario_title": "备忘录 ↔ 飞书双向对账", "type": "查看+回执", "dimensions": {"html": "生成同步报告页"}, "prompt": "请帮我跑备忘录和飞书的双向对账(唤醒词:备忘录同步):\n\n无需参数,直接发送。\n\n期望效果:\n  AI 执行 3 步对账:\n  1. 本地补建(本地心愿无飞书 task → 自动建)\n  2. 反向同步 done(飞书已完成 → 本地 complete-wish)\n  3. 反向同步 due(飞书 due 改 → 本地 notes.due 跟)\n  带 --html 时生成同步报告页(含 11 统计字段)。", "status": "", "result": "3 步对账:\n1. 本地补建:本地心愿无飞书 task → 自动建\n2. 反向同步 done:飞书已完成 → 本地 complete-wish\n3. 反向同步 due:飞书 due 改 → 本地 notes.due 跟(飞书优先)\n带 --html 时生成同步报告页(11 统计字段 + 3 步折叠 + errors 高亮)。\n", "category": "sync"}, {"wake_word": "记心愿", "scenario_id": "memo_add_wish", "scenario_title": "快速添加心愿(自动心愿分类)", "type": "采集+回执", "dimensions": {"content": "心愿内容", "sub_category": "自由文本", "due": "排期日期(可选)", "tasklist_guid": "飞书任务清单 GUID(可选)"}, "prompt": "请帮我快速添加心愿(唤醒词:记心愿 · 子唤醒词自动带心愿分类):\n\n请按以下格式填写你的参数:\n\n  内  容: _____________ (心愿内容,如\"想学 Python\")\n  子分类: _____________ (选填,2 字简短)\n  排  期: _____________ (选填,YYYY-MM-DD,放哪天完成)\n  飞书任务清单: _____________ (选填,tasklist GUID,留空=我的任务)\n\n期望效果:\n  AI 创建心愿 note,自动建飞书 task 并写回 task_guid。", "status": "", "result": "创建心愿 note,自动建飞书 task 并写回 task_guid。\n顶层分类已确定,跳过分类确认。\n", "category": "wish", "subfunction": "心愿管理"}, {"wake_word": "删心愿", "scenario_id": "memo_delete_wish", "scenario_title": "删心愿(自动心愿分类过滤)", "type": "采集+回执", "dimensions": {"id": "心愿 ID"}, "prompt": "请帮我删除心愿(唤醒词:删心愿 · 子唤醒词自动带心愿过滤):\n\n请按以下格式填写你的参数:\n\n  心愿 ID: _____________ (数字,如 15)\n\n期望效果:\n  AI 删除这条心愿;若有飞书 task,会自动标完成。", "status": "", "result": "走通用删笔记流程。心愿关联的飞书 task 自动标完成。\n", "category": "wish", "subfunction": "心愿管理"}, {"wake_word": "改心愿", "scenario_id": "memo_update_wish", "scenario_title": "改心愿(自动心愿分类过滤)", "type": "采集+回执", "dimensions": {"id": "心愿 ID", "content": "新内容"}, "prompt": "请帮我改心愿(唤醒词:改心愿 · 子唤醒词自动带心愿过滤):\n\n请按以下格式填写你的参数:\n\n  心愿 ID: _____________ (数字,如 15)\n  新内容: _____________ (改后的话)\n\n期望效果:\n  AI 更新内容,飞书 task 标题同步更新。", "status": "", "result": "走通用改笔记流程。飞书 task 标题自动同步。\n", "category": "wish", "subfunction": "心愿管理"}, {"wake_word": "记打卡", "scenario_id": "memo_add_checkin", "scenario_title": "快速添加打卡(自动打卡分类)", "type": "采集+回执", "dimensions": {"content": "打卡内容", "sub_category": "自由文本", "reminder_id": "关联提醒 ID(可选,溯源用)"}, "prompt": "请帮我快速添加打卡(唤醒词:记打卡 · 子唤醒词自动带打卡分类):\n\n请按以下格式填写你的参数:\n\n  内  容: _____________ (打卡内容,如\"跑了 5 公里\")\n  子分类: _____________ (选填,2 字简短,如\"跑步\")\n  关联提醒: _____________ (选填,提醒 ID,溯源用)\n\n期望效果:\n  AI 创建打卡 note。", "status": "", "result": "创建打卡 note。可选关联 reminder_id(提醒触发后自动打卡时由系统填)。\n", "category": "checkin"}, {"wake_word": "删打卡", "scenario_id": "memo_delete_checkin", "scenario_title": "删打卡(自动打卡分类过滤)", "type": "采集+回执", "dimensions": {"id": "打卡 ID"}, "prompt": "请帮我删除打卡(唤醒词:删打卡 · 子唤醒词自动带打卡过滤):\n\n请按以下格式填写你的参数:\n\n  打卡 ID: _____________ (数字,如 20)\n\n期望效果:\n  AI 删除这条打卡记录。", "status": "", "result": "走通用删笔记流程。\n", "category": "checkin"}, {"wake_word": "改打卡", "scenario_id": "memo_update_checkin", "scenario_title": "改打卡(自动打卡分类过滤)", "type": "采集+回执", "dimensions": {"id": "打卡 ID", "content": "新内容"}, "prompt": "请帮我改打卡(唤醒词:改打卡 · 子唤醒词自动带打卡过滤):\n\n请按以下格式填写你的参数:\n\n  打卡 ID: _____________ (数字,如 20)\n  新内容: _____________ (改后的话)\n\n期望效果:\n  AI 更新这条打卡的内容。", "status": "", "result": "走通用改笔记流程。\n", "category": "checkin"}, {"wake_word": "记情绪", "scenario_id": "memo_add_mood", "scenario_title": "快速添加情绪日记(自动情绪日记分类)", "type": "采集+回执", "dimensions": {"content": "情绪内容", "sub_category": "自由文本"}, "prompt": "请帮我快速添加情绪日记(唤醒词:记情绪 · 子唤醒词自动带情绪日记分类):\n\n请按以下格式填写你的参数:\n\n  内  容: _____________ (情绪内容)\n  子分类: _____________ (选填,2 字简短)\n\n期望效果:\n  AI 创建情绪日记 note。", "status": "", "result": "创建情绪日记 note。\n", "category": "mood"}, {"wake_word": "删情绪", "scenario_id": "memo_delete_mood", "scenario_title": "删情绪(自动情绪日记分类过滤)", "type": "采集+回执", "dimensions": {"id": "情绪日记 ID"}, "prompt": "请帮我删除情绪日记(唤醒词:删情绪 · 子唤醒词自动带情绪日记过滤):\n\n请按以下格式填写你的参数:\n\n  情绪日记 ID: _____________ (数字,如 25)\n\n期望效果:\n  AI 删除这条情绪日记。", "status": "", "result": "走通用删笔记流程。\n", "category": "mood"}, {"wake_word": "改情绪", "scenario_id": "memo_update_mood", "scenario_title": "改情绪(自动情绪日记分类过滤)", "type": "采集+回执", "dimensions": {"id": "情绪日记 ID", "content": "新内容"}, "prompt": "请帮我改情绪日记(唤醒词:改情绪 · 子唤醒词自动带情绪日记过滤):\n\n请按以下格式填写你的参数:\n\n  情绪日记 ID: _____________ (数字,如 25)\n  新内容: _____________ (改后的话)\n\n期望效果:\n  AI 更新这条情绪日记的内容。", "status": "", "result": "走通用改笔记流程。", "category": "mood"}, {"wake_word": "首次使用", "scenario_id": "memo_init_setup", "scenario_title": "初始化备忘录(首次使用引导)", "type": "向导+采集+回执", "dimensions": {}, "dependencies": "Python 3.10+: 必装(全部命令由 Python 驱动)\nSQLite(含 FTS5): Python 内置免装,需确认 FTS5 可用(全文搜索依赖)\n@larksuite/cli(飞书 CLI,bin 名 lark-cli) >=1.0.59: 强烈建议(核心联动:心愿→飞书、备忘录同步);安装 npm install -g @larksuite/cli,授权 lark-cli auth login;用户明确拒绝才可跳过,跳过则上述两个功能不可用\nSKILLS_DB_PATH: 可选环境变量,数据库根目录(多技能共用)。不设时默认:Windows D:/.db / Linux(含 WSL)~/.local/share/memo(或 /mnt/d/.db)\nMEMO_MEDIA_DIR: 可选环境变量,媒体文件目录(不设默认 media)\nCron 提醒调度: 可选,宿主平台定时调提醒检查;推送渠道(QQ/飞书/微信)由宿主选择\n浏览器: 系统自带,查看 HELP/查询/向导 HTML 用默认浏览器", "prompt": "请帮我初始化备忘录,我是第一次使用(唤醒词:首次使用):\n\n无需参数,直接发送。\n\n请按步骤帮我搭建好环境:检查并配置 Python、数据存储(全文搜索)、飞书 CLI(未安装则引导我安装并授权)、环境变量,初始化数据库,配置提醒调度;每步缺什么就告诉我怎么装/怎么配,完成后生成初始化报告页给我,并带我浏览一遍全部功能。\n\n期望效果:\n  AI 逐步引导我从零搭建环境(检测→安装/配置→验证),缺什么给具体指引,初始化数据库,生成初始化报告页,报告就绪情况。", "status": "", "result": "AI 从零逐步搭建环境:检查并配置 Python/SQLite/飞书 CLI/环境变量,缺什么给安装与配置指引(飞书未装会引导安装并授权),初始化数据库,配置提醒调度,生成初始化报告页;完成后带你浏览全部功能。", "category": "init"}], "summary": {"title": "备忘录 · 使用手册(HELP)", "subtitle": "8 个分类 · 30 个场景 · 版本 1.2.1 · 更新于 2026-08-07 14:04", "metrics": [{"label": "分类", "value": "8"}, {"label": "场景", "value": "30"}, {"label": "可用", "value": "30"}, {"label": "待开发", "value": "0"}], "version": "1.2.1", "generated_at": "2026-08-07 14:04:47"}, "initialized": true, "contact": {"github": "https://github.com/FeatherHunter/SKILLS", "issues": "https://github.com/FeatherHunter/SKILLS/issues"}}, "message": "共 30 个场景"};</script>
 <div class="wrap">
-<header class="hero">
-<div class="eyebrow">Memo Help</div>
-<h1>备忘录 · 使用手册</h1>
-<p class="lead">所有业务唤醒词的场景清单。每个场景可一键复制 prompt 给 AI。</p>
-<p class="meta" id="meta"></p>
-</header>
 
-<!-- 4 状态 fallback(§07 §5 · B.9 决策:success/empty/missing_data/error) -->
-<div id="stateSuccess" class="state-banner success" style="display:none;">✓ 场景已加载</div>
-<div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无场景(场景资产为空)</div>
-<div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 场景资产缺失,请联系维护者</div>
-<div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
+  <header class="hero">
+    <div class="eyebrow">Memo Help</div>
+    <h1>备忘录 · 使用手册</h1>
+    <div class="hero-mode">
+      <div class="hero-steps">
+        <span class="step">🔍 找场景</span><span class="arrow">→</span>
+        <span class="step">📋 复制 prompt</span><span class="arrow">→</span>
+        <span class="step">💬 发给 AI</span>
+      </div>
+      <div class="hero-stats" id="heroStats"></div>
+    </div>
+    <p class="meta" id="heroMeta"></p>
+  </header>
 
-<main id="bodyContent">
-<!-- 由 JS 按模块-场景两层折叠渲染 -->
-</main>
+  <!-- 4 状态 fallback(§07 §5 · B.9 决策:success/empty/missing_data/error) -->
+  <div id="stateSuccess" class="state-banner success" style="display:none;">✓ 场景已加载</div>
+  <div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无场景(场景资产为空)</div>
+  <div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 场景资产缺失,请联系维护者</div>
+  <div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
 
-<footer class="panel">
-<p style="font-size:13.5px;color:var(--fg2)">
-本页面由场景资产自动生成,改场景后重新运行 HELP 命令即可刷新。
-所有 prompt 都已剥离 CLI / 数据库 / 文件路径,纯用户意图,可直接发给 AI。
-</p>
-</footer>
+  <div class="init-banner" id="initBanner" hidden>
+    <div class="ib-text">
+      <div class="ib-title">🚀 第一次用备忘录?</div>
+      <div class="ib-sub">从「首次使用」开始 — 自动检测环境、安装依赖、初始化数据库,全程零手动配置。完成初始化后,本区域将不再出现。</div>
+    </div>
+    <button class="copy-btn" id="initCopy">📋 复制初始化 prompt</button>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <input id="sB" type="search" placeholder="输入即直达:搜索所有场景…" autocomplete="off">
+      <span class="s-icon">🔍</span>
+    </div>
+  </div>
+
+  <div id="mods"></div>
+
+  <details class="contact-box">
+    <summary>📮 联系作者(使用反馈 / 提 ISSUE / 报 Bug)</summary>
+    <div class="contact-body" id="contactBody"></div>
+  </details>
+
+  <footer id="footerLine"></footer>
 </div>
 
-<!-- 回到顶部按钮 -->
 <button class="back-to-top" id="backToTop" type="button" aria-label="回到顶部">↑</button>
 
-<!-- Toast(学习卡路里 help_center · iOS 通知风格 · 复制 prompt 后浮层提示) -->
 <div id="toast" class="toast" role="status" aria-live="polite">
   <div class="toast-icon">📋</div>
   <div class="toast-body">
-    <div class="toast-title">已复制 <em id="toastWake">prompt</em></div>
-    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),备忘录技能会自动执行这个流程,完成后你会在飞书收到 HTML</div>
+    <div class="toast-title">已复制 <em id="toastWake" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),备忘录技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div>
   </div>
   <button class="toast-close" id="toastClose">✓ 知道了</button>
 </div>
 
-<!-- ===== 占位符 - 由 injector 替换为 window.__DATA__ ===== -->
 <!--INJECT-DATA-->
 
 <script>
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function showState(name){
-  ['Success','Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
-  if(name){var el=document.getElementById('state'+name);if(el)el.style.display='block'}
-}
+(function(){
+  var ESC_MAP={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return ESC_MAP[c]})}
 
-try{
-  if(typeof window.__DATA__!=='object'||window.__DATA__===null){showState('Error');throw new Error('数据未注入')}
-  var data=window.__DATA__;
-  var payload=data.data||{};
-  document.getElementById('meta').textContent='版本 '+(payload.version||'?')+' · 生成时间 '+(payload.generated_at||'');
+  function showState(name){
+    ['Success','Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
+    if(name){var el=document.getElementById('state'+name);if(el)el.style.display='block'}
+  }
 
-  if(!Array.isArray(payload.scenarios)||payload.scenarios.length===0){showState('Empty')}
-  else{
-    var scenarios=payload.scenarios;
-    var validScenarios=scenarios.filter(function(s){
+  var payload;
+  try{
+    if(typeof window.__DATA__!=='object'||window.__DATA__===null){throw new Error('数据未注入')}
+    payload=window.__DATA__;
+    var d=payload.data||{};
+    var scenarios=Array.isArray(d.scenarios)?d.scenarios:[];
+    if(scenarios.length===0){showState('Empty');return}
+    var valid=scenarios.filter(function(s){
       return s.wake_word&&s.scenario_id&&s.scenario_title&&s.dimensions&&s.prompt&&s.status!==undefined&&s.result!==undefined;
     });
-    if(validScenarios.length===0){showState('Missing');throw new Error('所有场景均缺必填字段')}
-
-    // 分组(#31 Q2:#33 落地 · categories 列表来自 scenarios.yaml,渲染只读不硬编码)
-    var categories=Array.isArray(payload.categories)?payload.categories:[];
-    var catKeys={};
-    var catName={};var catIcon={};
-    categories.forEach(function(c){catKeys[c.key]=[];catName[c.key]=c.name||c.key;catIcon[c.key]=c.icon||''});
-    validScenarios.forEach(function(s){
-      var k=s.category;
-      if(!(k in catKeys)){if(!('?' in catKeys)){catKeys['?']=[];catName['?']='未分类';catIcon['?']=''};k='?'}
-      catKeys[k].push(s);
-    });
-
-    // 渲染 Level 1:分类(默认折叠) + Level 2:子功能 + Level 3:场景 + Level 4:详情
-    var main=document.getElementById('bodyContent');
-    main.innerHTML='';
-    var rendered=0;
-    // 分类顺序 = categories 列表书写序;未分类兜底最后
-    var orderedKeys=categories.map(function(c){return c.key}).concat(Object.keys(catKeys).filter(function(k){return !(categories.some(function(c){return c.key===k}))}));
-    orderedKeys.forEach(function(k){
-      var items=catKeys[k];
-      if(!items||items.length===0)return;
-      // Level 1:分类
-      var cat=document.createElement('details');cat.className='module';
-      var catSum=document.createElement('summary');catSum.textContent=(catIcon[k]?catIcon[k]+' ':'')+catName[k]+' ('+items.length+')';
-      cat.appendChild(catSum);
-      var catBody=document.createElement('div');catBody.className='module-body';
-      // Level 2:子功能分组(subfunction 空 →「基础」兜底 · #31 Q3)
-      var subGroups={};
-      items.forEach(function(s){var sub=s.subfunction||'基础';(subGroups[sub]=subGroups[sub]||[]).push(s)});
-      Object.keys(subGroups).forEach(function(sub){
-        var subEl=document.createElement('details');subEl.className='sub-module';
-        var subSum=document.createElement('summary');subSum.textContent=sub+' ('+subGroups[sub].length+')';
-        subEl.appendChild(subSum);
-        var subBody=document.createElement('div');subBody.className='module-body';
-        // Level 3:场景卡片(组内序 = 书写序 · #31 Q4)
-        subGroups[sub].forEach(function(s){subBody.appendChild(buildScenarioCard(s))});
-        subEl.appendChild(subBody);
-        catBody.appendChild(subEl);
-      });
-      cat.appendChild(catBody);
-      main.appendChild(cat);
-      rendered+=items.length;
-    });
-    if(rendered>0){showState('Success')}else{showState('Missing')}
+    if(valid.length===0){showState('Missing');throw new Error('所有场景均缺必填字段')}
+  }catch(err){
+    console.error('渲染失败:',err);
+    showState('Error');
+    return;
   }
-}catch(err){
-  console.error('渲染失败:',err);
-  showState('Error');
-}
 
-// ===== Level 2:场景卡片 =====
-function buildScenarioCard(s){
-  var card=document.createElement('article');card.className='scenario';
-
-  // 头部:chip + title + 复制按钮(复制按钮在末尾 · 总是可见)
-  var head=document.createElement('div');head.className='scenario-head';
-  var chip=document.createElement('span');chip.className='chip';chip.textContent=s.wake_word;
-  var title=document.createElement('div');title.className='title';title.textContent=s.scenario_title;
-  var btn=document.createElement('button');btn.className='copy-btn';btn.textContent='📋 复制 prompt';
-  btn.onclick=function(){copyPrompt(s,btn)};
-  head.appendChild(chip);head.appendChild(title);head.appendChild(btn);
-  card.appendChild(head);
-
-  // Level 4:详情子折叠(各 detail 独立折叠 · 4 级架构)
-  var details=document.createElement('details');details.className='details';
-  var sum=document.createElement('summary');sum.textContent='查看详情 · 维度 / prompt / 预期结果';
-  details.appendChild(sum);
-  var detailBody=document.createElement('div');detailBody.className='detail-body';
-
-  // 维度(dim 本身作为子块,不再直接铺)
-  var dimBlock=document.createElement('div');dimBlock.className='dim';
-  Object.keys(s.dimensions||{}).forEach(function(k){
-    dimBlock.innerHTML+='<b>'+esc(k)+'</b>: '+esc(s.dimensions[k])+'<br>';
+  /* ===== 分组(分类 → 子功能 · #31 Q2/Q3 · 渲染只读) ===== */
+  var categories=Array.isArray(d.categories)?d.categories:[];
+  var catMeta={};
+  categories.forEach(function(c){catMeta[c.key]={name:c.name||c.key,icon:c.icon||''}});
+  var byCat={};
+  valid.forEach(function(s){
+    var k=s.category;
+    if(!(k in catMeta)){k='?'}
+    (byCat[k]=byCat[k]||[]).push(s);
   });
-  if(dimBlock.innerHTML)detailBody.appendChild(dimBlock);
+  var orderedKeys=categories.map(function(c){return c.key}).concat(Object.keys(byCat).filter(function(k){return !(k in catMeta)}));
 
-  // prompt
-  var promptBox=document.createElement('pre');promptBox.className='prompt-box';promptBox.textContent=(s.prompt||'').trim();
-  detailBody.appendChild(promptBox);
-
-  // result
-  var resultBox=document.createElement('pre');resultBox.className='result-box';resultBox.textContent='预期: '+(s.result||'').trim();
-  detailBody.appendChild(resultBox);
-
-  // dependencies 依赖清单(#32 决议 · 可选字段 · 渲染为圆点列表)
-  if(s.dependencies&&String(s.dependencies).trim()){
-    var depBox=document.createElement('div');depBox.className='deps-box';
-    var depTitle=document.createElement('div');depTitle.className='deps-title';depTitle.textContent='环境依赖';
-    depBox.appendChild(depTitle);
-    var depList=document.createElement('ul');depList.className='deps-list';
-    String(s.dependencies).split('\n').forEach(function(line){
-      line=line.trim();if(!line)return;
-      var li=document.createElement('li');li.textContent=line;
-      depList.appendChild(li);
-    });
-    depBox.appendChild(depList);
-    detailBody.appendChild(depBox);
+  /* ===== Toast ===== */
+  var toastEl=document.getElementById('toast');
+  var toastWakeEl=document.getElementById('toastWake');
+  var toastTimer=null;
+  function showToast(t){
+    if(toastWakeEl)toastWakeEl.textContent=t;
+    if(toastEl)toastEl.classList.add('show');
+    if(toastTimer)clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){if(toastEl)toastEl.classList.remove('show')},4500);
   }
-
-  details.appendChild(detailBody);
-  card.appendChild(details);
-
-  // 【待开发】标记(§07 §4)
-  if(s.status==='【待开发】'){
-    var warn=document.createElement('div');warn.style.cssText='margin-top:10px;padding:8px 12px;background:#fff7e8;color:#b25b00;border-radius:10px;font-size:13px;font-weight:700';
-    warn.textContent='⚠️ 【待开发】- AI 收到此 prompt 必须停止 + 告知用户,不绕过/不假装/不降级';
-    card.appendChild(warn);
-  }
-  return card;
-}
-
-// ===== 复制 prompt(原则 10 · 学习卡路里 help_center · 直接复制纯 prompt 文本) =====
-// 第一性:prompt 自含「(唤醒词:XXX)」路由锚点 + 期望效果段,使命 = 让 AI 找到
-// SKILL.md 对应流程;复制内容 = prompt 本身,不加【场景】/【唤醒词】/【预期结果】
-// 标签(参考卡路里 help_center.js: s.prompt_template 直接复制 · 2026-08-02 拍板)
-function copyPrompt(s,btn){
-  var text=(s.prompt||'').trim();
-  // 提取唤醒词显示在 toast(确认复制对了)
-  var wakeLabel=s.wake_word||'prompt';
-  if(s.scenario_title)wakeLabel+=' · '+s.scenario_title;
-  showToast(wakeLabel);
-  var after=function(){
-    if(!btn)return;
-    var orig=btn.textContent;btn.textContent='✓ 已复制';btn.classList.add('copied');
-    setTimeout(function(){btn.textContent=orig;btn.classList.remove('copied')},2000);
-  };
-  safeWriteText(text).then(function(ok){if(ok){after()}else{fallbackCopy(text);after()}})
-}
-
-
-// ===== Toast 控制器(学习卡路里 help_center · iOS 通知风格) =====
-var toastEl=document.getElementById('toast');
-var toastWakeEl=document.getElementById('toastWake');
-var toastCloseEl=document.getElementById('toastClose');
-var toastTimer=null;
-function showToast(wake){
-  if(toastWakeEl)toastWakeEl.textContent=wake;
-  if(toastEl)toastEl.classList.add('show');
-  if(toastTimer)clearTimeout(toastTimer);
-  toastTimer=setTimeout(function(){if(toastEl)toastEl.classList.remove('show')},4500);
-}
-if(toastCloseEl){
-  toastCloseEl.addEventListener('click',function(){
-    if(toastEl)toastEl.classList.remove('show');
+  document.getElementById('toastClose').addEventListener('click',function(){
+    toastEl.classList.remove('show');
     if(toastTimer)clearTimeout(toastTimer);
   });
-}
 
-// 回到顶部按钮:滚 200px 后才显示 · 点击平滑回顶
-var backBtn=document.getElementById('backToTop');
-if(backBtn){
+  function copyPrompt(scene,btn){
+    showToast((scene.wake_word||'prompt')+' · '+(scene.scenario_title||''));
+    safeWriteText((scene.prompt||'').trim()).then(function(ok){flashBtn(btn,ok?'✓ 已复制':'✗ 复制失败',2000)});
+  }
+
+  function typeClass(t){
+    if(!t)return 't-view';
+    if(t.indexOf('向导')>=0)return 't-wizard';
+    if(t.indexOf('采集')>=0)return 't-collect';
+    if(t.indexOf('选择')>=0)return 't-select';
+    if(t.indexOf('查看')>=0)return 't-view';
+    return 't-mixed';
+  }
+  function typeBadge(t){return '<span class="type-badge '+typeClass(t)+'">'+esc(t||'查看')+'</span>'}
+  function hl(text,q_){
+    if(!q_||!text)return esc(text);
+    var i=text.toLowerCase().indexOf(q_.toLowerCase());
+    if(i<0)return esc(text);
+    return esc(text.slice(0,i))+'<mark>'+esc(text.slice(i,i+q_.length))+'</mark>'+esc(text.slice(i+q_.length));
+  }
+  function sceneMatch(s,q_){
+    if(!q_)return true;
+    var hay=(s.wake_word+' '+s.scenario_title+' '+(s.subfunction||'')+' '+(s.type||'')).toLowerCase();
+    return hay.indexOf(q_.toLowerCase())>=0;
+  }
+
+  /* ===== 场景卡片(整卡点击展开 · 对齐居家管家) ===== */
+  function buildSceneCard(s,q_){
+    var card=document.createElement('details');card.className='scene';card.id='s-'+s.scenario_id;
+    var head=document.createElement('summary');head.className='scene-head';
+    head.innerHTML='<span class="scene-id">'+esc(s.scenario_id)+'</span>'
+      +'<span class="chip">'+esc(s.wake_word)+'</span>'
+      +'<span class="scene-title">'+hl(s.scenario_title,q_)+'</span>';
+    var btn=document.createElement('button');btn.className='copy-btn';
+    var bl=document.createElement('span');bl.className='copy-long';bl.textContent='📋 复制 prompt';
+    var bs=document.createElement('span');bs.className='copy-short';bs.textContent='复制';
+    btn.appendChild(bl);btn.appendChild(bs);
+    btn.onclick=function(e){if(e){e.preventDefault();e.stopPropagation()};copyPrompt(s,btn)};
+    head.appendChild(btn);
+    card.appendChild(head);
+
+    var body=document.createElement('div');body.className='scene-body';
+    var tl=document.createElement('div');tl.className='scene-type';
+    tl.innerHTML='<span class="type-label">流程类型</span>'+typeBadge(s.type);
+    body.appendChild(tl);
+    var pb=document.createElement('div');pb.className='prompt-box';
+    pb.textContent=(s.prompt||'').trim();
+    var pin=document.createElement('button');pin.className='copy-inline';
+    pin.textContent='复制此 prompt';
+    pin.onclick=function(e){if(e)e.stopPropagation();copyPrompt(s,pin)};
+    pb.appendChild(pin);
+    body.appendChild(pb);
+
+    /* L4 详情子折叠(备忘录保留 · 维度/预期结果/依赖) */
+    var dt=document.createElement('details');dt.className='details';
+    var dsum=document.createElement('summary');dsum.textContent='查看详情 · 维度 / 预期结果 / 依赖';
+    dt.appendChild(dsum);
+    var dbody=document.createElement('div');dbody.className='detail-body';
+    var dimBlock=document.createElement('div');dimBlock.className='dim';
+    Object.keys(s.dimensions||{}).forEach(function(k){
+      dimBlock.innerHTML+='<b>'+esc(k)+'</b>: '+esc(s.dimensions[k])+'<br>';
+    });
+    if(dimBlock.innerHTML)dbody.appendChild(dimBlock);
+    if(s.result&&String(s.result).trim()){
+      var rb=document.createElement('pre');rb.className='result-box';rb.textContent='预期: '+(s.result||'').trim();
+      dbody.appendChild(rb);
+    }
+    if(s.dependencies&&String(s.dependencies).trim()){
+      var depBox=document.createElement('div');depBox.className='deps-box';
+      var depTitle=document.createElement('div');depTitle.className='deps-title';depTitle.textContent='环境依赖';
+      depBox.appendChild(depTitle);
+      var depList=document.createElement('ul');depList.className='deps-list';
+      String(s.dependencies).split('\n').forEach(function(line){
+        line=line.trim();if(!line)return;
+        var li=document.createElement('li');li.textContent=line;
+        depList.appendChild(li);
+      });
+      depBox.appendChild(depList);
+      dbody.appendChild(depBox);
+    }
+    if(dbody.childNodes.length)dt.appendChild(dbody);
+    body.appendChild(dt);
+
+    if(s.status){
+      var dev=document.createElement('div');dev.className='dev-banner';
+      dev.innerHTML='⚠️ '+esc(s.status)+'<span class="mini">· AI 收到此 prompt 必须停止执行并明确告知,不绕过/不假装/不降级(07 契约)</span>';
+      body.appendChild(dev);
+    }
+    card.appendChild(body);
+    return card;
+  }
+
+  /* ===== 分类模块(分类 → 子功能 → 场景 · 4 层折叠) ===== */
+  function buildModule(key,scenes){
+    var m=document.createElement('details');m.className='module';
+    var sum=document.createElement('summary');
+    sum.innerHTML='<span class="module-head"><span class="m-icon">'+esc(catMeta[key].icon)+'</span>'+esc(catMeta[key].name)
+      +(scenes.length?'<span class="m-count">'+scenes.length+' 场景</span>':'');
+    m.appendChild(sum);
+    var body=document.createElement('div');body.className='module-body';
+    var subGroups={};
+    scenes.forEach(function(s){var sub=s.subfunction||'基础';(subGroups[sub]=subGroups[sub]||[]).push(s)});
+    Object.keys(subGroups).forEach(function(sub){
+      var se=document.createElement('details');se.className='sub-module';
+      var ssum=document.createElement('summary');
+      ssum.innerHTML='<span class="sub-head"><span>'+esc(sub)+'</span><span class="scount">'+subGroups[sub].length+' 场景</span></span>';
+      se.appendChild(ssum);
+      var sbody=document.createElement('div');sbody.className='module-body';
+      subGroups[sub].forEach(function(s){sbody.appendChild(buildSceneCard(s,null))});
+      se.appendChild(sbody);
+      body.appendChild(se);
+    });
+    m.appendChild(body);
+    return m;
+  }
+
+  /* ===== 渲染 ===== */
+  var modsEl=document.getElementById('mods');
+  function renderMods(){
+    modsEl.innerHTML='';
+    orderedKeys.forEach(function(k){
+      if(byCat[k]&&byCat[k].length)modsEl.appendChild(buildModule(k,byCat[k]));
+    });
+  }
+  renderMods();
+  showState('Success');
+
+  /* hero meta + stats */
+  var sum=(d.summary&&typeof d.summary==='object')?d.summary:{};
+  var statsEl=document.getElementById('heroStats');
+  if(Array.isArray(sum.metrics)){
+    statsEl.innerHTML=sum.metrics.map(function(m){
+      return '<span class="stat">'+esc(m.value)+' '+esc(m.label)+'</span>';
+    }).join('');
+  }
+  document.getElementById('heroMeta').textContent=sum.subtitle?esc(sum.subtitle):'';
+
+  /* 首次使用横幅(状态驱动 · 对齐居家管家) */
+  var initBanner=document.getElementById('initBanner');
+  var initScene=null;
+  valid.forEach(function(s){if(s.scenario_id==='memo_init_setup')initScene=s});
+  if(!d.initialized&&initScene){
+    initBanner.hidden=false;
+    document.getElementById('initCopy').onclick=function(e){copyPrompt(initScene,this)};
+  }
+
+  /* 联系作者(对齐居家管家 · 仅 GitHub 链接,无 PII) */
+  var contact=(d.contact&&typeof d.contact==='object')?d.contact:{};
+  var cb=document.getElementById('contactBody');
+  var contactItems=[];
+  if(contact.github)contactItems.push(['GitHub',contact.github]);
+  if(contact.issues)contactItems.push(['Issues',contact.issues]);
+  contactItems.forEach(function(it){
+    var dd=document.createElement('div');dd.className='contact-item';
+    var href=(it[1]&&String(it[1]).indexOf('http')===0)?('href="'+esc(it[1])+'" target="_blank" rel="noopener"'):'';
+    dd.innerHTML='<span class="k">'+esc(it[0])+'</span><span>'+(href?'<a '+href+'>'+esc(it[1])+'</a>':esc(it[1]))+'</span>';
+    cb.appendChild(dd);
+  });
+  if(contactItems.length){
+    var cbtn=document.createElement('button');cbtn.className='copy-btn contact-copy';cbtn.textContent='一键复制全部联系信息';
+    cbtn.onclick=function(){
+      var t=contactItems.map(function(it){return it[0]+': '+it[1]}).join('\n');
+      showToast('全部联系信息');safeWriteText(t).then(function(ok){flashBtn(cbtn,ok?'✓ 已复制':'✗ 复制失败',2000)});
+    };
+    cb.appendChild(cbtn);
+  }
+
+  document.getElementById('footerLine').textContent='备忘录 v'+(d.version||'?')+' HELP · 使用手册';
+
+  /* ===== 场景直达(#hash 导航) ===== */
+  function openChain(el){
+    var n=el.parentNode;
+    while(n&&n!==document.body){
+      if(n.tagName==='DETAILS'){n.open=true}
+      n=n.parentNode;
+    }
+  }
+  function goToScene(scenario_id){
+    var el=document.getElementById('s-'+scenario_id);
+    if(!el)return;
+    openChain(el);
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+    el.style.transition='box-shadow .6s, border-color .6s';
+    el.style.boxShadow='0 0 0 3px rgba(0,122,255,.35)';
+    setTimeout(function(){el.style.boxShadow=''},2000);
+  }
+  var initHash=(location.hash||'').replace(/^#/,'');
+  if(initHash.indexOf('s-')===0){
+    setTimeout(function(){goToScene(initHash.slice(2))},120);
+  }
+
+  /* ===== / 快捷键聚焦搜索 ===== */
+  document.addEventListener('keydown',function(e){
+    var tag=(e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||e.target.isContentEditable)return;
+    if(e.key==='/'){
+      e.preventDefault();
+      document.getElementById('sB').focus();
+    }
+  });
+
+  /* ===== 搜索:有词 → 平铺命中;无词 → 目录(输入即直达) ===== */
+  var inpB=document.getElementById('sB');
+  inpB.addEventListener('input',function(){
+    var q_=this.value.trim();
+    if(!q_){renderMods();return}
+    var hits=[];
+    orderedKeys.forEach(function(k){
+      (byCat[k]||[]).forEach(function(s){if(sceneMatch(s,q_))hits.push(s)});
+    });
+    modsEl.innerHTML='';
+    if(hits.length===0){
+      var em=document.createElement('div');em.className='search-empty';
+      em.textContent='没有找到匹配「'+q_+'」的场景,换个词试试(唤醒词 / 场景名 / 子功能)。';
+      modsEl.appendChild(em);
+      return;
+    }
+    var hc=document.createElement('div');hc.className='hitcount';hc.textContent='命中 '+hits.length+' 个场景';
+    modsEl.appendChild(hc);
+    hits.forEach(function(s){modsEl.appendChild(buildSceneCard(s,q_))});
+  });
+
+  /* 回到顶部(备忘录保留) */
+  var backBtn=document.getElementById('backToTop');
   window.addEventListener('scroll',function(){
     if(window.scrollY>200){backBtn.classList.add('show')}else{backBtn.classList.remove('show')}
   },{passive:true});
   backBtn.addEventListener('click',function(){
     window.scrollTo({top:0,behavior:'smooth'});
   });
-}
+})();
 </script>
 </body>
 </html>
+

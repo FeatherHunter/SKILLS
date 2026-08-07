@@ -52,6 +52,7 @@ scenarios:
 - wake_word: 记备忘
   scenario_id: memo_add_basic
   scenario_title: 添加一条备忘笔记
+  type: 采集+回执
   dimensions:
     category: 备忘(默认) / 心愿 / 打卡 / 情绪日记
     sub_category: 自由文本,AI 智能推断 1 个 2 字
@@ -70,6 +71,7 @@ scenarios:
 - wake_word: 改备忘
   scenario_id: memo_update_basic
   scenario_title: 修改已有笔记
+  type: 采集+回执
   dimensions:
     id: 必填,数字 ID
     content: 新内容(可选)
@@ -87,6 +89,7 @@ scenarios:
 - wake_word: 删备忘
   scenario_id: memo_delete_basic
   scenario_title: 删除笔记
+  type: 采集+回执
   dimensions:
     id: 必填,数字 ID,可多个
     with_reminders: 是否级联删关联提醒(默认否,有提醒则报错)
@@ -102,6 +105,7 @@ scenarios:
 - wake_word: 备忘改分类
   scenario_id: memo_change_category_single
   scenario_title: 修改单条笔记的顶层分类
+  type: 采集+回执
   dimensions:
     id: 必填,数字 ID
     category: 目标分类(备忘/心愿/打卡/情绪日记)
@@ -119,6 +123,7 @@ scenarios:
 - wake_word: 备忘改子分类
   scenario_id: memo_change_subcategory
   scenario_title: 修改单条笔记的子分类
+  type: 采集+回执
   dimensions:
     id: 必填,数字 ID
     sub_category: 新子分类(2 字自由文本,'null' 清除)
@@ -133,6 +138,7 @@ scenarios:
 - wake_word: 搜备忘
   scenario_id: memo_search_keyword
   scenario_title: 按关键词搜索笔记
+  type: 查看+回执
   dimensions:
     keyword: 搜索词(全文索引)
     category: 顶层分类过滤(可选)
@@ -152,6 +158,7 @@ scenarios:
 - wake_word: 查备忘
   scenario_id: memo_search_alias
   scenario_title: 搜备忘的别名(同义触发)
+  type: 查看+回执
   dimensions:
     keyword: 搜索词
   prompt: "请帮我查备忘录(唤醒词:查备忘):\n\n请按以下格式填写你的参数:\n\n  关键词: _____________ (搜的内容)\n\n期望效果:\n\
@@ -165,6 +172,7 @@ scenarios:
 - wake_word: 看备忘
   scenario_id: memo_get_detail
   scenario_title: 查看单条笔记详情
+  type: 查看+回执
   dimensions:
     id: 必填,数字 ID
     html: 生成详情页
@@ -179,6 +187,7 @@ scenarios:
 - wake_word: 按时间搜备忘
   scenario_id: memo_search_by_date
   scenario_title: 按日期范围搜索笔记
+  type: 查看+回执
   dimensions:
     start: 开始日期 YYYY-MM-DD
     end: 结束日期 YYYY-MM-DD
@@ -196,6 +205,7 @@ scenarios:
 - wake_word: 查心愿
   scenario_id: memo_search_wish
   scenario_title: 查所有心愿(自动带分类过滤)
+  type: 查看+回执
   dimensions:
     keyword: 搜索词(可选)
     due: 按排期日期过滤
@@ -212,6 +222,7 @@ scenarios:
 - wake_word: 查打卡
   scenario_id: memo_search_checkin
   scenario_title: 查所有打卡记录
+  type: 查看+回执
   dimensions:
     keyword: 搜索词(可选)
     html: 生成可视化页
@@ -226,6 +237,7 @@ scenarios:
 - wake_word: 查情绪
   scenario_id: memo_search_mood
   scenario_title: 查所有情绪日记
+  type: 查看+回执
   dimensions:
     keyword: 搜索词(可选)
     html: 生成可视化页
@@ -240,6 +252,7 @@ scenarios:
 - wake_word: 记提醒
   scenario_id: memo_remind_with_note
   scenario_title: 添加笔记 + 设置提醒(两步合一)
+  type: 采集+回执
   dimensions:
     content: 笔记内容
     remind_at: 提醒时间 YYYY-MM-DD HH:MM
@@ -258,6 +271,7 @@ scenarios:
 - wake_word: 设提醒
   scenario_id: memo_remind_existing
   scenario_title: 给已有笔记加提醒
+  type: 采集+回执
   dimensions:
     note_id: 笔记 ID(可选,可不关联具体笔记)
     remind_at: 提醒时间
@@ -277,6 +291,7 @@ scenarios:
 - wake_word: 看提醒
   scenario_id: memo_reminders_active
   scenario_title: 查看所有有效提醒
+  type: 查看+回执
   dimensions:
     status: active(默认)/dismissed
     html: 生成可视化页
@@ -291,6 +306,7 @@ scenarios:
 - wake_word: 查已提醒备忘
   scenario_id: memo_completed_reminders
   scenario_title: 查询已触发的提醒与对应打卡
+  type: 查看+回执
   dimensions:
     html: 生成可视化页
   prompt: "请帮我查看已提醒过的备忘(唤醒词:查已提醒备忘):\n\n无需参数,直接发送。\n\n期望效果:\n  AI 列出已触发的提醒 + 关联打卡笔记\
@@ -306,6 +322,7 @@ scenarios:
 - wake_word: 完成心愿
   scenario_id: memo_complete_wish
   scenario_title: 把心愿标记为已完成(原子操作)
+  type: 向导+采集+回执
   dimensions:
     ids: 心愿 ID 列表(单条或多条)
     content: 打卡内容(默认拷贝心愿原文)
@@ -324,6 +341,7 @@ scenarios:
 - wake_word: 心愿排期
   scenario_id: memo_wish_schedule
   scenario_title: 给心愿设排期日期(同步飞书 due)
+  type: 向导+采集+回执
   dimensions:
     ids: 心愿 ID 列表
     due: 期望完成日期 YYYY-MM-DD
@@ -343,6 +361,7 @@ scenarios:
 - wake_word: 备忘改分类
   scenario_id: memo_batch_change_category
   scenario_title: 批量改分类(过程型 HTML 向导)
+  type: 向导+采集+回执
   dimensions:
     from_category: 原分类
     to_category: 建议目标分类(HTML 可改)
@@ -362,6 +381,7 @@ scenarios:
 - wake_word: 备忘录同步
   scenario_id: memo_sync_feishu
   scenario_title: 备忘录 ↔ 飞书双向对账
+  type: 查看+回执
   dimensions:
     html: 生成同步报告页
   prompt: "请帮我跑备忘录和飞书的双向对账(唤醒词:备忘录同步):\n\n无需参数,直接发送。\n\n期望效果:\n  AI 执行 3 步对账:\n  1.\
@@ -383,6 +403,7 @@ scenarios:
 - wake_word: 记心愿
   scenario_id: memo_add_wish
   scenario_title: 快速添加心愿(自动心愿分类)
+  type: 采集+回执
   dimensions:
     content: 心愿内容
     sub_category: 自由文本
@@ -403,6 +424,7 @@ scenarios:
 - wake_word: 删心愿
   scenario_id: memo_delete_wish
   scenario_title: 删心愿(自动心愿分类过滤)
+  type: 采集+回执
   dimensions:
     id: 心愿 ID
   prompt: "请帮我删除心愿(唤醒词:删心愿 · 子唤醒词自动带心愿过滤):\n\n请按以下格式填写你的参数:\n\n  心愿 ID: _____________\
@@ -416,6 +438,7 @@ scenarios:
 - wake_word: 改心愿
   scenario_id: memo_update_wish
   scenario_title: 改心愿(自动心愿分类过滤)
+  type: 采集+回执
   dimensions:
     id: 心愿 ID
     content: 新内容
@@ -430,6 +453,7 @@ scenarios:
 - wake_word: 记打卡
   scenario_id: memo_add_checkin
   scenario_title: 快速添加打卡(自动打卡分类)
+  type: 采集+回执
   dimensions:
     content: 打卡内容
     sub_category: 自由文本
@@ -445,6 +469,7 @@ scenarios:
 - wake_word: 删打卡
   scenario_id: memo_delete_checkin
   scenario_title: 删打卡(自动打卡分类过滤)
+  type: 采集+回执
   dimensions:
     id: 打卡 ID
   prompt: "请帮我删除打卡(唤醒词:删打卡 · 子唤醒词自动带打卡过滤):\n\n请按以下格式填写你的参数:\n\n  打卡 ID: _____________\
@@ -457,6 +482,7 @@ scenarios:
 - wake_word: 改打卡
   scenario_id: memo_update_checkin
   scenario_title: 改打卡(自动打卡分类过滤)
+  type: 采集+回执
   dimensions:
     id: 打卡 ID
     content: 新内容
@@ -470,6 +496,7 @@ scenarios:
 - wake_word: 记情绪
   scenario_id: memo_add_mood
   scenario_title: 快速添加情绪日记(自动情绪日记分类)
+  type: 采集+回执
   dimensions:
     content: 情绪内容
     sub_category: 自由文本
@@ -483,6 +510,7 @@ scenarios:
 - wake_word: 删情绪
   scenario_id: memo_delete_mood
   scenario_title: 删情绪(自动情绪日记分类过滤)
+  type: 采集+回执
   dimensions:
     id: 情绪日记 ID
   prompt: "请帮我删除情绪日记(唤醒词:删情绪 · 子唤醒词自动带情绪日记过滤):\n\n请按以下格式填写你的参数:\n\n  情绪日记 ID: _____________\
@@ -495,6 +523,7 @@ scenarios:
 - wake_word: 改情绪
   scenario_id: memo_update_mood
   scenario_title: 改情绪(自动情绪日记分类过滤)
+  type: 采集+回执
   dimensions:
     id: 情绪日记 ID
     content: 新内容
@@ -506,6 +535,7 @@ scenarios:
 - wake_word: 首次使用
   scenario_id: memo_init_setup
   scenario_title: 初始化备忘录(首次使用引导)
+  type: 向导+采集+回执
   dimensions: {}
   dependencies: 'Python 3.10+: 必装(全部命令由 Python 驱动)
 

@@ -11,6 +11,7 @@ v1.1.0(2026-07-25) · 修复 v1.0.9 真实运行时 bug:
 输出目录(v1.0.5) · 输出 = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 """
 import json
+import os
 from datetime import datetime
 from pathlib import Path
 
@@ -130,6 +131,47 @@ def _load_scenarios():
     return data
 
 
+def _help_summary(scenarios_data):
+    """HELP hero 统计(对齐居家管家 help_center summary.metrics · #179)。"""
+    scenarios = scenarios_data.get("scenarios", [])
+    categories = scenarios_data.get("categories", [])
+    available = sum(1 for s in scenarios if not s.get("status"))
+    pending = len(scenarios) - available
+    return {
+        "title": "备忘录 · 使用手册(HELP)",
+        "subtitle": (f"{len(categories)} 个分类 · {len(scenarios)} 个场景 · "
+                     f"版本 {scenarios_data.get('version', '')} · "
+                     f"更新于 {datetime.now().strftime('%Y-%m-%d %H:%M')}"),
+        "metrics": [
+            {"label": "分类", "value": str(len(categories))},
+            {"label": "场景", "value": str(len(scenarios))},
+            {"label": "可用", "value": str(available)},
+            {"label": "待开发", "value": str(pending)},
+        ],
+        "version": scenarios_data.get("version", ""),
+        "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+
+
+def _help_initialized():
+    """初始化状态判定(对齐居家管家 · #179):DB 文件存在 = 已初始化。
+    env 覆盖:HELP_INITIALIZED=1/0 可强制指定(测试/镜像可重现性)。"""
+    env = os.environ.get("HELP_INITIALIZED")
+    if env is not None:
+        return env.strip().lower() in ("1", "true", "yes")
+    from memo_cli import DB_PATH  # noqa: F401 · 复用 DB 路径计算
+    return DB_PATH.exists()
+
+
+def _help_contact():
+    """联系作者(对齐居家管家 · #179)。⚠️ 仅 GitHub 链接,
+    不引入邮箱/手机号(开源 PII 清理底线,release-checklist 项)。"""
+    return {
+        "github": "https://github.com/FeatherHunter/SKILLS",
+        "issues": "https://github.com/FeatherHunter/SKILLS/issues",
+    }
+
+
 def render_help(payload=None, name="备忘录_HELP", output_path=None):
     """渲染 HELP 使用手册页(v1.1.4 · 总纲 §07 契约)
 
@@ -168,6 +210,10 @@ def render_help(payload=None, name="备忘录_HELP", output_path=None):
                 "skill": scenarios_data.get("skill", "备忘录"),
                 "categories": scenarios_data.get("categories", []),
                 "scenarios": scenarios_data.get("scenarios", []),
+                # 全量对齐居家管家 help_center(#179):summary 统计 / initialized 状态 / contact
+                "summary": _help_summary(scenarios_data),
+                "initialized": _help_initialized(),
+                "contact": _help_contact(),
             },
             "message": f"共 {len(scenarios_data.get('scenarios', []))} 个场景",
         }

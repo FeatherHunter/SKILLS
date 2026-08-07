@@ -6,311 +6,517 @@
 <title>备忘录 · HELP 使用手册</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-.back-to-top{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:40px;height:40px;border:0;border-radius:50%;background:rgba(28,28,30,.78);color:#fff;font-size:18px;cursor:pointer;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;box-shadow:0 6px 16px rgba(0,0,0,.18);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);z-index:9000}
-.back-to-top.show{opacity:1;transform:translateY(0)}
-.back-to-top:hover{background:rgba(28,28,30,.92)}
-:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
-body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
-.wrap{max-width:980px;margin:0 auto;padding:48px 22px 90px}
-.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:24px;box-shadow:var(--shadow)}
-.eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
-h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
-.lead{color:var(--fg2);font-size:17px}
-.meta{margin-top:16px;color:var(--fg3);font-size:13px}
-.panel{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:18px}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--ok:#34c759;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased;padding-bottom:48px}
+button{font-family:inherit}
+mark{background:#ffe08a;border-radius:3px;padding:0 2px;color:inherit}
 
-/* ===== Level 1:功能模块(可折叠,默认折叠) ===== */
-.module{background:var(--card);border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px;overflow:hidden}
-.module>summary{padding:18px 22px;cursor:pointer;font-size:15px;font-weight:700;color:var(--fg);user-select:none;display:flex;align-items:center;gap:10px;transition:background .15s;list-style:none}
-.module>summary::-webkit-details-marker{display:none}
-.module>summary::before{content:"▶";display:inline-block;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
-.module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
-.module>summary:hover{background:var(--soft)}
-.module>summary:hover::before{color:var(--blue)}
-.module-body{padding:0 22px 18px}
+.wrap{max-width:860px;margin:0 auto;padding:28px 20px 40px}
 
-/* ===== Level 2:场景卡片 ===== */
-.scenario{background:var(--bg);border-radius:14px;padding:16px 18px;margin-bottom:10px;border:1px solid var(--line)}
-.scenario:last-child{margin-bottom:0}
-.scenario-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700;flex-shrink:0}
-.title{font-size:16px;font-weight:600;flex:1;min-width:200px}
-.copy-btn{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 14px;font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0}
-.copy-btn:hover{background:var(--blue2)}
-.copy-btn.copied{background:var(--ok)}
+/* ===== Hero(对齐居家管家) ===== */
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:24px;padding:28px 30px;margin-bottom:20px;box-shadow:var(--shadow)}
+.eyebrow{font-size:12px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.hero-mode{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:14px}
+.hero-steps{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hero-steps .step{background:var(--soft);border:1px solid #d7e6ff;color:var(--blue2);font-weight:700;font-size:13px;padding:6px 14px;border-radius:999px;box-shadow:0 1px 3px rgba(0,122,255,.10);white-space:nowrap}
+.hero-steps .arrow{color:var(--blue);font-weight:800;font-size:15px}
+.hero-stats{display:flex;gap:8px;margin-left:auto}
+.hero-stats .stat{background:#fff;border:1px solid var(--line);color:var(--fg2);font-size:12px;font-weight:700;padding:6px 12px;border-radius:999px;white-space:nowrap}
+.meta{margin-top:12px;color:var(--fg3);font-size:12.5px}
+@media(max-width:820px){.hero-mode{gap:8px}.hero-steps{order:-1;width:100%;gap:5px}.hero-steps .step{font-size:11.5px;padding:4px 7px}.hero-steps .arrow{font-size:12px;margin:0 -3px}.hero-stats{display:none}}
 
-/* ===== Level 2:子功能(4 级架构 #34) ===== */
-.sub-module{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
-.sub-module>summary{padding:12px 16px;cursor:pointer;font-size:14px;font-weight:600;color:var(--fg2);user-select:none;list-style:none;display:flex;align-items:center;gap:8px;transition:background .15s}
-.sub-module>summary::-webkit-details-marker{display:none}
-.sub-module>summary::before{content:"▸";font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
-.sub-module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
-.sub-module>summary:hover{background:var(--soft)}
-.sub-module .module-body{padding:10px 12px 12px}
-
-/* ===== Level 4:详情子块(#34) ===== */
-.detail-body{padding-top:2px}
-.deps-box{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:10px 14px;margin-top:10px}
-.deps-title{font-size:12px;font-weight:700;color:var(--fg3);letter-spacing:.05em;margin-bottom:6px}
-.deps-list{margin:0;padding-left:18px}
-.deps-list li{font-size:13px;color:var(--fg2);margin-bottom:3px;line-height:1.55}
-
-/* ===== Level 3:场景细节(可折叠,默认折叠) ===== */
-.details{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}
-.details summary{cursor:pointer;font-size:13px;color:var(--fg2);user-select:none;padding:4px 0;list-style:none;display:flex;align-items:center;gap:6px}
-.details summary::-webkit-details-marker{display:none}
-.details summary::before{content:"▸";font-size:10px;color:var(--fg3);transition:transform .15s}
-.details[open] summary::before{transform:rotate(90deg);color:var(--blue)}
-.details summary:hover{color:var(--blue)}
-.dim{color:var(--fg2);font-size:13.5px;margin:8px 0;padding-left:14px;border-left:3px solid var(--line)}
-.dim b{color:var(--fg3);font-size:12px;text-transform:uppercase;letter-spacing:.05em}
-.prompt-box{background:#1d1d1d;color:#f5f5f7;border-radius:14px;padding:14px 16px;margin-top:8px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;line-height:1.7}
-.result-box{background:var(--soft);color:var(--fg);border-radius:14px;padding:12px 14px;margin-top:8px;white-space:pre-wrap;font-size:13.5px}
-
-.empty{text-align:center;color:var(--fg2);padding:60px 20px}
+/* ===== 4 状态 fallback(备忘录保留 · §07 §5 · B.9) ===== */
 .state-banner{display:none;padding:18px;border-radius:14px;margin-bottom:18px;text-align:center;font-weight:600}
 .state-banner.success{background:#e8f7e8;color:#1a7a3a}
 .state-banner.empty{background:#fff7e8;color:#b25b00}
 .state-banner.missing{background:#fde8e8;color:#c7254e}
 .state-banner.error{background:#fde8e8;color:#c7254e}
 
-/* === TOAST(学习卡路里 help_center · iOS 通知风格) === */
-.toast{position:fixed;left:50%;bottom:32px;transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:320px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
-.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
-.toast-icon{font-size:22px;line-height:1;padding-top:1px;flex-shrink:0}
-.toast-body{flex:1;min-width:0}
-.toast-title{font-weight:600;font-size:13px;line-height:1.4;color:#fff;margin-bottom:3px}
-.toast-title em{font-style:normal;color:#34c759;font-weight:600}
-.toast-detail{font-size:11.5px;line-height:1.55;color:#c8c8cc}
-.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0;transition:background .12s}
-.toast-close:hover{background:rgba(255,255,255,.18)}
-.toast-close:active{transform:scale(.96)}
+/* ===== 首次使用横幅(状态驱动 · 对齐居家管家) ===== */
+.init-banner{background:linear-gradient(135deg,#0a63ce,#007aff 55%,#34c759);color:#fff;border-radius:20px;padding:22px 24px;margin-bottom:18px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 12px 32px rgba(0,122,255,.25)}
+.init-banner[hidden]{display:none}
+.init-banner .ib-text{flex:1;min-width:220px}
+.init-banner .ib-title{font-size:17px;font-weight:800;margin-bottom:2px}
+.init-banner .ib-sub{font-size:12.5px;opacity:.9}
+.init-banner .copy-btn{background:#fff;color:var(--blue);font-weight:700;padding:9px 16px}
+.init-banner .copy-btn.copied{background:var(--ok);color:#fff}
 
-@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}h1{font-size:30px}.scenario-head{flex-direction:column;align-items:stretch}.copy-btn{width:100%}.module-body{padding:0 16px 16px}.module>summary{padding:16px 18px}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0;padding:12px 12px 12px 14px}.toast.show{transform:translateX(0) scale(1)}.toast-icon{font-size:20px}.toast-title{font-size:12.5px}.toast-detail{font-size:11px}body{padding-bottom:env(safe-area-inset-bottom,0)}}
+/* ===== 搜索(sticky · 对齐居家管家) ===== */
+.search-wrap{position:sticky;top:0;z-index:40;background:rgba(245,245,247,.92);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);padding:8px 0;margin-bottom:6px}
+.search-box{position:relative}
+.search-box input{width:100%;border:1px solid var(--line);border-radius:999px;padding:10px 38px 10px 16px;font-size:14px;background:#fff;outline:none;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.search-box input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.15)}
+.search-box .s-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--fg3)}
+.hitcount{font-size:12.5px;color:var(--fg2);margin-bottom:10px;text-align:center}
+.search-empty{background:var(--card);border:1.5px dashed var(--line);border-radius:14px;padding:28px;text-align:center;color:var(--fg3);font-size:13px}
+
+/* ===== 场景卡片(整卡点击展开 · 对齐居家管家) ===== */
+.copy-btn{display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--blue);color:#fff;border-radius:999px;padding:7px 13px;font-size:12.5px;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:background .15s}
+.copy-btn:hover{background:var(--blue2)}
+.copy-btn.copied{background:var(--ok)}
+.copy-short{display:none}
+.scene{background:var(--bg);border:1px solid var(--line);border-radius:14px;margin-bottom:10px;scroll-margin-top:120px;overflow:hidden}
+.scene:last-child{margin-bottom:0}
+.scene>summary.scene-head{padding:14px 16px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;list-style:none;transition:background .15s}
+.scene>summary.scene-head::-webkit-details-marker{display:none}
+.scene>summary.scene-head::before{content:"▸";font-size:11px;color:var(--fg3);transition:transform .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;line-height:1}
+.scene[open]>summary.scene-head::before{transform:rotate(90deg);color:var(--blue)}
+.scene>summary.scene-head:hover{background:var(--soft)}
+.scene-id{font-size:11px;color:var(--fg3);font-weight:700;font-family:ui-monospace,Menlo,monospace}
+.scene-title{font-size:15px;font-weight:600;flex:1;min-width:180px}
+.chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:2px 9px;border-radius:999px;font-size:11.5px;font-weight:700;flex-shrink:0}
+.scene-body{padding:0 16px 14px}
+.scene-type{display:flex;align-items:center;gap:6px;margin:10px 0 0}
+.scene-type .type-label{font-size:11px;color:var(--fg3)}
+.type-badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700;flex-shrink:0;background:#e9e9ee;color:#666}
+.type-badge.t-view{background:#e8f2ff;color:#0a63ce}
+.type-badge.t-collect{background:#e7f8ee;color:#1a7a3a}
+.type-badge.t-select{background:#fff1e2;color:#c2540a}
+.type-badge.t-wizard{background:#e2f7f5;color:#00897b}
+.type-badge.t-mixed{background:#f3e9fb;color:#8e3fc9}
+.prompt-box{background:#1d1d1d;color:#f5f5f7;border-radius:12px;padding:12px 14px;white-space:pre-wrap;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:12.5px;line-height:1.7;position:relative;margin-top:8px}
+.prompt-box .copy-inline{position:absolute;top:8px;right:8px;background:rgba(255,255,255,.14);color:#fff;border:0;border-radius:8px;padding:4px 10px;font-size:11px;cursor:pointer}
+.prompt-box .copy-inline:hover{background:rgba(255,255,255,.25)}
+.prompt-box .copy-inline.copied{background:var(--ok)}
+.dev-banner{margin-top:10px;padding:8px 12px;background:#fff7e8;color:#b25b00;border-radius:10px;font-size:12.5px;font-weight:700;display:flex;gap:8px;align-items:center}
+.dev-banner .mini{font-size:11px;font-weight:400;color:#c07a2a}
+
+/* ===== L4 详情子折叠(备忘录保留 · #34 4 级架构) ===== */
+.details{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.details summary{cursor:pointer;font-size:12.5px;color:var(--fg2);user-select:none;padding:2px 0;list-style:none;display:flex;align-items:center;gap:6px}
+.details summary::-webkit-details-marker{display:none}
+.details summary::before{content:"▸";font-size:10px;color:var(--fg3);transition:transform .15s}
+.details[open] summary::before{transform:rotate(90deg);color:var(--blue)}
+.details summary:hover{color:var(--blue)}
+.detail-body{padding-top:8px}
+.dim{color:var(--fg2);font-size:12.5px;margin:6px 0;padding-left:12px;border-left:3px solid var(--line)}
+.dim b{color:var(--fg3);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.result-box{background:var(--soft);color:var(--fg);border-radius:12px;padding:10px 12px;margin-top:8px;white-space:pre-wrap;font-size:12.5px}
+.deps-box{background:var(--card);border:1px dashed var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.deps-title{font-size:11.5px;font-weight:700;color:var(--fg3);letter-spacing:.05em;margin-bottom:5px}
+.deps-list{margin:0;padding-left:18px}
+.deps-list li{font-size:12.5px;color:var(--fg2);margin-bottom:3px;line-height:1.55}
+
+/* ===== 分类模块折叠(域 → 子功能 → 场景 · 对齐居家管家) ===== */
+.module{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:12px;overflow:hidden}
+.module>summary{padding:9px 14px;cursor:pointer;font-size:14.5px;font-weight:700;color:var(--fg);user-select:none;display:flex;align-items:center;gap:10px;list-style:none;transition:background .15s}
+.module>summary::-webkit-details-marker{display:none}
+.module>summary::before{content:"▶";display:inline-flex;align-items:center;justify-content:center;width:12px;margin-right:-2px;font-size:9px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.module>summary:hover{background:var(--soft)}
+.module-body{padding:0 12px 8px}
+.module-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.module-head .m-icon{font-size:17px}
+.module-head .m-count{font-size:11.5px;color:var(--fg3);font-weight:600}
+.sub-module{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;overflow:hidden}
+.sub-module>summary{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--fg2);user-select:none;list-style:none;display:flex;align-items:center;gap:8px;transition:background .15s}
+.sub-module>summary::-webkit-details-marker{display:none}
+.sub-module>summary::before{content:"▸";display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.sub-module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.sub-module>summary:hover{background:var(--soft)}
+.sub-module .module-body{padding:10px 12px 8px}
+.sub-head{display:flex;align-items:center;gap:8px;justify-content:space-between;width:100%}
+.sub-head .scount{font-size:11px;color:var(--fg3)}
+
+/* ===== 联系作者(对齐居家管家) ===== */
+.contact-box{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-top:22px;overflow:hidden}
+.contact-box>summary{padding:14px 18px;cursor:pointer;font-size:14px;font-weight:700;list-style:none;user-select:none;display:flex;align-items:center;gap:10px;transition:background .15s}
+.contact-box>summary::-webkit-details-marker{display:none}
+.contact-box>summary::before{content:"▶";font-size:9px;color:var(--fg3);transition:transform .15s}
+.contact-box[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+.contact-box>summary:hover{background:var(--soft)}
+.contact-body{padding:0 18px 18px}
+.contact-item{display:flex;gap:10px;align-items:center;font-size:13.5px;color:var(--fg2);padding:7px 0;border-bottom:1px dashed var(--line)}
+.contact-item:last-child{border-bottom:0}
+.contact-item .k{font-weight:700;color:var(--fg);min-width:64px}
+.contact-item a{color:var(--blue);text-decoration:none}
+.contact-copy{margin-top:12px}
+footer{text-align:center;color:var(--fg3);font-size:11px;padding:20px 0 0;margin-top:8px}
+
+/* ===== Toast(备忘录保留 · iOS 通知风格) ===== */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+.toast-icon{font-size:20px;line-height:1;padding-top:1px;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}
+.toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}
+.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}
+
+/* ===== 回到顶部(备忘录保留) ===== */
+.back-to-top{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));width:40px;height:40px;border:0;border-radius:50%;background:rgba(28,28,30,.78);color:#fff;font-size:18px;cursor:pointer;opacity:0;transform:translateY(8px);transition:opacity .2s,transform .2s;box-shadow:0 6px 16px rgba(0,0,0,.18);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);z-index:9000}
+.back-to-top.show{opacity:1;transform:translateY(0)}
+.back-to-top:hover{background:rgba(28,28,30,.92)}
+
+/* ===== 移动适配(820px · 对齐居家管家) ===== */
+@media(max-width:820px){
+  .wrap{padding:18px 12px 60px}
+  h1{font-size:24px}
+  .hero{padding:20px 18px}
+  .prompt-box{padding-top:44px;padding-right:12px}
+  .toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}
+  .toast.show{transform:translateX(0) scale(1)}
+  .init-banner{flex-direction:column;align-items:stretch;text-align:center}
+  .init-banner .copy-btn{width:100%}
+  .scene>summary.scene-head{flex-wrap:nowrap;gap:4px;padding:9px 10px}
+  .scene-head .scene-id{display:none}
+  .scene-head .scene-title{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+  .scene-head .chip{font-size:10.5px;padding:1px 7px}
+  .scene-head .copy-btn{min-height:28px;min-width:56px;padding:0 10px;font-size:11px;margin-left:auto}
+  .copy-btn .copy-short{display:inline}
+  .copy-btn .copy-long{display:none}
+}
 </style>
 <!--INJECT-SHARED-->
 </head>
 <body>
 <div class="wrap">
-<header class="hero">
-<div class="eyebrow">Memo Help</div>
-<h1>备忘录 · 使用手册</h1>
-<p class="lead">所有业务唤醒词的场景清单。每个场景可一键复制 prompt 给 AI。</p>
-<p class="meta" id="meta"></p>
-</header>
 
-<!-- 4 状态 fallback(§07 §5 · B.9 决策:success/empty/missing_data/error) -->
-<div id="stateSuccess" class="state-banner success" style="display:none;">✓ 场景已加载</div>
-<div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无场景(场景资产为空)</div>
-<div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 场景资产缺失,请联系维护者</div>
-<div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
+  <header class="hero">
+    <div class="eyebrow">Memo Help</div>
+    <h1>备忘录 · 使用手册</h1>
+    <div class="hero-mode">
+      <div class="hero-steps">
+        <span class="step">🔍 找场景</span><span class="arrow">→</span>
+        <span class="step">📋 复制 prompt</span><span class="arrow">→</span>
+        <span class="step">💬 发给 AI</span>
+      </div>
+      <div class="hero-stats" id="heroStats"></div>
+    </div>
+    <p class="meta" id="heroMeta"></p>
+  </header>
 
-<main id="bodyContent">
-<!-- 由 JS 按模块-场景两层折叠渲染 -->
-</main>
+  <!-- 4 状态 fallback(§07 §5 · B.9 决策:success/empty/missing_data/error) -->
+  <div id="stateSuccess" class="state-banner success" style="display:none;">✓ 场景已加载</div>
+  <div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无场景(场景资产为空)</div>
+  <div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 场景资产缺失,请联系维护者</div>
+  <div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
 
-<footer class="panel">
-<p style="font-size:13.5px;color:var(--fg2)">
-本页面由场景资产自动生成,改场景后重新运行 HELP 命令即可刷新。
-所有 prompt 都已剥离 CLI / 数据库 / 文件路径,纯用户意图,可直接发给 AI。
-</p>
-</footer>
+  <div class="init-banner" id="initBanner" hidden>
+    <div class="ib-text">
+      <div class="ib-title">🚀 第一次用备忘录?</div>
+      <div class="ib-sub">从「首次使用」开始 — 自动检测环境、安装依赖、初始化数据库,全程零手动配置。完成初始化后,本区域将不再出现。</div>
+    </div>
+    <button class="copy-btn" id="initCopy">📋 复制初始化 prompt</button>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-box">
+      <input id="sB" type="search" placeholder="输入即直达:搜索所有场景…" autocomplete="off">
+      <span class="s-icon">🔍</span>
+    </div>
+  </div>
+
+  <div id="mods"></div>
+
+  <details class="contact-box">
+    <summary>📮 联系作者(使用反馈 / 提 ISSUE / 报 Bug)</summary>
+    <div class="contact-body" id="contactBody"></div>
+  </details>
+
+  <footer id="footerLine"></footer>
 </div>
 
-<!-- 回到顶部按钮 -->
 <button class="back-to-top" id="backToTop" type="button" aria-label="回到顶部">↑</button>
 
-<!-- Toast(学习卡路里 help_center · iOS 通知风格 · 复制 prompt 后浮层提示) -->
 <div id="toast" class="toast" role="status" aria-live="polite">
   <div class="toast-icon">📋</div>
   <div class="toast-body">
-    <div class="toast-title">已复制 <em id="toastWake">prompt</em></div>
-    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),备忘录技能会自动执行这个流程,完成后你会在飞书收到 HTML</div>
+    <div class="toast-title">已复制 <em id="toastWake" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),备忘录技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div>
   </div>
   <button class="toast-close" id="toastClose">✓ 知道了</button>
 </div>
 
-<!-- ===== 占位符 - 由 injector 替换为 window.__DATA__ ===== -->
 <!--INJECT-DATA-->
 
 <script>
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function showState(name){
-  ['Success','Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
-  if(name){var el=document.getElementById('state'+name);if(el)el.style.display='block'}
-}
+(function(){
+  var ESC_MAP={'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return ESC_MAP[c]})}
 
-try{
-  if(typeof window.__DATA__!=='object'||window.__DATA__===null){showState('Error');throw new Error('数据未注入')}
-  var data=window.__DATA__;
-  var payload=data.data||{};
-  document.getElementById('meta').textContent='版本 '+(payload.version||'?')+' · 生成时间 '+(payload.generated_at||'');
+  function showState(name){
+    ['Success','Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
+    if(name){var el=document.getElementById('state'+name);if(el)el.style.display='block'}
+  }
 
-  if(!Array.isArray(payload.scenarios)||payload.scenarios.length===0){showState('Empty')}
-  else{
-    var scenarios=payload.scenarios;
-    var validScenarios=scenarios.filter(function(s){
+  var payload;
+  try{
+    if(typeof window.__DATA__!=='object'||window.__DATA__===null){throw new Error('数据未注入')}
+    payload=window.__DATA__;
+    var d=payload.data||{};
+    var scenarios=Array.isArray(d.scenarios)?d.scenarios:[];
+    if(scenarios.length===0){showState('Empty');return}
+    var valid=scenarios.filter(function(s){
       return s.wake_word&&s.scenario_id&&s.scenario_title&&s.dimensions&&s.prompt&&s.status!==undefined&&s.result!==undefined;
     });
-    if(validScenarios.length===0){showState('Missing');throw new Error('所有场景均缺必填字段')}
-
-    // 分组(#31 Q2:#33 落地 · categories 列表来自 scenarios.yaml,渲染只读不硬编码)
-    var categories=Array.isArray(payload.categories)?payload.categories:[];
-    var catKeys={};
-    var catName={};var catIcon={};
-    categories.forEach(function(c){catKeys[c.key]=[];catName[c.key]=c.name||c.key;catIcon[c.key]=c.icon||''});
-    validScenarios.forEach(function(s){
-      var k=s.category;
-      if(!(k in catKeys)){if(!('?' in catKeys)){catKeys['?']=[];catName['?']='未分类';catIcon['?']=''};k='?'}
-      catKeys[k].push(s);
-    });
-
-    // 渲染 Level 1:分类(默认折叠) + Level 2:子功能 + Level 3:场景 + Level 4:详情
-    var main=document.getElementById('bodyContent');
-    main.innerHTML='';
-    var rendered=0;
-    // 分类顺序 = categories 列表书写序;未分类兜底最后
-    var orderedKeys=categories.map(function(c){return c.key}).concat(Object.keys(catKeys).filter(function(k){return !(categories.some(function(c){return c.key===k}))}));
-    orderedKeys.forEach(function(k){
-      var items=catKeys[k];
-      if(!items||items.length===0)return;
-      // Level 1:分类
-      var cat=document.createElement('details');cat.className='module';
-      var catSum=document.createElement('summary');catSum.textContent=(catIcon[k]?catIcon[k]+' ':'')+catName[k]+' ('+items.length+')';
-      cat.appendChild(catSum);
-      var catBody=document.createElement('div');catBody.className='module-body';
-      // Level 2:子功能分组(subfunction 空 →「基础」兜底 · #31 Q3)
-      var subGroups={};
-      items.forEach(function(s){var sub=s.subfunction||'基础';(subGroups[sub]=subGroups[sub]||[]).push(s)});
-      Object.keys(subGroups).forEach(function(sub){
-        var subEl=document.createElement('details');subEl.className='sub-module';
-        var subSum=document.createElement('summary');subSum.textContent=sub+' ('+subGroups[sub].length+')';
-        subEl.appendChild(subSum);
-        var subBody=document.createElement('div');subBody.className='module-body';
-        // Level 3:场景卡片(组内序 = 书写序 · #31 Q4)
-        subGroups[sub].forEach(function(s){subBody.appendChild(buildScenarioCard(s))});
-        subEl.appendChild(subBody);
-        catBody.appendChild(subEl);
-      });
-      cat.appendChild(catBody);
-      main.appendChild(cat);
-      rendered+=items.length;
-    });
-    if(rendered>0){showState('Success')}else{showState('Missing')}
+    if(valid.length===0){showState('Missing');throw new Error('所有场景均缺必填字段')}
+  }catch(err){
+    console.error('渲染失败:',err);
+    showState('Error');
+    return;
   }
-}catch(err){
-  console.error('渲染失败:',err);
-  showState('Error');
-}
 
-// ===== Level 2:场景卡片 =====
-function buildScenarioCard(s){
-  var card=document.createElement('article');card.className='scenario';
-
-  // 头部:chip + title + 复制按钮(复制按钮在末尾 · 总是可见)
-  var head=document.createElement('div');head.className='scenario-head';
-  var chip=document.createElement('span');chip.className='chip';chip.textContent=s.wake_word;
-  var title=document.createElement('div');title.className='title';title.textContent=s.scenario_title;
-  var btn=document.createElement('button');btn.className='copy-btn';btn.textContent='📋 复制 prompt';
-  btn.onclick=function(){copyPrompt(s,btn)};
-  head.appendChild(chip);head.appendChild(title);head.appendChild(btn);
-  card.appendChild(head);
-
-  // Level 4:详情子折叠(各 detail 独立折叠 · 4 级架构)
-  var details=document.createElement('details');details.className='details';
-  var sum=document.createElement('summary');sum.textContent='查看详情 · 维度 / prompt / 预期结果';
-  details.appendChild(sum);
-  var detailBody=document.createElement('div');detailBody.className='detail-body';
-
-  // 维度(dim 本身作为子块,不再直接铺)
-  var dimBlock=document.createElement('div');dimBlock.className='dim';
-  Object.keys(s.dimensions||{}).forEach(function(k){
-    dimBlock.innerHTML+='<b>'+esc(k)+'</b>: '+esc(s.dimensions[k])+'<br>';
+  /* ===== 分组(分类 → 子功能 · #31 Q2/Q3 · 渲染只读) ===== */
+  var categories=Array.isArray(d.categories)?d.categories:[];
+  var catMeta={};
+  categories.forEach(function(c){catMeta[c.key]={name:c.name||c.key,icon:c.icon||''}});
+  var byCat={};
+  valid.forEach(function(s){
+    var k=s.category;
+    if(!(k in catMeta)){k='?'}
+    (byCat[k]=byCat[k]||[]).push(s);
   });
-  if(dimBlock.innerHTML)detailBody.appendChild(dimBlock);
+  var orderedKeys=categories.map(function(c){return c.key}).concat(Object.keys(byCat).filter(function(k){return !(k in catMeta)}));
 
-  // prompt
-  var promptBox=document.createElement('pre');promptBox.className='prompt-box';promptBox.textContent=(s.prompt||'').trim();
-  detailBody.appendChild(promptBox);
-
-  // result
-  var resultBox=document.createElement('pre');resultBox.className='result-box';resultBox.textContent='预期: '+(s.result||'').trim();
-  detailBody.appendChild(resultBox);
-
-  // dependencies 依赖清单(#32 决议 · 可选字段 · 渲染为圆点列表)
-  if(s.dependencies&&String(s.dependencies).trim()){
-    var depBox=document.createElement('div');depBox.className='deps-box';
-    var depTitle=document.createElement('div');depTitle.className='deps-title';depTitle.textContent='环境依赖';
-    depBox.appendChild(depTitle);
-    var depList=document.createElement('ul');depList.className='deps-list';
-    String(s.dependencies).split('\n').forEach(function(line){
-      line=line.trim();if(!line)return;
-      var li=document.createElement('li');li.textContent=line;
-      depList.appendChild(li);
-    });
-    depBox.appendChild(depList);
-    detailBody.appendChild(depBox);
+  /* ===== Toast ===== */
+  var toastEl=document.getElementById('toast');
+  var toastWakeEl=document.getElementById('toastWake');
+  var toastTimer=null;
+  function showToast(t){
+    if(toastWakeEl)toastWakeEl.textContent=t;
+    if(toastEl)toastEl.classList.add('show');
+    if(toastTimer)clearTimeout(toastTimer);
+    toastTimer=setTimeout(function(){if(toastEl)toastEl.classList.remove('show')},4500);
   }
-
-  details.appendChild(detailBody);
-  card.appendChild(details);
-
-  // 【待开发】标记(§07 §4)
-  if(s.status==='【待开发】'){
-    var warn=document.createElement('div');warn.style.cssText='margin-top:10px;padding:8px 12px;background:#fff7e8;color:#b25b00;border-radius:10px;font-size:13px;font-weight:700';
-    warn.textContent='⚠️ 【待开发】- AI 收到此 prompt 必须停止 + 告知用户,不绕过/不假装/不降级';
-    card.appendChild(warn);
-  }
-  return card;
-}
-
-// ===== 复制 prompt(原则 10 · 学习卡路里 help_center · 直接复制纯 prompt 文本) =====
-// 第一性:prompt 自含「(唤醒词:XXX)」路由锚点 + 期望效果段,使命 = 让 AI 找到
-// SKILL.md 对应流程;复制内容 = prompt 本身,不加【场景】/【唤醒词】/【预期结果】
-// 标签(参考卡路里 help_center.js: s.prompt_template 直接复制 · 2026-08-02 拍板)
-function copyPrompt(s,btn){
-  var text=(s.prompt||'').trim();
-  // 提取唤醒词显示在 toast(确认复制对了)
-  var wakeLabel=s.wake_word||'prompt';
-  if(s.scenario_title)wakeLabel+=' · '+s.scenario_title;
-  showToast(wakeLabel);
-  var after=function(){
-    if(!btn)return;
-    var orig=btn.textContent;btn.textContent='✓ 已复制';btn.classList.add('copied');
-    setTimeout(function(){btn.textContent=orig;btn.classList.remove('copied')},2000);
-  };
-  safeWriteText(text).then(function(ok){if(ok){after()}else{fallbackCopy(text);after()}})
-}
-
-
-// ===== Toast 控制器(学习卡路里 help_center · iOS 通知风格) =====
-var toastEl=document.getElementById('toast');
-var toastWakeEl=document.getElementById('toastWake');
-var toastCloseEl=document.getElementById('toastClose');
-var toastTimer=null;
-function showToast(wake){
-  if(toastWakeEl)toastWakeEl.textContent=wake;
-  if(toastEl)toastEl.classList.add('show');
-  if(toastTimer)clearTimeout(toastTimer);
-  toastTimer=setTimeout(function(){if(toastEl)toastEl.classList.remove('show')},4500);
-}
-if(toastCloseEl){
-  toastCloseEl.addEventListener('click',function(){
-    if(toastEl)toastEl.classList.remove('show');
+  document.getElementById('toastClose').addEventListener('click',function(){
+    toastEl.classList.remove('show');
     if(toastTimer)clearTimeout(toastTimer);
   });
-}
 
-// 回到顶部按钮:滚 200px 后才显示 · 点击平滑回顶
-var backBtn=document.getElementById('backToTop');
-if(backBtn){
+  function copyPrompt(scene,btn){
+    showToast((scene.wake_word||'prompt')+' · '+(scene.scenario_title||''));
+    safeWriteText((scene.prompt||'').trim()).then(function(ok){flashBtn(btn,ok?'✓ 已复制':'✗ 复制失败',2000)});
+  }
+
+  function typeClass(t){
+    if(!t)return 't-view';
+    if(t.indexOf('向导')>=0)return 't-wizard';
+    if(t.indexOf('采集')>=0)return 't-collect';
+    if(t.indexOf('选择')>=0)return 't-select';
+    if(t.indexOf('查看')>=0)return 't-view';
+    return 't-mixed';
+  }
+  function typeBadge(t){return '<span class="type-badge '+typeClass(t)+'">'+esc(t||'查看')+'</span>'}
+  function hl(text,q_){
+    if(!q_||!text)return esc(text);
+    var i=text.toLowerCase().indexOf(q_.toLowerCase());
+    if(i<0)return esc(text);
+    return esc(text.slice(0,i))+'<mark>'+esc(text.slice(i,i+q_.length))+'</mark>'+esc(text.slice(i+q_.length));
+  }
+  function sceneMatch(s,q_){
+    if(!q_)return true;
+    var hay=(s.wake_word+' '+s.scenario_title+' '+(s.subfunction||'')+' '+(s.type||'')).toLowerCase();
+    return hay.indexOf(q_.toLowerCase())>=0;
+  }
+
+  /* ===== 场景卡片(整卡点击展开 · 对齐居家管家) ===== */
+  function buildSceneCard(s,q_){
+    var card=document.createElement('details');card.className='scene';card.id='s-'+s.scenario_id;
+    var head=document.createElement('summary');head.className='scene-head';
+    head.innerHTML='<span class="scene-id">'+esc(s.scenario_id)+'</span>'
+      +'<span class="chip">'+esc(s.wake_word)+'</span>'
+      +'<span class="scene-title">'+hl(s.scenario_title,q_)+'</span>';
+    var btn=document.createElement('button');btn.className='copy-btn';
+    var bl=document.createElement('span');bl.className='copy-long';bl.textContent='📋 复制 prompt';
+    var bs=document.createElement('span');bs.className='copy-short';bs.textContent='复制';
+    btn.appendChild(bl);btn.appendChild(bs);
+    btn.onclick=function(e){if(e){e.preventDefault();e.stopPropagation()};copyPrompt(s,btn)};
+    head.appendChild(btn);
+    card.appendChild(head);
+
+    var body=document.createElement('div');body.className='scene-body';
+    var tl=document.createElement('div');tl.className='scene-type';
+    tl.innerHTML='<span class="type-label">流程类型</span>'+typeBadge(s.type);
+    body.appendChild(tl);
+    var pb=document.createElement('div');pb.className='prompt-box';
+    pb.textContent=(s.prompt||'').trim();
+    var pin=document.createElement('button');pin.className='copy-inline';
+    pin.textContent='复制此 prompt';
+    pin.onclick=function(e){if(e)e.stopPropagation();copyPrompt(s,pin)};
+    pb.appendChild(pin);
+    body.appendChild(pb);
+
+    /* L4 详情子折叠(备忘录保留 · 维度/预期结果/依赖) */
+    var dt=document.createElement('details');dt.className='details';
+    var dsum=document.createElement('summary');dsum.textContent='查看详情 · 维度 / 预期结果 / 依赖';
+    dt.appendChild(dsum);
+    var dbody=document.createElement('div');dbody.className='detail-body';
+    var dimBlock=document.createElement('div');dimBlock.className='dim';
+    Object.keys(s.dimensions||{}).forEach(function(k){
+      dimBlock.innerHTML+='<b>'+esc(k)+'</b>: '+esc(s.dimensions[k])+'<br>';
+    });
+    if(dimBlock.innerHTML)dbody.appendChild(dimBlock);
+    if(s.result&&String(s.result).trim()){
+      var rb=document.createElement('pre');rb.className='result-box';rb.textContent='预期: '+(s.result||'').trim();
+      dbody.appendChild(rb);
+    }
+    if(s.dependencies&&String(s.dependencies).trim()){
+      var depBox=document.createElement('div');depBox.className='deps-box';
+      var depTitle=document.createElement('div');depTitle.className='deps-title';depTitle.textContent='环境依赖';
+      depBox.appendChild(depTitle);
+      var depList=document.createElement('ul');depList.className='deps-list';
+      String(s.dependencies).split('\n').forEach(function(line){
+        line=line.trim();if(!line)return;
+        var li=document.createElement('li');li.textContent=line;
+        depList.appendChild(li);
+      });
+      depBox.appendChild(depList);
+      dbody.appendChild(depBox);
+    }
+    if(dbody.childNodes.length)dt.appendChild(dbody);
+    body.appendChild(dt);
+
+    if(s.status){
+      var dev=document.createElement('div');dev.className='dev-banner';
+      dev.innerHTML='⚠️ '+esc(s.status)+'<span class="mini">· AI 收到此 prompt 必须停止执行并明确告知,不绕过/不假装/不降级(07 契约)</span>';
+      body.appendChild(dev);
+    }
+    card.appendChild(body);
+    return card;
+  }
+
+  /* ===== 分类模块(分类 → 子功能 → 场景 · 4 层折叠) ===== */
+  function buildModule(key,scenes){
+    var m=document.createElement('details');m.className='module';
+    var sum=document.createElement('summary');
+    sum.innerHTML='<span class="module-head"><span class="m-icon">'+esc(catMeta[key].icon)+'</span>'+esc(catMeta[key].name)
+      +(scenes.length?'<span class="m-count">'+scenes.length+' 场景</span>':'');
+    m.appendChild(sum);
+    var body=document.createElement('div');body.className='module-body';
+    var subGroups={};
+    scenes.forEach(function(s){var sub=s.subfunction||'基础';(subGroups[sub]=subGroups[sub]||[]).push(s)});
+    Object.keys(subGroups).forEach(function(sub){
+      var se=document.createElement('details');se.className='sub-module';
+      var ssum=document.createElement('summary');
+      ssum.innerHTML='<span class="sub-head"><span>'+esc(sub)+'</span><span class="scount">'+subGroups[sub].length+' 场景</span></span>';
+      se.appendChild(ssum);
+      var sbody=document.createElement('div');sbody.className='module-body';
+      subGroups[sub].forEach(function(s){sbody.appendChild(buildSceneCard(s,null))});
+      se.appendChild(sbody);
+      body.appendChild(se);
+    });
+    m.appendChild(body);
+    return m;
+  }
+
+  /* ===== 渲染 ===== */
+  var modsEl=document.getElementById('mods');
+  function renderMods(){
+    modsEl.innerHTML='';
+    orderedKeys.forEach(function(k){
+      if(byCat[k]&&byCat[k].length)modsEl.appendChild(buildModule(k,byCat[k]));
+    });
+  }
+  renderMods();
+  showState('Success');
+
+  /* hero meta + stats */
+  var sum=(d.summary&&typeof d.summary==='object')?d.summary:{};
+  var statsEl=document.getElementById('heroStats');
+  if(Array.isArray(sum.metrics)){
+    statsEl.innerHTML=sum.metrics.map(function(m){
+      return '<span class="stat">'+esc(m.value)+' '+esc(m.label)+'</span>';
+    }).join('');
+  }
+  document.getElementById('heroMeta').textContent=sum.subtitle?esc(sum.subtitle):'';
+
+  /* 首次使用横幅(状态驱动 · 对齐居家管家) */
+  var initBanner=document.getElementById('initBanner');
+  var initScene=null;
+  valid.forEach(function(s){if(s.scenario_id==='memo_init_setup')initScene=s});
+  if(!d.initialized&&initScene){
+    initBanner.hidden=false;
+    document.getElementById('initCopy').onclick=function(e){copyPrompt(initScene,this)};
+  }
+
+  /* 联系作者(对齐居家管家 · 仅 GitHub 链接,无 PII) */
+  var contact=(d.contact&&typeof d.contact==='object')?d.contact:{};
+  var cb=document.getElementById('contactBody');
+  var contactItems=[];
+  if(contact.github)contactItems.push(['GitHub',contact.github]);
+  if(contact.issues)contactItems.push(['Issues',contact.issues]);
+  contactItems.forEach(function(it){
+    var dd=document.createElement('div');dd.className='contact-item';
+    var href=(it[1]&&String(it[1]).indexOf('http')===0)?('href="'+esc(it[1])+'" target="_blank" rel="noopener"'):'';
+    dd.innerHTML='<span class="k">'+esc(it[0])+'</span><span>'+(href?'<a '+href+'>'+esc(it[1])+'</a>':esc(it[1]))+'</span>';
+    cb.appendChild(dd);
+  });
+  if(contactItems.length){
+    var cbtn=document.createElement('button');cbtn.className='copy-btn contact-copy';cbtn.textContent='一键复制全部联系信息';
+    cbtn.onclick=function(){
+      var t=contactItems.map(function(it){return it[0]+': '+it[1]}).join('\n');
+      showToast('全部联系信息');safeWriteText(t).then(function(ok){flashBtn(cbtn,ok?'✓ 已复制':'✗ 复制失败',2000)});
+    };
+    cb.appendChild(cbtn);
+  }
+
+  document.getElementById('footerLine').textContent='备忘录 v'+(d.version||'?')+' HELP · 使用手册';
+
+  /* ===== 场景直达(#hash 导航) ===== */
+  function openChain(el){
+    var n=el.parentNode;
+    while(n&&n!==document.body){
+      if(n.tagName==='DETAILS'){n.open=true}
+      n=n.parentNode;
+    }
+  }
+  function goToScene(scenario_id){
+    var el=document.getElementById('s-'+scenario_id);
+    if(!el)return;
+    openChain(el);
+    el.scrollIntoView({behavior:'smooth',block:'start'});
+    el.style.transition='box-shadow .6s, border-color .6s';
+    el.style.boxShadow='0 0 0 3px rgba(0,122,255,.35)';
+    setTimeout(function(){el.style.boxShadow=''},2000);
+  }
+  var initHash=(location.hash||'').replace(/^#/,'');
+  if(initHash.indexOf('s-')===0){
+    setTimeout(function(){goToScene(initHash.slice(2))},120);
+  }
+
+  /* ===== / 快捷键聚焦搜索 ===== */
+  document.addEventListener('keydown',function(e){
+    var tag=(e.target.tagName||'').toLowerCase();
+    if(tag==='input'||tag==='textarea'||e.target.isContentEditable)return;
+    if(e.key==='/'){
+      e.preventDefault();
+      document.getElementById('sB').focus();
+    }
+  });
+
+  /* ===== 搜索:有词 → 平铺命中;无词 → 目录(输入即直达) ===== */
+  var inpB=document.getElementById('sB');
+  inpB.addEventListener('input',function(){
+    var q_=this.value.trim();
+    if(!q_){renderMods();return}
+    var hits=[];
+    orderedKeys.forEach(function(k){
+      (byCat[k]||[]).forEach(function(s){if(sceneMatch(s,q_))hits.push(s)});
+    });
+    modsEl.innerHTML='';
+    if(hits.length===0){
+      var em=document.createElement('div');em.className='search-empty';
+      em.textContent='没有找到匹配「'+q_+'」的场景,换个词试试(唤醒词 / 场景名 / 子功能)。';
+      modsEl.appendChild(em);
+      return;
+    }
+    var hc=document.createElement('div');hc.className='hitcount';hc.textContent='命中 '+hits.length+' 个场景';
+    modsEl.appendChild(hc);
+    hits.forEach(function(s){modsEl.appendChild(buildSceneCard(s,q_))});
+  });
+
+  /* 回到顶部(备忘录保留) */
+  var backBtn=document.getElementById('backToTop');
   window.addEventListener('scroll',function(){
     if(window.scrollY>200){backBtn.classList.add('show')}else{backBtn.classList.remove('show')}
   },{passive:true});
   backBtn.addEventListener('click',function(){
     window.scrollTo({top:0,behavior:'smooth'});
   });
-}
+})();
 </script>
 </body>
 </html>
+

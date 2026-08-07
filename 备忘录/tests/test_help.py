@@ -520,15 +520,15 @@ class TestHelpThreeLevelCollapse:
     def test_template_has_level1_module_creation(self):
         """JS 创建 Level 1 <details class='module'>(分类,来自 categories 数据)"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        assert "cat.className='module'" in text, \
+        assert "className='module'" in text, \
             "应 JS 动态创建 Level 1 分类标签"
-        assert "payload.categories" in text, \
+        assert "d.categories" in text or "payload.categories" in text, \
             "Level 1 分类应从 payload.categories 读取,不硬编码"
 
     def test_template_has_level2_submodule_creation(self):
         """JS 创建 Level 2 <details class='sub-module'>(子功能分组)"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        assert "subEl.className='sub-module'" in text, \
+        assert "className='sub-module'" in text, \
             "应 JS 动态创建 Level 2 子功能标签"
         assert "s.subfunction||'基础'" in text, \
             "subfunction 空应兜底「基础」分组"
@@ -536,28 +536,30 @@ class TestHelpThreeLevelCollapse:
     def test_template_has_level3_details_creation(self):
         """JS 创建 Level 4 <details class='details'>(详情折叠)"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        assert "createElement('details');details.className='details'" in text, \
+        assert "className='details'" in text, \
             "应 JS 动态创建 Level 4 详情标签"
 
     def test_modules_default_collapsed(self):
         """Level 1 分类默认折叠(无 open 属性)"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        module_section = text.split("var main=document.getElementById('bodyContent')")[1] if "var main=document.getElementById('bodyContent')" in text else text
-        assert "'open'" not in module_section.split('cat.className=\'module\'')[1].split('cat.appendChild(catBody)')[0], \
+        module_section = text.split("function buildModule")[1].split("/* ===== 场景直达")[0] \
+            if "function buildModule" in text else text
+        assert "'open'" not in module_section and "open=" not in module_section, \
             "分类应默认折叠(无 open 属性)"
 
     def test_scenario_details_default_collapsed(self):
         """Level 4 详情默认折叠(无 open 属性)"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        details_section = text.split("function buildScenarioCard")[1] if "function buildScenarioCard" in text else ""
-        assert 'open' not in details_section.split('details.className=\'details\'')[1].split('card.appendChild(details)')[0] if details_section else True, \
+        details_section = text.split("function buildSceneCard")[1].split("/* ===== 分类模块")[0] \
+            if "function buildSceneCard" in text else ""
+        assert 'open' not in details_section.split("className='details'")[1].split("body.appendChild(dt)")[0] if details_section else True, \
             "详情应默认折叠"
 
     def test_copy_button_visible_at_scenario_level(self):
         """复制按钮在场景头,无需展开细节即可见"""
         text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        # 复制按钮应在 buildScenarioCard 内
-        assert "btn.textContent='📋 复制 prompt'" in text, \
+        # 复制按钮应在 buildSceneCard 内
+        assert "'📋 复制 prompt'" in text, \
             "复制按钮应在场景头部(总是可见)"
 
     def test_no_kpi_grid_or_filter_or_toc(self):
@@ -607,7 +609,7 @@ class TestHelpThreeLevelCollapse:
             page.wait_for_timeout(300)
             modules = page.locator("details.module").count()
             sub_modules = page.locator("details.sub-module").count()
-            scenarios = page.locator("article.scenario").count()
+            scenarios = page.locator("details.scene").count()
             copy_btns = page.locator(".copy-btn").count()
             toast = page.locator("#toast").count()
             backtop = page.locator("#backToTop").count()
@@ -618,7 +620,7 @@ class TestHelpThreeLevelCollapse:
         assert modules == 8, f"应 8 个分类,实际 {modules}"
         assert sub_modules == 13, f"应 13 个子功能,实际 {sub_modules}"
         assert scenarios == 30, f"应 30 场景卡,实际 {scenarios}"
-        assert copy_btns == 30, f"应 30 复制按钮,实际 {copy_btns}"
+        assert copy_btns == 32, f"应 32 复制按钮(30 场景头 + 1 联系作者 + 1 初始化横幅),实际 {copy_btns}"
         assert deps_boxes == 1, f"应 1 个依赖清单块(Init),实际 {deps_boxes}"
         assert toast == 1 and backtop == 1, "toast / back-to-top 元素应在"
         joined = " ".join(names)

@@ -14,8 +14,14 @@ from dataclasses import dataclass, field
 from typing import Dict, List
 
 REQUIRED_FIELDS = {
-    "wake_word", "scenario_id", "scenario_title",
+    "wake_word", "scenario_id", "scenario_title", "type",
     "dimensions", "prompt", "status", "result",
+}
+
+# type 流程类型白名单(08-HTML交互规范 · 与居家管家 scenes 同词汇 + 查看+回执,#179 对齐)
+TYPE_WHITELIST = {
+    "采集+回执", "查看", "查看+回执", "查看+选择", "查看+选择+回执",
+    "向导+采集+回执", "向导+回执", "选择+回执",
 }
 
 # 无 order / 无 aliases / 无反向索引(#31 Q4/Q1/Q6 · 防回归:这些字段不许出现)
@@ -89,6 +95,10 @@ def validate_scenarios(data: Dict) -> ValidationResult:
         for f in sorted(REQUIRED_FIELDS):
             if f not in s:
                 res.errors.append(f"[{sid}] 缺必填字段 {f}")
+        # type 白名单(08 契约 · #179)
+        tp = s.get("type")
+        if tp not in TYPE_WHITELIST:
+            res.errors.append(f"[{sid}] type={tp!r} 不在白名单 {sorted(TYPE_WHITELIST)}")
         # 唯一性(scenario_id 跨场景唯一;wake_word 允许多对一:
         # 备忘改分类 单条+批量 共用唤醒词,#33 归类确认)
         ids.append(sid)

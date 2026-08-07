@@ -1,4 +1,4 @@
-# 备忘录 · 场景资产(v1.2.0)
+# 备忘录 · 场景资产(v1.2.1)
 #
 # 总纲 §07-HELP与场景完备性.md 契约:场景资产 = HELP HTML 唯一事实源
 # 字段(7 必填 + 3 新):
@@ -22,7 +22,7 @@
 # 编辑本文件后,需重新跑 `memo_cli.py help` 刷新 HELP HTML。
 
 skill: 备忘录
-version: 1.2.0
+version: 1.2.1
 categories:
 - key: memo
   name: 备忘类

@@ -13,6 +13,7 @@
 ## [1.2.1] · 2026-08-04
 
 ### Changed
+- **SoT 元数据对齐**(2026-08-07 补记):SKILL.md frontmatter 与 `_meta.json` 自 1.2.0 对齐至 1.2.1(ADR-0001:SKILL.md 为版本 SoT;1.2.0 发布后版本元数据欠账,内容早已与 1.2.1 一致)
 - **飞书授权流程:强制非阻塞模式(架构修复 · 第一性原理)**
   - **背景**:2026-08-04 实测发现 AI 同步阻塞跑 `lark-cli config init --new` / `lark-cli auth login` 必被 AI 工具 timeout(2-5 分钟)干掉,用户浏览器操作是分钟级(1-10 分钟),时间维度不匹配 → 流程卡死 30+ 分钟。
   - **根因**:lark-cli 已提供非阻塞多轮协议(`--no-wait --json` 拿 device_code + `--device-code` 续轮询),但 SKILL.md 老版本描述的是同步阻塞用法,所有走该 SKILL 的 AI 都会卡死。

@@ -1,14 +1,14 @@
 ---
 name: 备忘录
-version: 1.2.0
+version: 1.2.1
 status: active
 description: 跨设备随手记录 · 结构化备忘 + 心愿 + 打卡 + 情绪追踪
-last_updated: 2026-08-02
+last_updated: 2026-08-07
 ---
 
 # 备忘录 (Memorandum)
 
-> **当前版本:1.2.0**(2026-08-02 发布 · git tag `v1.2.0`)
+> **当前版本:1.2.1**(2026-08-07 · git tag `v1.2.1` · SoT 对齐:1.2.0 元数据欠账修复,内容与 CHANGELOG 1.2.1 一致)
 > v1.2.0:HELP HTML 4 级重构 + 首次使用模块(wayfinder #30 map · ADR-0007)
 > v1.1.5:整体重构(规范合规化 · B+A+D 三阶段 23 决策落地 · 术语统一 + 结构文件 + 工程仪式)
 > v1.1.4:备忘录 HELP 唤醒词(总纲 §07 契约 · 场景资产 + HELP HTML + skill 根目录覆盖)

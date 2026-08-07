@@ -1,0 +1,90 @@
+# scenes/setup.yaml — 开始使用域场景注册(域唯一事实源 · 合并器 = 公共层脚本)
+# 场景 = 用户使用场景(初始化/备份恢复/导入语义独立条目;参数 = 填空区)
+# prompt 规则(定稿 · #144 补充决议 4):
+#   1. 结构 = head 一行 + 字段区
+#   2. head = 「请加载「饼干记账」技能,帮我<场景人话>(唤醒词:<唤醒词>):」
+#   3. 字段 = 「  字段名: ____(提示)」;必填无提示,选填(选填[,如:示例]),默认(默认 X)
+#   4. 禁写流程/呈现清单/反问/总结约束(全部下沉 SKILL.md 通用规则)
+# 依据:G6 零基础初始化决议(#147)、G2 备份 = db + goals.json(#143)、G1 导入最小方案(#142)
+version: "2.0"
+domain: setup
+subs:
+  - name: 初始化
+    wake_words:
+      - wake_word: 初始化
+        scenes:
+          - id: setup-1-1
+            scenario_id: setup_init_wizard
+            scenario_title: 首次使用向导(4 步零决策)
+            type: 向导
+            status: ""
+            html: {template: "开始使用/init_wizard.html", command_cn: "初始化向导", data_source: "db"}
+            prompt: |
+              请加载「饼干记账」技能,帮我开始使用饼干记账(唤醒词:初始化):
+            result: "HTML 4 步零决策向导(环境检测→数据目录确认→建库→只读验证);完成页「记第一笔」引导按钮;未初始化时 HELP init-banner 双通道入口"
+
+      - wake_word: 初始化状态
+        scenes:
+          - id: setup-1-2
+            scenario_id: setup_init_status
+            scenario_title: 初始化状态(是否已就绪)
+            type: 查看
+            status: ""
+            html: {template: "开始使用/init_status.html", command_cn: "初始化状态", data_source: "db"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看看饼干记账初始化了没有(唤醒词:初始化状态):
+            result: "HTML 三重判定(数据存在/schema 版本/就绪);未初始化 → 引导初始化;schema 过期 → 显式迁移提示"
+
+  - name: 备份恢复
+    wake_words:
+      - wake_word: 备份
+        scenes:
+          - id: setup-2-1
+            scenario_id: setup_backup_create
+            scenario_title: 一键备份
+            type: 回执
+            status: ""
+            html: {template: "开始使用/backup.html", command_cn: "一键备份", data_source: "db+goals.json"}
+            prompt: |
+              请加载「饼干记账」技能,帮我备份饼干记账的数据(唤醒词:备份):
+            result: "HTML 备份回执(文件路径/时间/内容:数据库+目标);失败 → 错误回执(5 状态契约)"
+          - id: setup-2-2
+            scenario_id: setup_backup_list
+            scenario_title: 查看备份
+            type: 查看
+            status: ""
+            html: {template: "开始使用/backup_list.html", command_cn: "查看备份", data_source: "备份目录"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看看有哪些备份(唤醒词:备份):
+            result: "HTML 备份列表(时间/大小/内容);无备份 → 空态引导一键备份"
+
+      - wake_word: 恢复
+        scenes:
+          - id: setup-2-3
+            scenario_id: setup_restore
+            scenario_title: 从备份恢复
+            type: 向导
+            status: ""
+            html: {template: "开始使用/restore.html", command_cn: "从备份恢复", data_source: "备份文件"}
+            prompt: |
+              请加载「饼干记账」技能,帮我从备份恢复数据(唤醒词:恢复):
+
+                备  份: ____ (选填,默认最新备份)
+            result: "HTML 恢复向导(备份详情预览→确认→恢复→验证);恢复前自动备份现状;失败 → 错误回执(5 状态契约)"
+
+  - name: 导入
+    wake_words:
+      - wake_word: 导入
+        scenes:
+          - id: setup-3-1
+            scenario_id: setup_import
+            scenario_title: 导入 CSV 账单(列映射向导)
+            type: 向导
+            status: ""
+            html: {template: "开始使用/import.html", command_cn: "导入CSV", data_source: "CSV 文件"}
+            prompt: |
+              请加载「饼干记账」技能,帮我导入 CSV 账单(唤醒词:导入):
+
+                文件路径: ____
+                列映射: ____ (选填,自动识别,如:日期=第1列,金额=第3列)
+            result: "HTML 列映射向导(前几行预览+自动猜测映射,可改)→ 批量确认 → 文字回执;缺文件路径 → AI 反问(不猜测)"

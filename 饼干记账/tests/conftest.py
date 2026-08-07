@@ -30,6 +30,22 @@ SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 if str(SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPTS_DIR))
 
+# v2.0 拆分后:旧入口 record_bill.py 按子命令路由到域 CLI(测试保持兼容)
+DOMAIN_BY_CMD = {
+    "add": "write", "update": "write",
+    "list": "query", "search": "query", "recent": "query", "summary": "query",
+    "monthly": "analysis", "compare": "analysis", "breakdown": "analysis",
+    "overview": "analysis", "stats": "analysis",
+}
+
+
+def _resolve_script(script_name: str, args: list) -> Path:
+    """解析脚本路径:record_bill.py → 域 cli.py;其他原样"""
+    if script_name == "record_bill.py":
+        domain = DOMAIN_BY_CMD.get(args[0] if args else "", "query")
+        return SCRIPTS_DIR / domain / "cli.py"
+    return SCRIPTS_DIR / script_name
+
 
 # ── 2. 临时 DB / HTML_DIR fixture ────────────────────────────────────────────
 
@@ -167,7 +183,7 @@ def run_cli(tmp_db_dir):
 
     def _runner(script_args, timeout=30):
         script_name = script_args[0]
-        script_path = SCRIPTS_DIR / script_name
+        script_path = _resolve_script(script_name, script_args[1:])
         if not script_path.exists():
             raise FileNotFoundError(f"脚本不存在: {script_path}")
         cmd = [sys.executable, str(script_path)] + script_args[1:]

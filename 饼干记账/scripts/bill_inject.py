@@ -41,7 +41,23 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 SKILL_DIR = _SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / "templates" / "query_view.html"
-CLI_PATH = _SCRIPT_DIR / "record_bill.py"
+
+# 查询类型 → 域 CLI(拆分后按域路由,v2.0 隔离契约)
+QUERY_DOMAIN = {
+    "summary": "query",
+    "list": "query",
+    "search": "query",
+    "recent": "query",
+    "monthly": "analysis",
+    "compare": "analysis",
+    "breakdown": "analysis",
+    "overview": "analysis",
+    "stats": "analysis",
+}
+
+
+def cli_path(query_type: str) -> Path:
+    return _SCRIPT_DIR / QUERY_DOMAIN.get(query_type, "query") / "cli.py"
 
 # 支持的查询类型（CLI 子命令 + 对应的 data.title / data.subtitle）
 QUERY_TYPES = {
@@ -58,8 +74,8 @@ QUERY_TYPES = {
 
 
 def run_cli_json(query_type: str, extra_args: list) -> dict:
-    """调用 record_bill.py <query_type> --json <extra_args>...，解析 JSON 输出"""
-    cmd = [sys.executable, str(CLI_PATH), query_type, "--json"] + list(extra_args)
+    """调用 <域>/cli.py <query_type> --json <extra_args>...，解析 JSON 输出"""
+    cmd = [sys.executable, str(cli_path(query_type)), query_type, "--json"] + list(extra_args)
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
     env["PYTHONUTF8"] = "1"

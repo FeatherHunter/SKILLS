@@ -1,0 +1,206 @@
+# scenes/query.yaml — 查询域场景注册(域唯一事实源 · 合并器 = 公共层脚本)
+# 场景 = 用户使用场景(时间/对比语义独立条目;参数值 = 填空区 ____)
+# prompt 风格(卡路里同构):head(请你加载技能·饼干记账,执行唤醒词「XX」。)
+#   + body(做什么 + 缺参反问 + 呈现清单 + 1 句话总结)+ 填空区(____)
+# 状态(空/缺/离线/错误)由 5 状态契约呈现,不占场景条目
+version: "2.0"
+domain: query
+subs:
+  - name: 按时间
+    wake_words:
+      - wake_word: 查今天
+        scenes:
+          - id: query-1-1
+            scenario_id: query_today
+            scenario_title: 今日收支摘要
+            type: 查看
+            status: ""
+            html: {template: "查询/today.html", command_cn: "今日摘要", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查今天」。
+
+              我想看今天的收支摘要。给我看:笔数 / 支出 / 收入 / 净额 + 今日逐条记录。完成后给 1 句话总结,不需要过多文字解释。
+            result: "HTML 展示 4 KPI + 洞察 + 今日明细;空数据 → 空态引导"
+
+      - wake_word: 查日期
+        scenes:
+          - id: query-2-1
+            scenario_id: query_date_yesterday
+            scenario_title: 查昨天
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查日期", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查日期」。
+
+              我想查昨天的账。给我看:昨日收支汇总 + 逐条记录明细。完成后给 1 句话总结,不需要过多文字解释。
+            result: "HTML 展示昨日记录"
+          - id: query-2-2
+            scenario_id: query_date_specific
+            scenario_title: 查某一天(指定日期)
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查日期", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查日期」。
+
+              我想查某天的账。如果我没说具体日期,问我补齐。给我看:该日收支汇总 + 逐条记录明细。完成后给 1 句话总结,不需要过多文字解释。
+
+              日期:____
+            result: "HTML 展示指定日期记录;相对表达(昨天/上周五/前两天)由 routing.py 换算"
+          - id: query-2-3
+            scenario_id: query_date_relative
+            scenario_title: 查相对日期(如上周五)
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查日期", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查日期」。
+
+              我想查某个相对日期的账(如:上周五 / 前天)。如果我没说清楚,问我补齐。给我看:该日收支汇总 + 逐条记录明细。完成后给 1 句话总结,不需要过多文字解释。
+
+              日期:____
+            result: "相对时间换算(routing.py)→ HTML"
+
+      - wake_word: 查范围
+        scenes:
+          - id: query-3-1
+            scenario_id: query_range_week
+            scenario_title: 查某周(本周/上周)
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查范围", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查范围」。
+
+              我想查某周的账。如果我没说哪周,问我补齐。给我看:该周收支汇总 + 逐条记录明细。完成后给 1 句话总结,不需要过多文字解释。
+
+              周:____(例如:本周 / 上周)
+            result: "HTML 展示该周记录(周一~周日)"
+          - id: query-3-2
+            scenario_id: query_range_custom
+            scenario_title: 查自定义区间
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查范围", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查范围」。
+
+              我想查某段时间的账。如果我没说起止日期,问我补齐。给我看:区间收支汇总 + 逐条记录明细。完成后给 1 句话总结,不需要过多文字解释。
+
+              开始日期:____
+              结束日期:____
+            result: "HTML 展示区间记录;跨月/跨年正确计算"
+          - id: query-3-3
+            scenario_id: query_range_double_compare
+            scenario_title: 双区间对比
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查范围", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查范围」。
+
+              我想对比两段时间的账。如果我没说起止日期,问我补齐。给我看:两段收支对比(支出/收入/净额)+ 变化率。完成后给 1 句话总结,不需要过多文字解释。
+
+              区间一:____(例如:5 月)
+              区间二:____(例如:6 月)
+            result: "HTML 双列并排对比 + 变化率"
+
+  - name: 按条件
+    wake_words:
+      - wake_word: 查分类
+        scenes:
+          - id: query-4-1
+            scenario_id: query_category
+            scenario_title: 查某分类记录
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查分类", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查分类」。
+
+              我想查某分类的记录。如果我没说分类,问我补齐。给我看:该分类逐条记录 + 分类统计。完成后给 1 句话总结,不需要过多文字解释。
+
+              分类:____(例如:餐饮 / 出行 / 奶茶)
+            result: "HTML 展示分类记录;多级分类/组合筛选(日期/账户)由 AI 解析"
+
+      - wake_word: 查最近
+        scenes:
+          - id: query-5-1
+            scenario_id: query_recent
+            scenario_title: 查最近记录(可排序)
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查最近", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查最近」。
+
+              我想看最近的记录。如果我没说条数,默认 10 条。给我看:最近 N 条记录明细。完成后给 1 句话总结,不需要过多文字解释。
+
+              条数(选填):____
+              排序(选填,例如:金额从大到小):____
+            result: "HTML 展示最近 N 条;排序为可选参数"
+
+      - wake_word: 搜备注
+        scenes:
+          - id: query-6-1
+            scenario_id: query_search
+            scenario_title: 搜索备注关键词
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "搜备注", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「搜备注」。
+
+              我想搜备注关键词。如果我没说关键词,问我补齐。给我看:命中记录明细。完成后给 1 句话总结,不需要过多文字解释。
+
+              关键词:____
+            result: "HTML 展示命中记录;零命中 → 空态"
+
+      - wake_word: 查标签
+        scenes:
+          - id: query-7-1
+            scenario_id: query_tag
+            scenario_title: 查标签(#tag 聚合)
+            type: 查看
+            status: ""
+            html: {template: "查询/tag.html", command_cn: "查标签", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查标签」。
+
+              我想查某个标签的记录。如果我没说标签,问我补齐。给我看:命中记录 + 聚合统计。完成后给 1 句话总结,不需要过多文字解释。
+
+              标签:____(例如:#旅行)
+            result: "HTML 展示标签命中记录 + 聚合统计"
+
+      - wake_word: 查账本
+        scenes:
+          - id: query-8-1
+            scenario_id: query_ledger
+            scenario_title: 查某账本记录
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查账本", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查账本」。
+
+              我想查某个账本的记录。如果我没说账本,问我补齐。给我看:该账本记录 + 汇总。完成后给 1 句话总结,不需要过多文字解释。
+
+              账本:____(例如:旅行 / 生活)
+            result: "HTML 展示账本记录 + 汇总"
+
+      - wake_word: 查账户
+        scenes:
+          - id: query-9-1
+            scenario_id: query_account
+            scenario_title: 查某账户记录
+            type: 查看
+            status: ""
+            html: {template: "查询/list.html", command_cn: "查账户", data_source: "bills"}
+            prompt: |
+              请你加载技能·饼干记账,执行唤醒词「查账户」。
+
+              我想查某个账户的记录。如果我没说账户,问我补齐。给我看:该账户记录 + 汇总。完成后给 1 句话总结,不需要过多文字解释。
+
+              账户:____(例如:支付宝 / 微信)
+            result: "HTML 展示账户记录 + 汇总"

@@ -977,6 +977,195 @@ scenes:
 
             时  间: ____ (选填,如:本月)
         result: '结果型 HTML:退款总额/次数 + 月份分布 + 退款明细;查 #退款/#已退款 聚合'
+- key: goal
+  name: 目标
+  icon: 🎯
+  subs:
+  - name: 预算
+    wake_words:
+    - wake_word: 设定预算
+      scenes:
+      - id: goal-1-1
+        scenario_id: goal_set_budget
+        scenario_title: 设定月度预算
+        type: 采集
+        status: ''
+        html:
+          template: 目标/budget_form.html
+          command_cn: 设定预算
+          data_source: goals.json
+        prompt: |
+          请加载「饼干记账」技能,帮我设定月度预算(唤醒词:设定预算):
+
+            金  额: ____ (如:3000)
+            月  份: ____ (选填,如:本月 / 8月;默认本月起)
+            分  类: ____ (选填,如:餐饮;不填 = 总预算)
+        result: 采集确认 → 写入 goals.json → 回执;覆盖同月同类预算时提示确认
+    - wake_word: 看预算
+      scenes:
+      - id: goal-2-1
+        scenario_id: goal_budget_status
+        scenario_title: 查看预算执行
+        type: 查看
+        status: ''
+        html:
+          template: 目标/budget_view.html
+          command_cn: 看预算
+          data_source: goals.json + bills
+        prompt: |
+          请加载「饼干记账」技能,帮我看预算执行情况(唤醒词:看预算):
+
+            月  份: ____ (选填,如:本月 / 8月)
+        result: 结果型 HTML:各预算进度条(预算 vs 实际/剩余/超支提示);超支 → 警示色
+  - name: 目标
+    wake_words:
+    - wake_word: 设定目标
+      scenes:
+      - id: goal-3-1
+        scenario_id: goal_set_saving
+        scenario_title: 设定储蓄目标
+        type: 采集
+        status: ''
+        html:
+          template: 目标/saving_form.html
+          command_cn: 设定目标
+          data_source: goals.json
+        prompt: |
+          请加载「饼干记账」技能,帮我设定储蓄目标(唤醒词:设定目标):
+
+            目  标: ____ (如:换手机 / 旅行基金)
+            金  额: ____ (如:10000)
+            截止日期: ____ (选填,如:12月底)
+        result: 采集确认 → 写入 goals.json → 回执
+    - wake_word: 看目标
+      scenes:
+      - id: goal-4-1
+        scenario_id: goal_saving_status
+        scenario_title: 查看目标进度
+        type: 查看
+        status: ''
+        html:
+          template: 目标/saving_view.html
+          command_cn: 看目标
+          data_source: goals.json + bills
+        prompt: |
+          请加载「饼干记账」技能,帮我看储蓄目标进度(唤醒词:看目标):
+        result: 结果型 HTML:各目标进度(已存/目标/百分比/剩余/预计达成日);进度 = 目标期内收入-支出累计
+- key: account
+  name: 账户
+  icon: 💳
+  subs:
+  - name: 账户管理
+    wake_words:
+    - wake_word: 新增账户
+      scenes:
+      - id: account-1-1
+        scenario_id: account_add
+        scenario_title: 新增账户
+        type: 采集
+        status: ''
+        html:
+          template: 账户/account_form.html
+          command_cn: 新增账户
+          data_source: goals.json(账户表)
+        prompt: |
+          请加载「饼干记账」技能,帮我新增账户(唤醒词:新增账户):
+
+            账户名: ____ (如:招行卡 / 花呗)
+            类  型: ____ (选填,如:银行卡 / 支付 / 信用)
+        result: 采集确认 → 写入账户表 → 回执;重名 → 提示确认
+    - wake_word: 改账户
+      scenes:
+      - id: account-2-1
+        scenario_id: account_update
+        scenario_title: 修改账户
+        type: 选择
+        status: ''
+        html:
+          template: 账户/confirm.html
+          command_cn: 改账户
+          data_source: 账户表 + bills
+        prompt: |
+          请加载「饼干记账」技能,帮我修改账户(唤醒词:改账户):
+
+            账  户: ____ (如:招行卡)
+            改成什么: ____ (如:改名「招行工资卡」 / 停用)
+        result: 定位账户 → 确认 → 更新;停用 = 标记停用(历史记录保留);找不到 → AI 反问
+    - wake_word: 账户转账
+      scenes:
+      - id: account-3-1
+        scenario_id: account_transfer
+        scenario_title: 账户间转账
+        type: 采集
+        status: ''
+        html:
+          template: 账户/transfer_confirm.html
+          command_cn: 账户转账
+          data_source: bills(账户)
+        prompt: |
+          请加载「饼干记账」技能,帮我做账户间转账(唤醒词:账户转账):
+
+            金  额: ____
+            从账户: ____ (如:支付宝)
+            到账户: ____ (如:招行卡)
+            时  间: ____ (选填,默认现在)
+        result: 记一笔特殊记录(账户 A → B 移动,备注=#转账,不影响收支统计)+ 确认 + 回执
+    - wake_word: 看账户汇总
+      scenes:
+      - id: account-4-1
+        scenario_id: account_summary
+        scenario_title: 查看账户汇总
+        type: 查看
+        status: ''
+        html:
+          template: 账户/account_view.html
+          command_cn: 账户汇总
+          data_source: bills(账户)
+        prompt: |
+          请加载「饼干记账」技能,帮我看账户汇总(唤醒词:看账户汇总):
+        result: 结果型 HTML:各账户余额卡(收支累计推算)+ 最近流水摘要;停用账户灰显
+- key: link
+  name: 联动
+  icon: 🔗
+  subs:
+  - name: 联动
+    wake_words:
+    - wake_word: 买东西
+      scenes:
+      - id: link-1-1
+        scenario_id: link_purchase
+        scenario_title: 买东西联动(记账 + 录物品)
+        type: 采集
+        status: ''
+        html:
+          template: 联动/purchase_confirm.html
+          command_cn: 买东西联动
+          data_source: bills + 居家管家
+        prompt: |
+          请加载「饼干记账」技能,帮我记一笔买东西的账并联动录入(唤醒词:买东西):
+
+            金  额: ____
+            物  品: ____ (如:空气炸锅)
+            分  类: ____ (选填,默认居家/家电)
+        result: 过程确认 → 记支出 + 回执按钮「同时录入居家管家」(点击 → AI 调居家管家录物品);只记账也 OK(按钮可选)
+    - wake_word: 吃饭
+      scenes:
+      - id: link-2-1
+        scenario_id: link_meal
+        scenario_title: 吃饭联动(记账 + 记卡路里)
+        type: 采集
+        status: ''
+        html:
+          template: 联动/meal_confirm.html
+          command_cn: 吃饭联动
+          data_source: bills + 卡路里
+        prompt: |
+          请加载「饼干记账」技能,帮我记一笔吃饭的账并联动卡路里(唤醒词:吃饭):
+
+            金  额: ____
+            吃  了: ____ (如:午饭 鸡腿饭)
+            分  类: ____ (选填,默认餐饮)
+        result: 过程确认 → 记支出 + 回执按钮「同时记卡路里」(点击 → AI 调卡路里记一餐);只记账也 OK(按钮可选)
 - key: setup
   name: 开始使用
   icon: 🚀

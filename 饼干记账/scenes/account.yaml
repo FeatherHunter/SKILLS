@@ -1,0 +1,67 @@
+# scenes/account.yaml — 账户域场景注册(域唯一事实源 · 合并器 = 公共层脚本)
+# 场景 = 用户「想管账户的每一件事」(直达式 · 2026-08-08)
+# 账户 = bills.account 字段(现有字段,无独立账户表);余额 = 收支累计推算
+# 交互:写入类 = 采集+回执;查看类 = 结果型 HTML
+version: "2.0"
+domain: account
+subs:
+  - name: 账户管理
+    wake_words:
+      - wake_word: 新增账户
+        scenes:
+          - id: account-1-1
+            scenario_id: account_add
+            scenario_title: 新增账户
+            type: 采集
+            status: ""
+            html: {template: "账户/account_form.html", command_cn: "新增账户", data_source: "goals.json(账户表)"}
+            prompt: |
+              请加载「饼干记账」技能,帮我新增账户(唤醒词:新增账户):
+
+                账户名: ____ (如:招行卡 / 花呗)
+                类  型: ____ (选填,如:银行卡 / 支付 / 信用)
+            result: "采集确认 → 写入账户表 → 回执;重名 → 提示确认"
+
+      - wake_word: 改账户
+        scenes:
+          - id: account-2-1
+            scenario_id: account_update
+            scenario_title: 修改账户
+            type: 选择
+            status: ""
+            html: {template: "账户/confirm.html", command_cn: "改账户", data_source: "账户表 + bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我修改账户(唤醒词:改账户):
+
+                账  户: ____ (如:招行卡)
+                改成什么: ____ (如:改名「招行工资卡」 / 停用)
+            result: "定位账户 → 确认 → 更新;停用 = 标记停用(历史记录保留);找不到 → AI 反问"
+
+      - wake_word: 账户转账
+        scenes:
+          - id: account-3-1
+            scenario_id: account_transfer
+            scenario_title: 账户间转账
+            type: 采集
+            status: ""
+            html: {template: "账户/transfer_confirm.html", command_cn: "账户转账", data_source: "bills(账户)"}
+            prompt: |
+              请加载「饼干记账」技能,帮我做账户间转账(唤醒词:账户转账):
+
+                金  额: ____
+                从账户: ____ (如:支付宝)
+                到账户: ____ (如:招行卡)
+                时  间: ____ (选填,默认现在)
+            result: "记一笔特殊记录(账户 A → B 移动,备注=#转账,不影响收支统计)+ 确认 + 回执"
+
+      - wake_word: 看账户汇总
+        scenes:
+          - id: account-4-1
+            scenario_id: account_summary
+            scenario_title: 查看账户汇总
+            type: 查看
+            status: ""
+            html: {template: "账户/account_view.html", command_cn: "账户汇总", data_source: "bills(账户)"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看账户汇总(唤醒词:看账户汇总):
+            result: "结果型 HTML:各账户余额卡(收支累计推算)+ 最近流水摘要;停用账户灰显"

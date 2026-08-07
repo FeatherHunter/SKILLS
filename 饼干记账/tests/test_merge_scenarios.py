@@ -80,7 +80,7 @@ class TestSummary:
         assert set(sc.keys()) == {"id", "scenario_id", "scenario_title", "type", "status", "html", "prompt", "result"}
 
     def test_real_three_domains_count(self):
-        """真实 4 域合并:61 场景(write 15 + query 15 + analysis 25 + setup 6),60 唤醒词"""
+        """真实 7 域合并:71 场景(write 15 + query 15 + analysis 25 + goal 4 + account 4 + link 2 + setup 6),70 唤醒词"""
         domain_data = {}
         for key in ms.DOMAIN_KEYS:
             data = ms.load_domain_yaml(key)
@@ -88,8 +88,8 @@ class TestSummary:
                 domain_data[key] = data
         summary = ms.build_summary(domain_data)
         stats = ms.collect_stats(summary)
-        assert stats["scenes"] == 61
-        assert stats["wake_words"] == 60
+        assert stats["scenes"] == 71
+        assert stats["wake_words"] == 70
 
 
 # ── 全局校验 ──────────────────────────────────────────────────────────────────

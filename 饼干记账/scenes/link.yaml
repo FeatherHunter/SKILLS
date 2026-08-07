@@ -1,0 +1,40 @@
+# scenes/link.yaml — 联动域场景注册(域唯一事实源 · 合并器 = 公共层脚本)
+# 场景 = 用户「想跨技能联动的每一件事」(直达式 · 2026-08-08)
+# G2 决议:联动最终形态 = 场景簇 + 回执按钮(无总览/无偏好/无 link_prefs)
+# 交互:采集 + 回执(回执带联动按钮:确认后 AI 调用目标技能)
+version: "2.0"
+domain: link
+subs:
+  - name: 联动
+    wake_words:
+      - wake_word: 买东西
+        scenes:
+          - id: link-1-1
+            scenario_id: link_purchase
+            scenario_title: 买东西联动(记账 + 录物品)
+            type: 采集
+            status: ""
+            html: {template: "联动/purchase_confirm.html", command_cn: "买东西联动", data_source: "bills + 居家管家"}
+            prompt: |
+              请加载「饼干记账」技能,帮我记一笔买东西的账并联动录入(唤醒词:买东西):
+
+                金  额: ____
+                物  品: ____ (如:空气炸锅)
+                分  类: ____ (选填,默认居家/家电)
+            result: "过程确认 → 记支出 + 回执按钮「同时录入居家管家」(点击 → AI 调居家管家录物品);只记账也 OK(按钮可选)"
+
+      - wake_word: 吃饭
+        scenes:
+          - id: link-2-1
+            scenario_id: link_meal
+            scenario_title: 吃饭联动(记账 + 记卡路里)
+            type: 采集
+            status: ""
+            html: {template: "联动/meal_confirm.html", command_cn: "吃饭联动", data_source: "bills + 卡路里"}
+            prompt: |
+              请加载「饼干记账」技能,帮我记一笔吃饭的账并联动卡路里(唤醒词:吃饭):
+
+                金  额: ____
+                吃  了: ____ (如:午饭 鸡腿饭)
+                分  类: ____ (选填,默认餐饮)
+            result: "过程确认 → 记支出 + 回执按钮「同时记卡路里」(点击 → AI 调卡路里记一餐);只记账也 OK(按钮可选)"

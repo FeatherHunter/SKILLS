@@ -1,0 +1,68 @@
+# scenes/goal.yaml — 目标域场景注册(域唯一事实源 · 合并器 = 公共层脚本)
+# 场景 = 用户「想定/想看目标的每一件事」(直达式 · 2026-08-08)
+# 载体:goals.json(目标 JSON · G1 决议);预算/目标 = 计划值 vs 实际(从 bills 聚合)
+# 交互:写入类 = 采集+回执;查看类 = 结果型 HTML(进度条)
+version: "2.0"
+domain: goal
+subs:
+  - name: 预算
+    wake_words:
+      - wake_word: 设定预算
+        scenes:
+          - id: goal-1-1
+            scenario_id: goal_set_budget
+            scenario_title: 设定月度预算
+            type: 采集
+            status: ""
+            html: {template: "目标/budget_form.html", command_cn: "设定预算", data_source: "goals.json"}
+            prompt: |
+              请加载「饼干记账」技能,帮我设定月度预算(唤醒词:设定预算):
+
+                金  额: ____ (如:3000)
+                月  份: ____ (选填,如:本月 / 8月;默认本月起)
+                分  类: ____ (选填,如:餐饮;不填 = 总预算)
+            result: "采集确认 → 写入 goals.json → 回执;覆盖同月同类预算时提示确认"
+
+      - wake_word: 看预算
+        scenes:
+          - id: goal-2-1
+            scenario_id: goal_budget_status
+            scenario_title: 查看预算执行
+            type: 查看
+            status: ""
+            html: {template: "目标/budget_view.html", command_cn: "看预算", data_source: "goals.json + bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看预算执行情况(唤醒词:看预算):
+
+                月  份: ____ (选填,如:本月 / 8月)
+            result: "结果型 HTML:各预算进度条(预算 vs 实际/剩余/超支提示);超支 → 警示色"
+
+  - name: 目标
+    wake_words:
+      - wake_word: 设定目标
+        scenes:
+          - id: goal-3-1
+            scenario_id: goal_set_saving
+            scenario_title: 设定储蓄目标
+            type: 采集
+            status: ""
+            html: {template: "目标/saving_form.html", command_cn: "设定目标", data_source: "goals.json"}
+            prompt: |
+              请加载「饼干记账」技能,帮我设定储蓄目标(唤醒词:设定目标):
+
+                目  标: ____ (如:换手机 / 旅行基金)
+                金  额: ____ (如:10000)
+                截止日期: ____ (选填,如:12月底)
+            result: "采集确认 → 写入 goals.json → 回执"
+
+      - wake_word: 看目标
+        scenes:
+          - id: goal-4-1
+            scenario_id: goal_saving_status
+            scenario_title: 查看目标进度
+            type: 查看
+            status: ""
+            html: {template: "目标/saving_view.html", command_cn: "看目标", data_source: "goals.json + bills"}
+            prompt: |
+              请加载「饼干记账」技能,帮我看储蓄目标进度(唤醒词:看目标):
+            result: "结果型 HTML:各目标进度(已存/目标/百分比/剩余/预计达成日);进度 = 目标期内收入-支出累计"

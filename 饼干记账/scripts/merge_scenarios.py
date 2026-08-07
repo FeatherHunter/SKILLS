@@ -48,14 +48,15 @@ VERSION = "2.0"
 SKILL_NAME = "饼干记账"
 
 # 7 域 meta(固定声明;scenes 只含已枚举域,未枚举域 HELP 显示待开发)
+# 顺序 = HELP 一级目录展示依据(G4):核心域在前,「开始使用」低频,移到最后(联系作者上方,人类 2026-08-07 裁定)
 DOMAINS = [
-    {"key": "setup",    "name": "开始使用", "icon": "🚀"},
     {"key": "write",    "name": "写入",     "icon": "✏️"},
     {"key": "query",    "name": "查询",     "icon": "🔍"},
     {"key": "analysis", "name": "分析",     "icon": "📊"},
     {"key": "goal",     "name": "目标",     "icon": "🎯"},
     {"key": "account",  "name": "账户",     "icon": "💳"},
     {"key": "link",     "name": "联动",     "icon": "🔗"},
+    {"key": "setup",    "name": "开始使用", "icon": "🚀"},
 ]
 DOMAIN_KEYS = [d["key"] for d in DOMAINS]
 

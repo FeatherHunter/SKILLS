@@ -53,11 +53,11 @@ def _domain(key: str, scenes=None) -> dict:
 
 class TestSummary:
     def test_domains_declares_all_seven(self):
-        """汇总 domains meta 固定声明 7 域(即使未枚举)"""
+        """汇总 domains meta 固定声明 7 域(即使未枚举);顺序 = HELP 展示依据"""
         summary = ms.build_summary({})
         assert len(summary["domains"]) == 7
         keys = [d["key"] for d in summary["domains"]]
-        assert keys == ["setup", "write", "query", "analysis", "goal", "account", "link"]
+        assert keys == ["write", "query", "analysis", "goal", "account", "link", "setup"]
 
     def test_scenes_only_enumerated_domains(self):
         """scenes 只含已枚举域;未枚举域不出现在 scenes"""

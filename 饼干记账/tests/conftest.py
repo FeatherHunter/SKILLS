@@ -163,6 +163,43 @@ def seeded_db(tmp_db_dir):
     return tmp_db_dir
 
 
+# ── 3.5 goals.json fixture(目标域载体 · T0 #164 第 8 项)───────────────────────
+
+GOALS_FILENAME = "goals.json"
+
+
+@pytest.fixture
+def goals_file(tmp_db_dir):
+    """临时 goals.json 路径 —— 约定:goals.json 与 db 同级(跟随 SKILLS_DB_PATH)
+
+    目标域实施后,goals 读写模块用此路径;备份机制同样约定(backup.py 已支持)。
+    测试用例可直接写文件注入数据:
+        goals_file.write_text('{"budgets": []}', encoding="utf-8")
+    """
+    return tmp_db_dir / GOALS_FILENAME
+
+
+@pytest.fixture
+def goals_rw(goals_file):
+    """goals.json 读写 helper(目标域实施前的临时设施)
+
+    返回 (load, save):
+        load() -> dict(不存在返回 {})
+        save(dict) -> None(原子写)
+    """
+    def load():
+        if not goals_file.exists():
+            return {}
+        return json.loads(goals_file.read_text(encoding="utf-8"))
+
+    def save(data):
+        tmp = goals_file.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        tmp.replace(goals_file)
+
+    return load, save
+
+
 # ── 4. CLI 子进程 wrapper ────────────────────────────────────────────────────
 
 @pytest.fixture

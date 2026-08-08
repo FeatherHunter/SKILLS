@@ -1,0 +1,118 @@
+# 派生域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 私家大厨/scenes/派生.yaml
+# 合并器 = scripts/场景合并.py(实施期接入,对齐居家管家契约;改总账的唯一通道 = 合并器)
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# G9 grilling 定案(2026-08-08 · 一轮 3 问 + 用户两项实质增强):
+#   1. 场景清单 = **3 场景卡**:添加派生关系(两菜已存在,建关系)/ 查看派生关系(家族树)/
+#      从已有派生新菜(复制母本 + AI 预填差异 + 建关系)——用户增强新增第 3 卡。
+#      G0 草稿 4 场景处置: 添加+变更说明 = add 参数(change_summary 必填,并入 rel-1);
+#      派生自身非法 = 底层校验规则,不占卡;查看双向 = 并入 rel-2 家族树。
+#   2. **从已有派生新菜(rel-3 · 用户提出,派生域核心价值)**:
+#      用户说「做咖喱鸡,类似咖喱牛腩」/「从咖喱牛腩派生咖喱鸡」→
+#      a. AI 拉出母本菜谱全字段(名称/食材/步骤/难度/份量/时间/背景)
+#      b. AI 按用户语言描述的差异**预填写**(牛腩→鸡,差异字段标色,对齐 G2 三态采集
+#         表单「AI 推测标色」视觉);母本字段天然完整,不走缺字段拒绝制
+#         (派生 = 复制+改,字段都有值;用户改坏/删空字段 → 红色必补,复用 G2 校验)
+#      c. 过程 HTML 供用户修改其他不同点 → 确认 → 复制确认 prompt → AI 写库
+#      d. 一次完成:创建新菜谱 + 自动建派生关系(relation_type=派生,
+#         change_summary = AI 总结的差异,如「牛腩换鸡,减咖喱量」)
+#      e. 结果型 HTML 回执:新菜谱 + 家族树已更新(新节点入树)
+#      边界: 母本废弃/不存在 → 拒绝 + 提示(不造值);派生深度不限(可再派生孙辈)
+#   3. **查看派生关系 = 家族树(rel-2 · 用户拍板,推翻 AI 推荐列表版)**:
+#      根 = 当前菜,向上祖先(派生自),向下后代(派生出了),多代连成链;
+#      数据少 → 单个根节点即可,不强制多代展示;list-all 有全量关系,
+#      实施期 render_data relations 视图改树形模板(AI 或渲染层按 parent/child 组装树);
+#      08 双按钮 + 双通道对齐。
+#   4. 添加派生关系(rel-1 · 核心骨架): 两菜已存在,建关系(类型 enum 派生/变体/改良 +
+#      改动说明必填);过程 HTML 确认卡(父/子/类型/说明)→ 确认 → 写库 → 回执
+#      (成功 + 撤销 / 失败原因 + 重试)——对齐 G8 全局交互骨架。
+#   5. B1 抽象清洗: 已核查 relation_manager add 输出干净(人类友好 + JSON 均无
+#      表名/字段泄漏,L1 兜底正常),无需额外处理。
+#   6. 与查看/做菜域衔接(R2 #6): 历史驱动再开做的「派生推荐」= 开做页顶部提示
+#      「这道菜有 X 个派生(如宫保杏鲍菇)」→ 已在 cook-2 增强范畴,派生域只保证
+#      list-child 数据可用(已满足)。
+#
+# status 判定原则(07 §4/§6 五者对应):
+#   rel-1/rel-2: 底层(relation_manager add/list + render_data relations)已实现
+#     → status = ""(可用);rel-2 家族树为展示增强 → 实施期改模板
+#   rel-3: 从已有派生新菜 = 新增工作流(复制+改+建关系) → 【待开发】;
+#     实施期 = 母本读取 + 差异预填 prompt + 过程 HTML(复用录入域采集组件)+
+#     写库(recipe 创建 + recipe_relations 插入同事务)
+version: "1.0"
+
+domain:
+  key: relation
+  name: 派生
+  icon: "🌿"
+  g: G9
+
+scenes:
+  - id: "rel-1"
+    domain: relation
+    sub: 派生
+    wake_word: 添加派生关系
+    scenario_id: add_relation
+    scenario_title: 添加派生关系
+    dimensions:
+      child: 子菜(派生出的菜)
+      parent: 父菜(派生自的菜)
+      relation_type: 关系类型(派生/变体/改良)
+      change_summary: 改动说明(必填)
+    type: 采集+确认+回执
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我添加派生关系(唤醒词:添加派生关系):
+      子  菜: _____________ (如: 宫保虾球)
+      父  菜: _____________ (如: 宫保鸡丁)
+      关系类型: _____________ (派生 / 变体 / 改良)
+      改动说明: _____________ (必填,如「鸡丁换虾球,减辣」)
+    result: "过程 HTML 确认卡(父/子/类型/说明)→ 确认 → 写库 → 回执(成功+撤销 / 失败原因+重试)。"
+    html:
+      template: 派生/relation_confirm.html
+      command_cn: 添加派生关系
+      data_source: relation_manager add
+    variants: []
+
+  - id: "rel-2"
+    domain: relation
+    sub: 派生
+    wake_word: 查看派生关系
+    scenario_id: view_relation_tree
+    scenario_title: 查看派生关系(家族树)
+    dimensions: {recipe: 指定菜名}
+    type: 查看
+    status: ""
+    prompt: |-
+      看看{{菜名}}的家族关系。
+    result: "家族树:根=当前菜,向上祖先(派生自)/向下后代(派生出了),多代连链;数据少则单根节点。"
+    html:
+      template: 派生/relation_tree.html
+      command_cn: 查看派生关系
+      data_source: relation_manager list-all
+    variants: []
+
+  - id: "rel-3"
+    domain: relation
+    sub: 派生
+    wake_word: 从已有派生新菜
+    scenario_id: derive_from_existing
+    scenario_title: 从已有派生新菜
+    dimensions:
+      source: 母本菜(从它派生)
+      target: 新菜名
+      differences: 差异描述(用户语言,AI 预填)
+    type: 采集+确认+回执(过程型)
+    status: "【待开发】"
+    prompt: |-
+      请加载「私家大厨」技能,帮我从已有菜谱派生新菜(唤醒词:从已有派生新菜):
+      母  本: _____________ (如: 咖喱牛腩)
+      新菜名: _____________ (如: 咖喱鸡)
+      差  异: _____________ (如: 牛腩换鸡,咖喱少放,加椰浆)
+    result: "AI 拉母本全字段按差异预填(标色)→ 过程 HTML 用户改 → 确认 → 创建新菜谱+自动建派生关系(change_summary=差异总结)→ 结果回执(新菜+家族树已更新)。"
+    html:
+      template: 派生/derive_edit.html
+      command_cn: 从已有派生新菜
+      data_source: recipe 创建 + relation_manager add(同事务)
+    variants: []

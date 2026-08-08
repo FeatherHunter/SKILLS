@@ -1,0 +1,266 @@
+# 搜索筛选域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 私家大厨/scenes/搜索筛选.yaml
+# 合并器 = scripts/场景合并.py(实施期接入,对齐居家管家契约;改总账的唯一通道 = 合并器)
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# G4 grilling 定案(2026-08-08 · 一轮拍板):
+#   1. 场景清单 = 13 场景卡 0 增 0 删(10 唤醒词维持)+ 2 降级详情层
+#      (对齐用户原则: 场景 = HELP 展示的入口,单维筛选各自是独立入口,不合并)
+#   2. 组合筛选泛化: filter_cuisine_combined → filter_combined(≤3 维,§07 rule_2),
+#      保留在「筛选菜系」入口下作为组合语义代表;组合能力 = 所有筛选场景共享的 AI 行为
+#      (AI 解析多维条件,不新增「组合筛选」唤醒词)
+#   3. B6 转实现 2 项: 错字模糊匹配(无结果 → AI 纠错「你是不是想找」→ 展示正确结果;
+#      纠错仍无 → 无结果详情层)/ 排除食材(AI 解析「不吃/不要/忌 X」→ NOT 条件查询)
+#   4. 检索输出契约化(R2 #10): search/list JSON 契约 7 字段 =
+#      id / name / difficulty / total_time_minutes / status / avg_rating(历史评分均值) / tags(口味+饮食标签)
+#      现状 search_as_dict 返 5 字段,缺 avg_rating/tags → 实施期补(LEFT JOIN recipe_history AVG + 标签聚合);
+#      网格卡片同源显示(菜名/难度/时间/评分/标签)
+#   5. 08 对齐: data_view.html 网格卡片 + 复制数据(5 段 JSON)/复制日志(6 段) + 双通道(文字回执+HTML)
+#      + _N 后缀防覆盖(F4) + empty/error 态保留(F8 已有基础)
+#
+# 详情层条目(四层结构第四层 · 不占场景卡):
+#   - 搜索无结果(search_no_result): 无匹配 → 先走错字纠错(模糊匹配场景)→ 仍无 → 礼貌告知 + 建议放宽/录入新菜
+#   - 空库列全部(list_all_with_empty): 库为空 → 礼貌告知 + 引导录入第一道菜
+version: "1.0"
+
+domain:
+  key: search
+  name: 搜索筛选
+  icon: "🔍"
+  g: G4
+
+scenes:
+  - id: "search-1"
+    domain: search
+    sub: 关键词搜索
+    wake_word: 搜索食谱
+    scenario_id: search_by_name_keyword
+    scenario_title: 关键词搜索(菜名/食材)
+    dimensions: {keyword: 菜名片段}
+    type: 查看
+    status: ""
+    prompt: |-
+      搜索排骨。
+    result: "列出菜名或食材含关键词的所有菜,网格卡片显示难度/时间/评分/标签。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 搜索食谱
+      data_source: recipes
+    variants: []
+
+  - id: "search-2"
+    domain: search
+    sub: 关键词搜索
+    wake_word: 搜索食谱
+    scenario_id: search_fuzzy_match
+    scenario_title: 错字模糊匹配(纠错提示)
+    dimensions: {keyword: 错字/谐音}
+    type: 查看
+    status: "【待开发】"
+    prompt: |-
+      搜索宫暴鸡丁(应为宫保)。
+    result: "无结果时 AI 纠错(同音/形近),提示「你是不是想找:宫保鸡丁」并直接展示结果;纠错仍无结果 → 走无结果详情层。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 搜索食谱
+      data_source: recipes
+    variants: []
+
+  - id: "search-3"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选菜系
+    scenario_id: filter_cuisine_basic
+    scenario_title: 按菜系筛选
+    dimensions: {cuisine: 川/粤/湘等}
+    type: 查看
+    status: ""
+    prompt: |-
+      川菜有哪些？
+    result: "列出所有川菜,按评分/更新时间排序。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选菜系
+      data_source: recipes
+    variants: []
+
+  - id: "search-4"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选菜系
+    scenario_id: filter_combined
+    scenario_title: 多维组合筛选(≤3 维)
+    dimensions: {cuisine: 川, time_max: 30 分钟, extra: 可加第 3 维}
+    type: 查看
+    status: ""
+    prompt: |-
+      川菜里 30 分钟内能搞定的。
+    result: "AI 解析多维组合条件(≤3 维,§07 rule_2),展示交集结果;组合能力为所有筛选场景共享。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选菜系
+      data_source: recipes
+    variants: []
+
+  - id: "search-5"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选食材
+    scenario_id: filter_by_ingredient_basic
+    scenario_title: 按食材筛选
+    dimensions: {ingredient: 具体食材名}
+    type: 查看
+    status: ""
+    prompt: |-
+      哪些菜里有虾。
+    result: "列出所有含虾的菜,按评分排序。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选食材
+      data_source: recipes
+    variants: []
+
+  - id: "search-6"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选食材
+    scenario_id: filter_exclude_ingredient
+    scenario_title: 排除食材(忌口)
+    dimensions: {ingredient_exclude: 不吃某食材}
+    type: 查看
+    status: "【待开发】"
+    prompt: |-
+      不吃辣,有什么菜？
+    result: "AI 解析「不吃/不要/忌 X」为排除条件(NOT 查询),列出不含该食材/口味的菜。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选食材
+      data_source: recipes
+    variants: []
+
+  - id: "search-7"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选难度
+    scenario_id: filter_difficulty_easy
+    scenario_title: 按难度筛选
+    dimensions: {difficulty: 简单/快手菜}
+    type: 查看
+    status: ""
+    prompt: |-
+      来个简单的。
+    result: "列出所有难度=简单/快手菜的菜。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选难度
+      data_source: recipes
+    variants: []
+
+  - id: "search-8"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选时间
+    scenario_id: filter_time_quick
+    scenario_title: 按时间筛选(30 分钟内)
+    dimensions: {time_max: 30 分钟}
+    type: 查看
+    status: ""
+    prompt: |-
+      30 分钟内的菜。
+    result: "列出所有总时间≤30 分钟的菜。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选时间
+      data_source: recipes
+    variants: []
+
+  - id: "search-9"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选炊具
+    scenario_id: filter_by_cookware
+    scenario_title: 按炊具筛选
+    dimensions: {cookware: 砂锅/高压锅等}
+    type: 查看
+    status: ""
+    prompt: |-
+      用砂锅做的菜。
+    result: "列出所有炊具含'砂锅'的菜。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选炊具
+      data_source: recipes
+    variants: []
+
+  - id: "search-10"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选口味
+    scenario_id: filter_by_flavor
+    scenario_title: 按口味筛选
+    dimensions: {flavor: 辣/甜/鲜等}
+    type: 查看
+    status: ""
+    prompt: |-
+      辣的菜有哪些。
+    result: "列出所有口味含'辣'的菜。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选口味
+      data_source: recipes
+    variants: []
+
+  - id: "search-11"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选季节
+    scenario_id: filter_by_season
+    scenario_title: 按季节筛选
+    dimensions: {season: 春/夏/秋/冬}
+    type: 查看
+    status: ""
+    prompt: |-
+      夏天适合吃什么。
+    result: "列出所有季节含'夏'的菜。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选季节
+      data_source: recipes
+    variants: []
+
+  - id: "search-12"
+    domain: search
+    sub: 维度筛选
+    wake_word: 筛选状态
+    scenario_id: filter_by_status
+    scenario_title: 按状态筛选
+    dimensions: {status: 未做/已做/熟练/已废弃}
+    type: 查看
+    status: ""
+    prompt: |-
+      已做的菜。
+    result: "列出所有状态=已做的菜,默认隐藏已废弃。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 筛选状态
+      data_source: recipes
+    variants: []
+
+  - id: "search-13"
+    domain: search
+    sub: 查看全部
+    wake_word: 查看全部
+    scenario_id: list_all_recipes
+    scenario_title: 列出所有食谱
+    dimensions: {}
+    type: 查看
+    status: ""
+    prompt: |-
+      查看全部。
+    result: "列出所有未废弃菜,按更新时间倒序,网格卡片显示难度/时间/评分/标签。"
+    html:
+      template: 搜索筛选/data_view.html
+      command_cn: 查看全部
+      data_source: recipes
+    variants: []

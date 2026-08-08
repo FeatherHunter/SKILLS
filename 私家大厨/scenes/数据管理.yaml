@@ -1,0 +1,106 @@
+# 数据管理域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 私家大厨/scenes/数据管理.yaml
+# 合并器 = scripts/场景合并.py(实施期接入,对齐居家管家契约;改总账的唯一通道 = 合并器)
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# G10 grilling 定案(2026-08-08 · 一轮 4 问 + 用户概念修正 · 收官之域):
+#   1. **唤醒词 ≠ 场景名(用户拍板 · 全局概念区分)**:
+#      唤醒词 = AI 路由用的准星,准确到 AI 能找到即可,不要求口语化;
+#      场景名 = 用户看 HELP 时的展示,精简而全面、一眼懂。
+#      yaml 两字段分开设计(wake_word 给 AI / scenario_title 给用户),prompt 里
+#      既含准确唤醒词(让 AI 准确加载技能并执行)又留填空位(方便用户填写)。
+#   2. 场景清单 = 3 卡(现状有实现无登记,全部补登记 + 设计唤醒词):
+#      data-1 数据质量报告(场景名)· 唤醒词「体检」—— 查看(结果型仪表盘)
+#      data-2 批量编辑(场景名)· 唤醒词「批量改」—— 采集+确认+回执(过程型 3-tab)
+#      data-3 导出备份(场景名)· 唤醒词「备份」—— 转移(JSON + 照片 ZIP 下载)
+#   3. 批量编辑 = 按 G8 核心骨架补齐(用户认可 Q3):
+#      现状已是「HTML 编辑 → 复制修改 prompt → AI 写库」,补齐:
+#      a. 编辑后改前/改后对比确认(预览差异)
+#      b. 08 双按钮(复制数据/复制日志)+ 双通道输出
+#      → 完全融入全局交互骨架,不单开设计
+#   4. 导出备份 = JSON + 照片 ZIP(用户认可 Q4):
+#      a. 全量 17 表 JSON(现状已有,含 id 供 import 复用,默认排除已废弃)
+#      b. 照片目录(photos/source_photos/work_photos 三目录,对齐 G5 契约)打包 ZIP
+#      c. 完整恢复 = 解压 + import;纯文件操作不碰 schema
+#      d. 边界: 恢复 = 导入域(recipe_import),本域只管「打包下载」
+#   5. 偏好档案(票任务 5)= **确认不落任何域**(用户认可 Q5):
+#      G1 已拍板砍除(开始使用域,对齐居家管家);R2 #9 可借鉴点(写前 diff/生鲜现问)
+#      已在其他域落地(G6 采购「已有vs需买」= 现查不存);不新增场景,票任务关闭。
+#   6. 数据健康检查候选(R2 #10 检索契约化): G4 已定检索契约 7 字段,实施期补
+#      avg_rating/tags 即可;健康检查本体 = data-1 质量报告,不另设场景。
+#   7. 08 对齐(实施期): 质量报告仪表盘 + 批量编辑 3-tab 补双按钮 + 双通道;
+#      质量报告启发式解析治本 = manager 加 --json(实施期随 argparse 统一治理)。
+#
+# status 判定原则(07 §4/§6 五者对应):
+#   data-1/2/3 底层均已实现(render_quality_report / render_batch_edit /
+#   export_recipes)→ status = ""(可用);唤醒词「体检/批量改/备份」为新增路由入口
+#   → 实施期登记 SKILL.md 路由表 + HELP;批量编辑对比确认/导出 ZIP = 增强待实施。
+version: "1.0"
+
+domain:
+  key: data
+  name: 数据管理
+  icon: "🗄️"
+  g: G10
+
+scenes:
+  - id: "data-1"
+    domain: data
+    sub: 数据管理
+    wake_word: 体检
+    scenario_id: data_quality_report
+    scenario_title: 数据质量报告
+    dimensions: {scope: 全部食谱}
+    type: 查看
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我做一次菜谱库体检(唤醒词:体检):
+      范  围: _____________ (选填,默认全部食谱)
+    result: "质量报告仪表盘:每道菜完整度评分(食材/步骤/贴士/技法/背景各 20 分),按分倒序,最差排前引导先补。"
+    html:
+      template: 数据管理/data_quality_report.html
+      command_cn: 体检
+      data_source: data_quality_report + render_quality_report
+    variants: []
+
+  - id: "data-2"
+    domain: data
+    sub: 数据管理
+    wake_word: 批量改
+    scenario_id: data_batch_edit
+    scenario_title: 批量编辑
+    dimensions:
+      recipe: 指定菜名(单菜多字段)
+      tab: 食材 / 步骤 / 标签
+    type: 采集+确认+回执(过程型)
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我批量编辑菜谱(唤醒词:批量改):
+      菜  名: _____________ (如: 宫保虾球)
+      改哪个部分: _____________ (食材 / 步骤 / 标签)
+    result: "3-tab 编辑页(食材/步骤/标签)→ 编辑 → 改前/改后对比确认 → 复制修改 prompt → AI 写库 → 回执(成功 diff+撤销 / 失败原因+重试)。"
+    html:
+      template: 数据管理/batch_edit.html
+      command_cn: 批量改
+      data_source: 9 个 manager CLI(render_batch_edit)
+    variants: []
+
+  - id: "data-3"
+    domain: data
+    sub: 数据管理
+    wake_word: 备份
+    scenario_id: data_export_backup
+    scenario_title: 导出备份
+    dimensions: {scope: 全部食谱, include_archived: 是否含已废弃(选填,默认不含)}
+    type: 转移(下载)
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我备份菜谱库(唤醒词:备份):
+      范  围: _____________ (选填,默认全部;要含已废弃的填「含废弃」)
+    result: "打包下载:全量 17 表 JSON + 照片目录 ZIP(photos/source_photos/work_photos),完整恢复=解压+导入;回执含文件路径与统计。"
+    html:
+      template: 数据管理/backup_receipt.html
+      command_cn: 备份
+      data_source: export_recipes + 照片目录打包
+    variants: []

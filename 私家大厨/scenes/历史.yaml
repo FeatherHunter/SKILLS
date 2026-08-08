@@ -1,0 +1,123 @@
+# 历史域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 私家大厨/scenes/历史.yaml
+# 合并器 = scripts/场景合并.py(实施期接入,对齐居家管家契约;改总账的唯一通道 = 合并器)
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# G7 grilling 定案(2026-08-08 · 一轮 4 问全认可 + 事实核查):
+#   1. 域收敛: G0 草稿 ~6 场景 → **4 场景卡(3 现状 + 1 新增)**:
+#      完整记录 / 快速记录 / 补录历史 → 并入 hist-1「记录做菜」1 卡
+#      (快速记录 = 同动作 AI 问少一点;B7 极简契约由 AI 行为保证;
+#       补录历史 = --cook_date 填昨天,参数不是场景——对齐 G6「参数旋钮」逻辑)
+#      → 历史时间线 = hist-2 / 单菜统计 = hist-3(现状已实现,0 增 0 删)
+#      → 全局统计 = hist-4(B6 转实现,唯一真新增)
+#   2. 快速记录非独立入口(用户拍板 Q2): 1 个入口 AI 自适应——
+#      用户说「记录做菜」AI 正常问(评分+反馈+反思);用户直接说「刚做完,5分,不错」
+#      AI 识别为快速记录,只收评分+一句话;HELP 不新增「快速记录」词。
+#      B7 用户拍板(2026-07-27): 反馈必填真实内容,禁「无」占位——快速记录也要求
+#      一句话真实反馈,CLI/DB 零改动。
+#   3. 全局统计 = 画像版(用户拍板 Q3): 不做趋势图(需新增按时间聚合查询,
+#      数据少时无意义)。画像内容 = 做过几道菜/总次数/最爱(均分最高+做得最多)/
+#      最近吃了啥/还有哪些菜没做过;数据来自现状 recipe_history 聚合,CLI/DB 零改动。
+#      唤醒词 = 「查看统计」不带菜名(与 hist-3 共享唤醒词,AI 按有无菜名路由:
+#      带菜名 → 单菜统计;不带 → 全局画像),不新增词(对齐 Q2 AI 自适应逻辑)。
+#   4. 历史驱动再开做 = 做菜域已落地(用户拍板 Q4): cook-2「含上次经验
+#      (cooking_start_with_history)」已存在且 status 可用——开做前顶部展示上次反思+
+#      均分/次数;历史域不新增场景、不加唤醒词,只保证 stats 数据可用(已满足)。
+#   5. 记录写操作回执(票任务 4,实施期): 成功 = 结果 + diff + 撤销按钮(复制 prompt
+#      → history_manager update 反悔);失败 = 原因 + 重试按钮(08 双通道)。
+#   6. 08 对齐(实施期): timeline/dashboard 补「复制数据(JSON)/复制日志」双按钮 +
+#      双通道输出;现状 data_view.html 无双按钮(R1 差距)。
+#
+# status 判定原则(07 §4/§6 五者对应):
+#   hist-1/2/3: 唤醒词路由 ✓ + 场景资产 ✓(本文件)+ prompt ✓ + 底层工作流
+#   (history_manager/render_data 已实现)+ HELP 映射 ✓ → status = ""(可用)
+#   hist-4: 全局统计未实现 → 【待开发】;实施期 render_data 加全局聚合视图
+version: "1.0"
+
+domain:
+  key: history
+  name: 历史
+  icon: "📜"
+  g: G7
+
+scenes:
+  - id: "hist-1"
+    domain: history
+    sub: 记录
+    wake_word: 记录做菜
+    scenario_id: record_cook
+    scenario_title: 记录做菜(完整 + 快速 + 补录)
+    dimensions:
+      recipe: 指定菜名
+      rating: 评分(0-5,可小数,选填)
+      feedback: 一句话反馈(必填真实内容,禁「无」占位)
+      backdate: 补录日期(选填,默认今天,YYYY-MM-DD)
+    type: 采集+回执
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我记录做菜(唤醒词:记录做菜):
+      菜  名: _____________
+      评  分: _____________ (选填,0-5 可带小数)
+      反  馈: _____________ (必填,一句话真实反馈,如「虾很Q弹,下次少放盐」)
+      日  期: _____________ (选填,补录填昨天日期,默认今天)
+    result: "写入 recipe_history(自动算第几次做,首做更新食谱状态为已做),回执=结果+评分+反馈+撤销按钮;失败=原因+重试。"
+    html:
+      template: 历史/record_receipt.html
+      command_cn: 记录做菜
+      data_source: history_manager add
+    variants: []
+
+  - id: "hist-2"
+    domain: history
+    sub: 查看
+    wake_word: 查看历史
+    scenario_id: view_history_list
+    scenario_title: 历史时间线
+    dimensions: {recipe: 指定菜名}
+    type: 查看
+    status: ""
+    prompt: |-
+      看看{{菜名}}的烹饪历史。
+    result: "垂直时间线:每次做菜的日期/第几次/评分/反馈,按时间倒序。"
+    html:
+      template: 历史/data_view_timeline.html
+      command_cn: 查看历史
+      data_source: history_manager list
+    variants: []
+
+  - id: "hist-3"
+    domain: history
+    sub: 查看
+    wake_word: 查看统计
+    scenario_id: view_stats_dashboard
+    scenario_title: 单菜统计
+    dimensions: {recipe: 指定菜名}
+    type: 查看
+    status: ""
+    prompt: |-
+      {{菜名}}的平均评分是多少?做过几次?
+    result: "KPI 仪表盘:总次数/平均分/最高分/最低分/最近做菜日期。"
+    html:
+      template: 历史/data_view_dashboard.html
+      command_cn: 查看统计
+      data_source: history_manager stats
+    variants: []
+
+  - id: "hist-4"
+    domain: history
+    sub: 查看
+    wake_word: 查看统计
+    scenario_id: view_stats_global
+    scenario_title: 全局统计(整体画像)
+    dimensions: {scope: 全部食谱}
+    type: 查看
+    status: "【待开发】"
+    prompt: |-
+      帮我看看我最近的厨艺整体情况。
+    result: "全局画像:做过几道菜/总次数/最爱(均分最高+做得最多)/最近吃了啥/还没做过的菜;带菜名则走单菜统计(hist-3)。"
+    html:
+      template: 历史/data_view_global.html
+      command_cn: 查看统计
+      data_source: recipe_history 全表聚合
+    variants: []

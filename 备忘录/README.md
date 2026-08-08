@@ -59,7 +59,7 @@
 
 ```
 备忘录/
-├── SKILL.md              # AI 决策用完整规范(SoT)
+├── SKILL.md              # AI 决策用完整规范(唯一事实源)
 ├── AGENTS.md             # Agent 入口(维护者指南)
 ├── README.md             # 本文件(零基础用户入口)
 ├── CONTEXT.md            # 术语表
@@ -68,8 +68,8 @@
 ├── script/               # 5 个 Python 模块(memo_cli / memo_render / injector / feishu_sync / reminder_scheduler)
 ├── templates/            # 6 个 HTML 模板(HELP / 查询 / 同步报告 / 3 个过程型向导)
 ├── references/           # 场景资产(scenarios.yaml)+ schema / examples / cron
-├── tests/                # pytest 测试(342 用例 · pytest tests/)
-└── docs/adr/             # 架构决策记录(ADR-0001 ~ 0007)
+├── tests/                # pytest 测试(363 用例 · pytest tests/)
+└── docs/adr/             # 架构决策记录(0001 ~ 0007)
 ```
 
 ## 维护

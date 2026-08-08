@@ -20,6 +20,7 @@
   - 领域第一对标：飞书日历 + Notion Calendar + 滴答清单 + 时光序（复合形态）+ AI 协作差异化；R1 确认「作息记录+日程计划+AI 复盘闭环」四家全空缺
   - Q5 开源清仓**全部处理**；Q6 路径链 env → `D:/.db`(win) → `~/.local/share/schedule-guardian/db`(linux)；Q7 作息管家/ 独立 MIT 子 LICENSE；Q8 三段式 onboarding；Q9 新增「首次使用」唤醒词入 scenarios.yaml；Q10 历史**不清理**、README 不提及；Q12 **不加** CI；Q13 初始化报告对标居家管家 first_use_wizard；Q14 直连脚本收敛为「底层 schedule_db.py + 中间层 schedule_cli.py」两层，batch 收敛为 CLI 子命令，direct_add/batch_add_morning 删除
 - **交互铁律 v2**（Q11，所有功能票必过）：所有功能以「HTML + 复制 prompt」为核心。闭环变体：① 一步直达（无过程页，不硬塞）② 多轮过程（过程 HTML → 操作 → 复制 prompt → 继续 → 结果 HTML）③ 多轮变种（允许）；**不引入第三种交互范式**
+- **顶层体验输入**（2026-08-08 用户口述，最高优先级）：`.scratch/skill-levelup/specs/顶层体验描述-2026-08-08.md` —— help 层级结构 + 场景命名原则 + 三层评估法（DB→CLI→场景）+ 动 DB 需用户确认 + 记录结果型作息表 HTML
 - **协议红线**：gh = `& "D:\0Tools\GitHubCLI\gh.exe"`；issue 标题 `[作息管家]` 前缀 + `skill:作息管家` + 分类 + 状态 label；Git 只 `add`/`commit`（禁 push）；全中文 commit + `Tested-By:` 行末；双门禁 A/B（09.1 T-A/T-B）；偏离记录三问（T-D）；人类参与点：push / 数据层 / 规格口径 / 双浏览器审查 / 考题判定 / 最终交付
 
 ## Decisions so far

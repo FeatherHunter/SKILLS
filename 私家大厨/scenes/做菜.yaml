@@ -1,0 +1,131 @@
+# 做菜域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 私家大厨/scenes/做菜.yaml
+# 合并器 = scripts/场景合并.py(实施期接入,对齐居家管家契约;改总账的唯一通道 = 合并器)
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# G5 grilling 定案(2026-08-08 · 两轮 + 事实核查):
+#   1. 场景清单 = 5 场景卡 0 增;2 新增(每步内联/完结闭环)并入 cooking_start_fresh 的 HTML 增强,
+#      不设独立入口(用户原则: 场景 = HELP 展示的入口,用户不会说「每步内联模式」这类词)
+#   2. 断点续做(B6 转实现)· 飞书内置浏览器 localStorage 不可靠(WebView 默认关闭 + 文件加载无存储空间,
+#      用户实地怀疑 + 技术核查一致)→ 恢复机制改为 **AI 会话记忆为主**:
+#      a. 做菜页「复制进度」按钮 → 生成「正在做 X,做到第 N 步」prompt → 用户发给 AI,AI 记住进度
+#      b. 下次「继续做 X」→ AI 生成从第 N 步开始的做菜页(URL 带 #step=N 参数,页面按参数直接定位步骤)
+#      c. localStorage 保留仅作增强(系统浏览器可用则用,不可用不阻塞)
+#      d. 页面顶部进度条(第 N / 共 M 步)
+#   3. 完结闭环(用户拍板交互): 做完 → 祝贺页(成品 + 用时 + 跳过步骤复盘)→ 评分/反馈/反思 →
+#      **全部动作都是「复制 prompt」按钮**(点评/评分/反思/完成拍照)→ 发给 AI → AI 落库;
+#      「完成拍照」按钮 → 生成预告式 prompt「我完成了 X,评分…,我现在完成的照片是:」→ AI 答「请发照片」
+#      → 用户第二次消息只发图 → AI 凭上文关联存照片(08 图片接收契约)
+#   4. 作品照片存储(用户认可加列): recipe_history 加 photo 列(可空,无照片=NULL 不造假值);
+#      实施期开单列迁移(006_add_history_photo,备份+回滚);照片存 work_photos/ 目录,chef:// 命名空间入库
+#   5. 照片/链接字段差异化契约(用户关切核查后补全): 三个字段(photo_url 成品照 / source_url 来源 /
+#      recipe_history.photo 作品照)统一「值类型判定表」:
+#      chef:// 本地文件 → 拼根目录 → <img>;图片扩展名/图床域名 → <img>;视频平台域名或视频扩展名 →
+#      外链 + 「🎬 视频」标识;其他 URL → 外链
+#      本地文件统一: photos/(成品照) + source_photos/(来源图,已有) + work_photos/(作品照,新建),
+#      命名 <recipe_slug>__<类型短码>__<YYYYMMDD>.<ext>,chef:// 入库不存绝对路径(跨设备迁移)
+#      核查发现: photo_url 现状「放养」(无目录/命名规范,仅 picsum 占位兜底),v4 补全;source_photos 有文档规范
+#   6. 输出根目录解析(用户拍板): env 优先 → 平台感知兜底: Windows → D:/CookHub / WSL → /mnt/d/CookHub /
+#      纯 Linux 无挂载 → 提示设置 env(对齐 db_config._fallback_db_dir 先例);CHEF_OUTPUT_DIR 退役兼容(D1 后置)
+#   7. 08 对齐: 复制数据(5 段 JSON)/复制日志(6 段) + 双通道 + _N 后缀防覆盖(F4,现状时间戳秒级连跑会撞)
+#   8. 剩余时间规则(cooking_mode.md §5: 归零/超时最低按计划时长)保留不重写;
+#      每步内联本步食材 + 菜级炊具顶部展示,对齐 G3 已定协议
+version: "1.0"
+
+domain:
+  key: cook
+  name: 做菜
+  icon: "🍳"
+  g: G5
+
+scenes:
+  - id: "cook-1"
+    domain: cook
+    sub: 做菜
+    wake_word: 做菜模式
+    scenario_id: cooking_start_fresh
+    scenario_title: 全新开始(含每步内联 + 完结闭环)
+    dimensions: {recipe: 指定菜名}
+    type: 向导+选择+回执
+    status: ""
+    prompt: |-
+      帮我做一道{{菜名}},我要按步骤来。
+    result: "可交互做菜页按顺序引导完成全部步骤;每步内联本步食材+菜级炊具顶部;做完先祝贺复盘,再评分/反馈/反思/拍作品照(全部一键复制给 AI)。"
+    html:
+      template: 做菜/cooking_mode.html
+      command_cn: 做菜模式
+      data_source: recipes
+    variants: []
+
+  - id: "cook-2"
+    domain: cook
+    sub: 做菜
+    wake_word: 做菜模式
+    scenario_id: cooking_start_with_history
+    scenario_title: 含上次经验(历史驱动再开做)
+    dimensions: {recipe: 指定菜名, history: 之前做过}
+    type: 向导+选择+回执
+    status: ""
+    prompt: |-
+      再做一次{{菜名}},上次做得不错但想改进。
+    result: "做菜页顶部展示上次做菜的反思提示(如'肉切厚了')与平均评分/次数,针对性改进。"
+    html:
+      template: 做菜/cooking_mode.html
+      command_cn: 做菜模式
+      data_source: recipes
+    variants: []
+
+  - id: "cook-3"
+    domain: cook
+    sub: 做菜
+    wake_word: 做菜模式
+    scenario_id: cooking_start_double_servings
+    scenario_title: 双份份量
+    dimensions: {recipe: 指定菜名, servings: 2 份}
+    type: 向导+选择+回执
+    status: ""
+    prompt: |-
+      做{{菜名}},今晚来客人,做两人份。
+    result: "步骤中食材用量自动按份数比例放大,无需心算。"
+    html:
+      template: 做菜/cooking_mode.html
+      command_cn: 做菜模式
+      data_source: recipes
+    variants: []
+
+  - id: "cook-4"
+    domain: cook
+    sub: 做菜
+    wake_word: 做菜模式
+    scenario_id: cooking_resume_after_pause
+    scenario_title: 断点续做(AI 会话记忆)
+    dimensions: {recipe: 指定菜名, progress: 已做 N 步}
+    type: 向导+选择+回执
+    status: "【待开发】"
+    prompt: |-
+      我刚才做到第 {{N}} 步,继续帮我做完。
+    result: "AI 凭会话记忆生成从第 N 步开始的做菜页(不依赖浏览器本地存储);页面顶部进度条显示位置。"
+    html:
+      template: 做菜/cooking_mode.html
+      command_cn: 做菜模式
+      data_source: recipes
+    variants: []
+
+  - id: "cook-5"
+    domain: cook
+    sub: 做菜
+    wake_word: 做菜模式
+    scenario_id: cooking_during_waiting_step
+    scenario_title: 等待步骤中并行做其他
+    dimensions: {recipe: 指定菜名, step_type: 等待型(炖/烤/腌)}
+    type: 向导+选择+回执
+    status: ""
+    prompt: |-
+      {{菜名}}正在炖,我能去干别的吗？
+    result: "页面显示该步骤为等待型,启动计时器即可解锁后续步骤,你可并行切配。"
+    html:
+      template: 做菜/cooking_mode.html
+      command_cn: 做菜模式
+      data_source: recipes
+    variants: []

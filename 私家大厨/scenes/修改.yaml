@@ -1,0 +1,137 @@
+# 修改域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
+#
+# 位置: 私家大厨/scenes/修改.yaml
+# 合并器 = scripts/场景合并.py(实施期接入,对齐居家管家契约;改总账的唯一通道 = 合并器)
+# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
+#
+# G8 grilling 定案(2026-08-08 · 一轮 4 问全认可 + 核心设计理念修正):
+#   1. 域收敛: G0 草稿 9 场景 → **4 场景卡**:
+#      修改食谱(改主信息: 描述/难度/份量/总时间/状态/图/来源/来源链接)
+#      修改步骤(内容 + 重排 reorder,已实现)
+#      修改食材(用量/单位 + 添加食材 + 食材↔步骤关联)
+#      废弃食谱(只增不删,status=已废弃,列表/搜索自动过滤)
+#      难度/份量/多字段 = 修改食谱的参数特例,不占独立卡(对齐 G6/G7 收敛逻辑)
+#   2. **核心设计理念(用户拍板 · 全局交互骨架)**:
+#      用户在 HELP HTML 找到想用的场景 → 复制填空 prompt 给 AI →
+#      AI 按提示执行,过程中有必要就展示过程型 HTML 让用户填写/确认 →
+#      用户操作后复制 prompt 回给 AI → AI 继续执行 → 最终结果型 HTML 给用户。
+#      本域所有写操作(4 卡)统一走此骨架,不区分单字段/多字段。
+#   3. 过程型 HTML = 修改前/后对比栏(用户拍板 Q2 修正):
+#      AI 生成 before/after 对比页(旧值→新值高亮差异)+「确认变更」按钮
+#      (08 §4 普通确认式) + 填写位(补字段)→ 用户确认 → 复制确认 prompt →
+#      AI 写库 → 结果型 HTML 回执(成功 = diff + 撤销按钮;失败 = 原因 + 重试)。
+#   4. 撤销机制(用户拍板 Q3): **不建版本表**(schema 冻结为主)。
+#      回执放「撤销」按钮 → 生成「把 X 改回旧值」prompt → 用户复制给 AI →
+#      AI 用旧值改回去(改回本身是一次修改,零 schema 变更;对齐 G5/G6
+#      「复制 prompt 单工闭环」套路)。DB 无版本历史,撤销 = 反写旧值。
+#   5. 口语词并入废弃食谱(用户拍板 Q4): 「不想要/删掉/废弃」= 路由表同义映射,
+#      HELP 只展示「废弃食谱」1 词,不占独立卡(variants 全空原则);
+#      口语可能是「真删掉」含义 → AI 确认「废弃 = 标记不用,不物理删除」后执行。
+#   6. 08 对齐(实施期): 修改页补「复制数据(修改前后 JSON)/复制日志」双按钮 +
+#      双通道输出;before/after 对比遵循 08 对比流程契约。
+#   7. L1 哲学衔接(票任务 5): 修改路径字段可推算不强制必问——用户说「改下难度」,
+#      AI 只问难度新值,不追问其他字段(缺省 = 不变,非空)。
+#
+# status 判定原则(07 §4/§6 五者对应):
+#   4 卡底层工作流(recipe_manager.update/discard + step_manager +
+#   ingredient_manager + step_ingredient_manager)全部已实现 → status = ""(可用),
+#   但「过程 HTML 对比确认 + 回执撤销」为新增增强 → 实施期落 templates/修改/。
+version: "1.0"
+
+domain:
+  key: update
+  name: 修改
+  icon: "✏️"
+  g: G8
+
+scenes:
+  - id: "update-1"
+    domain: update
+    sub: 修改
+    wake_word: 修改食谱
+    scenario_id: update_main_fields
+    scenario_title: 修改食谱主信息
+    dimensions:
+      recipe: 指定菜名
+      field: 目标字段(描述/难度/份量/总时间/状态/图/来源/来源链接,可多个)
+      new_value: 新值(用户提供)
+    type: 对比+确认+回执(过程型)
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我修改食谱(唤醒词:修改食谱):
+      菜  名: _____________
+      要改什么: _____________ (如: 难度改简单 / 份量改 4 人份 / 总时间改 30 分钟)
+    result: "AI 生成改前/改后对比 HTML(旧值→新值高亮),确认后写库,回执=成功 diff+撤销 / 失败原因+重试。"
+    html:
+      template: 修改/update_compare.html
+      command_cn: 修改食谱
+      data_source: recipe_manager update
+    variants: []
+
+  - id: "update-2"
+    domain: update
+    sub: 修改
+    wake_word: 修改步骤
+    scenario_id: update_step_content
+    scenario_title: 修改步骤(内容/重排)
+    dimensions:
+      recipe: 指定菜名
+      step: 目标步骤(第 N 步)
+      action: 改内容 / 重排顺序
+    type: 对比+确认+回执(过程型)
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我修改步骤(唤醒词:修改步骤):
+      菜  名: _____________
+      改哪个步骤: _____________ (如: 第 2 步)
+      改成什么: _____________ (内容,或「把第 2 步和第 3 步换一下」)
+    result: "AI 生成改前/改后对比 HTML(步骤内容差异或顺序变化),确认后写库,回执=成功 diff+撤销 / 失败原因+重试。"
+    html:
+      template: 修改/update_compare.html
+      command_cn: 修改步骤
+      data_source: step_manager update/reorder
+    variants: []
+
+  - id: "update-3"
+    domain: update
+    sub: 修改
+    wake_word: 修改食材
+    scenario_id: update_ingredient
+    scenario_title: 修改食材(用量/添加/关联步骤)
+    dimensions:
+      recipe: 指定菜名
+      ingredient: 目标食材
+      action: 改用量 / 添加食材 / 关联步骤
+    type: 对比+确认+回执(过程型)
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我修改食材(唤醒词:修改食材):
+      菜  名: _____________
+      改什么食材: _____________ (如: 虾仁用量改 300g / 加一味生抽 / 生抽关联到第 2 步)
+    result: "AI 生成改前/改后对比 HTML(用量/新增/关联差异),确认后写库,回执=成功 diff+撤销 / 失败原因+重试。"
+    html:
+      template: 修改/update_compare.html
+      command_cn: 修改食材
+      data_source: ingredient_manager + step_ingredient_manager
+    variants: []
+
+  - id: "update-4"
+    domain: update
+    sub: 修改
+    wake_word: 废弃食谱
+    scenario_id: discard_recipe
+    scenario_title: 废弃食谱(只增不删)
+    dimensions:
+      recipe: 指定菜名
+      confirm: 确认废弃(口语词「删掉/不要/废弃」经 AI 确认后执行)
+    type: 确认+回执
+    status: ""
+    prompt: |-
+      请加载「私家大厨」技能,帮我废弃食谱(唤醒词:废弃食谱):
+      菜  名: _____________
+    result: "确认「废弃 = 标记不用,不物理删除」后写库 status=已废弃,列表/搜索自动过滤;回执=结果+撤销(恢复可用)。"
+    html:
+      template: 修改/discard_receipt.html
+      command_cn: 废弃食谱
+      data_source: recipe_manager discard
+    variants: []

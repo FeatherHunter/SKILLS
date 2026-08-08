@@ -137,7 +137,9 @@ def test_result_html_renders_written_and_warning(goal_env):
     html = rgw.render_result_html(data)
     assert '已写入' in html
     assert '"extreme": true' in html
-    assert '1.32 kg/周' in html
+    # 速率断言必须动态:_days_until 用 date.today() 算真实剩余天数,
+    # 写死 '1.32 kg/周' 只在 2026-08-05(剩余 86 天)成立,换日即 flaky(2026-08-08 实测)
+    assert f"{data['rate']['per_week']:.2f} kg/周" in html
     assert '<div class="warn">' in html
     assert '写入时间' in html
     assert 'heroNum' in html

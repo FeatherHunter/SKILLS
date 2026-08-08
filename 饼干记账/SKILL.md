@@ -1,6 +1,6 @@
 ﻿---
 name: 饼干记账
-description: 记账技能。写入类：记支出、记收入、拍账单、改记录。查询/分析类：查今天、查日期、查范围、查分类、查最近、搜备注、看月度、看对比、看分类、看总览、做统计。**所有查询/分析类唤醒词默认 invoke HTML 工作流**（scripts/bill_inject.py + templates/query_view.html），写入类保持文字回执。能力速查：说「饼干记账 HELP」/「查帮助」/「能做什么」。
+description: 记账技能。写入类:记支出、记收入、拍账单、批量录入、改记录、撤销、恢复、记报销、记退款、记借出、记借入、记收回、记偿还、记分期。查询类:查今天、查某天、查月、查区间、查分类、搜备注、查标签、查账户、查账本、查欠款、查待报销。分析类:看月度、看总览、看分类、看对比、看趋势、看大额、做统计、看洞察、看借贷。目标/账户/联动:设定预算、看预算、设定目标、账户转账、买东西联动、吃饭联动。**所有查询/分析类唤醒词默认 invoke HTML 工作流**(scripts/bill_inject.py + templates),写入类保持文字回执。能力速查:说「饼干记账 HELP」/「查帮助」/「能做什么」。完整 70 个唤醒词见 references/路由表.md
 ---
 
 **🔗 联动提示：** 完成本技能主操作后，检查技能路由器（`图片路由/SKILL.md`）的联动规则，判断是否需要联动其他技能（如用户提到买了实物→询问是否录入居家管家；用户提到食物→询问是否记录卡路里）。详见路由器的联动规则表。
@@ -57,33 +57,82 @@ description: 记账技能。写入类：记支出、记收入、拍账单、改�
 
 ## 唤醒词总表
 
+> 全量 70 个唤醒词(2026-08-08 路由表定案);编号见 references/路由表.md;新增在域区间内追加
+
 | 类型 | 唤醒词 | 功能 | CLI 指令 | 默认输出 |
 |------|--------|------|----------|----------|
-| 写入 | `记支出` | 记账（支出） | `add --amount <负数>` | 文字回执 |
-| 写入 | `记收入` | 收入记录 | `add --amount <正数>` | 文字回执 |
-| 写入 | `拍账单` | 图片记账 | 图片识别 → `add` | 文字回执 |
-| 写入 | `批量录入` | 一次记多笔 | 逐笔解析 → 批量确认 | 文字回执 |
-| 写入 | `记退款` | 收到退款冲销原支出 | 查原支出 → `add`(收入) + `update`(标记) | 文字回执 |
-| 写入 | `记借出` | 借钱给别人 | `add`(账本=借贷, #未还) | 文字回执 |
-| 写入 | `记借入` | 向别人借钱 | `add`(账本=借贷, #未还) | 文字回执 |
-| 写入 | `记收回` | 收回借出的钱 | 查 #未还 → `add` + 状态流转 | 文字回执 |
-| 写入 | `记偿还` | 偿还借入的钱 | 查 #未还 → `add` + 状态流转 | 文字回执 |
-| 写入 | `记分期` | 分期平摊预写 | 计算每期 → 批量 `add` N 笔 | 文字回执 |
-| 写入 | `改记录` | 修改已有记录 | `update --id <ID> [--字段 新值 ...]` | 文字回执 |
-| 查询 | `查今天` | 今日摘要 | `summary` | **HTML（bill_inject.py）** |
-| 查询 | `查日期` | 指定日期查询 | `list --date <YYYY-MM-DD>` | **HTML** |
-| 查询 | `查范围` | 日期范围查询 | `list --from <日期> --to <日期>` | **HTML** |
-| 查询 | `查分类` | 按分类查询 | `list --category <分类>` | **HTML** |
-| 查询 | `查最近` | 最近N条 | `recent --limit <N>` | **HTML** |
-| 查询 | `搜备注` | 搜索备注 | `search "<关键词>"` | **HTML** |
-| 分析 | `看月度` | 月度汇总 | `monthly --month <YYYY-MM>` | **HTML** |
-| 分析 | `看对比` | 周期对比 | `compare --period week/month` | **HTML** |
-| 分析 | `看分类` | 分类明细 | `breakdown [--from --to]` | **HTML** |
-| 分析 | `看总览` | 收支总览 | `overview [--month <YYYY-MM>]` | **HTML** |
-| 统计 | `做统计` | 记账统计 | `stats` | **HTML** |
-| **HELP** | `饼干记账 HELP` / `饼干记账 帮助` / `查帮助` / `能做什么` | 能力速查 | `render_help.py` | **HTML（HELP 页）** |
-
----
+| 写入 | `记支出` | 记一笔支出 | `write add` | 文字回执 |
+| 写入 | `记收入` | 记一笔收入 | `write add` | 文字回执 |
+| 写入 | `拍账单` | 拍账单记账(图片识别) | `write add(图片识别)` | 文字回执 |
+| 写入 | `批量录入` | 批量录入多笔 | `write add(批量)` | 文字回执 |
+| 写入 | `记退款` | 记一笔退款(冲销原支出) | `write add + update(#已退款)` | 文字回执 |
+| 写入 | `记报销` | 记一笔报销支出(#待报销) | `write add(#待报销)` | 文字回执 |
+| 写入 | `报销到账` | 报销到账(记收入 + 流转标签) | `write add + update(标签流转)` | 文字回执 |
+| 写入 | `记借出` | 借给别人钱 | `write add(借贷账本)` | 文字回执 |
+| 写入 | `记借入` | 向别人借钱 | `write add(借贷账本)` | 文字回执 |
+| 写入 | `记收回` | 收回借出的钱 | `write add + update(#已还)` | 文字回执 |
+| 写入 | `记偿还` | 偿还借入的钱 | `write add + update(#已还)` | 文字回执 |
+| 写入 | `记分期` | 记一笔分期(平摊预写) | `write add×N(平摊预写)` | 文字回执 |
+| 写入 | `改记录` | 修改已有记录 | `write update` | 文字回执 |
+| 写入 | `撤销` | 撤销一条记录(软删) | `write update(deleted_at)` | 文字回执 |
+| 写入 | `恢复` | 恢复已撤销记录 | `write update(deleted_at=NULL)` | 文字回执 |
+| 查询 | `查今天` | 查今天收支 | `query summary` | **HTML** |
+| 查询 | `查昨天` | 查昨天收支 | `query list --date` | **HTML** |
+| 查询 | `查某天` | 查某一天的账 | `query list --date` | **HTML** |
+| 查询 | `查最近` | 查最近记录 | `query recent` | **HTML** |
+| 查询 | `查周` | 查某周的账 | `query list --from --to` | **HTML** |
+| 查询 | `查月` | 查某个月的账 | `query list --from --to` | **HTML** |
+| 查询 | `查区间` | 查任意时间段 | `query list --from --to` | **HTML** |
+| 查询 | `查分类` | 查某分类的账 | `query list --category` | **HTML** |
+| 查询 | `搜备注` | 搜索备注关键词 | `query search` | **HTML** |
+| 查询 | `查标签` | 查标签(#tag 聚合) | `query search #tag` | **HTML** |
+| 查询 | `查账户` | 查某账户流水 | `query list --account` | **HTML** |
+| 查询 | `查账本` | 查某账本的记录 | `query list --ledger` | **HTML** |
+| 查询 | `查欠款` | 查未还欠款(借贷状态) | `query search #未还(+聚合·待实施)` | **HTML** |
+| 查询 | `查待报销` | 查待报销 | `query search #待报销(待实施)` | **HTML** |
+| 查询 | `查分期` | 查进行中的分期 | `query search #分期(待实施)` | **HTML** |
+| 分析 | `看月度` | 某月收支汇总 | `analysis monthly` | **HTML** |
+| 分析 | `看年度` | 年度收支汇总 | `analysis monthly(年) + trend` | **HTML** |
+| 分析 | `看总览` | 时间段收支总览 | `analysis overview` | **HTML** |
+| 分析 | `看周报` | 本周简报(对比上周) | `analysis compare week` | **HTML** |
+| 分析 | `看分类` | 钱花在哪些分类 | `analysis breakdown` | **HTML** |
+| 分析 | `看账户` | 各账户花销情况 | `analysis breakdown(账户)` | **HTML** |
+| 分析 | `看账本` | 各账本收支汇总 | `analysis breakdown(账本)` | **HTML** |
+| 分析 | `看结构` | 收入支出来源去向 | `analysis breakdown×2` | **HTML** |
+| 分析 | `看对比` | 本期和上期对比 | `analysis compare` | **HTML** |
+| 分析 | `看双区间` | 两段时间对比 | `analysis compare(区间)` | **HTML** |
+| 分析 | `看同比` | 今年和去年同比 | `analysis compare(同比)` | **HTML** |
+| 分析 | `看分类对比` | 两段时间分类差异 | `analysis compare(分类)` | **HTML** |
+| 分析 | `看趋势` | 每月收支走势 | `analysis trend(待实施)` | **HTML** |
+| 分析 | `看分类趋势` | 某分类的月度变化 | `analysis trend(分类·待实施)` | **HTML** |
+| 分析 | `看大额` | 大额支出排行 | `analysis top(待实施)` | **HTML** |
+| 分析 | `看高频` | 高频消费排行 | `analysis top(频次·待实施)` | **HTML** |
+| 分析 | `看分布` | 金额区间分布 | `analysis distribution(待实施)` | **HTML** |
+| 分析 | `做统计` | 记账情况统计 | `analysis stats` | **HTML** |
+| 分析 | `看活跃` | 记账活跃度 | `analysis activity(待实施)` | **HTML** |
+| 分析 | `看洞察` | AI 消费洞察 | `analysis insight(待实施·接洞察生成器)` | **HTML** |
+| 分析 | `看异常` | 异常波动检测 | `analysis anomaly(待实施·接洞察生成器)` | **HTML** |
+| 分析 | `看借贷` | 借贷总览 | `analysis debt(待实施·#借贷)` | **HTML** |
+| 分析 | `看报销` | 报销汇总 | `analysis reimburse(待实施·#待报销)` | **HTML** |
+| 分析 | `看分期` | 分期总览 | `analysis installment(待实施·#分期)` | **HTML** |
+| 分析 | `看退款` | 退款统计 | `analysis refund(待实施·#退款)` | **HTML** |
+| 目标 | `设定预算` | 设定月度预算 | `goal set(待实施)` | **HTML** |
+| 目标 | `看预算` | 查看预算执行 | `goal view(待实施)` | **HTML** |
+| 目标 | `设定目标` | 设定储蓄目标 | `goal set(待实施)` | **HTML** |
+| 目标 | `看目标` | 查看目标进度 | `goal view(待实施)` | **HTML** |
+| 账户 | `新增账户` | 新增账户 | `account add(待实施)` | **HTML** |
+| 账户 | `改账户` | 修改账户 | `account update(待实施)` | **HTML** |
+| 账户 | `账户转账` | 账户间转账 | `account transfer(待实施·#转账)` | **HTML** |
+| 账户 | `看账户汇总` | 查看账户汇总 | `account summary(待实施)` | **HTML** |
+| 联动 | `买东西` | 买东西联动(记账 + 录物品) | `link purchase(待实施)` | 回执 |
+| 联动 | `吃饭` | 吃饭联动(记账 + 记卡路里) | `link meal(待实施)` | 回执 |
+| 开始使用 | `初始化` | 首次使用向导(4 步零决策) | `setup init(待实施·4 步向导)` | **HTML** |
+| 开始使用 | `初始化状态` | 初始化状态(是否已就绪) | `setup init-status(待实施)` | **HTML** |
+| 开始使用 | `备份` | 一键备份 | `backup create ✓` | **HTML** |
+| 开始使用 | `恢复备份` | 从备份恢复 | `backup restore ✓` | **HTML** |
+| 开始使用 | `导入` | 导入 CSV 账单(列映射向导) | `setup import(待实施·CSV)` | **HTML** |
+| HELP | `查帮助` | 能力速查 HELP | `render_help.py` | **HTML** |
+| HELP | `能做什么` | 能力速查 HELP | `render_help.py` | **HTML** |
 
 ## 📌 输出位置（§04 原则 12.A / 12.B）
 

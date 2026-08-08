@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G1 定标 · 第三批 · 作息管家</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 32px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--accent); background: var(--accent-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 640px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .strip { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-radius: 16px; padding: 14px 20px; margin: 20px 0 28px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  .stat { display: flex; align-items: baseline; gap: 8px; }
+  .num { font-size: 22px; font-weight: 700; color: var(--ok); }
+  .hint { color: var(--muted); font-size: 12.5px; }
+
+  .card { background: var(--card); border-radius: 20px; padding: 22px 24px 20px; margin-bottom: 18px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  .qhead { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .qidx { flex: none; width: 28px; height: 28px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; }
+  .qtitle { font-size: 16px; font-weight: 700; }
+  .qctx { color: var(--text2); font-size: 13.5px; margin: 8px 0 4px; }
+  .qctx b { color: var(--text); font-weight: 600; }
+  .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 14px; }
+  .note::before { content: "→ "; color: var(--accent); font-weight: 600; }
+
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt { border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; transition: all .15s ease; background: var(--card); display: flex; align-items: flex-start; gap: 10px; }
+  .opt:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .opt .tag { flex: none; font-size: 12px; font-weight: 700; width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--line); color: var(--text2); }
+  .opt .txt { font-size: 13px; color: var(--text2); }
+  .opt .txt b { display: block; font-size: 13.5px; color: var(--text); margin-bottom: 2px; }
+  .opt.sel { border-color: var(--ok); background: var(--ok-soft); }
+  .opt.sel .tag { background: var(--ok); color: #fff; }
+  .opt .rec { margin-left: auto; align-self: flex-start; font-size: 10.5px; font-weight: 700; color: var(--ok); background: var(--ok-soft); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+
+  .done { margin-top: 26px; background: var(--card); border-radius: 20px; padding: 20px 24px; border: 1px dashed var(--line); }
+  .done h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .done-item { display: flex; gap: 10px; padding: 6px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .done-item:last-child { border-bottom: none; }
+  .done-item .ok { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+
+  footer { margin-top: 32px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  footer code { background: var(--card); border: 1px solid var(--line); padding: 3px 10px; border-radius: 8px; font-size: 12px; }
+
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } .opts { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">G1 领域第一功能定标 · 第三批（grilling）</span>
+    <h1>4 个决策待定</h1>
+    <p class="sub">第二批已采纳（三个独立复盘场景 / 缺计划提示补齐 / 健康分全粒度 / 周视图独立）。第三批定<b>记录交互、每晚衔接、异常归属、场景清单收尾</b>。</p>
+  </header>
+
+  <div class="strip">
+    <div class="stat"><span class="num" id="cnt">0</span><span class="hint">/ 4 已选</span></div>
+    <span style="color:var(--muted);font-size:12.5px">点选即标记，回复时告诉我选择即可</span>
+  </div>
+
+  <!-- Q9 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">9</span><span class="qtitle">记录入口与交互形态</span></div>
+    <p class="qctx">记录 = 写一笔作息 → 返回三件套结果 HTML。记录本身怎么触发？</p>
+    <p class="note">交互铁律 v2 允许一步直达与多轮并存——同一场景按输入完整度自适应最省心。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>独立场景「记录」+ 过程页</b>说"记录"→ 过程 HTML 填时间段/活动 → add → 结果 HTML</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>一步直达</b>直接说"记录 14:00-15:00 工作"→ AI 写库 → 结果 HTML</span>
+      </div>
+      <div class="opt" data-v="C">
+        <span class="tag">C</span>
+        <span class="txt"><b>自适应</b>信息全→直达，缺信息→过程页补，同一场景</span>
+        <span class="rec">推荐</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q10 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">10</span><span class="qtitle">复盘 → 制定计划的衔接</span></div>
+    <p class="qctx">你每晚先复盘、再制定次日计划。两个独立场景之间要不要衔接引导？</p>
+    <p class="note">两个独立场景不合并，但"复盘完顺手去计划"符合你的每晚习惯。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>衔接引导</b>复盘结果 HTML 底部给「去制定明日计划」的复制 prompt 引导</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>完全独立</b>两个场景互不引导，用户自己切</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q11 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">11</span><span class="qtitle">异常识别归属</span></div>
+    <p class="qctx">异常/缺口/反常时段（现有 render-record-anomaly 命令已支持）。是独立场景还是并入复盘？</p>
+    <p class="note">异常是复盘的内容（问题视角），不是独立任务——并入今日/周复盘呈现更自然。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>并入复盘</b>异常/缺口/反常作为复盘内容的一部分呈现（今日/周/月）</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>独立场景「异常」</b>单独查某天/区间的异常时段</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q12 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">12</span><span class="qtitle">场景定标清单确认（G1 收尾）</span></div>
+    <p class="qctx">G1 目前能定的场景雏形盘点，确认齐全后 G1 出定标清单收尾：</p>
+    <p class="note" style="white-space:pre-line"><b>重点深度</b>：记录 · 复盘今日 · 复盘本周 · 复盘本月 · 制定次日计划 · 周视图
+<b>基础覆盖</b>：查询/时间线 · 分类管理 · 飞书同步 · 批量导入(batch-add) · 异常(并入复盘)</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>齐全</b>盘点没问题，G1 出功能定标清单</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>有补充</b>还缺 XX（回复里说）</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="done">
+    <h3>前两批已采纳（决议挂 #193）</h3>
+    <div class="done-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>记录 HTML = 三件套；复盘分层（今日/周/月）；计划呈现优先；周视图进 L 级</div>
+    <div class="done-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>复盘 = 三个独立场景；缺计划提示补齐；健康分全粒度；周视图独立场景</div>
+  </div>
+
+  <footer>回复格式：<code>9C 10A 11A 12A</code> · 全按推荐：<code>全A</code></footer>
+</div>
+
+<script>
+  const cards = document.querySelectorAll('.card');
+  const cnt = document.getElementById('cnt');
+  function refresh() { let n = 0; cards.forEach(c => { if (c.querySelector('.opt.sel')) n++; }); cnt.textContent = n; }
+  cards.forEach(card => {
+    card.querySelectorAll('.opt').forEach(opt => {
+      opt.addEventListener('click', () => { card.querySelectorAll('.opt').forEach(o => o.classList.remove('sel')); opt.classList.add('sel'); refresh(); });
+    });
+  });
+  refresh();
+</script>
+</body>
+</html>

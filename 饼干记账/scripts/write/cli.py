@@ -15,7 +15,7 @@ _SCRIPTS = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
-from db import add_bill, get_by_id, update_bill
+from db import add_bill, get_by_id, update_bill, undo_bill, restore_bill
 from validators import (
     ValidationError, validate_amount, validate_category, validate_time,
     validate_record, DEFAULTS as VALIDATOR_DEFAULTS,
@@ -100,6 +100,39 @@ def cmd_update(args):
     return result
 
 
+def cmd_undo(args):
+    """撤销一条记录(软删:deleted_at = now)"""
+    record_id = args.id
+    original = get_by_id(record_id, include_deleted=False)
+    if not original:
+        print(f"✗ ID={record_id} 不存在或已撤销")
+        return
+    result = undo_bill(record_id)
+    if result.get("success"):
+        print(f"✓ 已撤销(ID={record_id}): {original['category']} {original['amount']:.2f} (软删,可恢复)")
+    else:
+        print(f"✗ 撤销失败: {result.get('error', '未知错误')}")
+    return result
+
+
+def cmd_restore(args):
+    """恢复已撤销记录(deleted_at = NULL)"""
+    record_id = args.id
+    original = get_by_id(record_id, include_deleted=True)
+    if not original:
+        print(f"✗ ID={record_id} 不存在")
+        return
+    if original.get("deleted_at") is None:
+        print(f"✗ ID={record_id} 未撤销,无需恢复")
+        return
+    result = restore_bill(record_id)
+    if result.get("success"):
+        print(f"✓ 已恢复(ID={record_id}): {original['category']} {original['amount']:.2f}")
+    else:
+        print(f"✗ 恢复失败: {result.get('error', '未知错误')}")
+    return result
+
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="饼干记账 · 写入域 v2.0")
@@ -125,12 +158,18 @@ def main():
     p.add_argument('--currency', default=None, help='货币')
     p.add_argument('--note', default=None, help='备注')
 
+    p = sub.add_parser('undo', help='撤销一条记录(软删,可恢复)')
+    p.add_argument('--id', required=True, type=int, help='记录 ID')
+
+    p = sub.add_parser('restore', help='恢复已撤销记录')
+    p.add_argument('--id', required=True, type=int, help='记录 ID')
+
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
         return
 
-    commands = {'add': cmd_add, 'update': cmd_update}
+    commands = {'add': cmd_add, 'update': cmd_update, 'undo': cmd_undo, 'restore': cmd_restore}
     cmd = commands.get(args.command)
     if cmd:
         try:

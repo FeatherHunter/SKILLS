@@ -46,7 +46,7 @@ TABLE_NAME = "bills"
 # ── 数据库初始化 ─────────────────────────────────────────────────────────────
 
 def init_db():
-    """初始化SQLite数据库"""
+    """初始化SQLite数据库(v2.0 · G7 软删字段)"""
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_PATH))
     cursor = conn.cursor()
@@ -60,11 +60,16 @@ def init_db():
             ledger TEXT DEFAULT '生活',
             currency TEXT DEFAULT '人民币',
             note TEXT DEFAULT '',
-            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            deleted_at TEXT DEFAULT NULL
         )
     """)
     cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_bills_time ON {TABLE_NAME}(time)")
     cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_bills_category ON {TABLE_NAME}(category)")
+    # 幂等迁移:已有库补 deleted_at 列(软删契约 · G7 决议 A 项)
+    cols = [r[1] for r in cursor.execute(f"PRAGMA table_info({TABLE_NAME})").fetchall()]
+    if "deleted_at" not in cols:
+        cursor.execute(f"ALTER TABLE {TABLE_NAME} ADD COLUMN deleted_at TEXT DEFAULT NULL")
     conn.commit()
     return conn
 
@@ -102,13 +107,14 @@ def add_bill(category: str, amount: float, time_str: str,
 # ── 读取记录 ──────────────────────────────────────────────────────────────────
 
 def fetch_all(category: str = None, from_time: str = None, to_time: str = None,
-             keyword: str = None, limit: int = None) -> list:
+             keyword: str = None, limit: int = None, include_deleted: bool = False) -> list:
     """
     通用查询接口
     - category: 按分类筛选
     - from_time / to_time: 时间范围
     - keyword: 备注关键词搜索
     - limit: 限制返回条数
+    - include_deleted: True 时包含软删记录(恢复/导出场景),默认排除(软删契约)
     """
     conn = init_db()
     try:
@@ -130,6 +136,8 @@ def fetch_all(category: str = None, from_time: str = None, to_time: str = None,
         if keyword:
             conditions.append("note LIKE ?")
             params.append(f"%{keyword}%")
+        if not include_deleted:
+            conditions.append("deleted_at IS NULL")
 
         where_clause = " WHERE " + " AND ".join(conditions) if conditions else ""
 
@@ -145,13 +153,19 @@ def fetch_all(category: str = None, from_time: str = None, to_time: str = None,
         conn.close()
 
 
-def get_by_id(record_id: int) -> dict:
-    """按ID查询单条记录"""
+def get_by_id(record_id: int, include_deleted: bool = False) -> dict:
+    """按ID查询单条记录(默认排除软删;include_deleted=True 查已删,恢复场景用)"""
     conn = init_db()
     try:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
-        cursor.execute(f"SELECT * FROM {TABLE_NAME} WHERE id = ?", (record_id,))
+        if include_deleted:
+            cursor.execute(f"SELECT * FROM {TABLE_NAME} WHERE id = ?", (record_id,))
+        else:
+            cursor.execute(
+                f"SELECT * FROM {TABLE_NAME} WHERE id = ? AND deleted_at IS NULL",
+                (record_id,),
+            )
         row = cursor.fetchone()
         return dict(row) if row else None
     finally:
@@ -235,5 +249,52 @@ def update_bill(record_id: int, **fields) -> dict:
             "id": record_id,
             "updated_fields": list(updates.keys()),
         }
+    finally:
+        conn.close()
+
+
+# ── 软删(撤销/恢复 · G7 决议 + 软删契约)──────────────────────────────────────
+
+def _now_str() -> str:
+    from datetime import datetime
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
+def undo_bill(record_id: int) -> dict:
+    """撤销一条记录(软删:deleted_at = now)
+
+    只允许撤销未删记录;重复撤销返回错误。
+    """
+    conn = init_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"UPDATE {TABLE_NAME} SET deleted_at = ? WHERE id = ? AND deleted_at IS NULL",
+            (_now_str(), record_id),
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return {"success": False, "error": f"ID={record_id} 不存在或已撤销"}
+        return {"success": True, "id": record_id, "action": "undo", "deleted_at": _now_str()}
+    finally:
+        conn.close()
+
+
+def restore_bill(record_id: int) -> dict:
+    """恢复已撤销记录(deleted_at = NULL)
+
+    只允许恢复已删记录;记录未删或不存在返回错误。
+    """
+    conn = init_db()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            f"UPDATE {TABLE_NAME} SET deleted_at = NULL WHERE id = ? AND deleted_at IS NOT NULL",
+            (record_id,),
+        )
+        conn.commit()
+        if cursor.rowcount == 0:
+            return {"success": False, "error": f"ID={record_id} 不存在或未撤销"}
+        return {"success": True, "id": record_id, "action": "restore", "deleted_at": None}
     finally:
         conn.close()

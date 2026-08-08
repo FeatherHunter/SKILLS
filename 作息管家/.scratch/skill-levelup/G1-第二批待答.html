@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G1 定标 · 第二批 · 作息管家</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 32px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--accent); background: var(--accent-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 620px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .strip { display: flex; align-items: center; justify-content: space-between; background: var(--card); border-radius: 16px; padding: 14px 20px; margin: 20px 0 28px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  .stat { display: flex; align-items: baseline; gap: 8px; }
+  .num { font-size: 22px; font-weight: 700; color: var(--ok); }
+  .hint { color: var(--muted); font-size: 12.5px; }
+
+  .card { background: var(--card); border-radius: 20px; padding: 22px 24px 20px; margin-bottom: 18px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  .qhead { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .qidx { flex: none; width: 28px; height: 28px; border-radius: 9px; display: flex; align-items: center; justify-content: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; }
+  .qtitle { font-size: 16px; font-weight: 700; }
+  .qctx { color: var(--text2); font-size: 13.5px; margin: 8px 0 4px; }
+  .qctx b { color: var(--text); font-weight: 600; }
+  .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 14px; }
+  .note::before { content: "→ "; color: var(--accent); font-weight: 600; }
+
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt { border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; transition: all .15s ease; background: var(--card); display: flex; align-items: flex-start; gap: 10px; }
+  .opt:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .opt .tag { flex: none; font-size: 12px; font-weight: 700; width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--line); color: var(--text2); }
+  .opt .txt { font-size: 13px; color: var(--text2); }
+  .opt .txt b { display: block; font-size: 13.5px; color: var(--text); margin-bottom: 2px; }
+  .opt.sel { border-color: var(--ok); background: var(--ok-soft); }
+  .opt.sel .tag { background: var(--ok); color: #fff; }
+  .opt .rec { margin-left: auto; align-self: flex-start; font-size: 10.5px; font-weight: 700; color: var(--ok); background: var(--ok-soft); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+
+  .done { margin-top: 26px; background: var(--card); border-radius: 20px; padding: 20px 24px; border: 1px dashed var(--line); }
+  .done h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .done-item { display: flex; gap: 10px; padding: 6px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .done-item:last-child { border-bottom: none; }
+  .done-item .ok { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center; margin-top: 3px; }
+
+  footer { margin-top: 32px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  footer code { background: var(--card); border: 1px solid var(--line); padding: 3px 10px; border-radius: 8px; font-size: 12px; }
+
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } .opts { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">G1 领域第一功能定标 · 第二批（grilling）</span>
+    <h1>4 个决策待定</h1>
+    <p class="sub">第一批已采纳（记录三件套 / 复盘分层 / 计划呈现优先 / 周视图）。第二批继续定<b>复盘入口、数据兜底、健康分、周视图归属</b>。</p>
+  </header>
+
+  <div class="strip">
+    <div class="stat"><span class="num" id="cnt">0</span><span class="hint">/ 4 已选</span></div>
+    <span style="color:var(--muted);font-size:12.5px">点选即标记，回复时告诉我选择即可</span>
+  </div>
+
+  <!-- Q5 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">5</span><span class="qtitle">复盘入口粒度</span></div>
+    <p class="qctx">你每晚可能只说<b>「复盘」</b>一个词。今日 / 本周 / 本月三个粒度怎么进？</p>
+    <p class="note">按「场景 = 独立呈现单元」，三个粒度拆三个独立场景最贴合，每个有自己的 prompt + HTML。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>三个独立场景</b>复盘今日 / 复盘本周 / 复盘本月，各独立 prompt + HTML</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>一个「复盘」场景</b>内部过程页选粒度</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q6 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">6</span><span class="qtitle">今日复盘缺计划时怎么兜底</span></div>
+    <p class="qctx">今日复盘核心是「计划 vs 实际对照」。如果当天<b>没有计划</b>（schedule_plans 空），怎么处理？</p>
+    <p class="note">对照是复盘核心；按「不自动造值」原则，缺数据应显式报告让用户决定，不降级硬编。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>提示补齐</b>显式提示"今天还没有计划"+ 引导去制定，再回来复盘</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>降级复盘</b>缺计划就只复盘实际作息，跳过对照部分</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q7 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">7</span><span class="qtitle">健康分的粒度范围</span></div>
+    <p class="qctx">现有健康分是<b>单日</b>计算的。本周 / 本月复盘要不要健康分？</p>
+    <p class="note">健康分是差异化资产；周/月聚合分（每日均值 + 趋势）能看"作息健康在变好还是变差"。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>全粒度都有</b>今日=单日分；周/月=每日均值 + 趋势 + 异常日标注</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>只在今日</b>周/月只看 7 维趋势，不设健康分</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q8 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">8</span><span class="qtitle">周视图的归属</span></div>
+    <p class="qctx">周视图（第一批定的广度功能）放哪？是独立场景还是并进周复盘？</p>
+    <p class="note">周视图="看一周作息长什么样"（展示），周复盘="审视一周做得怎么样"（分析）——一展示一审视，独立更清晰。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>独立场景「周视图」</b>7×24 一周作息总览（网格/热力图），与周复盘互补</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>并入周复盘</b>作为其一部分呈现，不单独建场景</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="done">
+    <h3>第一批已采纳（2026-08-09 · 决议挂 #193）</h3>
+    <div class="done-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>记录 HTML = 核心三件套：时间轴 + 推断高亮 + 状态总览</div>
+    <div class="done-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>复盘分层：今日=对照+叙事+健康分；周=趋势+热力图+亮点/问题；月=聚合+环比+目标</div>
+    <div class="done-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>计划呈现优先：时间轴 + 分类色带 + 历史贴合提示</div>
+    <div class="done-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>周视图进 L 级；NLP 日期解析不做</div>
+  </div>
+
+  <footer>回复格式：<code>5A 6A 7A 8A</code> · 全按推荐：<code>全A</code></footer>
+</div>
+
+<script>
+  const cards = document.querySelectorAll('.card');
+  const cnt = document.getElementById('cnt');
+  function refresh() { let n = 0; cards.forEach(c => { if (c.querySelector('.opt.sel')) n++; }); cnt.textContent = n; }
+  cards.forEach(card => {
+    card.querySelectorAll('.opt').forEach(opt => {
+      opt.addEventListener('click', () => { card.querySelectorAll('.opt').forEach(o => o.classList.remove('sel')); opt.classList.add('sel'); refresh(); });
+    });
+  });
+  refresh();
+</script>
+</body>
+</html>

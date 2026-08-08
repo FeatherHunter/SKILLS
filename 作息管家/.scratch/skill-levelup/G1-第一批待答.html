@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G1 定标 · 第一批 · 作息管家</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --line: #e5e5ea;
+    --text: #1d1d1f;
+    --text2: #515154;
+    --muted: #86868b;
+    --accent: #0071e3;
+    --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759;
+    --ok-soft: rgba(52,199,89,.12);
+    --warn: #ff9f0a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-size: 14px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 48px 20px 80px; }
+
+  header { margin-bottom: 32px; }
+  .kicker {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 600; letter-spacing: .04em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 5px 14px; border-radius: 999px;
+  }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 600px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .strip {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--card); border-radius: 16px;
+    padding: 14px 20px; margin: 20px 0 28px;
+    box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
+  }
+  .stat { display: flex; align-items: baseline; gap: 8px; }
+  .num { font-size: 22px; font-weight: 700; color: var(--ok); }
+  .hint { color: var(--muted); font-size: 12.5px; }
+
+  .card {
+    background: var(--card); border-radius: 20px;
+    padding: 22px 24px 20px; margin-bottom: 18px;
+    box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
+  }
+  .qhead { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .qidx {
+    flex: none; width: 28px; height: 28px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-soft); color: var(--accent);
+    font-weight: 700; font-size: 14px;
+  }
+  .qtitle { font-size: 16px; font-weight: 700; }
+  .qctx { color: var(--text2); font-size: 13.5px; margin: 8px 0 4px; }
+  .qctx b { color: var(--text); font-weight: 600; }
+  .note { font-size: 12.5px; color: var(--muted); margin: 10px 0 14px; }
+  .note::before { content: "→ "; color: var(--accent); font-weight: 600; }
+
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt {
+    border: 1.5px solid var(--line); border-radius: 14px;
+    padding: 12px 14px; cursor: pointer;
+    transition: all .15s ease; background: var(--card);
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .opt:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .opt .tag {
+    flex: none; font-size: 12px; font-weight: 700;
+    width: 24px; height: 24px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--line); color: var(--text2);
+  }
+  .opt .txt { font-size: 13px; color: var(--text2); }
+  .opt .txt b { display: block; font-size: 13.5px; color: var(--text); margin-bottom: 2px; }
+  .opt.sel { border-color: var(--ok); background: var(--ok-soft); }
+  .opt.sel .tag { background: var(--ok); color: #fff; }
+  .opt .rec {
+    margin-left: auto; align-self: flex-start;
+    font-size: 10.5px; font-weight: 700; color: var(--ok);
+    background: var(--ok-soft); padding: 2px 8px; border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .recall {
+    margin-top: 26px; background: var(--card); border-radius: 20px;
+    padding: 20px 24px; border: 1px dashed var(--line);
+  }
+  .recall h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+  .recall-item { display: flex; gap: 10px; padding: 6px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .recall-item:last-child { border-bottom: none; }
+  .recall-item .ok {
+    flex: none; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--ok-soft); color: var(--ok);
+    display: flex; align-items: center; justify-content: center; margin-top: 3px;
+  }
+
+  footer {
+    margin-top: 32px; text-align: center; color: var(--muted); font-size: 12.5px;
+  }
+  footer code {
+    background: var(--card); border: 1px solid var(--line);
+    padding: 3px 10px; border-radius: 8px; font-size: 12px;
+  }
+
+  @media (max-width: 640px) {
+    h1 { font-size: 24px; }
+    .wrap { padding: 32px 14px 56px; }
+    .opts { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">G1 领域第一功能定标 · 第一批（grilling）</span>
+    <h1>4 个决策待定</h1>
+    <p class="sub">全部是<b>决策级</b>问题：定范围 / 深度 / 呈现数据。HTML 怎么画、流程怎么走，留给后续阶段。</p>
+  </header>
+
+  <div class="strip">
+    <div class="stat"><span class="num" id="cnt">0</span><span class="hint">/ 4 已选</span></div>
+    <span style="color:var(--muted);font-size:12.5px">点选即标记，回复时告诉我选择即可</span>
+  </div>
+
+  <!-- Q1 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">1</span><span class="qtitle">记录结果型 HTML 的呈现范围</span></div>
+    <p class="qctx">你已定核心是「过去几小时推断了什么 + 全天到现在作息表」。还要不要叠其他层？</p>
+    <p class="note">记录场景的第一目标是"让我一眼看懂今天"——贪多会糊。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>核心三件套</b>全天作息时间轴 + 过去几小时推断高亮 + 当前状态总览（笔数/覆盖时长/缺口）</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>A + 分类统计</b>加各分类时长占比</span>
+      </div>
+      <div class="opt" data-v="C">
+        <span class="tag">C</span>
+        <span class="txt"><b>B + 计划对照</b>再加今天计划 vs 实际</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">2</span><span class="qtitle">复盘的时间粒度与深度</span></div>
+    <p class="qctx">每晚复盘「今天 / 本周 / 本月」三个粒度已定。呈现数据层次分别做到哪？</p>
+    <p class="note">粒度越粗，越该看"趋势和结构"而不是逐条细节——今天看准、周月看势。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>分层定标</b>今天=对照+4段叙事+健康分；周=7维趋势+热力图+亮点/问题；月=聚合+环比+目标达成</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>今天做全</b>周/月只做聚合摘要（文字+简单图表）</span>
+      </div>
+      <div class="opt" data-v="C">
+        <span class="tag">C</span>
+        <span class="txt"><b>三个粒度同等深度</b>全部对照+趋势+叙事</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">3</span><span class="qtitle">制定次日计划的强化方向</span></div>
+    <p class="qctx">现有「商量计划」已是 AI 多轮生成 24h。着重做，方向是呈现优先还是流程优先？</p>
+    <p class="note">计划是"给明天看的"，第一价值是可读性；交互流程可后打磨，但"计划长什么样"现在要定清楚。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>呈现优先</b>先打磨「计划结果 HTML」形态：时间轴+分类色带+与历史作息贴合提示</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>流程优先</b>强化多轮交互（AI 生成→调整→再生成）</span>
+      </div>
+      <div class="opt" data-v="C">
+        <span class="tag">C</span>
+        <span class="txt"><b>两者都做</b>但本轮先定 A 的呈现范围</span>
+        <span class="rec">推荐</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="card">
+    <div class="qhead"><span class="qidx">4</span><span class="qtitle">广度功能候选</span></div>
+    <p class="qctx">竞品有而我们缺的（周视图 / NLP 日期解析），挑哪几个进 L 级范围？</p>
+    <p class="note">周视图跟周复盘天然闭环；NLP 日期解析收益低——AI 本身就能理解自然语言日期。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>周视图</b>一周作息总览（贴合"本周"复盘粒度）</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>NLP 日期解析</b>"明天下午三点"输入识别</span>
+      </div>
+      <div class="opt" data-v="C">
+        <span class="tag">C</span>
+        <span class="txt"><b>A+B 都要</b></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="recall">
+    <h3>已对齐 · 无需再定</h3>
+    <div class="recall-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>每晚工作流「复盘（今天/周/月）+ 制定次日计划」= 重点投入</div>
+    <div class="recall-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>记录一笔 → 返回结果型作息表 HTML（顶层体验核心）</div>
+    <div class="recall-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>场景 = 独立呈现单元，无变体概念，每场景独立脚本 + HTML</div>
+    <div class="recall-item"><span class="ok"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>三层评估：DB（3252 条记录已盘点）→ CLI（49 命令，缺口已标）→ 场景覆盖</div>
+  </div>
+
+  <footer>回复格式：<code>1A 2A 3C 4A</code> · 全按推荐：<code>全A</code></footer>
+</div>
+
+<script>
+  const cards = document.querySelectorAll('.card');
+  const cnt = document.getElementById('cnt');
+  function refresh() {
+    let n = 0;
+    cards.forEach(c => { if (c.querySelector('.opt.sel')) n++; });
+    cnt.textContent = n;
+  }
+  cards.forEach(card => {
+    card.querySelectorAll('.opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        card.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+        opt.classList.add('sel');
+        refresh();
+      });
+    });
+  });
+  refresh();
+</script>
+</body>
+</html>

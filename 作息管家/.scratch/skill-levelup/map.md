@@ -50,7 +50,7 @@
 |---|---|---|---|---|
 | #191 | [R2 开源准备处置](https://github.com/FeatherHunter/SKILLS/issues/191) | wayfinder:research | ✅ closed | — |
 | #192 | [R3 onboarding 三段式设计](https://github.com/FeatherHunter/SKILLS/issues/192) | wayfinder:prototype | 🔵 claimed（先开） | — |
-| #193 | [G1 领域第一功能定标](https://github.com/FeatherHunter/SKILLS/issues/193) | wayfinder:grilling | open | — |
+| #193 | [G1 领域第一功能定标](https://github.com/FeatherHunter/SKILLS/issues/193) | wayfinder:grilling | 🔵 claimed（顶层体验已吸收进 body） | — |
 | #194 | [G2 场景枚举定标](https://github.com/FeatherHunter/SKILLS/issues/194) | wayfinder:task | open | ← G1(#193) + R3(#192) |
 
-Frontier（可认领）：#193 G1（grilling，需人类参与）。#192 R3 已按人类拍板认领优先开。
+Frontier（可认领）：#194 G2（blocked）。#193 G1 已认领，grilling 进行中。

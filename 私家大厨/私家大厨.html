@@ -817,6 +817,18 @@
         </table>
       </div>
     </details>
+    <details class="cli">
+      <summary><span class="cli-name">shopping_render.py render &lt;recipe_id&gt; --stock-check [--stock-json '{"items":[...]}' | --stock-file &lt;path&gt;]</span><span style="color:var(--fg3);font-size:11.5px;margin-left:8px">核对库存(T9 · 已有vs需买详情层 · 默认开启)</span></summary>
+      <div class="cli-body">
+        <table class="flow-table">
+          <tr><th>数据来源</th><td>联动「居家管家」(囤货盘点/查物品)· <strong>prompt 单工闭环,禁写死调用居家管家 CLI/底层路径</strong></td></tr>
+          <tr><th>库存 JSON</th><td><code>{"items":[{"name":"鸡蛋","qty":2,"unit":"盒"}]}</code> — name=清单食材名(AI 完成同名/同义匹配后传入);qty=库存原文数量;unit=物品名单位线索,无线索省略</td></tr>
+          <tr><th>已有项 UI</th><td>灰色勾 + 划线 + 「已有 N盒」双量标注,不进用户勾选进度;进度只统计需买项;摘要第 4 格「已有 N 项」</td></tr>
+          <tr><th>无数据降级</th><td>居家管家无数据/无匹配 → 只带 <code>--stock-check</code> 不带 <code>--stock-json</code> → 顶部淡提示「未核对库存(居家管家暂无数据)」,不打勾;会话内只提示一次</td></tr>
+          <tr><th>不核对</th><td>用户明确「不核对」→ 不带 <code>--stock-check</code>,无提示无灰勾</td></tr>
+        </table>
+      </div>
+    </details>
   </div>
 </details>
 
@@ -1035,11 +1047,12 @@ python scripts/shopping_render.py render "&lt;recipe_id&gt;"</code></pre>
 <tr><td>汇总作息 / 查作息 / 查日程 / 商量计划</td><td><strong>作息管家</strong></td><td>作息管家 record + plan</td></tr>
 </table>
 
-<h3 style="font-size:15px;margin:18px 0 8px;color:var(--success)">✅ 已确定边界(3 项 · 用户 2026-07-27 拍板)</h3>
+<h3 style="font-size:15px;margin:18px 0 8px;color:var(--success)">✅ 已确定边界(4 项 · 用户 2026-07-27 拍板)</h3>
 <table class="flow-table">
 <tr><th>用户原话</th><th>归属</th><th>边界判定</th></tr>
 <tr><td>查看营养 X(菜本身的营养)</td><td>私家大厨</td><td>看 recipes.nutrition_info(每道菜独立);若"查营养/我的营养" → 卡路里</td></tr>
 <tr><td>采购清单 + 营养(联动)</td><td>不联动(默认)</td><td>采购清单="这次买菜要买啥";食品库="我常吃的";除非用户说"顺便存到食品库"才联动</td></tr>
+<tr><td>采购清单 + 核对库存</td><td><strong>居家管家</strong>(联动)</td><td>库存核对走居家管家「囤货盘点/查物品」(G6 3a);<strong>prompt 单工闭环,禁写死调用居家管家 CLI/底层路径</strong></td></tr>
 <tr><td>炊具(做菜需要哪些)</td><td>私家大厨</td><td>recipes.cookware 表(做菜角度)</td></tr>
 <tr><td>炊具(我家几个炒锅/锅在哪)</td><td>居家管家</td><td>实物角度</td></tr>
 </table>

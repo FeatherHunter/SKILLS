@@ -258,6 +258,8 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 
 | 类型 | 渲染器 | 输出路径 | 文件名格式 | V3 分类 |
 |------|--------|---------|-----------|---------|
+| 录入采集(三态表单) | `render_add.py collect` | `$CHEF_OUTPUT_DIR/录入/` | `录入采集_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 录入回执(成功/失败) | `render_add.py receipt` | `$CHEF_OUTPUT_DIR/录入/` | `录入回执_<成功|失败>_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 查看食谱 | `recipe_render.py` | `$CHEF_OUTPUT_DIR/recipes/` | `<recipe_slug>.html` | **12.A** 数据/过程 |
 | 做菜模式 | `cooking_render.py` | `$CHEF_OUTPUT_DIR/cooking/` | `做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 采购清单 | `shopping_render.py` | `$CHEF_OUTPUT_DIR/shopping/` | `采购清单_<slug_or_joined>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |

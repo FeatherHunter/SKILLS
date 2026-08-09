@@ -914,6 +914,22 @@ python scripts/recipe_json_validate.py <json_file>
 
 ---
 
+## 录入表单渲染命令(三态采集 · v4.0)
+
+> 录入的确认环节走三态采集表单(G2 决策 · 08 采集+回执)。渲染器:`scripts/render_add.py`,输出 `$CHEF_OUTPUT_DIR/录入/`,同秒重复自动 `_N` 后缀。
+
+```bash
+# 三态采集表单(payload.json = fields 三态标注 + payload 完整菜谱)
+python scripts/render_add.py collect <payload.json>
+
+# 回执(成功:结果+diff+撤销 / 失败:原因+修正重试)
+python scripts/render_add.py receipt <payload.json>
+```
+
+payload 契约(collect):`{scene_id, scene_title, wake_word, command_cn, occurred_at, target, fields: [{path, label, value, state, note}], payload}`,state ∈ `confirmed`(AI 确认)/ `guessed`(AI 推测标色)/ `missing`(缺失红补)。构造要点见 `features/add.md`「交互流程(v4.0 · 三态采集表单)」。
+
+---
+
 ## JSON导入命令
 
 > 一步完成食谱导入，适合信息完整的场景。

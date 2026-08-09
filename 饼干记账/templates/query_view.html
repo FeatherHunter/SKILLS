@@ -238,6 +238,10 @@
       list:      renderList,
       recent:    renderList,
       search:    renderList,
+      tag:       renderTag,
+      debt:      renderDebt,
+      reimburse: renderReimburse,
+      installment: renderInstallment,
       monthly:   renderMonthly,
       compare:   renderCompare,
       breakdown: renderBreakdown,
@@ -415,9 +419,11 @@
     };
   }
 
-  // ── 1. 今日摘要 summary ──────────────────────────────────
+  // ── 1. 今日摘要 summary(查今天:4 KPI + 分类聚合 + 今日明细) ──
   function renderSummary(data) {
     const records = data.records || [];
+    const cats = data.categories || [];
+    const max = cats.length ? Math.max(...cats.map(c => c.total)) : 0;
     $('#app').innerHTML = `
       <div class="kpi-grid">
         ${kpiCard('笔数', data.count || 0, '', 'blue')}
@@ -425,6 +431,12 @@
         ${kpiCard('收入', fmtMoney(data.income), '元', 'green')}
         ${kpiCard('净额', fmtMoney(data.net), '元', data.net >= 0 ? 'green' : 'red')}
       </div>
+      ${cats.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="section-title">分类聚合 <span class="count">${cats.length} 类</span></div>
+          ${cats.slice(0, 8).map((c, i) => categoryBar(c, max, PALETTE[i % PALETTE.length])).join('')}
+        </div>
+      ` : ''}
       ${records.length ? `
         <div class="card">
           <div class="section-title">当日明细 <span class="count">${records.length} 笔</span></div>
@@ -434,17 +446,30 @@
     `;
   }
 
-  // ── 2. 列表 list / recent / search ──────────────────────
+  // ── 2. 列表 list / recent / search(时间族/条件族) ────────────
   function renderList(data) {
     const records = data.records || [];
     const filter = data.filter || {};
     const chips = Object.entries(filter).map(([k, v]) => `<span class="filter-chip">${escapeHTML(k)}: ${escapeHTML(v)}</span>`).join('');
+    const hasKpi = data.expense != null || data.income != null;
+    const cats = data.categories || [];
+    const max = cats.length ? Math.max(...cats.map(c => c.total)) : 0;
 
     $('#app').innerHTML = `
       ${chips ? `<div style="margin-bottom:12px;">${chips}</div>` : ''}
+      ${data.category_pct != null ? `<div style="margin-bottom:12px;"><span class="filter-chip" style="background:rgba(52,199,89,.12);color:var(--green);">占比: ${fmtPct(data.category_pct)} 的同期支出</span></div>` : ''}
       <div class="kpi-grid" style="margin-bottom:14px;">
         ${kpiCard('记录数', records.length, '条', 'blue')}
+        ${hasKpi ? `${kpiCard('支出', fmtMoney(data.expense), '元', 'red')}
+        ${kpiCard('收入', fmtMoney(data.income), '元', 'green')}
+        ${kpiCard('净额', fmtMoney(data.net), '元', (data.net || 0) >= 0 ? 'green' : 'red')}` : ''}
       </div>
+      ${cats.length ? `
+        <div class="card" style="margin-bottom:14px;">
+          <div class="section-title">分类聚合 <span class="count">${cats.length} 类</span></div>
+          ${cats.slice(0, 8).map((c, i) => categoryBar(c, max, PALETTE[i % PALETTE.length])).join('')}
+        </div>
+      ` : ''}
       <div class="card">
         ${records.length ? recordsList(records) : '<div class="empty">没有匹配的记录</div>'}
       </div>
@@ -549,6 +574,90 @@
         ${kpiCard('首笔时间', data.first_record ? timeShort(data.first_record) : '-', '', 'orange', 'tiny')}
         ${kpiCard('最近记录', data.last_record ? timeShort(data.last_record) : '-', '', 'green', 'tiny')}
       </div>
+    `;
+  }
+
+  // ── 8. 查标签 tag(#tag 聚合卡 + 明细) ────────────────────
+  function renderTag(data) {
+    const records = data.records || [];
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('标签', '#' + (data.tag || ''), '', 'purple')}
+        ${kpiCard('笔数', data.count || 0, '笔', 'blue')}
+        ${kpiCard('支出', fmtMoney(data.expense), '元', 'red')}
+        ${kpiCard('收入', fmtMoney(data.income), '元', 'green')}
+      </div>
+      <div class="card" style="margin-top:14px;">
+        ${records.length ? recordsList(records) : '<div class="empty">没有 #' + escapeHTML(data.tag || '') + ' 的记录</div>'}
+      </div>
+    `;
+  }
+
+  // ── 9. 查欠款 debt(#未还 聚合) ───────────────────────────
+  function renderDebt(data) {
+    const items = data.records || [];
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('借出未还', fmtMoney(data.lent_unpaid_total), '元', 'orange')}
+        ${kpiCard('借入未还', fmtMoney(data.borrowed_unpaid_total), '元', 'purple')}
+        ${kpiCard('未还笔数', data.count || 0, '笔', 'blue')}
+      </div>
+      ${items.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="section-title">未还列表 <span class="count">${items.length} 笔</span></div>
+          <div class="records">
+            ${items.map(it => `
+              <div class="record">
+                <div class="time">${escapeHTML(timeShort(it.time))}</div>
+                <div>
+                  <div class="cat">${escapeHTML(it.direction)} · ${escapeHTML(it.target || '(未知对象)')}</div>
+                  ${it.note ? `<div class="note">${escapeHTML(it.note)}</div>` : ''}
+                </div>
+                <div class="amt ${it.direction === '借出' ? 'expense' : 'income'}">${fmtMoney(Math.abs(it.amount || 0))}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : '<div class="card empty" style="margin-top:14px;">没有未还欠款 🎉</div>'}
+    `;
+  }
+
+  // ── 10. 查待报销 reimburse(#待报销 列表 + 总额) ──────────
+  function renderReimburse(data) {
+    const records = data.records || [];
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('待报销总额', fmtMoney(data.total), '元', 'orange')}
+        ${kpiCard('笔数', data.count || 0, '笔', 'blue')}
+      </div>
+      <div class="card" style="margin-top:14px;">
+        ${records.length ? recordsList(records) : '<div class="empty">没有待报销记录 🎉</div>'}
+      </div>
+    `;
+  }
+
+  // ── 11. 查分期 installment(分期卡 + 记录明细) ────────────
+  function renderInstallment(data) {
+    const groups = data.groups || [];
+    const records = data.records || [];
+    $('#app').innerHTML = `
+      ${groups.length ? groups.map(g => `
+        <div class="card">
+          <div class="section-title">${escapeHTML(g.name)} <span class="count">${g.paid}/${g.periods} 期已还</span></div>
+          <div class="kpi-grid" style="margin-bottom:0;">
+            ${kpiCard('总额', fmtMoney(g.total), '元', 'purple', 'compact')}
+            ${kpiCard('每期', fmtMoney(g.each), '元', '', 'compact')}
+            ${kpiCard('剩余', g.remaining, '期', 'orange', 'compact')}
+            ${kpiCard('剩余金额', fmtMoney(g.remaining_amount), '元', 'red', 'compact')}
+          </div>
+        </div>
+      `).join('') : '<div class="card empty">没有进行中的分期</div>'}
+      ${records.length ? `
+        <div class="card">
+          <div class="section-title">#分期 记录明细 <span class="count">${records.length} 笔</span></div>
+          ${recordsList(records)}
+        </div>
+      ` : ''}
     `;
   }
 

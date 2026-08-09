@@ -30,7 +30,7 @@ BILL_INJECT = SCRIPTS_DIR / "bill_inject.py"
 RENDER_HELP = SCRIPTS_DIR / "render_help.py"
 
 
-def _run_bill_inject(tmp_db_dir, query_type, *extra_args, expect_rc=0):
+def _run_bill_inject(tmp_db_dir, query_type, *extra_args, expect_rc=0, out_suffix=""):
     """跑 bill_inject.py query_type [args] --out <tmp_path>，返回 (rc, out, err, output_html_path)
 
     用 --out 指定输出路径，避免从 stdout 解析路径（Windows drive: 冲突）。
@@ -42,7 +42,7 @@ def _run_bill_inject(tmp_db_dir, query_type, *extra_args, expect_rc=0):
     # 用 tmp_db_dir 下的可控路径
     out_dir = tmp_db_dir / "html_out"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / f"{query_type}.html"
+    out_path = out_dir / f"{query_type}{out_suffix}.html"
     cmd = [sys.executable, str(BILL_INJECT), query_type, "--out", str(out_path)] + list(extra_args)
     result = subprocess.run(
         cmd, capture_output=True, text=True,
@@ -102,16 +102,20 @@ def _assert_html_well_formed(html_path: Path, *, allow_error_state: bool = False
         "缺错误态 fallback"
 
 
-# ── 9 类 query_type 全跑 ────────────────────────────────────────────────────
+# ── 13 类 query_type 全跑(9 原有 + 查询域 4 新:tag/debt/reimburse/installment) ──
 
 class TestNineQueryTypesRender:
-    """9 类 query_type 端到端：每类都生成合法 HTML"""
+    """全部 query_type 端到端：每类都生成合法 HTML"""
 
     @pytest.mark.parametrize("query_type,extra_args", [
         ("summary",   []),
         ("list",      ["--date", "2026-01-02"]),
         ("recent",    ["--limit", "5"]),
         ("search",    ["午饭"]),
+        ("tag",       ["--tag", "旅行"]),
+        ("debt",      []),
+        ("reimburse", []),
+        ("installment", []),
         ("monthly",   ["--month", "2026-01"]),
         ("compare",   ["--period", "week"]),
         ("breakdown", []),
@@ -148,6 +152,62 @@ class TestEmptyDataRender:
         """关键词无匹配 → HTML 含空态"""
         rc, out, err, html_path = _run_bill_inject(seeded_db, "search", "外星人不存在")
         _assert_html_well_formed(html_path)
+
+    def test_tag_no_match(self, seeded_db):
+        """查标签无命中 → HTML 空态"""
+        rc, out, err, html_path = _run_bill_inject(seeded_db, "tag", "--tag", "不存在的标签")
+        _assert_html_well_formed(html_path)
+
+    def test_debt_reimburse_installment_on_empty_db(self, empty_db):
+        """状态族 3 类空库 → HTML 空态正常生成"""
+        for qt, extra in [("debt", []), ("reimburse", []), ("installment", [])]:
+            rc, out, err, html_path = _run_bill_inject(empty_db, qt, *extra)
+            _assert_html_well_formed(html_path)
+
+    def test_status_family_with_data(self, tmp_db_dir):
+        """状态族有数据:debt/reimburse/installment payload 含聚合值(HTML 渲染数据源)"""
+        import json
+        import re
+        from db import init_db, TABLE_NAME
+        import sqlite3
+        conn = init_db()
+        try:
+            cur = conn.cursor()
+            rows = [
+                ("借贷/借出", "2026-07-01 10:00:00", -500.0, "", "借贷", "#借出 #借给小明 #未还"),
+                ("借贷/借入", "2026-07-05 10:00:00", 300.0, "", "借贷", "#借入 #向小红借 #未还"),
+                ("餐饮/外卖/午餐", "2026-07-10 12:00:00", -88.0, "", "生活", "客户午餐 #待报销"),
+                ("分期/手机", "2026-07-01 00:00:00", -3400.0, "", "生活", "#分期 手机 第1期/3"),
+                ("分期/手机", "2026-09-01 00:00:00", -3300.0, "", "生活", "#分期 手机 第3期/3"),
+            ]
+            for c, t, a, acc, l, n in rows:
+                cur.execute(
+                    f"INSERT INTO {TABLE_NAME} (category, time, amount, account, ledger, currency, note) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (c, t, a, acc, l, "人民币", n),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+        def _payload(qt, *extra):
+            rc, out, err, html_path = _run_bill_inject(tmp_db_dir, qt, *extra)
+            text = html_path.read_text(encoding="utf-8-sig")
+            m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+            return json.loads(m.group(1))
+
+        p = _payload("debt")
+        assert p["status"] == "ok"
+        assert p["data"]["lent_unpaid_total"] == 500.0
+        assert p["data"]["borrowed_unpaid_total"] == 300.0
+
+        p = _payload("reimburse")
+        assert p["status"] == "ok" and p["data"]["total"] == 88.0
+
+        p = _payload("installment")
+        assert p["status"] == "ok"
+        g = p["data"]["groups"][0]
+        assert g["name"] == "手机" and g["total"] == 6700.0 and g["periods"] == 3
 
 
 # ── 错误 CLI 输出 ──────────────────────────────────────────────────────────
@@ -401,11 +461,88 @@ class TestTemplateCapability:
         assert meta.get("command_cn") and meta.get("occurred_at") and meta.get("render_cmd"), \
             "meta 缺 command_cn/occurred_at/render_cmd"
 
-    def test_meta_present_in_all_query_types(self, tmp_db_dir):
-        """9 类 query_type:正常态注入 meta;错误态(如 list 无参数)仍带复制按钮(08 硬标准)"""
+    def test_new_query_types_meta_mapping(self, tmp_db_dir):
+        """查询域 4 新类型:scene_id/wake_word 对齐 scenes/query.yaml(门禁 A 层 1 数据源)"""
         import json
         import re
-        for qt in ["summary", "list", "recent", "search", "monthly", "compare", "breakdown", "overview", "stats"]:
+        expect = {
+            "tag": ("query_tag", "查标签", ["--tag", "旅行"]),
+            "debt": ("query_debt", "查欠款", []),
+            "reimburse": ("query_pending_reimburse", "查待报销", []),
+            "installment": ("query_installment", "查分期", []),
+        }
+        for qt, (scene_id, wake_word, extra) in expect.items():
+            rc, out, err, html_path = _run_bill_inject(tmp_db_dir, qt, *extra)
+            text = html_path.read_text(encoding="utf-8-sig")
+            m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+            payload = json.loads(m.group(1))
+            assert payload.get("status") == "ok", f"{qt} 状态应 ok:{payload}"
+            meta = payload["data"]["meta"]
+            assert meta["scene_id"] == scene_id, f"{qt} scene_id 期望 {scene_id},实际 {meta['scene_id']}"
+            assert meta["wake_word"] == wake_word, f"{qt} wake_word 期望 {wake_word},实际 {meta['wake_word']}"
+
+    def test_list_output_filename_variant(self, tmp_db_dir):
+        """list 变体输出文件名细分(查日期/查区间/查分类/查账户/查账本 · 不传 --out 走默认路径)"""
+        env = os.environ.copy()
+        env["SKILLS_DB_PATH"] = str(tmp_db_dir)
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
+        cases = [
+            (["list", "--date", "2026-01-02"], "查日期"),
+            (["list", "--from", "2026-01-01", "--to", "2026-01-31"], "查区间"),
+            (["list", "--category", "餐饮"], "查分类"),
+            (["list", "--account", "支付宝"], "查账户"),
+            (["list", "--ledger", "旅行"], "查账本"),
+        ]
+        for args, prefix in cases:
+            result = subprocess.run(
+                [sys.executable, str(BILL_INJECT)] + args,
+                capture_output=True, text=True, encoding="utf-8", env=env, timeout=30,
+            )
+            assert result.returncode == 0, f"bill_inject {' '.join(args)} 失败: {result.stderr}"
+            fname = None
+            for line in result.stdout.splitlines():
+                if "已生成" in line:
+                    last_part = line.replace("\\", "/").rsplit("/", 1)[-1].strip()
+                    for suffix in [".", ",", ")", "]"]:
+                        if last_part.endswith(suffix):
+                            last_part = last_part[:-1]
+                    if last_part.endswith(".html"):
+                        fname = last_part
+                        break
+            assert fname is not None, f"未从 stdout 解析文件名: {result.stdout}"
+            assert fname.startswith(prefix), \
+                f"list 变体 {args} 文件名期望以 {prefix} 开头,实际 {fname}"
+
+    def test_list_variant_meta(self, tmp_db_dir):
+        """list 变体 meta 对齐 scenes/query.yaml(查某天/查区间/查分类/查账户/查账本)"""
+        import json
+        import re
+        cases = [
+            (["--date", "2026-01-02"], "query_date", "查某天"),
+            (["--from", "2026-01-01", "--to", "2026-01-31"], "query_range", "查区间"),
+            (["--category", "餐饮"], "query_category", "查分类"),
+            (["--account", "支付宝"], "query_account", "查账户"),
+            (["--ledger", "旅行"], "query_ledger", "查账本"),
+        ]
+        for extra, scene_id, wake_word in cases:
+            rc, out, err, html_path = _run_bill_inject(tmp_db_dir, "list", *extra)
+            text = html_path.read_text(encoding="utf-8-sig")
+            m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+            payload = json.loads(m.group(1))
+            assert payload.get("status") == "ok", f"list {extra} 状态应 ok:{payload}"
+            meta = payload["data"]["meta"]
+            assert meta["scene_id"] == scene_id, \
+                f"list {extra} scene_id 期望 {scene_id},实际 {meta['scene_id']}"
+            assert meta["wake_word"] == wake_word, \
+                f"list {extra} wake_word 期望 {wake_word},实际 {meta['wake_word']}"
+
+    def test_meta_present_in_all_query_types(self, tmp_db_dir):
+        """全部 query_type:正常态注入 meta;错误态(如 list 无参数)仍带复制按钮(08 硬标准)"""
+        import json
+        import re
+        for qt in ["summary", "list", "recent", "search", "tag", "debt", "reimburse", "installment",
+                   "monthly", "compare", "breakdown", "overview", "stats"]:
             rc, out, err, html_path = _run_bill_inject(tmp_db_dir, qt)
             text = html_path.read_text(encoding="utf-8-sig")
             m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)

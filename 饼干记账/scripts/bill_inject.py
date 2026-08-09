@@ -48,6 +48,10 @@ QUERY_DOMAIN = {
     "list": "query",
     "search": "query",
     "recent": "query",
+    "tag": "query",
+    "debt": "query",
+    "reimburse": "query",
+    "installment": "query",
     "monthly": "analysis",
     "compare": "analysis",
     "breakdown": "analysis",
@@ -65,6 +69,10 @@ QUERY_TYPES = {
     "list":      {"title": "查询记录",        "subtitle": "按条件筛选的明细"},
     "recent":    {"title": "最近记录",        "subtitle": "最新 N 条记录"},
     "search":    {"title": "备注搜索",        "subtitle": "关键词匹配的记录"},
+    "tag":       {"title": "查标签",          "subtitle": "#tag 命中记录 + 汇总"},
+    "debt":      {"title": "查欠款",          "subtitle": "未还借贷聚合(借出/借入)"},
+    "reimburse": {"title": "查待报销",        "subtitle": "#待报销 记录 + 总额"},
+    "installment": {"title": "查分期",        "subtitle": "#分期 分期卡 + 记录明细"},
     "monthly":   {"title": "月度汇总",        "subtitle": "整月支出/收入/净额 + 分类排行"},
     "compare":   {"title": "周期对比",        "subtitle": "本期 vs 上期支出变化"},
     "breakdown": {"title": "分类明细",        "subtitle": "各类支出占比 + 笔数/均值"},
@@ -79,6 +87,10 @@ QUERY_META = {
     "list":      {"scene_id": "query_list",      "wake_word": "查日期"},
     "recent":    {"scene_id": "query_recent",    "wake_word": "查最近"},
     "search":    {"scene_id": "query_search",    "wake_word": "搜备注"},
+    "tag":       {"scene_id": "query_tag",       "wake_word": "查标签"},
+    "debt":      {"scene_id": "query_debt",      "wake_word": "查欠款"},
+    "reimburse": {"scene_id": "query_pending_reimburse", "wake_word": "查待报销"},
+    "installment": {"scene_id": "query_installment",     "wake_word": "查分期"},
     "monthly":   {"scene_id": "monthly_current", "wake_word": "看月度"},
     "compare":   {"scene_id": "compare_month",   "wake_word": "看对比"},
     "breakdown": {"scene_id": "breakdown_current_month", "wake_word": "看分类"},
@@ -120,6 +132,33 @@ def run_cli_json(query_type: str, extra_args: list) -> dict:
         }
 
 
+# list 变体 → 场景标识/唤醒词(对齐 scenes/query.yaml 直达式场景;细粒度由调用方覆盖)
+LIST_META = {
+    "date":      {"scene_id": "query_date",      "wake_word": "查某天", "command_cn": "查某天"},
+    "range":     {"scene_id": "query_range",     "wake_word": "查区间", "command_cn": "查区间"},
+    "category":  {"scene_id": "query_category",  "wake_word": "查分类", "command_cn": "查分类"},
+    "account":   {"scene_id": "query_account",   "wake_word": "查账户", "command_cn": "查账户"},
+    "ledger":    {"scene_id": "query_ledger",    "wake_word": "查账本", "command_cn": "查账本"},
+    "default":   {"scene_id": "query_list",      "wake_word": "查日期", "command_cn": "查询记录"},
+}
+
+
+def _list_meta(extra_args: list) -> dict:
+    """list 参数 → 场景 meta(查某天/查区间/查分类/查账户/查账本)"""
+    ex = " ".join(extra_args)
+    if "--account" in ex:
+        return LIST_META["account"]
+    if "--ledger" in ex:
+        return LIST_META["ledger"]
+    if "--category" in ex:
+        return LIST_META["category"]
+    if "--from" in ex or "--to" in ex:
+        return LIST_META["range"]
+    if "--date" in ex:
+        return LIST_META["date"]
+    return LIST_META["default"]
+
+
 def build_payload(cli_json: dict, query_type: str, extra_args: list) -> dict:
     """把 CLI JSON 包成模板期望的 payload 结构"""
     meta = QUERY_TYPES.get(query_type, {"title": query_type, "subtitle": ""})
@@ -140,9 +179,12 @@ def build_payload(cli_json: dict, query_type: str, extra_args: list) -> dict:
     enriched["subtitle"] = meta["subtitle"] + (f" · 参数: {' '.join(extra_args)}" if extra_args else "")
     enriched["generated_at"] = now
     m = QUERY_META.get(query_type, {"scene_id": query_type, "wake_word": query_type})
+    # list 变体:按参数细分场景(对齐 scenes/query.yaml · 门禁 A 层 1)
+    if query_type == "list" and extra_args:
+        m = _list_meta(extra_args)
     enriched["meta"] = {
         "scene_id": m["scene_id"],
-        "command_cn": meta["title"] + " 结果",
+        "command_cn": m.get("command_cn", meta["title"] + " 结果"),
         "wake_word": m["wake_word"],
         "occurred_at": now,
         "chain": "(未注入 · AI 可在日志覆盖)",
@@ -176,14 +218,35 @@ def inject_to_template(payload: dict, output_path: Path) -> Path:
     return output_path
 
 
-def default_output_path(query_type: str, args=None) -> Path:
+def default_output_path(query_type: str, args=None, extra=None) -> Path:
     """默认输出路径(v2.5 同步卡路里 §4.1):
     $DATA_DIR/biscuit_accountant_html/<command_zh>_<TS>[_N].html
     - 中文 command 名由 html_paths.resolve_command_name() 解析
-    - list 命令按参数细分(查日期/查范围/查分类)
+    - list 命令按参数细分(查日期/查范围/查分类/查账户/查账本)
     """
     from html_paths import html_path, resolve_command_name
     cn = resolve_command_name(query_type, args)
+    # 查询域 4 新类型中文文件名(html_paths 公共层不动 · 本域隔离契约内实现)
+    NEW_TYPE_CN = {"tag": "查标签", "debt": "查欠款", "reimburse": "查待报销", "installment": "查分期"}
+    if query_type in NEW_TYPE_CN:
+        cn = NEW_TYPE_CN[query_type]
+    # list 变体:解析透传参数(extra)细分中文名(隔离契约内实现,不动 html_paths)
+    if query_type == "list" and extra:
+        ex = " ".join(extra)
+        if "--date" in ex or "--from" in ex:
+            if "--from" in ex:
+                if "--category" in ex:
+                    cn = "查分类区间"
+                else:
+                    cn = "查区间"
+            else:
+                cn = "查日期"
+        elif "--category" in ex:
+            cn = "查分类"
+        elif "--account" in ex:
+            cn = "查账户"
+        elif "--ledger" in ex:
+            cn = "查账本"
     return html_path(cn)
 
 
@@ -222,7 +285,7 @@ def main():
     payload = build_payload(cli_json, args.query_type, extra)
 
     # 3. 决定输出路径
-    output_path = Path(args.out) if args.out else default_output_path(args.query_type, args)
+    output_path = Path(args.out) if args.out else default_output_path(args.query_type, args, extra)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # 4. 注入模板（即使 CLI 返回 error 也注入，模板会显示错误卡片）

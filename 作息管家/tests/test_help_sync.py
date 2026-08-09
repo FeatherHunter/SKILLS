@@ -121,3 +121,32 @@ def test_escape_for_js_preserves_json_quotes():
     # 防 </script> 提前闭合仍生效
     assert "<" not in encoded.replace("\\u003c", "")
     assert "\\u003c" in encoded
+
+
+def test_no_wake_word_lands_uncategorized(monkeypatch):
+    """T8 对抗式补漏 · CATEGORY_MAP 必须覆盖全部唤醒词(防御性兜底不得出现)
+
+    L 级重构新增 周视图/首次使用 后曾落「未分类(防御性兜底)」:
+    help 页 5 模块分类缺登记 → 场景不可达分类浏览。修复后锁定:
+    所有 85 场景的唤醒词均归入 write/query/plan/analyze/admin 之一。
+
+    注:test_help_mobile_responsive 的 mock 渲染会把 help_render reload 到
+    临时副本且不还原(既有测试污染),此处显式钉死真实场景资产路径,自足不依赖
+    模块全局态。
+    """
+    import help_render
+
+    real_path = Path(__file__).resolve().parent.parent / "references" / "scenarios.yaml"
+    monkeypatch.setattr(help_render, "SCENARIOS_PATH", real_path)
+    scenarios, err = help_render.load_scenarios()
+    assert err is None
+    cats = help_render.group_by_category(scenarios)
+    uncat = [c for c in cats if c.get("key") == "_uncategorized"]
+    assert not uncat, f"存在未分类兜底: {uncat[0].get('wake_words', [])}"
+    total = sum(len(c.get("wake_words", [])) for c in cats)
+    wake_set = {s["wake_word"] for s in scenarios}
+    assert total == len(wake_set), f"分类覆盖 {total} != 唤醒词 {len(wake_set)}"
+    # 新场景必在分类内
+    keys = {w.get("wake_word") for c in cats for w in c.get("wake_words", [])}
+    for ww in ("周视图", "首次使用", "复盘今日", "复盘本周", "复盘本月", "复盘区间"):
+        assert ww in keys, f"唤醒词未分类: {ww}"

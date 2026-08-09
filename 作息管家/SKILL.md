@@ -404,7 +404,7 @@ ELIF "输出形式"列含 .html
 | 用户表达示例 | 唤醒词 | CLI 命令(默认 HTML · 文字答降级路径) | 输出形式 |
 |---|---|---|---|
 | "作息管家 HELP / 帮助 / 能做什么 / 使用说明" | (HELP 唤醒词,§07 契约) | `python scripts/help_render.py` | `$SKILLS_DB_PATH/schedule_html/help/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html` |
-| "记一笔 / 补一条 / 录作息" | #0 记作息 | `add <9 字段>` → `render-record-receipt <id>` | 记作息回执.html |
+| "记一笔 / 补一条 / 录作息" | #0 记作息 | `add <9 字段>`(写库后**自动渲染三件套**) · 手动补渲染 `render-record-result <id>`(旧名 render-receipt 兼容) | 记作息结果.html(三件套:时间轴+推断高亮+状态总览) |
 | "今天我做了什么 / 查作息" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | 查作息记录.html |
 | "昨天 / 前天 / 某天做了什么" | #6 查作息 | `render-record-day <date>` · 文本降级 `list <date>` | 查作息记录.html |
 | "今天总结 / 给我个报告" | #4 今天总结 | `render-record-day <date>`(满 24h) / `render-record-summary <date>`(不满) · 文本降级 `report`/`summary` | 查作息记录.html / (record_summary 文本) |
@@ -419,7 +419,7 @@ ELIF "输出形式"列含 .html
 | "7/15 健身什么时候做的(单日)" | (T4 单日) | `render-record-category <date> <category>` | 查作息类别.html |
 | "最近状态 / 有没有异常" | (T5 异常检测) | `render-record-anomaly [--window 7]` | 查作息异常.html |
 | "准备消息 / 拉消息" | #1 准备消息 | `prepare-messages [<start> [<end>]] [--page N]` | (无 HTML,数据准备) |
-| "同步作息 / 增量同步" | #2 #3 同步 | `prepare-messages` + AI 分析 + `add × N` → 各自 `render-record-receipt <id>` | (多条 记作息回执.html) |
+| "同步作息 / 增量同步" | #2 #3 同步 | `prepare-messages` + AI 分析 + `add × N`(各自自动渲染) → 必要时 `render-record-result <id>` | (多条 记作息结果.html 三件套) |
 | "看日程 / 查日程" | #12 查日程 | `render-list-events <date>` · 文本降级 `list-events <date>` | 查日程.html |
 | "今天有 XX 吗(带标题)" | #12 + 标题 | `search-plan-event <date> --title X` | (无 HTML,JSON) |
 | "24h 概览 / 查多日计划" | #15 #16 | `render-query-plans <日期列表>` · 文本降级 `query-plans` | 查日程.html |
@@ -525,6 +525,17 @@ ELIF "输出形式"列含 .html
 - `offline`: 网络不通 (HTML 仍可查看,顶部 offline 横幅)
 
 **反问格式**:`您是想看 A 还是 B?(我推荐 A 因为...)`
+
+### L 级重构新增能力路由（T8 · 2026-08-09 · 域模块自注册，渐进式注册通道）
+
+| 唤醒词 | 命令(域模块) | 输出 |
+|---|---|---|
+| "批量导入 / 导入这批作息" | `batch-add <date> --json @records.json`(batch_scenarios.py) | 批量回执 JSON(ok/partial,单条失败不打断) |
+| "周视图 / 这周作息总览" | `render-record-week [YYYY-MM-DD]`(week_view.py) | 查作息周视图.html(7×24 全分类热力图 + 每日汇总 + 健康分) |
+| "制定计划 / 帮我安排明天" | `plan-result <日期> --json @plan.json [--history-days N]`(plan_scenarios.py,强化 #17 商量计划) | plan_result.html(时间轴 + 分类色带 + 历史贴合提示) |
+| "首次使用 / 初始化 / 新手" | 6 步编排:`check` → 路径确认 → `init` → `status` → `render-first-use`(setup_scenarios.py) | 初始化报告 HTML(6 步 + 飞书强引导) |
+
+> 域模块命令全部经渐进式注册通道自动发现（schedule_cli.py 末尾动态加载，不动 49 命令 if/elif 分发）；详细流程见各票功能说明与 `references/CLI命令.md`。
 
 ### 路由失败处理
 

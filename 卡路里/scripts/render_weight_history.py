@@ -366,7 +366,7 @@ def main():
         return 1
     # 场景名(2026-08-09 #43):先于 build_data/render_html,模板标题+subtitle 用真实场景名
     scene_name = {
-        'trend': '看体重曲线', 'volatility': '看体重稳不稳',
+        'volatility': '看体重稳不稳',
         'compare': '对比体重', 'notes': '看「有备注」的体重记录',
     }.get(mode)
     if mode == 'history':
@@ -384,6 +384,24 @@ def main():
             scene_name = '看某段时间体重'
         else:
             scene_name = '看体重明细'
+    elif mode == 'trend':
+        # 2026-08-10 #43:trend 按参数区分场景名(R5)
+        if args.show_target:
+            scene_name = '看体重曲线（带目标）'
+        elif args.show_milestones:
+            scene_name = '看体重曲线（带里程碑）'
+        elif args.show_anomalies:
+            scene_name = '看体重曲线（带异常点）'
+        elif args.month == 'current':
+            scene_name = '看本月体重曲线'
+        elif args.month == 'last':
+            scene_name = '看上月体重曲线'
+        elif args.days and args.days != 30 and not (args.start and args.end):
+            scene_name = f'看最近 {args.days} 天体重曲线'
+        elif args.start and args.end:
+            scene_name = '看某段时间体重曲线'
+        else:
+            scene_name = '看体重曲线'
     try:
         data = _load_data(args.mock) if args.mock else build_data(
             s, e, mode=mode, show_target=args.show_target,

@@ -35,6 +35,7 @@ SKILL_DIR = _SCRIPT_DIR.parent
 TEMPLATE = SKILL_DIR / "templates" / "写入" / "expense_form.html"
 BATCH_TEMPLATE = SKILL_DIR / "templates" / "写入" / "batch_confirm.html"
 FLOW_TEMPLATE = SKILL_DIR / "templates" / "写入" / "flow_confirm.html"
+INSTALLMENT_TEMPLATE = SKILL_DIR / "templates" / "写入" / "installment_confirm.html"
 SKILL_VERSION = "2.0"
 
 FORM_TYPES = {
@@ -341,12 +342,97 @@ def build_flow_payload(flow_type: str, amount: str, search_hint: str = "", reaso
     }
 
 
+def compute_installments(total: float, periods: int, start_date: str) -> list:
+    """分期分摊计算(纯函数 · 2026-08-09 人类裁定)
+
+    规则:
+      - 每期 = round(总价 ÷ 期数, 2)
+      - 首期 = 总价 - 每期 × (期数-1)(保证总和精确 = 总价,首期补差)
+      - 日期 = 每月同日;该月无此日 → 月末回退 min(日, 该月天数)
+
+    Args:
+        total: 总价(元)
+        periods: 期数
+        start_date: 首期日 'YYYY-MM-DD'
+
+    Returns:
+        [{seq, date: 'YYYY-MM-DD', amount}...] 共 periods 条
+    """
+    import calendar
+    if periods <= 0:
+        raise ValueError("期数必须 > 0")
+    if total <= 0:
+        raise ValueError("总价必须 > 0")
+
+    each = round(total / periods, 2)
+    first = round(total - each * (periods - 1), 2)
+
+    y, m, d = (int(x) for x in start_date.split("-")[:3])
+    out = []
+    for seq in range(1, periods + 1):
+        if seq == 1:
+            amount = first
+        else:
+            amount = each
+            m += 1
+            if m > 12:
+                m = 1
+                y += 1
+        # 月末回退:取 min(日, 该月天数)
+        days_in_month = calendar.monthrange(y, m)[1]
+        day = min(d, days_in_month)
+        out.append({"seq": seq, "date": f"{y:04d}-{m:02d}-{day:02d}", "amount": amount})
+    return out
+
+
+def build_installment_payload(name: str, total: str, periods: int, start_date: str,
+                              account: str = "", ledger: str = "") -> dict:
+    """构建记分期确认 payload(向导:参数回显 + 分摊预览)"""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    total_f = float(total)
+    items = compute_installments(total_f, periods, start_date or now[:10])
+    each = round(total_f / periods, 2)
+    first = items[0]["amount"]
+    last = items[-1]["date"]
+    return {
+        "status": "ok",
+        "data": {
+            "title": "记一笔分期",
+            "generated_at": now,
+            "meta": {
+                "scene_id": "write_installment", "wake_word": "记分期",
+                "command_cn": "记分期 确认", "occurred_at": now,
+                "render_cmd": f"render_write.py installment --name {name} --total {total} --periods {periods}",
+                "version": SKILL_VERSION,
+            },
+            "form": {
+                "type": "installment",
+                "name": name,
+                "total": round(total_f, 2),
+                "periods": periods,
+                "each": each,
+                "first": first,
+                "start_date": start_date or now[:10],
+                "last_date": last,
+                "account": account or "",
+                "ledger": ledger or "",
+                "items": items,
+            },
+        },
+        "message": "记分期确认",
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="饼干记账 · 写入域采集表单渲染")
     parser.add_argument("form_type", choices=list(FORM_TYPES.keys()) + ["batch", "refund", "reimburse_done",
-                        "lend", "borrow", "collect", "payback"],
-                        help="expense / income / photo / reimburse / batch / refund / reimburse_done / lend / borrow / collect / payback")
+                        "lend", "borrow", "collect", "payback", "installment"],
+                        help="expense / income / photo / reimburse / batch / refund / reimburse_done / lend / borrow / collect / payback / installment")
     parser.add_argument("--amount", default=None, help="金额")
+    parser.add_argument("--name", default=None, help="分期名目")
+    parser.add_argument("--total", default=None, help="分期总价")
+    parser.add_argument("--periods", type=int, default=None, help="分期期数")
+    parser.add_argument("--start-date", default=None, help="首期日 YYYY-MM-DD")
     parser.add_argument("--category", default=None, help="分类(已确定)")
     parser.add_argument("--category-hint", default=None, help="分类名目意图(AI 语义推荐)")
     parser.add_argument("--account", default=None, help="账户")
@@ -364,6 +450,18 @@ def main():
     args = parser.parse_args()
 
     records = _load_history()
+
+    # ── 记分期(installment) ──
+    if args.form_type == "installment":
+        if not args.name or not args.total or not args.periods:
+            print("✗ installment 需要 --name/--total/--periods", file=sys.stderr)
+            sys.exit(1)
+        payload = build_installment_payload(args.name, args.total, args.periods,
+                                            args.start_date or "", args.account or "", args.ledger or "")
+        template_path = INSTALLMENT_TEMPLATE
+        _write_html(payload, template_path, "记分期确认", args.out)
+        print(f"  分摊: {len(payload['data']['form']['items'])} 期,首期 {payload['data']['form']['first']},末次 {payload['data']['form']['last_date']}")
+        return 0
 
     # ── 复合流程分支(refund / reimburse_done / collect / payback) ──
     if args.form_type in ("refund", "reimburse_done", "collect", "payback"):

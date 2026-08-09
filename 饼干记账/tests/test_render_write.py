@@ -326,3 +326,55 @@ class TestCollectPayback:
         assert "记借出" in text
         assert "fDeadline" in text  # 期限字段(JS 动态,payload 有值)
         assert "月底还" in text
+
+
+class TestInstallment:
+    def test_divisible(self):
+        """整除:6000/24 = 250,首期 = 250"""
+        items = rw.compute_installments(6000, 24, "2026-08-15")
+        assert len(items) == 24
+        assert all(it["amount"] == 250.0 for it in items)
+        assert items[0]["date"] == "2026-08-15"
+        assert items[1]["date"] == "2026-09-15"
+        assert sum(it["amount"] for it in items) == 6000.0
+
+    def test_remainder_first_period_pads(self):
+        """除不尽:6001/24,首期补差额保证总和 = 6001"""
+        items = rw.compute_installments(6001, 24, "2026-08-15")
+        assert len(items) == 24
+        assert items[0]["amount"] == round(6001 - 250.04 * 23, 2)
+        assert abs(sum(it["amount"] for it in items) - 6001.0) < 0.001
+
+    def test_month_end_fallback(self):
+        """月末回退:31 号首期 → 2月28(29)/4月30"""
+        items = rw.compute_installments(3100, 6, "2026-01-31")
+        dates = [it["date"] for it in items]
+        assert dates == ["2026-01-31", "2026-02-28", "2026-03-31", "2026-04-30", "2026-05-31", "2026-06-30"]
+
+    def test_cross_year(self):
+        items = rw.compute_installments(1200, 3, "2026-12-15")
+        assert items[1]["date"] == "2027-01-15"
+        assert items[2]["date"] == "2027-02-15"
+
+    def test_build_installment_payload(self):
+        p = rw.build_installment_payload("手机", "6000", 24, "2026-08-15", "招行", "生活")
+        form = p["data"]["form"]
+        assert form["type"] == "installment"
+        assert form["name"] == "手机"
+        assert len(form["items"]) == 24
+        assert p["data"]["meta"]["wake_word"] == "记分期"
+
+    def test_installment_html_structure(self, tmp_path):
+        p = rw.build_installment_payload("手机", "6000", 24, "2026-08-15")
+        template = rw.INSTALLMENT_TEMPLATE.read_text(encoding="utf-8")
+        html = template.replace("<!--INJECT-DATA-->",
+                                json.dumps(p, ensure_ascii=False).replace("</", "<\\/"), 1)
+        out = tmp_path / "inst.html"
+        out.write_text(html, encoding="utf-8-sig")
+        raw = out.read_bytes()
+        assert raw[:3] == b"\xef\xbb\xbf"
+        text = raw.decode("utf-8-sig")
+        assert "id=\"params\"" in text      # 参数回显
+        assert "id=\"rows\"" in text        # 分摊预览
+        assert "月末自动回退" in text       # 回退规则标注
+        assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text

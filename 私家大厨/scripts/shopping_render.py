@@ -100,7 +100,7 @@ def parse_stock(args: dict) -> dict:
     raw = args.get("--stock-json")
     if not raw and args.get("--stock-file"):
         try:
-            raw = Path(args["--stock-file"]).read_text(encoding="utf-8")
+            raw = Path(args["--stock-file"]).read_text(encoding="utf-8-sig")
         except OSError as e:
             raise ValueError(f"库存文件读取失败: {e}")
     items = []

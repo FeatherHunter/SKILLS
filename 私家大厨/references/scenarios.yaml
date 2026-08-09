@@ -153,7 +153,7 @@ scenarios:
       recipe: 指定菜名
       ingredient_swap: 替换某食材
     prompt: '{{菜名}}里没有 X,能用 Y 代替吗？'
-    status: 【待开发】
+    status: ''
     result: 查看页出现「原食材 → 替换食材」对照行,AI 建议替换+用量换算,你可调整,确认后展示替换后的食材清单(不落库)。
     wake_word: 查看食谱
     type: 查看+选择

@@ -97,3 +97,114 @@ def test_unique_constraint_on_item_tags(conn):
     ).fetchone()
     sql = schema[0] if schema else ""
     assert "UNIQUE" in sql.upper(), f"item_tags 缺 UNIQUE 约束: {sql}"
+
+
+# ═══════════════════ D1 批 schema(#119/#120)═══ 2026-08-09 追加 ═══════════════════
+
+def test_location_nodes_table_exists(conn):
+    """D1 #119:location_nodes 位置体系表必须存在(防删表拦截)"""
+    tables = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'")}
+    assert "location_nodes" in tables, "缺失 location_nodes 位置体系表"
+
+
+def test_location_nodes_path_unique(conn):
+    """location_nodes.path 必须 UNIQUE(规范化路径去重语义)"""
+    schema = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE name='location_nodes'"
+    ).fetchone()
+    sql = schema[0] if schema else ""
+    assert "UNIQUE" in sql.upper(), f"location_nodes 缺 UNIQUE(path): {sql}"
+
+
+def test_items_has_fixed_location_column(conn):
+    """D1 #120:items.fixed_location 固定位字段必须存在(防删字段拦截)"""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(items)")}
+    assert "fixed_location" in cols, "items 缺失 fixed_location 固定位字段"
+
+
+def test_location_nodes_backfill_from_item_locations(tmp_path, monkeypatch):
+    """回填:item_locations 既有路径去重导入 location_nodes(规范化 + 幂等)"""
+    import importlib
+    import home_manager.db as db_mod
+
+    monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+    importlib.reload(db_mod)
+    db_mod.init_db()
+    conn = db_mod.get_conn()
+    c = conn.cursor()
+    c.execute("INSERT INTO categories (id, parent_id, name) VALUES (1, NULL, '食物与饮品')")
+    c.execute("INSERT INTO items (id, name, category_id) VALUES (1, '物品', 1)")
+    # 全角斜杠 + 首尾空白 + 重复 → 应规范化去重为 2 节点
+    c.execute("INSERT INTO item_locations (item_id, location) VALUES (1, '卧室／衣柜')")
+    c.execute("INSERT INTO item_locations (item_id, location) VALUES (1, ' 客厅 /架子 ')")
+    c.execute("INSERT INTO item_locations (item_id, location) VALUES (1, '卧室/衣柜')")
+    conn.commit()
+
+    db_mod.init_db()  # 再次 init 触发回填
+    paths = {r[0] for r in c.execute("SELECT path FROM location_nodes")}
+    conn.close()
+
+    assert paths == {"卧室/衣柜", "客厅/架子"}, f"回填规范化/去重失败: {paths}"
+
+
+def test_rebuild_preserves_fixed_location_category_patch(tmp_path, monkeypatch):
+    """对抗审查回归:category-NOTNULL 重建路径必须保留 fixed_location 列与数据"""
+    import importlib
+    import sqlite3
+    import home_manager.db as db_mod
+
+    monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+    importlib.reload(db_mod)
+    # 构造老库:category NOT NULL,已由 T3 ensure_schema 加 fixed_location 并有数据
+    conn = sqlite3.connect(str(tmp_path / "home.db"))
+    conn.execute("""CREATE TABLE items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, category TEXT NOT NULL,
+        owner TEXT DEFAULT '使用者', purchase_price REAL, remark TEXT, photo TEXT,
+        access_count INTEGER DEFAULT 0, last_accessed_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+    conn.execute("INSERT INTO items (name, category) VALUES ('物品', '食物')")
+    conn.execute("ALTER TABLE items ADD COLUMN fixed_location TEXT")
+    conn.execute("UPDATE items SET fixed_location = '厨房/冰箱' WHERE id = 1")
+    conn.commit()
+    conn.close()
+
+    db_mod.init_db()
+    conn = sqlite3.connect(str(tmp_path / "home.db"))
+    row = conn.execute("SELECT fixed_location FROM items WHERE id = 1").fetchone()
+    conn.close()
+    assert row is not None and row[0] == "厨房/冰箱", \
+        f"category 重建路径丢 fixed_location 数据: {row}"
+
+
+def test_rebuild_preserves_fixed_location_date_migration(tmp_path, monkeypatch):
+    """对抗审查回归:日期列重建路径(migrate_add_date_columns)必须保留 fixed_location"""
+    import importlib
+    import sqlite3
+    import home_manager.db as db_mod
+
+    monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+    importlib.reload(db_mod)
+    # 构造老库:category 已 nullable,items 仍有日期列(触发日期重建),fixed_location 已有数据
+    conn = sqlite3.connect(str(tmp_path / "home.db"))
+    conn.execute("""CREATE TABLE items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, category TEXT,
+        owner TEXT DEFAULT '使用者', purchase_price REAL, remark TEXT, photo TEXT,
+        access_count INTEGER DEFAULT 0, last_accessed_at TIMESTAMP,
+        purchase_date TEXT, expiration_date TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+    conn.execute("INSERT INTO items (name, category, purchase_date) VALUES ('物品', '衣物', '2026-01-01')")
+    conn.execute("ALTER TABLE items ADD COLUMN fixed_location TEXT")
+    conn.execute("UPDATE items SET fixed_location = '卧室/衣柜' WHERE id = 1")
+    conn.commit()
+    conn.close()
+
+    db_mod.init_db()
+    conn = sqlite3.connect(str(tmp_path / "home.db"))
+    row = conn.execute("SELECT fixed_location FROM items WHERE id = 1").fetchone()
+    # 日期列应已迁出(重建发生),fixed_location 数据保留
+    conn.close()
+    assert row is not None and row[0] == "卧室/衣柜", \
+        f"日期重建路径丢 fixed_location 数据: {row}"

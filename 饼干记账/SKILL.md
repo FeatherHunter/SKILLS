@@ -1,6 +1,6 @@
 ﻿---
 name: 饼干记账
-description: 记账技能。写入类:记支出、记收入、拍账单、批量录入、改记录、撤销、恢复、记报销、记退款、记借出、记借入、记收回、记偿还、记分期。查询类:查今天、查某天、查月、查区间、查分类、搜备注、查标签、查账户、查账本、查欠款、查待报销。分析类:看月度、看总览、看分类、看对比、看趋势、看大额、做统计、看洞察、看借贷。目标/账户/联动:设定预算、看预算、设定目标、看目标、账户转账、买东西联动、吃饭联动。**所有查询/分析类唤醒词默认 invoke HTML 工作流**(scripts/bill_inject.py + templates),写入类保持文字回执。能力速查:说「饼干记账 HELP」/「查帮助」/「能做什么」。完整 70 个唤醒词见 references/路由表.md
+description: 记账技能。写入类:记支出、记收入、拍账单、批量录入、改记录、撤销、恢复、记报销、记退款、记借出、记借入、记收回、记偿还、记分期。查询类:查今天、查某天、查月、查区间、查分类、搜备注、查标签、查账户、查账本、查欠款、查待报销。分析类:看月度、看总览、看分类、看对比、看趋势、看大额、做统计、看洞察、看借贷。目标/账户/联动:设定预算、看预算、设定目标、看目标、新增账户、改账户、账户转账、看账户汇总、买东西联动、吃饭联动。**所有查询/分析类唤醒词默认 invoke HTML 工作流**(scripts/bill_inject.py + templates),写入类保持文字回执。能力速查:说「饼干记账 HELP」/「查帮助」/「能做什么」。完整 70 个唤醒词见 references/路由表.md
 ---
 
 **🔗 联动提示：** 完成本技能主操作后，检查技能路由器（`图片路由/SKILL.md`）的联动规则，判断是否需要联动其他技能（如用户提到买了实物→询问是否录入居家管家；用户提到食物→询问是否记录卡路里）。详见路由器的联动规则表。
@@ -15,7 +15,7 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 
 ## 操作规范（强制）
 
-- 所有数据操作通过 CLI（`scripts/write|query|analysis/cli.py` 三域入口），禁止直连数据库
+- 所有数据操作通过 CLI（`scripts/write|query|analysis|account/cli.py` 四域入口），禁止直连数据库
 - 只读操作（查询/分析/统计）不需确认；写入操作（记支出/记收入/拍账单/改记录）需用户确认
 - 不支持删除已有记录；修改功能见「改记录」流程
 - 金额必须明确，不能猜测
@@ -91,39 +91,39 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 | 查询 | `查欠款` | 查未还欠款(借贷状态) | `query debt` | **HTML** |
 | 查询 | `查待报销` | 查待报销 | `query reimburse` | **HTML** |
 | 查询 | `查分期` | 查进行中的分期 | `query installment` | **HTML** |
-| 分析 | `看月度` | 某月收支汇总 | `analysis monthly` | **HTML** |
-| 分析 | `看年度` | 年度收支汇总 | `analysis monthly(年) + trend` | **HTML** |
-| 分析 | `看总览` | 时间段收支总览 | `analysis overview` | **HTML** |
-| 分析 | `看周报` | 本周简报(对比上周) | `analysis compare week` | **HTML** |
-| 分析 | `看分类` | 钱花在哪些分类 | `analysis breakdown` | **HTML** |
-| 分析 | `看账户` | 各账户花销情况 | `analysis breakdown(账户)` | **HTML** |
-| 分析 | `看账本` | 各账本收支汇总 | `analysis breakdown(账本)` | **HTML** |
-| 分析 | `看结构` | 收入支出来源去向 | `analysis breakdown×2` | **HTML** |
-| 分析 | `看对比` | 本期和上期对比 | `analysis compare` | **HTML** |
-| 分析 | `看双区间` | 两段时间对比 | `analysis compare(区间)` | **HTML** |
-| 分析 | `看同比` | 今年和去年同比 | `analysis compare(同比)` | **HTML** |
-| 分析 | `看分类对比` | 两段时间分类差异 | `analysis compare(分类)` | **HTML** |
-| 分析 | `看趋势` | 每月收支走势 | `analysis trend(待实施)` | **HTML** |
-| 分析 | `看分类趋势` | 某分类的月度变化 | `analysis trend(分类·待实施)` | **HTML** |
-| 分析 | `看大额` | 大额支出排行 | `analysis top(待实施)` | **HTML** |
-| 分析 | `看高频` | 高频消费排行 | `analysis top(频次·待实施)` | **HTML** |
-| 分析 | `看分布` | 金额区间分布 | `analysis distribution(待实施)` | **HTML** |
+| 分析 | `看月度` | 某月收支汇总 | `analysis monthly --month` | **HTML** |
+| 分析 | `看年度` | 年度收支汇总 | `analysis yearly --year` | **HTML** |
+| 分析 | `看总览` | 时间段收支总览 | `analysis overview --from --to` | **HTML** |
+| 分析 | `看周报` | 本周简报(对比上周) | `analysis week` | **HTML** |
+| 分析 | `看分类` | 钱花在哪些分类 | `analysis category` | **HTML** |
+| 分析 | `看账户` | 各账户花销情况 | `analysis account` | **HTML** |
+| 分析 | `看账本` | 各账本收支汇总 | `analysis ledger` | **HTML** |
+| 分析 | `看结构` | 收入支出来源去向 | `analysis structure` | **HTML** |
+| 分析 | `看对比` | 本期和上期对比 | `analysis compare --period` | **HTML** |
+| 分析 | `看双区间` | 两段时间对比 | `analysis range_compare` | **HTML** |
+| 分析 | `看同比` | 今年和去年同比 | `analysis yoy --month` | **HTML** |
+| 分析 | `看分类对比` | 两段时间分类差异 | `analysis cat_compare` | **HTML** |
+| 分析 | `看趋势` | 每月收支走势 | `analysis trend --months` | **HTML** |
+| 分析 | `看分类趋势` | 某分类的月度变化 | `analysis cat_trend --category` | **HTML** |
+| 分析 | `看大额` | 大额支出排行 | `analysis top --limit` | **HTML** |
+| 分析 | `看高频` | 高频消费排行 | `analysis top_freq` | **HTML** |
+| 分析 | `看分布` | 金额区间分布 | `analysis distribution` | **HTML** |
 | 分析 | `做统计` | 记账情况统计 | `analysis stats` | **HTML** |
-| 分析 | `看活跃` | 记账活跃度 | `analysis activity(待实施)` | **HTML** |
-| 分析 | `看洞察` | AI 消费洞察 | `analysis insight(待实施·接洞察生成器)` | **HTML** |
-| 分析 | `看异常` | 异常波动检测 | `analysis anomaly(待实施·接洞察生成器)` | **HTML** |
-| 分析 | `看借贷` | 借贷总览 | `analysis debt(待实施·#借贷)` | **HTML** |
-| 分析 | `看报销` | 报销汇总 | `analysis reimburse(待实施·#待报销)` | **HTML** |
-| 分析 | `看分期` | 分期总览 | `analysis installment(待实施·#分期)` | **HTML** |
-| 分析 | `看退款` | 退款统计 | `analysis refund(待实施·#退款)` | **HTML** |
+| 分析 | `看活跃` | 记账活跃度 | `analysis activity` | **HTML** |
+| 分析 | `看洞察` | AI 消费洞察 | `analysis insight`(接洞察生成器) | **HTML** |
+| 分析 | `看异常` | 异常波动检测 | `analysis anomaly`(接洞察生成器) | **HTML** |
+| 分析 | `看借贷` | 借贷总览 | `analysis debt_summary`(#借贷) | **HTML** |
+| 分析 | `看报销` | 报销汇总 | `analysis reimburse_summary`(#待报销) | **HTML** |
+| 分析 | `看分期` | 分期总览 | `analysis installment_summary`(#分期) | **HTML** |
+| 分析 | `看退款` | 退款统计 | `analysis refund_summary`(#退款) | **HTML** |
 | 目标 | `设定预算` | 设定月度预算 | `goal set-budget --amount X [--month] [--category]` | **HTML 表单+回执** |
 | 目标 | `看预算` | 查看预算执行 | `goal budget [--month]` | **HTML** |
 | 目标 | `设定目标` | 设定储蓄目标 | `goal set-saving --name X --amount Y [--deadline]` | **HTML 表单+回执** |
 | 目标 | `看目标` | 查看目标进度 | `goal saving [--name]` | **HTML** |
-| 账户 | `新增账户` | 新增账户 | `account add(待实施)` | **HTML** |
-| 账户 | `改账户` | 修改账户 | `account update(待实施)` | **HTML** |
-| 账户 | `账户转账` | 账户间转账 | `account transfer(待实施·#转账)` | **HTML** |
-| 账户 | `看账户汇总` | 查看账户汇总 | `account summary(待实施)` | **HTML** |
+| 账户 | `新增账户` | 新增账户 | `account add --name X [--type Y]` | **HTML 表单+回执** |
+| 账户 | `改账户` | 修改账户 | `account update --name X [--new-name/--disable/--enable]` | **HTML 表单+回执** |
+| 账户 | `账户转账` | 账户间转账 | `account transfer --amount X --from A --to B` | **HTML 表单+回执** |
+| 账户 | `看账户汇总` | 查看账户汇总 | `account summary` | **HTML** |
 | 联动 | `买东西` | 买东西联动(记账 + 录物品) | `link form + receipt` | **HTML 表单+回执** |
 | 联动 | `吃饭` | 吃饭联动(记账 + 记卡路里) | `link form + receipt` | **HTML 表单+回执** |
 | 开始使用 | `初始化` | 首次使用向导(4 步零决策) | `setup init(待实施·4 步向导)` | **HTML** |
@@ -183,6 +183,10 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 | "各类支出占比"、"分类明细" | → `看分类` |
 | "收支情况"、"本月收支" | → `看总览` |
 | "记了多少笔"、"记账情况" | → `做统计` |
+| "转钱"、"转账"、"把钱转到X" | → `账户转账` |
+| "新增账户"、"加个账户"、"建个X账户" | → `新增账户` |
+| "把X改成Y"、"停用X账户"、"改账户" | → `改账户` |
+| "账户余额"、"账户汇总"、"各账户" | → `看账户汇总` |
 
 ### Step 3：解析参数
 
@@ -367,7 +371,71 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 | "本月汇总" | --month = 当前月（YYYY-MM） |
 | "3月份的账" | --month = 2026-03 |
 
-返回：支出/收入/净额 + 分类明细。
+返回：支出/收入/净额/笔数 + 分类排行。
+
+#### 看年度
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "今年汇总" | --year = 当前年 |
+| "2025年总结" | --year = 2025 |
+
+返回：全年 KPI(支出/收入/净额/笔数) + 逐月趋势表 + 大额分类 TOP。
+
+#### 看周报
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "本周简报" | week（默认本周） |
+| "上周周报" | week --offset 1 |
+
+返回：本周 KPI + 本周 vs 上周双卡(支出变化率) + 本周大额支出。
+
+#### 看总览
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "本月收支" | --month = 当前月（默认） |
+| "3月收支情况" | --month = 2026-03 |
+| "5月1到10号的收支" | --from 2026-05-01 --to 2026-05-10 |
+
+返回：笔数/支出/收入/净额 + 日均支出 + 区间标注。
+
+#### 看分类
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "各类支出占比" | 无参数，默认本月 |
+| "5月的分类明细" | --from 2026-05-01 --to 2026-05-31 |
+| "支付宝花了什么" | --account 支付宝 |
+| "收入占比" | --type income |
+
+返回：SVG 环形图 + 排行(总额/占比/笔数/均值)；分类 L1 聚合(餐饮/外卖 → 餐饮)。
+
+#### 看账户
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "各账户花销" | 默认本月 |
+| "上个月的账户情况" | --month 上个月 |
+
+返回：账户占比条 + 各账户汇总(支出/收入/净额)。
+
+#### 看账本
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "各账本收支" | 默认本月 |
+
+返回：各账本汇总卡(生活/旅行/借贷:支出/收入/净额) + 占比。
+
+#### 看结构
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "收入和支出的结构" | 默认本月 |
+
+返回：双环形图(收入来源结构 + 支出去向结构)。
 
 #### 看对比
 
@@ -376,29 +444,182 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 | "这周和上周比" | --period week |
 | "本月和上月比" | --period month |
 
-返回：本期/上期的支出/收入/净额 + 变化率。
+返回：本期/上期的支出/收入/净额 + 变化率徽章(↑↓→)。
 
-#### 看分类
-
-| 用户说 | 解析结果 |
-|--------|----------|
-| "各类支出占比" | 无参数，默认本月 |
-| "5月的分类明细" | --from 2026-05-01 --to 2026-05-31 |
-
-返回：各分类总支出/占比/笔数/均值。
-
-#### 看总览
+#### 看双区间
 
 | 用户说 | 解析结果 |
 |--------|----------|
-| "本月收支" | --month = 当前月（默认） |
-| "3月收支情况" | --month = 2026-03 |
+| "5月和4月比" | --from1 2026-05-01 --to1 2026-05-31 --from2 2026-04-01 --to2 2026-04-30 |
+| "五一和端午比" | 两段区间参数 |
 
-返回：笔数/支出/收入/净额。
+返回：双卡并排(区间一/区间二) + 变化率 + 分类差异提示 TOP。
+
+#### 看同比
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "今年3月和去年比" | --month 2026-03（默认本月） |
+
+返回：今年 vs 去年同月双卡 + 变化率。
+
+#### 看分类对比
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "5月和4月的分类差异" | --from1/--to1/--from2/--to2 两段区间 |
+
+返回：分类差异 TOP(金额变化最大/笔数变化最大) 对比条形。
+
+#### 看趋势
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "近6个月走势" | --months 6 |
+| "近一年的趋势" | --months 12（默认） |
+
+返回：SVG 双线折线(支出/收入逐月) + 峰值标注 + 月均。
+
+#### 看分类趋势
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "餐饮的月度变化" | --category 餐饮 --months 12（默认） |
+| "出行近半年" | --category 出行 --months 6 |
+
+返回：柱状/折线(该分类逐月支出) + 月均 + 峰值月；分类 L1 前缀匹配。
+
+#### 看大额
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "大额支出TOP10" | --limit 10（默认） |
+| "5月花得最大的一笔" | --from 2026-05-01 --to 2026-05-31 --limit 5 |
+
+返回：支出 TOP N 排行(金额/分类/日期/备注)。
+
+#### 看高频
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "什么花得最频繁" | 默认本月 |
+| "近30天高频" | --from/--to + --limit 10（默认） |
+
+返回：分类笔数 TOP(笔数/总金额/单均/最近一笔时间)。
+
+#### 看分布
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "金额区间分布" | 默认本月支出 |
+| "收入分布" | --type income |
+
+返回：SVG 直方图(区间:<10 / 10-50 / 50-100 / 100-500 / 500+) + 各区间笔数/占比。
 
 #### 做统计
 
-无参数。返回总笔数、记账天数、首笔时间、最近记录时间。
+无参数。返回总笔数、记账天数、日均笔数、首笔时间、最近记录时间 + 月度分布。
+
+#### 看活跃
+
+无参数。返回周几分布柱状(哪天记最多) + 时段分布(几点记)。
+
+#### 看洞察
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "AI 消费洞察" | --months 6（默认） |
+| "近90天的洞察" | --months 3 |
+
+**流程**：AI 调 `analysis insight --months N --json` 拿**事实层**（period/category_dist/monthly_trend/top_expense + 均值/中位数/最大偏离度，纯计算无判定）→ AI 基于事实撰写解读（消费习惯/异常波动/省钱建议）→ `bill_inject.py insight` 生成洞察卡 HTML 交付。**AI 解读规则**：只引用事实层数字；不说事实层没有的话；建议可落地(如"奶茶类支出占 18%，可减少频次")。
+
+#### 看异常
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "异常波动检测" | --months 6（默认） |
+
+**流程**：AI 调 `analysis anomaly --months N --json` 拿**事实层**（月度序列 + 环比变化 + 分类环比暴涨）→ AI 判定异常（突增月/暴涨分类，幅度≥50% 值得说）→ `bill_inject.py anomaly` 生成检测 HTML 交付。**AI 判定规则**：幅度 < 50% 不判异常；判异常必须附"建议核对"(一次性大额/记错分类/真实增长)。
+
+#### 看借贷
+
+无参数。返回借出未还总额 + 借入未还总额 + 对象列表 + 已还/未还统计；聚合 `#借出/#借入/#未还/#已还`。
+
+#### 看报销
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "报销汇总" | 无参数 |
+
+返回待报销总额 + 已到账总额 + 历史报销列表；聚合 `#待报销/#报销到账`。
+
+#### 看分期
+
+无参数。返回进行中分期卡(名目/总额/每期/期数/已还/剩余期数+金额) + 历史分期；聚合 `#分期`。
+
+#### 看退款
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "退款统计" | 无参数 |
+
+返回退款总额/次数 + 月份分布 + 退款明细；聚合 `#退款`。
+
+### 账户流程细则（4 场景 · 2026-08-09 落地）
+
+账户 = `bills.account` 字段（无独立账户表）；账户清单 = `goals.json` 顶层 `accounts` 键（账户表，与目标域 `budgets/savings` 键隔离）；余额 = 该账户收入 − 支出累计推算。
+
+**载体契约：**
+- 新增/改名/停用/启用 → 写 `goals.json`（原子写，保留其他键）
+- 改名 → 同步更新 `bills.account`（历史流水保留，跟随新名）
+- 停用 → `disabled=true`，汇总灰显 + 不含于合计；历史记录保留
+- 转账 → **两笔记录**（会计两笔分录）：`转账/转出` 支出(源账户) + `转账/转入` 收入(目标账户)，账本=`转账`，备注=`#转账 转出至X / 转入自X`；**不影响收支统计**（账户汇总收支 KPI 按「转账」分类排除，余额计算含转账使两账户正确增减）；其他域查询中与借贷先例一致如实展示
+
+#### 新增账户
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "新增账户 招行卡" | --name 招行卡 |
+| "加个花呗账户,信用类型" | --name 花呗 --type 信用 |
+
+流程：采集表单（账户名 + 类型，已有账户可点选快速填写）→ 确认 → `account add` → 文字回执；重名 → 提示确认。
+
+#### 改账户
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "把招行卡改成招行工资卡" | --name 招行卡 --new-name 招行工资卡 |
+| "停用花呗" | --name 花呗 --disable |
+
+流程：diff 确认表单（原账户卡 + 待修改表）→ 确认 → `account update` → 文字回执；账户不在账户表 → AI 反问（不猜测）。
+
+#### 账户转账
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "从支付宝转 500 到招行卡" | --amount 500 --from 支付宝 --to 招行卡 |
+
+流程：采集表单（金额/从账户/到账户/时间，账户建议点选）→ 确认 → `account transfer` → 文字回执两笔（转出支出 + 转入收入）；同账户/负数 → AI 反问。
+
+#### 看账户汇总
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "看账户汇总" / "账户余额" | account summary |
+
+结果型 HTML：总余额/总收入/总支出/净额/转账 KPI + 各账户余额卡（收支/转入转出/笔数/最近一笔；停用灰显 + 未登记标记）+ 最近流水摘要；空账户表 → 空态引导。
+
+**HTML 渲染入口（账户域专用，不走 bill_inject）：**
+
+```bash
+# 采集/选择(过程型表单)
+python3 scripts/account/render.py add-form --name 微信 --type 支付
+python3 scripts/account/render.py transfer-form --amount 200 --from 支付宝 --to 招行卡
+python3 scripts/account/render.py update-form --name 招行卡 --new-name 招行工资卡
+python3 scripts/account/render.py update-form --name 花呗 --disable
+# 查看(结果型)
+python3 scripts/account/render.py view
+```
 
 ### 目标域流程细则（4 场景 · 2026-08-09 落地 · 载体 goals.json）
 
@@ -562,19 +783,61 @@ python3 scripts/scripts/query/cli.py installment --name 手机
 # 看月度
 python3 scripts/scripts/analysis/cli.py monthly --month 2026-05
 
+# 看年度 / 看周报
+python3 scripts/scripts/analysis/cli.py yearly --year 2026
+python3 scripts/scripts/analysis/cli.py week
+python3 scripts/scripts/analysis/cli.py week --offset 1
+
+# 看总览(区间)
+python3 scripts/scripts/analysis/cli.py overview --from 2026-05-01 --to 2026-05-31
+python3 scripts/scripts/analysis/cli.py overview --month 2026-05
+
+# 看分类(L1 聚合 + 环形图)
+python3 scripts/scripts/analysis/cli.py category
+python3 scripts/scripts/analysis/cli.py category --from 2026-05-01 --to 2026-05-31 --account 支付宝
+
+# 看账户 / 看账本 / 看结构
+python3 scripts/scripts/analysis/cli.py account
+python3 scripts/scripts/analysis/cli.py ledger
+python3 scripts/scripts/analysis/cli.py structure
+
 # 看对比
 python3 scripts/scripts/analysis/cli.py compare --period week
 
-# 看分类
-python3 scripts/scripts/analysis/cli.py breakdown
-python3 scripts/scripts/analysis/cli.py breakdown --from 2026-05-01 --to 2026-05-31
+# 看双区间 / 看同比 / 看分类对比
+python3 scripts/scripts/analysis/cli.py range_compare --from1 2026-05-01 --to1 2026-05-31 --from2 2026-04-01 --to2 2026-04-30
+python3 scripts/scripts/analysis/cli.py yoy --month 2026-05
+python3 scripts/scripts/analysis/cli.py cat_compare --from1 2026-05-01 --to1 2026-05-31 --from2 2026-04-01 --to2 2026-04-30
 
-# 看总览
-python3 scripts/scripts/analysis/cli.py overview
-python3 scripts/scripts/analysis/cli.py overview --month 2026-05
+# 看趋势 / 看分类趋势
+python3 scripts/scripts/analysis/cli.py trend --months 12
+python3 scripts/scripts/analysis/cli.py cat_trend --category 餐饮 --months 6
 
-# 做统计
+# 看大额 / 看高频 / 看分布
+python3 scripts/scripts/analysis/cli.py top --limit 10
+python3 scripts/scripts/analysis/cli.py top_freq
+python3 scripts/scripts/analysis/cli.py distribution
+
+# 做统计 / 看活跃
 python3 scripts/scripts/analysis/cli.py stats
+python3 scripts/scripts/analysis/cli.py activity
+
+# 看洞察 / 看异常(洞察生成器事实 + AI 解读)
+python3 scripts/scripts/analysis/cli.py insight --months 6
+python3 scripts/scripts/analysis/cli.py anomaly --months 6
+
+# 看借贷 / 看报销 / 看分期 / 看退款(状态聚合)
+python3 scripts/scripts/analysis/cli.py debt_summary
+python3 scripts/scripts/analysis/cli.py reimburse_summary
+python3 scripts/scripts/analysis/cli.py installment_summary
+python3 scripts/scripts/analysis/cli.py refund_summary
+
+# 账户域(账户表 = goals.json accounts;HTML 渲染走 scripts/account/render.py)
+python3 scripts/account/cli.py add --name 招行卡 --type 银行卡
+python3 scripts/account/cli.py update --name 招行卡 --new-name 招行工资卡
+python3 scripts/account/cli.py update --name 花呗 --disable
+python3 scripts/account/cli.py transfer --amount 500 --from 支付宝 --to 招行卡
+python3 scripts/account/cli.py summary
 ```
 
 ### Step 5：回复用户
@@ -589,7 +852,7 @@ python3 scripts/scripts/analysis/cli.py stats
 > 所有查询/分析/统计类唤醒词命中后，AI **默认** 调用 `scripts/bill_inject.py` 生成可视化 HTML 交付给用户。
 > 文字答仅在用户**明确说**「不要 HTML」「给我文字版」「就告诉我数字」时才走。
 
-**支持 13 种查询类型（全部默认 HTML）：**
+**支持 25 种查询/分析类型（全部默认 HTML）：**
 
 | 类型 | CLI 子命令 | 适用场景 | bill_inject.py 调用 |
 |---|---|---|---|
@@ -600,10 +863,32 @@ python3 scripts/scripts/analysis/cli.py stats
 | 查待报销 | `reimburse` | #待报销 清单 | `bill_inject.py reimburse` |
 | 查分期 | `installment` | #分期 分期卡 | `bill_inject.py installment` |
 | 月度汇总 | `monthly` | 看月度分类排行 | `bill_inject.py monthly --month 2026-07` |
+| 年度汇总 | `yearly` | 看年度趋势 | `bill_inject.py yearly --year 2026` |
+| 本周简报 | `week` | 本周 vs 上周 | `bill_inject.py week` |
+| 收支总览 | `overview` | 看区间 4 KPI + 日均 | `bill_inject.py overview --from ... --to ...` |
+| 分类占比 | `category` | 看分类环形图(L1 聚合) | `bill_inject.py category --month 2026-07` |
+| 账户占比 | `account` | 看各账户花销 | `bill_inject.py account` |
+| 账本汇总 | `ledger` | 看各账本收支 | `bill_inject.py ledger` |
+| 收支结构 | `structure` | 看收入来源/支出去向 | `bill_inject.py structure` |
 | 周期对比 | `compare` | 本周 vs 上周 / 本月 vs 上月 | `bill_inject.py compare --period week` |
-| 分类明细 | `breakdown` | 看各类支出占比（SVG 环形图） | `bill_inject.py breakdown --from ... --to ...` |
-| 收支总览 | `overview` | 看月度 4 个 KPI | `bill_inject.py overview --month 2026-07` |
+| 双区间对比 | `range_compare` | 两段时间对比 | `bill_inject.py range_compare --from1 ... --to1 ... --from2 ... --to2 ...` |
+| 同比对比 | `yoy` | 今年 vs 去年同月 | `bill_inject.py yoy --month 2026-07` |
+| 分类对比 | `cat_compare` | 分类差异 TOP | `bill_inject.py cat_compare --from1 ... --to1 ... --from2 ... --to2 ...` |
+| 收支趋势 | `trend` | 逐月折线(支出/收入) | `bill_inject.py trend --months 12` |
+| 分类趋势 | `cat_trend` | 某分类逐月变化 | `bill_inject.py cat_trend --category 餐饮 --months 6` |
+| 大额排行 | `top` | 支出 TOP N | `bill_inject.py top --limit 10` |
+| 高频排行 | `top_freq` | 分类笔数 TOP | `bill_inject.py top_freq` |
+| 金额分布 | `distribution` | 直方图(5 区间) | `bill_inject.py distribution` |
 | 记账统计 | `stats` | 看总笔数 / 天数 | `bill_inject.py stats` |
+| 活跃度 | `activity` | 周几/时段分布 | `bill_inject.py activity` |
+| 消费洞察 | `insight` | AI 洞察(事实 + 解读) | `bill_inject.py insight --months 6` |
+| 异常检测 | `anomaly` | 突增月/暴涨分类 | `bill_inject.py anomaly --months 6` |
+| 借贷总览 | `debt_summary` | 借出/借入未还 + 对象 | `bill_inject.py debt_summary` |
+| 报销汇总 | `reimburse_summary` | 待报销 + 已到账 | `bill_inject.py reimburse_summary` |
+| 分期总览 | `installment_summary` | 进行中 + 历史分期 | `bill_inject.py installment_summary` |
+| 退款统计 | `refund_summary` | 退款总额/次数/分布 | `bill_inject.py refund_summary` |
+
+> **账户域例外**：账户类唤醒词（新增账户/改账户/账户转账/看账户汇总）不走 bill_inject，走 `scripts/account/render.py`（见「账户流程细则」），输出路径与 §12.A 一致。
 
 **调用流程（AI 必走）：**
 
@@ -611,8 +896,9 @@ python3 scripts/scripts/analysis/cli.py stats
 # 标准路径（自动调 CLI + 注入 HTML 模板 + 输出文件）
 python3 scripts/bill_inject.py summary
 python3 scripts/bill_inject.py monthly --month 2026-07
-python3 scripts/bill_inject.py breakdown --from 2026-07-01 --to 2026-07-31
-python3 scripts/bill_inject.py compare --period week
+python3 scripts/bill_inject.py category --month 2026-07
+python3 scripts/bill_inject.py range_compare --from1 2026-07-01 --to1 2026-07-31 --from2 2026-06-01 --to2 2026-06-30
+python3 scripts/bill_inject.py insight --months 6
 python3 scripts/bill_inject.py search "咖啡"
 ```
 
@@ -630,12 +916,13 @@ python3 scripts/bill_inject.py search "咖啡"
 
 **交付给用户**：用 `<media src="..." type="file" />` 把生成的 HTML 文件交付，用户双击在浏览器打开即可看到可视化效果。
 
-**模板特性（query_view.html）**：
+**模板特性（query_view.html / 分析/analysis_view.html）**：
 - 单文件离线运行（无 CDN / 无 chart.js 依赖）
 - Apple 视觉风格（圆角卡片 / 系统字体 / 蓝橙绿红配色）
 - 自适应桌面 + 平板 + 手机
 - 5 种状态：正常 / 空态 / 缺数据 / 错误 / 离线
-- SVG 环形图（breakdown 用）
+- 查询域：SVG 环形图（breakdown 用）
+- 分析域（templates/分析/analysis_view.html · 2026-08-09 实施）：SVG 环形/柱状/双线折线/直方 4 种图表，离线可用；25 场景全渲染器（汇总/结构/对比/趋势/金额/统计洞察/状态聚合）
 - 一键复制 ID 回 AI（每条记录含 ID）
 
 **目标域 HTML（goal/render.py · 2026-08-09 落地）：**
@@ -724,11 +1011,32 @@ python3 scripts/render_help.py --check
 | `reimburse` | 查待报销(#待报销) | （无） | **`--json`** |
 | `installment` | 查分期(#分期 聚合) | （无） | `--name`, **`--json`** |
 | `monthly` | 月度汇总 | `--month` | **`--json`** |
-| `compare` | 周期对比 | （无） | `--period` (week/month, 默认 week), **`--json`** |
 | `recent` | 最近N条 | （无） | `--limit` (默认 10), `--days`, `--sort`(amount_desc/amount_asc), **`--json`** |
-| `breakdown` | 分类明细 | （无） | `--from`, `--to`, **`--json`** |
-| `overview` | 收支总览 | （无） | `--month` (默认当月), **`--json`** |
+| `yearly` | 年度汇总 | （无） | `--year` (默认今年), **`--json`** |
+| `week` | 本周简报 | （无） | `--offset` (0=本周/1=上周), **`--json`** |
+| `overview` | 收支总览 | （无） | `--month` (默认当月) 或 `--from`+`--to` (区间), **`--json`** |
+| `category` | 分类占比(L1 聚合) | （无） | `--month` 或 `--from`+`--to`, `--account`, `--type`(expense/income), **`--json`** |
+| `account` | 账户占比 | （无） | `--month` 或 `--from`+`--to`, **`--json`** |
+| `ledger` | 账本汇总 | （无） | `--month` 或 `--from`+`--to`, **`--json`** |
+| `structure` | 收支结构(双环形) | （无） | `--month` 或 `--from`+`--to`, **`--json`** |
+| `compare` | 周期对比 | （无） | `--period` (week/month, 默认 week), **`--json`** |
+| `range_compare` | 双区间对比 | （无） | `--from1`+`--to1`+`--from2`+`--to2`(全必填), **`--json`** |
+| `yoy` | 同比对比 | （无） | `--month` (默认本月), **`--json`** |
+| `cat_compare` | 分类对比 | （无） | `--from1`+`--to1`+`--from2`+`--to2`(全必填), **`--json`** |
+| `trend` | 收支趋势 | （无） | `--months` (默认 12), **`--json`** |
+| `cat_trend` | 分类趋势 | （无） | `--category`, `--months` (默认 12), **`--json`** |
+| `top` | 大额排行 | （无） | `--limit` (默认 10), `--from`+`--to`, **`--json`** |
+| `top_freq` | 高频排行 | （无） | `--limit` (默认 10), `--from`+`--to`, **`--json`** |
+| `distribution` | 金额分布 | （无） | `--month` 或 `--from`+`--to`, `--type`(expense/income, 默认 expense), **`--json`** |
 | `stats` | 记账统计 | （无） | **`--json`** |
+| `activity` | 记账活跃度 | （无） | **`--json`** |
+| `insight` | AI 消费洞察 | （无） | `--months` (默认 6), `--top-n`, **`--json`** |
+| `anomaly` | 异常波动检测 | （无） | `--months` (默认 6), **`--json`** |
+| `debt_summary` | 借贷总览(#借出/#借入) | （无） | **`--json`** |
+| `reimburse_summary` | 报销汇总(#待报销) | （无） | **`--json`** |
+| `installment_summary` | 分期总览(#分期) | （无） | **`--json`** |
+| `refund_summary` | 退款统计(#退款) | （无） | **`--json`** |
+| `breakdown` | 分类明细(旧口径兼容) | （无） | `--from`, `--to`, **`--json`** |
 | `form` | 联动采集表单渲染(买东西联动/吃饭联动) | `purchase`/`meal`(位置参数) | `--amount`, `--item`/`--ate`, `--category`, `--category-hint`, `--account`, `--ledger`, `--time`, `--note`, `--currency`, `--out` |
 | `receipt` | 联动回执渲染(回执带联动按钮) | `purchase`/`meal` + `--id`(必需) | `--item`/`--ate`, `--out` |
 | `set-budget` | 设定月度预算(goal) | `--amount` | `--month`(默认本月), `--category`(不填=总预算), `--force`(覆盖), **`--json`** |
@@ -756,7 +1064,7 @@ python3 scripts/render_help.py --check
 
 ## 与其他工具的边界
 
-本 Skill 的 **5 层骨架**（数据层 `db.py` / 操作层 `analyze.py` / 规则层 `validators.py` / 接口层 `write|query|analysis/cli.py`(三域) / 文档层 `references/`+`templates/`）**不含** `config-cookie-accounting.ts`。
+本 Skill 的 **5 层骨架**（数据层 `db.py` / 操作层 `analyze.py` / 规则层 `validators.py` / 接口层 `write|query|analysis|account/cli.py`(四域) / 文档层 `references/`+`templates/`）**不含** `config-cookie-accounting.ts`。
 
 | 文件 | 归属 | 维护方 | 与本 Skill 的关系 |
 |------|------|--------|-------------------|

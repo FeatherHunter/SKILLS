@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>饼干记账 · 账户汇总</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --border: #e5e5ea;
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --blue: #007aff; --green: #34c759; --orange: #ff9500; --red: #ff3b30; --purple: #af52de;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --radius: 14px; --radius-sm: 10px;
+  }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh; padding: 0 0 80px;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Header */
+  .header { padding: 8px 0 24px; }
+  .eyebrow { font-size: 12px; color: var(--fg3); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  h1.title { font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+  .subtitle { color: var(--fg2); font-size: 15px; margin-top: 6px; }
+
+  /* Card / Section */
+  .card { background: var(--card); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title .count { font-size: 13px; font-weight: 500; color: var(--fg3); margin-left: auto; }
+  .empty { color: var(--fg3); font-size: 14px; text-align: center; padding: 24px 0; }
+
+  /* KPI Grid */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .kpi { background: var(--card); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+  .kpi .label { font-size: 12px; color: var(--fg2); margin-bottom: 6px; font-weight: 500; }
+  .kpi .value { font-size: 26px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kpi .value.compact { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+  .kpi .unit { font-size: 13px; color: var(--fg2); font-weight: 400; margin-left: 4px; }
+  .kpi.blue .value { color: var(--blue); }
+  .kpi.green .value { color: var(--green); }
+  .kpi.orange .value { color: var(--orange); }
+  .kpi.red .value { color: var(--red); }
+  .kpi.purple .value { color: var(--purple); }
+
+  /* Account cards */
+  .acct-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+  .acct-card { background: var(--card); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); border-left: 3px solid var(--blue); }
+  .acct-card.disabled { opacity: .45; border-left-color: var(--fg3); }
+  .acct-card.unregistered { border-left-color: var(--orange); }
+  .acct-card .head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .acct-card .name { font-size: 16px; font-weight: 700; }
+  .acct-card .type { font-size: 11.5px; color: var(--fg3); background: var(--bg); padding: 2px 8px; border-radius: 999px; }
+  .badge { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
+  .badge.off { background: rgba(0,0,0,.06); color: var(--fg2); }
+  .badge.new { background: rgba(255,149,0,.14); color: var(--orange); }
+  .acct-card .balance { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
+  .acct-card .balance.neg { color: var(--red); }
+  .acct-card .balance.pos { color: var(--green); }
+  .acct-card .rows { display: grid; grid-template-columns: 1fr 1fr; gap: 3px 12px; font-size: 12px; color: var(--fg2); }
+  .acct-card .rows b { font-variant-numeric: tabular-nums; color: var(--fg); font-weight: 600; }
+
+  /* Records list */
+  .records { display: flex; flex-direction: column; gap: 1px; background: var(--border); border-radius: var(--radius); overflow: hidden; }
+  .record { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; padding: 12px 16px; background: var(--card); align-items: center; }
+  .record .time { font-size: 12px; color: var(--fg2); font-variant-numeric: tabular-nums; }
+  .record .cat { font-size: 14px; font-weight: 600; color: var(--fg); }
+  .record .note { font-size: 12px; color: var(--fg3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .record .amt { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .record .amt.expense { color: var(--red); }
+  .record .amt.income { color: var(--green); }
+  .record .amt.transfer { color: var(--purple); }
+
+  .filter-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,122,255,.1); color: var(--blue); padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-right: 6px; margin-bottom: 4px; }
+
+  /* Footer */
+  .footer { text-align: center; color: var(--fg3); font-size: 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .footer code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--fg2); }
+
+  /* Error / Offline */
+  .error-card { background: rgba(255,59,48,.08); border: 1px solid rgba(255,59,48,.2); border-radius: var(--radius); padding: 24px; text-align: center; }
+  .error-card h3 { color: var(--red); margin-bottom: 8px; font-size: 18px; }
+  .error-card p { color: var(--fg2); font-size: 14px; }
+
+  .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin: 4px 0 16px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; border: 0; background: var(--blue); color: #fff; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .btn:hover { background: #0a63ce; }
+  .btn.ghost { background: #fff; color: var(--fg); border: 1px solid var(--border); }
+  .btn.ghost:hover { background: var(--bg); }
+
+  .sheet-mask { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 90; display: none; align-items: flex-end; justify-content: center; }
+  .sheet-mask.show { display: flex; }
+  .sheet { background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 10px 14px calc(14px + env(safe-area-inset-bottom,0)); box-shadow: 0 -8px 32px rgba(0,0,0,.12); }
+  .sheet-title { font-size: 15px; font-weight: 700; text-align: center; padding: 10px 0 4px; }
+  .sheet-sub { font-size: 12px; color: var(--fg3); text-align: center; padding-bottom: 10px; }
+  .sheet-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--bg); border: 0; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+  .sheet-item .f { font-weight: 700; font-size: 14px; min-width: 56px; }
+  .sheet-item .d { font-size: 11.5px; color: var(--fg3); }
+  .sheet-cancel { width: 100%; background: var(--bg); border: 0; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 600; color: var(--fg2); cursor: pointer; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom,0)); transform: translateX(-50%) scale(.9); opacity: 0; background: rgba(28,28,30,.94); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); color: #f0f0f0; border-radius: 14px; padding: 13px 14px 13px 16px; display: flex; align-items: flex-start; gap: 12px; max-width: 480px; min-width: 300px; box-shadow: 0 10px 32px rgba(0,0,0,.32); pointer-events: none; transition: opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index: 99; }
+  .toast.show { opacity: 1; transform: translateX(-50%) scale(1); pointer-events: auto; }
+  .toast-title { font-weight: 600; font-size: 12.5px; color: #fff; margin-bottom: 2px; }
+  .toast-detail { font-size: 11px; color: #c8c8cc; }
+  .toast-close { background: rgba(255,255,255,.10); color: #34c759; border: 0; border-radius: 8px; padding: 5px 9px; font-size: 10.5px; margin-left: 6px; cursor: pointer; flex-shrink: 0; }
+
+  .offline { background: #fff7e8; border: 1px solid #ffe3b3; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 14px; color: #b25b00; font-size: 13.5px; }
+
+  @media (max-width: 640px) {
+    .container { padding: 16px 12px; }
+    h1.title { font-size: 26px; }
+    .kpi .value { font-size: 22px; }
+    .record { grid-template-columns: 70px 1fr auto; gap: 8px; padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header" id="header"></header>
+  <main id="app"></main>
+  <div class="toolbar">
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn ghost" id="copyLogBtn">🛠 复制日志</button>
+  </div>
+  <footer class="footer" id="footer"></footer>
+</div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+
+<div class="sheet-mask" id="sheetMask">
+  <div class="sheet">
+    <div class="sheet-title">复制数据</div>
+    <div class="sheet-sub">选格式,点哪个复制哪个</div>
+    <button class="sheet-item" data-f="text"><span class="f">纯文本</span><span class="d">粘贴到聊天/笔记</span></button>
+    <button class="sheet-item" data-f="json"><span class="f">JSON</span><span class="d">粘贴给 AI 记账</span></button>
+    <button class="sheet-item" data-f="csv"><span class="f">CSV</span><span class="d">粘贴到 Excel 存档</span></button>
+    <button class="sheet-cancel" id="sheetCancel">取消</button>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+  <div class="toast-detail" id="toastDetail"></div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  const $ = (sel) => document.querySelector(sel);
+  const fmtMoney = (n) => (Math.round((n || 0) * 100) / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const escapeHTML = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const CURRENT_YEAR = new Date().getFullYear();
+  const timeShort = (t) => {
+    const s = t || '';
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+    if (!m) return s;
+    const [, y, mo, d, rest] = m;
+    const trim = rest ? ' ' + rest.trim() : '';
+    return (parseInt(y) !== CURRENT_YEAR) ? `${y}/${mo}/${d}${trim}` : `${mo}/${d}${trim}`;
+  };
+
+  function init() {
+    const raw = document.getElementById('payload').textContent;
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch (e) {
+      renderError('JSON 解析失败：' + e.message);
+      return;
+    }
+    if (!payload || payload.status === 'empty') {
+      renderError('数据未注入（payload 为空）');
+      return;
+    }
+    if (payload.status === 'error') {
+      renderError(payload.message || '查询失败', payload.data);
+      return;
+    }
+    const data = payload.data || {};
+    window._payloadData = data;
+
+    renderHeader(data.title || '账户汇总', data);
+    if (data.offline) {
+      $('#app').insertAdjacentHTML('afterbegin', '<div class="offline">⚠️ 离线态:展示本地缓存数据,可能过期</div>');
+    }
+    renderBody(data);
+    renderFooter(data);
+  }
+
+  function renderHeader(title, data) {
+    $('#header').innerHTML = `
+      <div class="eyebrow">饼干记账 · 账户汇总</div>
+      <h1 class="title">${escapeHTML(title)}</h1>
+      ${data.subtitle ? `<div class="subtitle">${escapeHTML(data.subtitle)}</div>` : ''}
+    `;
+  }
+
+  function renderFooter(data) {
+    const ts = data.generated_at || new Date().toLocaleString('zh-CN');
+    $('#footer').innerHTML = `
+      生成于 ${escapeHTML(ts)} · 场景 <code>账户汇总</code><br>
+      源数据: <code>scripts/account/cli.py summary --json</code>
+    `;
+  }
+
+  function renderError(msg, hint) {
+    $('#app').innerHTML = `
+      <div class="error-card">
+        <h3>⚠️ 出错了</h3>
+        <p>${escapeHTML(msg)}</p>
+        ${hint ? `<p style="margin-top:8px;font-size:12px;">${escapeHTML(JSON.stringify(hint))}</p>` : ''}
+      </div>
+    `;
+  }
+
+  function renderBody(data) {
+    const totals = data.totals || {};
+    const cards = data.accounts || [];
+    const flows = data.flows || [];
+
+    if (!cards.length) {
+      $('#app').innerHTML = '<div class="card empty">账户表为空 · 先用「新增账户」登记账户,或用「记支出/记收入」产生流水后回来看汇总</div>';
+      return;
+    }
+
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('总余额', fmtMoney(totals.balance), '元', (totals.balance || 0) >= 0 ? 'green' : 'red')}
+        ${kpiCard('总收入', fmtMoney(totals.income), '元', 'green')}
+        ${kpiCard('总支出', fmtMoney(totals.expense), '元', 'red')}
+        ${kpiCard('净额', fmtMoney(totals.net), '元', (totals.net || 0) >= 0 ? 'green' : 'red')}
+        ${kpiCard('转账', totals.transfer_count || 0, '笔 · ' + fmtMoney(totals.transfer_total) + ' 元', 'purple', 'compact')}
+      </div>
+
+      <div class="section-title" style="margin-top:18px;">各账户余额卡 <span class="count">${cards.length} 个账户</span></div>
+      <div class="acct-grid">
+        ${cards.map(acctCard).join('')}
+      </div>
+
+      ${flows.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="section-title">最近流水摘要 <span class="count">${flows.length} 笔</span></div>
+          <div class="records">
+            ${flows.map(f => {
+              const isTransfer = (f.category || '').indexOf('转账') === 0;
+              const cls = isTransfer ? 'transfer' : ((f.amount || 0) < 0 ? 'expense' : 'income');
+              const sign = (f.amount || 0) < 0 ? '-' : '+';
+              return `
+                <div class="record">
+                  <div class="time">${escapeHTML(timeShort(f.time))}</div>
+                  <div>
+                    <div class="cat">${escapeHTML(f.account)} · ${escapeHTML(f.category)}</div>
+                    ${f.note ? `<div class="note">${escapeHTML(f.note)}</div>` : ''}
+                  </div>
+                  <div class="amt ${cls}">${sign}${fmtMoney(Math.abs(f.amount || 0))}</div>
+                </div>`;
+            }).join('')}
+          </div>
+        </div>
+      ` : ''}
+    `;
+  }
+
+  function acctCard(a) {
+    const cls = a.disabled ? ' disabled' : (a.registered === false ? ' unregistered' : '');
+    const badges = [];
+    if (a.disabled) badges.push('<span class="badge off">已停用</span>');
+    if (a.registered === false) badges.push('<span class="badge new">未登记</span>');
+    const balCls = a.balance < 0 ? 'neg' : (a.balance > 0 ? 'pos' : '');
+    return `
+      <div class="acct-card${cls}">
+        <div class="head">
+          <span class="name">${escapeHTML(a.name)}</span>
+          ${a.type ? `<span class="type">${escapeHTML(a.type)}</span>` : ''}
+          ${badges.join('')}
+        </div>
+        <div class="balance ${balCls}">${fmtMoney(a.balance)} <span style="font-size:12px;color:var(--fg3);font-weight:500;">余额</span></div>
+        <div class="rows">
+          <div>收入 <b>${fmtMoney(a.income)}</b></div>
+          <div>支出 <b>${fmtMoney(a.expense)}</b></div>
+          <div>转入 <b>${fmtMoney(a.transfer_in)}</b></div>
+          <div>转出 <b>${fmtMoney(a.transfer_out)}</b></div>
+          <div>笔数 <b>${a.count || 0}</b></div>
+          <div>最近 <b>${a.last_time ? escapeHTML(timeShort(a.last_time)) : '—'}</b></div>
+        </div>
+      </div>`;
+  }
+
+  function kpiCard(label, value, unit, color, size) {
+    const sizeClass = (size === 'compact') ? 'compact' : '';
+    return `<div class="kpi ${color || ''}">
+      <div class="label">${escapeHTML(label)}</div>
+      <div class="value ${sizeClass}">${escapeHTML(value)}${unit ? `<span class="unit">${escapeHTML(unit)}</span>` : ''}</div>
+    </div>`;
+  }
+
+  // ── 模板能力接口(08 §4 · G4):复制数据弹层三选一 + 复制日志 + B1 toast ──
+  const TOAST_NEXT = { text: '粘贴到聊天/笔记保存', json: '粘贴给 AI 即可记账', csv: '粘贴到 Excel 存档', log: '发给开发者排障' };
+  let _toastTimer = null;
+
+  function showToast(fmt) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastFmt').textContent = (fmt === 'log') ? '日志' : fmt.toUpperCase();
+    document.getElementById('toastDetail').textContent = TOAST_NEXT[fmt] || '';
+    t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
+  }
+
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    done();
+  }
+
+  function doCopy(text, fmt) {
+    const done = () => showToast(fmt);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+
+  function pickPayload(d) {
+    const out = {};
+    for (const k in d) {
+      if (['title', 'subtitle', 'generated_at', 'meta'].includes(k)) continue;
+      out[k] = d[k];
+    }
+    return out;
+  }
+
+  function buildData5() {
+    const d = window._payloadData || {};
+    const m = d.meta || {};
+    return {
+      scene_id: m.scene_id || 'account_summary',
+      command_cn: m.command_cn || '账户汇总',
+      occurred_at: m.occurred_at || d.generated_at || '',
+      target: 'accounts',
+      payload: pickPayload(d),
+    };
+  }
+
+  function toCSV(d5) {
+    const p = d5.payload || {};
+    const arr = p.accounts || null;
+    if (Array.isArray(arr) && arr.length) {
+      const keys = Object.keys(arr[0]);
+      return [keys.join(','), ...arr.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
+    }
+    return Object.entries(p).map(([k, v]) => k + ',' + JSON.stringify(v ?? '')).join('\n');
+  }
+
+  function buildDataText(fmt) {
+    const d5 = buildData5();
+    if (fmt === 'json') return JSON.stringify(d5, null, 2);
+    if (fmt === 'text') {
+      return [
+        '场景: ' + d5.command_cn,
+        '时间: ' + d5.occurred_at,
+        '目标: ' + d5.target,
+        '数据: ' + JSON.stringify(d5.payload),
+      ].join('\n');
+    }
+    return toCSV(d5);
+  }
+
+  function buildLogText() {
+    const d = window._payloadData || {};
+    const m = d.meta || {};
+    const lines = [];
+    lines.push('① 场景标识');
+    lines.push('  command_cn: ' + (m.command_cn || '账户汇总'));
+    lines.push('  唤醒词: ' + (m.wake_word || '看账户汇总'));
+    lines.push('  场景名: ' + (d.title || '账户汇总') + ' (scene_id=' + (m.scene_id || 'account_summary') + ')');
+    lines.push('');
+    lines.push('② AI 思考链');
+    lines.push('  ' + (m.chain || '(未注入)'));
+    lines.push('');
+    lines.push('③ 底层数据结构');
+    lines.push('  payload: ' + JSON.stringify(pickPayload(d)));
+    lines.push('  DB 操作: SELECT bills(只读) + READ goals.json(账户表)');
+    lines.push('');
+    lines.push('④ 调用链');
+    lines.push('  渲染脚本: ' + (m.render_cmd || '(未知)'));
+    lines.push('');
+    lines.push('⑤ 时间戳 + 版本');
+    lines.push('  本地时间: ' + (m.occurred_at || d.generated_at || '(未知)'));
+    lines.push('  skill 版本: ' + (m.version || '(未知)'));
+    lines.push('');
+    lines.push('⑥ 异常信息');
+    lines.push('  无');
+    return lines.join('\n');
+  }
+
+  function bindCopyActions() {
+    const sheetMask = document.getElementById('sheetMask');
+    const closeSheet = () => sheetMask.classList.remove('show');
+
+    document.getElementById('copyDataBtn').onclick = () => sheetMask.classList.add('show');
+    document.getElementById('sheetCancel').onclick = closeSheet;
+    sheetMask.addEventListener('click', (e) => { if (e.target === sheetMask) closeSheet(); });
+    sheetMask.querySelectorAll('.sheet-item').forEach((b) => {
+      b.onclick = () => {
+        const f = b.getAttribute('data-f');
+        closeSheet();
+        doCopy(buildDataText(f), f);
+      };
+    });
+
+    document.getElementById('copyLogBtn').onclick = () => doCopy(buildLogText(), 'log');
+    document.getElementById('toastClose').onclick = () => {
+      document.getElementById('toast').classList.remove('show');
+      clearTimeout(_toastTimer);
+    };
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    bindCopyActions();
+    init();
+  });
+})();
+</script>
+</body>
+</html>

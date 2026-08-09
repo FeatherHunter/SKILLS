@@ -131,7 +131,7 @@ def build_live_receipt(kg, note='', target_date=None):
     g = cur.fetchone()
     conn.close()
 
-    dl = weight.delta_last(receipt['date']) if receipt['date'] else None
+    dl = weight.delta_last(receipt['date'], receipt['time']) if receipt['date'] else None
     dl = round(receipt['kg'] - dl, 1) if dl is not None else None
     goal = g[0] if g and g[0] else None
     goal_diff = round(receipt['kg'] - goal, 1) if goal else None

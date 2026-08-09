@@ -276,16 +276,27 @@ def get_weight_goal_value():
     return g[0] if g and g[0] else None
 
 
-def delta_last(target_date=None):
-    """距上次体重(kg):目标记录之前的最后一条(或目标当天首条之前)。无上次 → None"""
+def delta_last(target_date=None, exclude_time=None):
+    """距上次体重(kg):目标记录之前的最后一条(同天更早记录优先;无则前一天)。无上次 → None
+
+    2026-08-09 #43 验收修复:原 SQL 用 time < 当天最早,同一天再记时会把前一天当"上次"、
+    与卡片相邻记录口径不一致(如 -0.3 vs -0.2)。加 exclude_time 排除目标记录自身。
+    """
     d = target_date or date.today().isoformat()
     conn = _get_db()
     c = conn.cursor()
-    c.execute('''
-        SELECT weight_kg FROM weight_log
-        WHERE (date < ?) OR (date = ? AND time < (SELECT MIN(time) FROM weight_log WHERE date = ?))
-        ORDER BY date DESC, time DESC LIMIT 1
-    ''', (d, d, d))
+    if exclude_time:
+        c.execute('''
+            SELECT weight_kg FROM weight_log
+            WHERE date < ? OR (date = ? AND time < ?)
+            ORDER BY date DESC, time DESC LIMIT 1
+        ''', (d, d, exclude_time))
+    else:
+        c.execute('''
+            SELECT weight_kg FROM weight_log
+            WHERE date < ? OR (date = ? AND time < (SELECT MIN(time) FROM weight_log WHERE date = ?))
+            ORDER BY date DESC, time DESC LIMIT 1
+        ''', (d, d, d))
     row = c.fetchone()
     conn.close()
     return row[0] if row else None

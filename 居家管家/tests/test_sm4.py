@@ -12,7 +12,7 @@ import os
 import shutil
 import subprocess
 import sys
-from datetime import date, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -43,7 +43,8 @@ def tmp_db(tmp_path, monkeypatch):
 def _seed_item(conn, iid, name, cat_id, location, price=None, status="在家",
                created_days_ago=3, last_acc_days_ago=None, exp_days=None, qty=1):
     """直接 SQL 种子一个物品(绕过 add_item 的标签硬约束)"""
-    today = date.today()
+    # 用 UTC 日期对齐 SQL 的 date('now')/julianday('now') 口径(本地凌晨会 ±1 漂移)
+    today = datetime.now(timezone.utc).date()
     created = (today - timedelta(days=created_days_ago)).isoformat() + " 09:00:00"
     last_acc = ((today - timedelta(days=last_acc_days_ago)).isoformat() + " 09:00:00"
                 if last_acc_days_ago is not None else None)

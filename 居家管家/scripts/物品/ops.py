@@ -1010,7 +1010,8 @@ def photos_payload(item_id):
             return None
         photos = ev.get_photos(conn, item_id)
         for p in photos:
-            p["photo_base64"] = _get_photo_base64(p["file_path"])
+            # 照片档案页 = 「查看大图」场景,保留原图(full=True)
+            p["photo_base64"] = _get_photo_base64(p["file_path"], full=True)
             p["full_path"] = str(get_photo_full_path(p["file_path"])) if p["file_path"] else None
         return {"item": _item_card(cur, conn), "photos": photos}
     finally:

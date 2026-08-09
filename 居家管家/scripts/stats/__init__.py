@@ -5,10 +5,8 @@
 # 数据基础:items / item_locations / categories / item_tags(现状 schema);
 # inventory_records 为 D1 新表,本域按 D1 约定结构查询,表不存在时优雅空态。
 
-import base64
 from datetime import datetime
 
-from home_manager.db import PHOTOS_DIR
 from home_manager.tag_ops import get_tags
 
 SKILL_VERSION = "居家管家 v2.0 (SM4 T5)"
@@ -29,18 +27,14 @@ def build_meta(scene_id, wake_word, command_cn, render_cmd, chain="", source="it
     }
 
 
-def photo_b64(photo):
-    """items.photo 相对路径 → base64(无图/读失败 → None)"""
-    if not photo:
-        return None
-    p = PHOTOS_DIR / photo
-    if not p.exists():
-        return None
-    try:
-        with open(p, "rb") as f:
-            return base64.b64encode(f.read()).decode("ascii")
-    except Exception:
-        return None
+def photo_b64(photo, full=False):
+    """items.photo 相对路径 → base64 缩略图(无图/读失败 → None)。
+
+    复用 home_manager.item_ops._get_photo_base64 的缩略图逻辑(issue #199:
+    统物品/闲置/过期等 stats 页面不再内嵌手机原图,避免 HTML 体积爆炸)。
+    """
+    from home_manager.item_ops import _get_photo_base64
+    return _get_photo_base64(photo, full=full)
 
 
 def _active_condition(alias="items"):

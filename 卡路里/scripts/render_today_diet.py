@@ -157,6 +157,31 @@ def build_data(day, mode='diet'):
 from diet import infer_meal_type  # noqa: E402
 
 
+def diet_filename_label(day, today=None):
+    """按查询日期生成文件名标签(issue #53 · 2026-08-09)
+
+    规则:
+      - day == today      → '今日饮食总览'
+      - day == today-1    → '昨日饮食总览'
+      - 其他历史日期       → '饮食总览_<YYYYMMDD>'(按日期归一,一眼可辨)
+
+    Args:
+        day: 查询日期 'YYYY-MM-DD'(或 'YYYYMMDD',自动归一)
+        today: 参考今天(默认 date.today();测试可注入)
+
+    Returns:
+        str: 文件名标签(不含 TS 后缀)
+    """
+    today = today or date.today()
+    d = day.replace('-', '')
+    t = today.isoformat().replace('-', '')
+    if d == t:
+        return '今日饮食总览'
+    if d == (today - timedelta(days=1)).isoformat().replace('-', ''):
+        return '昨日饮食总览'
+    return f'饮食总览_{d}'
+
+
 def render_html(data):
     template = TEMPLATE_PATH.read_text(encoding='utf-8')
     if template.count('<!--INJECT-DATA-->') != 1:
@@ -192,7 +217,8 @@ def main():
     if args.output:
         out_path = Path(args.output)
     else:
-        out_path = html_path(SKILL_DIR, '今日饮食总览')
+        # issue #53(2026-08-09):文件名随查询日期动态,不再写死「今日饮食总览」
+        out_path = html_path(SKILL_DIR, diet_filename_label(day))
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
 

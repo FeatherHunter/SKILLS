@@ -10,7 +10,7 @@ import os
 import sqlite3
 import subprocess
 import sys
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -246,7 +246,8 @@ def test_express_view_lists_delivery_items(ex_db):
 
 
 def test_express_view_waits_days(ex_db):
-    created = (date.today() - timedelta(days=10)).isoformat()
+    # UTC 日期对齐 SQL 的 julianday('now') 口径(本地凌晨会 ±1 漂移)
+    created = (datetime.now(timezone.utc).date() - timedelta(days=10)).isoformat()
     _seed_item(ex_db, "旧快递", qty=1, status="快递中", created_at=created)
     result = ops.express_view(ex_db, timeout_days=7)
     assert result["items"][0]["days"] >= 10

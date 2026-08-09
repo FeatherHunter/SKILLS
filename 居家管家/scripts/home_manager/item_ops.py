@@ -775,20 +775,56 @@ def item_detail(item_id):
 
 
 
-def _get_photo_base64(photo_relative_path):
-    """读取照片文件并返回 base64 编码字符串，失败返回 None"""
+def _get_photo_base64(photo_relative_path, max_width=400, quality=70, full=False):
+    """读取照片文件并返回 base64 编码字符串，失败返回 None。
+
+    - 默认生成缩略图(max_width 宽、JPEG quality)再编码 —— 全量页面(照片墙/统物品/
+      筛选浏览/搬家盘点/衣橱分析等)共用此函数,原图内嵌会导致 HTML 体积爆炸
+      (issue #199: 86MB~210MB)。缩略图单张约 5~15KB,页面可压到 1~2MB。
+    - full=True 时返回原图 base64(供照片档案等「查看大图」场景)。
+    - PIL 不可用或处理失败时 fallback 原图 base64(功能不降级,仅体积回退)。
+    """
     if not photo_relative_path:
         return None
     full_path = get_photo_full_path(photo_relative_path)
     if not full_path or not full_path.exists():
         return None
-    try:
+    import base64
+
+    def _raw_b64():
         with open(full_path, "rb") as f:
-            data = f.read()
-        import base64
-        return base64.b64encode(data).decode("ascii")
+            return base64.b64encode(f.read()).decode("ascii")
+
+    if full:
+        try:
+            return _raw_b64()
+        except Exception:
+            return None
+    try:
+        from io import BytesIO
+        from PIL import Image, ImageOps
+        with Image.open(full_path) as im:
+            # 手机原图常带 EXIF 方向,先摆正再缩略
+            im = ImageOps.exif_transpose(im)
+            # 统一转 RGB(JPEG 无透明通道;RGBA 合成白底防黑底)
+            if im.mode in ("RGBA", "LA") or (im.mode == "P" and "transparency" in im.info):
+                rgba = im.convert("RGBA")
+                bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+                im = Image.alpha_composite(bg, rgba).convert("RGB")
+            elif im.mode != "RGB":
+                im = im.convert("RGB")
+            if im.width > max_width:
+                new_h = max(1, round(im.height * max_width / im.width))
+                im = im.resize((max_width, new_h), Image.LANCZOS)
+            buf = BytesIO()
+            im.save(buf, format="JPEG", quality=quality, optimize=True)
+        return base64.b64encode(buf.getvalue()).decode("ascii")
     except Exception:
-        return None
+        # PIL 缺失 / 非图片文件 / 处理异常 → 原图兜底
+        try:
+            return _raw_b64()
+        except Exception:
+            return None
 
 
 def _item_to_dict(row, conn):

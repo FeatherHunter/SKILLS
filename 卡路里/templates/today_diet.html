@@ -219,14 +219,18 @@ function doCopyText(txt, btn, okMsg) {
 
   // #44 审查:标题按日期动态——今天=今日饮食,历史日期=「M月D日 饮食」
   const h1 = document.querySelector('h1');
+  let h1text;
   if (mode === 'nutrition') {
-    h1.textContent = '🥗 今日营养';
+    h1text = '🥗 今日营养';
   } else if (meta.date === meta.today) {
-    h1.textContent = '🍽️ 今日饮食';
+    h1text = '🍽️ 今日饮食';
   } else {
     const parts = meta.date.split('-');
-    h1.textContent = `🍽️ ${Number(parts[1])}月${Number(parts[2])}日 饮食`;
+    h1text = `🍽️ ${Number(parts[1])}月${Number(parts[2])}日 饮食`;
   }
+  h1.textContent = h1text;
+  // issue #53(2026-08-09):<title> 与 h1/文件名口径一致(今天/昨天/历史日期)
+  document.title = `卡路里 · ${h1text.replace(/\s/g, ' ')} ${meta.date}`;
 
   // #44 审查:nutrition 视角分离——隐藏 餐次进度/今日明细,只留 4 营养 KPI + 配比
   if (mode === 'nutrition') {

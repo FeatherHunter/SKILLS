@@ -5,7 +5,8 @@
 - 域模块 handler 签名:handler(args: list[str])
 - 未命中命令返回 False,不打断现有 if/elif 分发(现有命令不受影响)
 - import 失败的模块仅告警不中断;同名命令先到先得(按文件名排序)
-- 真实 scripts/ 目录当前无域模块 → 注册表为空(现有 49 命令分发不受扰动)
+- 真实 scripts/ 目录现有域模块 batch_scenarios.py(实施 T4)→ 注册表含 batch-add;
+  既有 49 命令分发不受扰动(域命令只走 else 钩子)
 """
 import sys
 from pathlib import Path
@@ -55,9 +56,17 @@ def test_discover_skips_underscore_and_self(tmp_path):
     assert "dom-hello" not in registry
 
 
-def test_discover_real_scripts_dir_is_empty_now():
-    """当前真实 scripts/ 无域模块 → 注册表空,证明现有 49 命令分发未被任何域命令扰动"""
-    assert schedule_cli.discover_domain_commands(SCRIPTS_DIR) == {}
+def test_discover_real_scripts_dir_has_batch_add():
+    """真实 scripts/ 已有域模块 batch_scenarios.py(T4) → 注册表含 batch-add;
+    并行 session(T5-T7)可能追加其他域命令,故只断言 batch-add 必在。
+    """
+    old = sys.modules.pop("batch_scenarios", None)
+    try:
+        registry = schedule_cli.discover_domain_commands(SCRIPTS_DIR)
+    finally:
+        if old is not None:
+            sys.modules["batch_scenarios"] = old
+    assert "batch-add" in registry
 
 
 def test_discover_ignores_broken_module(tmp_path):

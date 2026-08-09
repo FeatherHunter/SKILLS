@@ -353,13 +353,17 @@ def add_record_full(date, time_start, time_end, duration_minutes, activity, cate
     category 必须通过白名单校验(2026-07-22 重构后强制)
     """
     # 字段完整性校验
+    # source_timestamps / analysis_reasoning 为可选审计字段（空串合法，实施 T4 对齐
+    # R2 batch-add 设计「缺省填空串」；单条 add 路径在 CLI 层仍强制必填）
     required_fields = {
         'date': date, 'time_start': time_start, 'time_end': time_end,
         'duration_minutes': duration_minutes, 'activity': activity,
         'category': category, 'source_contents': source_contents,
         'source_timestamps': source_timestamps, 'analysis_reasoning': analysis_reasoning
     }
-    missing = [k for k, v in required_fields.items() if v is None or v == '']
+    _EMPTY_OK = {'source_timestamps', 'analysis_reasoning'}
+    missing = [k for k, v in required_fields.items()
+               if v is None or (v == '' and k not in _EMPTY_OK)]
     if missing:
         raise ValueError(f"缺少必填字段: {', '.join(missing)}")
 

@@ -1,0 +1,14 @@
+# 作息管家 · 场景片段：批量导入（实施 T4 · 由 update_scenarios.py 合并进 references/scenarios.yaml）
+# 字段契约（§07 §2.2）：wake_word / scenario_id / scenario_title / dimensions / prompt / status / result
+# 批量导入 → #0-json 家族（G2-2 独立场景 · G2-3 与 record_add_json 同一命令家族衔接；精确替换关系归 T8）
+
+- wake_word: '#0 记作息'
+  scenario_id: batch_add
+  scenario_title: 批量导入作息（JSON 批量写入）
+  dimensions:
+    input: JSON 文件路径
+    date: 目标日期（缺省取当日）
+    mode: 一次性批量写入（无唯一键，不幂等）
+  prompt: 请帮我批量导入这些作息数据（从 JSON 文件）
+  status: ''
+  result: 逐条校验复用 add 链路（batch-add 命令）后写入，单条失败不打断，返回 ok/partial JSON 回执；重复执行会重复插入

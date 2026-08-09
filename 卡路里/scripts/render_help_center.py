@@ -53,7 +53,7 @@ CATEGORIES_V3 = [
     ('🎯', '目标管理',   'goal'),
     ('🧬', '身体细节',   'body_detail'),
     ('📸', '身材照片',   'body_photo'),
-    ('🛠', '基础信息',   'profile'),
+    ('⚙️', '基础信息',   'profile'),   # 2026-08-09 issue #47:🛠(U+1F6E0 ZWJ 组合)换 ⚙️,与其他单字符 emoji 宽度一致
     ('📊', '分析',       'analysis'),
     ('🔗', '技能协同',   'cross_skill'),
 ]

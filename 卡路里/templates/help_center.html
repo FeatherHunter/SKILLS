@@ -117,6 +117,14 @@ body {
   background: #fafbfc;
   min-height: 36px;
 }
+/* issue #47(2026-08-09):icon 固定占位宽度,保证各分类「文字起点」垂直对齐
+   (🛠 ZWJ 组合 emoji 宽度与其他单字符不一致曾导致「基础信息」左偏) */
+.cat-block > summary > span:first-child {
+  display: inline-block;
+  width: 1.6em;
+  text-align: center;
+  flex-shrink: 0;
+}
 .cat-block > summary::before {
   content: '▸'; font-size: 10px; color: var(--sub);
   transition: transform .12s;

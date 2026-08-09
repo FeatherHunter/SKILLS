@@ -348,11 +348,13 @@
       const v = old_record[k];
       if (v === null || v === undefined || v === '' || v === 0) return;
       const label = FIELD_LABELS[k] || k;
+      // 2026-08-09 #43 验收用户拍板:删除后不再显示「已删除 —」标记(重复冗余),
+      // 只保留删除前快照旧值;箭头占位保持行结构对齐
       diffList.insertAdjacentHTML('beforeend',
         `<div class="diff-row">` +
         `<div><div class="diff-label">${label}</div><div class="diff-old">${fmtVal(k, v)}</div></div>` +
-        `<div class="diff-arrow">→</div>` +
-        `<div><div class="diff-label">已删除</div><div class="diff-new">—</div></div>` +
+        `<div class="diff-arrow" style="visibility:hidden">→</div>` +
+        `<div></div>` +
         `</div>`);
     });
     if (diffList.children.length === 0) {
@@ -381,8 +383,8 @@
     }
   }
 
-  // context 卡(今日累计)
-  if (context && context.totals) {
+  // context 卡(今日累计;删除场景不显示 · 2026-08-09 #43 用户拍板:已删除不再展示被删记录绿区)
+  if (context && context.totals && op !== 'delete') {
     const ctxList = document.getElementById('ctxList');
     context.totals.forEach(t => {
       const pct = t.target ? `<span class="pct">/ ${t.target} (${Math.round(t.value / t.target * 100)}%)</span>` : '';

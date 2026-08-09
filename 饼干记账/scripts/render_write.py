@@ -36,6 +36,7 @@ TEMPLATE = SKILL_DIR / "templates" / "写入" / "expense_form.html"
 BATCH_TEMPLATE = SKILL_DIR / "templates" / "写入" / "batch_confirm.html"
 FLOW_TEMPLATE = SKILL_DIR / "templates" / "写入" / "flow_confirm.html"
 INSTALLMENT_TEMPLATE = SKILL_DIR / "templates" / "写入" / "installment_confirm.html"
+UPDATE_TEMPLATE = SKILL_DIR / "templates" / "写入" / "update_confirm.html"
 SKILL_VERSION = "2.0"
 
 FORM_TYPES = {
@@ -423,12 +424,66 @@ def build_installment_payload(name: str, total: str, periods: int, start_date: s
     }
 
 
+def build_update_payload(record_id: int, new_fields: dict) -> dict:
+    """构建改记录 diff 确认 payload
+    数据侧:查原记录 + 计算 diff(纯查询);AI 传 id + 新字段
+    """
+    from db import get_by_id
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    orig = get_by_id(record_id)
+    if not orig:
+        raise ValueError(f"ID={record_id} 不存在或已撤销")
+
+    changes = []
+    for k, v in new_fields.items():
+        if v is None:
+            continue
+        old_val = orig.get(k, "")
+        if isinstance(old_val, float):
+            old_disp = f"{old_val:.2f}"
+        else:
+            old_disp = str(old_val or "")
+        new_disp = f"{float(v):.2f}" if k == "amount" and isinstance(v, (int, float)) else str(v)
+        if old_disp != new_disp:
+            changes.append({"field": k, "old": old_disp, "new": new_disp})
+    if not changes:
+        raise ValueError("没有实际变更的字段(原值 = 新值)")
+
+    return {
+        "status": "ok",
+        "data": {
+            "title": "修改已有记录",
+            "generated_at": now,
+            "meta": {
+                "scene_id": "write_update", "wake_word": "改记录",
+                "command_cn": "改记录 确认", "occurred_at": now,
+                "render_cmd": f"render_write.py update --id {record_id}",
+                "version": SKILL_VERSION,
+            },
+            "form": {
+                "type": "update",
+                "original": {
+                    "id": orig["id"], "time": str(orig.get("time") or ""),
+                    "category": str(orig.get("category") or ""),
+                    "amount": f"{float(orig.get('amount') or 0):.2f}",
+                    "account": str(orig.get("account") or ""),
+                    "ledger": str(orig.get("ledger") or ""),
+                    "note": str(orig.get("note") or ""),
+                },
+                "changes": changes,
+            },
+        },
+        "message": "改记录确认",
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="饼干记账 · 写入域采集表单渲染")
     parser.add_argument("form_type", choices=list(FORM_TYPES.keys()) + ["batch", "refund", "reimburse_done",
-                        "lend", "borrow", "collect", "payback", "installment"],
-                        help="expense / income / photo / reimburse / batch / refund / reimburse_done / lend / borrow / collect / payback / installment")
+                        "lend", "borrow", "collect", "payback", "installment", "update"],
+                        help="expense / income / photo / reimburse / batch / refund / reimburse_done / lend / borrow / collect / payback / installment / update")
     parser.add_argument("--amount", default=None, help="金额")
+    parser.add_argument("--id", type=int, default=None, help="改记录:目标 ID")
     parser.add_argument("--name", default=None, help="分期名目")
     parser.add_argument("--total", default=None, help="分期总价")
     parser.add_argument("--periods", type=int, default=None, help="分期期数")
@@ -450,6 +505,23 @@ def main():
     args = parser.parse_args()
 
     records = _load_history()
+
+    # ── 改记录(update) ──
+    if args.form_type == "update":
+        if not args.id:
+            print("✗ update 需要 --id", file=sys.stderr)
+            sys.exit(1)
+        new_fields = {k: getattr(args, k, None) for k in
+                      ("category", "amount", "note", "account", "ledger", "time", "currency")}
+        try:
+            payload = build_update_payload(args.id, new_fields)
+        except ValueError as e:
+            print(f"✗ {e}", file=sys.stderr)
+            sys.exit(1)
+        template_path = UPDATE_TEMPLATE
+        _write_html(payload, template_path, "改记录确认", args.out)
+        print(f"  diff: {len(payload['data']['form']['changes'])} 项")
+        return 0
 
     # ── 记分期(installment) ──
     if args.form_type == "installment":

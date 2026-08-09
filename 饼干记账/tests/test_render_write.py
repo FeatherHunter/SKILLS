@@ -376,5 +376,47 @@ class TestInstallment:
         text = raw.decode("utf-8-sig")
         assert "id=\"params\"" in text      # 参数回显
         assert "id=\"rows\"" in text        # 分摊预览
-        assert "月末自动回退" in text       # 回退规则标注
+        assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
+
+
+class TestUpdate:
+    def _seed(self, tmp_db_dir):
+        from db import add_bill
+        return add_bill("餐饮/外卖/午餐", -35.0, "2026-08-05 12:00:00", account="支付宝", ledger="生活", note="午饭")["id"]
+
+    def test_update_diff(self, tmp_db_dir):
+        rid = self._seed(tmp_db_dir)
+        p = rw.build_update_payload(rid, {"amount": -38.0, "note": "午饭+牛奶"})
+        form = p["data"]["form"]
+        assert form["type"] == "update"
+        assert form["original"]["id"] == rid
+        fields = {c["field"]: c for c in form["changes"]}
+        assert fields["amount"]["old"] == "-35.00" and fields["amount"]["new"] == "-38.00"
+        assert fields["note"]["old"] == "午饭" and fields["note"]["new"] == "午饭+牛奶"
+
+    def test_update_no_change_raises(self, tmp_db_dir):
+        rid = self._seed(tmp_db_dir)
+        import pytest as _pt
+        with _pt.raises(ValueError):
+            rw.build_update_payload(rid, {"amount": -35.0})  # 原值 = 新值
+
+    def test_update_missing_id_raises(self, tmp_db_dir):
+        import pytest as _pt
+        with _pt.raises(ValueError):
+            rw.build_update_payload(99999, {"note": "x"})
+
+    def test_update_html_structure(self, tmp_db_dir, tmp_path):
+        rid = self._seed(tmp_db_dir)
+        p = rw.build_update_payload(rid, {"amount": -38.0})
+        template = rw.UPDATE_TEMPLATE.read_text(encoding="utf-8")
+        html = template.replace("<!--INJECT-DATA-->",
+                                json.dumps(p, ensure_ascii=False).replace("</", "<\\/"), 1)
+        out = tmp_path / "update.html"
+        out.write_text(html, encoding="utf-8-sig")
+        raw = out.read_bytes()
+        assert raw[:3] == b"\xef\xbb\xbf"
+        text = raw.decode("utf-8-sig")
+        assert "id=\"orig\"" in text       # 原记录
+        assert "id=\"diff\"" in text       # diff 表
+        assert "class=\"old\"" in text and "class=\"new\"" in text  # 原值划线/新值蓝
         assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text

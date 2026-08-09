@@ -21,6 +21,7 @@
 - 追踪某道菜做了多少次
 - 查看平均评分
 - 复盘改进
+- 全局画像：做过几道菜 / 总次数 / 最爱(均分最高+做得最多) / 最近吃了啥 / 还没做过的菜(hist-4,T10)
 
 **遵循规范**：SKILL.md 中的"AI使用规范"和"字段推测规则"。
 
@@ -74,6 +75,40 @@ AI：执行命令：
     最低评分：4.0分（2026-05-10）
 ```
 
+### 查看统计（全局画像 · 不带菜名）
+
+```
+用户：帮我看看我最近的厨艺整体情况
+AI：执行命令：
+    python scripts/history_manager.py global-stats --json
+
+    📜 私家大厨 · 全局统计(整体画像):
+      做过几道菜:2 / 总次数:3
+      最爱·均分最高:宫保虾球(4.75 分,做了 2 次)
+      最爱·做得最多:宫保虾球(做了 2 次)
+      最近吃了啥: 宫保虾球(2026-08-03) → 酸菜鱼(2026-08-02)
+      还没做过的菜:红烧肉
+```
+
+> 一次查询即得(单 SQL 聚合 recipes + recipe_history)。渲染 HTML: `python scripts/render_历史.py global`
+> 带菜名则走单菜统计(hist-3);不带菜名走全局画像(hist-4)。
+
+### 记录做菜（回执 + 撤销）
+
+```
+用户：今天做了宫保虾球，评分4.5，反馈是虾很Q弹
+AI：执行命令：
+    python scripts/history_manager.py add 宫保虾球 --json
+       --cook_date 2026-05-15 --rating 4.5 --feedback "虾很Q弹"
+
+    (json 返回 history_id)
+AI：渲染回执 HTML：
+    python scripts/render_历史.py receipt <payload.json>
+    (成功=结果+diff+撤销按钮;失败=原因+重试按钮)
+```
+
+> 撤销: `python scripts/history_manager.py delete <history_id>`(末条记录删除后食谱状态回滚「未做」)
+
 ### 更新记录
 
 ```
@@ -103,6 +138,17 @@ python scripts/history_manager.py add <recipe_id> \
 
 # 记录做菜（简单用法，默认今天，默认无反馈）
 python scripts/history_manager.py add <recipe_id> --rating 4.5
+
+# 全局画像（hist-4 · 不带菜名 · 一次查询即得）
+python scripts/history_manager.py global-stats
+python scripts/history_manager.py global-stats --json
+
+# 撤销记录（回执反悔）
+python scripts/history_manager.py delete <history_id>
+
+# 渲染（T10）
+python scripts/render_历史.py global
+python scripts/render_历史.py receipt <payload.json>
 
 # 查看历史
 python scripts/history_manager.py list <recipe_id>

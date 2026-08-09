@@ -685,16 +685,32 @@ def search(args):
 
 
 def search_as_dict(keyword: str) -> list:
-    """search 的 JSON 版本(L3-polish)"""
+    """search 的 JSON 版本(L3-polish)
+    G4 检索契约 7 字段: id/name/difficulty/total_time_minutes/status/avg_rating/tags
+    (T2 实施: LEFT JOIN recipe_history AVG + 口味/饮食标签聚合)"""
     rows = query("""
-        SELECT DISTINCT r.id, r.name, r.difficulty, r.total_time_minutes, r.status
+        SELECT DISTINCT
+            r.id, r.name, r.difficulty, r.total_time_minutes, r.status,
+            ROUND(AVG(rh.rating), 1) AS avg_rating,
+            GROUP_CONCAT(DISTINCT tags.tag_name) AS tags
         FROM recipes r
         LEFT JOIN ingredients i ON r.id = i.recipe_id
+        LEFT JOIN recipe_history rh ON r.id = rh.recipe_id
+        LEFT JOIN (
+            SELECT recipe_id, tag_name FROM (
+                SELECT recipe_id, flavor AS tag_name FROM recipe_flavors
+                UNION ALL
+                SELECT recipe_id, tag AS tag_name FROM recipe_diet_tags
+            )
+        ) tags ON r.id = tags.recipe_id
         WHERE (r.name LIKE ? OR i.name LIKE ?)
         AND r.status != '已废弃'
+        GROUP BY r.id, r.name, r.difficulty, r.total_time_minutes, r.status
         ORDER BY r.name
     """, (f"%{keyword}%", f"%{keyword}%"))
     rows = [dict(r) for r in rows]
+    for row in rows:
+        row["tags"] = (row.get("tags") or "").split(",") if row.get("tags") else []
     return rows
 
 def update(args):

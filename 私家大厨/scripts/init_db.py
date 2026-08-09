@@ -257,6 +257,7 @@ def init_db():
     
     # ========== 表13：recipe_history（烹饪历史）==========
     # L1-A: 3 业务字段 NOT NULL
+    # G5 决策(2026-08-08): 加 photo 可空列(作品照片,无照片=NULL 不造假值)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS recipe_history (
             id TEXT PRIMARY KEY,
@@ -265,12 +266,22 @@ def init_db():
             cook_sequence INTEGER NOT NULL,
             rating REAL NOT NULL,
             feedback TEXT NOT NULL,
+            photo TEXT,
             FOREIGN KEY (recipe_id) REFERENCES recipes(id) ON DELETE CASCADE
         )
     """)
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_recipe_history_recipe ON recipe_history(recipe_id)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_recipe_history_date ON recipe_history(cook_date)")
     print("✓ recipe_history 表创建完成")
+
+    # G5 迁移 006: 老库补 photo 列(幂等,PRAGMA 检查;新库 DDL 已带列,此处自动跳过)
+    cursor.execute("PRAGMA table_info(recipe_history)")
+    history_cols = [row[1] for row in cursor.fetchall()]
+    if "photo" not in history_cols:
+        cursor.execute("ALTER TABLE recipe_history ADD COLUMN photo TEXT")
+        print("✓ recipe_history 补 photo 列(迁移 006)")
+    else:
+        print("✓ recipe_history.photo 列已存在(跳过)")
     
     # ========== 表14：background_knowledge（背景知识）==========
     # L1-A: 1:1 UNIQUE 表,3 字段全 NOT NULL(用户决策:背景知识每菜必录)

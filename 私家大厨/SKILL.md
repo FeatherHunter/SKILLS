@@ -464,6 +464,8 @@ python scripts/recipe_render.py render <菜名或ID>
 
 **「做菜模式」** 收到时必须调用 `python scripts/cooking_render.py render <菜名或ID>` 生成正式 HTML;禁止 AI 手动复制模板再临时命名。`cooking_render.py` 会自动 show --json、注入 `templates/cooking_mode.html`、输出 `$CHEF_OUTPUT_DIR/cooking/做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html`。做饭页右侧"剩余约 N 分钟"必须按 `references/cooking_mode.md` 的剩余时间规则计算:当前步骤显示剩余分钟 + 后续所有步骤计划分钟之和;暂停保持、重做重置、归零/超时时当前步骤最低按计划时长显示。
 
+**「断点续做」(T8 cook-4 · AI 会话记忆为主)** 用户说「我刚才做到第 N 步,继续帮我做完」→ AI 必须用 `python scripts/cooking_render.py render <菜名或ID> --step N` 重新渲染,页面从第 N 步开始(URL 锚点 `#step=N`)。进度来源 = 用户粘贴做菜页「📋 复制进度」按钮生成的 prompt(AI 记住会话);localStorage 仅增强,不可用不阻塞。做菜页完结区 = 4 个单动作复制 prompt 按钮(⭐评分/📝点评/🤔反思/📷完成拍照,拍照为预告式「【作品照片即将发送:】」);作品照片存 `work_photos/` 目录,`chef://` 命名空间入库(三目录契约 + 值类型判定表见 `scripts/photo_utils.py` 与 `references/cooking_mode.md` §4.3)。
+
 ### 采购清单 HTML 强制（v5.2 新增 · T9 库存核对接入）
 
 **「生成清单 / 排除可选」** AI 收到时**必须自动**按以下步骤走：

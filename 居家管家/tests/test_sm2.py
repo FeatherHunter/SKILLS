@@ -410,3 +410,30 @@ def test_suggest_e2e_cli(tmp_db, tmp_path, seeded):
     r2 = _run_cli("sm2-suggest", "--batch", "--limit", "10")
     result2, code2 = _load_output(r2)
     assert code2 == 0 and result2["status"] == "ok"
+
+
+def test_cli_rename_conflict_error_receipt(tmp_db, tmp_path):
+    """改名到已存在位置 → 错误回执 HTML(不崩),失败原因透出"""
+    from 位置 import ops
+    ops.create_node(tmp_db, "书房/电竞桌")
+    ops.create_node(tmp_db, "书房/电竞区")
+    r = _run_cli("sm2-manage", "--action", "rename", "--old", "书房/电竞桌",
+                 "--new", "书房/电竞区", "--output", str(tmp_path / "rename_err.html"))
+    assert r.returncode != 0
+    out, _ = _load_output(r)
+    assert out["status"] == "ok"
+    assert out["data"].get("template") == "位置/error.html"
+    html = (tmp_path / "rename_err.html").read_text(encoding="utf-8")
+    assert "合并" in html
+
+
+def test_cli_merge_missing_src_error_receipt(tmp_db, tmp_path):
+    """合并不存在的 src → 错误回执 HTML(不崩,不静默空成功)"""
+    r = _run_cli("sm2-manage", "--action", "merge", "--old", "不存在/位置",
+                 "--new", "客厅/茶几", "--output", str(tmp_path / "merge_err.html"))
+    assert r.returncode != 0
+    out, _ = _load_output(r)
+    assert out["status"] == "ok"
+    assert out["data"].get("template") == "位置/error.html"
+    html = (tmp_path / "merge_err.html").read_text(encoding="utf-8")
+    assert "不存在" in html

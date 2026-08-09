@@ -125,6 +125,11 @@ def run(args):
                                  target=preview["old"], output_path=args.output)
                 ok, msg, payload = ops.rename_node(conn, args.old, args.new,
                                                    cli_cmd=" ".join(sys.argv[1:]))
+                if not ok or payload is None:
+                    return _emit_err("管位置", "位置改名", msg or "位置改名失败",
+                                     {"old": args.old, "new": args.new},
+                                     suggest="目标已是独立位置时,请改用「合并」",
+                                     output_path=args.output)
                 payload["target"] = f"{preview['old']} → {preview['new']}"
                 payload["diff"] = [{"field": "位置路径", "before": preview["old"], "after": preview["new"]}]
                 payload["extra"] = {"涉及物品": preview["items_affected"]}
@@ -145,6 +150,11 @@ def run(args):
                                  target=f"{old} → {new}", output_path=args.output)
                 ok, msg, payload = ops.merge_node(conn, old, new,
                                                   cli_cmd=" ".join(sys.argv[1:]))
+                if not ok or payload is None:
+                    return _emit_err("管位置", "位置合并", msg or "位置合并失败",
+                                     {"src": old, "tgt": new},
+                                     suggest="先确认 src 存在,或改用「改名/删除」",
+                                     output_path=args.output)
                 payload["target"] = f"{old} → {new}"
                 payload["diff"] = [{"field": "位置路径", "before": old, "after": new}]
                 return _receipt_scene(ok, msg, payload, "SM2-1", "管位置", "位置合并",

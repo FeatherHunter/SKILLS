@@ -357,9 +357,16 @@ def test_cli_expiring_invalid_days_graceful(cli_env, tmp_path):
     assert "7/30/90" in data["message"]
 
 
-def test_cli_html_type_requires_output(cli_env):
-    """HTML 类型无 --output → 明确提示,非「未知统计类型」误导"""
+def test_cli_html_auto_chinese_name(cli_env):
+    """HTML 类型无 --output → 自动中文场景名命名(卡路里同款规则)"""
     r = _run_cli(cli_env, "stats", "--type", "idle")
-    assert r.returncode == 1
+    assert r.returncode == 0, r.stderr
     assert "Traceback" not in r.stdout and "Traceback" not in r.stderr
-    assert "--output" in r.stdout
+    data = json.loads(r.stdout)
+    assert data["status"] == "ok"
+    out = data["data"]["output"]
+    # 命名规则:<场景名>_结果_<TS>.html(参考 卡路里 html_paths.py)
+    name = out.replace("\\", "/").split("/")[-1]
+    assert name.startswith("闲置物品检测_结果_")
+    assert name.endswith(".html")
+    assert Path(out).exists()

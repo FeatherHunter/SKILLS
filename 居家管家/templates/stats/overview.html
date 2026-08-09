@@ -42,12 +42,12 @@ table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:7px 10px;
 .empty{background:var(--card);border-radius:18px;padding:36px 20px;text-align:center;color:var(--fg3)}
 .empty h2{font-size:18px;color:var(--fg);margin-bottom:6px}
 .actions{display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap}
-.btn{border:none;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;box-shadow:var(--shadow)}
+.btn{border:none;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;box-shadow:var(--shadow);min-height:40px}
 .btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
 .btn.copied{background:var(--green)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
 .toast.show{opacity:1}
-@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:24px}.actions{position:static}.card span{font-size:19px}}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:24px}.actions{position:static}.card span{font-size:19px}.btn{min-height:44px;padding:11px 20px}}
 </style>
 </head>
 <body>

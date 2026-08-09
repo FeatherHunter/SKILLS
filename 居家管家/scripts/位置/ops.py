@@ -338,6 +338,15 @@ def merge_node(conn, src_raw, tgt_raw, cli_cmd=""):
         return False, "合并双方相同", None
     if is_descendant_or_self(src, tgt) or is_descendant_or_self(tgt, src):
         return False, "父子位置不可互相合并(先确认层级)", None
+    # src 必须真实存在(节点或有条目引用),否则静默空成功
+    cursor = conn.cursor()
+    clause, params = _prefix_clause(src)
+    cursor.execute(f"SELECT COUNT(*) AS n FROM item_locations WHERE {clause}", params)
+    n_items = cursor.fetchone()["n"]
+    cursor.execute("SELECT id FROM location_nodes WHERE path = ? OR path LIKE ?", (src, src + "/%"))
+    has_node = cursor.fetchone() is not None
+    if n_items == 0 and not has_node:
+        return False, f"位置「{src}」不存在", None
     result = _merge_cascade(conn, src, tgt, cli_cmd=cli_cmd)
     return True, f"已合并:「{src}」→「{tgt}」(涉及 {result['renamed_items']} 件物品)", result
 

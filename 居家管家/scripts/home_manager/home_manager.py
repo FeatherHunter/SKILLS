@@ -449,15 +449,21 @@ def main():
 
     elif args.command == "stats":
         _html_stat_types = ("expiring", "overview", "idle", "inventory-stat")
+        _stat_scene_names = {
+            "expiring": "过期检查与预告",
+            "overview": "物品总览",
+            "idle": "闲置物品检测",
+            "inventory-stat": "盘点统计",
+        }
         if args.type in _html_stat_types and not args.output:
-            # 08 规范 §6: 失败回执 = 结构化文本,不裸 traceback
-            import json as _json
-            print(_json.dumps({
-                "status": "error",
-                "data": {},
-                "message": f"统计类型 {args.type} 为 HTML 类型,请加 --output 指定输出路径",
-            }, ensure_ascii=False))
-            return 1
+            # 卡路里同款场景命名规则:<场景名>_结果_<TS>.html(参考 卡路里/scripts/html_paths.py)
+            from render import resolve_output_root, HTML_SUBDIR
+            from datetime import datetime as _dt
+            out_dir = resolve_output_root() / HTML_SUBDIR
+            out_dir.mkdir(parents=True, exist_ok=True)
+            stamp = _dt.now().strftime("%Y%m%d_%H%M%S")
+            scene = _stat_scene_names.get(args.type, args.type)
+            args.output = str(out_dir / f"{scene}_结果_{stamp}.html")
         if args.output and args.type in _html_stat_types:
             from render import emit
             import json as _json

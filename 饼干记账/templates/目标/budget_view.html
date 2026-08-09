@@ -53,6 +53,8 @@
   .budget-bar .foot { display: flex; justify-content: space-between; margin-top: 7px; font-size: 12px; color: var(--fg3); gap: 10px; flex-wrap: wrap; }
   .budget-bar .foot .warn { color: var(--orange); font-weight: 600; }
   .budget-bar .foot .over { color: var(--red); font-weight: 700; }
+  .budget-bar .proj { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 12px; color: var(--fg2); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .budget-bar .proj .over { color: var(--red); font-weight: 600; }
   .status-chip { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
   .status-chip.ok { background: rgba(52,199,89,.12); color: var(--green); }
   .status-chip.warn { background: rgba(255,149,0,.14); color: var(--orange); }
@@ -337,7 +339,7 @@
     };
   }
 
-  // ── 看预算 budget(预算 vs 实际/剩余/超支 · 进度条) ──
+  // ── 看预算 budget(预算 vs 实际/剩余/超支 · 进度条 + 月底预测) ──
   function renderBudget(data) {
     const budgets = data.budgets || [];
     const t = data.totals || {};
@@ -347,7 +349,7 @@
         ${kpiCard('预算总额', fmtMoney(t.budget), '元', 'blue')}
         ${kpiCard('实际支出', fmtMoney(t.actual), '元', 'red')}
         ${kpiCard('剩余', fmtMoney(t.remaining), '元', (t.remaining || 0) >= 0 ? 'green' : 'red')}
-        ${kpiCard('超支项', over, '项', over > 0 ? 'orange' : '')}
+        ${kpiCard('超支项', over > 0 ? over : '✓ 无', over > 0 ? '项' : '', over > 0 ? 'orange' : 'green')}
       </div>
       ${budgets.length ? `
         <div class="card" style="margin-top:14px;">
@@ -363,6 +365,14 @@
     const pct = Math.min(b.pct, 100);
     const overText = b.status === 'over' ? `<span class="over">⚠ 已超支 ${fmtMoney(Math.abs(b.remaining))} 元</span>` : '';
     const warnText = b.status === 'warn' ? `<span class="warn">⚠ 接近上限,剩余 ${fmtMoney(b.remaining)} 元</span>` : '';
+    // 月底预测(按当前节奏):过去月预测=实际,未来月无预测
+    let projText = '';
+    if (b.month_end_proj != null && b.days_elapsed) {
+      const diff = b.month_end_proj - b.amount;
+      const hint = diff > 0.01 ? `<span class="over">预计超 ${fmtMoney(diff)} 元</span>`
+        : diff < -0.01 ? `预计省 ${fmtMoney(Math.abs(diff))} 元` : '预计持平';
+      projText = `<div class="proj">日均 ${fmtMoney(b.daily_avg)} 元 · 按此节奏月底预计 ${fmtMoney(b.month_end_proj)} 元(${hint})</div>`;
+    }
     return `
       <div class="budget-bar">
         <div class="head">
@@ -375,6 +385,7 @@
           <span>${b.remaining >= 0 ? '剩余 ' + fmtMoney(b.remaining) + ' 元' : '超出 ' + fmtMoney(Math.abs(b.remaining)) + ' 元'}</span>
           ${overText || warnText || ''}
         </div>
+        ${projText}
       </div>
     `;
   }

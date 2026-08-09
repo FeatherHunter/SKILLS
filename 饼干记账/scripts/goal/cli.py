@@ -87,6 +87,28 @@ def _month_range(month: str) -> tuple:
     return f"{month}-01 00:00:00", f"{last.strftime('%Y-%m-%d')} 23:59:59"
 
 
+def _month_projection(month: str, actual: float) -> tuple:
+    """按当前节奏的月底预测(体验增强 · 2026-08-09 门禁 B 复查采纳)
+
+    返回 (日均, 月底预计, 已过天数):过去月 → 预测=实际;未来月 → (None, None, 0)。
+    用途:预算视图「日均 X 元 · 按此节奏月底预计 Y 元(超/省提示)」。
+    """
+    y, m = int(month[:4]), int(month[5:7])
+    last = date(y + (m // 12), (m % 12) + 1, 1) - timedelta(days=1)
+    month_days = last.day
+    today = date.today()
+    if (y, m) < (today.year, today.month):
+        return round(actual / month_days, 2), actual, month_days  # 过去月:预测=实际
+    if (y, m) > (today.year, today.month):
+        return None, None, 0
+    days_elapsed = min(today.day, month_days)
+    if days_elapsed <= 0:
+        return None, None, 0
+    daily = round(actual / days_elapsed, 2)
+    proj = round(daily * month_days, 2)
+    return daily, proj, days_elapsed
+
+
 def _month_expense(month: str, category: str = "") -> tuple:
     """当月支出(分类预算 = 该分类当月支出,L1 前缀匹配)→ (合计, 笔数)"""
     from_time, to_time = _month_range(month)
@@ -164,12 +186,15 @@ def cmd_budget(args):
             status = "warn"
         else:
             status = "over"
+        daily_avg, month_end_proj, days_elapsed = _month_projection(month, actual)
         items.append({
             "id": b.get("id"), "month": month,
             "category": b.get("category") or "",
             "category_cn": b.get("category") or "总预算",
             "amount": amount, "actual": actual, "count": count,
             "remaining": remaining, "pct": pct, "status": status,
+            "daily_avg": daily_avg, "month_end_proj": month_end_proj,
+            "days_elapsed": days_elapsed,
         })
     items.sort(key=lambda x: (0 if x["category"] == "" else 1, x["category"]))
 
@@ -264,6 +289,17 @@ def _saving_progress(s: dict) -> dict:
         total_m = y * 12 + (m - 1) + months_needed
         eta = f"{total_m // 12:04d}-{total_m % 12 + 1:02d}"
 
+    # 达标所需月存(体验增强 · 2026-08-09 门禁 B 复查采纳):截止日前还需每月存多少
+    needed_monthly = None
+    if deadline and saved < amount:
+        try:
+            dd = datetime.strptime(deadline, "%Y-%m-%d").date()
+        except ValueError:
+            dd = None
+        if dd is not None and dd >= today:
+            months_left = max((dd.year - today.year) * 12 + (dd.month - today.month), 1)
+            needed_monthly = round(max(remaining, 0) / months_left, 2)
+
     if saved >= amount:
         status = "done"
     elif monthly_avg <= 0:
@@ -276,7 +312,8 @@ def _saving_progress(s: dict) -> dict:
     return {"id": s.get("id"), "name": s.get("name") or "未命名目标",
             "amount": amount, "deadline": deadline, "created_at": str(s.get("created_at") or ""),
             "start_month": start_month, "saved": saved, "remaining": remaining,
-            "pct": pct, "monthly_avg": monthly_avg, "eta": eta, "status": status}
+            "pct": pct, "monthly_avg": monthly_avg, "eta": eta, "status": status,
+            "needed_monthly": needed_monthly}
 
 
 def cmd_saving(args):

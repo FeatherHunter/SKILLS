@@ -215,6 +215,23 @@ class TestBudget:
         d = _run_goal_cli(tmp_db_dir, "budget", "--month", "2026-08")["data"]
         assert len(d["budgets"]) == 1 and d["budgets"][0]["amount"] == 3000.0
 
+    def test_budget_month_end_projection(self, tmp_db_dir):
+        """月底预测(门禁 B 复查采纳):当月有日均/月底预计;过去月预测=实际;未来月无预测"""
+        _insert(tmp_db_dir, "餐饮", -300.0, "2026-08-01 12:00:00", "a")
+        _run_goal_cli(tmp_db_dir, "set-budget", "--amount", "1000", "--month", "2026-08")
+        b = _run_goal_cli(tmp_db_dir, "budget", "--month", "2026-08")["data"]["budgets"][0]
+        assert b["daily_avg"] is not None and b["month_end_proj"] is not None
+        assert b["days_elapsed"] >= 1
+        # 过去月(2026-07):预测 = 实际
+        _insert(tmp_db_dir, "餐饮", -200.0, "2026-07-01 12:00:00", "b")
+        _run_goal_cli(tmp_db_dir, "set-budget", "--amount", "1000", "--month", "2026-07")
+        b7 = _run_goal_cli(tmp_db_dir, "budget", "--month", "2026-07")["data"]["budgets"][0]
+        assert b7["month_end_proj"] == b7["actual"]
+        # 未来月(2026-12):无预测
+        _run_goal_cli(tmp_db_dir, "set-budget", "--amount", "1000", "--month", "2026-12")
+        b12 = _run_goal_cli(tmp_db_dir, "budget", "--month", "2026-12")["data"]["budgets"][0]
+        assert b12["month_end_proj"] is None and b12["daily_avg"] is None
+
 
 # ── 设定目标(set-saving · 采集型)─────────────────────────────────────────────
 
@@ -299,6 +316,22 @@ class TestSaving:
         """无目标 → 空态"""
         data = _run_goal_cli(tmp_db_dir, "saving")
         assert data["data"]["savings"] == [] and data["data"]["count"] == 0
+
+    def test_saving_needed_monthly(self, tmp_db_dir):
+        """达标所需月存(门禁 B 复查采纳):有截止日且未达成 → 剩余/剩余月数;无截止日 → None"""
+        _insert(tmp_db_dir, "工资/基本工资", 8000.0, "2026-08-05 09:00:00", "工资")
+        _run_goal_cli(tmp_db_dir, "set-saving", "--name", "换手机",
+                      "--amount", "10000", "--deadline", "2026-12-31")
+        s = _run_goal_cli(tmp_db_dir, "saving")["data"]["savings"][0]
+        assert s["needed_monthly"] is not None and s["needed_monthly"] > 0
+        # 无截止日 → None
+        _run_goal_cli(tmp_db_dir, "set-saving", "--name", "旅行", "--amount", "5000")
+        s2 = _run_goal_cli(tmp_db_dir, "saving", "--name", "旅行")["data"]["savings"][0]
+        assert s2["needed_monthly"] is None
+        # 已达成 → None
+        _insert(tmp_db_dir, "工资/基本工资", 30000.0, "2026-08-06 09:00:00", "大额")
+        s3 = _run_goal_cli(tmp_db_dir, "saving", "--name", "换手机")["data"]["savings"][0]
+        assert s3["status"] == "done" and s3["needed_monthly"] is None
 
 
 # ── 渲染(goal/render.py · 4 模式)─────────────────────────────────────────────

@@ -27,6 +27,7 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'weight_history.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path, html_scene_path  # noqa
+from render_crud_view import _quote_arg  # noqa  # 2026-08-09 #43:复制日志 render_cmd 构造
 from _cmd_maps import WEIGHT_MODE_MAP  # noqa
 
 
@@ -115,7 +116,8 @@ def _fetch_milestones(conn):
     return out
 
 
-def build_data(start, end, mode='history', show_target=False, show_milestones=False, show_anomalies=False, note_only=False):
+def build_data(start, end, mode='history', show_target=False, show_milestones=False, show_anomalies=False, note_only=False,
+               scene_label=None):
     from db import find_db_path
     import sqlite3
     db_path = find_db_path(SKILL_DIR)
@@ -143,7 +145,7 @@ def build_data(start, end, mode='history', show_target=False, show_milestones=Fa
     if mode == 'history':
         avg = round(statistics.mean(weights), 2)
         delta_range = round(max(weights) - min(weights), 1)
-        summary = build_history_summary(sampled, items, avg, delta_range)
+        summary = build_history_summary(sampled, items, avg, delta_range, label=scene_label)
     elif mode == 'trend':
         start_avg = weights[0]
         end_avg = weights[-1]
@@ -250,13 +252,15 @@ def empty_meta(start, end, days):
     return {'start': start, 'end': end, 'days': days, 'today': date.today().isoformat()}
 
 
-def build_history_summary(sampled, items, avg, delta_range):
+def build_history_summary(sampled, items, avg, delta_range, label=None):
     # 估算 BMR: Mifflin-St Jeor 公式 (假设男 30 岁 70 kg)
     weight = avg
     bmr = round(10 * weight + 6.25 * 175 - 5 * 30 + 5, 0)
     net_change = round(items[-1]['kg'] - items[0]['kg'], 1)
+    # 2026-08-09 #43 审查:subtitle 用真实场景词(本周/上周/本月/最近N天)
+    scope = label or f'近 {len(items)} 天'
     return {
-        'subtitle': f'近 {len(items)} 天体重数据汇总 · 净变化 {net_change:+.1f} kg',
+        'subtitle': f'{scope}体重数据汇总 · 净变化 {net_change:+.1f} kg',
         'k1': {'label':'记录数', 'value':str(len(items)), 'extra':f'共 {len(items)} 天'},
         'k2': {'label':'平均体重', 'value':f'{avg} kg', 'extra':f'最低 {min(i["kg"] for i in items)} · 最高 {max(i["kg"] for i in items)}'},
         'k3': {'label':'净变化', 'value':f'{net_change:+} kg', 'extra':f'首 {items[0]["kg"]} → 末 {items[-1]["kg"]}'},
@@ -360,33 +364,41 @@ def main():
     except Exception as e:
         print(f'❌ 时间窗口解析失败: {e}', file=sys.stderr)
         return 1
+    # 场景名(2026-08-09 #43):先于 build_data/render_html,模板标题+subtitle 用真实场景名
+    scene_name = {
+        'trend': '看体重曲线', 'volatility': '看体重稳不稳',
+        'compare': '对比体重', 'notes': '看「有备注」的体重记录',
+    }.get(mode)
+    if mode == 'history':
+        if args.week == 'current':
+            scene_name = '看本周体重'
+        elif args.week == 'last':
+            scene_name = '看上周体重'
+        elif args.month == 'current':
+            scene_name = '看本月体重'
+        elif args.month == 'last':
+            scene_name = '看上月体重'
+        elif args.days:
+            scene_name = f'看最近 {args.days} 天体重'
+        elif args.start and args.end:
+            scene_name = '看某段时间体重'
+        else:
+            scene_name = '看体重明细'
     try:
         data = _load_data(args.mock) if args.mock else build_data(
             s, e, mode=mode, show_target=args.show_target,
             show_milestones=args.show_milestones, show_anomalies=args.show_anomalies,
-            note_only=args.note_only)
+            note_only=args.note_only, scene_label=scene_name.replace('看', '').replace('体重', '') if mode == 'history' else None)
         if 'mode' not in data['data']: data['data']['mode'] = mode
-        # 场景名(2026-08-09 #43):先于 render_html 注入,模板标题显示真实场景名
-        scene_name = {
-            'trend': '看体重曲线', 'volatility': '看体重稳不稳',
-            'compare': '对比体重', 'notes': '看「有备注」的体重记录',
-        }.get(mode)
-        if mode == 'history':
-            if args.week == 'current':
-                scene_name = '看本周体重'
-            elif args.week == 'last':
-                scene_name = '看上周体重'
-            elif args.month == 'current':
-                scene_name = '看本月体重'
-            elif args.month == 'last':
-                scene_name = '看上月体重'
-            elif args.days:
-                scene_name = f'看最近 {args.days} 天体重'
-            elif args.start and args.end:
-                scene_name = '看某段时间体重'
-            else:
-                scene_name = '看体重明细'
         data['data']['scene_name'] = scene_name
+        # 复制日志排障字段(R3 · 2026-08-09 #43 审查补:render_cmd 可复现)
+        if 'meta' in data['data'] and isinstance(data['data']['meta'], dict):
+            import sys as _sys
+            argv = _sys.argv[1:]
+            if '--output' in argv:
+                i = argv.index('--output')
+                argv = argv[:i] + argv[i + 2:] if i + 1 < len(argv) else argv[:i]
+            data['data']['meta']['render_cmd'] = f"python scripts/{Path(__file__).name} " + ' '.join(_quote_arg(a) for a in argv)
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)

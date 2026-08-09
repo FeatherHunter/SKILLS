@@ -357,7 +357,9 @@
 
   document.getElementById('srcLine').textContent = `📊 数据来源:weight_log · ${meta.start} → ${meta.end} · ${items.length} 条`;
   document.getElementById('copyBtn').onclick = function() {
+    // 2026-08-09 #43 审查:复制数据含摘要(范围/均值/净变化) + 明细
     let r = `体重分析 ${meta.start} → ${meta.end} (${items.length} 条)\n`;
+    r += `平均 ${summary.k2.value} · 净变化 ${summary.k3.value}\n`;
     items.forEach(p => { r += `  ${p.date}  ${p.kg} kg\n`; });
     navigator.clipboard.writeText(r).then(() => {
       toast('已复制');

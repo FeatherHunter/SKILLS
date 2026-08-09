@@ -531,7 +531,7 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 | "AI 消费洞察" | --months 6（默认） |
 | "近90天的洞察" | --months 3 |
 
-**流程**：AI 调 `analysis insight --months N --json` 拿**事实层**（period/category_dist/monthly_trend/top_expense + 均值/中位数/最大偏离度，纯计算无判定）→ AI 基于事实撰写解读（消费习惯/异常波动/省钱建议）→ `bill_inject.py insight` 生成洞察卡 HTML 交付。**AI 解读规则**：只引用事实层数字；不说事实层没有的话；建议可落地(如"奶茶类支出占 18%，可减少频次")。
+**流程**：AI 调 `analysis insight --months N --json` 拿**事实层**（period/category_dist/monthly_trend/top_expense + 均值/中位数/最大偏离度，纯计算无判定）→ AI 基于事实撰写解读（消费习惯/异常波动/省钱建议）→ `bill_inject.py insight --months N --ai-note "消费习惯:…|异常波动:…|省钱建议:…"` 生成洞察卡 HTML（解读卡 + 事实卡）交付。**AI 解读规则**：只引用事实层数字；不说事实层没有的话；建议可落地(如"奶茶类支出占 18%，可减少频次")；三段式用 `|` 分隔。
 
 #### 看异常
 
@@ -539,7 +539,7 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 |--------|----------|
 | "异常波动检测" | --months 6（默认） |
 
-**流程**：AI 调 `analysis anomaly --months N --json` 拿**事实层**（月度序列 + 环比变化 + 分类环比暴涨）→ AI 判定异常（突增月/暴涨分类，幅度≥50% 值得说）→ `bill_inject.py anomaly` 生成检测 HTML 交付。**AI 判定规则**：幅度 < 50% 不判异常；判异常必须附"建议核对"(一次性大额/记错分类/真实增长)。
+**流程**：AI 调 `analysis anomaly --months N --json` 拿**事实层**（月度序列 + 环比变化 + 分类环比暴涨）→ AI 判定异常（突增月/暴涨分类，幅度≥50% 值得说）→ `bill_inject.py anomaly --months N --ai-note "异常波动:…|建议核对:…"` 生成检测 HTML（解读卡 + 事实卡）交付。**AI 判定规则**：幅度 < 50% 不判异常；判异常必须附"建议核对"(一次性大额/记错分类/真实增长)。
 
 #### 看借贷
 

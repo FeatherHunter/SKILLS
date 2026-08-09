@@ -144,42 +144,43 @@ QUERY_TYPES = {
 
 # 模板能力接口(08 §4 硬标准 · 复制数据/复制日志数据源):query_type → 场景标识/唤醒词
 # scene_id 对齐 scenes/query.yaml 的场景(基础映射;细粒度由调用方覆盖)
+# command_cn 对齐 scenes/{域}.yaml html.command_cn(复制数据 5 段 · 2026-08-09 对抗式审查补齐)
 QUERY_META = {
-    "summary":   {"scene_id": "query_today",     "wake_word": "查今天"},
-    "list":      {"scene_id": "query_list",      "wake_word": "查日期"},
-    "recent":    {"scene_id": "query_recent",    "wake_word": "查最近"},
-    "search":    {"scene_id": "query_search",    "wake_word": "搜备注"},
-    "tag":       {"scene_id": "query_tag",       "wake_word": "查标签"},
-    "debt":      {"scene_id": "query_debt",      "wake_word": "查欠款"},
-    "reimburse": {"scene_id": "query_pending_reimburse", "wake_word": "查待报销"},
-    "installment": {"scene_id": "query_installment",     "wake_word": "查分期"},
-    "monthly":   {"scene_id": "monthly_summary", "wake_word": "看月度"},
-    "compare":   {"scene_id": "period_compare",   "wake_word": "看对比"},
-    "breakdown": {"scene_id": "category_breakdown", "wake_word": "看分类"},
-    "overview":  {"scene_id": "range_overview",   "wake_word": "看总览"},
-    "stats":     {"scene_id": "stats",            "wake_word": "做统计"},
+    "summary":   {"scene_id": "query_today",     "wake_word": "查今天", "command_cn": "今日摘要"},
+    "list":      {"scene_id": "query_list",      "wake_word": "查日期", "command_cn": "查询记录"},
+    "recent":    {"scene_id": "query_recent",    "wake_word": "查最近", "command_cn": "最近记录"},
+    "search":    {"scene_id": "query_search",    "wake_word": "搜备注", "command_cn": "备注搜索"},
+    "tag":       {"scene_id": "query_tag",       "wake_word": "查标签", "command_cn": "查标签"},
+    "debt":      {"scene_id": "query_debt",      "wake_word": "查欠款", "command_cn": "查欠款"},
+    "reimburse": {"scene_id": "query_pending_reimburse", "wake_word": "查待报销", "command_cn": "查待报销"},
+    "installment": {"scene_id": "query_installment",     "wake_word": "查分期", "command_cn": "查分期"},
+    "monthly":   {"scene_id": "monthly_summary", "wake_word": "看月度", "command_cn": "月度汇总"},
+    "compare":   {"scene_id": "period_compare",   "wake_word": "看对比", "command_cn": "周期对比"},
+    "breakdown": {"scene_id": "category_breakdown", "wake_word": "看分类", "command_cn": "分类明细"},
+    "overview":  {"scene_id": "range_overview",   "wake_word": "看总览", "command_cn": "收支总览"},
+    "stats":     {"scene_id": "stats",            "wake_word": "做统计", "command_cn": "记账统计"},
     # ── 分析域 25 场景(2026-08-09 实施 · 对齐 scenes/analysis.yaml) ──
-    "yearly":    {"scene_id": "yearly_summary",      "wake_word": "看年度"},
-    "week":      {"scene_id": "week_brief",          "wake_word": "看周报"},
-    "category":  {"scene_id": "category_breakdown",  "wake_word": "看分类"},
-    "account":   {"scene_id": "account_breakdown",   "wake_word": "看账户"},
-    "ledger":    {"scene_id": "ledger_summary",      "wake_word": "看账本"},
-    "structure": {"scene_id": "income_expense_structure", "wake_word": "看结构"},
-    "range_compare": {"scene_id": "range_compare",   "wake_word": "看双区间"},
-    "yoy":       {"scene_id": "year_over_year",      "wake_word": "看同比"},
-    "cat_compare":  {"scene_id": "category_compare", "wake_word": "看分类对比"},
-    "trend":     {"scene_id": "monthly_trend",       "wake_word": "看趋势"},
-    "cat_trend": {"scene_id": "category_trend",      "wake_word": "看分类趋势"},
-    "top":       {"scene_id": "top_expense",         "wake_word": "看大额"},
-    "top_freq":  {"scene_id": "top_frequency",       "wake_word": "看高频"},
-    "distribution": {"scene_id": "amount_distribution", "wake_word": "看分布"},
-    "activity":  {"scene_id": "activity",            "wake_word": "看活跃"},
-    "insight":   {"scene_id": "insight",             "wake_word": "看洞察"},
-    "anomaly":   {"scene_id": "anomaly",             "wake_word": "看异常"},
-    "debt_summary":  {"scene_id": "debt_summary",    "wake_word": "看借贷"},
-    "reimburse_summary": {"scene_id": "reimburse_summary", "wake_word": "看报销"},
-    "installment_summary": {"scene_id": "installment_summary", "wake_word": "看分期"},
-    "refund_summary": {"scene_id": "refund_summary", "wake_word": "看退款"},
+    "yearly":    {"scene_id": "yearly_summary",      "wake_word": "看年度", "command_cn": "年度汇总"},
+    "week":      {"scene_id": "week_brief",          "wake_word": "看周报", "command_cn": "周报"},
+    "category":  {"scene_id": "category_breakdown",  "wake_word": "看分类", "command_cn": "分类占比"},
+    "account":   {"scene_id": "account_breakdown",   "wake_word": "看账户", "command_cn": "账户占比"},
+    "ledger":    {"scene_id": "ledger_summary",      "wake_word": "看账本", "command_cn": "账本汇总"},
+    "structure": {"scene_id": "income_expense_structure", "wake_word": "看结构", "command_cn": "收支结构"},
+    "range_compare": {"scene_id": "range_compare",   "wake_word": "看双区间", "command_cn": "双区间对比"},
+    "yoy":       {"scene_id": "year_over_year",      "wake_word": "看同比", "command_cn": "同比"},
+    "cat_compare":  {"scene_id": "category_compare", "wake_word": "看分类对比", "command_cn": "分类对比"},
+    "trend":     {"scene_id": "monthly_trend",       "wake_word": "看趋势", "command_cn": "收支趋势"},
+    "cat_trend": {"scene_id": "category_trend",      "wake_word": "看分类趋势", "command_cn": "分类趋势"},
+    "top":       {"scene_id": "top_expense",         "wake_word": "看大额", "command_cn": "大额排行"},
+    "top_freq":  {"scene_id": "top_frequency",       "wake_word": "看高频", "command_cn": "高频排行"},
+    "distribution": {"scene_id": "amount_distribution", "wake_word": "看分布", "command_cn": "金额分布"},
+    "activity":  {"scene_id": "activity",            "wake_word": "看活跃", "command_cn": "活跃度"},
+    "insight":   {"scene_id": "insight",             "wake_word": "看洞察", "command_cn": "消费洞察"},
+    "anomaly":   {"scene_id": "anomaly",             "wake_word": "看异常", "command_cn": "异常检测"},
+    "debt_summary":  {"scene_id": "debt_summary",    "wake_word": "看借贷", "command_cn": "借贷总览"},
+    "reimburse_summary": {"scene_id": "reimburse_summary", "wake_word": "看报销", "command_cn": "报销汇总"},
+    "installment_summary": {"scene_id": "installment_summary", "wake_word": "看分期", "command_cn": "分期总览"},
+    "refund_summary": {"scene_id": "refund_summary", "wake_word": "看退款", "command_cn": "退款统计"},
 }
 
 SKILL_VERSION = "2.0"
@@ -294,8 +295,12 @@ def _human_args(query_type: str, extra_args: list) -> str:
     return " · ".join(x for x in out if x)
 
 
-def build_payload(cli_json: dict, query_type: str, extra_args: list) -> dict:
-    """把 CLI JSON 包成模板期望的 payload 结构"""
+def build_payload(cli_json: dict, query_type: str, extra_args: list, ai_note: str = None, chain: str = None) -> dict:
+    """把 CLI JSON 包成模板期望的 payload 结构
+
+    ai_note: AI 解读文本(看洞察/看异常 · 注入 data.ai_note 供洞察卡渲染,08 §5 双通道)
+    chain:   AI 思考链(注入 meta.chain · 复制日志②段数据源)
+    """
     meta = QUERY_TYPES.get(query_type, {"title": query_type, "subtitle": ""})
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -314,6 +319,9 @@ def build_payload(cli_json: dict, query_type: str, extra_args: list) -> dict:
     human = _human_args(query_type, extra_args)
     enriched["subtitle"] = meta["subtitle"] + (f" · {human}" if human else "")
     enriched["generated_at"] = now
+    # AI 解读注入(看洞察/看异常:洞察卡数据源 · 08 §5 输出双通道落地)
+    if ai_note:
+        enriched["ai_note"] = ai_note
     m = QUERY_META.get(query_type, {"scene_id": query_type, "wake_word": query_type})
     # list 变体:按参数细分场景(对齐 scenes/query.yaml · 门禁 A 层 1)
     if query_type == "list" and extra_args:
@@ -323,7 +331,7 @@ def build_payload(cli_json: dict, query_type: str, extra_args: list) -> dict:
         "command_cn": m.get("command_cn", meta["title"] + " 结果"),
         "wake_word": m["wake_word"],
         "occurred_at": now,
-        "chain": "(未注入 · AI 可在日志覆盖)",
+        "chain": chain or "(未注入 · AI 可在日志覆盖)",
         "render_cmd": f"bill_inject.py {query_type} {' '.join(extra_args)}".strip(),
         "version": SKILL_VERSION,
     }
@@ -405,10 +413,13 @@ def default_output_path(query_type: str, args=None, extra=None) -> Path:
 def main():
     parser = argparse.ArgumentParser(
         description="饼干记账 · HTML 注入器",
-        usage="python3 scripts/bill_inject.py <query_type> [args...] [--out <path>]"
+        usage="python3 scripts/bill_inject.py <query_type> [args...] [--out <path>] [--ai-note <文本>] [--chain <思考链>]"
     )
     parser.add_argument("query_type", choices=list(QUERY_TYPES.keys()), help="查询类型（CLI 子命令）")
     parser.add_argument("--out", default=None, help="输出 HTML 路径(默认 $DATA_DIR/biscuit_accountant_html/)")
+    # AI 解读/思考链注入(08 §5 双通道 · 看洞察/看异常洞察卡 + 复制日志②段)
+    parser.add_argument("--ai-note", dest="ai_note", default=None, help="AI 解读文本(洞察卡渲染,如看洞察/看异常)")
+    parser.add_argument("--chain", default=None, help="AI 思考链(复制日志②段数据源)")
 
     # 透传参数：收集 --xxx 形式的 CLI 参数
     args, extra = parser.parse_known_args()
@@ -427,12 +438,15 @@ def main():
 
     print(f"📥 注入查询: {args.query_type}")
     print(f"   CLI 参数: {' '.join(extra) if extra else '(无)'}")
+    if args.ai_note:
+        print(f"   AI 解读: {args.ai_note[:60]}{'…' if len(args.ai_note) > 60 else ''}")
 
     # 1. 调 CLI 拿 JSON
     cli_json = run_cli_json(args.query_type, extra)
 
-    # 2. 包 payload
-    payload = build_payload(cli_json, args.query_type, extra)
+    # 2. 包 payload(带 AI 解读/思考链)
+    payload = build_payload(cli_json, args.query_type, extra,
+                            ai_note=args.ai_note, chain=args.chain)
 
     # 3. 决定输出路径
     output_path = Path(args.out) if args.out else default_output_path(args.query_type, args, extra)

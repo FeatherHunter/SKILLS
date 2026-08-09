@@ -747,3 +747,106 @@ class TestTemplateCapability:
             meta = payload["data"].get("meta", {})
             assert meta.get("scene_id"), f"{qt} 缺 meta.scene_id"
             assert meta.get("wake_word"), f"{qt} 缺 meta.wake_word"
+
+
+# ── 对抗式审查修复(2026-08-09):command_cn 对齐 / ai-note 注入 / CSV 通道 / 响应式 / 下钻 ──
+
+class TestAdversarialReviewFixes:
+    """垂直五层对抗式审查发现的问题修复验证"""
+
+    def test_analysis_command_cn_aligned_to_yaml(self, tmp_db_dir):
+        """复制数据 5 段:分析域 command_cn 对齐 scenes/analysis.yaml html.command_cn(非 title+结果)"""
+        import json
+        import re
+        expect = {
+            "yearly": "年度汇总", "week": "周报", "category": "分类占比",
+            "account": "账户占比", "ledger": "账本汇总", "structure": "收支结构",
+            "range_compare": "双区间对比", "yoy": "同比", "cat_compare": "分类对比",
+            "trend": "收支趋势", "cat_trend": "分类趋势",
+            "top": "大额排行", "top_freq": "高频排行", "distribution": "金额分布",
+            "activity": "活跃度", "insight": "消费洞察", "anomaly": "异常检测",
+            "debt_summary": "借贷总览", "reimburse_summary": "报销汇总",
+            "installment_summary": "分期总览", "refund_summary": "退款统计",
+        }
+        for qt, cn in expect.items():
+            extra = []
+            if qt == "yearly":
+                extra = ["--year", "2026"]
+            elif qt == "range_compare" or qt == "cat_compare":
+                extra = ["--from1", "2026-01-01", "--to1", "2026-01-31",
+                         "--from2", "2025-12-01", "--to2", "2025-12-31"]
+            elif qt == "yoy":
+                extra = ["--month", "2026-01"]
+            rc, out, err, html_path = _run_bill_inject(tmp_db_dir, qt, *extra)
+            text = html_path.read_text(encoding="utf-8-sig")
+            m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+            payload = json.loads(m.group(1))
+            assert payload.get("status") == "ok", f"{qt} 状态应 ok:{payload}"
+            got = payload["data"]["meta"]["command_cn"]
+            assert got == cn, f"{qt} command_cn 期望 {cn}(对齐 yaml),实际 {got}"
+
+    def test_ai_note_and_chain_injection(self, tmp_db_dir):
+        """看洞察/看异常:--ai-note 注入 data.ai_note(洞察卡)+ --chain 注入 meta.chain(日志②段)"""
+        import json
+        import re
+        rc, out, err, html_path = _run_bill_inject(
+            tmp_db_dir, "insight", "--months", "6",
+            "--ai-note", "消费习惯:餐饮占大头|省钱建议:少喝奶茶",
+            "--chain", "用户问洞察,调了 insight CLI")
+        text = html_path.read_text(encoding="utf-8-sig")
+        m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+        payload = json.loads(m.group(1))
+        d = payload["data"]
+        assert d["ai_note"] == "消费习惯:餐饮占大头|省钱建议:少喝奶茶", "ai_note 应注入 data"
+        assert d["meta"]["chain"] == "用户问洞察,调了 insight CLI", "chain 应注入 meta(日志②段)"
+        assert "parseAiNote" in text and "AI 消费洞察(解读)" in text, "模板应渲染解读卡"
+
+    def test_ai_note_optional(self, tmp_db_dir):
+        """不带 --ai-note:payload 无 ai_note 字段,模板不渲染解读卡(不崩)"""
+        import json
+        import re
+        rc, out, err, html_path = _run_bill_inject(tmp_db_dir, "insight", "--months", "6")
+        text = html_path.read_text(encoding="utf-8-sig")
+        m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+        payload = json.loads(m.group(1))
+        assert "ai_note" not in payload["data"], "无 --ai-note 时不应有 ai_note 字段"
+        assert payload["status"] == "ok"
+
+    def test_csv_array_fields_cover_analysis(self, tmp_db_dir):
+        """复制数据 CSV 通道:模板 toCSV 覆盖分析域数组字段(categories/series/buckets/accounts/objects)"""
+        text = Path(__file__).resolve().parent.parent.joinpath(
+            "templates", "分析", "analysis_view.html").read_text(encoding="utf-8")
+        for f in ["categories", "series", "buckets", "accounts", "objects",
+                  "active", "history", "details", "top_expenses", "top_categories"]:
+            assert f in text, f"toCSV 缺数组字段映射: {f}"
+
+    def test_chart_responsive_base(self, tmp_db_dir):
+        """SVG 图表响应式:chartBase 按 window.innerWidth 切手机画布(手机字号 ≥ 桌面可读)"""
+        text = Path(__file__).resolve().parent.parent.joinpath(
+            "templates", "分析", "analysis_view.html").read_text(encoding="utf-8")
+        assert "function chartBase()" in text, "缺 chartBase 响应式基座"
+        assert "window.innerWidth <= 640" in text, "应监听视口宽度切手机画布"
+        assert "font-size=\"${fs}\"" in text, "图表文字字号应走 fs 变量(响应式)"
+        assert "mobile ? 13 : 11" in text, "手机字号应 ≥ 11(缩放后可读)"
+
+    def test_drill_interactions_bound(self, tmp_db_dir):
+        """本地只读下钻:category 点分类→明细 / trend 点月份→汇总(bind + onclick 绑定)"""
+        text = Path(__file__).resolve().parent.parent.joinpath(
+            "templates", "分析", "analysis_view.html").read_text(encoding="utf-8")
+        assert "bindCategoryDrill" in text and "_drillCategory" in text, "category 缺下钻绑定"
+        assert "bindTrendDrill" in text and "_drillTrend" in text, "trend 缺下钻绑定"
+        assert "type === 'category'" in text and "type === 'trend'" in text, "init 应绑定下钻"
+
+    def test_accessibility_css(self, tmp_db_dir):
+        """设计细节:focus-visible 焦点环 + prefers-reduced-motion(对抗式审查补齐)"""
+        text = Path(__file__).resolve().parent.parent.joinpath(
+            "templates", "分析", "analysis_view.html").read_text(encoding="utf-8")
+        assert ":focus-visible" in text, "缺键盘焦点环"
+        assert "prefers-reduced-motion: reduce" in text, "缺动效偏好适配"
+
+    def test_stats_five_card_layout(self, tmp_db_dir):
+        """做统计 5 卡:数字 3 卡 + 时间 2 卡分两行(避免手机 2+2+1 末卡独行)"""
+        text = Path(__file__).resolve().parent.parent.joinpath(
+            "templates", "分析", "analysis_view.html").read_text(encoding="utf-8")
+        assert text.count('kpiCard(') >= 5, "renderStats 应有 5 张 KPI 卡"
+        assert "首笔时间" in text and "最近记录" in text, "时间卡应在"

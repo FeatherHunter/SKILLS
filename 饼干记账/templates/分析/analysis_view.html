@@ -137,6 +137,16 @@
   .btn.ghost { background: #fff; color: var(--fg); border: 1px solid var(--border); }
   .btn.ghost:hover { background: var(--bg); }
 
+  /* 无障碍:键盘焦点环(2026-08-09 对抗式审查补齐) */
+  .btn:focus-visible, .sheet-item:focus-visible, .sheet-cancel:focus-visible, .toast-close:focus-visible {
+    outline: 2px solid var(--blue); outline-offset: 2px;
+  }
+
+  /* 动效偏好:减少动态(2026-08-09 对抗式审查补齐) */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  }
+
   .sheet-mask { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 90; display: none; align-items: flex-end; justify-content: center; }
   .sheet-mask.show { display: flex; }
   .sheet { background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 10px 14px calc(14px + env(safe-area-inset-bottom,0)); box-shadow: 0 -8px 32px rgba(0,0,0,.12); }
@@ -287,6 +297,9 @@
       return;
     }
     fn(data);
+    // 下钻绑定(本地只读 · 08 §3 · category 点分类看明细 / trend 点月份看汇总)
+    if (type === 'category') bindCategoryDrill(data);
+    if (type === 'trend') bindTrendDrill(data);
     renderFooter(data);
   }
 
@@ -378,10 +391,27 @@
 
   function toCSV(d5) {
     const p = d5.payload || {};
-    const arr = p.records || p.bills || p.items || null;
-    if (Array.isArray(arr) && arr.length) {
+    // 分析域数组字段映射(2026-08-09 对抗式审查修复:CSV 三选一在分析域可存档)
+    const ARRAY_FIELDS = ['records', 'bills', 'items', 'categories', 'series', 'buckets',
+                          'accounts', 'ledgers', 'objects', 'active', 'history', 'details',
+                          'top_expenses', 'top_categories', 'monthly', 'rows', 'category_dist'];
+    let arr = null;
+    for (const f of ARRAY_FIELDS) {
+      if (Array.isArray(p[f]) && p[f].length) { arr = p[f]; break; }
+    }
+    if (arr && arr.length) {
+      // 扁平化非标行(分类/月份结构统一成 key/value/count/amount 语义)
       const keys = Object.keys(arr[0]);
-      return [keys.join(','), ...arr.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
+      const rows = arr.map(r => {
+        const o = {};
+        for (const k of keys) {
+          let v = r[k];
+          if (typeof v === 'object' && v !== null) v = JSON.stringify(v);
+          o[k] = v ?? '';
+        }
+        return o;
+      });
+      return [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
     }
     return Object.entries(p).map(([k, v]) => k + ',' + JSON.stringify(v ?? '')).join('\n');
   }
@@ -546,7 +576,7 @@
     `;
   }
 
-  // ── 5. 分类占比 category(SVG 环形图 + 排行) ──
+  // ── 5. 分类占比 category(SVG 环形图 + 排行 · 点分类下钻明细,本地只读) ──
   function renderCategory(data) {
     const cats = data.categories || [];
     const total = data.grand_total || cats.reduce((s, c) => s + c.expense, 0);
@@ -573,11 +603,45 @@
           </div>
         </div>
         <div class="card">
-          <div class="section-title">占比明细 <span class="count">${cats.length} 类</span></div>
-          ${cats.map((c, i) => categoryBar({ category: c.key || c.category, total: c.expense, count: c.count, pct: c.pct, avg: c.avg }, max, PALETTE[i % PALETTE.length])).join('')}
+          <div class="section-title">占比明细 <span class="count">${cats.length} 类 · 点击分类看明细</span></div>
+          ${cats.map((c, i) => `
+            <div class="cat-bar" style="cursor:pointer;transition:opacity .15s;" data-cat="${escapeHTML(c.key || c.category)}" onclick="window._drillCategory && window._drillCategory(this, '${escapeHTML(c.key || c.category)}')">
+              <div class="head">
+                <span class="name">${escapeHTML(c.key || c.category)}</span>
+                <span class="stats"><b>${fmtMoney(c.expense)}</b> 元 · ${c.count || 0} 笔${c.pct != null ? ' · ' + fmtPct(c.pct) : ''}${c.avg ? ' · 均 ' + fmtMoney(c.avg) : ''} <span style="color:var(--blue);font-size:11px;">▾ 明细</span></span>
+              </div>
+              <div class="track"><div class="fill" style="width:${max ? c.expense / max * 100 : 0}%;background:${PALETTE[i % PALETTE.length]}"></div></div>
+            </div>
+          `).join('')}
         </div>
+        <div id="drillPanel" style="display:none;"></div>
       ` : '<div class="card empty" style="margin-top:14px;">该期间暂无分类数据</div>'}
     `;
+  }
+
+  // 分类下钻:展示该分类记录明细(本地只读 · 08 §3 · 点开/收起)
+  function bindCategoryDrill(data) {
+    window._drillCategory = function(el, cat) {
+      const panel = document.getElementById('drillPanel');
+      if (panel && panel.style.display === 'block' && panel.dataset.cat === cat) {
+        panel.style.display = 'none';
+        return;
+      }
+      const recs = (data.records || []).filter(r => {
+        const c = r.category || '';
+        return c === cat || c.startsWith(cat + '/');
+      });
+      if (!panel) return;
+      panel.dataset.cat = cat;
+      panel.style.display = 'block';
+      panel.innerHTML = `
+        <div class="card">
+          <div class="section-title">${escapeHTML(cat)} 明细 <span class="count">${recs.length} 笔 · ${fmtMoney(recs.reduce((s, r) => s + Math.abs(r.amount || 0), 0))} 元</span></div>
+          ${recs.length ? recordsList(recs) : '<div class="empty">该分类暂无记录</div>'}
+        </div>
+      `;
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
   }
 
   // ── 6. 账户占比 account ──
@@ -778,7 +842,7 @@
     `;
   }
 
-  // ── 13. 收支趋势 trend(SVG 双线折线) ──
+  // ── 13. 收支趋势 trend(SVG 双线折线 · 点月份展开该月汇总,本地只读) ──
   function renderTrend(data) {
     const series = data.series || [];
     $('#app').innerHTML = `
@@ -798,10 +862,10 @@
           </div>
         </div>
         <div class="card">
-          <div class="section-title">逐月明细</div>
+          <div class="section-title">逐月明细 <span class="count">点击月份看该月汇总</span></div>
           <div class="records">
-            ${series.map(m => `
-              <div class="record">
+            ${series.map((m, i) => `
+              <div class="record" style="cursor:pointer;" onclick="window._drillTrend && window._drillTrend(this, ${i})">
                 <div class="time">${escapeHTML(m.month)}</div>
                 <div><div class="cat">${m.count} 笔</div></div>
                 <div style="text-align:right">
@@ -812,8 +876,38 @@
             `).join('')}
           </div>
         </div>
+        <div id="trendDrillPanel" style="display:none;"></div>
       ` : '<div class="card empty" style="margin-top:14px;">暂无数据</div>'}
     `;
+  }
+
+  // 月份下钻:展开该月净额/占比快览(本地只读 · 08 §3)
+  function bindTrendDrill(data) {
+    window._drillTrend = function(el, idx) {
+      const panel = document.getElementById('trendDrillPanel');
+      const m = (data.series || [])[idx];
+      if (!panel || !m) return;
+      if (panel.style.display === 'block' && panel.dataset.idx === String(idx)) {
+        panel.style.display = 'none';
+        return;
+      }
+      panel.dataset.idx = String(idx);
+      panel.style.display = 'block';
+      const exp = m.expense || 0, inc = m.income || 0;
+      const net = inc - exp;
+      panel.innerHTML = `
+        <div class="card">
+          <div class="section-title">${escapeHTML(m.month)} 汇总</div>
+          <div class="kpi-grid" style="margin-bottom:0;">
+            ${kpiCard('支出', fmtMoney(exp), '元', 'red', 'compact')}
+            ${kpiCard('收入', fmtMoney(inc), '元', 'green', 'compact')}
+            ${kpiCard('净额', fmtMoney(net), '元', net >= 0 ? 'green' : 'red', 'compact')}
+            ${kpiCard('笔数', m.count || 0, '笔', 'blue', 'compact')}
+          </div>
+        </div>
+      `;
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    };
   }
 
   // ── 14. 分类趋势 cat_trend(柱状/折线) ──
@@ -911,11 +1005,14 @@
   function renderStats(data) {
     const monthly = data.monthly_dist || [];
     const max = monthly.length ? Math.max(...monthly.map(m => m.count)) : 0;
+    // 5 卡布局:前 3 数字卡 + 末 2 时间卡合并为一行两张(避免手机 2+2+1 末卡独行,2026-08-09 审查修复)
     $('#app').innerHTML = `
       <div class="kpi-grid">
         ${kpiCard('总笔数', data.total_records || 0, '笔', 'blue')}
         ${kpiCard('记账天数', data.total_days || 0, '天', 'purple')}
         ${kpiCard('日均笔数', data.daily_avg || 0, '笔/天', 'green', 'compact')}
+      </div>
+      <div class="kpi-grid" style="margin-top:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
         ${kpiCard('首笔时间', data.first_record ? timeShort(data.first_record) : '-', '', 'orange', 'tiny')}
         ${kpiCard('最近记录', data.last_record ? timeShort(data.last_record) : '-', '', 'green', 'tiny')}
       </div>
@@ -955,7 +1052,18 @@
     `;
   }
 
-  // ── 20. AI 消费洞察 insight(洞察卡) ──
+  // ── 20. AI 消费洞察 insight(洞察卡:事实层 + AI 解读) ──
+  function parseAiNote(note) {
+    // AI 解读支持三段式:「消费习惯:…|异常波动:…|省钱建议:…」或纯文本单段
+    if (!note) return [];
+    const parts = String(note).split('|').map(s => s.trim()).filter(Boolean);
+    const KNOWN = { '消费习惯': 1, '异常波动': 1, '省钱建议': 1 };
+    return parts.map(s => {
+      const m = s.match(/^([^:：]{2,6})[:：]\s*(.*)$/);
+      if (m && KNOWN[m[1]]) return { title: m[1], text: m[2] };
+      return { title: 'AI 解读', text: s };
+    });
+  }
   function renderInsight(data) {
     const p = data.period || {};
     const cats = data.category_dist || [];
@@ -963,7 +1071,19 @@
     const months = trend.months || [];
     const tops = data.top_expense || [];
     const max = cats.length ? Math.max(...cats.map(c => c.expense)) : 0;
+    const notes = parseAiNote(data.ai_note);
     $('#app').innerHTML = `
+      ${notes.length ? `
+        <div class="card insight-card" style="margin-bottom:14px;">
+          <div class="t">💡 AI 消费洞察(解读)</div>
+          ${notes.map(n => `
+            <div style="padding:10px 0;${n.title !== 'AI 解读' ? 'border-bottom:1px solid var(--border);' : ''}">
+              ${n.title !== 'AI 解读' ? `<div class="t" style="font-size:13px;color:var(--purple);margin-bottom:4px;">${escapeHTML(n.title)}</div>` : ''}
+              <div class="d">${escapeHTML(n.text)}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
       <div class="kpi-grid">
         ${kpiCard('区间支出', fmtMoney(p.expense), '元', 'red')}
         ${kpiCard('区间收入', fmtMoney(p.income), '元', 'green')}
@@ -1213,10 +1333,21 @@
     </svg>`;
   }
 
-  // ── 组件：SVG 双线折线图(趋势) ───────────────────────────
+  // ── 组件：SVG 双线折线图(趋势 · 响应式:按容器宽度动态字号,手机 ≥8px) ──
+  function chartBase() {
+    // 视口感知:≤640px 手机用紧凑画布,否则 800px 桌面画布(SVG 内文字按比例放大)
+    const mobile = window.innerWidth <= 640;
+    const W = mobile ? 375 : 800;
+    const H = mobile ? 240 : 260;
+    const fs = mobile ? 13 : 11;          // 文字基础字号(手机 13px ≥ 8px 可读)
+    const lw = mobile ? 3 : 2.5;          // 线宽
+    const padL = mobile ? 44 : 56;        // 左 padding(坐标轴数字宽度)
+    return { W, H, PL: padL, PR: 20, PT: 16, PB: mobile ? 44 : 36, fs, lw };
+  }
+
   function lineChart(series) {
     if (!series.length) return '<div class="empty">暂无数据</div>';
-    const W = 800, H = 260, PL = 56, PR = 20, PT = 16, PB = 36;
+    const { W, H, PL, PR, PT, PB, fs, lw } = chartBase();
     const iw = W - PL - PR, ih = H - PT - PB;
     const maxV = Math.max(...series.map(m => Math.max(m.expense, m.income)), 1) * 1.15;
     const n = series.length;
@@ -1226,16 +1357,16 @@
 
     function polyline(values, color) {
       const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-      return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+      return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="${lw}" stroke-linejoin="round" stroke-linecap="round"/>`;
     }
     const gridY = [0, 0.25, 0.5, 0.75, 1].map(f => {
       const gy = PT + ih * f;
       const val = (maxV * (1 - f)).toFixed(0);
-      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="11" fill="#86868b">${val}</text>`;
+      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="${fs}" fill="#86868b">${val}</text>`;
     }).join('');
     const xLabels = labels.map((lb, i) => {
       const show = n <= 8 || i % Math.ceil(n / 8) === 0 || i === n - 1;
-      return show ? `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-size="11" fill="#86868b">${escapeHTML(lb)}</text>` : '';
+      return show ? `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-size="${fs}" fill="#86868b">${escapeHTML(lb)}</text>` : '';
     }).join('');
     // 峰值标注(支出)
     let peakMark = '';
@@ -1243,7 +1374,7 @@
       let pi = 0;
       for (let i = 1; i < n; i++) if (series[i].expense > series[pi].expense) pi = i;
       if (series[pi].expense > 0) {
-        peakMark = `<text x="${x(pi)}" y="${y(series[pi].expense) - 8}" text-anchor="middle" font-size="11" font-weight="700" fill="#ff3b30">峰值 ${fmtMoney(series[pi].expense)}</text>`;
+        peakMark = `<text x="${x(pi)}" y="${y(series[pi].expense) - 8}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#ff3b30">峰值 ${fmtMoney(series[pi].expense)}</text>`;
       }
     }
     return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
@@ -1255,10 +1386,10 @@
     </svg>`;
   }
 
-  // ── 组件：SVG 柱状图(分类趋势/时段) ─────────────────────
+  // ── 组件：SVG 柱状图(分类趋势/时段 · 响应式) ──
   function barChart(series) {
     if (!series.length) return '<div class="empty">暂无数据</div>';
-    const W = 800, H = 260, PL = 56, PR = 20, PT = 16, PB = 36;
+    const { W, H, PL, PR, PT, PB, fs } = chartBase();
     const iw = W - PL - PR, ih = H - PT - PB;
     const maxV = Math.max(...series.map(m => m.expense), 1) * 1.1;
     const n = series.length;
@@ -1269,16 +1400,16 @@
       const bh = (m.expense / maxV) * ih;
       const by = PT + ih - bh;
       return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(bh, 1).toFixed(1)}" rx="4" fill="#ff9500"/>
-        ${m.expense > 0 ? `<text x="${(bx + bw / 2).toFixed(1)}" y="${(by - 6).toFixed(1)}" text-anchor="middle" font-size="10" fill="#86868b">${fmtMoney(m.expense)}</text>` : ''}`;
+        ${m.expense > 0 ? `<text x="${(bx + bw / 2).toFixed(1)}" y="${(by - 6).toFixed(1)}" text-anchor="middle" font-size="${fs}" fill="#86868b">${fmtMoney(m.expense)}</text>` : ''}`;
     }).join('');
     const gridY = [0, 0.5, 1].map(f => {
       const gy = PT + ih * f;
       const val = (maxV * (1 - f)).toFixed(0);
-      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="11" fill="#86868b">${val}</text>`;
+      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="${fs}" fill="#86868b">${val}</text>`;
     }).join('');
     const xLabels = series.map((m, i) => {
       const show = n <= 8 || i % Math.ceil(n / 8) === 0 || i === n - 1;
-      return show ? `<text x="${(PL + step * i + step / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="11" fill="#86868b">${escapeHTML(m.month.slice(2))}</text>` : '';
+      return show ? `<text x="${(PL + step * i + step / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="${fs}" fill="#86868b">${escapeHTML(m.month.slice(2))}</text>` : '';
     }).join('');
     return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
       ${gridY}
@@ -1287,10 +1418,10 @@
     </svg>`;
   }
 
-  // ── 组件：SVG 直方图(金额分布) ───────────────────────────
+  // ── 组件：SVG 直方图(金额分布 · 响应式) ──
   function histChart(buckets) {
     if (!buckets.length) return '<div class="empty">暂无数据</div>';
-    const W = 800, H = 260, PL = 56, PR = 20, PT = 16, PB = 40;
+    const { W, H, PL, PR, PT, PB, fs } = chartBase();
     const iw = W - PL - PR, ih = H - PT - PB;
     const maxV = Math.max(...buckets.map(b => b.count), 1) * 1.15;
     const n = buckets.length;
@@ -1301,16 +1432,15 @@
       const bh = (b.count / maxV) * ih;
       const by = PT + ih - bh;
       return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(bh, 1).toFixed(1)}" rx="4" fill="#007aff"/>
-        <text x="${(bx + bw / 2).toFixed(1)}" y="${(by - 6).toFixed(1)}" text-anchor="middle" font-size="10" fill="#86868b">${b.count}笔</text>`;
+        <text x="${(bx + bw / 2).toFixed(1)}" y="${(by - 6).toFixed(1)}" text-anchor="middle" font-size="${fs}" fill="#86868b">${b.count}笔</text>`;
     }).join('');
     const gridY = [0, 0.5, 1].map(f => {
       const gy = PT + ih * f;
       const val = Math.round(maxV * (1 - f));
-      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="11" fill="#86868b">${val}</text>`;
+      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="${fs}" fill="#86868b">${val}</text>`;
     }).join('');
     const xLabels = buckets.map((b, i) => {
-      const words = String(b.bucket).split('');
-      return `<text x="${(PL + step * i + step / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="10.5" fill="#86868b">${escapeHTML(b.bucket)}</text>`;
+      return `<text x="${(PL + step * i + step / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="${fs}" fill="#86868b">${escapeHTML(b.bucket)}</text>`;
     }).join('');
     return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
       ${gridY}

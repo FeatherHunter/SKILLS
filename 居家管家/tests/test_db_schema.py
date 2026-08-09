@@ -67,9 +67,19 @@ def test_item_ids_are_unique(conn):
 
 
 def test_real_data_count_is_sane(conn):
-    """物品总数应 ≥ 800, 异常低说明 DB 损坏或被错误清理"""
-    count = conn.execute("SELECT COUNT(*) FROM items").fetchone()[0]
-    assert count > 800, f"物品数 {count} 异常低, 可能 DB 损坏"
+    """items 表可写(issue #125: 不再断言生产库真实数据量, 隔离后为临时库)
+
+    原断言 `count > 800` 依赖生产库真实数据, conftest conn 已改为临时库
+    (issue #125 测试隔离), 该断言失义。改造为写-读-删的 schema 功能验证,
+    保留「表可正常使用」的防破坏意图。
+    """
+    name = "TEST_SCHEMA_PROBE"
+    cur = conn.execute("INSERT INTO items (name, category) VALUES (?, '测试')", (name,))
+    iid = cur.lastrowid
+    row = conn.execute("SELECT id, name FROM items WHERE id = ?", (iid,)).fetchone()
+    assert row is not None and row["name"] == name, "items 表不可写, schema 异常"
+    conn.execute("DELETE FROM items WHERE id = ?", (iid,))
+    conn.commit()
 
 
 def test_no_orphan_test_items(conn):

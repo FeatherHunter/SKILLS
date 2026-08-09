@@ -126,11 +126,11 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 | 账户 | `看账户汇总` | 查看账户汇总 | `account summary` | **HTML** |
 | 联动 | `买东西` | 买东西联动(记账 + 录物品) | `link form + receipt` | **HTML 表单+回执** |
 | 联动 | `吃饭` | 吃饭联动(记账 + 记卡路里) | `link form + receipt` | **HTML 表单+回执** |
-| 开始使用 | `初始化` | 首次使用向导(4 步零决策) | `setup init(待实施·4 步向导)` | **HTML** |
-| 开始使用 | `初始化状态` | 初始化状态(是否已就绪) | `setup init-status(待实施)` | **HTML** |
-| 开始使用 | `备份` | 一键备份 | `backup create ✓` | **HTML** |
-| 开始使用 | `恢复备份` | 从备份恢复 | `backup restore ✓` | **HTML** |
-| 开始使用 | `导入` | 导入 CSV 账单(列映射向导) | `setup import(待实施·CSV)` | **HTML** |
+| 开始使用 | `初始化` | 首次使用向导(4 步零决策) | `setup init` | **HTML** |
+| 开始使用 | `初始化状态` | 初始化状态(是否已就绪) | `setup init-status` | **HTML** |
+| 开始使用 | `备份` | 一键备份 / 查看备份 | `setup backup-create / backup-list` | **HTML** |
+| 开始使用 | `恢复备份` | 从备份恢复 | `setup restore --name X` | **HTML** |
+| 开始使用 | `导入` | 导入 CSV 账单(列映射向导) | `setup import --file X` | **HTML** |
 | HELP | `查帮助` | 能力速查 HELP | `render_help.py` | **HTML** |
 | HELP | `能做什么` | 能力速查 HELP | `render_help.py` | **HTML** |
 
@@ -187,6 +187,11 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 | "新增账户"、"加个账户"、"建个X账户" | → `新增账户` |
 | "把X改成Y"、"停用X账户"、"改账户" | → `改账户` |
 | "账户余额"、"账户汇总"、"各账户" | → `看账户汇总` |
+| "开始使用"、"帮我初始化"、"首次使用" | → `初始化` |
+| "初始化了吗"、"能不能用"、"就绪了吗" | → `初始化状态` |
+| "备份一下"、"做个备份"、"存档" | → `备份` |
+| "恢复数据"、"恢复到X"、"还原" | → `恢复备份` |
+| "导入账单"、"导入CSV"、"导入文件" | → `导入` |
 
 ### Step 3：解析参数
 
@@ -565,6 +570,53 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 
 返回退款总额/次数 + 月份分布 + 退款明细；聚合 `#退款`。
 
+### 开始使用流程细则（6 场景 · 2026-08-09 落地）
+
+初始化/备份/导入统一遵守（载体契约 G6/G2/G1）：
+
+- **初始化**：`setup init --check`（只读环境检测，向导步骤 1-2）→ 用户确认 → `setup init`（建库幂等自愈 + 只读验证）；重复执行安全。`setup init-status` 三重判定（数据存在 + schema 完整 + 版本 v2.0 特征列 deleted_at）；schema 过期 → 显式迁移提示（不自动迁移）。
+- **备份**：`setup backup-create`（db + goals.json → 备份目录 `<时间戳>/`）；`setup backup-list` 查看；`setup restore --name X` 恢复（**默认最新备份**，恢复前自动备份现状防覆盖丢失）。备份/恢复包装公共层 `scripts/backup.py`（T0 第 9 项）。
+- **导入**：G1 最小方案 = 通用 CSV + 列映射（**不逐软件适配**）。`setup import --file X [--mapping date=1,amount=3,category=2]` 自动猜测映射（表头关键词 日期/金额/分类/备注/账户/账本/收支方向），可显式覆盖；时间自动归一化（纯日期补 00:00:00）；收支方向列含"收"→正/"支"→负，缺省按金额符号；逐行校验（分类白名单/金额非零/时间格式），失败行收集不中断；**外部导入缺省未删**（deleted_at=NULL · 软删契约）；缺文件路径 → AI 反问（不猜测）。
+- **向导 HTML 流程**：初始化/恢复/导入 = 向导型（HTML 预览确认 → AI 执行 CLI → 回执）；备份 = 回执型 HTML；状态 = 结果型 HTML。全部走 `scripts/setup/render.py <mode>`，输出路径与 §12.A 一致。
+
+#### 初始化
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "帮我初始化/开始使用" | `setup init --check`（渲染向导）→ 确认 → `setup init` |
+| "初始化了没/能用吗" | `setup init-status` → 状态 HTML（未就绪引导初始化） |
+
+流程：AI 调 `setup/render.py init-wizard`（4 步零决策向导：环境检测 → 数据目录确认 → 建库 → 只读验证；含「记第一笔」引导按钮）→ 用户确认（复制 prompt）→ AI 执行 `setup init` → 完成页。
+
+#### 备份 / 恢复备份
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "备份一下" | `setup backup-create` → 回执 HTML |
+| "有哪些备份" | `setup backup-list` → 列表 HTML（空态引导一键备份） |
+| "从备份恢复" / "恢复XX备份" | `setup restore --name X`（默认最新）→ 向导确认 → 恢复回执 |
+
+#### 导入
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "导入 CSV 账单" | 缺文件路径 → AI 反问；有路径 → `setup/render.py import --file X` 渲染列映射向导 |
+
+流程：HTML 列映射向导（前几行预览 + 自动猜测映射可改）→ 用户确认（复制 prompt 含文件路径 + 映射）→ AI 执行 `setup import --file X --mapping ...` → 文字回执（成功/失败行数）。
+
+**HTML 渲染入口（开始使用域专用，不走 bill_inject）：**
+
+```bash
+# 向导型(4 步零决策 / 恢复预览 / 列映射)
+python3 scripts/setup/render.py init-wizard
+python3 scripts/setup/render.py restore [--name X]
+python3 scripts/setup/render.py import --file x.csv
+# 结果型 / 回执型
+python3 scripts/setup/render.py init-status
+python3 scripts/setup/render.py backup-create
+python3 scripts/setup/render.py backup-list
+```
+
 ### 账户流程细则（4 场景 · 2026-08-09 落地）
 
 账户 = `bills.account` 字段（无独立账户表）；账户清单 = `goals.json` 顶层 `accounts` 键（账户表，与目标域 `budgets/savings` 键隔离）；余额 = 收支累计推算（该账户收入 − 支出）。
@@ -838,6 +890,15 @@ python3 scripts/account/cli.py update --name 招行卡 --new-name 招行工资�
 python3 scripts/account/cli.py update --name 花呗 --disable
 python3 scripts/account/cli.py transfer --amount 500 --from 支付宝 --to 招行卡
 python3 scripts/account/cli.py summary
+
+# 开始使用域(初始化/备份/导入;HTML 渲染走 scripts/setup/render.py)
+python3 scripts/setup/cli.py init --check
+python3 scripts/setup/cli.py init
+python3 scripts/setup/cli.py init-status
+python3 scripts/setup/cli.py backup-create
+python3 scripts/setup/cli.py backup-list
+python3 scripts/setup/cli.py restore --name 20260809_120000
+python3 scripts/setup/cli.py import --file x.csv --mapping date=1,amount=3,category=2
 ```
 
 ### Step 5：回复用户
@@ -968,6 +1029,53 @@ python3 scripts/goal/render.py saving
 - 进度条组件（预算 vs 实际 / 已存 vs 目标）+ 状态机警示色（预算内绿 / 接近上限橙 / 已超支红；目标进行中蓝 / 落后红 / 达成绿）
 - 采集表单：字段回显 + 覆盖冲突警示条 + 一键复制确认 prompt（对齐 scenes/goal.yaml）
 
+**开始使用域 HTML（setup/render.py · 2026-08-09 落地）：**
+
+| 场景 | CLI 子命令 | 模板 | setup/render.py 调用 |
+|---|---|---|---|
+| 首次使用向导（4 步零决策） | `init` / `init --check` | `templates/开始使用/init_wizard.html` | `setup/render.py init-wizard` |
+| 初始化状态（三重判定） | `init-status` | `templates/开始使用/init_status.html` | `setup/render.py init-status` |
+| 一键备份（回执） | `backup-create` | `templates/开始使用/backup.html` | `setup/render.py backup-create` |
+| 查看备份（列表） | `backup-list` | `templates/开始使用/backup_list.html` | `setup/render.py backup-list` |
+| 从备份恢复（向导） | `restore --name X` | `templates/开始使用/restore.html` | `setup/render.py restore [--name X]` |
+| 导入 CSV（列映射向导） | `import --file X` | `templates/开始使用/import.html` | `setup/render.py import --file X` |
+
+开始使用域场景默认 HTML 交付（向导/回执/结果型 + 复制数据/日志）；备份/恢复/导入包装公共层 `backup.py`（G2 决议 备份 = db + goals.json）。
+
+**调用流程（AI 必走）：**
+
+```bash
+# 标准路径(向导/回执/结果 → HTML;执行走 setup/cli.py)
+python3 scripts/setup/render.py init-wizard
+python3 scripts/setup/render.py init-status
+python3 scripts/setup/render.py backup-create
+python3 scripts/setup/render.py backup-list
+python3 scripts/setup/render.py restore
+python3 scripts/setup/render.py import --file x.csv
+# 执行侧(向导确认后)
+python3 scripts/setup/cli.py init
+python3 scripts/setup/cli.py import --file x.csv --mapping date=1,amount=3,category=2
+```
+
+**错误处理（§04 原则 11 反模式 #3）：**
+- HTML 生成失败 / 业务失败（无备份可恢复 / 文件不存在 / 缺文件路径）→ **保留错误页 HTML** 交付给用户（setup/render.py 自动处理，含 5 状态契约错误回执）
+- ❌ **禁止**降级为纯文字答（这是 fail mode,不是 fallback）
+
+**默认输出路径（v2.5 同步卡路里 §4.1）**：`$DATA_DIR/biscuit_accountant_html/<command_zh>_<YYYYMMDD>_<HHMMSS>[_N].html`
+  - 中文化 command 名：init-wizard → 初始化向导 / init-status → 初始化状态 / backup-create → 一键备份 / backup-list → 查看备份 / restore → 从备份恢复 / import → 导入CSV
+
+**指定输出路径**：`python3 scripts/setup/render.py restore --out C:/Users/xxx/Desktop/x.html`
+
+**交付给用户**：用 `<media src="..." type="file" />` 把生成的 HTML 文件交付，用户双击在浏览器打开即可看到可视化效果。
+
+**模板特性（templates/开始使用/*.html）**：
+- 单文件离线运行（无 CDN / 无图表库依赖）
+- Apple 视觉风格（圆角卡片 / 系统字体 / 蓝橙绿红配色）
+- 自适应桌面 + 平板 + 手机
+- 向导型步骤条（初始化 4 步 / 恢复 3 步 / 导入列映射）+ 完成态「记第一笔」引导按钮
+- 初始化状态三重判定卡（存在 / schema / 版本）+ 迁移提示条
+- 备份列表空态引导一键备份;恢复向导覆盖警示（恢复前自动备份现状）
+
 ### Step 7：HELP 能力速查（v2.4 升级）
 
 当用户说「饼干记账 HELP」「饼干记账 帮助」「查帮助」「能做什么」时，AI 调用 `scripts/render_help.py` 生成 HELP HTML 并交付。
@@ -1043,8 +1151,14 @@ python3 scripts/render_help.py --check
 | `budget` | 查看预算执行(goal) | （无） | `--month`, `--category`, **`--json`** |
 | `set-saving` | 设定储蓄目标(goal) | `--name`, `--amount` | `--deadline`, **`--json`** |
 | `saving` | 查看目标进度(goal) | （无） | `--name`, **`--json`** |
+| `init` | 初始化向导执行(setup) | （无） | `--check`(只读环境检测), **`--json`** |
+| `init-status` | 初始化状态三重判定(setup) | （无） | **`--json`** |
+| `backup-create` | 一键备份(setup · db+goals.json) | （无） | **`--json`** |
+| `backup-list` | 查看备份(setup) | （无） | **`--json`** |
+| `restore` | 从备份恢复(setup) | （无） | `--name`(默认最新), **`--json`** |
+| `import` | 导入 CSV 账单(setup) | `--file` | `--mapping`(字段=列号), `--encoding`, `--skip-header`, `--preview`/`--dry-run`, **`--json`** |
 
-> **JSON 契约**：所有查询命令加 `--json` 后输出 `{status: "ok"|"error", data: {...}, message: "..."}` 三段式。`bill_inject.py` 用此契约注入 HTML 模板。写入类命令（add/update）不支持 `--json`，保持纯文本输出。目标域 4 命令（`set-budget` / `budget` / `set-saving` / `saving`）在 `scripts/goal/cli.py`（HTML 渲染走 `scripts/goal/render.py`）；`set-budget` 覆盖冲突时返回 `status: "ok"` + `data.conflict: true`（原值在 `data.existing`），AI 据此提示用户确认后加 `--force`。
+> **JSON 契约**：所有查询命令加 `--json` 后输出 `{status: "ok"|"error", data: {...}, message: "..."}` 三段式。`bill_inject.py` 用此契约注入 HTML 模板。写入类命令（add/update）不支持 `--json`，保持纯文本输出。目标域 4 命令（`set-budget` / `budget` / `set-saving` / `saving`）在 `scripts/goal/cli.py`（HTML 渲染走 `scripts/goal/render.py`）；`set-budget` 覆盖冲突时返回 `status: "ok"` + `data.conflict: true`（原值在 `data.existing`），AI 据此提示用户确认后加 `--force`。开始使用域 6 命令（`init` / `init-status` / `backup-create` / `backup-list` / `restore` / `import`）在 `scripts/setup/cli.py`（HTML 渲染走 `scripts/setup/render.py`，包装公共层 backup.py）。
 
 ---
 

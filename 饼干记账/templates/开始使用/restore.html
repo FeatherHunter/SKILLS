@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>饼干记账 · 从备份恢复</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg:#f5f5f7; --card:#fff; --line:#e5e5ea; --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --blue:#007aff; --blue2:#0a63ce; --green:#34c759; --orange:#ff9500; --red:#ff3b30; --soft:#f5f8ff; --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05); }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--fg); line-height:1.6; -webkit-font-smoothing:antialiased; padding:0 0 110px; }
+  .wrap { max-width:640px; margin:0 auto; padding:24px 16px; }
+  .header { padding:6px 0 18px; }
+  .eyebrow { font-size:12px; color:var(--fg3); font-weight:600; letter-spacing:.06em; margin-bottom:6px; }
+  h1 { font-size:27px; font-weight:700; letter-spacing:-.02em; line-height:1.25; }
+  .subtitle { color:var(--fg2); font-size:14px; margin-top:6px; }
+  .chips { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
+  .chip { font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:999px; background:var(--soft); color:var(--blue2); border:1px solid #d7e6ff; }
+  .card { background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:18px 20px; margin-bottom:14px; }
+  .steps { display:flex; flex-direction:column; gap:0; }
+  .step { display:flex; gap:14px; padding:12px 0; border-bottom:1px solid var(--line); }
+  .step:last-child { border-bottom:0; }
+  .step-ic { width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; flex-shrink:0; }
+  .step-ic.done { background:rgba(52,199,89,.14); color:var(--green); }
+  .step-ic.pending { background:var(--bg); color:var(--fg3); }
+  .step-ic.current { background:rgba(0,122,255,.14); color:var(--blue); }
+  .step-body { flex:1; min-width:0; }
+  .step-name { font-size:15px; font-weight:700; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .step-status { font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; }
+  .step-status.done { background:rgba(52,199,89,.12); color:var(--green); }
+  .step-status.pending { background:var(--bg); color:var(--fg3); }
+  .step-status.current { background:rgba(0,122,255,.12); color:var(--blue); }
+  .step-detail { font-size:12.5px; color:var(--fg2); margin-top:3px; word-break:break-all; }
+  .warn { background:#fff7e8; border:1px solid #ffe3b3; border-radius:12px; padding:12px 14px; color:#b25b00; font-size:13px; margin-top:10px; }
+  .detail-row { display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .detail-row:last-child { border-bottom:0; }
+  .detail-row .k { color:var(--fg3); }
+  .detail-row .v { font-weight:600; font-variant-numeric:tabular-nums; word-break:break-all; text-align:right; }
+  .select { margin-top:10px; }
+  .select-label { font-size:12px; font-weight:600; color:var(--fg2); margin-bottom:6px; }
+  .b-list { display:flex; flex-direction:column; gap:6px; }
+  .b-opt { display:flex; align-items:center; gap:10px; border:1.5px solid var(--line); background:#fff; border-radius:12px; padding:10px 12px; font-size:13.5px; font-weight:600; cursor:pointer; font-family:inherit; text-align:left; transition:border .15s; }
+  .b-opt:hover { border-color:var(--blue); }
+  .b-opt.sel { border-color:var(--blue); background:var(--soft); }
+  .b-opt .m { color:var(--fg3); font-weight:400; font-size:12px; margin-left:auto; }
+  .actions { position:fixed; left:0; right:0; bottom:0; background:rgba(255,255,255,.92); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); border-top:1px solid var(--line); padding:12px 16px calc(12px + env(safe-area-inset-bottom,0)); display:flex; gap:8px; justify-content:center; }
+  .actions .btn-main, .actions .btn { flex:1; min-width:0; justify-content:center; }
+  .btn-main { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:999px; padding:11px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+  .btn-main:hover { background:var(--bg); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:999px; padding:11px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn:hover { background:var(--bg); }
+  .btn-main.primary { background:var(--blue); color:#fff; border-color:var(--blue); }
+  .btn-main.primary:hover { background:var(--blue2); }
+  .toast { position:fixed; left:50%; bottom:calc(76px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) scale(.9); opacity:0; background:rgba(28,28,30,.94); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); color:#f0f0f0; border-radius:14px; padding:13px 14px 13px 16px; display:flex; align-items:flex-start; gap:12px; max-width:480px; min-width:300px; box-shadow:0 10px 32px rgba(0,0,0,.32); pointer-events:none; transition:opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index:99; }
+  .toast.show { opacity:1; transform:translateX(-50%) scale(1); pointer-events:auto; }
+  .toast-title { font-weight:600; font-size:12.5px; color:#fff; margin-bottom:2px; }
+  .toast-detail { font-size:11px; color:#c8c8cc; }
+  .toast-close { background:rgba(255,255,255,.10); color:#34c759; border:0; border-radius:8px; padding:5px 9px; font-size:10.5px; margin-left:6px; cursor:pointer; flex-shrink:0; }
+  .sheet-mask { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:90; display:none; align-items:flex-end; justify-content:center; }
+  .sheet-mask.show { display:flex; }
+  .sheet { background:#fff; border-radius:18px 18px 0 0; width:100%; max-width:480px; padding:10px 14px calc(14px + env(safe-area-inset-bottom,0)); box-shadow:0 -8px 32px rgba(0,0,0,.12); }
+  .sheet-title { font-size:15px; font-weight:700; text-align:center; padding:10px 0 4px; }
+  .sheet-sub { font-size:12px; color:var(--fg3); text-align:center; padding-bottom:10px; }
+  .sheet-item { display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:var(--bg); border:0; border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer; font-family:inherit; }
+  .sheet-item .f { font-weight:700; font-size:14px; min-width:56px; }
+  .sheet-item .d { font-size:11.5px; color:var(--fg3); }
+  .sheet-cancel { width:100%; background:var(--bg); border:0; border-radius:12px; padding:12px; font-size:14px; font-weight:600; color:var(--fg2); cursor:pointer; font-family:inherit; }
+  .error-card { background:rgba(255,59,48,.08); border:1px solid rgba(255,59,48,.2); border-radius:16px; padding:22px; text-align:center; }
+  .error-card h3 { color:var(--red); margin-bottom:8px; font-size:17px; }
+  .error-card p { color:var(--fg2); font-size:13.5px; word-break:break-all; }
+  @media (max-width:640px) { .wrap { padding:18px 12px 70px; } h1 { font-size:23px; } .actions .btn-main, .actions .btn { font-size:12.5px; padding:10px 8px; white-space:nowrap; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="header">
+    <div class="eyebrow">饼干记账 · 开始使用</div>
+    <h1 id="title">从备份恢复</h1>
+    <div class="subtitle" id="subtitle"></div>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <main id="app"></main>
+</div>
+
+<div class="actions">
+  <button class="btn-main primary" id="copyPromptBtn">↩️ 确认恢复</button>
+  <button class="btn" id="copyDataBtn">复制数据</button>
+  <button class="btn" id="copyLogBtn">🛠 复制日志</button>
+</div>
+
+<script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>
+
+<div class="sheet-mask" id="sheetMask">
+  <div class="sheet">
+    <div class="sheet-title">复制数据</div>
+    <div class="sheet-sub">选格式,点哪个复制哪个</div>
+    <button class="sheet-item" data-f="text"><span class="f">纯文本</span><span class="d">粘贴到聊天/笔记</span></button>
+    <button class="sheet-item" data-f="json"><span class="f">JSON</span><span class="d">粘贴给 AI 记账</span></button>
+    <button class="sheet-item" data-f="csv"><span class="f">CSV</span><span class="d">粘贴到 Excel 存档</span></button>
+    <button class="sheet-cancel" id="sheetCancel">取消</button>
+  </div>
+</div>
+
+<div class="toast" id="toast">
+  <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+  <div class="toast-detail" id="toastDetail"></div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var esc = function (s) { return String(s ?? '').replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); };
+  var payload;
+  try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
+  if (!payload || payload.status === 'empty') return;
+  if (payload.status === 'error') {
+    document.getElementById('app').innerHTML =
+      '<div class="error-card"><h3>⚠️ 无法恢复</h3><p>' + esc(payload.message || '未知错误') + '</p></div>';
+    return;
+  }
+  var d = payload.data || {};
+  var meta = d.meta || {};
+  var sel = d.selected || {};
+
+  document.getElementById('subtitle').textContent = d.subtitle || '';
+  document.getElementById('chips').innerHTML =
+    '<span class="chip">⚡ ' + esc(meta.wake_word || '恢复备份') + '</span>' +
+    '<span class="chip">● 详情预览</span>' +
+    '<span class="chip">🕒 ' + esc(d.generated_at || '') + '</span>';
+
+  var stepsHtml =
+    '<div class="step"><div class="step-ic done">✓</div><div class="step-body"><div class="step-name">备份详情预览 <span class="step-status done">已完成</span></div>' +
+    '<div class="step-detail">选中: ' + esc(sel.name || '') + '</div></div></div>' +
+    '<div class="step"><div class="step-ic current">2</div><div class="step-body"><div class="step-name">确认恢复 <span class="step-status current">待确认</span></div>' +
+    '<div class="step-detail">恢复前会自动备份现状(防覆盖丢失)</div></div></div>' +
+    '<div class="step"><div class="step-ic pending">3</div><div class="step-body"><div class="step-name">恢复 + 验证 <span class="step-status pending">待执行</span></div>' +
+    '<div class="step-detail">拷贝回数据目录 → db 校验可打开</div></div></div>';
+
+  var detailHtml =
+    '<div class="detail-row"><span class="k">备份名称</span><span class="v">' + esc(sel.name || '') + '</span></div>' +
+    '<div class="detail-row"><span class="k">备份时间</span><span class="v">' + esc(sel.time || '') + '</span></div>' +
+    '<div class="detail-row"><span class="k">大小</span><span class="v">' + esc(sel.size != null ? (sel.size >= 1024 ? (sel.size / 1024).toFixed(1) + ' KB' : sel.size + ' B') : '') + '</span></div>' +
+    '<div class="detail-row"><span class="k">内容</span><span class="v">' + esc((sel.files || []).join(', ')) + '</span></div>';
+
+  var selectHtml = '';
+  if ((d.backups || []).length > 1) {
+    var opts = (d.backups || []).map(function (b) {
+      var selCls = b.name === sel.name ? ' sel' : '';
+      return '<button class="b-opt' + selCls + '" data-name="' + esc(b.name) + '">' + esc(b.name) +
+        '<span class="m">' + esc(b.time || '') + '</span></button>';
+    }).join('');
+    selectHtml = '<div class="select"><div class="select-label">选择备份(默认最新)</div><div class="b-list">' + opts + '</div></div>';
+  }
+
+  document.getElementById('app').innerHTML =
+    '<div class="card"><div class="steps">' + stepsHtml + '</div>' +
+    '<div class="warn"><b>⚠️ 恢复将覆盖当前数据</b>恢复前会自动备份现状,若恢复后不满意可再用「恢复备份」回到现状备份</div>' +
+    selectHtml + '</div>' +
+    '<div class="card"><div class="detail-row" style="border-bottom:1px solid var(--line);"><span class="k" style="font-weight:700;font-size:14px;">📦 备份详情</span><span></span></div>' + detailHtml + '</div>';
+
+  // 切换备份 → 重新复制确认 prompt
+  var curName = sel.name || '';
+  document.querySelectorAll('.b-opt').forEach(function (b) {
+    b.onclick = function () {
+      curName = this.getAttribute('data-name');
+      document.querySelectorAll('.b-opt').forEach(function (x) { x.classList.remove('sel'); });
+      this.classList.add('sel');
+    };
+  });
+
+  document.getElementById('copyPromptBtn').onclick = function () {
+    doCopy('请加载「饼干记账」技能,帮我从备份恢复数据(唤醒词:恢复备份):\n\n  备  份: ' + (curName || '____') + ' (默认最新)', 'prompt');
+  };
+
+  // ── 复制能力(08 §4 硬标准) ──
+  var toastTimer = null;
+  var TOAST_NEXT = { text: '粘贴到聊天/笔记保存', json: '粘贴给 AI 即可记账', csv: '粘贴到 Excel 存档', log: '发给开发者排障', prompt: '粘贴发给 AI 继续' };
+  function showToast(fmt) {
+    document.getElementById('toastFmt').textContent = fmt === 'log' ? '日志' : fmt === 'prompt' ? 'Prompt' : fmt.toUpperCase();
+    document.getElementById('toastDetail').textContent = TOAST_NEXT[fmt] || '';
+    document.getElementById('toast').classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { document.getElementById('toast').classList.remove('show'); }, 4500);
+  }
+  function doCopy(text, fmt) {
+    function done() { showToast(fmt); }
+    function fb() { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fb);
+    else fb();
+  }
+
+  function pickPayload() {
+    var out = {};
+    for (var k in d) { if (['type','title','subtitle','generated_at','meta'].indexOf(k) < 0) out[k] = d[k]; }
+    return out;
+  }
+  function buildData5() {
+    return { scene_id: meta.scene_id || 'setup_restore', command_cn: meta.command_cn || '从备份恢复',
+             occurred_at: d.generated_at || '', target: '数据库 + goals.json', payload: pickPayload() };
+  }
+  function buildDataText(fmt) {
+    var d5 = buildData5();
+    if (fmt === 'json') return JSON.stringify(d5, null, 2);
+    if (fmt === 'text') {
+      return ['场景: ' + d5.command_cn, '时间: ' + d5.occurred_at, '目标: ' + d5.target,
+              '数据: ' + JSON.stringify(d5.payload)].join('\n');
+    }
+    return Object.entries(d5.payload).map(function (e) { return e[0] + ',' + JSON.stringify(e[1] ?? ''); }).join('\n');
+  }
+
+  var sheetMask = document.getElementById('sheetMask');
+  var closeSheet = function () { sheetMask.classList.remove('show'); };
+  document.getElementById('copyDataBtn').onclick = function () { sheetMask.classList.add('show'); };
+  document.getElementById('sheetCancel').onclick = closeSheet;
+  sheetMask.addEventListener('click', function (e) { if (e.target === sheetMask) closeSheet(); });
+  sheetMask.querySelectorAll('.sheet-item').forEach(function (b) {
+    b.onclick = function () { var f = b.getAttribute('data-f'); closeSheet(); doCopy(buildDataText(f), f); };
+  });
+  document.getElementById('copyLogBtn').onclick = function () {
+    var lines = [];
+    lines.push('① 场景标识');
+    lines.push('  command_cn: ' + (meta.command_cn || '从备份恢复'));
+    lines.push('  唤醒词: ' + (meta.wake_word || '恢复备份'));
+    lines.push('  场景名: 从备份恢复 (scene_id=' + (meta.scene_id || 'setup_restore') + ')');
+    lines.push('');
+    lines.push('② AI 思考链: 用户恢复备份 → 备份详情预览 → 确认 → restore(自动备份现状)');
+    lines.push('');
+    lines.push('③ 底层数据结构');
+    lines.push('  payload: ' + JSON.stringify(pickPayload()));
+    lines.push('  DB 操作: COPY 备份 → 数据目录 + sqlite 打开校验');
+    lines.push('');
+    lines.push('④ 调用链');
+    lines.push('  渲染脚本: ' + (meta.render_cmd || '(未知)'));
+    lines.push('');
+    lines.push('⑤ 时间戳 + 版本');
+    lines.push('  本地时间: ' + (d.generated_at || '(未知)'));
+    lines.push('  skill 版本: ' + (meta.version || '(未知)'));
+    lines.push('');
+    lines.push('⑥ 异常信息: 无');
+    doCopy(lines.join('\n'), 'log');
+  };
+  document.getElementById('toastClose').onclick = function () {
+    document.getElementById('toast').classList.remove('show');
+    clearTimeout(toastTimer);
+  };
+})();
+</script>
+</body>
+</html>

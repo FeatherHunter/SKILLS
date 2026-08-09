@@ -395,6 +395,11 @@ def build_data(target_date: str, view: str = 'overview', period: str = None) -> 
         ]
         done = sum(1 for it in goal_items if it['pct'] is not None and it['pct'] >= 100)
         progress_pct = round(done / len(goal_items) * 100) if goal_items else 0
+        # 2026-08-09 信息重复审查:目标卡=达标计数(结果维度),进度卡=记录完整度(过程维度),语义分离
+        ts_now = data['today_status']
+        recorded = sum(1 for k in ('food', 'water', 'exercise', 'weight') if ts_now[k]['count'] > 0)
+        record_pct = round(recorded / 4 * 100) if goal_items else 0
+        missing_labels = [t['label'] for t in ts_now['todo']]
         kpis = [
             {'key': 'diet', 'label': '饮食', 'icon': '🔥', 'value': act['calorie'], 'unit': '卡',
              'detail': f"目标 {goal.get('calorie_goal') or '—'} 卡",
@@ -408,24 +413,23 @@ def build_data(target_date: str, view: str = 'overview', period: str = None) -> 
              'pct': None},
             {'key': 'goal', 'label': '目标', 'icon': '🎯', 'value': f"{done}/4", 'unit': '项达标',
              'detail': '热量/蛋白/饮水/运动', 'pct': progress_pct},
-            {'key': 'progress', 'label': '进度', 'icon': '📊', 'value': f"{progress_pct}%", 'unit': '',
-             'detail': f"今日记录 {data['today_status']['todo'] and len(data['today_status']['todo']) or 0} 项待办",
-             'pct': progress_pct},
+            {'key': 'progress', 'label': '进度', 'icon': '📊', 'value': f"{recorded}/4", 'unit': '类已记录',
+             'detail': ('缺 ' + '、'.join(missing_labels)) if missing_labels else '',
+             'pct': record_pct},
             {'key': 'streak', 'label': '连续', 'icon': '🔥', 'value': st['current'], 'unit': '天',
              'detail': f"历史最长 {st['longest']} 天", 'pct': None},
         ]
-        # 一句话总结(R6 · 基于实际状态)
-        parts = []
-        if act['calorie'] > 0:
-            cp = _pct(act['calorie'], goal.get('calorie_goal'))
-            parts.append(f"已摄入 {act['calorie']:,} 卡" + (f"(目标 {cp}%)" if cp is not None else ''))
-        if ex['count'] > 0:
-            parts.append(f"运动消耗 {ex['burn']:,} 卡")
-        if w['latest_kg'] is not None:
-            parts.append(f"体重 {w['latest_kg']} kg")
-        summary = ' · '.join(parts) + ('。' if parts else '今天还没有记录,从记一餐开始吧。')
-        if st['current'] >= 3:
-            summary += f' 已连续记录 {st["current"]} 天!'
+        # 一句话总结(2026-08-09 信息重复审查:判断句 · 不复述卡片数字 · KPI 卡=唯一事实源)
+        judge = []
+        cp = _pct(act['calorie'], goal.get('calorie_goal'))
+        ep = _pct(ex['burn'], goal.get('exercise_goal'))
+        if cp is not None:
+            judge.append('热量已达标' if cp >= 100 else '热量接近达标' if cp >= 80 else '热量偏少')
+        if ep is not None:
+            judge.append('运动超额完成' if ep >= 100 else '运动已达标' if ep >= 80 else '运动偏少')
+        if w['latest_kg'] is not None and w['delta_7d'] is not None:
+            judge.append('近7天体重' + ('下降' if w['delta_7d'] < 0 else '上升' if w['delta_7d'] > 0 else '持平'))
+        summary = ' · '.join(judge) if judge else '今天还没有记录,从记一餐开始吧。'
         data['home'] = {'kpis': kpis, 'trend': _week_trend(target_date), 'summary': summary}
     elif view == 'diet':
         goal = _goal_row() or {}
@@ -472,9 +476,9 @@ def build_data(target_date: str, view: str = 'overview', period: str = None) -> 
         ]
         pcts = [(it['label'], it['pct']) for it in items if it['pct'] is not None]
         if pcts:
-            high = max(pcts, key=lambda x: x[1])
+            done = sum(1 for it in items if it['pct'] is not None and it['pct'] >= 100)
             low = min(pcts, key=lambda x: x[1])
-            summary = f'完成最好的是{high[0]}({high[1]}%),最需补的是{low[0]}({low[1]}%)'
+            summary = f'4 项中 {done} 项达标 · 最需补{low[0]}'
         else:
             summary = '未设营养目标'
         data['goals'] = {'items': items, 'summary': summary}
@@ -499,17 +503,20 @@ def build_data(target_date: str, view: str = 'overview', period: str = None) -> 
     elif view == 'streak':
         st = _streak(target_date)
         data['streak'] = st
-        data['streak']['summary'] = (
-            f'已连续记录 {st["current"]} 天' + (f',历史最长 {st["longest"]} 天' if st['longest'] > st['current'] else '')
-        )
+        if st['current'] == 0:
+            data['streak']['summary'] = '暂无连续记录'
+        elif st['current'] >= st['longest']:
+            data['streak']['summary'] = '连续记录追平历史最长 · 保持住'
+        else:
+            data['streak']['summary'] = f'距历史最长还差 {st["longest"] - st["current"]} 天'
     elif view == 'budget':
         b = _budget(target_date)
         summary = None
         if b['remaining'] is not None:
             if b['remaining'] >= 0:
-                summary = f'今天还能吃 {round(b["remaining"]):,} 卡'
+                summary = '今日额度内 · 可正常安排正餐'
             else:
-                summary = f'已超预算 {abs(round(b["remaining"])):,} 卡'
+                summary = '已超预算 · 建议减少加餐'
         b['summary'] = summary
         data['budget'] = b
     return data

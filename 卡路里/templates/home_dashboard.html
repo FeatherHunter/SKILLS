@@ -768,7 +768,8 @@ function renderSection(view, date) {
       card('累计热量', fmtInt(x.calories), '卡', x.goal_cal != null ? `目标 ${fmtInt(x.goal_cal)} 卡` : '未设热量目标', calP) +
       card('蛋白质', (x.protein != null ? Math.round(x.protein) : '—'), 'g', x.goal_protein != null ? `目标 ${x.goal_protein} g` : '未设蛋白目标', protP);
     summary.textContent = calP != null
-      ? `今日热量完成 ${calP}%` + (protP != null ? ` · 蛋白完成 ${protP}%` : '')
+      ? (calP >= 100 ? '热量已达标' : calP >= 80 ? '热量接近达标' : '热量未达标') +
+        (protP != null ? ' · ' + (protP >= 100 ? '蛋白达标' : protP >= 90 ? '蛋白接近达标' : '蛋白偏低') : '')
       : '未设营养目标';
   } else if (view === 'exercise') {
     const x = d.exercise || {};
@@ -776,7 +777,9 @@ function renderSection(view, date) {
     document.getElementById('exerciseView').innerHTML =
       card('累计消耗', fmtInt(x.burn), '卡', x.count != null ? `${x.count} 条记录` : '', p) +
       card('运动时长', x.minutes != null ? fmtInt(x.minutes) : '—', '分钟', x.goal != null ? `目标 ${fmtInt(x.goal)} 卡` : '未设运动目标', null);
-    summary.textContent = p != null ? `今日运动完成 ${p}%` : (x.count ? `已记录 ${x.count} 条` : '今日暂无运动记录');
+    summary.textContent = p != null
+      ? (p >= 100 ? '运动超额完成' : p >= 80 ? '运动已达标' : '运动量偏少')
+      : (x.count ? `已记录 ${x.count} 条` : '今日暂无运动记录');
   } else if (view === 'weight') {
     const x = d.weight || {};
     document.getElementById('weightView').innerHTML =
@@ -786,7 +789,11 @@ function renderSection(view, date) {
            x.delta_7d != null ? `Δ7天 ${x.delta_7d > 0 ? '+' : ''}${x.delta_7d.toFixed(1)} kg` : 'Δ7天 —', null);
     summary.textContent = x.latest_kg == null
       ? '今日暂无体重记录'
-      : (x.goal_diff != null ? (x.goal_diff <= 0 ? `距目标还差 ${Math.abs(x.goal_diff).toFixed(1)} kg` : `已超出目标 ${x.goal_diff.toFixed(1)} kg`) : '未设体重目标');
+      : (x.goal_diff == null
+          ? '未设体重目标'
+          : (x.goal_diff <= 0
+              ? '体重已达目标' + (x.delta_7d != null && x.delta_7d < 0 ? ' · 仍在下降' : '')
+              : '体重高于目标' + (x.delta_7d != null && x.delta_7d < 0 ? ' · 近7天在回落' : '')));
   } else if (view === 'goals') {
     const x = d.goals || {};
     // 2026-08-04 #66:暂停横幅(仅提示,数据照常) + 重启复制按钮
@@ -840,7 +847,8 @@ function renderSection(view, date) {
       card(`${pLabel}运动消耗`, fmtInt(x.exercise_burn), '卡', `${x.exercise_days || 0} 天有记录`, null) +
       card(`${pLabel}体重变化`, wt != null ? (wt > 0 ? '+' : '') + wt.toFixed(1) : '—', 'kg', x.weight_start != null ? `${x.weight_start} → ${x.weight_end} kg` : '区间无体重记录', null);
     summary.textContent = wt != null
-      ? `${pLabel}体重${wt > 0 ? '上升' : wt < 0 ? '下降' : '持平'} ${Math.abs(wt).toFixed(1)} kg`
+      ? (wt < 0 ? '体重下降' : wt > 0 ? '体重上升' : '体重持平') +
+        (x.diet_days >= 5 ? ' · 记录稳定' : '')
       : `${pLabel}暂无体重记录`;
   }
 }
@@ -905,7 +913,7 @@ function render() {
         <div class="label"><span class="icon">${k.icon}</span>${k.label}${k.pct != null ? `<span class="badge ${barClass(k.pct)}">${k.pct}%</span>` : ''}</div>
         <div class="main"><span class="value">${escapeHTML(String(k.value))}</span><span class="unit">${escapeHTML(k.unit || '')}</span></div>
         ${k.pct != null ? `<div class="bar"><i class="${barClass(k.pct)}" style="width:${Math.min(100,k.pct)}%"></i></div>` : ''}
-        <div class="detail">${escapeHTML(k.detail || '')}</div>
+        ${k.detail ? `<div class="detail">${escapeHTML(k.detail)}</div>` : ''}
       </div>
     `).join('');
 
@@ -970,8 +978,9 @@ function render() {
     weight: today_status.weight.count,
   };
   if (todos.length === 0) {
-    todoContainer.innerHTML = `<div class="todo-empty">今日记录完整 ✓</div>`;
-    todoHint.textContent = '全部记录完成';
+    // 2026-08-09 信息重复审查:完成状态由 statusPill 唯一表达,待办区空时隐藏
+    const ts = document.getElementById('todoSection');
+    if (ts) ts.style.display = 'none';
   } else {
     todoHint.textContent = `${todos.length} 项待完成`;
     const allKeys = ['food', 'water', 'exercise', 'weight'];

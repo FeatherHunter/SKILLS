@@ -2,7 +2,7 @@
 
 本目录的问题（issue）与规格（PRD）按仓库根协议统一发布到 **GitHub Issues**（`FeatherHunter/SKILLS`）。本文件是仓库根 `docs/agents/issue-tracker.md` 在作息管家技能内的子协议说明。
 
-> 完整协议与 PAT 安全备注见 `D:\2Study\StudyNotes\SKILLS\docs\agents\issue-tracker.md`。
+> 完整协议与 PAT 安全备注见 `docs/agents/issue-tracker.md`。
 
 ## 作息管家的分区标识
 

@@ -307,7 +307,7 @@ python3 scripts/schedule_cli.py render-record-report 2026-07-15
 ```json
 {
   "status": "error",
-  "message": "HTML 输出目录不存在: 字段 record_dir(派生自环境变量 SKILLS_DB_PATH),当前值 D:\\.db\\schedule_html\\record,期望 SKILLS_DB_PATH/schedule_html/record/ 存在,建议: mkdir -p D:\\.db\\schedule_html\\record 或检查 SKILLS_DB_PATH 环境变量"
+  "message": "HTML 输出目录不存在: 字段 record_dir(派生自环境变量 SKILLS_DB_PATH),当前值 $SKILLS_DB_PATH/schedule_html/record,期望 SKILLS_DB_PATH/schedule_html/record/ 存在,建议: mkdir -p $SKILLS_DB_PATH/schedule_html/record 或检查 SKILLS_DB_PATH 环境变量"
 }
 ```
 

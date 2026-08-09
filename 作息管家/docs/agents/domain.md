@@ -1,6 +1,6 @@
 # 领域文档 · 作息管家
 
-本目录的领域文档布局按仓库根协议（详见 `D:\2Study\StudyNotes\SKILLS\docs\agents\domain.md`）。
+本目录的领域文档布局按仓库根协议（详见 `docs/agents/domain.md`）。
 
 ## 探索之前，先读这些
 

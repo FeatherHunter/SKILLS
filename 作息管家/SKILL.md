@@ -178,7 +178,7 @@ record 域(#26 修正作息)                ─── 数据修正
 ### 二级（白名单制）
 
 - 初始 ~70 个，写在 `scripts/validators.py::DEFAULT_WHITELIST`
-- 用户/AI 扩展项写到 `.db/category_whitelist.yaml`
+- 用户/AI 扩展项写到 `category_whitelist.yaml`
 - 运行时合并两层白名单
 - **不允许三级**（避免爆炸）
 
@@ -262,7 +262,7 @@ python scripts/schedule_cli.py approve-category --code "一级.二级"
 |---------|------|--------|
 | `SKILLS_DB_PATH` | 数据库文件所在目录 |
 
-DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → 技能目录 → 父目录 `.db/` 文件夹 → 自动创建 `.db/` 目录。
+DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → `D:/.db`(Windows) → `~/.local/share/schedule-guardian/db`(其他平台)。
 
 ### 一键安装 prompt
 
@@ -775,8 +775,8 @@ AI 判断逻辑:
 # 标准用法（最常用）
 python scripts/schedule_cli.py render-record-report 2026-07-15
 # → stdout:
-# {"status":"ok","data":{"file_path":"D:\\2Study\\StudyNotes\\.db\\schedule_html\\record\\2026-07-15_record_report.html","bytes":16717,...},"message":"✓ ..."}
-# AI 用 <media src="D:\\...\\2026-07-15_record_report.html" type="file" /> 把文件交付给用户
+# {"status":"ok","data":{"file_path":"$SKILLS_DB_PATH/schedule_html/record/2026-07-15_record_report.html","bytes":16717,...},"message":"✓ ..."}
+# AI 用 <media src="$SKILLS_DB_PATH/schedule_html/record/2026-07-15_record_report.html" type="file" /> 把文件交付给用户
 ```
 
 **约束**：

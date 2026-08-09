@@ -825,7 +825,7 @@ Tested-By: exempt + 原因
 | 命令 HTML(plan) | 作息管家 | `plan_list_<TIMESTAMP>.html` | `$SKILLS_DB_PATH/schedule_html/plan/list/` |
 | **HELP HTML** | **作息管家** | **`作息管家_HELP_<TIMESTAMP>.html`** | **`$SKILLS_DB_PATH/` 根** |
 | HELP HTML | 卡路里 | `卡路里_HELP_<TIMESTAMP>.html` | `$SKILLS_DB_PATH/calorie_html/` |
-| HELP HTML | 饼干记账 | `饼干记账_HELP_<TIMESTAMP>.html` | `D:/Downloads`(跨平台 fallback) |
+| HELP HTML | 饼干记账 | `饼干记账_HELP_<TIMESTAMP>.html` | `$HOME/Downloads`(跨平台 fallback) |
 
 ### 为什么命令 HTML 和 HELP HTML 命名规则不同
 
@@ -1155,7 +1155,7 @@ Tested-By: exempt + 原因
 
 ## 待修缺陷(下个 release)
 
-参考 `D:\2Study\StudyNotes\SKILLS\html\review_5710525.html`(对抗式审查报告),按 ROI 修复:
+参考 `html/review_5710525.html`(对抗式审查报告),按 ROI 修复:
 
 1. **C1 写 CHANGELOG** ✅(本文件)
 2. **C2 抄回 13 维业务派生**(meal_records / work_records / leisure_records ...)

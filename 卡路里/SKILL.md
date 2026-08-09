@@ -184,7 +184,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.18c", "requires": { "
 | `templates/profile_setup.html` | (设置档案 · 配置辅助页) | `profile.get/set` | `scripts/render_profile_setup.py [--live]` |
 | `templates/cron_setup.html` | 开启定时复盘 / 关闭定时复盘 | `mavis cron list/create/delete` (AI 自动查状态) | `scripts/render_cron_setup.py` |
 | `templates/crud_view.html` | 查档案 / 查定时复盘 | `profile.get` / `mavis cron list` | `scripts/render_crud_view.py` |
-| `templates/crud_receipt.html` | 记一餐 / 记一餐（含备注） / 补记饮食 / 批量补记饮食 / 记喝水 / 复制昨日饮食 / 改饮食记录 / 改某日饮食 / 删饮食记录 / 删一餐 / 删某日饮食 / 批量删饮食 / 存食品 / 改食品 / 下架食品 / 改体重记录 / 改某日体重 / 删体重记录 / 删某日体重 / 批量删体重 / 改运动记录 / 设置档案 / 设活动量 / 改档案 / 删体脂 / 删围度 | 各 CRUD 函数返回 diff | `scripts/render_crud_receipt.py [--live-diet-add/--live-diet-batch/--live-diet-copy/--live-diet-update/--live-diet-update-date/--live-diet-delete/--live-diet-delete-meal/--live-diet-delete-date/--live-diet-delete-range/--live-water-add/--live-product-add/--live-product-update/--live-product-deprecate/--live-profile-set/--live-profile-activity/--live-profile-update]` |
+| `templates/crud_receipt.html` | 记一餐 / 记一餐（含备注） / 补记饮食 / 批量补记饮食 / 记喝水 / 复制昨日饮食 / 改饮食记录 / 改某日饮食 / 删饮食记录 / 删一餐 / 删某日饮食 / 批量删饮食 / 存食品 / 改食品 / 下架食品 / 改体重记录 / 改某日体重 / 删体重记录 / 删某日体重 / 批量删体重 / 改运动记录 / 设置档案 / 设活动量 / 改档案 / 删体脂 / 删围度 | 各 CRUD 函数返回 diff | `scripts/render_crud_receipt.py [--live-diet-add/--live-diet-batch/--live-diet-batch-meal/--live-diet-copy/--live-diet-update/--live-diet-update-date/--live-diet-delete/--live-diet-delete-meal/--live-diet-delete-date/--live-diet-delete-range/--live-water-add/--live-product-add/--live-product-update/--live-product-deprecate/--live-profile-set/--live-profile-activity/--live-profile-update]` |
 
 | `templates/diet_review.html` | 饮食复盘（本周）/ 饮食复盘（本月）/ 饮食复盘（最近 90 天）/ 饮食复盘（今年）/ 饮食复盘（自定义时间） | `food_log` 聚合(总热量/日均/总蛋白/趋势/高频 TOP5) | `scripts/render_diet_review.py --type {week,month,quarter,year,range}` |
 | `templates/diet_overview.html` | 看饮食总览 | `food_log` 周期累计(本周/本月 + 趋势,不含今日) | `scripts/render_diet_overview.py` |
@@ -1502,6 +1502,19 @@ dashboard(start, end)                      # 综合四维度仪表盘
 
 #### Step 1:解析用户输入
 提取:食物名、克数(如有)、备注(如有)、日期(补记时)
+
+#### Step 1.5:同餐多食物判定(issue #158 · 2026-08-09)
+用户一句话包含 **≥2 个食物且属同一餐** 时(用「和 / 、/ 同时 / 一起 / 都」连接),**必须合并为 1 个回执**:
+- 每个食物先走 Step 2/3 查库确认营养(可复用查询,不必逐条重新问)
+- 全部确认后,**一次调用** `--live-diet-batch-meal`,传入同餐 JSON(每项一个食物,同 date/time):
+  ```
+  python scripts/render_crud_receipt.py --live-diet-batch-meal --input <json> --chain "1.解析→2.查库→3.同餐批量写库→4.合并回执"
+  # json 示例(同餐 N 食物):
+  # [{"food_name":"米饭","grams":200,"calories":232,"protein":4.3,"carbs":50,"fat":0.5},
+  #  {"food_name":"清蒸鱼","grams":150,"calories":165,"protein":28,"carbs":0,"fat":6}]
+  ```
+- **禁止**逐食物调用 `--live-diet-add`(那是 N 个回执,issue #158 根因)
+- 跨餐(「然后 / 之后 / 又 / 再」分隔)仍分别回执;用户显式说「一个一个回」→ 尊重,逐条回
 
 #### Step 2:模糊查询 nutrition_products 表
 执行:`python scripts/calorie_tracker.py search-product <食物名>`

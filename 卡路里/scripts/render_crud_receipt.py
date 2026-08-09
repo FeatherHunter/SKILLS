@@ -25,7 +25,7 @@
   --live-weight-delete            实读 DB:删体重记录(--id/--date/--start --end,写库 + 回执一体 · ticket #4)
 """
 import argparse, json, sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 
 SCRIPT_DIR = Path(__file__).resolve().parent
@@ -478,6 +478,96 @@ def build_live_diet_batch(input_path):
                          datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary)
 
 
+def build_live_diet_batch_meal(input_path):
+    """同餐多食物 → 单一回执(issue #158 · 2026-08-09)
+
+    现象:用户「中午吃米饭、清蒸鱼、炒青菜、豆腐汤」→ AI 逐个调 add,
+    每个食物一个 receipt,聊天窗口被 N 个回执挤满。
+    修复:AI 把同餐多个食物一次性传入 --input(每项一个食物,同 date/time),
+    写库 N 条但**只回 1 个 receipt**:餐别/时间 + 全部食物列表 + 营养合计。
+
+    输入 JSON(每项一个食物,同餐同 date/time):
+        [{"food_name":"米饭","grams":200,"calories":232,"protein":4.3,"carbs":50,"fat":0.5},
+         {"food_name":"清蒸鱼","grams":150,"calories":165,"protein":28,"carbs":0,"fat":6}]
+    可选: meal(餐别,仅展示用 — food_log 无 meal 列,由 time 推断)/ date / time
+
+    V3 调用透明:summary 明确「本次写库 N 条 → 合并为 1 个回执」。
+    """
+    import json as _json
+    from pathlib import Path as _P
+    import diet
+    p = _P(input_path)
+    if not p.exists():
+        raise FileNotFoundError(f'同餐批量输入文件不存在: {input_path}')
+    entries = _json.loads(p.read_text(encoding='utf-8'))
+    if not isinstance(entries, list) or not entries:
+        raise ValueError('同餐批量 JSON 顶层必须是非空数组(每项一个食物)')
+
+    # 同餐公共字段(取第一项,整餐一致;date 缺省=今天,time 缺省=now)
+    meal = entries[0].get('meal') or ''
+    d = entries[0].get('date') or date.today().isoformat()
+    t = entries[0].get('time') or datetime.now().strftime('%H:%M:%S')
+
+    r = diet.add_meals_batch(entries)
+    added = r['added']
+    if added == 0:
+        raise ValueError('同餐批量写入 0 条,请检查输入格式')
+
+    # 写库成功后回查本餐明细(按 date+time,只取最近 added 条 → 列表 + 合计)
+    items, totals = _fetch_meal_items(d, t, added)
+    cal, pro, carb, fat = totals
+
+    # 餐别从 time 推断(food_log 无 meal 列 · add_meals_batch 不写 meal)
+    meal_label = meal or diet.infer_meal_type(t)
+    new_record = {
+        'meal': meal_label, 'time': t, 'date': d,
+        'food_count': added, 'total_calories': cal,
+        'total_protein': pro, 'total_carbs': carb, 'total_fat': fat,
+    }
+    date_label = d if d != date.today().isoformat() else '今日'
+    summary = (f"{meal_label} {len(items)} 个食物已记入 {date_label}"
+               f" · 共 {cal} 卡(蛋白 {pro}g/碳水 {carb}g/脂肪 {fat}g)")
+    if r['skipped'] or r['failed']:
+        summary += f" · 跳过 {r['skipped']} 条,失败 {r['failed']} 条"
+    # V3 调用透明:AI 内部写库 N 条,统一 1 个回执
+    summary += f" · 本次写库 {added} 条 → 合并 1 个回执"
+    kpis = [
+        {'label': '食物数', 'value': f'{len(items)} 种', 'extra': '本餐'},
+        {'label': '总热量', 'value': f'{cal} 卡', 'extra': '合计'},
+        {'label': '总蛋白', 'value': f'{pro} g', 'extra': '合计'},
+        {'label': '总碳水', 'value': f'{carb} g', 'extra': '合计'},
+        {'label': '总脂肪', 'value': f'{fat} g', 'extra': '合计'},
+    ]
+    return _diet_receipt('create', 0, {}, new_record, '记一餐(同餐合并)',
+                         datetime.now().strftime('%Y-%m-%d %H:%M:%S'), summary,
+                         kpis=kpis, items=items)
+
+
+def _fetch_meal_items(date_str, time_str, n_expected):
+    """回查同餐写入的记录明细(按 date+time),返回 (items, (cal, pro, carb, fat))
+
+    items 与模板 crud_receipt.html 明细卡字段对齐:time/food_name/grams/calories + label
+    """
+    import diet as _diet
+    conn = _diet._get_db()
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT time, food_name, grams, calories, protein, carbs, fat
+        FROM food_log
+        WHERE date = ? AND time = ?
+        ORDER BY id DESC LIMIT ?
+    ''', (date_str, time_str, n_expected))
+    rows = cur.fetchall()
+    conn.close()
+    items = []
+    cal = pro = carb = fat = 0.0
+    for r in rows:
+        items.append({'label': '已写入', 'time': r[0] or '', 'food_name': r[1],
+                      'grams': r[2] or 0, 'calories': r[3] or 0})
+        cal += r[3] or 0; pro += r[4] or 0; carb += r[5] or 0; fat += r[6] or 0
+    return items, (round(cal), round(pro, 1), round(carb, 1), round(fat, 1))
+
+
 def build_live_diet_copy(from_date, to_date=None):
     """复制昨日饮食:写库 + 回执(呈现:复制条数/跳过条数)"""
     import diet
@@ -685,6 +775,8 @@ def main():
                    help='记一餐/补记饮食:写库 + 回执(flag 后接位置参数 food cal pro,可选 --carbs/--fat/--grams/--note/--date/--time/--meal)')
     g.add_argument('--live-diet-batch', action='store_true',
                    help='批量补记饮食:从 --input JSON 数组写库 + 回执')
+    g.add_argument('--live-diet-batch-meal', action='store_true',
+                   help='同餐多食物(issue #158):从 --input JSON 数组写库 + 单一回执(食物列表+营养合计)')
     g.add_argument('--live-diet-copy', action='store_true',
                    help='复制昨日饮食:写库 + 回执(--from/--to 可选)')
     g.add_argument('--live-diet-update', action='store_true',
@@ -824,6 +916,11 @@ def main():
                                        meal=kw.get('meal'))
         elif args.live_diet_batch:
             data = build_live_diet_batch(args.input)
+        elif args.live_diet_batch_meal:
+            if not args.input:
+                print('❌ --live-diet-batch-meal 需要 --input <json>', file=sys.stderr)
+                return 1
+            data = build_live_diet_batch_meal(args.input)
         elif args.live_diet_copy:
             data = build_live_diet_copy(args.from_date, args.to_date)
         elif args.live_diet_update:

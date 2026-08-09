@@ -128,7 +128,7 @@ def run(args):
                 if not ok or payload is None:
                     return _emit_err("管位置", "位置改名", msg or "位置改名失败",
                                      {"old": args.old, "new": args.new},
-                                     suggest="目标已是独立位置时,请改用「合并」",
+                                     suggest="目标已是独立位置时,请改用「合并」;修正路径后重试",
                                      output_path=args.output)
                 payload["target"] = f"{preview['old']} → {preview['new']}"
                 payload["diff"] = [{"field": "位置路径", "before": preview["old"], "after": preview["new"]}]
@@ -153,7 +153,7 @@ def run(args):
                 if not ok or payload is None:
                     return _emit_err("管位置", "位置合并", msg or "位置合并失败",
                                      {"src": old, "tgt": new},
-                                     suggest="先确认 src 存在,或改用「改名/删除」",
+                                     suggest="先确认 src 存在后重试,或改用「改名/删除」修正",
                                      output_path=args.output)
                 payload["target"] = f"{old} → {new}"
                 payload["diff"] = [{"field": "位置路径", "before": old, "after": new}]

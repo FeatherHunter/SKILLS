@@ -1,8 +1,5 @@
-# 本地 SQLite 数据文件(运行时数据,不进版本控制)
-作息管家/.db/schedule.db
-作息管家/.db/schedule.db-shm
-作息管家/.db/schedule.db-wal
-作息管家/.db/schedule.db-journal
+# 作息管家运行时数据目录(旧 DB 位置,Q6 后全部外部基目录;含 schedule.db*/schedule_html/ 派生产物,不入版本控制)
+作息管家/.db/
 
 # 卡路里运行时 SQLite 数据文件(同上,不入版本控制)
 卡路里/scripts/calories.db
@@ -82,8 +79,8 @@ Thumbs.db
 # 居家管家加密密钥目录(Fernet master key 等敏感数据,不入库)
 居家管家/.db/
 
-# 作息管家 schedule_html 运行时输出目录(每次渲染生成的 HTML 镜像,不入库)
-作息管家/.db/schedule_html/
+# 作息管家 HELP 稳定镜像(ADR-0001:每次 help_render 覆盖写,运行时自动重生成,不入版本控制)
+作息管家/作息管家.html
 
 # 作息管家 playwright 测试截图产物(tests/test_replay_*.py 等视觉测试落盘的 PNG,不入库)
 作息管家/tests/screenshots/

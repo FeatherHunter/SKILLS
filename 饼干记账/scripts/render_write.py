@@ -248,10 +248,47 @@ def build_flow_payload(flow_type: str, amount: str, search_hint: str = "", reaso
         meta = {"scene_id": "write_refund", "wake_word": "记退款", "command_cn": "记退款 确认"}
         category, note_tag, op2_label = "退款/冲销", "#退款", "标记 #已退款"
         pool = [r for r in records if float(r.get("amount") or 0) < 0]
-    else:  # reimburse_done
+    elif flow_type == "reimburse_done":
         meta = {"scene_id": "write_reimburse_done", "wake_word": "报销到账", "command_cn": "报销到账 确认"}
         category, note_tag, op2_label = "其他收入/报销回款", "#报销到账", "标记 #报销到账"
         pool = [r for r in records if "#待报销" in (r.get("note") or "")]
+    elif flow_type == "collect":
+        meta = {"scene_id": "write_collect", "wake_word": "记收回", "command_cn": "记收回 确认"}
+        category, note_tag, op2_label = "借贷/收回", "#收回", "原记录 #未还 → #已还"
+        pool = [r for r in records if "#借出" in (r.get("note") or "") and "#未还" in (r.get("note") or "")]
+    elif flow_type == "payback":
+        meta = {"scene_id": "write_payback", "wake_word": "记偿还", "command_cn": "记偿还 确认"}
+        category, note_tag, op2_label = "借贷/偿还", "#偿还", "原记录 #未还 → #已还"
+        pool = [r for r in records if "#借入" in (r.get("note") or "") and "#未还" in (r.get("note") or "")]
+    else:  # lend / borrow(单操作,无候选)
+        is_lend = flow_type == "lend"
+        meta = {"scene_id": "write_lend" if is_lend else "write_borrow",
+                "wake_word": "记借出" if is_lend else "记借入",
+                "command_cn": ("记借出" if is_lend else "记借入") + " 确认"}
+        category = "借贷/借出" if is_lend else "借贷/借入"
+        tag_txt = f"#借出 #借给{{{search_hint or '对象'}}} #未还" if is_lend else f"#借入 #向{{{search_hint or '对象'}}}借 #未还"
+        return {
+            "status": "ok",
+            "data": {
+                "title": "借给别人钱" if is_lend else "向别人借钱",
+                "generated_at": now,
+                "meta": {**meta, "occurred_at": now, "render_cmd": f"render_write.py {flow_type}",
+                         "version": SKILL_VERSION},
+                "form": {
+                    "type": flow_type,
+                    "amount": amount or "",
+                    "target": search_hint or "",
+                    "deadline": reason or "",
+                    "note": tag_txt,
+                    "candidates": [],
+                    "operations": [
+                        {"label": "记一笔" + ("支出" if is_lend else "收入"),
+                         "text": f"{category} {amount or '____'} 元", "detail": f"账本=借贷 · 备注 {tag_txt}"},
+                    ],
+                },
+            },
+            "message": meta["command_cn"],
+        }
 
     # 1) AI 显式候选优先(已含 id 等完整字段,直接透传)
     if explicit_candidates:
@@ -277,10 +314,11 @@ def build_flow_payload(flow_type: str, amount: str, search_hint: str = "", reaso
             "note": str(r.get("note") or ""),
         } for r in cands[:5]]
 
-    # 两步操作预览
+    # 两步操作预览(collect/payback:复合;refund/reimburse_done:复合)
     amt = amount or "____"
     operations = [
-        {"label": "① 记一笔收入", "text": f"{category} {amt} 元", "detail": f"备注自动 {note_tag}"},
+        {"label": "① 记一笔收入" if flow_type in ("refund", "reimburse_done", "collect") else "① 记一笔支出",
+         "text": f"{category} {amt} 元", "detail": f"备注自动 {note_tag}"},
         {"label": "② 原记录标记", "text": op2_label, "detail": "执行后回执展示两笔状态"},
     ]
 
@@ -305,8 +343,9 @@ def build_flow_payload(flow_type: str, amount: str, search_hint: str = "", reaso
 
 def main():
     parser = argparse.ArgumentParser(description="饼干记账 · 写入域采集表单渲染")
-    parser.add_argument("form_type", choices=list(FORM_TYPES.keys()) + ["batch", "refund", "reimburse_done"],
-                        help="expense / income / photo / reimburse / batch / refund / reimburse_done")
+    parser.add_argument("form_type", choices=list(FORM_TYPES.keys()) + ["batch", "refund", "reimburse_done",
+                        "lend", "borrow", "collect", "payback"],
+                        help="expense / income / photo / reimburse / batch / refund / reimburse_done / lend / borrow / collect / payback")
     parser.add_argument("--amount", default=None, help="金额")
     parser.add_argument("--category", default=None, help="分类(已确定)")
     parser.add_argument("--category-hint", default=None, help="分类名目意图(AI 语义推荐)")
@@ -326,8 +365,8 @@ def main():
 
     records = _load_history()
 
-    # ── 复合流程分支(refund / reimburse_done) ──
-    if args.form_type in ("refund", "reimburse_done"):
+    # ── 复合流程分支(refund / reimburse_done / collect / payback) ──
+    if args.form_type in ("refund", "reimburse_done", "collect", "payback"):
         explicit = None
         if args.candidates:
             try:
@@ -338,9 +377,18 @@ def main():
         payload = build_flow_payload(args.form_type, args.amount or "", args.search_hint or "",
                                      args.reason or "", records, explicit_candidates=explicit)
         template_path = FLOW_TEMPLATE
-        out_name = "记退款确认" if args.form_type == "refund" else "报销到账确认"
+        out_name = f"{args.form_type}确认"
         _write_html(payload, template_path, out_name, args.out)
         print(f"  候选: {len(payload['data']['form']['candidates'])} 笔({'AI 定位' if explicit else '脚本兜底'})")
+        return 0
+
+    # ── 借贷单操作(lend / borrow) ──
+    if args.form_type in ("lend", "borrow"):
+        payload = build_flow_payload(args.form_type, args.amount or "", args.search_hint or "",
+                                     args.reason or "", records)
+        template_path = FLOW_TEMPLATE
+        out_name = "记借出确认" if args.form_type == "lend" else "记借入确认"
+        _write_html(payload, template_path, out_name, args.out)
         return 0
 
     # ── batch 分支 ──

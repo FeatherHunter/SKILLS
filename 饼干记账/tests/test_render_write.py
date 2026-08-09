@@ -270,3 +270,59 @@ class TestFlow:
         assert "id=\"warnBox\"" in text      # 超支警示
         assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
         assert "toastClose" in text
+
+
+class TestLendBorrow:
+    def test_lend_payload_single_op(self):
+        p = rw.build_flow_payload("lend", "500", "小明", "月底还", RECORDS)
+        form = p["data"]["form"]
+        assert form["type"] == "lend"
+        assert len(form["candidates"]) == 0  # 单操作无候选
+        ops = form["operations"]
+        assert len(ops) == 1
+        assert "借贷/借出" in ops[0]["text"]
+        assert "#借出" in ops[0]["detail"] and "#未还" in ops[0]["detail"]
+        assert p["data"]["meta"]["wake_word"] == "记借出"
+
+    def test_borrow_payload(self):
+        p = rw.build_flow_payload("borrow", "500", "小明", "", RECORDS)
+        form = p["data"]["form"]
+        assert form["type"] == "borrow"
+        assert "借贷/借入" in form["operations"][0]["text"]
+        assert p["data"]["meta"]["wake_word"] == "记借入"
+
+
+class TestCollectPayback:
+    def test_collect_finds_unpaid_lend(self):
+        recs = RECORDS + [_rec("借贷/借出", -500.0, "2026-07-01 10:00:00", "#借出 #借给小明 #未还")]
+        p = rw.build_flow_payload("collect", "", "小明", "", recs)
+        form = p["data"]["form"]
+        assert form["type"] == "collect"
+        assert len(form["candidates"]) >= 1
+        assert "#借出" in form["candidates"][0]["note"]
+        ops = form["operations"]
+        assert len(ops) == 2
+        assert "借贷/收回" in ops[0]["text"]
+        assert "#未还 → #已还" in ops[1]["text"]
+
+    def test_payback_finds_unpaid_borrow(self):
+        recs = RECORDS + [_rec("借贷/借入", 500.0, "2026-07-02 10:00:00", "#借入 #向小明借 #未还")]
+        p = rw.build_flow_payload("payback", "", "小明", "", recs)
+        form = p["data"]["form"]
+        assert form["type"] == "payback"
+        assert len(form["candidates"]) >= 1
+        assert "#借入" in form["candidates"][0]["note"]
+        assert "借贷/偿还" in form["operations"][0]["text"]
+
+    def test_lend_borrow_html_has_target_field(self, tmp_path):
+        """借贷单操作:无候选卡 + 对象/期限字段"""
+        p = rw.build_flow_payload("lend", "500", "小明", "月底还", RECORDS)
+        template = rw.FLOW_TEMPLATE.read_text(encoding="utf-8")
+        html = template.replace("<!--INJECT-DATA-->",
+                                json.dumps(p, ensure_ascii=False).replace("</", "<\\/"), 1)
+        out = tmp_path / "lend.html"
+        out.write_text(html, encoding="utf-8-sig")
+        text = out.read_text(encoding="utf-8-sig")
+        assert "记借出" in text
+        assert "fDeadline" in text  # 期限字段(JS 动态,payload 有值)
+        assert "月底还" in text

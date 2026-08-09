@@ -105,30 +105,65 @@
   var d = payload.data || {};
   var meta = d.meta || {};
   var form = d.form || {};
-  var TYPE = form.type || 'refund';  // refund | reimburse_done
+  var TYPE = form.type || 'refund';  // refund | reimburse_done | lend | borrow | collect | payback
   var META = {
-    refund: { wake: '记退款', action: '记一笔退款', label: '关联原支出' },
-    reimburse_done: { wake: '报销到账', action: '报销到账', label: '关联待报销记录' },
+    refund: { wake: '记退款', action: '记一笔退款', label: '关联原支出', fields: ['amount', 'reason'] },
+    reimburse_done: { wake: '报销到账', action: '报销到账', label: '关联待报销记录', fields: ['amount'] },
+    lend: { wake: '记借出', action: '借给别人钱', label: null, fields: ['amount', 'target', 'deadline'] },
+    borrow: { wake: '记借入', action: '向别人借钱', label: null, fields: ['amount', 'target', 'deadline'] },
+    collect: { wake: '记收回', action: '收回借出的钱', label: '关联未还借出', fields: ['amount', 'target'] },
+    payback: { wake: '记偿还', action: '偿还借入的钱', label: '关联未还借入', fields: ['amount', 'target'] },
   };
   var TM = META[TYPE] || META.refund;
   var WAKE = meta.wake_word || TM.wake;
+  var HAS_CAND = !!TM.label;  // 有 label = 需要候选选择
 
   document.getElementById('title').textContent = TM.action;
   document.getElementById('eyebrow').textContent = '饼干记账 · 复合操作确认';
   document.getElementById('chips').innerHTML =
     '<span class="chip">⚡ ' + esc(WAKE) + '</span>' +
-    '<span class="chip">● 两步确认</span>' +
+    '<span class="chip">● ' + (TM.fields.length === 1 ? '单步确认' : '填写确认') + '</span>' +
     '<span class="chip">🕒 ' + esc(d.generated_at || '') + '</span>';
-  document.getElementById('candTitle').textContent = TM.label;
+  document.getElementById('candTitle').textContent = TM.label || '关联记录';
 
-  // 金额输入 + 原因(label 按类型)
+  // 金额输入 + 原因
   var elAmount = document.getElementById('fAmount');
   elAmount.value = form.amount || '';
   var reasonEl = document.getElementById('fReason');
-  if (TYPE === 'reimburse_done') {
-    document.getElementById('reasonLabel').textContent = '关联说明(选填)';
+  reasonEl.value = form.reason || '';
+  // 字段区按类型(对象/期限 vs 原因)
+  var reasonWrap = reasonEl.closest('label') || reasonEl.parentNode.parentNode;
+  var reasonLabel = document.getElementById('reasonLabel');
+  if (TM.fields.includes('target')) {
+    reasonLabel.textContent = '对\u2003象';
+    reasonEl.placeholder = '如:小明';
+    reasonEl.value = form.target || '';
+  } else if (TM.fields.includes('reason')) {
+    reasonLabel.textContent = '退款原因';
+    reasonEl.placeholder = '如:退货 / 取消订单(选填)';
   } else {
-    reasonEl.value = form.reason || '';
+    reasonLabel.textContent = '备\u2003注';
+    reasonEl.placeholder = '选填';
+    reasonEl.value = form.note || '';
+  }
+  // 期限字段(借贷) —— 动态追加
+  var deadlineWrap = document.createElement('label');
+  deadlineWrap.className = 'field';
+  deadlineWrap.id = 'deadlineWrap';
+  deadlineWrap.innerHTML = '期\u2003限';
+  var dlInput = document.createElement('input');
+  dlInput.type = 'text';
+  dlInput.id = 'fDeadline';
+  dlInput.placeholder = '如:月底还(选填)';
+  dlInput.value = form.deadline || '';
+  deadlineWrap.appendChild(dlInput);
+  if (TM.fields.includes('deadline')) {
+    reasonWrap.parentNode.insertBefore(deadlineWrap, reasonWrap.nextSibling);
+  }
+
+  // 候选卡:无候选需求的类型(lend/borrow)隐藏
+  if (!HAS_CAND) {
+    document.getElementById('candCard').style.display = 'none';
   }
 
   // ── 操作预览 ──
@@ -196,11 +231,33 @@
       lines.push('  金\u2003额: ' + elAmount.value);
       lines.push('  原支出: ' + candTxt);
       lines.push('  退款原因: ' + (reasonEl.value || '(选填)'));
-    } else {
+    } else if (TYPE === 'reimburse_done') {
       lines.push('请加载「饼干记账」技能,帮我记录报销到账(唤醒词:报销到账):');
       lines.push('');
       lines.push('  金\u2003额: ' + elAmount.value);
       lines.push('  关\u2003联: ' + candTxt);
+    } else if (TYPE === 'lend') {
+      lines.push('请加载「饼干记账」技能,帮我记一笔借出(唤醒词:记借出):');
+      lines.push('');
+      lines.push('  金\u2003额: ' + elAmount.value);
+      lines.push('  对\u2003象: ' + (reasonEl.value || '__借给谁__'));
+      lines.push('  期\u2003限: ' + (dlInput.value || '(选填)'));
+    } else if (TYPE === 'borrow') {
+      lines.push('请加载「饼干记账」技能,帮我记一笔借入(唤醒词:记借入):');
+      lines.push('');
+      lines.push('  金\u2003额: ' + elAmount.value);
+      lines.push('  对\u2003象: ' + (reasonEl.value || '__向谁借__'));
+      lines.push('  期\u2003限: ' + (dlInput.value || '(选填)'));
+    } else if (TYPE === 'collect') {
+      lines.push('请加载「饼干记账」技能,帮我记一笔收回(唤醒词:记收回):');
+      lines.push('');
+      lines.push('  哪一笔: ' + candTxt);
+      lines.push('  金\u2003额: ' + (elAmount.value || '(与借出一致)'));
+    } else if (TYPE === 'payback') {
+      lines.push('请加载「饼干记账」技能,帮我记一笔偿还(唤醒词:记偿还):');
+      lines.push('');
+      lines.push('  哪一笔: ' + candTxt);
+      lines.push('  金\u2003额: ' + (elAmount.value || '(与借入一致)'));
     }
     return lines.join('\n');
   }

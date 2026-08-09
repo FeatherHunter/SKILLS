@@ -223,11 +223,9 @@ def run(args):
             "next": payload.get("next"),
             "undo_prompt": payload.get("undo_prompt") or f"撤销操作(居家管家): 撤销刚才的{command_cn}",
         }
-        scene = {"receipt": receipt, "buttons": buttons or []}
-        if payload.get("item"):
-            scene["item"] = payload["item"]
-        data = {"scene": scene, **payload}
-        data.pop("item", None)
+        # 注意: 不再包内层 scene 键(信封 data.scene 即本数据;双重嵌套
+        # scene.scene 会让 receipt.html 读不到 summary/diff,issue #127)
+        data = {"receipt": receipt, "buttons": buttons or [], **payload}
         data.pop("diff", None)
         data.pop("extra", None)
         data.pop("results", None)

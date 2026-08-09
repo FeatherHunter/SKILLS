@@ -1,0 +1,267 @@
+<!--
+私家大厨 · 派生域 rel-2 查看派生关系 · 家族树(T12 v4.0 / G9 用户拍板,推翻列表版)
+由 scripts/render_派生.py tree 注入数据,占位符 INJECT-DATA 唯一 1 次。
+
+家族树: 根=当前菜,向上祖先(派生自)/ 向下后代(派生出了),多代连链;
+        数据少 → 单个根节点即可,不强制多代展示。
+数据: scripts/派生/cli.py tree → ops.relation_tree(list-all 全量关系 BFS 组装)。
+08 对齐: 复制数据(5 段 JSON)/ 复制日志(6 段)双按钮 + 双通道。
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="私家大厨 · render_派生.py · v4.0 T12">
+<title>私家大厨 · 查看派生关系(家族树)</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 110px 0}
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  .hero{background:var(--card);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:26px;font-weight:700;letter-spacing:-0.025em;margin-bottom:4px}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--text3);margin:10px 0 14px}
+  .hero-meta span{display:inline-flex;align-items:center;gap:4px}
+
+  /* 树:祖先区(向上)/ 根 / 后代区(向下) */
+  .tree-zone{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+  .zone-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.04em;margin:2px 4px}
+  .zone-label .cnt{font-weight:400;color:var(--text4)}
+
+  .node{background:var(--card);border-radius:var(--radius);padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);display:flex;align-items:center;gap:12px;position:relative}
+  .node.root{background:linear-gradient(135deg,var(--blue-soft),var(--card) 70%);border:1.5px solid var(--blue-soft)}
+  .node .gen{flex:none;width:26px;height:26px;border-radius:var(--radius-pill);background:var(--bg);color:var(--text3);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+  .node.root .gen{background:var(--blue);color:#fff}
+  .node .body{flex:1;min-width:0}
+  .node .name{font-size:16px;font-weight:600}
+  .node.root .name{font-size:17px;color:var(--blue)}
+  .node .rel-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:3px;font-size:12px;color:var(--text3)}
+  .node .badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill)}
+  .badge.派生{background:var(--blue-soft);color:var(--blue)}
+  .badge.变体{background:var(--warn-soft);color:var(--warn)}
+  .badge.改良{background:var(--success-soft);color:var(--success)}
+  .node .summary{font-size:12px;color:var(--text2);margin-top:2px;word-break:break-all}
+
+  .edge{text-align:center;color:var(--text4);font-size:13px;line-height:1;margin:-3px 0}
+  .edge.up{color:var(--warn)}
+  .edge.down{color:var(--success)}
+  .edge .rel{font-size:10px;color:var(--text4);margin-left:6px}
+
+  .empty{background:var(--card);border-radius:var(--radius);padding:36px 20px;text-align:center;color:var(--text3);box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:14px}
+  .empty .icon{font-size:40px;display:block;margin-bottom:10px;opacity:0.6}
+
+  .actions{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,0.94);backdrop-filter:blur(10px);border-top:0.5px solid var(--separator);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .actions .inner{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;text-align:center}
+  .btn.ghost{background:var(--bg);color:var(--blue)}
+  .btn-row{display:flex;gap:8px}
+  .btn-row .btn{flex:1}
+  .btn small{font-weight:400;font-size:11px;opacity:0.8}
+
+  .state{background:var(--card);border-radius:var(--radius);padding:48px 24px;text-align:center;color:var(--text3);box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px}
+  .hidden{display:none !important}
+  .state .icon{font-size:48px;margin-bottom:12px;opacity:0.6}
+  .state.error{color:var(--danger)}
+
+  .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:rgba(28,28,30,0.92);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--radius-pill);opacity:0;pointer-events:none;transition:opacity 0.25s;z-index:99;max-width:80vw}
+  .toast.show{opacity:1}
+
+  @media (max-width:480px){
+    .container{padding:16px 12px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:22px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="state-error" class="state error hidden">
+  <div class="icon">⚠️</div>
+  <div id="error-msg">数据加载失败</div>
+</div>
+
+<div id="main-content" class="hidden">
+
+  <section class="hero">
+    <h1>🌿 <span id="page-title">查看派生关系</span></h1>
+    <div class="hero-meta">
+      <span>📅 <span id="generated-at"></span></span>
+      <span>🎙️ 唤醒词:<span id="wake-word"></span></span>
+      <span>🔖 <span id="scene-id"></span></span>
+    </div>
+  </section>
+
+  <div id="tree-container"></div>
+
+</div>
+
+<div class="actions hidden" id="actions">
+  <div class="inner">
+    <div class="btn-row">
+      <button class="btn ghost" id="btn-copy-data">📋 复制数据</button>
+      <button class="btn ghost" id="btn-copy-log">🧾 复制日志</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!--INJECT-DATA-->
+
+<script>
+(function(){
+  'use strict';
+
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    showState('error', '数据未注入(window.__DATA__ 缺失)。这是模板,不是最终交付。请用 scripts/render_派生.py tree 生成。');
+    return;
+  }
+  const D = window.__DATA__;
+  const T = D.tree || {};
+
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function showState(type, msg) {
+    const main = document.getElementById('main-content');
+    const actions = document.getElementById('actions');
+    if (main) main.classList.add('hidden');
+    if (actions) actions.classList.add('hidden');
+    const el = document.getElementById('state-' + type);
+    if (el) {
+      el.classList.remove('hidden');
+      if (msg) { const m = document.getElementById('error-msg'); if (m) m.textContent = msg; }
+    }
+  }
+
+  if (!T.root || !T.found) {
+    showState('error', '未找到该食谱(或已废弃),无法组装家族树。');
+    return;
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+  }
+  function copyText(text, okMsg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast(okMsg), () => fallbackCopy(text, okMsg));
+    } else {
+      fallbackCopy(text, okMsg);
+    }
+  }
+  function fallbackCopy(text, okMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast(okMsg); } catch (e) { toast('复制失败,请手动复制'); }
+    document.body.removeChild(ta);
+  }
+
+  // ── 头部 ──
+  document.getElementById('page-title').textContent = '家族树 · ' + T.root.name;
+  document.getElementById('generated-at').textContent = D.occurred_at || D.generated_at || '未知';
+  document.getElementById('wake-word').textContent = D.wake_word || '—';
+  document.getElementById('scene-id').textContent = (D.scene_id || 'view_relation_tree') + ' · ' + (T.count || 0) + ' 个关联';
+
+  // ── 树渲染 ──
+  function nodeHTML(n, root) {
+    const relBadge = n.relation_type ? '<span class="badge ' + esc(n.relation_type) + '">' + esc(n.relation_type) + '</span>' : '';
+    const summary = n.change_summary ? '<div class="summary">✏️ ' + esc(n.change_summary) + '</div>' : '';
+    return '<div class="node' + (root ? ' root' : '') + '">' +
+      '<span class="gen">' + (root ? '我' : 'L' + n.level) + '</span>' +
+      '<div class="body"><div class="name">' + esc(n.name) + '</div>' +
+      '<div class="rel-meta">' + relBadge + (root ? '<span>当前菜(根)</span>' : '') + '</div>' +
+      summary + '</div></div>';
+  }
+
+  const container = document.getElementById('tree-container');
+  let html = '';
+
+  if (T.ancestors && T.ancestors.length > 0) {
+    // 祖先链: 从上往下(最远祖先 → 直接父本)
+    const ordered = T.ancestors.slice().reverse();
+    html += '<div class="tree-zone"><div class="zone-label">⬆️ 向上 · 祖先(派生自)<span class="cnt"> · ' + T.ancestors.length + '</span></div>';
+    ordered.forEach(n => {
+      html += nodeHTML(n, false);
+      html += '<div class="edge up">▲ <span class="rel">' + esc(n.relation_type || '派生') + '</span></div>';
+    });
+    html += '</div>';
+  }
+
+  html += '<div class="tree-zone"><div class="zone-label">🌟 根 · 当前菜</div>' + nodeHTML(T.root, true) + '</div>';
+
+  if (T.descendants && T.descendants.length > 0) {
+    html += '<div class="tree-zone"><div class="zone-label">⬇️ 向下 · 后代(派生出了)<span class="cnt"> · ' + T.descendants.length + '</span></div>';
+    T.descendants.forEach((n, i) => {
+      html += '<div class="edge down">▼ <span class="rel">' + esc(n.relation_type || '派生') + '</span></div>';
+      html += nodeHTML(n, false);
+    });
+    html += '</div>';
+  }
+
+  if (T.count === 0) {
+    html = '<div class="empty"><span class="icon">🌱</span>' + esc(T.root.name) + ' 还没有派生关系 —— 它是一道原创菜(单根节点)。<br><br>试试「添加派生关系」或「从已有派生新菜」。</div>';
+  }
+
+  container.innerHTML = html;
+
+  // ── 复制数据(硬标准 · 5 段 JSON)──
+  document.getElementById('btn-copy-data').addEventListener('click', function () {
+    const data = {
+      scene_id: D.scene_id || 'view_relation_tree',
+      command_cn: D.command_cn || '查看派生关系',
+      occurred_at: D.occurred_at || '',
+      target: T.root.name,
+      payload: {tree: T}
+    };
+    copyText(JSON.stringify(data, null, 2), '已复制数据(5 段 JSON)');
+  });
+
+  // ── 复制日志(硬标准 · 6 段)──
+  document.getElementById('btn-copy-log').addEventListener('click', function () {
+    const logs = D.logs || {};
+    const lines = [
+      '① 场景标识: command_cn=' + (D.command_cn || '') + ' · 唤醒词=' + (D.wake_word || '') + ' · 场景=' + (D.scene_title || ''),
+      '② AI 思考链: ' + (logs.thought_chain || '意图理解 → 「查看派生关系」 → 调 list-all 全量关系 → BFS 组装家族树(根=当前菜)'),
+      '③ 底层数据结构: window.__DATA__.tree(root/ancestors/descendants) · 读库(recipes+recipe_relations)',
+      '④ 调用链: render_派生.py tree → 派生/cli.py tree → relation_manager(list-all 同源查询)',
+      '⑤ 时间戳+版本: ' + (D.occurred_at || '') + ' · skill v4.0',
+      '⑥ 异常信息(如有): ' + (logs.exception || '无')
+    ];
+    copyText(lines.join('\n'), '已复制日志(6 段)');
+  });
+
+  document.getElementById('main-content').classList.remove('hidden');
+  document.getElementById('actions').classList.remove('hidden');
+})();
+</script>
+
+</body>
+</html>

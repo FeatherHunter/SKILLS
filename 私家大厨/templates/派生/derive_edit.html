@@ -1,0 +1,385 @@
+<!--
+私家大厨 · 派生域 rel-3 过程 HTML(从已有派生新菜 · T12 v4.0 / G9 用户新增核心价值)
+由 scripts/render_派生.py derive-edit 注入数据,占位符 INJECT-DATA 唯一 1 次。
+
+三态契约(对齐 G2 采集表单 · G9 决策「AI 推测标色」):
+  - confirmed: 与母本相同(AI 确认,正常样式)
+  - guessed:   AI 按差异预填的字段(底色标注 + 「AI 推测」角标,用户可改)
+  - missing:   空字段(红色框 + 「待补充」,必须用户补充)
+母本字段天然完整,不走缺字段拒绝制;用户改坏/删空 → 红色必补(复用 G2 校验视觉)。
+确认派生按钮: 缺失字段未补全时置灰禁用(系统拦,不带缺口写库)。
+动作区: 复制数据(5 段 JSON 硬标准)/ 复制日志(6 段硬标准)/ 确认派生(带参数 prompt)。
+边界: 母本废弃/不存在 → 拒绝 + 提示(不造值);派生深度不限。
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="私家大厨 · render_派生.py · v4.0 T12">
+<title>私家大厨 · 从已有派生新菜</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --guessed:#FFF4E0;--guessed-border:#FFB340;
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 96px 0}
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  .hero{background:var(--card);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:26px;font-weight:700;letter-spacing:-0.025em;margin-bottom:4px}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--text3);margin:10px 0 14px}
+  .hero-meta span{display:inline-flex;align-items:center;gap:4px}
+  .stage-bar{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text3)}
+  .stage-bar .step{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius-pill);background:var(--bg)}
+  .stage-bar .step.on{background:var(--blue);color:#fff}
+  .stage-bar .arrow{color:var(--text4)}
+
+  .mother-card{background:linear-gradient(135deg,var(--blue-soft),var(--card) 60%);border:1.5px solid var(--blue-soft);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+  .mother-card h3{font-size:14px;font-weight:600;margin-bottom:8px;color:var(--blue)}
+  .mother-line{display:flex;flex-wrap:wrap;gap:10px;font-size:13px;color:var(--text2)}
+  .mother-line b{font-size:15px;color:var(--text)}
+  .mother-tag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:var(--radius-pill);background:var(--bg);color:var(--text3)}
+  .mother-desc{font-size:12px;color:var(--text3);margin-top:8px}
+
+  .field-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);border:2px solid transparent}
+  .field-card.missing{border-color:var(--danger);background:linear-gradient(0deg,var(--danger-soft),var(--card) 40%)}
+  .field-card.guessed{background:linear-gradient(0deg,var(--guessed),var(--card) 45%)}
+  .field-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .field-label{font-size:14px;font-weight:600}
+  .field-path{font-size:11px;color:var(--text4);font-family:ui-monospace,Menlo,monospace}
+  .badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);letter-spacing:0.02em}
+  .badge.guessed{background:var(--warn-soft);color:var(--warn)}
+  .badge.missing{background:var(--danger-soft);color:var(--danger)}
+  .field-value{width:100%;font-size:15px;padding:10px 12px;border:1.5px solid var(--separator);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);font-family:var(--font);outline:none}
+  .field-value:focus{border-color:var(--blue);background:#fff}
+  .field-card.missing .field-value{border-color:var(--danger);background:#fff}
+  .field-note{font-size:12px;color:var(--text3);margin-top:6px}
+  .field-card.missing .field-note{color:var(--danger)}
+  .field-ok{display:none;font-size:12px;color:var(--success);margin-top:6px}
+  .field-card.missing.filled .field-ok{display:block}
+
+  .legend{background:var(--card);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:13px;color:var(--text2)}
+  .legend .row{display:flex;align-items:center;gap:8px;margin:4px 0}
+  .legend .dot{width:12px;height:12px;border-radius:4px;flex:none}
+
+  .actions{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,0.94);backdrop-filter:blur(10px);border-top:0.5px solid var(--separator);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .actions .inner{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;text-align:center}
+  .btn.primary{background:var(--blue);color:#fff}
+  .btn.primary:disabled{background:var(--text4);color:rgba(255,255,255,0.7);cursor:not-allowed}
+  .btn.ghost{background:var(--bg);color:var(--blue)}
+  .btn-row{display:flex;gap:8px}
+  .btn-row .btn{flex:1}
+  .btn small{font-weight:400;font-size:11px;opacity:0.8}
+
+  .state{background:var(--card);border-radius:var(--radius);padding:48px 24px;text-align:center;color:var(--text3);box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px}
+  .hidden{display:none !important}
+  .state .icon{font-size:48px;margin-bottom:12px;opacity:0.6}
+  .state.error{color:var(--danger)}
+
+  .toast{position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:rgba(28,28,30,0.92);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--radius-pill);opacity:0;pointer-events:none;transition:opacity 0.25s;z-index:99;max-width:80vw}
+  .toast.show{opacity:1}
+
+  @media (max-width:480px){
+    .container{padding:16px 12px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:22px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="state-error" class="state error hidden">
+  <div class="icon">⚠️</div>
+  <div id="error-msg">数据加载失败</div>
+</div>
+
+<div id="main-content" class="hidden">
+
+  <section class="hero">
+    <h1 id="page-title">从已有派生新菜</h1>
+    <div class="hero-meta">
+      <span>📅 <span id="generated-at"></span></span>
+      <span>🎙️ 唤醒词:<span id="wake-word"></span></span>
+      <span>🔖 <span id="scene-id"></span></span>
+    </div>
+    <div class="stage-bar">
+      <span class="step on">🌿 预填</span><span class="arrow">→</span>
+      <span class="step">✅ 确认</span><span class="arrow">→</span>
+      <span class="step">📦 一次建成(新菜+关系)</span>
+    </div>
+  </section>
+
+  <!-- 母本卡 -->
+  <div class="mother-card hidden" id="mother-card">
+    <h3>🌿 母本</h3>
+    <div class="mother-line" id="mother-line"></div>
+    <div class="mother-desc" id="mother-desc"></div>
+  </div>
+
+  <!-- 差异说明卡(change_summary · AI 总结) -->
+  <div class="legend hidden" id="change-card">
+    <div class="row" style="font-weight:600">✏️ 差异说明(将写入派生关系):</div>
+    <div class="row" id="change-summary" style="font-size:14px"></div>
+  </div>
+
+  <div class="legend" id="legend">
+    <div class="row"><span class="dot" style="background:#fff;border:1.5px solid var(--separator)"></span>与母本相同(可直接确认)</div>
+    <div class="row"><span class="dot" style="background:var(--guessed);border:1.5px solid var(--guessed-border)"></span>AI 按差异预填(可修改)</div>
+    <div class="row"><span class="dot" style="background:var(--danger-soft);border:1.5px solid var(--danger)"></span>空字段(必补,补全前无法确认派生)</div>
+  </div>
+
+  <div id="fields"></div>
+  <div id="missing-summary" class="legend hidden"></div>
+
+</div>
+
+<div class="actions hidden" id="actions">
+  <div class="inner">
+    <button class="btn primary" id="btn-confirm" disabled>确认派生</button>
+    <div class="btn-row">
+      <button class="btn ghost" id="btn-copy-data">📋 复制数据</button>
+      <button class="btn ghost" id="btn-copy-log">🧾 复制日志</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!--INJECT-DATA-->
+
+<script>
+(function(){
+  'use strict';
+
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    showState('error', '数据未注入(window.__DATA__ 缺失)。这是模板,不是最终交付。请用 scripts/render_派生.py derive-edit 生成。');
+    return;
+  }
+  const D = window.__DATA__;
+
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function escAttr(s) { return esc(s).replace(/\n/g, '\\n'); }
+
+  function showState(type, msg) {
+    const main = document.getElementById('main-content');
+    const actions = document.getElementById('actions');
+    if (main) main.classList.add('hidden');
+    if (actions) actions.classList.add('hidden');
+    const el = document.getElementById('state-' + type);
+    if (el) {
+      el.classList.remove('hidden');
+      if (msg) { const m = document.getElementById('error-msg'); if (m) m.textContent = msg; }
+    }
+  }
+
+  const fields = D.fields || [];
+  if (fields.length === 0) {
+    showState('error', 'payload.fields 为空:没有可预填的字段。');
+    return;
+  }
+
+  let toastTimer = null;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+  }
+  function copyText(text, okMsg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast(okMsg), () => fallbackCopy(text, okMsg));
+    } else {
+      fallbackCopy(text, okMsg);
+    }
+  }
+  function fallbackCopy(text, okMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast(okMsg); } catch (e) { toast('复制失败,请手动复制'); }
+    document.body.removeChild(ta);
+  }
+
+  // ── 头部 ──
+  document.getElementById('page-title').textContent = D.scene_title || '从已有派生新菜';
+  document.getElementById('generated-at').textContent = D.occurred_at || D.generated_at || '未知';
+  document.getElementById('wake-word').textContent = D.wake_word || '—';
+  document.getElementById('scene-id').textContent = (D.scene_id || 'derive_from_existing') + ' · 新菜:' + (D.target || '—');
+
+  // ── 母本卡 ──
+  const mother = D.mother || {};
+  if (mother && mother.name) {
+    const tags = [];
+    if (mother.difficulty) tags.push('难度:' + mother.difficulty);
+    if (mother.servings) tags.push('份量:' + mother.servings + '人');
+    if (mother.total_time) tags.push('⏱' + mother.total_time + 'min');
+    document.getElementById('mother-line').innerHTML =
+      '<b>🌿 ' + esc(mother.name) + '</b>' + tags.map(t => '<span class="mother-tag">' + esc(t) + '</span>').join('');
+    if (mother.description) document.getElementById('mother-desc').textContent = mother.description;
+    document.getElementById('mother-card').classList.remove('hidden');
+  }
+  if (D.change_summary) {
+    document.getElementById('change-summary').textContent = D.change_summary;
+    document.getElementById('change-card').classList.remove('hidden');
+  }
+
+  // ── 三态字段渲染 ──
+  const stateMap = {
+    confirmed: {label: '与母本相同', cls: ''},
+    guessed:   {label: 'AI 推测',  cls: 'guessed'},
+    missing:   {label: '待补充',   cls: 'missing'}
+  };
+  const fieldEls = [];
+  const container = document.getElementById('fields');
+
+  fields.forEach(f => {
+    const st = stateMap[f.state] || stateMap.confirmed;
+    const card = document.createElement('div');
+    card.className = 'field-card ' + st.cls;
+    card.dataset.state = f.state;
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'field-value';
+    input.value = (f.value === null || f.value === undefined) ? '' : String(f.value);
+    input.placeholder = (f.state === 'missing') ? '请补充' : '';
+    input.dataset.path = f.path;
+
+    const ok = document.createElement('div');
+    ok.className = 'field-ok'; ok.textContent = '✓ 已补充';
+
+    let head = '<div class="field-head">' +
+      '<span class="field-label">' + esc(f.label || f.path) + '</span>' +
+      '<span class="field-path">' + esc(f.path || '') + '</span>';
+    if (f.state === 'guessed') head += '<span class="badge guessed">AI 推测</span>';
+    if (f.state === 'missing') head += '<span class="badge missing">待补充</span>';
+    head += '</div>';
+
+    card.innerHTML = head;
+    card.appendChild(input);
+    if (f.note) {
+      const note = document.createElement('div');
+      note.className = 'field-note'; note.textContent = f.note;
+      card.appendChild(note);
+    }
+    card.appendChild(ok);
+    container.appendChild(card);
+    fieldEls.push({el: card, input: input});
+  });
+
+  // ── 缺失字段联动:补全后确认按钮才可用 ──
+  const confirmBtn = document.getElementById('btn-confirm');
+  const missingSummary = document.getElementById('missing-summary');
+
+  function refreshMissing() {
+    let missingCount = 0;
+    fieldEls.forEach(f => {
+      const isMissing = f.el.dataset.state === 'missing' && !f.input.value.trim();
+      f.el.classList.toggle('filled', f.el.dataset.state === 'missing' && !!f.input.value.trim());
+      if (isMissing) missingCount++;
+    });
+    confirmBtn.disabled = missingCount > 0;
+    if (missingCount > 0) {
+      missingSummary.classList.remove('hidden');
+      missingSummary.innerHTML = '🔴 还有 <b>' + missingCount + '</b> 个缺失字段未补全,补全后才能确认派生。';
+    } else {
+      missingSummary.classList.add('hidden');
+    }
+  }
+  fieldEls.forEach(f => {
+    f.input.addEventListener('input', refreshMissing);
+  });
+  refreshMissing();
+
+  // ── 确认派生:带参数 prompt(08 §4 · 单工闭环)──
+  function buildFilledPayload() {
+    const p = JSON.parse(JSON.stringify(D.payload || {}));
+    fieldEls.forEach(f => {
+      const path = f.input.dataset.path;
+      const val = f.input.value.trim();
+      if (val === '') return;
+      const parts = path.split('.');
+      let cur = p;
+      for (let i = 0; i < parts.length - 1; i++) {
+        const k = parts[i];
+        if (cur[k] === undefined || cur[k] === null || typeof cur[k] !== 'object') {
+          cur[k] = /^\d+$/.test(parts[i + 1]) ? [] : {};
+        }
+        cur = cur[k];
+      }
+      const last = parts[parts.length - 1];
+      if (Array.isArray(cur) && /^\d+$/.test(last)) {
+        cur[Number(last)] = val;
+      } else {
+        cur[last] = val;
+      }
+    });
+    return p;
+  }
+
+  confirmBtn.addEventListener('click', function () {
+    if (confirmBtn.disabled) return;
+    const filled = buildFilledPayload();
+    const prompt =
+      '请确认从「' + (D.mother && D.mother.name || '母本') + '」派生新菜(缺失字段已补全):\n' +
+      '【' + (D.command_cn || '从已有派生新菜') + '】\n' +
+      JSON.stringify(filled, null, 2);
+    copyText(prompt, '已复制确认 prompt,发给 AI 即可一次建成(新菜+派生关系)');
+  });
+
+  // ── 复制数据(硬标准 · 5 段 JSON)──
+  document.getElementById('btn-copy-data').addEventListener('click', function () {
+    const data = {
+      scene_id: D.scene_id || 'derive_from_existing',
+      command_cn: D.command_cn || '从已有派生新菜',
+      occurred_at: D.occurred_at || '',
+      target: D.target || '',
+      payload: buildFilledPayload()
+    };
+    copyText(JSON.stringify(data, null, 2), '已复制数据(5 段 JSON)');
+  });
+
+  // ── 复制日志(硬标准 · 6 段)──
+  document.getElementById('btn-copy-log').addEventListener('click', function () {
+    const logs = D.logs || {};
+    const lines = [
+      '① 场景标识: command_cn=' + (D.command_cn || '') + ' · 唤醒词=' + (D.wake_word || '') + ' · 场景=' + (D.scene_title || ''),
+      '② AI 思考链: ' + (logs.thought_chain || '意图理解 → 母本读取 → 差异预填(标色) → 三态标注'),
+      '③ 底层数据结构: payload=' + JSON.stringify(buildFilledPayload()) + ' · DB 操作=INSERT recipes+子表+recipe_relations(同事务)',
+      '④ 调用链: 派生/cli.py mother → 过程 HTML → derive-commit <payload.json>',
+      '⑤ 时间戳+版本: ' + (D.occurred_at || '') + ' · skill v4.0',
+      '⑥ 异常信息(如有): ' + (logs.exception || '无')
+    ];
+    copyText(lines.join('\n'), '已复制日志(6 段)');
+  });
+
+  document.getElementById('main-content').classList.remove('hidden');
+  document.getElementById('actions').classList.remove('hidden');
+})();
+</script>
+
+</body>
+</html>

@@ -118,6 +118,94 @@ class TestBackupZip:
         assert data["data"]["zip_path"] == str(out_zip)
         assert data["data"]["receipt_path"] and Path(data["data"]["receipt_path"]).exists()
         assert "photo_counts" in data["data"]
+        assert data["data"]["import_files"]  # import 兼容文件非空
+
+    def test_restore_roundtrip_e2e(self, tmp_path):
+        """验收 e2e:备份 → 解压 → recipes_import 逐个导入新库 → 17 表数据完整恢复"""
+        import sqlite3
+        env = seeded_env(tmp_path)
+        out_zip = tmp_path / "rt.zip"
+        r = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "export_backup.py"), "--out", str(out_zip)],
+            capture_output=True, text=True, encoding="utf-8", env=env,
+        )
+        assert r.returncode == 0, r.stderr
+        assert json.loads(r.stdout)["status"] == "success"
+
+        # 解压 → recipes_import/
+        unz = tmp_path / "unz"
+        unz.mkdir()
+        with zipfile.ZipFile(out_zip) as zf:
+            zf.extractall(unz)
+        imp_dir = unz / "recipes_import"
+        files = sorted(imp_dir.glob("*.json"))
+        assert files, "ZIP 必须含 recipes_import/ 嵌套 JSON(恢复=解压+导入)"
+
+        # 新库逐个导入
+        db2 = tmp_path / "db2"
+        db2.mkdir()
+        env2 = dict(env)
+        env2["SKILLS_DB_PATH"] = str(db2)
+        r = subprocess.run(
+            [sys.executable, str(CLI_INIT), "init"],
+            capture_output=True, text=True, encoding="utf-8", env=env2,
+        )
+        assert r.returncode == 0, r.stderr
+        for f in files:
+            r = subprocess.run(
+                [sys.executable, str(SCRIPT_DIR / "import_orchestrator.py"), str(f)],
+                capture_output=True, text=True, encoding="utf-8", env=env2,
+            )
+            assert r.returncode == 0, f"恢复导入失败 {f.name}: {r.stdout[:400]}"
+
+        # 17 表完整性断言(种子=宫保虾球:2 食材/2 步骤/2 季节/2 做法/2 口味/1 技法/1 tip/1 背景/1 营养)
+        conn = sqlite3.connect(str(db2 / "chef_data.db"))
+        expect = {
+            "recipes": 1, "recipe_categories": 1, "recipe_seasons": 2,
+            "recipe_cooking_methods": 2, "recipe_flavors": 2, "recipe_diet_tags": 1,
+            "recipe_meal_types": 1, "ingredients": 2, "cooking_steps": 2,
+            "step_ingredients": 1, "step_techniques": 1, "tips": 1,
+            "background_knowledge": 1, "cookware": 1, "nutrition_info": 1,
+        }
+        for t, n in expect.items():
+            got = conn.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
+            assert got == n, f"{t}: 期望 {n} 行,恢复后 {got} 行"
+        row = conn.execute("SELECT name, difficulty, servings FROM recipes").fetchone()
+        assert row[0] == "宫保虾球" and row[1] == "中等"
+        conn.close()
+
+    def test_restore_incomplete_recipe_blocked_by_reject_rule(self, tmp_path):
+        """边界:源数据缺 tips/techniques(如真实老库辣椒炒肉)的菜,恢复时被 T5 拒绝制如实拦截。
+
+        这不是备份缺陷——备份 JSON 完整保留原样;恢复走录入域拒绝制,
+        缺 tips/techniques 时校验列出缺失,AI 引导用户补 1 条真实值(与录入语义一致)。
+        """
+        env = seeded_env(tmp_path)
+        # 用转换器直接构造一个缺 tips/techniques 的嵌套 dict(模拟真实老库缺字段)
+        sys.path.insert(0, str(SCRIPT_DIR))
+        import export_backup
+        flat = {
+            "_recipe": {"id": "x1", "name": "老菜", "difficulty": "简单", "servings": 1,
+                        "total_time_minutes": 10, "status": "未做", "photo_url": "p",
+                        "source": "s", "source_url": "u", "description": "老库缺 tips"},
+            "recipe_categories": [], "recipe_seasons": [], "recipe_cooking_methods": [],
+            "recipe_flavors": [], "recipe_diet_tags": [], "recipe_meal_types": [],
+            "ingredients": [], "cooking_steps": [], "step_ingredients": [],
+            "step_techniques": [], "tips": [], "recipe_history": [],
+            "background_knowledge": [], "recipe_relations": [], "cookware": [],
+            "nutrition_info": [],
+        }
+        nested = export_backup.to_import_format(flat)
+        # 转换如实:空 tips/techniques 不造假填充(键缺失 = 缺字段,交给拒绝制拦截)
+        assert "tips" not in nested or nested["tips"] == []
+        assert "techniques" not in nested or nested["techniques"] == []
+
+        # 导入被拒绝制拦截:错误列出 tips/techniques 缺失(友好,非静默丢数据)
+        import import_orchestrator
+        res = import_orchestrator.orchestrate_import(nested)
+        assert res["status"] == "error"
+        fields = [e.get("field") for e in (res.get("errors") or [])]
+        assert "tips" in fields and "techniques" in fields
 
     def test_receipt_html_has_08_and_payload(self, tmp_path, monkeypatch):
         """回执 HTML:08 双按钮 + INJECT-DATA 已替换(无残留占位符)"""

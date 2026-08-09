@@ -23,7 +23,7 @@
 | 做菜模式 / 开始做菜 | **私家大厨** | cooking_render.py + cooking_mode.html |
 | 查看食谱 / 查看食材 / 查看步骤 / 查看营养(菜本身)/ 查看背景 | **私家大厨** | recipe_render.py + recipe_view.html |
 | 记录做菜 / 查看历史 / 查看统计 | **私家大厨** | history_manager.py |
-| 添加派生关系 / 查看派生关系 | **私家大厨** | relation_manager.py |
+| 添加派生关系 / 查看派生关系 / 从已有派生新菜 | **私家大厨** | relation_manager.py + 派生/ + render_派生.py(T12) |
 | 搜索食谱 / 筛选 X | **私家大厨** | recipe_manager.py |
 | 修改食谱 / 修改步骤 / 修改食材 / 修改难度 / 修改份量 / 废弃食谱 | **私家大厨** | 各 *_manager.py |
 | 体检 / 批量改 / 备份 | **私家大厨** | data_quality_report.py + render_batch_edit.py + export_backup.py(数据管理域) |
@@ -166,12 +166,13 @@
 | 录入食谱 | 录入新食谱(图片/文本/JSON) | ✓ 加个新菜 | ✓ 帮我录 X | - |
 | 导入食谱 | JSON文件导入 | ✓ 导入 JSON | ✓ 帮我导入下 | - |
 
-### H. 派生关系（2个，v5.1 新增）
+### H. 派生关系（3个，v5.1 新增 · v4.0 T12 增 rel-3）
 
 | 唤醒词 | 说明 | 同义(S) | 口语(O) | 模糊(F) |
 |--------|------|
 | 添加派生关系 | 标记一道菜的变体(派生/变体/改良) | ✓ 加个变体 | ✓ X 派生自 Y | - |
-| 查看派生关系 | 查看一道菜的父本/子本关系 | ✓ X 的家族 | ✓ X 跟谁有关 | - |
+| 查看派生关系 | 查看一道菜的家族树(祖先/后代多代连链) | ✓ X 的家族 | ✓ X 跟谁有关 | - |
+| 从已有派生新菜 | 拉母本全字段按差异预填(标色)→ 改 → 确认 → 新菜谱+派生关系一次建成 | ✓ 类似 X 做 Y | ✓ 从 X 派生 Y | - |
 
 ### I. 帮助（1个 · §07 HELP 契约 · 不展示自身）
 
@@ -267,7 +268,7 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 | 查看历史 | `render_data.py history` | `$CHEF_OUTPUT_DIR/timeline/` | `数据视图_history_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 查看统计 | `render_data.py stats` | `$CHEF_OUTPUT_DIR/dashboard/` | `数据视图_stats_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 查看统计(不带菜名) | `render_历史.py global` | `$CHEF_OUTPUT_DIR/dashboard/` | `数据视图_global_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
-| 查看派生关系 | `render_data.py relations` | `$CHEF_OUTPUT_DIR/list/` | `数据视图_relations_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 查看派生关系 | `render_派生.py tree` | `$CHEF_OUTPUT_DIR/派生/` | `家族树_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 体检(数据质量报告) | `render_quality_report.py` | `$CHEF_OUTPUT_DIR/quality/` | `数据质量报告_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 批量改(批量编辑) | `render_batch_edit.py` | `$CHEF_OUTPUT_DIR/batch_edit/` | `批量编辑_<recipe_id8>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 备份(导出 ZIP) | `export_backup.py` | `$CHEF_OUTPUT_DIR/backup/` | `私家大厨备份_<YYYYMMDD_HHMMSS>.zip` + 回执 `备份回执_<ts>.html` | **12.A** 数据/过程 |
@@ -279,7 +280,7 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 
 ### 4 类榜单 HTML 机制(2026-07-27 · P1-2 增)
 
-> C 类(搜索/筛选/查看全部)+ E 类(查看历史/查看统计)+ H 类(查看派生关系) 共 **11 唤醒词** 统一走 `render_data.py`(§04 原则 2 · 1 模板 3 type)。
+> C 类(搜索/筛选/查看全部)+ E 类(查看历史/查看统计) 共 **10 唤醒词** 统一走 `render_data.py`(§04 原则 2 · 1 模板 3 type);H 类(查看派生关系)走 `render_派生.py tree`(家族树 · T12)。
 
 | 唤醒词类别 | 唤醒词数 | render_data.py 子命令 | 输出 type |
 |------------|---------|---------------------|-----------|
@@ -287,7 +288,7 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 | 查看历史 | 1 | `history <菜名或ID>` | `timeline`(垂直时间线) |
 | 查看统计(带菜名) | 1 | `stats <菜名或ID>` | `dashboard`(4-6 KPI 卡片) |
 | 查看统计(不带菜名) | 1 | `render_历史.py global` | `dashboard`(全局画像:做过几道菜/总次数/最爱/最近/还没做过) |
-| 查看派生关系 | 1 | `relations <菜名或ID>` | `list`(parent+child 两组) |
+| 查看派生关系 | 1 | `render_派生.py tree <菜名或ID>` | `tree`(家族树 · 根=当前菜) |
 
 **统一模板**:`templates/data_view.html`(3 type 切换 layout)· **统一渲染器**:`scripts/render_data.py`。
 **底层 CLI**:全部走 `recipe_manager.py` / `history_manager.py` / `relation_manager.py` 的 `--json` 返回结构化数据(§02 L3 三段式)。
@@ -618,12 +619,13 @@ python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...] \
 
 ---
 
-### H. 派生关系 → `relation.md`（v5.1 新增）
+### H. 派生关系 → `relation.md`（v5.1 新增 · v4.0 T12 扩 rel-3）
 
 | # | 唤醒词 | 说明 |
 |---|--------|------|
 | 27 | 添加派生关系 | 标记一道菜的变体(派生/变体/改良) | ✓ 加个变体 | ✓ X 派生自 Y | - |
-| 28 | 查看派生关系 | 查看一道菜的父本/子本关系 | ✓ X 的家族 | ✓ X 跟谁有关 | - |
+| 28 | 查看派生关系 | 查看一道菜的家族树(祖先/后代) | ✓ X 的家族 | ✓ X 跟谁有关 | - |
+| 29 | 从已有派生新菜 | 拉母本按差异预填(标色)→ 确认 → 新菜谱+关系一次建成 | ✓ 类似 X 做 Y | ✓ 从 X 派生 Y | - |
 
 ### I. 帮助 → `scripts/render_help.py`（§07 HELP 契约 · 不展示自身）
 
@@ -691,6 +693,7 @@ python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...] \
 | "导入食谱" | 导入食谱 | 完整 | 无 | add.md（JSON导入） |
 | "添加派生关系 宫保虾球 基于 上海排骨年糕" | 添加派生关系 | 开头 | 宫保虾球 | relation.md |
 | "查看派生关系 上海排骨年糕" | 查看派生关系 | 开头 | 上海排骨年糕 | relation.md |
+| "做咖喱鸡,类似咖喱牛腩" | 从已有派生新菜 | 结尾 | 咖喱鸡(母本:咖喱牛腩) | relation.md |
 | "宫保虾球" | 无命中 | - | 宫保虾球 | search.md（兜底菜名搜索） |
 
 ---
@@ -706,7 +709,7 @@ python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...] \
 | 烹饪历史 | 3 | `features/history.md` | E |
 | 采购清单 | 2 | `features/shopping.md` | F |
 | 录入食谱 | 2 | `features/add.md` | G |
-| 派生关系 | 2 | `features/relation.md` | H |
+| 派生关系 | 3 | `features/relation.md` | H |
 | 数据库结构 | - | `references/database_schema.md` | - |
 | 分类参考 | - | `references/categories.md` | - |
 | CLI命令 | - | `references/commands.md` | - |

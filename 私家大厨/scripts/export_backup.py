@@ -62,13 +62,219 @@ def pack_photos(output_root: Path) -> dict:
     return counts
 
 
+# ── 扁平 17 表 → import 兼容嵌套格式(恢复=解压+逐个导入)─────────────
+# import_orchestrator 只吃嵌套 recipe 格式(recipe_template.json 同构);
+# export_recipes 输出扁平表 → 这里做无损转换,每菜一个嵌套 JSON。
+def to_import_format(flat: dict) -> dict:
+    """把 export_recipes 的单菜扁平记录转为 import_orchestrator 可消费的嵌套 dict。
+
+    flat 结构: {_recipe, recipe_categories, recipe_seasons, ..., ingredients,
+                cooking_steps, step_ingredients, step_techniques, tips, ...}
+    """
+    recipe = dict(flat.get("_recipe") or {})
+    out = {
+        "name": recipe.get("name"),
+        "description": recipe.get("description"),
+        "difficulty": recipe.get("difficulty"),
+        "servings": recipe.get("servings"),
+        "total_time": recipe.get("total_time_minutes"),
+        "status": recipe.get("status"),
+        "photo_url": recipe.get("photo_url"),
+        "source": recipe.get("source"),
+        "source_url": recipe.get("source_url"),
+    }
+
+    # 1:1 分类(cuisine_type → cuisine)
+    cats = flat.get("recipe_categories") or []
+    if cats:
+        c = cats[0]
+        out["category"] = {
+            "cuisine": c.get("cuisine_type"),
+            "region": c.get("region"),
+            "country": c.get("country"),
+        }
+
+    # 1:N 标签表 → 字符串数组
+    tag_map = {
+        "recipe_seasons": "season",
+        "recipe_cooking_methods": "method",
+        "recipe_flavors": "flavor",
+        "recipe_diet_tags": "tag",
+        "recipe_meal_types": "meal_type",
+    }
+    for table, col in tag_map.items():
+        rows = flat.get(table) or []
+        values = [r.get(col) for r in rows if r.get(col)]
+        if values:
+            key = {
+                "recipe_seasons": "seasons",
+                "recipe_cooking_methods": "cooking_methods",
+                "recipe_flavors": "flavors",
+                "recipe_diet_tags": "diet_tags",
+                "recipe_meal_types": "meal_types",
+            }[table]
+            out[key] = values
+
+    # 食材:扁平行 → 嵌套(去 id/recipe_id)
+    ing_rows = flat.get("ingredients") or []
+    if ing_rows:
+        out["ingredients"] = [{
+            "name": r.get("name"),
+            "quantity": r.get("quantity"),
+            "unit": r.get("unit"),
+            "category": r.get("category"),
+            "sequence": r.get("sequence"),
+            "is_optional": bool(r.get("is_optional")),
+            "substitute": r.get("substitute"),
+            "quantity_text": r.get("quantity_text"),
+        } for r in ing_rows]
+
+    # 步骤 + 步骤×食材桥(step_ingredients → steps[].ingredients_used)
+    step_rows = flat.get("cooking_steps") or []
+    si_rows = flat.get("step_ingredients") or []
+    ing_id_to_name = {r["id"]: r.get("name") for r in ing_rows if r.get("id")}
+    ing_id_to_unit = {r["id"]: r.get("unit") for r in ing_rows if r.get("id")}
+    # step_id → ingredients_used[]
+    si_by_step = {}
+    for si in si_rows:
+        sid = si.get("step_id")
+        si_by_step.setdefault(sid, []).append({
+            "name": ing_id_to_name.get(si.get("ingredient_id"), "?"),
+            "quantity_used": si.get("quantity_used"),
+            "introduced_at": si.get("introduced_at"),
+            "unit": si.get("unit") or ing_id_to_unit.get(si.get("ingredient_id")),
+        })
+    if step_rows:
+        out["steps"] = []
+        for s in step_rows:
+            step_item = {
+                "sequence": s.get("sequence"),
+                "action": s.get("action"),
+                "duration": s.get("duration_minutes"),
+                "heat_level": s.get("heat_level"),
+                "temperature": s.get("temperature"),
+                "expected_result": s.get("expected_result"),
+            }
+            used = si_by_step.get(s.get("id"))
+            if used:
+                step_item["ingredients_used"] = used
+            out["steps"].append(step_item)
+
+    # 步骤技法(step_techniques → techniques,step_id 换算回 sequence)
+    tech_rows = flat.get("step_techniques") or []
+    step_id_to_seq = {s.get("id"): s.get("sequence") for s in step_rows if s.get("id")}
+    if tech_rows:
+        out["techniques"] = [{
+            "step_sequence": step_id_to_seq.get(t.get("step_id")),
+            "technique_name": t.get("technique_name"),
+            "description": t.get("description"),
+            "key_points": t.get("key_points"),
+        } for t in tech_rows]
+
+    # 贴士(tips → step_sequence 换算;菜级 tip 无 step_id)
+    tip_rows = flat.get("tips") or []
+    if tip_rows:
+        out["tips"] = [{
+            "step_sequence": step_id_to_seq.get(t.get("step_id")),
+            "content": t.get("content"),
+            "category": t.get("category"),
+            "priority": t.get("priority"),
+        } for t in tip_rows]
+
+    # 炊具
+    cw_rows = flat.get("cookware") or []
+    if cw_rows:
+        out["cookware"] = [{"name": c.get("name"), "category": c.get("category")} for c in cw_rows]
+
+    # 营养 1:1
+    nut = flat.get("nutrition_info") or []
+    if nut:
+        n = nut[0]
+        out["nutrition"] = {
+            "serving_size": n.get("serving_size"),
+            "serving_unit": n.get("serving_unit"),
+            "calories": n.get("calories"),
+            "protein": n.get("protein"),
+            "fat": n.get("fat"),
+            "carbs": n.get("carbs"),
+            "fiber": n.get("fiber"),
+            "sodium": n.get("sodium"),
+        }
+
+    # 背景 1:1
+    bg = flat.get("background_knowledge") or []
+    if bg:
+        b = bg[0]
+        out["background"] = {
+            "origin_story": b.get("origin_story"),
+            "historical_background": b.get("historical_background"),
+            "cultural_significance": b.get("cultural_significance"),
+        }
+
+    # 烹饪历史(缺字段拒绝制:key 恒在,空数组 [] 合法)
+    hist = flat.get("recipe_history") or []
+    out["history"] = [{
+        "cook_date": h.get("cook_date"),
+        "cook_sequence": h.get("cook_sequence"),
+        "rating": h.get("rating"),
+        "feedback": h.get("feedback"),
+    } for h in hist]
+
+    # 派生关系(本菜为 child → parent_name 需库中已存在;恢复时父本先导入)
+    # 缺字段拒绝制:key 恒在,空数组 [] 合法
+    rels = flat.get("recipe_relations") or []
+    rel_out = []
+    for r in rels:
+        if r.get("parent_id") == recipe.get("id"):
+            continue  # 本菜是父本 → 对向关系由子本侧登记,跳过
+        rel_out.append({
+            "parent_name": r.get("parent_name_hint") or "",
+            "relation_type": r.get("relation_type"),
+            "change_summary": r.get("change_summary"),
+        })
+    out["relations"] = rel_out
+
+    return out
+
+
+def build_import_files(records: list, tmp_dir: Path) -> list:
+    """把扁平导出转为 import 兼容嵌套 JSON(每菜一个文件)。
+
+    返回 [{name, path, status}] — 恢复 = 逐个 import_orchestrator.py <path>。
+    """
+    files = []
+    ing_by_id = {}
+    for rec in records:
+        rid = (rec.get("_recipe") or {}).get("id")
+        if rid:
+            ing_by_id[rid] = (rec.get("_recipe") or {}).get("name")
+    # 预解析:recipe_relations 只有 parent_id/child_id,补 parent_name_hint
+    for rec in records:
+        rid = (rec.get("_recipe") or {}).get("id")
+        for r in rec.get("recipe_relations") or []:
+            r["parent_name_hint"] = ing_by_id.get(r.get("parent_id"), "")
+    for rec in records:
+        nested = to_import_format(rec)
+        name = (nested.get("name") or "untitled")
+        safe = name.strip().replace("/", "_").replace("\\", "_")[:60] or "untitled"
+        # 防同名菜覆盖:同名加 _N 后缀
+        candidate = tmp_dir / f"{safe}.json"
+        n = 1
+        while candidate.exists():
+            candidate = tmp_dir / f"{safe}_{n}.json"
+            n += 1
+        candidate.write_text(json.dumps(nested, ensure_ascii=False, indent=2), encoding="utf-8")
+        files.append({"name": name, "path": str(candidate)})
+    return files
+
+
 def create_backup(zip_path: Path, include_archived: bool = False) -> dict:
-    """创建备份 ZIP:17 表 JSON + 三照片目录。
+    """创建备份 ZIP:17 表 JSON + import 兼容嵌套 JSON + 三照片目录。
 
     返回:
         {
             "zip_path", "json_name", "recipe_count",
-            "tables", "photo_counts", "created_at", "db_path",
+            "tables", "photo_counts", "import_files", "created_at", "db_path",
         }
     """
     output_root = get_output_root()
@@ -80,6 +286,11 @@ def create_backup(zip_path: Path, include_archived: bool = False) -> dict:
     recipe_count = result["recipe_count"]
     tables = result["tables"]
 
+    # 1b. import 兼容嵌套 JSON(每菜一个 → recipes_import/ 子目录)
+    import_dir = Path(zip_path.parent) / f".import_{_ts()}"
+    import_dir.mkdir(parents=True, exist_ok=True)
+    import_files = build_import_files(result["recipes"], import_dir)
+
     # 2. 照片目录计数
     photo_counts = pack_photos(output_root)
 
@@ -87,6 +298,8 @@ def create_backup(zip_path: Path, include_archived: bool = False) -> dict:
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(str(zip_path), "w", zipfile.ZIP_DEFLATED) as zf:
         zf.write(str(tmp_json), arcname=json_name)
+        for f in import_files:
+            zf.write(f["path"], arcname=f"recipes_import/{Path(f['path']).name}")
         for name in PHOTO_DIRS:
             src = output_root / name
             if not src.is_dir():
@@ -95,8 +308,10 @@ def create_backup(zip_path: Path, include_archived: bool = False) -> dict:
                 if f.is_file():
                     zf.write(str(f), arcname=f"{name}/{f.relative_to(src).as_posix()}")
 
-    # 4. 清临时 JSON
+    # 4. 清临时文件
     tmp_json.unlink(missing_ok=True)
+    import shutil
+    shutil.rmtree(import_dir, ignore_errors=True)
 
     return {
         "zip_path": str(zip_path),
@@ -104,6 +319,7 @@ def create_backup(zip_path: Path, include_archived: bool = False) -> dict:
         "recipe_count": recipe_count,
         "tables": tables,
         "photo_counts": photo_counts,
+        "import_files": import_files,
         "created_at": _now(),
         "db_path": result["db_path"],
         "include_archived": include_archived,
@@ -124,6 +340,7 @@ def render_receipt(backup: dict) -> str:
         "recipe_count": backup["recipe_count"],
         "tables": backup["tables"],
         "photo_counts": backup["photo_counts"],
+        "import_files": backup["import_files"],
         "include_archived": backup["include_archived"],
     }
 
@@ -149,6 +366,7 @@ def render_receipt(backup: dict) -> str:
             "recipe_count": backup["recipe_count"],
             "tables": backup["tables"],
             "photo_counts": backup["photo_counts"],
+            "import_files": len(backup["import_files"]),
             "include_archived": backup["include_archived"],
         },
     )
@@ -200,9 +418,10 @@ def main():
                 "recipe_count": backup["recipe_count"],
                 "tables": backup["tables"],
                 "photo_counts": backup["photo_counts"],
+                "import_files": [f["name"] for f in backup["import_files"]],
                 "include_archived": backup["include_archived"],
             },
-            "message": f"已备份 {backup['recipe_count']} 道菜(17 表 JSON + 照片)到 {backup['zip_path']}"
+            "message": f"已备份 {backup['recipe_count']} 道菜(17 表 JSON + import 兼容 JSON + 照片)到 {backup['zip_path']}"
         }, ensure_ascii=False, indent=2))
     except Exception as e:
         print(json.dumps({

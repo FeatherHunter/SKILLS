@@ -55,8 +55,10 @@
     </div>
     <div class="path-block" id="zip-path">加载中...</div>
     <div class="tip">
-      <strong>♻️ 完整恢复:</strong>解压 ZIP → 得到 17 表 JSON + 三照片目录 → 用
-      <code>import_orchestrator.py</code> 导入 JSON → 照片目录放回 <code>$CHEF_OUTPUT_DIR</code> 对应位置(纯文件操作,不碰 schema)。
+      <strong>♻️ 完整恢复(三步):</strong>① 解压 ZIP → 得到 17 表全量 JSON + <code>recipes_import/</code> 每菜一个嵌套 JSON + 三照片目录;
+      ② 对 <code>recipes_import/*.json</code> 逐个跑 <code>import_orchestrator.py &lt;文件&gt;</code>(派生关系的父本需先导入);
+      ③ 照片目录放回 <code>$CHEF_OUTPUT_DIR</code> 对应位置(纯文件操作,不碰 schema)。
+      <br><strong>⚠️ 边界:</strong>若源菜缺 tips/techniques(老库遗留),恢复会被录入域缺字段拒绝制如实拦截并列出缺失——备份 JSON 完整保留原样,补齐 1 条真实值后重新导入即可。
     </div>
   </div>
 
@@ -66,6 +68,14 @@
       <span class="count" id="stats-count"></span>
     </div>
     <div id="stats-detail"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>import 兼容文件(recipes_import/)</h2>
+      <span class="count" id="import-count"></span>
+    </div>
+    <div id="import-detail"></div>
   </div>
 
   <footer class="footer" id="footer">
@@ -155,6 +165,20 @@
     return;
   }
   stats.innerHTML = [...tableRows, ...photoRows].join('');
+
+  // 5. import 兼容文件清单
+  const impFiles = D.import_files || [];
+  document.getElementById('import-count').textContent = `${impFiles.length} 个(逐个导入)`;
+  const impDetail = document.getElementById('import-detail');
+  if (impFiles.length === 0) {
+    impDetail.innerHTML = '<div class="row"><span class="label">无(库中无食谱)</span></div>';
+  } else {
+    impDetail.innerHTML = impFiles.map(f => {
+      const p = f.path || '';
+      const fname = p.split(/[\\\/]/).pop() || '?';
+      return `<div class="row"><span class="label">${esc(f.name)}</span><span class="value">recipes_import/${esc(fname)}</span></div>`;
+    }).join('');
+  }
 
   // 正常态(内容已渲染)
   state('normal');

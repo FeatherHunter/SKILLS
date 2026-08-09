@@ -31,7 +31,9 @@ td.kg{font-weight:700;font-feature-settings:"tnum"}
 .btn.primary{background:var(--bad);color:#fff}
 .btn.ghost{background:var(--card);color:var(--ink2);box-shadow:var(--shadow)}
 .footer{text-align:center;font-size:11px;color:var(--ink3);margin-top:16px}
-@media(max-width:480px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.kpi .value{font-size:19px}
+@media(max-width:480px){.kpi-grid{grid-template-columns:1fr 1fr;grid-template-areas:"count range" "days range";gap:10px}
+.kpi:nth-child(1){grid-area:count}.kpi:nth-child(2){grid-area:range}.kpi:nth-child(3){grid-area:days}
+.kpi .value{font-size:19px}
 .actions .btn{flex:1 1 45%;min-height:42px;padding:10px 12px;font-size:13px}}
 </style>
 </head>

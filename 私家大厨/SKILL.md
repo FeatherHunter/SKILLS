@@ -150,7 +150,7 @@
 |--------|------|
 | 记录做菜 | 记录一次烹饪(评分+反馈) | ✓ 刚做完/今天做了 | ✓ 哈,做完了 5 分 | ✓ 录下/写 |
 | 查看历史 | 查看某道菜的烹饪历史 | ✓ 做过几次 | ✓ X 的记录 | - |
-| 查看统计 | 查看评分统计(均分/次数) | ✓ X 评分/平均分 | ✓ 帮我看下统计 | - |
+| 查看统计 | 查看评分统计(均分/次数);不带菜名=全局画像(hist-4:做过几道菜/总次数/最爱/最近/还没做过) | ✓ X 评分/平均分 | ✓ 帮我看下统计 | ✓ 最近厨艺咋样 |
 
 ### F. 采购清单（2个）
 
@@ -266,6 +266,7 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 | 搜索/筛选/查看全部 | `render_data.py search` | `$CHEF_OUTPUT_DIR/list/` | `数据视图_search_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 查看历史 | `render_data.py history` | `$CHEF_OUTPUT_DIR/timeline/` | `数据视图_history_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 查看统计 | `render_data.py stats` | `$CHEF_OUTPUT_DIR/dashboard/` | `数据视图_stats_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 查看统计(不带菜名) | `render_历史.py global` | `$CHEF_OUTPUT_DIR/dashboard/` | `数据视图_global_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 查看派生关系 | `render_data.py relations` | `$CHEF_OUTPUT_DIR/list/` | `数据视图_relations_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 体检(数据质量报告) | `render_quality_report.py` | `$CHEF_OUTPUT_DIR/quality/` | `数据质量报告_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 批量改(批量编辑) | `render_batch_edit.py` | `$CHEF_OUTPUT_DIR/batch_edit/` | `批量编辑_<recipe_id8>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
@@ -284,7 +285,8 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 |------------|---------|---------------------|-----------|
 | 搜索食谱/筛选 X/查看全部 | 11 | `search <关键词>` | `list`(网格卡片) |
 | 查看历史 | 1 | `history <菜名或ID>` | `timeline`(垂直时间线) |
-| 查看统计 | 1 | `stats <菜名或ID>` | `dashboard`(4-6 KPI 卡片) |
+| 查看统计(带菜名) | 1 | `stats <菜名或ID>` | `dashboard`(4-6 KPI 卡片) |
+| 查看统计(不带菜名) | 1 | `render_历史.py global` | `dashboard`(全局画像:做过几道菜/总次数/最爱/最近/还没做过) |
 | 查看派生关系 | 1 | `relations <菜名或ID>` | `list`(parent+child 两组) |
 
 **统一模板**:`templates/data_view.html`(3 type 切换 layout)· **统一渲染器**:`scripts/render_data.py`。
@@ -637,7 +639,7 @@ python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...] \
 |---|--------|------|
 | 24 | 记录做菜 | 记录一次烹饪(评分+反馈) | ✓ 刚做完/今天做了 | ✓ 哈,做完了 5 分 | ✓ 录下/写 |
 | 25 | 查看历史 | 查看某道菜的烹饪历史 | ✓ 做过几次 | ✓ X 的记录 | - |
-| 26 | 查看统计 | 查看评分统计(均分/次数) | ✓ X 评分/平均分 | ✓ 帮我看下统计 | - |
+| 26 | 查看统计 | 查看评分统计(均分/次数);不带菜名=全局画像(hist-4:做过几道菜/总次数/最爱/最近/还没做过) | ✓ X 评分/平均分 | ✓ 帮我看下统计 | ✓ 最近厨艺咋样 |
 
 ---
 

@@ -41,6 +41,7 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 SKILL_DIR = _SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / "templates" / "query_view.html"
+ANALYSIS_TEMPLATE_PATH = SKILL_DIR / "templates" / "分析" / "analysis_view.html"
 
 # 查询类型 → 域 CLI(拆分后按域路由,v2.0 隔离契约)
 QUERY_DOMAIN = {
@@ -57,11 +58,50 @@ QUERY_DOMAIN = {
     "breakdown": "analysis",
     "overview": "analysis",
     "stats": "analysis",
+    # 分析域 25 场景(2026-08-09 实施 · 分析域最大域)
+    "yearly": "analysis",
+    "week": "analysis",
+    "category": "analysis",
+    "account": "analysis",
+    "ledger": "analysis",
+    "structure": "analysis",
+    "range_compare": "analysis",
+    "yoy": "analysis",
+    "cat_compare": "analysis",
+    "trend": "analysis",
+    "cat_trend": "analysis",
+    "top": "analysis",
+    "top_freq": "analysis",
+    "distribution": "analysis",
+    "activity": "analysis",
+    "insight": "analysis",
+    "anomaly": "analysis",
+    "debt_summary": "analysis",
+    "reimburse_summary": "analysis",
+    "installment_summary": "analysis",
+    "refund_summary": "analysis",
 }
 
 
 def cli_path(query_type: str) -> Path:
     return _SCRIPT_DIR / QUERY_DOMAIN.get(query_type, "query") / "cli.py"
+
+# 分析域 25 场景 → 模板(单模板多渲染器 · 隔离契约 templates/分析/)
+ANALYSIS_TYPES = {
+    "monthly", "yearly", "overview", "week",
+    "category", "account", "ledger", "structure",
+    "compare", "range_compare", "yoy", "cat_compare",
+    "trend", "cat_trend",
+    "top", "top_freq", "distribution",
+    "stats", "activity", "insight", "anomaly",
+    "debt_summary", "reimburse_summary", "installment_summary", "refund_summary",
+    "breakdown",
+}
+
+
+def template_path_for(query_type: str) -> Path:
+    """按类型选模板:分析域 → templates/分析/analysis_view.html;其余 → query_view.html"""
+    return ANALYSIS_TEMPLATE_PATH if query_type in ANALYSIS_TYPES else TEMPLATE_PATH
 
 # 支持的查询类型（CLI 子命令 + 对应的 data.title / data.subtitle）
 QUERY_TYPES = {
@@ -78,6 +118,28 @@ QUERY_TYPES = {
     "breakdown": {"title": "分类明细",        "subtitle": "各类支出占比 + 笔数/均值"},
     "overview":  {"title": "收支总览",        "subtitle": "当月 4 个核心指标"},
     "stats":     {"title": "记账统计",        "subtitle": "总笔数 / 天数 / 首末时间"},
+    # ── 分析域 25 场景(2026-08-09 实施) ──
+    "yearly":    {"title": "年度汇总",        "subtitle": "全年 KPI + 逐月趋势 + 大额分类"},
+    "week":      {"title": "本周简报",        "subtitle": "本周 KPI + 对比上周 + 大额支出"},
+    "category":  {"title": "分类占比",        "subtitle": "SVG 环形图 + 排行(总额/占比/笔数/均值)"},
+    "account":   {"title": "账户占比",        "subtitle": "各账户支出/收入/净额"},
+    "ledger":    {"title": "账本汇总",        "subtitle": "各账本收支汇总卡 + 占比"},
+    "structure": {"title": "收支结构",        "subtitle": "收入来源 + 支出去向双环形"},
+    "range_compare": {"title": "双区间对比",  "subtitle": "两段时间双卡 + 变化率 + 分类差异"},
+    "yoy":       {"title": "同比对比",        "subtitle": "今年 vs 去年同月"},
+    "cat_compare":  {"title": "分类对比",     "subtitle": "两段时间分类差异 TOP"},
+    "trend":     {"title": "收支趋势",        "subtitle": "SVG 双线折线 + 峰值 + 月均"},
+    "cat_trend": {"title": "分类趋势",        "subtitle": "某分类逐月变化折线/柱状"},
+    "top":       {"title": "大额排行",        "subtitle": "支出 TOP N"},
+    "top_freq":  {"title": "高频排行",        "subtitle": "分类笔数 TOP"},
+    "distribution": {"title": "金额分布",     "subtitle": "SVG 直方图(5 区间)"},
+    "activity":  {"title": "记账活跃度",      "subtitle": "周几分布 + 时段分布"},
+    "insight":   {"title": "AI 消费洞察",     "subtitle": "洞察生成器事实 + AI 解读"},
+    "anomaly":   {"title": "异常波动检测",    "subtitle": "突增月/暴涨分类事实"},
+    "debt_summary": {"title": "借贷总览",     "subtitle": "借出/借入未还 + 对象列表"},
+    "reimburse_summary": {"title": "报销汇总", "subtitle": "待报销 + 已到账 + 历史"},
+    "installment_summary": {"title": "分期总览", "subtitle": "进行中分期卡 + 历史"},
+    "refund_summary": {"title": "退款统计",   "subtitle": "退款总额/次数 + 月份分布"},
 }
 
 # 模板能力接口(08 §4 硬标准 · 复制数据/复制日志数据源):query_type → 场景标识/唤醒词
@@ -91,11 +153,33 @@ QUERY_META = {
     "debt":      {"scene_id": "query_debt",      "wake_word": "查欠款"},
     "reimburse": {"scene_id": "query_pending_reimburse", "wake_word": "查待报销"},
     "installment": {"scene_id": "query_installment",     "wake_word": "查分期"},
-    "monthly":   {"scene_id": "monthly_current", "wake_word": "看月度"},
-    "compare":   {"scene_id": "compare_month",   "wake_word": "看对比"},
-    "breakdown": {"scene_id": "breakdown_current_month", "wake_word": "看分类"},
-    "overview":  {"scene_id": "overview_current", "wake_word": "看总览"},
-    "stats":     {"scene_id": "stats_long_term", "wake_word": "做统计"},
+    "monthly":   {"scene_id": "monthly_summary", "wake_word": "看月度"},
+    "compare":   {"scene_id": "period_compare",   "wake_word": "看对比"},
+    "breakdown": {"scene_id": "category_breakdown", "wake_word": "看分类"},
+    "overview":  {"scene_id": "range_overview",   "wake_word": "看总览"},
+    "stats":     {"scene_id": "stats",            "wake_word": "做统计"},
+    # ── 分析域 25 场景(2026-08-09 实施 · 对齐 scenes/analysis.yaml) ──
+    "yearly":    {"scene_id": "yearly_summary",      "wake_word": "看年度"},
+    "week":      {"scene_id": "week_brief",          "wake_word": "看周报"},
+    "category":  {"scene_id": "category_breakdown",  "wake_word": "看分类"},
+    "account":   {"scene_id": "account_breakdown",   "wake_word": "看账户"},
+    "ledger":    {"scene_id": "ledger_summary",      "wake_word": "看账本"},
+    "structure": {"scene_id": "income_expense_structure", "wake_word": "看结构"},
+    "range_compare": {"scene_id": "range_compare",   "wake_word": "看双区间"},
+    "yoy":       {"scene_id": "year_over_year",      "wake_word": "看同比"},
+    "cat_compare":  {"scene_id": "category_compare", "wake_word": "看分类对比"},
+    "trend":     {"scene_id": "monthly_trend",       "wake_word": "看趋势"},
+    "cat_trend": {"scene_id": "category_trend",      "wake_word": "看分类趋势"},
+    "top":       {"scene_id": "top_expense",         "wake_word": "看大额"},
+    "top_freq":  {"scene_id": "top_frequency",       "wake_word": "看高频"},
+    "distribution": {"scene_id": "amount_distribution", "wake_word": "看分布"},
+    "activity":  {"scene_id": "activity",            "wake_word": "看活跃"},
+    "insight":   {"scene_id": "insight",             "wake_word": "看洞察"},
+    "anomaly":   {"scene_id": "anomaly",             "wake_word": "看异常"},
+    "debt_summary":  {"scene_id": "debt_summary",    "wake_word": "看借贷"},
+    "reimburse_summary": {"scene_id": "reimburse_summary", "wake_word": "看报销"},
+    "installment_summary": {"scene_id": "installment_summary", "wake_word": "看分期"},
+    "refund_summary": {"scene_id": "refund_summary", "wake_word": "看退款"},
 }
 
 SKILL_VERSION = "2.0"
@@ -171,6 +255,8 @@ def _human_args(query_type: str, extra_args: list) -> str:
         "--category": "分类", "--account": "账户", "--ledger": "账本",
         "--tag": "标签", "--target": "对象", "--name": "名目",
         "--limit": "最近", "--days": "近", "--month": "月份",
+        "--year": "年份", "--months": "近", "--offset": "偏移",
+        "--from1": "区间一", "--to1": "", "--from2": "区间二", "--to2": "",
     }
     values = {"--sort": {"amount_desc": "金额从大到小", "amount_asc": "金额从小到大"},
               "--type": {"expense": "支出", "income": "收入"}}
@@ -249,12 +335,13 @@ def build_payload(cli_json: dict, query_type: str, extra_args: list) -> dict:
     }
 
 
-def inject_to_template(payload: dict, output_path: Path) -> Path:
-    """把 payload 注入到模板，生成 HTML 文件"""
-    if not TEMPLATE_PATH.exists():
-        raise FileNotFoundError(f"模板不存在: {TEMPLATE_PATH}")
+def inject_to_template(payload: dict, output_path: Path, query_type: str = None) -> Path:
+    """把 payload 注入到模板，生成 HTML 文件(分析域 → templates/分析/analysis_view.html)"""
+    template_path = template_path_for(query_type) if query_type else TEMPLATE_PATH
+    if not template_path.exists():
+        raise FileNotFoundError(f"模板不存在: {template_path}")
 
-    template = TEMPLATE_PATH.read_text(encoding="utf-8")
+    template = template_path.read_text(encoding="utf-8")
     payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
 
     old = '<script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>'
@@ -280,6 +367,19 @@ def default_output_path(query_type: str, args=None, extra=None) -> Path:
     NEW_TYPE_CN = {"tag": "查标签", "debt": "查欠款", "reimburse": "查待报销", "installment": "查分期"}
     if query_type in NEW_TYPE_CN:
         cn = NEW_TYPE_CN[query_type]
+    # 分析域 21 新类型中文文件名(html_paths 公共层不动 · 本域隔离契约内实现)
+    ANALYSIS_TYPE_CN = {
+        "yearly": "年度汇总", "week": "周报", "category": "分类占比",
+        "account": "账户占比", "ledger": "账本汇总", "structure": "收支结构",
+        "range_compare": "双区间对比", "yoy": "同比", "cat_compare": "分类对比",
+        "trend": "收支趋势", "cat_trend": "分类趋势",
+        "top": "大额排行", "top_freq": "高频排行", "distribution": "金额分布",
+        "activity": "活跃度", "insight": "消费洞察", "anomaly": "异常检测",
+        "debt_summary": "借贷总览", "reimburse_summary": "报销汇总",
+        "installment_summary": "分期总览", "refund_summary": "退款统计",
+    }
+    if query_type in ANALYSIS_TYPE_CN:
+        cn = ANALYSIS_TYPE_CN[query_type]
     # list 变体:解析透传参数(extra)细分中文名(隔离契约内实现,不动 html_paths)
     if query_type == "list" and extra:
         ex = " ".join(extra)
@@ -340,7 +440,7 @@ def main():
 
     # 4. 注入模板（即使 CLI 返回 error 也注入，模板会显示错误卡片）
     try:
-        final = inject_to_template(payload, output_path)
+        final = inject_to_template(payload, output_path, args.query_type)
     except (FileNotFoundError, RuntimeError) as e:
         print(f"✗ 注入失败：{e}", file=sys.stderr)
         sys.exit(1)

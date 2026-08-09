@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>饼干记账 · 分析视图</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --border: #e5e5ea;
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --blue: #007aff; --green: #34c759; --orange: #ff9500; --red: #ff3b30; --purple: #af52de;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --radius: 14px; --radius-sm: 10px;
+  }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh; padding: 0 0 80px;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 24px 16px; }
+
+  /* Header */
+  .header { padding: 8px 0 24px; }
+  .eyebrow { font-size: 12px; color: var(--fg3); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  h1.title { font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+  .subtitle { color: var(--fg2); font-size: 15px; margin-top: 6px; }
+
+  /* Card / Section */
+  .card { background: var(--card); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title .count { font-size: 13px; font-weight: 500; color: var(--fg3); margin-left: auto; }
+  .empty { color: var(--fg3); font-size: 14px; text-align: center; padding: 24px 0; }
+
+  /* KPI Grid */
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .kpi { background: var(--card); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+  .kpi .label { font-size: 12px; color: var(--fg2); margin-bottom: 6px; font-weight: 500; }
+  .kpi .value { font-size: 26px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kpi .value.compact { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+  .kpi .value.tiny { font-size: 14px; font-weight: 600; letter-spacing: 0; }
+  .kpi .unit { font-size: 13px; color: var(--fg2); font-weight: 400; margin-left: 4px; }
+  .kpi.blue .value { color: var(--blue); }
+  .kpi.green .value { color: var(--green); }
+  .kpi.orange .value { color: var(--orange); }
+  .kpi.red .value { color: var(--red); }
+  .kpi.purple .value { color: var(--purple); }
+
+  /* Compare side-by-side */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .compare-card { background: var(--card); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); }
+  .compare-card.this { border-left: 3px solid var(--blue); }
+  .compare-card.last { border-left: 3px solid var(--fg3); }
+  .compare-card .period-label { font-size: 13px; color: var(--fg2); margin-bottom: 12px; font-weight: 600; }
+  .compare-card .row { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; }
+  .compare-card .row .k { color: var(--fg2); font-size: 13px; }
+  .compare-card .row .v { font-weight: 700; font-variant-numeric: tabular-nums; font-size: 15px; }
+
+  /* Change badge */
+  .change-badge { display: flex; align-items: center; gap: 12px; padding: 16px 20px; border-radius: var(--radius); font-size: 15px; margin-bottom: 12px; }
+  .change-badge.up { background: rgba(255,149,0,.12); color: var(--orange); }
+  .change-badge.down { background: rgba(52,199,89,.12); color: var(--green); }
+  .change-badge.flat { background: rgba(0,0,0,.05); color: var(--fg2); }
+  .change-badge .arrow { font-size: 22px; font-weight: 700; }
+  .change-badge .big { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .change-badge .pct { font-size: 14px; opacity: .85; }
+
+  /* Records list */
+  .records { display: flex; flex-direction: column; gap: 1px; background: var(--border); border-radius: var(--radius); overflow: hidden; }
+  .record { display: grid; grid-template-columns: 90px 1fr auto; gap: 12px; padding: 12px 16px; background: var(--card); align-items: center; }
+  .record .time { font-size: 12px; color: var(--fg2); font-variant-numeric: tabular-nums; }
+  .record .cat { font-size: 14px; font-weight: 600; color: var(--fg); }
+  .record .note { font-size: 12px; color: var(--fg3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .record .amt { font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; text-align: right; }
+  .record .amt.expense { color: var(--red); }
+  .record .amt.income { color: var(--green); }
+
+  /* Category bar */
+  .cat-bar { background: var(--card); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 8px; box-shadow: var(--shadow); }
+  .cat-bar .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+  .cat-bar .name { font-size: 14px; font-weight: 600; }
+  .cat-bar .stats { font-size: 12px; color: var(--fg2); font-variant-numeric: tabular-nums; }
+  .cat-bar .stats b { color: var(--fg); font-weight: 700; font-size: 15px; }
+  .cat-bar .track { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
+  .cat-bar .fill { height: 100%; border-radius: 4px; }
+
+  /* Donut */
+  .donut-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: center; padding: 16px 0; }
+  .donut { width: 220px; height: 220px; flex-shrink: 0; }
+  .donut-legend { flex: 1; min-width: 200px; }
+  .donut-legend .item { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; }
+  .donut-legend .dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .donut-legend .name { flex: 1; }
+  .donut-legend .pct { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg); }
+  .donut-center { font-size: 12px; fill: var(--fg2); }
+  .donut-center-big { font-size: 20px; font-weight: 700; fill: var(--fg); font-variant-numeric: tabular-nums; }
+
+  /* Chart (line/bar/histogram) */
+  .chart-card .chart-title { font-size: 13px; color: var(--fg2); font-weight: 600; margin-bottom: 8px; }
+  svg.chart { width: 100%; height: auto; display: block; }
+  .chart-legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--fg2); margin-top: 8px; }
+  .chart-legend .item { display: inline-flex; align-items: center; gap: 6px; }
+  .chart-legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* Insight cards */
+  .insight-card { border-left: 3px solid var(--purple); }
+  .insight-card .t { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .insight-card .d { font-size: 13.5px; color: var(--fg2); }
+  .fact-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; font-size: 13.5px; }
+  .fact-row .k { color: var(--fg2); }
+  .fact-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+  /* Status chips */
+  .chip { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; margin-left: 8px; }
+  .chip.active { background: rgba(0,122,255,.12); color: var(--blue); }
+  .chip.done { background: rgba(52,199,89,.14); color: var(--green); }
+  .chip.warn { background: rgba(255,149,0,.14); color: var(--orange); }
+
+  /* Filter chip */
+  .filter-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,122,255,.1); color: var(--blue); padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-right: 6px; margin-bottom: 4px; }
+
+  /* Footer */
+  .footer { text-align: center; color: var(--fg3); font-size: 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .footer code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--fg2); }
+
+  /* Error / Empty / Loading */
+  .error-card { background: rgba(255,59,48,.08); border: 1px solid rgba(255,59,48,.2); border-radius: var(--radius); padding: 24px; text-align: center; }
+  .error-card h3 { color: var(--red); margin-bottom: 8px; font-size: 18px; }
+  .error-card p { color: var(--fg2); font-size: 14px; }
+
+  /* 模板能力接口(08 §4 硬标准 · G4):toolbar 动作区 / 弹层三选一 / B1 toast / 离线态 */
+  .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin: 4px 0 16px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; border: 0; background: var(--blue); color: #fff; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .btn:hover { background: #0a63ce; }
+  .btn.ghost { background: #fff; color: var(--fg); border: 1px solid var(--border); }
+  .btn.ghost:hover { background: var(--bg); }
+
+  .sheet-mask { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 90; display: none; align-items: flex-end; justify-content: center; }
+  .sheet-mask.show { display: flex; }
+  .sheet { background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 10px 14px calc(14px + env(safe-area-inset-bottom,0)); box-shadow: 0 -8px 32px rgba(0,0,0,.12); }
+  .sheet-title { font-size: 15px; font-weight: 700; text-align: center; padding: 10px 0 4px; }
+  .sheet-sub { font-size: 12px; color: var(--fg3); text-align: center; padding-bottom: 10px; }
+  .sheet-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--bg); border: 0; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+  .sheet-item .f { font-weight: 700; font-size: 14px; min-width: 56px; }
+  .sheet-item .d { font-size: 11.5px; color: var(--fg3); }
+  .sheet-cancel { width: 100%; background: var(--bg); border: 0; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 600; color: var(--fg2); cursor: pointer; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom,0)); transform: translateX(-50%) scale(.9); opacity: 0; background: rgba(28,28,30,.94); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); color: #f0f0f0; border-radius: 14px; padding: 13px 14px 13px 16px; display: flex; align-items: flex-start; gap: 12px; max-width: 480px; min-width: 300px; box-shadow: 0 10px 32px rgba(0,0,0,.32); pointer-events: none; transition: opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index: 99; }
+  .toast.show { opacity: 1; transform: translateX(-50%) scale(1); pointer-events: auto; }
+  .toast-title { font-weight: 600; font-size: 12.5px; color: #fff; margin-bottom: 2px; }
+  .toast-detail { font-size: 11px; color: #c8c8cc; }
+  .toast-close { background: rgba(255,255,255,.10); color: #34c759; border: 0; border-radius: 8px; padding: 5px 9px; font-size: 10.5px; margin-left: 6px; cursor: pointer; flex-shrink: 0; }
+
+  .offline { background: #fff7e8; border: 1px solid #ffe3b3; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 14px; color: #b25b00; font-size: 13.5px; }
+
+  @media (max-width: 640px) {
+    .container { padding: 16px 12px; }
+    h1.title { font-size: 26px; }
+    .kpi .value { font-size: 22px; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .record { grid-template-columns: 70px 1fr auto; gap: 8px; padding: 10px 12px; }
+    .donut { width: 180px; height: 180px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header" id="header"></header>
+  <main id="app"></main>
+  <!-- 动作区(08 §2 通用骨架:内容区下方,页面底部) -->
+  <div class="toolbar">
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn ghost" id="copyLogBtn">🛠 复制日志</button>
+  </div>
+  <footer class="footer" id="footer"></footer>
+</div>
+
+<!-- 注入点：AI / bill_inject.py 会把 CLI JSON 输出包成 {status, data, message} 后注入这里 -->
+<script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>
+
+<!-- 模板能力接口(08 §4 · G4):复制数据弹层三选一 + B1 toast -->
+<div class="sheet-mask" id="sheetMask">
+  <div class="sheet">
+    <div class="sheet-title">复制数据</div>
+    <div class="sheet-sub">选格式,点哪个复制哪个</div>
+    <button class="sheet-item" data-f="text"><span class="f">纯文本</span><span class="d">粘贴到聊天/笔记</span></button>
+    <button class="sheet-item" data-f="json"><span class="f">JSON</span><span class="d">粘贴给 AI 记账</span></button>
+    <button class="sheet-item" data-f="csv"><span class="f">CSV</span><span class="d">粘贴到 Excel 存档</span></button>
+    <button class="sheet-cancel" id="sheetCancel">取消</button>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+  <div class="toast-detail" id="toastDetail"></div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── 工具函数 ──────────────────────────────────────────────
+  const $ = (sel) => document.querySelector(sel);
+  const $$ = (sel) => document.querySelectorAll(sel);
+  const fmtMoney = (n) => (Math.round((n || 0) * 100) / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtPct = (n) => (Math.round((n || 0) * 10) / 10).toFixed(1) + '%';
+  const escapeHTML = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const CURRENT_YEAR = new Date().getFullYear();
+  const timeShort = (t) => {
+    const s = t || '';
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})(.*)$/);
+    if (!m) return s;
+    const [, y, mo, d, rest] = m;
+    const trim = rest ? ' ' + rest.trim() : '';
+    return (parseInt(y) !== CURRENT_YEAR) ? `${y}/${mo}/${d}${trim}` : `${mo}/${d}${trim}`;
+  };
+
+  // 配色（环形图 + 占比条）
+  const PALETTE = ['#007aff', '#34c759', '#ff9500', '#af52de', '#ff3b30', '#5ac8fa', '#ffcc00', '#8e8e93', '#ff2d55', '#5856d6'];
+
+  // ── 主路由 ────────────────────────────────────────────────
+  function init() {
+    const raw = document.getElementById('payload').textContent;
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch (e) {
+      renderError('JSON 解析失败：' + e.message);
+      return;
+    }
+    if (!payload || payload.status === 'empty') {
+      renderError('数据未注入（payload 为空）');
+      return;
+    }
+    if (payload.status === 'error') {
+      renderError(payload.message || '查询失败', payload.data);
+      return;
+    }
+    const data = payload.data || {};
+    const type = data.type;
+    const title = data.title || payload.message || '饼干记账 · 分析结果';
+
+    // 供复制数据/日志函数使用(5 段/6 段数据结构 · 08 §4 硬标准)
+    window._payloadData = data;
+
+    // 渲染 header
+    renderHeader(title, data);
+
+    // 5 状态之离线态:正常渲染 + 顶部离线提示条
+    if (data.offline) {
+      $('#app').insertAdjacentHTML('afterbegin', '<div class="offline">⚠️ 离线态:展示本地缓存数据,可能过期</div>');
+    }
+
+    // 按 type 分发(分析域 25 场景)
+    const routers = {
+      monthly:   renderMonthly,
+      yearly:    renderYearly,
+      overview:  renderOverview,
+      week:      renderWeek,
+      category:  renderCategory,
+      account:   renderAccount,
+      ledger:    renderLedger,
+      structure: renderStructure,
+      compare:   renderCompare,
+      range_compare: renderRangeCompare,
+      yoy:       renderYoy,
+      cat_compare: renderCatCompare,
+      trend:     renderTrend,
+      cat_trend: renderCatTrend,
+      top:       renderTop,
+      top_freq:  renderTopFreq,
+      distribution: renderDistribution,
+      stats:     renderStats,
+      activity:  renderActivity,
+      insight:   renderInsight,
+      anomaly:   renderAnomaly,
+      debt_summary: renderDebtSummary,
+      reimburse_summary: renderReimburseSummary,
+      installment_summary: renderInstallmentSummary,
+      refund_summary: renderRefundSummary,
+    };
+    const fn = routers[type];
+    if (!fn) {
+      renderError('未知分析类型：' + escapeHTML(type));
+      return;
+    }
+    fn(data);
+    renderFooter(data);
+  }
+
+  function renderHeader(title, data) {
+    const subtitle = data.subtitle || data.message || '';
+    $('#header').innerHTML = `
+      <div class="eyebrow">饼干记账 · 分析视图</div>
+      <h1 class="title">${escapeHTML(title)}</h1>
+      ${subtitle ? `<div class="subtitle">${escapeHTML(subtitle)}</div>` : ''}
+    `;
+  }
+
+  function renderFooter(data) {
+    const ts = data.generated_at || new Date().toLocaleString('zh-CN');
+    const type = data.type || '';
+    $('#footer').innerHTML = `
+      生成于 ${escapeHTML(ts)} · 类型 <code>${escapeHTML(type)}</code><br>
+      源数据: <code>scripts/analysis/cli.py ${escapeHTML(type)} --json</code>
+    `;
+  }
+
+  function renderError(msg, hint) {
+    $('#app').innerHTML = `
+      <div class="error-card">
+        <h3>⚠️ 出错了</h3>
+        <p>${escapeHTML(msg)}</p>
+        ${hint ? `<p style="margin-top:8px;font-size:12px;">${escapeHTML(JSON.stringify(hint))}</p>` : ''}
+      </div>
+    `;
+  }
+
+  function renderEmpty(text) {
+    $('#app').innerHTML = `<div class="card empty">${escapeHTML(text || '暂无数据')}</div>`;
+  }
+
+  // ── 模板能力接口(08 §4 · G4 决议):复制数据弹层三选一 + 复制日志 + B1 toast ──
+  const TOAST_NEXT = { text: '粘贴到聊天/笔记保存', json: '粘贴给 AI 即可记账', csv: '粘贴到 Excel 存档', log: '发给开发者排障' };
+  let _toastTimer = null;
+
+  function showToast(fmt) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastFmt').textContent = (fmt === 'log') ? '日志' : fmt.toUpperCase();
+    document.getElementById('toastDetail').textContent = TOAST_NEXT[fmt] || '';
+    t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
+  }
+
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    done();
+  }
+
+  function doCopy(text, fmt) {
+    const done = () => showToast(fmt);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+
+  // 复制数据:结构化 JSON 固定 5 段(08 §4.1) { scene_id, command_cn, occurred_at, target, payload }
+  function pickPayload(d) {
+    const out = {};
+    for (const k in d) {
+      if (['type', 'title', 'subtitle', 'generated_at', 'meta'].includes(k)) continue;
+      out[k] = d[k];
+    }
+    return out;
+  }
+
+  function buildData5() {
+    const d = window._payloadData || {};
+    const m = d.meta || {};
+    return {
+      scene_id: m.scene_id || d.type || '',
+      command_cn: m.command_cn || ((d.title || '') + ' 结果'),
+      occurred_at: m.occurred_at || d.generated_at || '',
+      target: d.type || 'bills',
+      payload: pickPayload(d),
+    };
+  }
+
+  function toCSV(d5) {
+    const p = d5.payload || {};
+    const arr = p.records || p.bills || p.items || null;
+    if (Array.isArray(arr) && arr.length) {
+      const keys = Object.keys(arr[0]);
+      return [keys.join(','), ...arr.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
+    }
+    return Object.entries(p).map(([k, v]) => k + ',' + JSON.stringify(v ?? '')).join('\n');
+  }
+
+  function buildDataText(fmt) {
+    const d5 = buildData5();
+    if (fmt === 'json') return JSON.stringify(d5, null, 2);
+    if (fmt === 'text') {
+      return [
+        '场景: ' + d5.command_cn,
+        '时间: ' + d5.occurred_at,
+        '目标: ' + d5.target,
+        '数据: ' + JSON.stringify(d5.payload),
+      ].join('\n');
+    }
+    return toCSV(d5);
+  }
+
+  // 复制日志:6 段(08 §4.2)
+  function buildLogText() {
+    const d = window._payloadData || {};
+    const m = d.meta || {};
+    const lines = [];
+    lines.push('① 场景标识');
+    lines.push('  command_cn: ' + (m.command_cn || '(未知)'));
+    lines.push('  唤醒词: ' + (m.wake_word || '(未知)'));
+    lines.push('  场景名: ' + (d.title || '(未知)') + ' (scene_id=' + (m.scene_id || '') + ')');
+    lines.push('');
+    lines.push('② AI 思考链');
+    lines.push('  ' + (m.chain || '(未注入)'));
+    lines.push('');
+    lines.push('③ 底层数据结构');
+    lines.push('  payload: ' + JSON.stringify(pickPayload(d)));
+    lines.push('  DB 操作: SELECT bills(只读查询)');
+    lines.push('');
+    lines.push('④ 调用链');
+    lines.push('  渲染脚本: ' + (m.render_cmd || '(未知)'));
+    lines.push('');
+    lines.push('⑤ 时间戳 + 版本');
+    lines.push('  本地时间: ' + (m.occurred_at || d.generated_at || '(未知)'));
+    lines.push('  skill 版本: ' + (m.version || '(未知)'));
+    lines.push('');
+    lines.push('⑥ 异常信息');
+    lines.push('  无');
+    return lines.join('\n');
+  }
+
+  // 弹层三选一(G4 轮次 2)
+  function bindCopyActions() {
+    const sheetMask = document.getElementById('sheetMask');
+    const closeSheet = () => sheetMask.classList.remove('show');
+
+    document.getElementById('copyDataBtn').onclick = () => sheetMask.classList.add('show');
+    document.getElementById('sheetCancel').onclick = closeSheet;
+    sheetMask.addEventListener('click', (e) => { if (e.target === sheetMask) closeSheet(); });
+    sheetMask.querySelectorAll('.sheet-item').forEach((b) => {
+      b.onclick = () => {
+        const f = b.getAttribute('data-f');
+        closeSheet();
+        doCopy(buildDataText(f), f);
+      };
+    });
+
+    document.getElementById('copyLogBtn').onclick = () => doCopy(buildLogText(), 'log');
+    document.getElementById('toastClose').onclick = () => {
+      document.getElementById('toast').classList.remove('show');
+      clearTimeout(_toastTimer);
+    };
+  }
+
+  // ── 1. 月度汇总 monthly(KPI4 + 分类排行条 + 区间标注) ──
+  function renderMonthly(data) {
+    const cats = data.categories || [];
+    const max = cats.length ? Math.max(...cats.map(c => c.total)) : 0;
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('支出', fmtMoney(data.expense), '元', 'red')}
+        ${kpiCard('收入', fmtMoney(data.income), '元', 'green')}
+        ${kpiCard('净额', fmtMoney(data.net), '元', data.net >= 0 ? 'green' : 'red')}
+        ${kpiCard('笔数', data.count || 0, '笔', 'blue')}
+      </div>
+      <div style="margin-top:12px;"><span class="filter-chip">📅 ${escapeHTML(data.month || '-')}</span></div>
+      <div class="card" style="margin-top:12px;">
+        <div class="section-title">分类排行 <span class="count">${cats.length} 类</span></div>
+        ${cats.length ? cats.slice(0, 8).map((c, i) => categoryBar(c, max, PALETTE[i % PALETTE.length])).join('') : '<div class="empty">本月暂无分类数据</div>'}
+      </div>
+    `;
+  }
+
+  // ── 2. 年度汇总 yearly(总 KPI + 逐月趋势表 + 大额分类 TOP) ──
+  function renderYearly(data) {
+    const monthly = data.monthly || [];
+    const cats = data.top_categories || [];
+    const maxMonth = monthly.length ? Math.max(...monthly.map(m => m.expense)) : 0;
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('全年支出', fmtMoney(data.expense), '元', 'red')}
+        ${kpiCard('全年收入', fmtMoney(data.income), '元', 'green')}
+        ${kpiCard('净额', fmtMoney(data.net), '元', data.net >= 0 ? 'green' : 'red')}
+        ${kpiCard('笔数', data.count || 0, '笔', 'blue')}
+      </div>
+      <div style="margin-top:12px;"><span class="filter-chip">📅 ${escapeHTML(String(data.year || ''))} 年</span></div>
+      <div class="card" style="margin-top:12px;">
+        <div class="section-title">逐月趋势 <span class="count">${monthly.length} 个月</span></div>
+        ${monthly.length ? monthly.map(m => categoryBar({ category: m.month, total: m.expense, count: m.count }, maxMonth, PALETTE[2])).join('') : '<div class="empty">该年暂无数据</div>'}
+      </div>
+      <div class="card">
+        <div class="section-title">大额分类 TOP</div>
+        ${cats.length ? cats.map((c, i) => categoryBar({ category: c.key, total: c.expense, count: c.count }, Math.max(...cats.map(x => x.expense)), PALETTE[i % PALETTE.length])).join('') : '<div class="empty">无支出分类</div>'}
+      </div>
+    `;
+  }
+
+  // ── 3. 收支总览 overview(4 KPI + 日均支出 + 区间标注) ──
+  function renderOverview(data) {
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('笔数', data.count || 0, '笔', 'blue')}
+        ${kpiCard('支出', fmtMoney(data.expense), '元', 'red')}
+        ${kpiCard('收入', fmtMoney(data.income), '元', 'green')}
+        ${kpiCard('净额', fmtMoney(data.net), '元', data.net >= 0 ? 'green' : 'red')}
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="section-title">区间标注</div>
+        <div class="fact-row"><span class="k">期间</span><span class="v">${escapeHTML(data.period || '-')}</span></div>
+        <div class="fact-row"><span class="k">日均支出</span><span class="v">${fmtMoney(data.daily_avg)} 元</span></div>
+      </div>
+    `;
+  }
+
+  // ── 4. 本周简报 week(本周 KPI + vs 上周双卡 + 大额支出) ──
+  function renderWeek(data) {
+    const cmp = data.compare || {};
+    const t = cmp.period_a || {}, l = cmp.period_b || {}, c = cmp.change || {};
+    const diff = c.expense_diff || 0;
+    const pct = c.expense_pct || 0;
+    const cls = diff > 0.01 ? 'up' : diff < -0.01 ? 'down' : 'flat';
+    const arrow = diff > 0.01 ? '↑' : diff < -0.01 ? '↓' : '→';
+    const tops = data.top_expenses || [];
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('本周支出', fmtMoney(data.expense), '元', 'red')}
+        ${kpiCard('本周收入', fmtMoney(data.income), '元', 'green')}
+        ${kpiCard('净额', fmtMoney(data.net), '元', data.net >= 0 ? 'green' : 'red')}
+        ${kpiCard('笔数', data.count || 0, '笔', 'blue')}
+      </div>
+      <div class="compare-grid" style="margin-top:14px;">
+        ${compareCard('this', t.label || '本周', t)}
+        ${compareCard('last', l.label || '上周', l)}
+      </div>
+      <div class="change-badge ${cls}">
+        <span class="arrow">${arrow}</span>
+        <span class="big">${fmtMoney(Math.abs(diff))} 元</span>
+        <span class="pct">(${fmtPct(Math.abs(pct))}) · 支出${diff > 0.01 ? '上涨' : diff < -0.01 ? '下降' : '持平'}</span>
+      </div>
+      ${tops.length ? `
+        <div class="card">
+          <div class="section-title">本周大额支出 <span class="count">TOP ${tops.length}</span></div>
+          ${recordsList(tops)}
+        </div>
+      ` : '<div class="card empty">本周暂无支出</div>'}
+    `;
+  }
+
+  // ── 5. 分类占比 category(SVG 环形图 + 排行) ──
+  function renderCategory(data) {
+    const cats = data.categories || [];
+    const total = data.grand_total || cats.reduce((s, c) => s + c.expense, 0);
+    const max = cats.length ? Math.max(...cats.map(c => c.expense)) : 0;
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('总支出', fmtMoney(total), '元', 'red')}
+        ${kpiCard('分类数', cats.length, '个', 'blue')}
+        ${kpiCard('期间', (data.period || '-'), '', 'purple', 'compact')}
+      </div>
+      ${cats.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="donut-wrap">
+            ${donutSVG(cats, total, '总支出')}
+            <div class="donut-legend">
+              ${cats.slice(0, 10).map((c, i) => `
+                <div class="item">
+                  <span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
+                  <span class="name">${escapeHTML(c.key || c.category)}</span>
+                  <span class="pct">${fmtPct(c.pct)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">占比明细 <span class="count">${cats.length} 类</span></div>
+          ${cats.map((c, i) => categoryBar({ category: c.key || c.category, total: c.expense, count: c.count, pct: c.pct, avg: c.avg }, max, PALETTE[i % PALETTE.length])).join('')}
+        </div>
+      ` : '<div class="card empty" style="margin-top:14px;">该期间暂无分类数据</div>'}
+    `;
+  }
+
+  // ── 6. 账户占比 account ──
+  function renderAccount(data) {
+    const items = data.accounts || [];
+    const max = items.length ? Math.max(...items.map(x => x.expense)) : 0;
+    $('#app').innerHTML = `
+      ${items.length ? `
+        <div class="card">
+          <div class="section-title">账户占比 <span class="count">${items.length} 个账户</span></div>
+          ${items.map((x, i) => `
+            <div class="cat-bar">
+              <div class="head">
+                <span class="name">${escapeHTML(x.account)}</span>
+                <span class="stats"><b>${fmtMoney(x.expense)}</b> 元 · ${x.count} 笔 · ${fmtPct(x.pct)}</span>
+              </div>
+              <div class="track"><div class="fill" style="width:${max ? x.expense / max * 100 : 0}%;background:${PALETTE[i % PALETTE.length]}"></div></div>
+            </div>
+          `).join('')}
+        </div>
+        <div class="card">
+          <div class="section-title">各账户汇总 <span class="count">${items.length} 个</span></div>
+          <div class="records">
+            ${items.map(x => `
+              <div class="record">
+                <div class="time">${x.count} 笔</div>
+                <div>
+                  <div class="cat">${escapeHTML(x.account)}</div>
+                </div>
+                <div style="text-align:right">
+                  <div class="amt expense">支出 ${fmtMoney(x.expense)}</div>
+                  <div class="amt income">收入 ${fmtMoney(x.income)}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : '<div class="card empty">该期间暂无账户数据</div>'}
+    `;
+  }
+
+  // ── 7. 账本汇总 ledger ──
+  function renderLedger(data) {
+    const items = data.ledgers || [];
+    $('#app').innerHTML = `
+      ${items.length ? items.map(x => `
+        <div class="card">
+          <div class="section-title">${escapeHTML(x.ledger)} <span class="count">${x.count} 笔 · ${fmtPct(x.pct)}</span></div>
+          <div class="kpi-grid" style="margin-bottom:0;">
+            ${kpiCard('支出', fmtMoney(x.expense), '元', 'red', 'compact')}
+            ${kpiCard('收入', fmtMoney(x.income), '元', 'green', 'compact')}
+            ${kpiCard('净额', fmtMoney(x.net), '元', x.net >= 0 ? 'green' : 'red', 'compact')}
+          </div>
+        </div>
+      `).join('') : '<div class="card empty">该期间暂无账本数据</div>'}
+    `;
+  }
+
+  // ── 8. 收支结构 structure(双环形) ──
+  function renderStructure(data) {
+    const inc = data.income_structure || [];
+    const exp = data.expense_structure || [];
+    const incTotal = data.income_total || inc.reduce((s, x) => s + x.income, 0);
+    const expTotal = data.expense_total || exp.reduce((s, x) => s + x.expense, 0);
+    $('#app').innerHTML = `
+      <div class="card">
+        <div class="section-title">收入来源结构</div>
+        ${inc.length ? `
+          <div class="donut-wrap">
+            ${donutSVG(inc.map(x => ({ category: x.key, total: x.income })), incTotal, '总收入')}
+            <div class="donut-legend">
+              ${inc.slice(0, 8).map((x, i) => `
+                <div class="item">
+                  <span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
+                  <span class="name">${escapeHTML(x.key)}</span>
+                  <span class="pct">${fmtMoney(x.income)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : '<div class="empty">该期间暂无收入</div>'}
+      </div>
+      <div class="card">
+        <div class="section-title">支出去向结构</div>
+        ${exp.length ? `
+          <div class="donut-wrap">
+            ${donutSVG(exp.map(x => ({ category: x.key, total: x.expense })), expTotal, '总支出')}
+            <div class="donut-legend">
+              ${exp.slice(0, 8).map((x, i) => `
+                <div class="item">
+                  <span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
+                  <span class="name">${escapeHTML(x.key)}</span>
+                  <span class="pct">${fmtMoney(x.expense)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : '<div class="empty">该期间暂无支出</div>'}
+      </div>
+    `;
+  }
+
+  // ── 9. 周期对比 compare(双卡 + 变化率徽章) ──
+  function renderCompare(data) {
+    const t = data.this || {}, l = data.last || {}, c = data.change || {};
+    const diff = c.expense_diff || 0;
+    const pct = c.expense_pct || 0;
+    const cls = diff > 0.01 ? 'up' : diff < -0.01 ? 'down' : 'flat';
+    const arrow = diff > 0.01 ? '↑' : diff < -0.01 ? '↓' : '→';
+    const note = diff > 0.01 ? '支出上涨' : diff < -0.01 ? '支出下降' : '支出持平';
+
+    $('#app').innerHTML = `
+      <div class="compare-grid">
+        ${compareCard('this', t.label || '本期', t)}
+        ${compareCard('last', l.label || '上期', l)}
+      </div>
+      <div class="change-badge ${cls}">
+        <span class="arrow">${arrow}</span>
+        <span class="big">${fmtMoney(Math.abs(diff))} 元</span>
+        <span class="pct">(${fmtPct(Math.abs(pct))}) · ${note}</span>
+      </div>
+    `;
+  }
+
+  // ── 10. 双区间对比 range_compare ──
+  function renderRangeCompare(data) {
+    const a = data.period_a || {}, b = data.period_b || {}, c = data.change || {};
+    const diffs = data.category_diffs || [];
+    const diff = c.expense_diff || 0;
+    const cls = diff > 0.01 ? 'up' : diff < -0.01 ? 'down' : 'flat';
+    const arrow = diff > 0.01 ? '↑' : diff < -0.01 ? '↓' : '→';
+    $('#app').innerHTML = `
+      <div class="compare-grid">
+        ${compareCard('this', a.label || '区间一', a)}
+        ${compareCard('last', b.label || '区间二', b)}
+      </div>
+      <div class="change-badge ${cls}">
+        <span class="arrow">${arrow}</span>
+        <span class="big">${fmtMoney(Math.abs(diff))} 元</span>
+        <span class="pct">(${fmtPct(Math.abs(c.expense_pct || 0))})</span>
+      </div>
+      ${diffs.length ? `
+        <div class="card">
+          <div class="section-title">分类差异提示 <span class="count">TOP ${diffs.length}</span></div>
+          ${diffs.map(x => {
+            const d = x.diff || 0;
+            return `<div class="fact-row"><span class="k">${escapeHTML(x.category)}</span><span class="v" style="color:${d > 0 ? 'var(--orange)' : d < 0 ? 'var(--green)' : 'var(--fg2)'}">${d > 0 ? '↑ +' : d < 0 ? '↓ -' : '→ '}${fmtMoney(Math.abs(d))} (${fmtMoney(x.a)} → ${fmtMoney(x.b)})</span></div>`;
+          }).join('')}
+        </div>
+      ` : ''}
+    `;
+  }
+
+  // ── 11. 同比 yoy ──
+  function renderYoy(data) {
+    const a = data.period_a || {}, b = data.period_b || {}, c = data.change || {};
+    const diff = c.expense_diff || 0;
+    const cls = diff > 0.01 ? 'up' : diff < -0.01 ? 'down' : 'flat';
+    const arrow = diff > 0.01 ? '↑' : diff < -0.01 ? '↓' : '→';
+    $('#app').innerHTML = `
+      <div class="compare-grid">
+        ${compareCard('this', a.label || (data.month + ' 今年'), a)}
+        ${compareCard('last', b.label || (data.last_month + ' 去年'), b)}
+      </div>
+      <div class="change-badge ${cls}">
+        <span class="arrow">${arrow}</span>
+        <span class="big">${fmtMoney(Math.abs(diff))} 元</span>
+        <span class="pct">(${fmtPct(Math.abs(c.expense_pct || 0))}) · 同比${diff > 0.01 ? '上涨' : diff < -0.01 ? '下降' : '持平'}</span>
+      </div>
+    `;
+  }
+
+  // ── 12. 分类对比 cat_compare(差异 TOP 对比条形) ──
+  function renderCatCompare(data) {
+    const rows = data.rows || [];
+    const maxDiff = rows.length ? Math.max(...rows.map(r => Math.abs(r.amount_diff))) : 0;
+    $('#app').innerHTML = `
+      <div style="margin-bottom:12px;">
+        <span class="filter-chip">区间一 ${escapeHTML(data.from1 || '')} ~ ${escapeHTML(data.to1 || '')}</span>
+        <span class="filter-chip">区间二 ${escapeHTML(data.from2 || '')} ~ ${escapeHTML(data.to2 || '')}</span>
+      </div>
+      ${rows.length ? `
+        <div class="card">
+          <div class="section-title">金额变化最大 <span class="count">TOP ${rows.length}</span></div>
+          ${rows.map(r => {
+            const w = maxDiff ? Math.abs(r.amount_diff) / maxDiff * 100 : 0;
+            const up = r.amount_diff > 0;
+            return `<div class="cat-bar">
+              <div class="head">
+                <span class="name">${escapeHTML(r.category)}</span>
+                <span class="stats">${fmtMoney(r.a_expense)} → ${fmtMoney(r.b_expense)} · <b>${up ? '+' : ''}${fmtMoney(r.amount_diff)}</b> (${r.a_count}→${r.b_count}笔)</span>
+              </div>
+              <div class="track"><div class="fill" style="width:${w}%;background:${up ? 'var(--orange)' : 'var(--green)'}"></div></div>
+            </div>`;
+          }).join('')}
+        </div>
+      ` : '<div class="card empty">两区间均无支出数据</div>'}
+    `;
+  }
+
+  // ── 13. 收支趋势 trend(SVG 双线折线) ──
+  function renderTrend(data) {
+    const series = data.series || [];
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('峰值月', data.peak && data.peak.month ? data.peak.month : '-', '', 'orange', 'compact')}
+        ${kpiCard('峰值支出', fmtMoney((data.peak && data.peak.expense) || 0), '元', 'red', 'compact')}
+        ${kpiCard('月均支出', fmtMoney(data.avg_expense), '元', 'purple', 'compact')}
+        ${kpiCard('窗口', data.months || '-', '个月', 'blue', 'compact')}
+      </div>
+      ${series.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="section-title">逐月收支走势</div>
+          ${lineChart(series)}
+          <div class="chart-legend">
+            <span class="item"><span class="dot" style="background:#ff3b30"></span>支出</span>
+            <span class="item"><span class="dot" style="background:#34c759"></span>收入</span>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title">逐月明细</div>
+          <div class="records">
+            ${series.map(m => `
+              <div class="record">
+                <div class="time">${escapeHTML(m.month)}</div>
+                <div><div class="cat">${m.count} 笔</div></div>
+                <div style="text-align:right">
+                  <div class="amt expense">支出 ${fmtMoney(m.expense)}</div>
+                  <div class="amt income">收入 ${fmtMoney(m.income)}</div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : '<div class="card empty" style="margin-top:14px;">暂无数据</div>'}
+    `;
+  }
+
+  // ── 14. 分类趋势 cat_trend(柱状/折线) ──
+  function renderCatTrend(data) {
+    const series = data.series || [];
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('分类', data.category || '-', '', 'purple', 'compact')}
+        ${kpiCard('峰值月', data.peak && data.peak.month ? data.peak.month : '-', '', 'orange', 'compact')}
+        ${kpiCard('峰值支出', fmtMoney((data.peak && data.peak.expense) || 0), '元', 'red', 'compact')}
+        ${kpiCard('月均', fmtMoney(data.avg_expense), '元', 'green', 'compact')}
+      </div>
+      ${series.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="section-title">${escapeHTML(data.category || '')} 逐月支出</div>
+          ${barChart(series)}
+        </div>
+      ` : '<div class="card empty" style="margin-top:14px;">该分类暂无数据</div>'}
+    `;
+  }
+
+  // ── 15. 大额排行 top ──
+  function renderTop(data) {
+    const items = data.items || [];
+    const max = items.length ? Math.max(...items.map(x => Math.abs(x.amount))) : 0;
+    $('#app').innerHTML = `
+      <div style="margin-bottom:12px;"><span class="filter-chip">TOP ${data.limit || 10} · ${escapeHTML(data.period || '全部时间')}</span></div>
+      ${items.length ? `
+        <div class="card">
+          <div class="section-title">大额支出排行 <span class="count">${items.length} 笔</span></div>
+          ${items.map((x, i) => `
+            <div class="cat-bar">
+              <div class="head">
+                <span class="name">${i + 1}. ${escapeHTML(x.category)}</span>
+                <span class="stats"><b>${fmtMoney(Math.abs(x.amount))}</b> 元 · ${escapeHTML(timeShort(x.time))}</span>
+              </div>
+              ${x.note ? `<div style="font-size:12px;color:var(--fg3);margin-top:4px;">${escapeHTML(x.note)}</div>` : ''}
+              <div class="track" style="margin-top:6px;"><div class="fill" style="width:${max ? Math.abs(x.amount) / max * 100 : 0}%;background:${PALETTE[i % PALETTE.length]}"></div></div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '<div class="card empty">该期间暂无支出</div>'}
+    `;
+  }
+
+  // ── 16. 高频排行 top_freq ──
+  function renderTopFreq(data) {
+    const items = data.items || [];
+    const max = items.length ? Math.max(...items.map(x => x.count)) : 0;
+    $('#app').innerHTML = `
+      <div style="margin-bottom:12px;"><span class="filter-chip">TOP ${data.limit || 10} · ${escapeHTML(data.period || '全部时间')}</span></div>
+      ${items.length ? `
+        <div class="card">
+          <div class="section-title">高频消费排行 <span class="count">${items.length} 类</span></div>
+          ${items.map((x, i) => `
+            <div class="cat-bar">
+              <div class="head">
+                <span class="name">${i + 1}. ${escapeHTML(x.category)}</span>
+                <span class="stats"><b>${x.count}</b> 笔 · ${fmtMoney(x.total)} 元 · 单均 ${fmtMoney(x.avg)}</span>
+              </div>
+              <div class="track"><div class="fill" style="width:${max ? x.count / max * 100 : 0}%;background:${PALETTE[i % PALETTE.length]}"></div></div>
+              <div style="font-size:11.5px;color:var(--fg3);margin-top:4px;">最近一笔: ${escapeHTML(timeShort(x.last_time))}</div>
+            </div>
+          `).join('')}
+        </div>
+      ` : '<div class="card empty">该期间暂无支出</div>'}
+    `;
+  }
+
+  // ── 17. 金额分布 distribution(SVG 直方图) ──
+  function renderDistribution(data) {
+    const buckets = data.buckets || [];
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('统计口径', data.type || '支出', '', 'blue', 'compact')}
+        ${kpiCard('总笔数', data.total || 0, '笔', 'purple', 'compact')}
+        ${kpiCard('期间', data.period || '-', '', 'orange', 'compact')}
+      </div>
+      ${buckets.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="section-title">金额区间分布</div>
+          ${histChart(buckets)}
+        </div>
+        <div class="card">
+          <div class="section-title">各区间明细</div>
+          ${buckets.map(x => `
+            <div class="fact-row"><span class="k">${escapeHTML(x.bucket)}</span><span class="v">${x.count} 笔 · ${fmtPct(x.pct)}</span></div>
+          `).join('')}
+        </div>
+      ` : '<div class="card empty" style="margin-top:14px;">该期间暂无数据</div>'}
+    `;
+  }
+
+  // ── 18. 记账统计 stats ──
+  function renderStats(data) {
+    const monthly = data.monthly_dist || [];
+    const max = monthly.length ? Math.max(...monthly.map(m => m.count)) : 0;
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('总笔数', data.total_records || 0, '笔', 'blue')}
+        ${kpiCard('记账天数', data.total_days || 0, '天', 'purple')}
+        ${kpiCard('日均笔数', data.daily_avg || 0, '笔/天', 'green', 'compact')}
+        ${kpiCard('首笔时间', data.first_record ? timeShort(data.first_record) : '-', '', 'orange', 'tiny')}
+        ${kpiCard('最近记录', data.last_record ? timeShort(data.last_record) : '-', '', 'green', 'tiny')}
+      </div>
+      ${monthly.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="section-title">月度分布 <span class="count">${monthly.length} 个月</span></div>
+          ${monthly.map(m => categoryBar({ category: m.month, total: m.count, count: m.count }, max, PALETTE[0])).join('')}
+        </div>
+      ` : ''}
+    `;
+  }
+
+  // ── 19. 活跃度 activity(周几 + 时段柱状) ──
+  function renderActivity(data) {
+    const weekdays = data.weekdays || [];
+    const hours = data.hours || [];
+    const wdMax = weekdays.length ? Math.max(...weekdays.map(w => w.count)) : 0;
+    const activeHours = hours.filter(h => h.count > 0);
+    $('#app').innerHTML = `
+      <div style="margin-bottom:12px;"><span class="filter-chip">共 ${data.total || 0} 条记录</span></div>
+      <div class="card">
+        <div class="section-title">周几分布(哪天记最多)</div>
+        ${weekdays.map((w, i) => `
+          <div class="cat-bar">
+            <div class="head">
+              <span class="name">${escapeHTML(w.weekday)}</span>
+              <span class="stats"><b>${w.count}</b> 笔</span>
+            </div>
+            <div class="track"><div class="fill" style="width:${wdMax ? w.count / wdMax * 100 : 0}%;background:${PALETTE[i % PALETTE.length]}"></div></div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card">
+        <div class="section-title">时段分布(几点记)</div>
+        ${activeHours.length ? hourBars(activeHours) : '<div class="empty">暂无时段数据</div>'}
+      </div>
+    `;
+  }
+
+  // ── 20. AI 消费洞察 insight(洞察卡) ──
+  function renderInsight(data) {
+    const p = data.period || {};
+    const cats = data.category_dist || [];
+    const trend = data.monthly_trend || {};
+    const months = trend.months || [];
+    const tops = data.top_expense || [];
+    const max = cats.length ? Math.max(...cats.map(c => c.expense)) : 0;
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('区间支出', fmtMoney(p.expense), '元', 'red')}
+        ${kpiCard('区间收入', fmtMoney(p.income), '元', 'green')}
+        ${kpiCard('净额', fmtMoney(p.net), '元', (p.net || 0) >= 0 ? 'green' : 'red')}
+        ${kpiCard('笔数', p.count || 0, '笔', 'blue')}
+      </div>
+      <div class="card insight-card" style="margin-top:14px;">
+        <div class="t">💡 AI 消费洞察(事实层)</div>
+        <div class="fact-row"><span class="k">区间</span><span class="v">${escapeHTML((p.from || '') + ' ~ ' + (p.to || ''))}</span></div>
+        <div class="fact-row"><span class="k">趋势均值</span><span class="v">${fmtMoney(trend.mean_expense)} 元/月</span></div>
+        <div class="fact-row"><span class="k">最大偏离月</span><span class="v">${escapeHTML((trend.max_deviation && trend.max_deviation.month) || '-')} (${fmtPct((trend.max_deviation && trend.max_deviation.deviation_pct) || 0)})</span></div>
+      </div>
+      ${cats.length ? `
+        <div class="card">
+          <div class="section-title">消费习惯(分类分布) <span class="count">${cats.length} 类</span></div>
+          ${cats.slice(0, 8).map((c, i) => categoryBar({ category: c.category, total: c.expense, count: c.count, pct: c.pct }, max, PALETTE[i % PALETTE.length])).join('')}
+        </div>
+      ` : ''}
+      ${months.length ? `
+        <div class="card">
+          <div class="section-title">月度走势(近 ${data.window_months || 6} 个月)</div>
+          ${lineChart(months.map(m => ({ month: m.month, expense: m.expense, income: m.income })))}
+        </div>
+      ` : ''}
+      ${tops.length ? `
+        <div class="card">
+          <div class="section-title">大额支出 TOP ${tops.length}</div>
+          ${recordsList(tops)}
+        </div>
+      ` : ''}
+    `;
+  }
+
+  // ── 21. 异常检测 anomaly(突增月/暴涨分类) ──
+  function renderAnomaly(data) {
+    const mom = data.month_over_month || [];
+    const surge = data.category_surge || [];
+    const series = data.series || [];
+    $('#app').innerHTML = `
+      <div style="margin-bottom:12px;"><span class="filter-chip">窗口: 近 ${data.window_months || 6} 个月</span></div>
+      ${mom.length ? `
+        <div class="card">
+          <div class="section-title">月度环比变化</div>
+          <div class="records">
+            ${mom.map(x => {
+              const up = x.pct > 0;
+              const big = Math.abs(x.pct) >= 50;
+              return `<div class="record">
+                <div class="time">${escapeHTML(x.month)}</div>
+                <div><div class="cat">${fmtMoney(x.prev)} → ${fmtMoney(x.cur)}</div>${big ? '<span class="chip warn">⚠ 幅度较大</span>' : ''}</div>
+                <div class="amt" style="color:${up ? 'var(--orange)' : 'var(--green)'}">${up ? '↑' : '↓'} ${fmtPct(Math.abs(x.pct))}</div>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>
+      ` : ''}
+      ${surge.length ? `
+        <div class="card">
+          <div class="section-title">分类暴涨检测 <span class="count">${data.window_months || 6} 月 vs 上一月</span></div>
+          ${surge.map(x => `
+            <div class="fact-row"><span class="k">${escapeHTML(x.category)} <span class="chip warn">+${fmtPct(x.pct)}</span></span><span class="v">${fmtMoney(x.prev)} → ${fmtMoney(x.cur)}</span></div>
+          `).join('')}
+          <div style="font-size:12px;color:var(--fg3);margin-top:8px;">建议核对: 是否存在一次性大额 / 记错分类 / 真实增长</div>
+        </div>
+      ` : ''}
+      ${series.length ? `
+        <div class="card">
+          <div class="section-title">月度序列(事实)</div>
+          ${lineChart(series.map(m => ({ month: m.month, expense: m.expense, income: m.income })))}
+        </div>
+      ` : ''}
+      ${!mom.length && !surge.length ? '<div class="card empty">近几个月数据平稳或暂无数据</div>' : ''}
+    `;
+  }
+
+  // ── 22. 借贷总览 debt_summary ──
+  function renderDebtSummary(data) {
+    const objects = data.objects || [];
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('借出未还', fmtMoney(data.lent_unpaid_total), '元', 'orange')}
+        ${kpiCard('借入未还', fmtMoney(data.borrowed_unpaid_total), '元', 'purple')}
+        ${kpiCard('已还(借出)', data.lent_paid_count || 0, '笔', 'green', 'compact')}
+        ${kpiCard('已还(借入)', data.borrowed_paid_count || 0, '笔', 'green', 'compact')}
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="section-title">对象列表 <span class="count">${objects.length} 人</span></div>
+        ${objects.length ? objects.map(x => `
+          <div class="fact-row">
+            <span class="k">${escapeHTML(x.target)}</span>
+            <span class="v">借出未还 ${fmtMoney(x.lent_unpaid)} / 借入未还 ${fmtMoney(x.borrowed_unpaid)}</span>
+          </div>
+        `).join('') : '<div class="empty">暂无未还借贷</div>'}
+      </div>
+    `;
+  }
+
+  // ── 23. 报销汇总 reimburse_summary ──
+  function renderReimburseSummary(data) {
+    const history = data.history || [];
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('待报销总额', fmtMoney(data.pending_total), '元', 'orange')}
+        ${kpiCard('待报销笔数', data.pending_count || 0, '笔', 'blue')}
+        ${kpiCard('已到账总额', fmtMoney(data.received_total), '元', 'green')}
+        ${kpiCard('已到账笔数', data.received_count || 0, '笔', 'green')}
+      </div>
+      <div class="card" style="margin-top:14px;">
+        <div class="section-title">历史报销 <span class="count">${history.length} 笔</span></div>
+        ${history.length ? history.map(x => `
+          <div class="record">
+            <div class="time">${escapeHTML(timeShort(x.time))}</div>
+            <div>
+              <div class="cat">${escapeHTML(x.category)}</div>
+              ${x.note ? `<div class="note">${escapeHTML(x.note)}</div>` : ''}
+            </div>
+            <div>
+              <div class="amt expense">${fmtMoney(Math.abs(x.amount))}</div>
+              <span class="chip ${x.status === '已到账' ? 'done' : 'warn'}">${x.status === '已到账' ? '✓ 已到账' : '待报销'}</span>
+            </div>
+          </div>
+        `).join('') : '<div class="empty">暂无报销记录</div>'}
+      </div>
+    `;
+  }
+
+  // ── 24. 分期总览 installment_summary ──
+  function renderInstallmentSummary(data) {
+    const active = data.active || [];
+    const history = data.history || [];
+    $('#app').innerHTML = `
+      <div style="margin-bottom:12px;">
+        <span class="filter-chip">进行中 ${active.length} 项</span>
+        <span class="filter-chip">已还清 ${history.length} 项</span>
+      </div>
+      ${active.length ? active.map(g => `
+        <div class="card">
+          <div class="section-title">${escapeHTML(g.name)} <span class="chip active">进行中</span></div>
+          <div class="kpi-grid" style="margin-bottom:0;">
+            ${kpiCard('总额', fmtMoney(g.total), '元', 'purple', 'compact')}
+            ${kpiCard('首期', fmtMoney(g.first), '元', '', 'compact')}
+            ${kpiCard('每期', fmtMoney(g.each), '元', '', 'compact')}
+            ${kpiCard('已还', g.paid, '期', 'green', 'compact')}
+            ${kpiCard('剩余', g.remaining, '期', 'orange', 'compact')}
+            ${kpiCard('剩余金额', fmtMoney(g.remaining_amount), '元', 'red', 'compact')}
+          </div>
+        </div>
+      `).join('') : ''}
+      ${history.length ? `
+        <div class="card">
+          <div class="section-title">历史分期(已还清)</div>
+          ${history.map(g => `
+            <div class="fact-row"><span class="k">${escapeHTML(g.name)} <span class="chip done">✓ 已还清</span></span><span class="v">总额 ${fmtMoney(g.total)} · ${g.periods} 期</span></div>
+          `).join('')}
+        </div>
+      ` : ''}
+      ${!active.length && !history.length ? '<div class="card empty">暂无分期记录</div>' : ''}
+    `;
+  }
+
+  // ── 25. 退款统计 refund_summary ──
+  function renderRefundSummary(data) {
+    const monthly = data.monthly || [];
+    const details = data.details || [];
+    const max = monthly.length ? Math.max(...monthly.map(m => m.count)) : 0;
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('退款总额', fmtMoney(data.total), '元', 'green')}
+        ${kpiCard('退款次数', data.count || 0, '次', 'blue')}
+      </div>
+      ${monthly.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="section-title">月份分布</div>
+          ${monthly.map(m => categoryBar({ category: m.month, total: m.count, count: m.count }, max, PALETTE[0])).join('')}
+        </div>
+      ` : ''}
+      <div class="card">
+        <div class="section-title">退款明细 <span class="count">${details.length} 笔</span></div>
+        ${details.length ? recordsList(details) : '<div class="empty">暂无退款记录</div>'}
+      </div>
+    `;
+  }
+
+  // ── 组件：KPI 卡 ─────────────────────────────────────────
+  function kpiCard(label, value, unit, color, size) {
+    const sizeClass = (size === 'tiny') ? 'tiny' : (size === 'compact') ? 'compact' : '';
+    return `<div class="kpi ${color || ''}">
+      <div class="label">${escapeHTML(label)}</div>
+      <div class="value ${sizeClass}">${escapeHTML(value)}${unit ? `<span class="unit">${escapeHTML(unit)}</span>` : ''}</div>
+    </div>`;
+  }
+
+  // ── 组件：对比卡 ─────────────────────────────────────────
+  function compareCard(cls, label, d) {
+    return `<div class="compare-card ${cls}">
+      <div class="period-label">${escapeHTML(label)}</div>
+      <div class="row"><span class="k">笔数</span><span class="v">${d.count || 0}</span></div>
+      <div class="row"><span class="k">支出</span><span class="v" style="color:var(--red)">${fmtMoney(d.expense)}</span></div>
+      <div class="row"><span class="k">收入</span><span class="v" style="color:var(--green)">${fmtMoney(d.income)}</span></div>
+      <div class="row"><span class="k">净额</span><span class="v" style="color:${(d.net || 0) >= 0 ? 'var(--green)' : 'var(--red)'}">${fmtMoney(d.net)}</span></div>
+    </div>`;
+  }
+
+  // ── 组件：分类占比条 ─────────────────────────────────────
+  function categoryBar(c, max, color) {
+    const pct = max ? (c.total / max * 100) : 0;
+    const totalPct = c.pct != null ? `${fmtPct(c.pct)}` : '';
+    return `<div class="cat-bar">
+      <div class="head">
+        <span class="name">${escapeHTML(c.category)}</span>
+        <span class="stats"><b>${fmtMoney(c.total)}</b> 元 · ${c.count || 0} 笔${totalPct ? ' · ' + totalPct : ''}${c.avg ? ' · 均 ' + fmtMoney(c.avg) : ''}</span>
+      </div>
+      <div class="track"><div class="fill" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
+  }
+
+  // ── 组件：记录列表 ───────────────────────────────────────
+  function recordsList(records) {
+    return `<div class="records">${records.slice(0, 200).map(r => `
+      <div class="record">
+        <div class="time">${escapeHTML(timeShort(r.time))}</div>
+        <div>
+          <div class="cat">${escapeHTML(r.category || '')}</div>
+          ${r.note ? `<div class="note">${escapeHTML(r.note)}</div>` : ''}
+        </div>
+        <div class="amt ${(r.amount || 0) < 0 ? 'expense' : 'income'}">${(r.amount || 0) < 0 ? '-' : '+'}${fmtMoney(Math.abs(r.amount || 0))}</div>
+      </div>
+    `).join('')}</div>${records.length > 200 ? `<div class="empty" style="margin-top:12px;">仅显示前 200 条 · 共 ${records.length} 条</div>` : ''}`;
+  }
+
+  // ── 组件：SVG 环形图 ─────────────────────────────────────
+  function donutSVG(cats, total, centerLabel) {
+    const r = 80, cx = 110, cy = 110, c = 2 * Math.PI * r;
+    let acc = 0;
+    const segments = cats.map((cat, i) => {
+      const pct = total ? (cat.total / total) : 0;
+      const dash = pct * c;
+      const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PALETTE[i % PALETTE.length]}" stroke-width="22" stroke-dasharray="${dash} ${c}" stroke-dashoffset="${-acc}" transform="rotate(-90 ${cx} ${cy})"/>`;
+      acc += dash;
+      return seg;
+    }).join('');
+    return `<svg class="donut" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#f5f5f7" stroke-width="22"/>
+      ${segments}
+      <text class="donut-center" x="${cx}" y="${cy - 8}" text-anchor="middle">${escapeHTML(centerLabel || '合计')}</text>
+      <text class="donut-center-big" x="${cx}" y="${cy + 18}" text-anchor="middle">${fmtMoney(total)}</text>
+    </svg>`;
+  }
+
+  // ── 组件：SVG 双线折线图(趋势) ───────────────────────────
+  function lineChart(series) {
+    if (!series.length) return '<div class="empty">暂无数据</div>';
+    const W = 800, H = 260, PL = 56, PR = 20, PT = 16, PB = 36;
+    const iw = W - PL - PR, ih = H - PT - PB;
+    const maxV = Math.max(...series.map(m => Math.max(m.expense, m.income)), 1) * 1.15;
+    const n = series.length;
+    const x = (i) => PL + (n === 1 ? iw / 2 : iw * i / (n - 1));
+    const y = (v) => PT + ih - (v / maxV) * ih;
+    const labels = series.map(m => m.month.slice(2)); // YY-MM
+
+    function polyline(values, color) {
+      const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+      return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+    const gridY = [0, 0.25, 0.5, 0.75, 1].map(f => {
+      const gy = PT + ih * f;
+      const val = (maxV * (1 - f)).toFixed(0);
+      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="11" fill="#86868b">${val}</text>`;
+    }).join('');
+    const xLabels = labels.map((lb, i) => {
+      const show = n <= 8 || i % Math.ceil(n / 8) === 0 || i === n - 1;
+      return show ? `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-size="11" fill="#86868b">${escapeHTML(lb)}</text>` : '';
+    }).join('');
+    // 峰值标注(支出)
+    let peakMark = '';
+    if (n > 0) {
+      let pi = 0;
+      for (let i = 1; i < n; i++) if (series[i].expense > series[pi].expense) pi = i;
+      if (series[pi].expense > 0) {
+        peakMark = `<text x="${x(pi)}" y="${y(series[pi].expense) - 8}" text-anchor="middle" font-size="11" font-weight="700" fill="#ff3b30">峰值 ${fmtMoney(series[pi].expense)}</text>`;
+      }
+    }
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${gridY}
+      ${polyline(series.map(m => m.income), '#34c759')}
+      ${polyline(series.map(m => m.expense), '#ff3b30')}
+      ${xLabels}
+      ${peakMark}
+    </svg>`;
+  }
+
+  // ── 组件：SVG 柱状图(分类趋势/时段) ─────────────────────
+  function barChart(series) {
+    if (!series.length) return '<div class="empty">暂无数据</div>';
+    const W = 800, H = 260, PL = 56, PR = 20, PT = 16, PB = 36;
+    const iw = W - PL - PR, ih = H - PT - PB;
+    const maxV = Math.max(...series.map(m => m.expense), 1) * 1.1;
+    const n = series.length;
+    const bw = Math.min(iw / n * 0.6, 40);
+    const step = iw / n;
+    const bars = series.map((m, i) => {
+      const bx = PL + step * i + (step - bw) / 2;
+      const bh = (m.expense / maxV) * ih;
+      const by = PT + ih - bh;
+      return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(bh, 1).toFixed(1)}" rx="4" fill="#ff9500"/>
+        ${m.expense > 0 ? `<text x="${(bx + bw / 2).toFixed(1)}" y="${(by - 6).toFixed(1)}" text-anchor="middle" font-size="10" fill="#86868b">${fmtMoney(m.expense)}</text>` : ''}`;
+    }).join('');
+    const gridY = [0, 0.5, 1].map(f => {
+      const gy = PT + ih * f;
+      const val = (maxV * (1 - f)).toFixed(0);
+      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="11" fill="#86868b">${val}</text>`;
+    }).join('');
+    const xLabels = series.map((m, i) => {
+      const show = n <= 8 || i % Math.ceil(n / 8) === 0 || i === n - 1;
+      return show ? `<text x="${(PL + step * i + step / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="11" fill="#86868b">${escapeHTML(m.month.slice(2))}</text>` : '';
+    }).join('');
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${gridY}
+      ${bars}
+      ${xLabels}
+    </svg>`;
+  }
+
+  // ── 组件：SVG 直方图(金额分布) ───────────────────────────
+  function histChart(buckets) {
+    if (!buckets.length) return '<div class="empty">暂无数据</div>';
+    const W = 800, H = 260, PL = 56, PR = 20, PT = 16, PB = 40;
+    const iw = W - PL - PR, ih = H - PT - PB;
+    const maxV = Math.max(...buckets.map(b => b.count), 1) * 1.15;
+    const n = buckets.length;
+    const bw = Math.min(iw / n * 0.62, 90);
+    const step = iw / n;
+    const bars = buckets.map((b, i) => {
+      const bx = PL + step * i + (step - bw) / 2;
+      const bh = (b.count / maxV) * ih;
+      const by = PT + ih - bh;
+      return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(bh, 1).toFixed(1)}" rx="4" fill="#007aff"/>
+        <text x="${(bx + bw / 2).toFixed(1)}" y="${(by - 6).toFixed(1)}" text-anchor="middle" font-size="10" fill="#86868b">${b.count}笔</text>`;
+    }).join('');
+    const gridY = [0, 0.5, 1].map(f => {
+      const gy = PT + ih * f;
+      const val = Math.round(maxV * (1 - f));
+      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="11" fill="#86868b">${val}</text>`;
+    }).join('');
+    const xLabels = buckets.map((b, i) => {
+      const words = String(b.bucket).split('');
+      return `<text x="${(PL + step * i + step / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="10.5" fill="#86868b">${escapeHTML(b.bucket)}</text>`;
+    }).join('');
+    return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+      ${gridY}
+      ${bars}
+      ${xLabels}
+    </svg>`;
+  }
+
+  // ── 组件：时段柱状(activity 小时段,纯 div 条形) ─────────
+  function hourBars(hours) {
+    const max = Math.max(...hours.map(h => h.count));
+    return hours.map(h => `
+      <div class="cat-bar">
+        <div class="head">
+          <span class="name">${escapeHTML(h.hour)} 点</span>
+          <span class="stats"><b>${h.count}</b> 笔</span>
+        </div>
+        <div class="track"><div class="fill" style="width:${max ? h.count / max * 100 : 0}%;background:#5ac8fa"></div></div>
+      </div>
+    `).join('');
+  }
+
+  // ── 启动 ──────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    bindCopyActions();
+    init();
+  });
+})();
+</script>
+</body>
+</html>

@@ -127,6 +127,123 @@ class TestNineQueryTypesRender:
         _assert_html_well_formed(html_path)
 
 
+# ── 分析域 25 场景端到端(2026-08-09 实施 · 最大域)────────────────────────────
+
+class TestAnalysisDomainRender:
+    """分析域全部类型：每类都生成合法 HTML(隔离契约 templates/分析/analysis_view.html)"""
+
+    @pytest.mark.parametrize("query_type,extra_args", [
+        # 汇总 4
+        ("monthly",   ["--month", "2026-01"]),
+        ("yearly",    ["--year", "2026"]),
+        ("overview",  ["--from", "2026-01-01", "--to", "2026-01-31"]),
+        ("week",      []),
+        # 结构 4
+        ("category",  ["--month", "2026-01"]),
+        ("account",   ["--month", "2026-01"]),
+        ("ledger",    ["--month", "2026-01"]),
+        ("structure", ["--month", "2026-01"]),
+        # 对比 4
+        ("compare",   ["--period", "month"]),
+        ("range_compare", ["--from1", "2026-01-01", "--to1", "2026-01-31", "--from2", "2025-12-01", "--to2", "2025-12-31"]),
+        ("yoy",       ["--month", "2026-01"]),
+        ("cat_compare", ["--from1", "2026-01-01", "--to1", "2026-01-31", "--from2", "2025-12-01", "--to2", "2025-12-31"]),
+        # 趋势 2
+        ("trend",     ["--months", "6"]),
+        ("cat_trend", ["--category", "餐饮", "--months", "6"]),
+        # 金额 3
+        ("top",       ["--limit", "5"]),
+        ("top_freq",  ["--limit", "5"]),
+        ("distribution", ["--month", "2026-01"]),
+        # 统计洞察 4
+        ("stats",     []),
+        ("activity",  []),
+        ("insight",   ["--months", "6"]),
+        ("anomaly",   ["--months", "6"]),
+        # 状态聚合 4
+        ("debt_summary", []),
+        ("reimburse_summary", []),
+        ("installment_summary", []),
+        ("refund_summary", []),
+    ])
+    def test_each_analysis_type_generates_valid_html(self, seeded_db, query_type, extra_args):
+        rc, out, err, html_path = _run_bill_inject(seeded_db, query_type, *extra_args)
+        _assert_html_well_formed(html_path)
+
+    def test_analysis_types_use_analysis_template(self, seeded_db):
+        """分析域类型注入分析域模板(analysis_view.html 特征:SVG 折线 lineChart + 图表图例)"""
+        for qt, extra in [("yearly", ["--year", "2026"]), ("trend", ["--months", "6"])]:
+            rc, out, err, html_path = _run_bill_inject(seeded_db, qt, *extra)
+            text = html_path.read_text(encoding="utf-8-sig")
+            assert "lineChart" in text, f"{qt} 应使用分析域模板(含 lineChart)"
+            assert "分析视图" in text, f"{qt} 应使用分析域模板标题"
+
+    def test_analysis_empty_db(self, empty_db):
+        """分析域空库 → HTML 空态正常生成(不崩)"""
+        for qt, extra in [
+            ("yearly", ["--year", "2026"]), ("week", []), ("category", []),
+            ("structure", []), ("range_compare", ["--from1", "2026-01-01", "--to1", "2026-01-31", "--from2", "2025-12-01", "--to2", "2025-12-31"]),
+            ("trend", ["--months", "6"]), ("top", []), ("distribution", []),
+            ("activity", []), ("insight", []), ("anomaly", []),
+            ("debt_summary", []), ("reimburse_summary", []),
+            ("installment_summary", []), ("refund_summary", []),
+        ]:
+            rc, out, err, html_path = _run_bill_inject(empty_db, qt, *extra)
+            _assert_html_well_formed(html_path, allow_error_state=True)
+
+    def test_analysis_status_family_with_data(self, tmp_db_dir):
+        """状态聚合有数据:debt_summary/reimburse_summary/installment_summary/refund_summary payload 含聚合值"""
+        import re
+        import sqlite3
+        from db import init_db, TABLE_NAME
+        conn = init_db()
+        try:
+            cur = conn.cursor()
+            rows = [
+                ("借贷/借出", "2026-07-01 10:00:00", -500.0, "", "借贷", "#借出 #借给小明 #未还"),
+                ("借贷/借入", "2026-07-05 10:00:00", 300.0, "", "借贷", "#借入 #向小红借 #未还"),
+                ("借贷/借出", "2026-06-01 10:00:00", -200.0, "", "借贷", "#借出 #借给老王 #已还"),
+                ("餐饮", "2026-07-10 12:00:00", -88.0, "", "生活", "客户午餐 #待报销"),
+                ("餐饮", "2026-07-15 12:00:00", 88.0, "", "生活", "报销到账 #报销到账"),
+                ("分期/手机", "2026-07-01 00:00:00", -3400.0, "", "生活", "#分期 手机 第1期/3"),
+                ("分期/手机", "2026-09-01 00:00:00", -3300.0, "", "生活", "#分期 手机 第3期/3"),
+                ("餐饮", "2026-07-08 12:00:00", 30.0, "", "生活", "外卖退款 #退款"),
+            ]
+            for c, t, a, acc, l, n in rows:
+                cur.execute(
+                    f"INSERT INTO {TABLE_NAME} (category, time, amount, account, ledger, currency, note) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (c, t, a, acc, l, "人民币", n),
+                )
+            conn.commit()
+        finally:
+            conn.close()
+
+        def _payload(qt, *extra):
+            rc, out, err, html_path = _run_bill_inject(tmp_db_dir, qt, *extra)
+            text = html_path.read_text(encoding="utf-8-sig")
+            m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+            return json.loads(m.group(1))
+
+        p = _payload("debt_summary")
+        assert p["status"] == "ok"
+        assert p["data"]["lent_unpaid_total"] == 500.0
+        assert p["data"]["borrowed_unpaid_total"] == 300.0
+        assert p["data"]["lent_paid_count"] == 1
+
+        p = _payload("reimburse_summary")
+        assert p["status"] == "ok" and p["data"]["pending_total"] == 88.0
+        assert p["data"]["received_total"] == 88.0
+
+        p = _payload("installment_summary")
+        assert p["status"] == "ok"
+        g = p["data"]["active"][0]
+        assert g["name"] == "手机" and g["total"] == 6700.0 and g["periods"] == 3
+
+        p = _payload("refund_summary")
+        assert p["status"] == "ok" and p["data"]["total"] == 30.0 and p["data"]["count"] == 1
+
+
 # ── 空数据场景 ─────────────────────────────────────────────────────────────
 
 class TestEmptyDataRender:
@@ -537,12 +654,87 @@ class TestTemplateCapability:
             assert meta["wake_word"] == wake_word, \
                 f"list {extra} wake_word 期望 {wake_word},实际 {meta['wake_word']}"
 
+    def test_analysis_types_meta_mapping(self, tmp_db_dir):
+        """分析域 21 新类型:scene_id/wake_word 对齐 scenes/analysis.yaml(门禁 A 层 1 数据源)"""
+        import json
+        import re
+        expect = {
+            "yearly": ("yearly_summary", "看年度", ["--year", "2026"]),
+            "week": ("week_brief", "看周报", []),
+            "category": ("category_breakdown", "看分类", []),
+            "account": ("account_breakdown", "看账户", []),
+            "ledger": ("ledger_summary", "看账本", []),
+            "structure": ("income_expense_structure", "看结构", []),
+            "range_compare": ("range_compare", "看双区间", ["--from1", "2026-01-01", "--to1", "2026-01-31", "--from2", "2025-12-01", "--to2", "2025-12-31"]),
+            "yoy": ("year_over_year", "看同比", ["--month", "2026-01"]),
+            "cat_compare": ("category_compare", "看分类对比", ["--from1", "2026-01-01", "--to1", "2026-01-31", "--from2", "2025-12-01", "--to2", "2025-12-31"]),
+            "trend": ("monthly_trend", "看趋势", ["--months", "6"]),
+            "cat_trend": ("category_trend", "看分类趋势", ["--category", "餐饮", "--months", "6"]),
+            "top": ("top_expense", "看大额", ["--limit", "5"]),
+            "top_freq": ("top_frequency", "看高频", ["--limit", "5"]),
+            "distribution": ("amount_distribution", "看分布", []),
+            "activity": ("activity", "看活跃", []),
+            "insight": ("insight", "看洞察", []),
+            "anomaly": ("anomaly", "看异常", []),
+            "debt_summary": ("debt_summary", "看借贷", []),
+            "reimburse_summary": ("reimburse_summary", "看报销", []),
+            "installment_summary": ("installment_summary", "看分期", []),
+            "refund_summary": ("refund_summary", "看退款", []),
+        }
+        for qt, (scene_id, wake_word, extra) in expect.items():
+            rc, out, err, html_path = _run_bill_inject(tmp_db_dir, qt, *extra)
+            text = html_path.read_text(encoding="utf-8-sig")
+            m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
+            payload = json.loads(m.group(1))
+            assert payload.get("status") == "ok", f"{qt} 状态应 ok:{payload}"
+            meta = payload["data"]["meta"]
+            assert meta["scene_id"] == scene_id, f"{qt} scene_id 期望 {scene_id},实际 {meta['scene_id']}"
+            assert meta["wake_word"] == wake_word, f"{qt} wake_word 期望 {wake_word},实际 {meta['wake_word']}"
+
+    def test_analysis_output_filename_variant(self, tmp_db_dir):
+        """分析域新类型输出文件名中文细分(不传 --out 走默认路径)"""
+        env = os.environ.copy()
+        env["SKILLS_DB_PATH"] = str(tmp_db_dir)
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
+        cases = [
+            (["yearly", "--year", "2026"], "年度汇总"),
+            (["week"], "周报"),
+            (["category"], "分类占比"),
+            (["insight"], "消费洞察"),
+            (["debt_summary"], "借贷总览"),
+            (["refund_summary"], "退款统计"),
+        ]
+        for args, prefix in cases:
+            result = subprocess.run(
+                [sys.executable, str(BILL_INJECT)] + args,
+                capture_output=True, text=True, encoding="utf-8", env=env, timeout=30,
+            )
+            assert result.returncode == 0, f"bill_inject {' '.join(args)} 失败: {result.stderr}"
+            fname = None
+            for line in result.stdout.splitlines():
+                if "已生成" in line:
+                    last_part = line.replace("\\", "/").rsplit("/", 1)[-1].strip()
+                    for suffix in [".", ",", ")", "]"]:
+                        if last_part.endswith(suffix):
+                            last_part = last_part[:-1]
+                    if last_part.endswith(".html"):
+                        fname = last_part
+                        break
+            assert fname is not None, f"未从 stdout 解析文件名: {result.stdout}"
+            assert fname.startswith(prefix), \
+                f"分析域 {args} 文件名期望以 {prefix} 开头,实际 {fname}"
+
     def test_meta_present_in_all_query_types(self, tmp_db_dir):
         """全部 query_type:正常态注入 meta;错误态(如 list 无参数)仍带复制按钮(08 硬标准)"""
         import json
         import re
         for qt in ["summary", "list", "recent", "search", "tag", "debt", "reimburse", "installment",
-                   "monthly", "compare", "breakdown", "overview", "stats"]:
+                   "monthly", "compare", "breakdown", "overview", "stats",
+                   "yearly", "week", "category", "account", "ledger", "structure",
+                   "range_compare", "yoy", "cat_compare", "trend", "cat_trend",
+                   "top", "top_freq", "distribution", "activity", "insight", "anomaly",
+                   "debt_summary", "reimburse_summary", "installment_summary", "refund_summary"]:
             rc, out, err, html_path = _run_bill_inject(tmp_db_dir, qt)
             text = html_path.read_text(encoding="utf-8-sig")
             m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)

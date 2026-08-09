@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
@@ -26,10 +26,10 @@
   td { padding:6px 8px; border-bottom:1px dashed var(--line); }
   td.amt { text-align:right; font-weight:600; font-variant-numeric:tabular-nums; }
   .fold-hint { font-size:12px; color:var(--fg3); text-align:center; padding:8px 0 2px; }
-  .actions { display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin:4px 0 16px; }
+  .actions { display:flex; justify-content:flex-end; gap:8px; margin:4px 0 16px; }
+  .actions .btn-main, .actions .btn { flex:1; min-width:0; justify-content:center; }
   .btn-main { display:inline-flex; align-items:center; gap:6px; border:0; background:var(--blue); color:#fff; border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
   .btn-main:hover { background:var(--blue2); }
-  .btn-main.copied { background:var(--green); }
   .btn { display:inline-flex; align-items:center; justify-content:center; border:0; background:#fff; color:var(--fg); border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
   .btn:hover { background:var(--bg); }
   .toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) scale(.9); opacity:0; background:rgba(28,28,30,.94); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); color:#f0f0f0; border-radius:14px; padding:13px 14px 13px 16px; display:flex; align-items:flex-start; gap:12px; max-width:480px; min-width:300px; box-shadow:0 10px 32px rgba(0,0,0,.32); pointer-events:none; transition:opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index:99; }
@@ -37,7 +37,7 @@
   .toast-title { font-weight:600; font-size:12.5px; color:#fff; margin-bottom:2px; }
   .toast-detail { font-size:11px; color:#c8c8cc; }
   .toast-close { background:rgba(255,255,255,.10); color:#34c759; border:0; border-radius:8px; padding:5px 9px; font-size:10.5px; margin-left:6px; cursor:pointer; flex-shrink:0; }
-  @media (max-width:640px) { .wrap { padding:18px 12px 70px; } h1 { font-size:23px; } }
+  @media (max-width:640px) { .wrap { padding:18px 12px 70px; } .actions .btn-main, .actions .btn { font-size:12.5px; padding:9px 8px; white-space:nowrap; } h1 { font-size:23px; } }
 </style>
 </head>
 <body>
@@ -66,7 +66,7 @@
   </main>
 
   <div class="actions">
-    <button class="btn-main" id="copyPromptBtn">📋 复制确认 prompt</button>
+    <button class="btn-main" id="copyPromptBtn">📋 确认 prompt</button>
     <button class="btn" id="copyDataBtn">复制数据</button>
     <button class="btn" id="copyLogBtn">🛠 复制日志</button>
   </div>
@@ -143,7 +143,7 @@
     toastTimer = setTimeout(function () { document.getElementById('toast').classList.remove('show'); }, 4500);
   }
   function doCopy(text, fmt, btn) {
-    function done() { if (btn) { btn.classList.add('copied'); setTimeout(function () { btn.classList.remove('copied'); }, 1600); } showToast(fmt); }
+    function done() { showToast(fmt); }
     function fb() { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fb);
     else fb();

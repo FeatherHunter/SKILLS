@@ -378,7 +378,7 @@ def main():
             scene_name = '看本月体重'
         elif args.month == 'last':
             scene_name = '看上月体重'
-        elif args.days:
+        elif args.days and not (args.start and args.end):
             scene_name = f'看最近 {args.days} 天体重'
         elif args.start and args.end:
             scene_name = '看某段时间体重'

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>规格阶段闭环 · 作息管家 L 级重构</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+    --purple: #af52de; --purple-soft: rgba(175,82,222,.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 30px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--ok); background: var(--ok-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 660px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .badge-row { display: flex; gap: 10px; margin: 18px 0 26px; flex-wrap: wrap; }
+  .badge { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 16px; font-size: 13px; color: var(--text2); box-shadow: 0 1px 0 rgba(0,0,0,.03); }
+  .badge b { color: var(--text); font-size: 16px; }
+  .badge .g { color: var(--ok); }
+
+  .sec-title { font-size: 16px; font-weight: 700; margin: 28px 0 12px; display: flex; align-items: center; gap: 8px; }
+  .sec-title .tag { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+
+  .ticket { background: var(--card); border-radius: 16px; padding: 16px 20px; margin-bottom: 10px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); display: flex; align-items: center; gap: 14px; }
+  .ticket .st { flex: none; width: 40px; height: 40px; border-radius: 12px; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center; }
+  .ticket .info { flex: 1; }
+  .ticket .info b { font-size: 14.5px; display: block; }
+  .ticket .info span { font-size: 12.5px; color: var(--text2); }
+  .ticket .num { flex: none; color: var(--muted); font-size: 12.5px; }
+
+  .deliver { margin-top: 24px; background: var(--card); border: 1px dashed var(--line); border-radius: 16px; padding: 18px 20px; }
+  .deliver h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .deliver .item { display: flex; gap: 10px; padding: 6px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .deliver .item:last-child { border-bottom: none; }
+  .deliver .item .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+
+  .next { margin-top: 26px; background: var(--card); border-radius: 16px; padding: 18px 20px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  .next h3 { font-size: 14px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .next p { font-size: 13.5px; color: var(--text2); }
+  .next .step { display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px dashed var(--line-soft); }
+  .next .step:last-child { border-bottom: none; }
+  .next .step .idx { flex: none; width: 22px; height: 22px; border-radius: 7px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 12px; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+
+  footer { margin-top: 32px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">✅ 规格 map #190 全部闭环</span>
+    <h1>规格阶段完成 · 进入实施阶段</h1>
+    <p class="sub">R2 / G1 / R3 / G2 四票全部关闭，所有决策已定案。作息管家 L 级重构从「决策」进入「执行」。</p>
+  </header>
+
+  <div class="badge-row">
+    <div class="badge"><b>4</b> 票全关</div>
+    <div class="badge"><b>81</b> 场景清单</div>
+    <div class="badge"><b>12</b> 次 commit</div>
+    <div class="badge"><span class="g">✓</span> 决策全定案</div>
+  </div>
+
+  <div class="sec-title"><span class="tag">四票闭环</span></div>
+  <div class="ticket">
+    <div class="st"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <div class="info"><b>R2 开源准备处置</b><span>16 项清仓清单 + 路径统一链 + LICENSE + batch-add 设计</span></div>
+    <div class="num">#191</div>
+  </div>
+  <div class="ticket">
+    <div class="st"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <div class="info"><b>G1 领域第一功能定标</b><span>6 深度场景 + 5 基础覆盖 + 跨场景约定（Q1-Q12 全采纳）</span></div>
+    <div class="num">#193</div>
+  </div>
+  <div class="ticket">
+    <div class="st"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <div class="info"><b>R3 onboarding 三段式设计</b><span>README + 复制即装 prompt + 首次使用 6 步 + 初始化报告，飞书强引导</span></div>
+    <div class="num">#192</div>
+  </div>
+  <div class="ticket">
+    <div class="st"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></div>
+    <div class="info"><b>G2 场景枚举定标</b><span>81 场景（73 + 8 新增/强化），复盘 start-end → 更名「复盘区间」</span></div>
+    <div class="num">#194</div>
+  </div>
+
+  <div class="sec-title"><span class="tag">规格产出 · 实施输入</span></div>
+  <div class="deliver">
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>G1 功能定标清单：6 深度场景（记录/复盘今日/复盘本周/复盘本月/制定计划/周视图）+ 5 基础覆盖</div>
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>R2 处置清单：16 项（删 3 脚本 / 收敛 batch-add / 路径统一链 / LICENSE / 文档清理）</div>
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>R3 onboarding 三段式：README 草案 + 首次使用工作流 + first_use_wizard.html</div>
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>G2 场景清单：81 场景（scenarios.yaml 73→81，合并器写入）</div>
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>顶层体验输入 + 交互铁律 v2 + 三层评估（DB/CLI/场景）</div>
+  </div>
+
+  <div class="next">
+    <h3>下一步 · 建实施 map（09 两阶段第 2 阶段）</h3>
+    <div class="step"><span class="idx">1</span>拆实施票：按域拆 T 票（record / plan / 跨域复盘 / setup），隔离契约执行</div>
+    <div class="step"><span class="idx">2</span>D1 数据层后置：动 DB 前必须你确认（Q4 约定）</div>
+    <div class="step"><span class="idx">3</span>每票闭环：门禁 A/B + 偏离记录 + Tested-By</div>
+    <div class="step"><span class="idx">4</span>交付前：过程复盘 → 考题对齐 → 交付清单</div>
+  </div>
+
+  <footer>规格 map #190 · 2026-08-09 · commit 71d2968</footer>
+</div>
+</body>
+</html>

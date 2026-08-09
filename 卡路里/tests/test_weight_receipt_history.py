@@ -64,17 +64,18 @@ def test_receipt_goal_diff_uses_latest(clean_weight_log, temp_db):
 
 
 def test_receipt_history_window_excludes_old(clean_weight_log, temp_db):
-    """issue #198:近 30 天窗口过滤 —— 31+ 天前的记录不得进入 history
+    """issue #198:近 30 天窗口过滤 —— 窗口外(>30 天前)的记录不得进入 history
 
     此前 SQL 只取最新 30 条无日期过滤,稀疏记录时横跨远超 30 天
     (x 轴出现更早月份,用户实测 2026-08-08:最新 30 条跨 44 天)。
+    窗口语义(2026-08-09 对抗审查对齐):近 N 天 = 含今天共 N 个日期 → 31 天前必在窗口外。
     """
     import render_weight_receipt as rwr
     import weight
 
     today = date.today()
-    # 窗口内(近 30 天)1 条 + 窗口外(40 天前)1 条 —— 稀疏记录场景
-    weight.log_weight(70.0, target_date=(today - timedelta(days=40)).isoformat())
+    # 窗口外(31 天前)1 条 + 今天 1 条 —— 稀疏记录场景
+    weight.log_weight(70.0, target_date=(today - timedelta(days=31)).isoformat())
     weight.log_weight(68.0, target_date=today.isoformat())
     data = rwr.build_live_receipt(67.8)  # 写库本身再记一条今天
     dates = [h['date'] for h in data['history']]
@@ -83,10 +84,10 @@ def test_receipt_history_window_excludes_old(clean_weight_log, temp_db):
 
 
 def test_receipt_history_window_boundary_29_days(clean_weight_log, temp_db):
-    """窗口边界:第 30 天前(day=30)应排除,day=29 应保留
+    """窗口边界:29 天前(第 30 个日期)保留,31 天前排除
 
-    窗口语义:date >= today - 30 天(含 30 天前当天,共 31 个日期?不——
-    按 _latest_history 实现 today-30 天起算,day=29 保留、day=31 排除)。
+    窗口语义(2026-08-09 对抗审查对齐):近 30 天 = 含今天共 30 个日期
+    = date >= today-29(与 render_weight_history 等视图一致)。
     """
     import render_weight_receipt as rwr
     import weight
@@ -98,4 +99,4 @@ def test_receipt_history_window_boundary_29_days(clean_weight_log, temp_db):
     data = rwr.build_live_receipt(67.8)
     dates = [h['date'] for h in data['history']]
     assert (today - timedelta(days=31)).isoformat() not in dates, '31 天前应被过滤'
-    assert (today - timedelta(days=29)).isoformat() in dates, '29 天前应保留'
+    assert (today - timedelta(days=29)).isoformat() in dates, '29 天前(第30个日期)应保留'

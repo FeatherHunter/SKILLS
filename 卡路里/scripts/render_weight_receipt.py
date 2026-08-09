@@ -93,11 +93,13 @@ def _latest_history(conn, limit=30, days=30):
 
     issue #198 修复(2026-08-09):此前只取最新 30 条无日期窗口过滤,稀疏记录时
     横跨远超 30 天(x 轴出现更早月份 → 与模板「近 30 天趋势」标题不符,用户实测
-    最新 30 条跨 44 天)。改为 date >= today-N 天,与 render_weight_history 等
-    视图的日期窗口语义一致。
+    最新 30 条跨 44 天)。改为 date >= today-(N-1) 天窗口,与 render_weight_history /
+    render_today_meals / render_calorie_trend 等视图的「近 N 天 = 含今天共 N 个日期」
+    语义一致(2026-08-09 对抗审查:原 today-N 是 N+1 个日期,off-by-one)。
     """
     cur = conn.cursor()
-    window_start = (date.today() - timedelta(days=days)).isoformat()
+    # days=30 → 窗口起点 = today-29(含今天共 30 个日期),与仓库其他视图一致
+    window_start = (date.today() - timedelta(days=days - 1)).isoformat()
     cur.execute('''
         SELECT date, weight_kg FROM weight_log
         WHERE date >= ?

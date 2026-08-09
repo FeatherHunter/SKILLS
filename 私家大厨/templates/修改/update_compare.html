@@ -1,0 +1,495 @@
+<!--
+私家大厨 · 修改域对比页(update-1/2/3 · T11 v4.0 · G8 核心骨架)
+由 scripts/render_修改.py compare/receipt 注入数据,占位符 INJECT-DATA 唯一 1 次。
+三模式(payload.mode):
+  compare  过程型:before/after 对比栏(旧→新高亮)+ 填写位(补字段)+「确认变更」按钮(08 §4 普通确认式)
+  success  结果型回执:成功 diff + 撤销按钮(反写旧值 prompt · G8 决策: 不建表)
+  failure  结果型回执:08 §6.1 错误回执(操作名/失败原因/关键数据/建议下一步+修正重试)
+双按钮硬标准(08 §4): 复制数据(5 段 JSON)+ 复制日志(6 段),全模式恒在。
+5 状态覆盖(08 §6): 正常 / 空 / 缺数据 / 错误 / 离线 → state 降级页。
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="私家大厨 · render_修改.py · v4.0 T11">
+<title>私家大厨 · 修改对比</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --guessed:#FFF4E0;--guessed-border:#FFB340;
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 120px 0}
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  .hero{background:var(--card);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:26px;font-weight:700;letter-spacing:-0.025em;margin-bottom:4px}
+  .hero h1 .st{font-size:13px;font-weight:700;vertical-align:middle;padding:3px 10px;border-radius:var(--radius-pill);margin-right:8px;letter-spacing:0.02em}
+  .hero h1 .st.on{background:var(--blue-soft);color:var(--blue)}
+  .hero h1 .st.ok{background:var(--success-soft);color:var(--success)}
+  .hero h1 .st.fail{background:var(--danger-soft);color:var(--danger)}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--text3);margin:10px 0 14px}
+  .hero-meta span{display:inline-flex;align-items:center;gap:4px}
+  .stage-bar{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text3)}
+  .stage-bar .step{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius-pill);background:var(--bg)}
+  .stage-bar .step.on{background:var(--blue);color:#fff}
+  .stage-bar .step.done{background:var(--success-soft);color:var(--success)}
+  .stage-bar .step.fail{background:var(--danger-soft);color:var(--danger)}
+  .stage-bar .arrow{color:var(--text4)}
+
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .card h3{font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text)}
+
+  .target-line{font-size:15px;font-weight:600;margin-bottom:6px}
+  .target-line .id{font-size:12px;color:var(--text3);font-family:ui-monospace,Menlo,monospace;font-weight:400}
+
+  .legend{font-size:12px;color:var(--text2);display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px}
+  .legend .row{display:inline-flex;align-items:center;gap:5px}
+  .legend .dot{width:10px;height:10px;border-radius:3px;flex:none}
+  .legend .dot.mod{background:var(--warn)}
+  .legend .dot.add{background:var(--success)}
+  .legend .dot.del{background:var(--danger)}
+
+  .cmp-row{display:flex;gap:10px;align-items:stretch;padding:12px 0;border-top:0.5px solid var(--separator)}
+  .cmp-row:first-of-type{border-top:none;padding-top:4px}
+  .cmp-side{flex:1;min-width:0;background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;border:1.5px solid transparent}
+  .cmp-side .side-tag{font-size:10.5px;font-weight:700;letter-spacing:0.04em;color:var(--text3);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+  .cmp-side .field-label{font-size:13px;font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .cmp-side .field-path{font-size:10.5px;color:var(--text4);font-family:ui-monospace,Menlo,monospace;font-weight:400}
+  .cmp-side .val{font-size:14px;color:var(--text2);word-break:break-word;white-space:pre-wrap}
+  .cmp-side.old{background:var(--danger-soft);border-color:var(--danger)}
+  .cmp-side.old .val{color:var(--danger)}
+  .cmp-side.new{background:var(--success-soft);border-color:var(--success)}
+  .cmp-side.new .val{color:var(--success)}
+  .cmp-side.unchanged{background:var(--bg)}
+  .cmp-arrow{align-self:center;color:var(--text4);font-weight:700;flex:none}
+  .cmp-new-missing{display:block;width:100%;font-size:14px;padding:8px 10px;border:1.5px solid var(--danger);border-radius:var(--radius-sm);background:#fff;color:var(--text);font-family:var(--font);outline:none;margin-top:4px}
+  .cmp-new-missing:focus{border-color:var(--blue)}
+  .badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:var(--radius-pill);letter-spacing:0.02em}
+  .badge.guessed{background:var(--warn-soft);color:var(--warn)}
+  .badge.missing{background:var(--danger-soft);color:var(--danger)}
+
+  .fail-card{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);border-left:4px solid var(--danger)}
+  .fail-card h3{font-size:14px;font-weight:600;margin-bottom:10px}
+  .fail-item{margin-bottom:10px}
+  .fail-item .k{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px}
+  .fail-item .v{font-size:14px;color:var(--text2);word-break:break-all}
+  .fail-item .v.reason{color:var(--danger)}
+  .fail-item .v.next{color:var(--blue)}
+
+  .reminder{background:var(--warn-soft);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;font-size:13px;color:#9A5B00}
+  .hint{background:var(--blue-soft);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:12.5px;color:#04569e}
+
+  .diff-row{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:0.5px solid var(--separator);font-size:13px}
+  .diff-row:first-child{border-top:none;padding-top:0}
+  .diff-row .act{flex:none;font-size:11px;font-weight:700;padding:1px 8px;border-radius:var(--radius-pill)}
+  .diff-row .act.add{background:var(--success-soft);color:var(--success)}
+  .diff-row .act.del{background:var(--danger-soft);color:var(--danger)}
+  .diff-row .act.mod{background:var(--warn-soft);color:var(--warn)}
+  .diff-row .fd{color:var(--text2)}
+  .diff-row .fd code{font-size:12px;background:var(--bg);padding:1px 6px;border-radius:6px}
+
+  .actions{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,0.94);backdrop-filter:blur(10px);border-top:0.5px solid var(--separator);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .actions .inner{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;text-align:center}
+  .btn.primary{background:var(--blue);color:#fff}
+  .btn.primary.danger{background:var(--danger)}
+  .btn.primary:disabled{background:var(--text4);color:rgba(255,255,255,0.7);cursor:not-allowed}
+  .btn.ghost{background:var(--bg);color:var(--blue)}
+  .btn-row{display:flex;gap:8px}
+  .btn-row .btn{flex:1}
+  .btn small{font-weight:400;font-size:11px;opacity:0.8}
+
+  .state{background:var(--card);border-radius:var(--radius);padding:48px 24px;text-align:center;color:var(--text3);box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px}
+  .hidden{display:none !important}
+  .state .icon{font-size:48px;margin-bottom:12px;opacity:0.6}
+  .state.error{color:var(--danger)}
+
+  .toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);background:rgba(28,28,30,0.92);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--radius-pill);opacity:0;pointer-events:none;transition:opacity 0.25s;z-index:99;max-width:80vw}
+  .toast.show{opacity:1}
+
+  @media (max-width:480px){
+    .container{padding:16px 12px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:22px}
+    .cmp-row{flex-direction:column;gap:8px}
+    .cmp-arrow{transform:rotate(90deg);align-self:flex-start}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="state-error" class="state error hidden">
+  <div class="icon">⚠️</div>
+  <div id="error-msg">数据加载失败</div>
+</div>
+
+<div id="main-content" class="hidden">
+
+  <section class="hero">
+    <h1><span class="st" id="stage-badge">对比</span><span id="page-title">修改对比</span></h1>
+    <div class="hero-meta">
+      <span>🕒 <span id="generated-at"></span></span>
+      <span>🎯 唤醒词 <span id="wake-word"></span></span>
+      <span>📄 <span id="scene-id"></span></span>
+    </div>
+    <div class="stage-bar" id="stage-bar">
+      <span class="step done">✏️ 填写</span><span class="arrow">→</span>
+      <span class="step on" id="stage-confirm">✅ 确认</span><span class="arrow">→</span>
+      <span class="step" id="stage-final">📦 执行</span>
+    </div>
+  </section>
+
+  <!-- 对比区: before/after 对比栏 + 填写位 -->
+  <div id="compare-block" class="hidden">
+    <div class="card">
+      <div class="target-line" id="target-line"></div>
+      <div class="legend">
+        <span class="row"><span class="dot mod"></span>修改</span>
+        <span class="row"><span class="dot add"></span>新增</span>
+        <span class="row"><span class="dot del"></span>删除</span>
+        <span class="row"><span class="dot" style="background:#fff;border:1.5px solid var(--separator)"></span>不变</span>
+      </div>
+      <div id="compare-list"></div>
+    </div>
+    <div class="hint hidden" id="compare-hint">💡 左=改前 · 右=改后;黄框字段由 AI 推测,红框字段待补充。确认后复制 prompt 发给 AI 写库。</div>
+    <div class="card hidden" id="missing-summary">
+      <h3>⚠️ 待补充字段</h3>
+      <p id="missing-text" style="font-size:13px;color:var(--danger)"></p>
+    </div>
+  </div>
+
+  <!-- 成功回执: 结果 + diff + 撤销 -->
+  <div id="success-block" class="hidden">
+    <div class="card">
+      <div class="result-line" id="result-line"></div>
+      <div id="diff-list"></div>
+    </div>
+    <div class="reminder hidden" id="reminder"></div>
+  </div>
+
+  <!-- 失败回执: 08 §6.1 -->
+  <div id="failure-block" class="hidden">
+    <div class="fail-card">
+      <div class="fail-item">
+        <div class="k">① 操作名</div>
+        <div class="v" id="f-operation"></div>
+      </div>
+      <div class="fail-item">
+        <div class="k">② 失败原因</div>
+        <div class="v reason" id="f-reason"></div>
+      </div>
+      <div class="fail-item">
+        <div class="k">③ 关键数据</div>
+        <div class="v" id="f-keydata"></div>
+      </div>
+      <div class="fail-item">
+        <div class="k">④ 建议下一步</div>
+        <div class="v next" id="f-next"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="actions hidden" id="actions">
+  <div class="inner">
+    <button class="btn primary" id="btn-primary">下一步</button>
+    <div class="btn-row">
+      <button class="btn ghost" id="btn-copy-data">📋 复制数据</button>
+      <button class="btn ghost" id="btn-copy-log">🛠 复制日志</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!--INJECT-DATA-->
+
+<script>
+(function(){
+  'use strict';
+
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    showState('error', '数据未注入(window.__DATA__ 缺失)。这是模板,不是最终交付。请用 scripts/render_修改.py compare / receipt 生成。');
+    return;
+  }
+  const D = window.__DATA__;
+
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function showState(type, msg) {
+    const main = document.getElementById('main-content');
+    const actions = document.getElementById('actions');
+    if (main) main.classList.add('hidden');
+    if (actions) actions.classList.add('hidden');
+    const el = document.getElementById('state-' + type);
+    if (el) {
+      el.classList.remove('hidden');
+      if (msg) { const m = document.getElementById('error-msg'); if (m) m.textContent = msg; }
+    }
+  }
+
+  const mode = D.mode || 'compare';
+  let toastTimer = null;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+  function copyText(text, okMsg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function(){ toast(okMsg); }, function(){ fallbackCopy(text, okMsg); });
+    } else {
+      fallbackCopy(text, okMsg);
+    }
+  }
+  function fallbackCopy(text, okMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast(okMsg); } catch (e) { toast('复制失败,请手动复制'); }
+    document.body.removeChild(ta);
+  }
+
+  document.getElementById('page-title').textContent = D.scene_title || '修改对比';
+  document.getElementById('generated-at').textContent = D.occurred_at || D.generated_at || '未知';
+  document.getElementById('wake-word').textContent = D.wake_word || '—';
+  document.getElementById('scene-id').textContent = (D.scene_id || 'update') + ' · ' + (D.target || '—');
+
+  const badge = document.getElementById('stage-badge');
+  const confirmStep = document.getElementById('stage-confirm');
+  const finalStep = document.getElementById('stage-final');
+
+  if (mode === 'compare') {
+    badge.textContent = '对比'; badge.className = 'st on';
+    document.getElementById('compare-block').classList.remove('hidden');
+    fillCompare();
+  } else if (mode === 'success') {
+    badge.textContent = '成功'; badge.className = 'st ok';
+    confirmStep.className = 'step done'; confirmStep.textContent = '✅ 已确认';
+    finalStep.className = 'step done'; finalStep.textContent = '📦 已完成';
+    document.getElementById('success-block').classList.remove('hidden');
+    fillSuccess();
+  } else {
+    badge.textContent = '失败'; badge.className = 'st fail';
+    confirmStep.className = 'step done'; confirmStep.textContent = '✅ 已确认';
+    finalStep.className = 'step fail'; finalStep.textContent = '✗ 失败';
+    document.getElementById('failure-block').classList.remove('hidden');
+    fillFailure();
+  }
+
+  function fillCompare() {
+    const target = document.getElementById('target-line');
+    target.textContent = '✏️ 修改对象: ' + (D.target || '—');
+    if (D.recipe_id) target.innerHTML += ' <span class="id">' + esc(String(D.recipe_id).slice(0, 8)) + '</span>';
+
+    const changes = D.changes || [];
+    const list = document.getElementById('compare-list');
+    list.innerHTML = '';
+
+    const inputs = [];
+
+    changes.forEach(function(c) {
+      const row = document.createElement('div');
+      row.className = 'cmp-row';
+      const oldVal = (c.old === null || c.old === undefined || c.old === '') ? '—' : String(c.old);
+      const isAdd = c.action === 'add';
+      const isDel = c.action === 'del';
+      const unchanged = !isAdd && !isDel && String(c.old) === String(c.new);
+      const state = c.state || 'confirmed';
+
+      const labelHtml = '<span class="field-label">' + esc(c.label || c.path || '') +
+        '<span class="field-path">' + esc(c.path || '') + '</span>' +
+        (state === 'guessed' ? '<span class="badge guessed">AI 推测</span>' : '') +
+        (state === 'missing' ? '<span class="badge missing">待补充</span>' : '') +
+        '</span>';
+
+      let sideOld, sideNew;
+      if (isAdd) {
+        sideOld = '<div class="cmp-side unchanged"><div class="side-tag">改前</div>—</div>';
+      } else {
+        sideOld = '<div class="cmp-side old"><div class="side-tag">改前</div>' + (isDel ? esc(oldVal) : esc(oldVal)) + '</div>';
+      }
+      if (isDel) {
+        sideNew = '<div class="cmp-side new"><div class="side-tag">改后</div>—</div>';
+      } else if (state === 'missing') {
+        sideNew = '<div class="cmp-side new"><div class="side-tag">改后</div>' + labelHtml +
+          '<input type="text" class="cmp-new-missing" data-path="' + esc(c.path || '') + '" placeholder="请补充新值" value="' + esc(c.new || '') + '"></div>';
+      } else if (state === 'guessed') {
+        sideNew = '<div class="cmp-side new"><div class="side-tag">改后</div>' + labelHtml +
+          '<input type="text" class="cmp-new-missing" data-path="' + esc(c.path || '') + '" style="border-color:var(--guessed-border)" value="' + esc(c.new || '') + '"></div>';
+      } else {
+        sideNew = '<div class="cmp-side new"><div class="side-tag">改后</div>' + labelHtml +
+          (unchanged ? '<div class="val" style="color:var(--text2)">' + esc(c.new) + '</div>'
+                     : '<input type="text" class="cmp-new-missing" data-path="' + esc(c.path || '') + '" value="' + esc(c.new || '') + '"></div>');
+      }
+      row.innerHTML = sideOld + '<div class="cmp-arrow">→</div>' + sideNew;
+      list.appendChild(row);
+      const input = row.querySelector('input[data-path]');
+      if (input) inputs.push({el: input, path: input.dataset.path, isMissing: state === 'missing'});
+    });
+
+    const hint = document.getElementById('compare-hint');
+    if (changes.length > 0) hint.classList.remove('hidden');
+
+    function refreshMissing() {
+      let miss = 0;
+      inputs.forEach(function(f) {
+        if (f.isMissing && !f.el.value.trim()) miss++;
+      });
+      const summary = document.getElementById('missing-summary');
+      const text = document.getElementById('missing-text');
+      const btn = document.getElementById('btn-primary');
+      if (miss > 0) {
+        summary.classList.remove('hidden');
+        text.textContent = '还有 ' + miss + ' 个字段未补充,补充完整后才能确认变更。';
+        btn.disabled = true;
+      } else {
+        summary.classList.add('hidden');
+        btn.disabled = false;
+      }
+    }
+    inputs.forEach(function(f) { f.el.addEventListener('input', refreshMissing); });
+    refreshMissing();
+
+    const btn = document.getElementById('btn-primary');
+    btn.classList.remove('danger');
+    btn.textContent = '✅ 确认变更';
+    btn.addEventListener('click', function() {
+      if (btn.disabled) return;
+      const filled = JSON.parse(JSON.stringify(D.payload || {}));
+      inputs.forEach(function(f) {
+        const parts = f.path.split('.');
+        let cur = filled;
+        for (let i = 0; i < parts.length - 1; i++) {
+          const k = parts[i];
+          if (cur[k] === undefined || cur[k] === null || typeof cur[k] !== 'object') cur[k] = {};
+          cur = cur[k];
+        }
+        cur[parts[parts.length - 1]] = f.el.value.trim();
+      });
+      const prompt =
+        '请确认修改「' + (D.target || '') + '」并写库(' + (D.command_cn || '修改') + '):\n' +
+        '「' + (D.target || '') + '」修改前后对比:\n' + summarizeChanges() + '\n' +
+        '修改后数据 JSON:\n' + JSON.stringify(filled, null, 2);
+      copyText(prompt, '已复制确认变更 prompt,发给 AI 即写库');
+    });
+  }
+
+  function summarizeChanges() {
+    const changes = D.changes || [];
+    return changes.map(function(c) {
+      return '  · ' + (c.label || c.path || '') + ': ' + (c.old || '—') + ' → ' + (c.new || '待补充');
+    }).join('\n');
+  }
+
+  function fillSuccess() {
+    document.getElementById('result-line').innerHTML =
+      esc(D.result || '已完成') + (D.recipe_id ? ' <span class="id">' + esc(String(D.recipe_id).slice(0, 8)) + '</span>' : '');
+    const diff = D.diff || [];
+    const list = document.getElementById('diff-list');
+    list.innerHTML = '';
+    diff.forEach(function(d) {
+      const row = document.createElement('div');
+      row.className = 'diff-row';
+      const actCls = (d.action === 'add') ? 'add' : (d.action === 'del' ? 'del' : 'mod');
+      row.innerHTML = '<span class="act ' + actCls + '">' + esc(d.action || 'mod') + '</span>' +
+        '<span class="fd"><code>' + esc(d.field || '') + '</code> ' + esc(d.summary || '') + '</span>';
+      list.appendChild(row);
+    });
+    if (diff.length === 0) list.innerHTML = '<div class="diff-row"><span class="fd" style="color:var(--text3)">无内容变化</span></div>';
+    if (D.reminder) {
+      const r = document.getElementById('reminder');
+      r.textContent = '💡 ' + D.reminder;
+      r.classList.remove('hidden');
+    }
+  }
+
+  function fillFailure() {
+    document.getElementById('f-operation').textContent = D.operation || '(未知操作)';
+    document.getElementById('f-reason').textContent = D.failure_reason || '(未提供原因)';
+    document.getElementById('f-keydata').textContent = typeof D.key_data === 'string'
+      ? D.key_data : JSON.stringify(D.key_data || {}, null, 2);
+    document.getElementById('f-next').textContent = D.next_step || '修正后重试';
+  }
+
+  const primary = document.getElementById('btn-primary');
+  if (mode === 'compare') {
+    primary.disabled = true; /* refreshMissing 会重算 */
+  } else if (mode === 'success') {
+    primary.classList.add('danger');
+    primary.textContent = '↩︎ 撤销(改回旧值)';
+    primary.addEventListener('click', function() {
+      copyText(D.undo_prompt || buildUndoPrompt(), '已复制撤销 prompt(反写旧值),发给 AI 执行');
+    });
+  } else {
+    primary.textContent = '🔧 修正重试';
+    primary.addEventListener('click', function() {
+      copyText(D.retry_prompt || '请修正后重试:' + (D.operation || ''), '已复制修正 prompt,发给 AI 重试');
+    });
+  }
+
+  function buildUndoPrompt() {
+    const diff = D.diff || [];
+    const lines = diff.map(function(d) {
+      if (d.action === 'del') return '补回「' + (d.field || '') + '」=' + (d.old || '');
+      return '把「' + (d.field || '') + '」从「' + (d.new || '') + '」改回「' + (d.old || '') + '」';
+    });
+    return '请撤销刚才对「' + (D.target || '') + '」的修改:' + (lines.join('; ') || '改回原值') + '(不建版本表,直接反写旧值)。';
+  }
+
+  document.getElementById('btn-copy-data').addEventListener('click', function() {
+    const data = {
+      scene_id: D.scene_id || 'update',
+      command_cn: D.command_cn || '修改',
+      occurred_at: D.occurred_at || '',
+      target: D.target || '',
+      payload: D.payload || {}
+    };
+    copyText(JSON.stringify(data, null, 2), '已复制数据(5 段 JSON)');
+  });
+
+  document.getElementById('btn-copy-log').addEventListener('click', function() {
+    const logs = D.logs || {};
+    const lines = [
+      '① 场景标识: command_cn=' + (D.command_cn || '') + ' · 唤醒词=' + (D.wake_word || '') + ' · 场景=' + (D.scene_title || ''),
+      '② AI 思考链: ' + (logs.thought_chain || '意图理解 → 取旧值 → 对比确认 → 写库'),
+      '③ 底层数据结构: payload=' + JSON.stringify(D.payload || {}) + ' · DB 操作=' + (D.db_op || 'recipe_manager update(事务)'),
+      '④ 调用链: ' + (logs.call_chain || 'render_修改.py <mode> → recipe_manager.py update/discard'),
+      '⑤ 时间戳 + 版本: ' + (D.occurred_at || '') + ' · skill v4.0',
+      '⑥ 异常信息(如有): ' + (logs.exception || (mode === 'success' ? '无' : D.failure_reason || '无'))
+    ];
+    copyText(lines.join('\n'), '已复制日志(6 段)');
+  });
+
+  document.getElementById('main-content').classList.remove('hidden');
+  document.getElementById('actions').classList.remove('hidden');
+})();
+</script>
+
+</body>
+</html>

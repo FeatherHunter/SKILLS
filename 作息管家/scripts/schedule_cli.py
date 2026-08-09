@@ -741,7 +741,8 @@ def main(argv=None):
         cmd_render_plans_preview(args)
     elif cmd == "render-plans-review":
         cmd_render_plans_review(args)
-    elif cmd == "render-receipt":
+    elif cmd in ("render-receipt", "render-record-result"):
+        # render-receipt = 旧名(向后兼容);render-record-result = 三件套新名(T2 · 2026-08-09)
         cmd_render_receipt(args)
     elif cmd == "render-plan-receipt":
         cmd_render_plan_receipt(args)
@@ -1924,21 +1925,22 @@ def cmd_render_plans_review(args):
 
 
 def cmd_render_receipt(args):
-    """render-receipt <record_id>
+    """render-record-result <record_id>(旧名 render-receipt 兼容)
 
-    单条 CRUD 漂亮回执(回执型首款)。输入 record_id,生成包含:
-    - 新记录 11 字段展开(主卡,高敏字段折叠)
-    - 4 卡摘要(今日已记录/今日总时长/本周累计/分类排名)
-    - 4 部分 prompt(场景/今日进度/AI 自主决定建议/来源) → 复制给 AI
+    记录三件套结果 HTML(G1-A1 · T2 2026-08-09 升级 add 回执链路)。输入 record_id,生成:
+    - ① 全天作息时间轴(24h 分类色带 · 高中作息表升级版)
+    - ② 过去几小时推断高亮(来源消息 + 推理链回溯)
+    - ③ 当前状态总览(今日笔数/覆盖时长/缺口时段)
+    - 3 操作按钮(继续记/看今日全貌/晚点复盘) → 4 部分 prompt 复制给 AI
     """
-    from schedule_html_render import _html_base_dir, render_receipt, render_and_write
+    from schedule_html_render import _html_base_dir, render_record_result, render_and_write
     from pathlib import Path as _P
 
     if not args:
         print(_json.dumps({
             "status": "error",
-            "message": "用法: render-receipt <record_id>(整数)",
-            "example": "render-receipt 3582",
+            "message": "用法: render-record-result <record_id>(整数,旧名 render-receipt 兼容)",
+            "example": "render-record-result 3582",
         }, ensure_ascii=False))
         return
 
@@ -1947,12 +1949,12 @@ def cmd_render_receipt(args):
     except ValueError:
         print(_json.dumps({
             "status": "error",
-            "message": f"record_id 格式非法: '{args[0]}'(期望整数),建议: render-receipt 3582",
+            "message": f"record_id 格式非法: '{args[0]}'(期望整数),建议: render-record-result 3582",
         }, ensure_ascii=False))
         return
 
     try:
-        payload = render_receipt(record_id)
+        payload = render_record_result(record_id)
     except Exception as e:
         print(_json.dumps({
             "status": "error",
@@ -1985,13 +1987,13 @@ def cmd_render_receipt(args):
             "file_path": str(fp),
             "bytes": size_bytes,
             "size_kb": result["data"]["size_kb"],
-            "mode": "record-receipt",
+            "mode": "record-result",
             "record_id": record_id,
             "today_count": stats.get("today_count", 0),
             "week_count": stats.get("week_count", 0),
-            "category_rank": f"{stats.get('category_rank', '?')}/{stats.get('category_total', '?')}",
+            "gap_count": len(stats.get("gap_slots", [])),
         },
-        "message": f"✓ 漂亮回执已写入: {fp}（今日 {stats.get('today_count', 0)} 条,本周 {stats.get('week_count', 0)} 条）",
+        "message": f"✓ 三件套结果 HTML 已写入: {fp}（今日 {stats.get('today_count', 0)} 条,缺口 {len(stats.get('gap_slots', []))} 段）",
     }, ensure_ascii=False, indent=2))
 
 
@@ -3039,6 +3041,26 @@ def cmd_add_record(args):
         if warning:
             result["warning"] = warning
             result["message"] += f"\n{warning}"
+        # === T2 · 记录链路升级:写库后自动渲染三件套结果 HTML(记录一笔 → 三件套) ===
+        try:
+            from schedule_html_render import render_record_result, render_and_write
+            payload = render_record_result(record_id, warning=warning)
+            if payload.get("status") == "ok":
+                wr = render_and_write(payload, None)
+                if wr.get("status") == "ok":
+                    result["data"]["result_html"] = {
+                        "file_path": wr["data"]["file_path"],
+                        "size_kb": wr["data"]["size_kb"],
+                        "mode": "record-result",
+                    }
+                    result["message"] += f"\n✓ 三件套结果 HTML: {wr['data']['file_path']}"
+                else:
+                    result["data"]["render_error"] = wr.get("message")
+            else:
+                result["data"]["render_error"] = payload.get("message")
+        except Exception as e:
+            # 写库已成功,渲染失败不吞主结果,附注错误供上层处置
+            result["data"]["render_error"] = f"{type(e).__name__}: {e}"
         print(_json.dumps(result, ensure_ascii=False, indent=2))
     except ValueError as e:
         # 校验失败
@@ -3063,7 +3085,7 @@ def cmd_help():
 
 基础:
   init                                    初始化数据库
-  add <参数> 或 --json                    写入作息记录(规范化入口,2026-07-22 新增)
+  add <参数> 或 --json                    写入作息记录(规范化入口,2026-07-22 新增;写库后自动生成三件套结果 HTML · T2)
   prepare-messages [start] [end] [--page N] [--page-size N]   取待同步消息
   list [date]                             查看某日作息
   get-record <id>                         按 ID 查询单条作息(含完整 11 字段)
@@ -3089,7 +3111,7 @@ HTML 渲染(可视化查询结果):
   render-query-plans <d1,d2,...> [--out PATH]  渲染日程多日 query-plans 为 HTML
   render-plans-preview <日期> --json @plan.json  商量计划预览(过程型,4 部分 prompt 复制给 AI)
   render-plans-review <日期>  复盘报告(过程型,5 状态选项 + 复制 prompt 给 AI 调 update-event)
-  render-receipt <record_id>  漂亮回执(回执型首款,新记录 id 后的视觉反馈 + 复制今日进度)
+  render-record-result <record_id>  记录三件套结果 HTML(旧名 render-receipt · T2 升级:时间轴+推断高亮+状态总览;add 已自动生成)
   render-plan-receipt <id> [--action update|deactivate]  改/删计划回执(回执型第2款,3 操作按钮复制专属 prompt)
   render-plan-receipt-add <id>  补计划回执(回执型第3款,绿色调,3 操作按钮复制专属 prompt)
   render-plan-receipt-write <id>  写摘要回执(回执型第4款,紫色调,3 操作按钮复制专属 prompt)

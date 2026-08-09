@@ -57,7 +57,7 @@ scenes:
     scenario_title: 错字模糊匹配(纠错提示)
     dimensions: {keyword: 错字/谐音}
     type: 查看
-    status: "【待开发】"
+    status: ""
     prompt: |-
       搜索宫暴鸡丁(应为宫保)。
     result: "无结果时 AI 纠错(同音/形近),提示「你是不是想找:宫保鸡丁」并直接展示结果;纠错仍无结果 → 走无结果详情层。"
@@ -129,7 +129,7 @@ scenes:
     scenario_title: 排除食材(忌口)
     dimensions: {ingredient_exclude: 不吃某食材}
     type: 查看
-    status: "【待开发】"
+    status: ""
     prompt: |-
       不吃辣,有什么菜？
     result: "AI 解析「不吃/不要/忌 X」为排除条件(NOT 查询),列出不含该食材/口味的菜。"

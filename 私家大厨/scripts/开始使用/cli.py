@@ -15,8 +15,6 @@ _scripts = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _scripts not in sys.path:
     sys.path.insert(0, _scripts)
 
-from 开始使用 import ops
-
 
 def _emit(payload, exit_ok=0):
     print(json.dumps(payload, ensure_ascii=False))
@@ -33,12 +31,20 @@ def main():
     sub.add_parser("check", help="环境检测(OS/Python/pyyaml/DB 状态/目录可写)")
     sub.add_parser("install", help="自动安装命令(缺失时: 装前展示 → 确认 → 执行 → 重检)")
     sub.add_parser("env-config", help="环境变量持久化引导(Windows setx / Linux export)")
-    sub.add_parser("init", help="建库(幂等: 老库 17 表跳过,空库/部分库补全)")
+    p_init = sub.add_parser("init", help="建库(幂等: 老库 17 表跳过,空库/部分库补全)")
+    p_init.add_argument("--db-path", default=None,
+                        help="建库目标目录(覆盖 env/默认;对齐实施要点: Windows 设 env 当前进程不生效 → 用目标路径)")
 
     args = parser.parse_args()
     if not args.command:
         parser.print_help()
         return 0
+
+    if args.command == "init" and args.db_path:
+        os.environ["SKILLS_DB_PATH"] = args.db_path
+
+    # 延迟 import: db_config 在 import 时读 env,必须等 --db-path 注入之后再加载
+    from 开始使用 import ops
 
     if args.command == "check":
         return _emit(ops.env_check_payload())

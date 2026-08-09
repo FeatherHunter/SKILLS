@@ -40,9 +40,20 @@ def _step_status(pred: bool, cur: bool) -> str:
     return "current" if cur else "pending"
 
 
-def wizard_scene() -> dict:
+def _apply_target_overrides(env: dict, db_path=None, out_dir=None) -> dict:
+    """目标路径覆盖(实施要点: 设 env 当前进程不生效 → 用目标路径;向导如实显示并进复制 prompt)"""
+    if db_path:
+        env["db_path"] = db_path
+        env["db_target"] = db_path
+    if out_dir:
+        env["output_root"] = out_dir
+        env["output_target"] = out_dir
+    return env
+
+
+def wizard_scene(db_path=None, out_dir=None) -> dict:
     """4 步向导场景数据(步骤条 + 阶段判定 + 下一步动作 prompt)"""
-    env = ops.env_check_payload()
+    env = _apply_target_overrides(ops.env_check_payload(), db_path, out_dir)
     persist = ops.env_persist_payload()
     install = ops.install_cmds_payload()
     tables = env.get("db_tables", 0)
@@ -98,9 +109,9 @@ def wizard_scene() -> dict:
     }
 
 
-def receipt_scene(init_result: dict) -> dict:
+def receipt_scene(init_result: dict, db_path=None, out_dir=None) -> dict:
     """步骤 4 完成回执场景数据(基于 AI 刚执行的 init 结果)"""
-    env = ops.env_check_payload()
+    env = _apply_target_overrides(ops.env_check_payload(), db_path, out_dir)
     persist = ops.env_persist_payload()
     ok = init_result.get("status") == "ok"
     stage = "done" if ok else "error"
@@ -212,7 +223,8 @@ def render(args) -> bool:
             return False
 
     try:
-        scene = receipt_scene(init_result) if init_result else wizard_scene()
+        scene = receipt_scene(init_result, args.get("--db-path"), args.get("--out-dir")) if init_result \
+            else wizard_scene(args.get("--db-path"), args.get("--out-dir"))
     except Exception as e:
         print(f"❌ 场景数据组装失败: {e}", file=sys.stderr)
         return False
@@ -230,7 +242,9 @@ def render(args) -> bool:
     if output_arg:
         output_path = Path(output_arg)
     else:
-        base_dir = get_output_root()
+        # 默认:$CHEF_OUTPUT_DIR/setup/首次使用_<时间戳>.html
+        # --out-dir: 显式目标输出根目录(对齐实施要点: 设 env 当前进程不生效 → 用目标路径)
+        base_dir = Path(args["--out-dir"]) if args.get("--out-dir") else get_output_root()
         setup_dir = base_dir / "setup"
         setup_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -253,16 +267,18 @@ def render(args) -> bool:
 def main():
     if len(sys.argv) < 2:
         print("""用法:
-    python scripts/render_开始使用.py render [--init-json '<json>'] [--out <path>]
+    python scripts/render_开始使用.py render [--init-json '<json>'] [--out <path>] [--out-dir <dir>] [--db-path <dir>]
 
 示例:
     python scripts/render_开始使用.py render
+    python scripts/render_开始使用.py render --out-dir D:/MyChef --db-path D:/MyChef/.db
     python scripts/render_开始使用.py render --init-json '{"status":"ok","db_path":"D:/CookHub/chef_data.db","tables":17}'
     python scripts/render_开始使用.py render --out ./preview.html
 
 环境变量:
     CHEF_OUTPUT_DIR / SKILLS_DATA_DIR   HTML 输出目录(默认 D:/CookHub)
     输出子目录: $CHEF_OUTPUT_DIR/setup/
+    --out-dir / --db-path 优先级最高(显式目标路径,设 env 当前进程不生效时使用;向导如实显示并进复制 prompt)
 """)
         return
 

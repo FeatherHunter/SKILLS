@@ -143,6 +143,19 @@ class TestInit:
         assert data["error"] == "init_failed"
         assert "Traceback" not in r["err"]
 
+    def test_init_db_path_override(self, tmp_path):
+        """--db-path 目标路径接线(实施要点: 设 env 当前进程不生效 → 用目标路径建库)"""
+        env = make_env(tmp_path)
+        target = tmp_path / "custom_data"
+        r = run_cli(env, "init", "--db-path", str(target))
+        assert r["rc"] == 0, r["err"]
+        data = json.loads(r["out"])
+        assert data["status"] == "ok"
+        assert data["created"] is True
+        db = target / "chef_data.db"
+        assert db.exists()
+        assert table_count(db) == EXPECTED_TABLES
+
 
 class TestRenderWizard:
     """渲染: 向导 + 回执(08 双按钮 + 占位符注入)"""
@@ -216,6 +229,18 @@ class TestRenderWizard:
         assert "already" in html
         assert "跳过建库" in html or "已初始化" in html
 
+    def test_render_out_dir_override(self, tmp_path):
+        """--out-dir 目标输出目录接线(设 env 当前进程不生效 → 用目标路径输出)"""
+        env = make_env(tmp_path)
+        target = tmp_path / "custom_out"
+        r = run_render(env, "render", "--out-dir", str(target))
+        assert r["rc"] == 0, r["err"]
+        files = list((target / "setup").glob("首次使用_*.html"))
+        assert files, "--out-dir 未生效"
+        html = files[0].read_text(encoding="utf-8")
+        data = simulate_browser_parse(html)
+        assert data["scene"]["env"]["output_root"] == str(target)
+
     def test_render_error_receipt_on_init_failure(self, tmp_path):
         env = make_env(tmp_path)
         init_json = json.dumps({
@@ -228,3 +253,15 @@ class TestRenderWizard:
         assert files
         html = files[-1].read_text(encoding="utf-8")
         assert "磁盘只读" in html
+
+    def test_render_db_path_override_shown_in_wizard(self, tmp_path):
+        """--db-path 目标路径在向导中如实显示(复制 prompt 不再带默认值)"""
+        env = make_env(tmp_path)
+        target = tmp_path / "custom_data"
+        r = run_render(env, "render", "--db-path", str(target))
+        assert r["rc"] == 0, r["err"]
+        out_dir = tmp_path / "chef_out" / "setup"
+        html = sorted(out_dir.glob("首次使用_*.html"))[-1].read_text(encoding="utf-8")
+        data = simulate_browser_parse(html)
+        assert data["scene"]["env"]["db_path"] == str(target)
+        assert str(target) in data["scene"]["next"]["prompt"]

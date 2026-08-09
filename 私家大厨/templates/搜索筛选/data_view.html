@@ -1,0 +1,325 @@
+<!--
+私家大厨 · 搜索筛选域模板(scene search-1 ~ search-13 · G4/T7)
+由 scripts/render_搜索筛选.py 注入数据:
+  - 网格卡片显示检索契约 7 字段: 菜名/难度/时间/状态/评分(avg_rating)/标签(口味+饮食)
+  - 纠错详情层(search-2): 无结果自动纠错「你是不是想找:X」,纠错命中直接展示结果
+  - 无结果详情层(search_no_result): 候选列表 + 放宽关键词/录入新菜动作
+  - 5 状态 + 08 双按钮(复制数据/复制日志)+ _N 后缀防覆盖
+渲染器写入示例:script 块含 window.__DATA__ = {...}
+占位符 INJECT-08 / INJECT-DATA 各唯一 1 次
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="私家大厨 · render_搜索筛选.py · v4.0-T7">
+<title>私家大厨 · 搜索筛选</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 80px 0}
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  /* Hero */
+  .hero{background:var(--card);border-radius:var(--radius);padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:28px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--text3);margin-bottom:6px}
+  .hero-meta span{display:inline-flex;align-items:center;gap:4px}
+  .hero-query{font-size:12px;color:var(--text3);line-height:1.7}
+
+  /* 5 状态 fallback */
+  .state{background:var(--card);border-radius:var(--radius);padding:48px 24px;text-align:center;color:var(--text3);box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px}
+  .hidden{display:none !important}
+  .state .icon{font-size:48px;margin-bottom:12px;opacity:0.6}
+  .state.error{color:var(--danger)}
+
+  /* 纠错详情层(search-2) */
+  .correction{background:var(--warn-soft);border:1px solid rgba(255,149,0,0.25);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px}
+  .correction .cq{font-size:14px;font-weight:600;color:var(--text);margin-bottom:4px}
+  .correction .cq .to{color:var(--warn)}
+  .correction .cm{font-size:12px;color:var(--text2);line-height:1.6}
+  .correction .cm code{background:rgba(255,149,0,0.15);color:var(--warn);padding:1px 6px;border-radius:6px;font-size:12px}
+  .corr-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .mini-btn{background:var(--card);border:1px solid var(--separator);border-radius:var(--radius-pill);padding:6px 12px;font-size:12px;font-weight:600;color:var(--blue);cursor:pointer}
+  .mini-btn:hover{background:var(--blue-soft)}
+
+  /* List type · 网格卡片(7 字段) */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+  .card-item{background:var(--card);border-radius:var(--radius);padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);text-decoration:none;color:inherit;display:block;transition:transform 0.15s}
+  .card-item:hover{transform:translateY(-2px)}
+  .card-item .title{font-size:16px;font-weight:600;margin-bottom:6px}
+  .card-item .sub{font-size:12px;color:var(--text3);margin-bottom:8px}
+  .card-item .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .tag{background:var(--blue-soft);color:var(--blue);font-size:10px;font-weight:600;padding:2px 6px;border-radius:var(--radius-pill)}
+  .tag.tag-flavor{background:rgba(175,82,222,0.12);color:#AF52DE}
+  .tag.tag-status{background:rgba(60,60,67,0.08);color:var(--text2)}
+  .tag.tag-time{background:rgba(0,122,255,0.08);color:var(--blue)}
+  .rating{background:var(--warn-soft);color:var(--warn);font-size:10px;font-weight:600;padding:2px 6px;border-radius:var(--radius-pill)}
+  .rating.none{background:rgba(142,142,147,0.12);color:var(--text3)}
+
+  /* 无结果详情层(search_no_result) */
+  .no-result{background:var(--card);border-radius:var(--radius);padding:32px 20px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .no-result .icon{font-size:44px;margin-bottom:10px}
+  .no-result .nr-title{font-size:16px;font-weight:700;margin-bottom:6px}
+  .no-result .nr-msg{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:14px}
+  .nr-suggest{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:14px}
+  .sug-btn{background:var(--blue-soft);border:1px solid rgba(0,122,255,0.25);border-radius:var(--radius-pill);padding:8px 14px;font-size:13px;font-weight:600;color:var(--blue);cursor:pointer}
+  .sug-btn:hover{background:var(--blue);color:#fff}
+  .sug-btn .score{font-weight:400;opacity:0.7;font-size:11px}
+  .nr-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+  .act-btn{background:var(--card);border:1px solid var(--separator);border-radius:12px;padding:10px 16px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer}
+  .act-btn.primary{background:var(--blue);color:#fff;border-color:var(--blue)}
+  .act-btn:hover{opacity:0.85}
+
+  /* 通用 */
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+
+  @media (max-width:480px){
+    .container{padding:16px 12px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:22px}
+    .grid{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<!-- 5 状态 fallback -->
+<div id="state-error" class="state error hidden">
+  <div class="icon">⚠️</div>
+  <div id="error-msg">数据加载失败</div>
+</div>
+<div id="state-empty" class="state hidden">
+  <div class="icon">📭</div>
+  <div id="empty-msg">暂无数据</div>
+</div>
+
+<!-- 主内容(由 JS 根据 type 渲染) -->
+<div id="main-content" class="hidden">
+
+  <!-- 首屏 Hero -->
+  <section class="hero">
+    <h1 id="page-title">搜索筛选</h1>
+    <div class="hero-meta">
+      <span>📅 <span id="generated-at"></span></span>
+      <span>🔖 类型:<span id="data-type"></span></span>
+    </div>
+    <div id="hero-query" class="hero-query"></div>
+  </section>
+
+  <!-- 纠错详情层(search-2): 无结果自动纠错「你是不是想找」 -->
+  <section id="correction-layer" class="correction hidden">
+    <div class="cq">❓ 你是不是想找:<span id="corr-to" class="to"></span></div>
+    <div class="cm" id="corr-msg"></div>
+    <div class="corr-actions">
+      <button class="mini-btn" id="corr-copy">📋 复制纠错后的搜索</button>
+    </div>
+  </section>
+
+  <!-- 主体:type=list 网格卡片 -->
+  <div id="body-content"></div>
+</div>
+
+<!-- 尾部 -->
+<footer class="footer" id="footer-msg">
+  数据来自 recipes / ingredients / recipe_flavors / recipe_diet_tags / recipe_history · CLI: <code>scripts/搜索筛选/cli.py</code> --json
+</footer>
+
+</div>
+
+<!--INJECT-08-->
+
+<!--INJECT-DATA-->
+
+<script>
+(function(){
+  'use strict';
+
+  var A08 = window.A08;
+  function state(name, msg){
+    if (!A08) return;
+    if (name === 'normal') { A08.state.hide(); return; }
+    A08.state.show(name, null, msg || '');
+  }
+  state('loading', '数据加载中…');
+
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    showState('error', '数据未注入(window.__DATA__ 缺失)。这是模板,不是最终交付。请用 scripts/render_搜索筛选.py 生成。');
+    return;
+  }
+  const D = window.__DATA__;
+
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function copyText(text, okMsg) {
+    if (A08 && A08.copyText) { A08.copyText(text, okMsg); return; }
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  function showState(type, msg) {
+    document.getElementById('main-content').classList.add('hidden');
+    ['error', 'empty'].forEach(function(s) {
+      document.getElementById('state-' + s).classList.add('hidden');
+    });
+    var el = document.getElementById('state-' + type);
+    if (el) {
+      el.classList.remove('hidden');
+      if (msg) {
+        var msgEl = el.querySelector('#' + (type === 'error' ? 'error-msg' : 'empty-msg'));
+        if (msgEl) msgEl.textContent = msg;
+      }
+    }
+    if (type === 'error') state('error', msg || '数据加载失败');
+    else if (type === 'empty') state('empty', msg || '暂无数据');
+    else state('normal');
+  }
+
+  // 查询条件摘要(hero 区)
+  function renderQuery() {
+    var q = D.query || {};
+    var parts = [];
+    if (q.keyword) parts.push('关键词「' + q.keyword + '」');
+    (q.exclude || []).forEach(function(e) { parts.push('排除「' + e + '」'); });
+    var f = q.filters || {};
+    var map = {cuisine:'菜系', time_max:'≤N分钟', difficulty:'难度', status:'状态',
+               cookware:'炊具', flavor:'口味', season:'季节'};
+    Object.keys(map).forEach(function(k) {
+      if (f[k]) parts.push(map[k] + '=' + f[k]);
+    });
+    if (!parts.length) parts.push('全部食谱');
+    parts.push('排序:' + (q.sort === 'updated' ? '更新时间' : (q.sort === 'name' ? '菜名' : '评分')));
+    document.getElementById('hero-query').textContent = '条件: ' + parts.join(' · ');
+  }
+
+  // 纠错详情层(search-2): 你是不是想找
+  function renderCorrection() {
+    var c = D.correction;
+    if (!c) { document.getElementById('correction-layer').classList.add('hidden'); return; }
+    document.getElementById('corr-to').textContent = c.corrected;
+    document.getElementById('corr-msg').innerHTML =
+      '原关键词 <code>' + esc(c.original) + '</code> 无匹配结果' +
+      (c.auto ? ',已自动纠错(同音/形近)' : ',AI 判定为错字') +
+      (c.score ? '(相似度 ' + esc(c.score.toFixed(2)) + ')' : '') +
+      ',以下为「' + esc(c.corrected) + '」的结果。';
+    document.getElementById('corr-copy').onclick = function() {
+      copyText('搜索食谱:' + c.corrected, '已复制纠错后的搜索');
+    };
+    document.getElementById('correction-layer').classList.remove('hidden');
+  }
+
+  // 无结果详情层(search_no_result): 纠错候选 + 放宽/录入动作
+  function renderNoResult() {
+    var body = document.getElementById('body-content');
+    var wrap = document.createElement('div');
+    wrap.className = 'no-result';
+    var sug = (D.suggestions || []).map(function(s) {
+      return '<button class="sug-btn" data-name="' + esc(s.name) + '">你是不是想找:' +
+             esc(s.name) + ' <span class="score">' + esc(s.score.toFixed(2)) + '</span></button>';
+    }).join('');
+    var acts = (D.no_result_actions || []).map(function(a, i) {
+      return '<button class="act-btn' + (i === 0 ? ' primary' : '') + '" data-prompt="' +
+             esc(a.prompt) + '">' + esc(a.label) + '</button>';
+    }).join('');
+    wrap.innerHTML =
+      '<div class="icon">🔍</div>' +
+      '<div class="nr-title">没有找到匹配的菜</div>' +
+      '<div class="nr-msg">' + esc(D.empty_msg || '换个说法试试') + '</div>' +
+      (sug ? '<div class="nr-suggest">' + sug + '</div>' : '') +
+      (acts ? '<div class="nr-actions">' + acts + '</div>' : '');
+    body.appendChild(wrap);
+    wrap.querySelectorAll('.sug-btn').forEach(function(b) {
+      b.onclick = function() { copyText('搜索食谱:' + b.dataset.name, '已复制:搜索食谱:' + b.dataset.name); };
+    });
+    wrap.querySelectorAll('.act-btn').forEach(function(b) {
+      b.onclick = function() { copyText(b.dataset.prompt, '已复制操作指令'); };
+    });
+  }
+
+  // type=list 网格卡片(检索契约 7 字段: 菜名/难度/时间/状态/评分/标签)
+  function renderList() {
+    var items = D.items || [];
+    if (items.length === 0) {
+      document.getElementById('page-title').textContent = D.title || '搜索结果';
+      document.getElementById('data-type').textContent = 'list';
+      renderQuery();
+      renderCorrection();
+      renderNoResult();
+      return;
+    }
+    document.getElementById('page-title').textContent = D.title || '搜索结果';
+    document.getElementById('data-type').textContent = 'list';
+    renderQuery();
+    renderCorrection();
+    var grid = document.createElement('div');
+    grid.className = 'grid';
+    items.forEach(function(item) {
+      var card = document.createElement('a');
+      card.className = 'card-item';
+      card.href = '#';
+      var tags = [];
+      if (item.difficulty) tags.push('<span class="tag">难度:' + esc(item.difficulty) + '</span>');
+      if (item.total_time_minutes) tags.push('<span class="tag tag-time">⏱ ' + esc(item.total_time_minutes) + 'min</span>');
+      (item.tags || []).forEach(function(t) { tags.push('<span class="tag tag-flavor">' + esc(t) + '</span>'); });
+      if (item.status) tags.push('<span class="tag tag-status">' + esc(item.status) + '</span>');
+      var rating = item.avg_rating
+        ? '<span class="rating">★ ' + esc(Number(item.avg_rating).toFixed(1)) + '</span>'
+        : '<span class="rating none">暂无评分</span>';
+      card.innerHTML =
+        '<div class="title">' + esc(item.name || '?') + '</div>' +
+        '<div class="sub">id: ' + esc((item.id || '?').slice(0, 8)) + '…</div>' +
+        '<div class="meta">' + tags.join('') + rating + '</div>';
+      grid.appendChild(card);
+    });
+    document.getElementById('body-content').appendChild(grid);
+  }
+
+  // ── 主入口 ──
+  try {
+    document.getElementById('generated-at').textContent = D.generated_at || '未知';
+    if (D.type === 'list') renderList();
+    else if (D.type === 'timeline') renderTimeline();
+    else if (D.type === 'dashboard') renderDashboard();
+    else {
+      showState('error', '未知 type: ' + esc(D.type) + ' · 期望 list');
+      return;
+    }
+    document.getElementById('main-content').classList.remove('hidden');
+    state('normal');
+  } catch (err) {
+    showState('error', '渲染异常: ' + (err && err.message ? err.message : String(err)));
+    console.error('搜索筛选 render error:', err);
+  }
+
+  // 兼容老模板 timeline/dashboard 分支(本模板仅 list,占位防误用)
+  function renderTimeline() { showState('error', '本模板仅支持 list 类型'); }
+  function renderDashboard() { showState('error', '本模板仅支持 list 类型'); }
+})();
+</script>
+
+</body>
+</html>

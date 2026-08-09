@@ -32,8 +32,8 @@
 
   .actions { display:flex; justify-content:flex-end; gap:8px; margin:4px 0 16px; }
   .actions .btn-main, .actions .btn { flex:1; min-width:0; justify-content:center; }
-  .btn-main { display:inline-flex; align-items:center; gap:6px; border:0; background:var(--blue); color:#fff; border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
-  .btn-main:hover { background:var(--blue2); }
+  .btn-main { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+  .btn-main:hover { background:var(--bg); }
   .btn { display:inline-flex; align-items:center; justify-content:center; border:0; background:#fff; color:var(--fg); border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
   .btn:hover { background:var(--bg); }
 
@@ -66,7 +66,7 @@
   </main>
 
   <div class="actions">
-    <button class="btn-main" id="copyPromptBtn">📋 确认 prompt</button>
+    <button class="btn-main" id="copyPromptBtn">📋 确认</button>
     <button class="btn" id="copyDataBtn">复制数据</button>
     <button class="btn" id="copyLogBtn">🛠 复制日志</button>
   </div>

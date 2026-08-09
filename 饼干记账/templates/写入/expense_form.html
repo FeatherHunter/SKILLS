@@ -49,8 +49,8 @@
   /* 动作区(08 §2:底部右对齐) */
   .actions { display:flex; justify-content:flex-end; gap:8px; margin:4px 0 16px; }
   .actions .btn-main, .actions .btn { flex:1; min-width:0; justify-content:center; }
-  .btn-main { display:inline-flex; align-items:center; gap:6px; border:0; background:var(--blue); color:#fff; border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
-  .btn-main:hover { background:var(--blue2); }
+  .btn-main { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+  .btn-main:hover { background:var(--bg); }
 
   /* B1 toast */
   .toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) scale(.9); opacity:0; background:rgba(28,28,30,.94); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); color:#f0f0f0; border-radius:14px; padding:13px 14px 13px 16px; display:flex; align-items:flex-start; gap:12px; max-width:480px; min-width:300px; box-shadow:0 10px 32px rgba(0,0,0,.32); pointer-events:none; transition:opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index:99; }
@@ -106,7 +106,7 @@
 
   <!-- 动作区(08 §2 底部右对齐) -->
   <div class="actions">
-    <button class="btn-main" id="copyPromptBtn">📋 确认 prompt</button>
+    <button class="btn-main" id="copyPromptBtn">📋 确认</button>
     <button class="btn ghost" id="copyDataBtn">复制数据</button>
     <button class="btn ghost" id="copyLogBtn">🛠 复制日志</button>
   </div>

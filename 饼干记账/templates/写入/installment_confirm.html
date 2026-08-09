@@ -20,7 +20,6 @@
   .param { background:#f8f8fa; border-radius:10px; padding:9px 12px; }
   .param .k { font-size:11px; color:var(--fg3); font-weight:600; }
   .param .v { font-size:15px; font-weight:700; margin-top:2px; }
-  .sum-check { background:#e7f8ee; border:1px solid #b8e6c8; border-radius:10px; padding:9px 12px; font-size:12.5px; color:#1a7a3a; margin-top:10px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th { text-align:left; font-size:11px; color:var(--fg3); font-weight:600; padding:6px 8px; border-bottom:1px solid var(--line); }
   td { padding:6px 8px; border-bottom:1px dashed var(--line); }
@@ -28,8 +27,8 @@
   .fold-hint { font-size:12px; color:var(--fg3); text-align:center; padding:8px 0 2px; }
   .actions { display:flex; justify-content:flex-end; gap:8px; margin:4px 0 16px; }
   .actions .btn-main, .actions .btn { flex:1; min-width:0; justify-content:center; }
-  .btn-main { display:inline-flex; align-items:center; gap:6px; border:0; background:var(--blue); color:#fff; border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
-  .btn-main:hover { background:var(--blue2); }
+  .btn-main { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+  .btn-main:hover { background:var(--bg); }
   .btn { display:inline-flex; align-items:center; justify-content:center; border:0; background:#fff; color:var(--fg); border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
   .btn:hover { background:var(--bg); }
   .toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) scale(.9); opacity:0; background:rgba(28,28,30,.94); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); color:#f0f0f0; border-radius:14px; padding:13px 14px 13px 16px; display:flex; align-items:flex-start; gap:12px; max-width:480px; min-width:300px; box-shadow:0 10px 32px rgba(0,0,0,.32); pointer-events:none; transition:opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index:99; }
@@ -52,7 +51,6 @@
     <div class="card">
       <h2>分期参数</h2>
       <div class="params" id="params"></div>
-      <div class="sum-check" id="sumCheck"></div>
     </div>
 
     <div class="card">
@@ -66,7 +64,7 @@
   </main>
 
   <div class="actions">
-    <button class="btn-main" id="copyPromptBtn">📋 确认 prompt</button>
+    <button class="btn-main" id="copyPromptBtn">📋 确认</button>
     <button class="btn" id="copyDataBtn">复制数据</button>
     <button class="btn" id="copyLogBtn">🛠 复制日志</button>
   </div>
@@ -104,8 +102,6 @@
   ].filter(function (p) { return p[1] !== undefined && p[1] !== ''; }).map(function (p) {
     return '<div class="param"><div class="k">' + esc(p[0]) + '</div><div class="v">' + esc(String(p[1])) + '</div></div>';
   }).join('');
-  document.getElementById('sumCheck').textContent =
-    '✓ 分摊总额 = ' + form.total + ' 元(首期补差保证精确) · 月末日自动回退(如 31 号遇 2 月 → 月末)';
 
   // 分摊预览(≤24 全显,>24 折叠前 12)
   var showAll = form.periods <= 24;

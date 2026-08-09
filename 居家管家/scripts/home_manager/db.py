@@ -202,9 +202,53 @@ def init_db():
     migrate_add_date_columns(conn)
     migrate_add_category_id_column(conn)
 
+    # ── D1 批:位置体系 + 固定位(D1 总账 #103 → #119/#120,SM2 实施载体收编)──
+    # 注意:必须先于 items 重建补丁之后执行——category-notnull 补丁与
+    # migrate_add_date_columns 会重建 items 表,若在此之前 ALTER 加列会被重建丢弃。
+    migrate_add_location_nodes(conn)
+    migrate_add_fixed_location_column(conn)
+
     conn.commit()
     conn.close()
     return True
+
+
+def migrate_add_location_nodes(conn):
+    """迁移:#119 location_nodes 位置体系表(树/规范化)+ 全量回填
+
+    位置 = 自由层级(树),树结构隐含在路径字符串;节点只存规范化路径。
+    来源:SM2 实施载体 scripts/位置/schema.py ensure_schema → 本批正式收编。
+    """
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS location_nodes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            path TEXT NOT NULL UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    # 回填:从 item_locations.location 去重导入既有路径(全量,展示层过滤)
+    cursor.execute("""
+        INSERT OR IGNORE INTO location_nodes (path)
+        SELECT DISTINCT location FROM item_locations
+        WHERE location IS NOT NULL AND trim(location) != ''
+    """)
+
+
+def migrate_add_fixed_location_column(conn):
+    """迁移:#120 items.fixed_location 固定位锚定路径(可空,规范化)
+
+    固定位 = 物品一等属性,与「当前位置」分离;老数据零迁移(全新属性)。
+    来源:SM2 实施载体 scripts/位置/schema.py ensure_schema → 本批正式收编。
+    """
+    cursor = conn.cursor()
+    cursor.execute("PRAGMA table_info(items)")
+    items_cols = {row[1] for row in cursor.fetchall()}
+    if "fixed_location" not in items_cols:
+        cursor.execute("ALTER TABLE items ADD COLUMN fixed_location TEXT")
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_items_fixed_location ON items(fixed_location)"
+        )
 
 
 def migrate_add_date_columns(conn):

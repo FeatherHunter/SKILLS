@@ -233,13 +233,13 @@ def default_output_path(command_name: str) -> Path:
     return html_path(command_name)
 
 
-def build_flow_payload(flow_type: str, amount: str, search_hint: str, reason: str = "",
-                       records: list = None) -> dict:
+def build_flow_payload(flow_type: str, amount: str, search_hint: str = "", reason: str = "",
+                       records: list = None, explicit_candidates: list = None) -> dict:
     """构建复合确认 payload(记退款 / 报销到账)
 
-    数据侧:按 hint 查候选原记录(脚本纯查询);AI 语义定位(传 search_hint)
-    refund:        候选 = 备注/分类含 hint 的支出记录
-    reimburse_done:候选 = 备注含 #待报销 的记录(金额/时间匹配 hint 优先)
+    职责分工(对抗审查 2026-08-09 修复):
+      AI 语义定位候选 → 传 explicit_candidates(优先,格式 [{id,time,category,amount,note}])
+      脚本仅组装 + 兜底(explicit_candidates 空时按 search_hint 简单匹配,再不行最近记录)
     """
     records = records if records is not None else _load_history()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -247,32 +247,35 @@ def build_flow_payload(flow_type: str, amount: str, search_hint: str, reason: st
     if flow_type == "refund":
         meta = {"scene_id": "write_refund", "wake_word": "记退款", "command_cn": "记退款 确认"}
         category, note_tag, op2_label = "退款/冲销", "#退款", "标记 #已退款"
-        # 候选:支出记录(备注/分类含 hint;hint 空 → 最近支出)
         pool = [r for r in records if float(r.get("amount") or 0) < 0]
-        cands = []
-        if search_hint:
-            cands = [r for r in pool if search_hint in (r.get("note") or "") or search_hint in (r.get("category") or "")]
-        if not cands:
-            cands = pool[:5]
-        cands = cands[:5]
     else:  # reimburse_done
         meta = {"scene_id": "write_reimburse_done", "wake_word": "报销到账", "command_cn": "报销到账 确认"}
         category, note_tag, op2_label = "其他收入/报销回款", "#报销到账", "标记 #报销到账"
         pool = [r for r in records if "#待报销" in (r.get("note") or "")]
+
+    # 1) AI 显式候选优先(已含 id 等完整字段,直接透传)
+    if explicit_candidates:
+        candidates = [{
+            "id": c.get("id") or 0,
+            "time": str(c.get("time") or ""),
+            "category": str(c.get("category") or ""),
+            "amount": float(c.get("amount") or 0),
+            "note": str(c.get("note") or ""),
+        } for c in explicit_candidates[:5]]
+    # 2) 脚本兜底:search-hint 简单匹配 → 最近记录
+    else:
         cands = []
         if search_hint:
             cands = [r for r in pool if search_hint in (r.get("note") or "") or search_hint in (r.get("category") or "")]
         if not cands:
             cands = pool[:5]
-        cands = cands[:5]
-
-    candidates = [{
-        "id": r["id"],
-        "time": str(r.get("time") or ""),
-        "category": str(r.get("category") or ""),
-        "amount": float(r.get("amount") or 0),
-        "note": str(r.get("note") or ""),
-    } for r in cands]
+        candidates = [{
+            "id": r.get("id") or 0,
+            "time": str(r.get("time") or ""),
+            "category": str(r.get("category") or ""),
+            "amount": float(r.get("amount") or 0),
+            "note": str(r.get("note") or ""),
+        } for r in cands[:5]]
 
     # 两步操作预览
     amt = amount or "____"
@@ -315,7 +318,8 @@ def main():
     parser.add_argument("--images", type=int, default=1, help="拍账单:已收图片数")
     parser.add_argument("--photo-note", default=None, help="拍账单:识别说明(如:识别自外卖截图)")
     parser.add_argument("--items", default=None, help="批量:条目 JSON 数组字符串")
-    parser.add_argument("--search-hint", default=None, help="退款/到账:原记录定位提示(AI 语义)")
+    parser.add_argument("--search-hint", default=None, help="退款/到账:原记录定位提示(AI 语义,脚本兜底)")
+    parser.add_argument("--candidates", default=None, help="退款/到账:AI 定位候选 JSON 数组(优先于 search-hint)")
     parser.add_argument("--reason", default=None, help="退款原因")
     parser.add_argument("--out", default=None, help="输出路径")
     args = parser.parse_args()
@@ -324,12 +328,19 @@ def main():
 
     # ── 复合流程分支(refund / reimburse_done) ──
     if args.form_type in ("refund", "reimburse_done"):
+        explicit = None
+        if args.candidates:
+            try:
+                explicit = json.loads(args.candidates)
+            except json.JSONDecodeError as e:
+                print(f"✗ --candidates 不是合法 JSON: {e}", file=sys.stderr)
+                sys.exit(1)
         payload = build_flow_payload(args.form_type, args.amount or "", args.search_hint or "",
-                                     args.reason or "", records)
+                                     args.reason or "", records, explicit_candidates=explicit)
         template_path = FLOW_TEMPLATE
         out_name = "记退款确认" if args.form_type == "refund" else "报销到账确认"
         _write_html(payload, template_path, out_name, args.out)
-        print(f"  候选: {len(payload['data']['form']['candidates'])} 笔")
+        print(f"  候选: {len(payload['data']['form']['candidates'])} 笔({'AI 定位' if explicit else '脚本兜底'})")
         return 0
 
     # ── batch 分支 ──

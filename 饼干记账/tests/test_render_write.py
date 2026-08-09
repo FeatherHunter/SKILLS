@@ -227,6 +227,26 @@ class TestFlow:
         p = rw.build_flow_payload("refund", "35", "", "", RECORDS)
         assert len(p["data"]["form"]["candidates"]) >= 1
 
+    def test_refund_ai_candidates_priority(self):
+        """AI 显式候选优先(对抗审查修复:AI 语义定位 → 脚本组装)"""
+        ai_cands = [
+            {"id": 999, "time": "2026-08-01 12:00:00", "category": "餐饮/外卖/午餐",
+             "amount": -35.0, "note": "午饭(用户确认那笔)"},
+        ]
+        p = rw.build_flow_payload("refund", "35", "", "退货", RECORDS, explicit_candidates=ai_cands)
+        cands = p["data"]["form"]["candidates"]
+        assert len(cands) == 1
+        assert cands[0]["id"] == 999
+        assert "用户确认那笔" in cands[0]["note"]
+
+    def test_ai_candidates_limited_to_five(self):
+        ai_cands = [
+            {"id": i, "time": f"2026-08-0{i} 12:00:00", "category": "餐饮", "amount": -10.0, "note": ""}
+            for i in range(1, 8)
+        ]
+        p = rw.build_flow_payload("refund", "35", "", "", RECORDS, explicit_candidates=ai_cands)
+        assert len(p["data"]["form"]["candidates"]) == 5
+
     def test_reimburse_done_finds_pending(self):
         recs = RECORDS + [_rec("餐饮/差旅", -100.0, "2026-07-28 10:00:00", "#待报销 出差餐")]
         p = rw.build_flow_payload("reimburse_done", "100", "出差", "", recs)

@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>饼干记账 · 记一笔支出</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg:#f5f5f7; --card:#fff; --line:#e5e5ea; --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --blue:#007aff; --blue2:#0a63ce; --green:#34c759; --orange:#ff9500; --red:#ff3b30; --purple:#af52de; --soft:#f5f8ff; --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05); }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--fg); line-height:1.6; -webkit-font-smoothing:antialiased; padding:0 0 90px; }
+  .wrap { max-width:640px; margin:0 auto; padding:24px 16px; }
+  .header { padding:6px 0 18px; }
+  .eyebrow { font-size:12px; color:var(--fg3); font-weight:600; letter-spacing:.06em; margin-bottom:6px; }
+  h1 { font-size:27px; font-weight:700; letter-spacing:-.02em; line-height:1.25; }
+  .chips { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .chip { font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:999px; background:var(--soft); color:var(--blue2); border:1px solid #d7e6ff; }
+  .card { background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:18px 20px; margin-bottom:14px; }
+  label.field { display:block; font-size:12px; font-weight:600; color:var(--fg2); margin:14px 0 5px; }
+  label.field:first-child { margin-top:0; }
+  input[type=text], input[type=number], select, textarea { width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 12px; font-size:14px; font-family:inherit; background:#fff; outline:none; transition:border .15s, box-shadow .15s; }
+  input:focus, select:focus, textarea:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,122,255,.12); }
+  input.amount { font-size:26px; font-weight:700; padding:12px 14px; font-variant-numeric:tabular-nums; }
+  .prefix { position:relative; }
+  .prefix input { padding-left:34px; }
+  .prefix .cur { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--fg3); font-size:15px; font-weight:600; }
+  .hint { font-size:11.5px; color:var(--fg3); margin-top:4px; }
+
+  /* 分类选择器 */
+  .sugg { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .sugg-btn { border:1.5px solid var(--line); background:#fff; border-radius:999px; padding:6px 13px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:6px; }
+  .sugg-btn .tag { font-size:10px; font-weight:700; padding:1px 6px; border-radius:999px; }
+  .tag-exist { background:#e7f8ee; color:#1a7a3a; }
+  .tag-new { background:#fff1e2; color:#c2540a; }
+  .sugg-btn:hover { border-color:var(--blue); }
+  .sugg-btn.sel { border-color:var(--blue); background:var(--soft); }
+  .cat-row { display:flex; gap:8px; margin-top:8px; }
+  .cat-row select { flex:1; }
+  .cat-row .btn { flex-shrink:0; }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; border:0; background:var(--blue); color:#fff; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+  .btn:hover { background:var(--blue2); }
+  .btn.ghost { background:#fff; color:var(--fg); border:1px solid var(--line); }
+  .btn.ghost:hover { background:var(--bg); }
+  .new-cat { margin-top:8px; display:none; }
+  .new-cat.show { display:block; }
+  .dup-warn { background:#fff7e8; border:1px solid #ffe3b3; border-radius:12px; padding:11px 14px; font-size:13px; color:#8a5a00; margin-bottom:12px; display:flex; gap:8px; align-items:flex-start; }
+  .dup-warn b { color:#b25b00; }
+  .prefill { background:var(--soft); border:1px solid #d7e6ff; border-radius:12px; padding:10px 14px; font-size:12.5px; color:var(--blue2); margin-bottom:12px; }
+
+  /* 动作区(08 §2:底部右对齐) */
+  .actions { display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin:4px 0 16px; }
+  .btn-main { display:inline-flex; align-items:center; gap:6px; border:0; background:var(--blue); color:#fff; border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+  .btn-main:hover { background:var(--blue2); }
+  .btn-main.copied { background:var(--green); }
+
+  /* B1 toast */
+  .toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) scale(.9); opacity:0; background:rgba(28,28,30,.94); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); color:#f0f0f0; border-radius:14px; padding:13px 14px 13px 16px; display:flex; align-items:flex-start; gap:12px; max-width:480px; min-width:300px; box-shadow:0 10px 32px rgba(0,0,0,.32); pointer-events:none; transition:opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index:99; }
+  .toast.show { opacity:1; transform:translateX(-50%) scale(1); pointer-events:auto; }
+  .toast-title { font-weight:600; font-size:12.5px; color:#fff; margin-bottom:2px; }
+  .toast-detail { font-size:11px; color:#c8c8cc; }
+  .toast-close { background:rgba(255,255,255,.10); color:#34c759; border:0; border-radius:8px; padding:5px 9px; font-size:10.5px; margin-left:6px; cursor:pointer; flex-shrink:0; }
+  @media (max-width:640px) { .wrap { padding:18px 12px 70px; } h1 { font-size:23px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="header">
+    <div class="eyebrow" id="eyebrow">饼干记账 · 采集</div>
+    <h1 id="title">记一笔支出</h1>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <main>
+    <!-- 智能预填来源标注(有则显示) -->
+    <div class="prefill" id="prefillBox" hidden></div>
+    <!-- 重复检测提示(有则显示) -->
+    <div class="dup-warn" id="dupBox" hidden></div>
+
+    <div class="card">
+      <label class="field">金额(元)</label>
+      <div class="prefix"><span class="cur">¥</span><input type="number" step="0.01" class="amount" id="fAmount" placeholder="0.00"></div>
+      <div class="hint" id="amountHint"></div>
+
+      <label class="field">分类</label>
+      <div class="sugg" id="suggBox"></div>
+      <div class="cat-row">
+        <select id="fCategorySelect"><option value="">选择已有分类…</option></select>
+        <button class="btn ghost" id="newCatBtn">+ 新建</button>
+      </div>
+      <div class="new-cat" id="newCatBox">
+        <input type="text" id="fNewCat" placeholder="输入新分类名(如:健身 / 宠物/猫粮)">
+        <div class="hint" id="newCatHint"></div>
+      </div>
+
+      <label class="field">账户</label>
+      <input type="text" id="fAccount" placeholder="如:支付宝 / 微信(选填)">
+      <label class="field">账本</label>
+      <input type="text" id="fLedger" placeholder="如:生活 / 旅行(选填)">
+      <label class="field">时间</label>
+      <input type="text" id="fTime" placeholder="默认现在;补记写「昨天」或日期">
+      <label class="field">备注</label>
+      <input type="text" id="fNote" placeholder="选填">
+      <label class="field">币种</label>
+      <input type="text" id="fCurrency" placeholder="默认人民币;外币如:USD">
+    </div>
+  </main>
+
+  <!-- 动作区(08 §2 底部右对齐) -->
+  <div class="actions">
+    <button class="btn-main" id="copyPromptBtn">📋 复制确认 prompt</button>
+    <button class="btn ghost" id="copyDataBtn">复制数据</button>
+    <button class="btn ghost" id="copyLogBtn">🛠 复制日志</button>
+  </div>
+
+  <script id="payload" type="application/json"><!--INJECT-DATA--></script>
+
+  <div class="toast" id="toast">
+    <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+    <div class="toast-detail" id="toastDetail"></div>
+    <button class="toast-close" id="toastClose">✓ 知道了</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var esc = function (s) { return String(s ?? '').replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); };
+
+  // ── 读取 payload ──
+  var payload;
+  try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
+  if (!payload || payload.status !== 'ok') return;
+  var d = payload.data || {};
+  var meta = d.meta || {};
+  var form = d.form || {};
+  var fields = form.fields || {};
+  var TYPE = form.type || 'expense';
+  var WAKE = meta.wake_word || (TYPE === 'expense' ? '记支出' : '记收入');
+  var ACTION = TYPE === 'expense' ? '记一笔支出' : '记一笔收入';
+
+  document.getElementById('title').textContent = ACTION;
+  document.getElementById('eyebrow').textContent = '饼干记账 · ' + (TYPE === 'expense' ? '支出' : '收入') + '采集';
+  document.getElementById('chips').innerHTML =
+    '<span class="chip">⚡ ' + esc(WAKE) + '</span>' +
+    '<span class="chip">● 填写确认</span>' +
+    '<span class="chip">🕒 ' + esc(d.generated_at || '') + '</span>';
+
+  // ── 预填 + 重复提示 ──
+  if (form.prefill_source) {
+    document.getElementById('prefillBox').textContent = '⚡ ' + form.prefill_source + '(可直接确认或修改)';
+    document.getElementById('prefillBox').hidden = false;
+  }
+  if (form.duplicate_hint) {
+    document.getElementById('dupBox').innerHTML = '⚠️ <b>疑似重复:</b>' + esc(form.duplicate_hint);
+    document.getElementById('dupBox').hidden = false;
+  }
+
+  // ── 填值 ──
+  var elAmount = document.getElementById('fAmount');
+  var elCat = document.getElementById('fCategorySelect');
+  var elNewCat = document.getElementById('fNewCat');
+  var elAccount = document.getElementById('fAccount');
+  var elLedger = document.getElementById('fLedger');
+  var elTime = document.getElementById('fTime');
+  var elNote = document.getElementById('fNote');
+  var elCurrency = document.getElementById('fCurrency');
+  elAmount.value = fields.amount || '';
+  elAccount.value = fields.account || '';
+  elLedger.value = fields.ledger || '';
+  elTime.value = fields.time || '';
+  elNote.value = fields.note || '';
+  elCurrency.value = fields.currency || '人民币';
+
+  var curCat = '';
+  function setCat(c) {
+    curCat = c || '';
+    elCat.value = c || '';
+    elNewCat.value = '';
+    document.getElementById('newCatBox').classList.remove('show');
+    var btns = document.querySelectorAll('.sugg-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('sel', btns[i].getAttribute('data-cat') === c);
+    }
+  }
+
+  // ── 分类推荐区 ──
+  var suggs = form.category_suggestions || [];
+  var suggBox = document.getElementById('suggBox');
+  if (suggs.length) {
+    suggBox.innerHTML = suggs.map(function (s) {
+      var tagCls = s.kind === 'new' ? 'tag-new' : 'tag-exist';
+      var tagTxt = s.kind === 'new' ? '推荐新建分类' : 'AI 推荐的已有分类';
+      return '<button class="sugg-btn" data-cat="' + esc(s.name) + '" data-kind="' + esc(s.kind) + '">' +
+        esc(s.name) + '<span class="tag ' + tagCls + '">' + tagTxt + '</span></button>';
+    }).join('');
+    var btns = suggBox.querySelectorAll('.sugg-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].onclick = function () { setCat(this.getAttribute('data-cat')); };
+    }
+  } else {
+    suggBox.innerHTML = '<div class="hint">说出分类后,AI 会在这里推荐</div>';
+  }
+
+  // ── 下拉(历史分类 + L1) ──
+  var catOptions = (form.categories_history || []).concat(form.categories_all || []);
+  var seen = {};
+  catOptions = catOptions.filter(function (c) { if (!c || seen[c]) return false; seen[c] = true; return true; });
+  elCat.innerHTML = '<option value="">选择已有分类…</option>' + catOptions.map(function (c) {
+    return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
+  }).join('');
+  elCat.onchange = function () { if (this.value) setCat(this.value); };
+
+  // ── 新建分类(相似校验提示) ──
+  document.getElementById('newCatBtn').onclick = function () {
+    document.getElementById('newCatBox').classList.toggle('show');
+  };
+  elNewCat.oninput = function () {
+    var v = this.value.trim();
+    var hint = document.getElementById('newCatHint');
+    if (!v) { hint.textContent = ''; return; }
+    // 相似检测:与已有分类前缀相同 → 提示
+    var similar = catOptions.filter(function (c) { return c === v || c.startsWith(v + '/') || v.startsWith(c + '/'); });
+    if (similar.length) {
+      hint.textContent = '已有相似分类「' + similar[0] + '」,是否使用已有的?(点上方推荐或下拉选择)';
+      hint.style.color = '#b25b00';
+    } else {
+      hint.textContent = '新分类将作为「' + v + '」入库(需 L1 在白名单)';
+      hint.style.color = '';
+    }
+    curCat = v;
+  };
+  // 新建输入聚焦即视为选新分类
+  elNewCat.onfocus = function () { curCat = this.value.trim(); };
+
+  // ── 确认 prompt 生成 ──
+  function fmtField(k, v, hint) { return '  ' + k + ': ' + (v || '__' + (hint || '') + '__'); }
+  function buildPrompt() {
+    var lines = [];
+    lines.push('请加载「饼干记账」技能,帮我' + ACTION + '(唤醒词:' + WAKE + '):');
+    lines.push('');
+    var cat = curCat || elCat.value;
+    lines.push(fmtField('金\u2003额', elAmount.value));
+    lines.push(fmtField('分类/名目', cat, '如:房租 / 午饭'));
+    lines.push(fmtField('备\u2003注', elNote.value, '选填'));
+    lines.push(fmtField('时\u2003间', elTime.value, '默认现在'));
+    lines.push(fmtField('账\u2003户', elAccount.value, '选填'));
+    lines.push(fmtField('账\u2003本', elLedger.value, '选填'));
+    lines.push(fmtField('币\u2003种', elCurrency.value, '默认人民币'));
+    return lines.join('\n');
+  }
+
+  // ── 复制(弹层三选一 for 数据 + toast) ──
+  var toastTimer = null;
+  function showToast(fmt) {
+    var detailMap = { prompt: '粘贴给 AI 即可记账', data: '粘贴到聊天/笔记', log: '发给开发者排障' };
+    document.getElementById('toastFmt').textContent = fmt === 'log' ? '日志' : fmt.toUpperCase();
+    document.getElementById('toastDetail').textContent = detailMap[fmt] || '';
+    document.getElementById('toast').classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { document.getElementById('toast').classList.remove('show'); }, 4500);
+  }
+  function doCopy(text, fmt, btn) {
+    function done() { if (btn) { btn.classList.add('copied'); setTimeout(function () { btn.classList.remove('copied'); }, 1600); } showToast(fmt); }
+    function fb() { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fb);
+    else fb();
+  }
+  function payloadData() {
+    return { form: { type: TYPE, fields: {
+      amount: elAmount.value, category: curCat || elCat.value, account: elAccount.value,
+      ledger: elLedger.value, time: elTime.value, note: elNote.value, currency: elCurrency.value
+    } } };
+  }
+  document.getElementById('copyPromptBtn').onclick = function () { doCopy(buildPrompt(), 'prompt', this); };
+  document.getElementById('copyDataBtn').onclick = function () { doCopy(JSON.stringify(payloadData(), null, 2), 'data'); };
+  document.getElementById('copyLogBtn').onclick = function () {
+    var lines = [];
+    lines.push('① 场景标识');
+    lines.push('  command_cn: ' + ACTION + ' 采集');
+    lines.push('  唤醒词: ' + WAKE);
+    lines.push('  场景名: ' + (d.title || ACTION));
+    lines.push('');
+    lines.push('② AI 思考链: 生成采集表单 → 分类推荐/预填 → 用户确认');
+    lines.push('');
+    lines.push('③ 底层数据结构');
+    lines.push('  payload: ' + JSON.stringify(payloadData()));
+    lines.push('  DB 操作: INSERT bills(待用户确认后)');
+    lines.push('');
+    lines.push('④ 调用链');
+    lines.push('  渲染脚本: ' + (meta.render_cmd || '(未知)'));
+    lines.push('');
+    lines.push('⑤ 时间戳 + 版本');
+    lines.push('  本地时间: ' + (d.generated_at || '(未知)'));
+    lines.push('  skill 版本: ' + (meta.version || '(未知)'));
+    lines.push('');
+    lines.push('⑥ 异常信息: 无');
+    doCopy(lines.join('\n'), 'log');
+  };
+  document.getElementById('toastClose').onclick = function () {
+    document.getElementById('toast').classList.remove('show');
+    clearTimeout(toastTimer);
+  };
+
+  // 初始选中 AI 首选分类
+  if (suggs.length && fields.category) setCat(fields.category);
+  else if (suggs.length) setCat(suggs[0].name);
+})();
+</script>
+</body>
+</html>

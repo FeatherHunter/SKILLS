@@ -3,15 +3,15 @@
  * 第一性:多个 HTML 模板(record 域 6 模板经 _record_engine.js,plan 域
  * schedule_list_events.html 独立)都需要"复制 4 部分 prompt"按钮 + 剪贴板
  * 降级 + 复制成功反馈。把同一份逻辑抄两遍 = 改一处忘另一处就出 bug,
- * 所以抽到本文件,所有模板 <script src="_copy_prompt_helper.js"></script> 引用。
+ * 所以抽到本文件,所有模板末尾引用本文件(共享唯一一份逻辑)。
  *
  * 用法:
- *   1. 模板 <head> 或 <body> 末尾加 <script src="_copy_prompt_helper.js"></script>
+ *   1. 模板 <head> 或 <body> 末尾加本文件引用
  *   2. 模板渲染时调 CopyPromptHelper.renderBlock(data.copy_prompt) 拼到 html
  *   3. 模板渲染完调 CopyPromptHelper.bind() 绑定点击事件(全局事件代理,
  *      .copy-prompt-btn class + data-copy-prompt 属性,避免 id 冲突)
  *
- * 数据契约:HTML 含 <script id="payload" type="application/json">{...}</script>
+ * 数据契约:HTML 含 id="payload" 的 JSON script 块(id 值 = payload.data),
  *          payload.data.copy_prompt 字段是 4 部分文本
  */
 window.CopyPromptHelper = (function(){

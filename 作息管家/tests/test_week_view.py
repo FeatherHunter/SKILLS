@@ -178,3 +178,55 @@ def test_domain_registry_contains_week_view():
             sys.modules["week_view"] = old
     assert "render-record-week" in registry
     assert callable(registry["render-record-week"])
+
+
+def test_week_view_dom_renders(tmp_path, monkeypatch, capsys):
+    """DOM 渲染冒烟(playwright chromium headless · file://,对标 test_replay_e2e):
+
+    周视图 HTML 加载后:热力图 7×24=168 格 + 复制 prompt 按钮 + 标题正确 +
+    无浏览器 JS 错误 + 不卡"加载中"(5 状态契约)。
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        pytest.skip("playwright 未安装,跳过")
+    monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+    _seed_record("2026-07-15", "09:00", "11:00", category="工作.AI调优")
+    _seed_record("2026-07-16", "22:00", "23:30", category="维持.睡眠")
+    week_view.week_view_main([ANCHOR])
+    capsys.readouterr()
+    htmls = list((tmp_path / "schedule_html" / "record" / "week").glob("查作息周视图_*.html"))
+    assert len(htmls) == 1
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        try:
+            page = browser.new_context(
+                viewport={"width": 1280, "height": 900}
+            ).new_page()
+            errors = []
+            page.on("console", lambda m: errors.append(m.text) if m.type == "error" else None)
+            page.on("pageerror", lambda e: errors.append(str(e)))
+            page.goto("file:///" + str(htmls[0]).replace("\\", "/"), wait_until="load")
+            page.wait_for_function(
+                "() => document.querySelectorAll('.hm-cell').length === 168",
+                timeout=10000,
+            )
+            data = page.evaluate(
+                """() => ({
+                    heatCells: document.querySelectorAll('.hm-cell').length,
+                    promptBtn: !!document.querySelector('.copy-prompt-btn'),
+                    stuck: document.getElementById('page-subtitle') &&
+                           document.getElementById('page-subtitle').textContent === '加载中…',
+                    hasCatOverview: Array.from(document.querySelectorAll('.card h2'))
+                        .some(h => h.textContent.indexOf('分类总览') >= 0),
+                })"""
+            )
+            assert data["heatCells"] == 168
+            assert data["promptBtn"], "缺复制 prompt 按钮"
+            assert data["hasCatOverview"], "缺分类总览卡"
+            assert not data["stuck"], "页面卡在'加载中…'"
+            assert not errors, f"浏览器 JS 错误: {errors}"
+            assert "作息周视图" in page.title()
+        finally:
+            browser.close()

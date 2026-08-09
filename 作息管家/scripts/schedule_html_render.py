@@ -308,6 +308,10 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
     js_src = '<script src="_record_engine.js"></script>'
     if js_src in injected:
         js_text = (TEMPLATE_DIR / "_record_engine.js").read_text(encoding="utf-8")
+        # 与 payload 同款转义(2026-08-09 对抗式复查):内联 JS 若含 </script>
+        # 字面量(注释/字符串)会被 HTML 解析器提前截断 script 块。
+        # JS 字符串里 \/ === /,零语义影响。
+        js_text = js_text.replace("</", "<\\/")
         injected = injected.replace(
             js_src,
             "<script>\n" + js_text + "\n</script>"
@@ -318,6 +322,7 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
     helper_src = '<script src="_copy_prompt_helper.js"></script>'
     if helper_src in injected:
         helper_text = (TEMPLATE_DIR / "_copy_prompt_helper.js").read_text(encoding="utf-8")
+        helper_text = helper_text.replace("</", "<\\/")  # 同款转义,防 </script> 字面量截断
         injected = injected.replace(
             helper_src,
             "<script>\n" + helper_text + "\n</script>"

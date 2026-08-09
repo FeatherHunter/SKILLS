@@ -4,6 +4,21 @@
 
 ---
 
+## [T3] · 2026-08-09
+
+### 🚀 T3 · 复盘一体模板 · 4 粒度路由(G1-A2/A3/A4 · 对抗式审查矛盾 2:不双模板并存)
+
+**动机**:L 级重构 T3 —— 复盘链路升级:今日/本周/本月/区间统一到一个模板承载,不再按粒度各出模板。
+
+**变更**:
+- ✅ `render_replay(start, end, granularity=day|week|month|range)`:`meta.granularity` + 粒度数据(health_series 每日序列 + health_mean 均值 / month_compare 环比 vs 上月同期 / month_rate_compare 完成率环比 / plan_guide 缺计划补齐引导)
+- ✅ **区间按跨度自动路由**:range 粒度 ≤1 天→今日 / ≤7 天→周 / ≤31 天→月 / 其他→通用 4 段叙事
+- ✅ **健康分全粒度**:4 粒度全部显示(今日=单日分 / 周月=均值 + 每日序列条)
+- ✅ **缺计划补齐引导**:复盘今日无计划 → 顶部引导条(复制 prompt → ensure-plan-event 补齐 → 重新复盘,不降级)
+- ✅ **复盘→计划衔接**:页面底部「复盘 → 制定明日计划」引导区;copy_prompt 含"制定明日计划"衔接闭环
+- ✅ **CLI**:`render-replay <s> <e> [--granularity day|week|month|range]`;incomplete 状态也渲染 HTML(单域缺失标 ⚠️ 不假装成功)
+- ✅ **场景资产**:`scenarios/replay.yaml` 片段(复盘今日/复盘本周/复盘本月/复盘区间 4 场景 · G2-1 原 start-end 重命名「复盘区间」)+ 合并器写回(73→77)
+
 ## [Unreleased] · 2026-07-30
 
 ### 🚀 Phase E · 复盘 start-end 跨域 dual-domain 工作流落地(2026-07-30)

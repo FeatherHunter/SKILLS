@@ -269,12 +269,27 @@ DB 查找顺序:`SKILLS_DB_PATH` 环境变量 → `D:/.db`(Windows) → `~/.loca
 将以下内容发送给 AI 即可安装本技能:
 
 ```
-请帮我安装作息管家技能:
-1. 检查 Python 环境
-2. 引导我配置环境变量
-3. 显示当前环境变量配置
-4. 告诉我如何更改数据目录
+请帮我安装「作息管家」技能。这是一个作息记录、日程计划、AI 复盘闭环的作息管理技能。
+请按以下步骤操作:
+1. 在 https://github.com/FeatherHunter/SKILLS 仓库中找到「作息管家」目录(含 scripts/schedule_cli.py 的目录)
+2. 把整个「作息管家」目录复制到你本机的技能目录:
+   - Claude Code: ~/.claude/skills/作息管家
+   - opencode: ~/.config/opencode/skill/作息管家
+3. 复制完成后告诉我「安装完成」,然后我会说「首次使用」,请你按首次使用流程帮我完成初始化
 ```
+
+### 首次使用（onboarding · 2026-08-09 R3 定标 · 唤醒词：首次使用 / 初始化 / 新手）
+
+安装完成后用户说「首次使用」→ 走 6 步引导式初始化（对标居家管家 SM8 / 备忘录 9 步），全程零手动配置，结束生成初始化报告 HTML（`templates/开始使用/first_use_wizard.html`）：
+
+1. **环境检测**：OS / Python（≥3.7）/ 数据目录可写 / DB 状态（`python scripts/schedule_cli.py check`，缺 Python → winget 自动安装，失败给手动指引）
+2. **路径确认**：展示 DB 基目录（`SKILLS_DB_PATH` env → `D:/.db`(win) → `~/.local/share/schedule-guardian/db`(linux)），**必须征求用户确认，不静默**
+3. **建库 + 初始化**：`python scripts/schedule_cli.py init`（幂等：已有库 → 跳过）
+4. **状态确认**：`python scripts/schedule_cli.py status`（未初始化 / 库已建 / 就绪）
+5. **渲染初始化报告 HTML**：数据契约 `{"items":[{name,status(ok/warn/err),desc,action}], "todos":[{title,steps}], "verify":[str]}`（对标备忘录 init-report）
+6. **完成**：引导说「作息管家 help」浏览功能 / 录第一条记录；失败 → 错误回执 HTML + 一键重试
+
+**飞书强引导**（R3 人类修正 · 原"可选"升级）：飞书联动是核心能力（计划双向同步日历），**默认引导安装 + 强烈建议配置，说「配合飞书效果最好」**；只有用户明确拒绝才跳过，且报告页醒目标注「飞书同步不可用」；后续想说「配置飞书」补装。安装走强制非阻塞模式（`--no-wait --json` device_code → 用户"好了" → poll），**禁止同步阻塞** `config init --new` / `auth login`；官方包是 **`@larksuite/cli`**（bin 名 `lark-cli`），npm 上 `lark-cli` 是僵尸包，严禁指引安装。
 
 ---
 
@@ -469,19 +484,22 @@ ELIF "输出形式"列含 .html
 | "看下 7 月 1 号" | ① 7 月 1 日 ② 7 月 1 周(7/1~7/7) | **默认按单日 7 月 1 日**,不需要反问 |
 | "健身做得怎么样" | ① record 域"健康.健身"分类 ② plan 域"健身"计划复盘 | **按上下文判断**:若用户刚说"作息"→ record;若刚说"日程"→ plan |
 
-### 复盘 start-end 唤醒词(Phase E · 2026-07-30 新增 · ADR-0005)
+### 复盘一体模板 · 4 粒度唤醒词(T3 · 2026-08-09 · G1-A2/A3/A4 + G2-1 · 对抗式审查矛盾 2:不双模板并存)
 
-**底层 = 任意 start-end 区间**(schedule_records + schedule_plans 双域聚合),**上层 = 7 个预置时间维度 + 自由区间语法**:
+**底层 = 任意 start-end 区间**(schedule_records + schedule_plans 双域聚合),**上层 = 4 粒度 + 7 个预置时间维度 + 自由区间语法**,全部由**同一个模板** `schedule_replay.html` 承载,粒度决定区块组合:
 
-| 预置唤醒词 | 实际起止 | 工作流 | 模板 |
+| 唤醒词 | 实际起止 | 命令 | 模板区块 |
 |---|---|---|---|
-| "复盘本周" | 本周一~周日 | 复盘 start-end | schedule_replay.html |
-| "复盘上周" | 上周一~周日 | 复盘 start-end | schedule_replay.html |
-| "复盘本月" | 本月 1 日~末日 | 复盘 start-end | schedule_replay.html |
-| "复盘上月" | 上月 1 日~末日 | 复盘 start-end | schedule_replay.html |
-| "复盘今年" | 本年 1 月 1 日~今 | 复盘 start-end | schedule_replay.html |
-| "复盘上年" | 上年 1 月 1 日~12 月 31 日 | 复盘 start-end | schedule_replay.html |
-| "复盘 [区间]" | 自由 start-end | 复盘 start-end | schedule_replay.html |
+| "复盘今日" | 今天(单日) | `render-replay <今日> <今日> --granularity day` | 计划 vs 实际对照 + 叙事 + 单日健康分 |
+| "复盘本周" | 本周一~周日 | `render-replay <周一> <周日> --granularity week` | 7 维趋势 + 热力图 + 健康分均值 |
+| "复盘本月" | 本月 1 日~末日 | `render-replay <月初> <月末> --granularity month` | 月度聚合 + 环比 + 目标达成 |
+| "复盘上周" | 上周一~周日 | `render-replay ... --granularity week` | 同上(周区块) |
+| "复盘上月" | 上月 1 日~末日 | `render-replay ... --granularity month` | 同上(月区块) |
+| "复盘今年" | 本年 1 月 1 日~今 | `render-replay ...`(range) | 按跨度自动路由 |
+| "复盘上年" | 上年 1 月 1 日~12 月 31 日 | `render-replay ...`(range) | 按跨度自动路由 |
+| "复盘 [区间]" | 自由 start-end | `render-replay <s> <e>`(默认 range) | 按跨度自动路由 |
+
+**区间按跨度自动路由**(granularity=range 时):≤1 天→今日区块 / ≤7 天→周区块 / ≤31 天→月区块 / 其他→通用 4 段叙事(实际作息 + 计划执行 + 跨域对比 + AI 洞察)。
 
 **自由区间语法**(用户提非预置):
 - `YYYY-MM-DD~YYYY-MM-DD` (例:"复盘 2026-07-13~2026-07-19")
@@ -491,8 +509,13 @@ ELIF "输出形式"列含 .html
 
 **与 14 复盘区分**:
 - "复盘" / "复盘今天" / "复盘昨天" / "复盘 YYYY-MM-DD" → **14 复盘** (单日 plan 域 completion 写库)
-- "复盘本周/上月/本年" + "复盘 [区间]" → **复盘 start-end** (跨域 dual-domain)
+- "复盘今日/本周/本月/上周/上月/今年/上年" + "复盘 [区间]" → **复盘一体模板**(跨域 dual-domain · G2-1 原"复盘 start-end"重命名为「复盘区间」场景)
 - 裸词 "复盘" 默认走 14 复盘 (向后兼容, A 方案)
+
+**跨场景约定**(G1-C · T3 已兑现):
+- **健康分全粒度**:4 粒度全部显示健康分(今日=单日分 / 周月=均值 + 每日序列)
+- **缺计划补齐引导**:复盘今日缺计划 → 顶部补齐引导(复制 prompt 让 AI 先 ensure-plan-event 补齐再复盘,不降级)
+- **复盘→计划衔接**:页面底部「复盘 → 制定明日计划」引导区,复制完整 prompt 直接衔接商量计划
 
 **5 状态 fallback**(总纲 §04 原则 4):
 - `ok`: 两域数据完整
@@ -1432,6 +1455,32 @@ python scripts/schedule_cli.py amend-record 123 --json '{"category":"工作.AI�
 4. CLI 调 `render_record_receipt_edit(123, diff)` → 蓝调 HTML
 5. AI 拿 file_path → `<media src="..." type="file" />` 给用户
 6. 浏览器自动打开 → 用户看 diff 视图确认改对了
+
+---
+
+## 场景资产 · 模板分合规则与注册替换（2026-08-09 · 实施 T8 定标）
+
+### 模板分合规则（人类确认 · 写入 G1/G2 决策）
+
+1. **一个场景 = 一个唤醒词 = 一个模板**（呈现数据不同的场景，各自独立模板）
+2. **复用只发生在计算层（函数），不发生在模板层（呈现不同）**
+3. 信息构成相同（只换日期范围）→ 复用同一模板（查今天/昨天/指定日 → record_day.html）
+4. 信息构成不同（呈现数据集变了）→ 独立模板（复盘本周=趋势结构 vs 复盘本月=环比目标）
+5. 自由区间场景按区间长度路由到最贴近模板：~7 天 → 周模板；~30 天 → 月模板；其他 → 通用区间摘要
+
+### 场景注册替换关系（G2 定标 · 81 场景清单）
+
+`references/scenarios.yaml` 是场景资产唯一事实源（§07 契约），**只经合并器 `scripts/update_scenarios.py` 写入**（禁止手改正文；域片段放 `scenarios/<域>.yaml`，合并器全量校验后按 scenario_id 合并写回）。本次 L 级重构的注册替换关系：
+
+| 关系 | 说明 |
+|---|---|
+| 「记录」替换 #0 系列 | 新注册「记录」场景（G1-A1 三件套结果 HTML），#0 记作息 5 子场景（record_add_single/json/illegal_category/l1_only/missing_field）合并为其过程变体 |
+| 「制定计划」强化 #17 | 新注册「制定计划」场景强化既有「商量计划」（plan-result 结果 HTML：时间轴 + 分类色带 + 历史贴合提示），原 #17 5 子场景保留为过程细节 |
+| 「批量导入」收编 #0-json | 新注册「批量导入」场景（batch-add 命令），与 #0-json 同一命令家族衔接 |
+| 「复盘区间」= start-end 更名 | 原「复盘 start-end」保留独立场景并更名「复盘区间」（任意区间跨域复盘，7 预置 + 自由区间语法） |
+| 首次使用 / 复盘今日 / 复盘本周 / 复盘本月 / 周视图 | 5 个新注册场景（R3 onboarding / G1 深度场景） |
+
+81 = 73 现有（全部保留，无删除）+ 8 新注册/强化（记录 / 批量导入 / 周视图 / 制定计划 / 复盘今日 / 复盘本周 / 复盘本月 / 首次使用）。
 
 ---
 

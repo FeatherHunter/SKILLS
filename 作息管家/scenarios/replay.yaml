@@ -1,0 +1,43 @@
+# 作息管家 · 场景片段：复盘 4 粒度(T3 · 2026-08-09 · G1-A2/A3/A4 + G2-1)
+# 合并通道: scripts/update_scenarios.py 合并器(T1 建成)读本目录 *.yaml 片段 →
+#           校验字段契约(§07 §2.2) → 按 scenario_id 合并写回 references/scenarios.yaml。
+# 设计依据:
+# - G1-功能定标清单 A2(复盘今日=对照+叙事+健康分) / A3(复盘本周=趋势+热力图+均值) /
+#   A4(复盘本月=聚合+环比+目标) + C 跨场景约定(复盘→计划衔接 / 缺数据兜底 / 健康分全粒度)
+# - G2-1: 复盘 start-end 保留独立场景,重命名「复盘区间」(原 start-end 名不好听)
+# - T3 一体模板(对抗式审查矛盾 2 修正: 不双模板并存): 4 粒度同一 schedule_replay.html,
+#   区间按跨度自动路由区块(≤1天→今日 / ≤7天→周 / ≤31天→月 / 其他→通用)
+# - 唤醒词分工: 「复盘」裸词默认走 14 复盘(plan 域 completion 写库,向后兼容);
+#   复盘今日/本周/本月 + 复盘[区间] 走一体模板(render-replay --granularity)
+- wake_word: 复盘今日
+  scenario_id: replay_day
+  scenario_title: 复盘今日(计划 vs 实际对照 + 叙事 + 单日健康分)
+  dimensions:
+    date: 单日 YYYY-MM-DD(默认今天)
+  prompt: 请帮我复盘今天(唤醒词:复盘今日)
+  status: ''
+  result: render-replay <今日> <今日> --granularity day → 一体模板今日区块:计划 vs 实际对照表 + 实际作息 + 健康分;缺计划 → 补齐引导(不降级);底部复盘→制定明日计划衔接
+- wake_word: 复盘本周
+  scenario_id: replay_week
+  scenario_title: 复盘本周(7 维趋势 + 热力图 + 健康分均值)
+  dimensions:
+    range: 本周一~周日(自动换算)
+  prompt: 请帮我复盘本周(唤醒词:复盘本周)
+  status: ''
+  result: render-replay <周一> <周日> --granularity week → 一体模板周区块:7 维趋势折线 + 24h×N 热力图 + 健康分均值趋势 + 亮点/问题
+- wake_word: 复盘本月
+  scenario_id: replay_month
+  scenario_title: 复盘本月(月度聚合 + 环比对比 + 目标达成)
+  dimensions:
+    range: 本月 1 日~月末(自动换算)
+  prompt: 请帮我复盘本月(唤醒词:复盘本月)
+  status: ''
+  result: render-replay <月初> <月末> --granularity month → 一体模板月区块:分类聚合 + 环比对比(vs 上月同期) + 目标达成(完成率 + 维持占比) + 健康分趋势
+- wake_word: 复盘区间
+  scenario_id: replay_range
+  scenario_title: 复盘区间(任意区间跨域复盘 · 原 start-end)
+  dimensions:
+    range: 任意 start-end(预置 上周/上月/今年/上年 + 自由区间语法)
+  prompt: 请帮我复盘 2026-07-13~2026-07-19(唤醒词:复盘区间)
+  status: ''
+  result: render-replay <start> <end>(默认粒度 range)→ 一体模板按区间跨度自动路由区块(≤1天→今日 / ≤7天→周 / ≤31天→月 / 其他→通用 4 段叙事)

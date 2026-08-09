@@ -3,7 +3,7 @@
 """render_crud_receipt.py — 通用 CRUD 操作回执 HTML 渲染器(回执型)
 
 对应 SKILL.md 唤醒词(10 个):
-  - 删吃的/改吃的   → mode=update/delete
+  - 删饮食记录/改饮食记录 → mode=update/delete
   - 存食品/改食品   → mode=update/create
   - 删身材照       → mode=delete
   - 改照片标签     → mode=update
@@ -45,7 +45,11 @@ def _load_data(input_path):
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
+    # 2026-08-09 #43:批量删除用专门回执模板(weight_batch_delete.html)
+    if data.get('data', {}).get('batch'):
+        template = (SKILL_DIR / 'templates' / 'weight_batch_delete.html').read_text(encoding='utf-8')
+    else:
+        template = TEMPLATE_PATH.read_text(encoding='utf-8')
     if template.count('<!--INJECT-DATA-->') != 1:
         raise ValueError('模板缺少唯一占位符')
     payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
@@ -378,12 +382,15 @@ def build_live_weight_delete(target_id=None, target_date=None, start=None, end=N
         totals = [{'label': '时间范围', 'value': f'{start} ~ {end}', 'unit': ''},
                   {'label': '删除条数', 'value': str(r['deleted_count']), 'unit': '条'}]
         undo = f"python scripts/calorie_tracker.py weight {first['weight_kg']} --date {first['date']}"
-        return _weight_delete_receipt('delete', first['id'], r['snapshot'][0], totals, summary, f'{start} ~ {end}', undo)
+        # 2026-08-09 #43 用户拍板:批量删除用专门回执(全量明细表)
+        return _weight_delete_receipt('delete', first['id'], r['snapshot'][0], totals, summary,
+                                      f'{start} ~ {end}', undo, items=r['snapshot'], batch=True)
 
     raise ValueError('--live-weight-delete 需要 --id / --date / --start+--end 之一')
 
 
-def _weight_delete_receipt(op, record_id, snapshot, totals, summary, action_at, undo_cli):
+def _weight_delete_receipt(op, record_id, snapshot, totals, summary, action_at, undo_cli,
+                           items=None, batch=False):
     return {
         'status': 'ok',
         'data': {
@@ -391,6 +398,8 @@ def _weight_delete_receipt(op, record_id, snapshot, totals, summary, action_at, 
             'record_id': record_id,
             'old_record': snapshot,
             'new_record': {},
+            'items': items or [],
+            'batch': batch,
             'context': {'kpis': [], 'totals': totals},
             'meta': {'action_at': action_at, 'entity_type': '体重记录', 'undo_cli': undo_cli},
             'summary': summary,
@@ -1110,15 +1119,20 @@ def main():
             # 2026-08-09 #43 验收修复:原逻辑跳过 flag 值,data_source 的
             # --id/--date/--start+--end 写法全部不可复现(第 4 层链路断)
             # → 支持 flag 形式 + 兼容裸位置参数
+            # R5 场景名按删除方式区分(2026-08-09 #43):区间=批量删体重 / 日期=删某日体重 / id=删体重记录
             if 'id' in kw:
                 data = build_live_weight_delete(target_id=int(kw['id']))
+                cmd_name = '删体重记录'
             elif 'date' in kw:
                 data = build_live_weight_delete(target_date=kw['date'])
+                cmd_name = '删某日体重'
             elif 'start' in kw and 'end' in kw:
                 data = build_live_weight_delete(start=kw['start'], end=kw['end'])
+                cmd_name = '批量删体重'
             elif pos:
                 if len(pos) >= 2:
                     data = build_live_weight_delete(start=pos[0], end=pos[1])
+                    cmd_name = '批量删体重'
                 else:
                     target = pos[0]
                     try:
@@ -1160,4 +1174,5 @@ def main():
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     sys.exit(main())

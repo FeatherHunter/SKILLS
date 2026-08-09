@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量删除体重 · 卡路里</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.14);--accent:#0071e3;--good:#34c759;--warn:#ff9500;--bad:#ff3b30;--shadow:0 1px 3px rgba(0,0,0,.05),0 8px 24px rgba(0,0,0,.05)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:640px;margin:0 auto;padding:24px 16px 56px}
+.hero{background:linear-gradient(135deg,#fff,#fff3f3);border:1px solid rgba(255,59,48,.14);border-radius:20px;padding:24px 22px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.hero .icon{font-size:28px;margin-bottom:6px}
+.hero h1{font-size:22px;font-weight:800;letter-spacing:-.3px}
+.hero .meta{font-size:12px;color:var(--ink3);margin-top:6px}
+.summary{background:var(--card);border-radius:16px;padding:14px 18px;font-size:14px;color:var(--ink);box-shadow:var(--shadow);margin-bottom:14px;border-left:3px solid var(--bad)}
+.kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .label{font-size:11px;color:var(--ink3);margin-bottom:6px}
+.kpi .value{font-size:24px;font-weight:700;font-feature-settings:"tnum"}
+.kpi .value.bad{color:var(--bad)}
+.kpi .extra{font-size:11px;color:var(--ink3);margin-top:4px}
+.card{background:var(--card);border-radius:16px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.card .head{padding:12px 16px;font-size:14px;font-weight:700;border-bottom:1px solid var(--line)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-size:11px;color:var(--ink3);font-weight:700;background:#fafafa}
+td.kg{font-weight:700;font-feature-settings:"tnum"}
+.actions{display:flex;gap:10px;margin-bottom:14px}
+.btn{flex:1;border:0;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn.primary{background:var(--bad);color:#fff}
+.btn.ghost{background:var(--card);color:var(--ink2);box-shadow:var(--shadow)}
+.footer{text-align:center;font-size:11px;color:var(--ink3);margin-top:16px}
+@media(max-width:480px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.kpi .value{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="icon">🗑</div>
+    <h1>批量删除体重</h1>
+    <div class="meta" id="metaLine">加载中...</div>
+  </div>
+
+  <div class="summary" id="summaryLine">💬 加载中...</div>
+
+  <div class="kpi-grid">
+    <div class="kpi"><div class="label">删除条数</div><div class="value bad" id="kpiCount">—</div><div class="extra" id="kpiCountExtra">条</div></div>
+    <div class="kpi"><div class="label">时间范围</div><div class="value" id="kpiRange" style="font-size:16px;line-height:1.3">—</div><div class="extra">区间</div></div>
+    <div class="kpi"><div class="label">涉及天数</div><div class="value" id="kpiDays">—</div><div class="extra">天</div></div>
+  </div>
+
+  <div class="card">
+    <div class="head">📋 已删除记录明细</div>
+    <table>
+      <thead><tr><th>日期</th><th>时间</th><th>体重</th><th>BMI</th><th>备注</th></tr></thead>
+      <tbody id="itemsBody"></tbody>
+    </table>
+  </div>
+
+  <div class="actions">
+    <button class="btn primary" id="undoBtn">↩ 撤销删除</button>
+    <button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+  </div>
+
+  <div class="footer">卡路里 Skill · 批量删除体重回执</div>
+
+</div>
+
+<!--INJECT-DATA-->
+
+<script>
+const DATA = window.__DATA__ && window.__DATA__.data || {};
+const d = DATA;
+document.getElementById('metaLine').textContent = (d.meta && d.meta.action_at || '') + ' · ' + (d.meta && d.meta.entity_type || '');
+document.getElementById('summaryLine').textContent = '💬 ' + (d.summary || '');
+const items = d.items || [];
+document.getElementById('kpiCount').textContent = String(items.length);
+document.getElementById('kpiDays').textContent = String(new Set(items.map(i => i.date)).size);
+const range = (d.meta && d.meta.action_at) || (d.context && d.context.totals && d.context.totals[0] ? d.context.totals[0].value : '—');
+document.getElementById('kpiRange').textContent = range;
+const body = document.getElementById('itemsBody');
+if (items.length) {
+  items.forEach(i => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + (i.date || '—') + '</td><td>' + (i.time || '—') + '</td>' +
+      '<td class="kg">' + (i.weight_kg != null ? i.weight_kg + ' kg' : '—') + '</td>' +
+      '<td>' + (i.bmi != null ? i.bmi : '—') + '</td><td>' + (i.note || '—') + '</td>';
+    body.appendChild(tr);
+  });
+} else {
+  body.innerHTML = '<tr><td colspan="5" style="color:#86868b;text-align:center;padding:16px">无删除记录</td></tr>';
+}
+
+// 复制数据
+function buildDataText() {
+  const lines = ['🗑 批量删除体重', '', '时间范围: ' + range, '删除条数: ' + items.length, ''];
+  items.forEach(i => lines.push((i.date || '') + ' ' + (i.time || '') + ' ' + (i.weight_kg != null ? i.weight_kg + 'kg' : '') + (i.note ? ' (' + i.note + ')' : '')));
+  return lines.join('\n');
+}
+function buildLogText() {
+  const lines = ['[批量删除体重 · 排障日志]', '', '唤醒词: 批量删体重', '时间: ' + (d.meta && d.meta.action_at || '')];
+  lines.push('撤销命令: ' + (d.meta && d.meta.undo_cli || '(无)'));
+  lines.push('', '原始数据: ' + JSON.stringify(DATA));
+  return lines.join('\n');
+}
+function showToast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
+function copyText(text, btn) {
+  const after = () => showToast('已复制');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
+  } else { fallbackCopy(text); after(); }
+}
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
+  document.body.appendChild(ta); ta.focus(); ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+}
+document.getElementById('copyDataBtn').addEventListener('click', function() { copyText(buildDataText(), this); });
+document.getElementById('copyLogBtn').addEventListener('click', function() { copyText(buildLogText(), this); });
+document.getElementById('undoBtn').addEventListener('click', function() {
+  const undo = d.meta && d.meta.undo_cli;
+  if (undo) copyText(undo, this);
+  showToast('撤销命令已复制');
+});
+</script>
+
+</body>
+</html>

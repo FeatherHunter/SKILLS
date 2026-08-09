@@ -10,7 +10,7 @@
   4. 分析 → 写入 schedule_records
   5. 下次继续从最新的最后一条记录开始
 
-路径两层查找：环境变量 SKILLS_DB_PATH > D:/.db（WSL 转 /mnt/d/.db/）
+路径统一链：SKILLS_DB_PATH env > D:/.db(win) > ~/.local/share/schedule-guardian/db(linux)（Q6）
 """
 
 import sqlite3
@@ -58,39 +58,27 @@ def _normalize_date(d) -> str:
         ) from e
     return s
 
-# ============ 路径配置（两层查找）===========
+# ============ 路径配置（Q6 统一链：env > D:/.db(win) > ~/.local/share/schedule-guardian/db(linux)）============
 SKILL_DIR = Path(__file__).parent.parent
 DB_FILENAME = "schedule_data.db"
 DR_FILENAME = "daily_recorder.db"
 
-def _fallback_db_dir():
-    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+def _fallback_db_dir() -> Path:
+    """平台 fallback：Windows → D:/.db；其他平台 → ~/.local/share/schedule-guardian/db（Q6）"""
     if sys.platform == 'win32':
         return Path('D:/.db')
-    d_drive = Path('/mnt/d')
-    if d_drive.exists():
-        return d_drive / '.db'
-    raise RuntimeError(
-        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
-        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
-    )
+    return Path.home() / '.local' / 'share' / 'schedule-guardian' / 'db'
 
-def _find_db_path(skill_dir, db_filename):
-    """两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db"""
-    # 1. 环境变量（最高优先级，设了就直接用）
+def get_db_base_dir() -> Path:
+    """统一 DB 基目录（Q6 链）：SKILLS_DB_PATH 环境变量 > 平台 fallback。全技能共用入口。"""
     env_path = os.environ.get('SKILLS_DB_PATH')
-    if env_path:
-        p = Path(env_path)
-        p.mkdir(parents=True, exist_ok=True)
-        return p / db_filename
-    # 2. fallback: D:\.db\（WSL 自动转 /mnt/d/.db/）
-    db_dir = _fallback_db_dir()
-    db_dir.mkdir(parents=True, exist_ok=True)
-    return db_dir / db_filename
+    base = Path(env_path) if env_path else _fallback_db_dir()
+    base.mkdir(parents=True, exist_ok=True)
+    return base
 
-DB_DIR = SKILL_DIR  # 兼容旧代码，指向技能目录
-DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
-DR_DB_PATH = _find_db_path(SKILL_DIR, DR_FILENAME)
+DB_DIR = get_db_base_dir()      # 语义修正：不再指向 SKILL_DIR
+DB_PATH = DB_DIR / DB_FILENAME
+DR_DB_PATH = DB_DIR / DR_FILENAME
 
 # ============ 基础读写接口 ============
 def _configure_connection(conn):

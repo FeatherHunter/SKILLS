@@ -31,7 +31,6 @@ import argparse
 import datetime as dt
 import html
 import json
-import os
 import re
 import sys
 from collections import OrderedDict
@@ -47,8 +46,8 @@ TEMPLATE_PATH = SKILL_DIR / "templates" / "help_center.html"
 
 def get_html_base_dir() -> Path:
     """作息管家 HTML 输出基目录(同 schedule_html_render.py::_html_base_dir)"""
-    db_dir = os.environ.get("SKILLS_DB_PATH") or str(SKILL_DIR / ".db")
-    return Path(db_dir) / "schedule_html"
+    from schedule_db import get_db_base_dir
+    return get_db_base_dir() / "schedule_html"
 
 
 def help_naming_path() -> Path:

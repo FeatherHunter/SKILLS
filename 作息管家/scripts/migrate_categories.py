@@ -14,10 +14,9 @@ import sqlite3
 import sys
 from pathlib import Path
 
-# scripts/ 位于 SKILLS/作息管家/scripts,DB 位于 StudyNotes/.db/schedule_data.db
-SKILL_DIR = Path(__file__).resolve().parent.parent
-STUDYNOTES_DIR = SKILL_DIR.parent.parent
-DB_PATH = STUDYNOTES_DIR / ".db" / "schedule_data.db"
+# DB 路径统一走 schedule_db 解析器(Q6 链:SKILLS_DB_PATH env > D:/.db(win) > ~/.local/share/schedule-guardian/db(linux))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from schedule_db import DB_PATH
 
 # 旧分类 → 新分类 的映射表
 MIGRATION_MAP = {

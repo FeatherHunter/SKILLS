@@ -329,8 +329,7 @@ def inject_into_template(template_name: str, payload: dict, output_path: Path) -
     return output_path
 
 
-# ===== 路径常量:硬绑 SKILLS_DB_PATH(破坏兼容,plan/list + plan/query 也走这里)=====
-import os
+# ===== 路径常量:统一 DB 基目录(get_db_base_dir · Q6 链,plan/list + plan/query 也走这里)=====
 
 
 # === 中文 command 名映射(ADR-0002 Q5 · 总纲 §04 原则 12.A)===
@@ -373,9 +372,9 @@ CN_COMMAND_MAP = {
 
 
 def _html_base_dir() -> Path:
-    """延迟求值,避免模块加载时 SKILLS_DB_PATH/schedule_html 还不存在导致 RECORD_DIR 永久冻结为空"""
-    db_dir = os.environ.get('SKILLS_DB_PATH') or 'D:/.db'
-    return Path(db_dir) / 'schedule_html'
+    """延迟求值,避免模块加载时 DB 基目录还不存在导致 RECORD_DIR 永久冻结为空"""
+    from schedule_db import get_db_base_dir
+    return get_db_base_dir() / 'schedule_html'
 
 
 def _naming_path(command: str, subdir: str = "") -> Path:

@@ -200,14 +200,15 @@ def render_batch_edit_html(recipe_id: str, out_path=None) -> str:
             "ingredients_count": len(ingredients),
             "steps_count": len(steps),
             "tags": tags,
+            "edit_mode": "改前/改后对比确认(页面内编辑 → 预览差异 → 复制修改 prompt)",
         },
     )
     copy_log = build_copy_log(
         scene_id="edit-1",
         command_cn="批量改",
         wake_word="批量改 / 批量编辑",
-        thinking=f"意图理解 → 批量改 → 收集 {basics['recipe_name']} 9 个 manager 数据 → 3-tab 编辑",
-        data_structure="window.__DATA__(ingredients/steps/tags)· 读库(只读)",
+        thinking="意图理解 → 批量改 → 收集该菜 9 个 manager 数据 → 3-tab 编辑 → 改前/改后对比确认 → 复制修改 prompt → AI 写库",
+        data_structure="window.__DATA__(ingredients/steps/tags)· 读库(只读)· 修改写库走 AI 调 manager CLI",
         call_chain="python render_batch_edit.py <recipe_id_or_name>",
     )
     output = inject_08_layer(output, copy_data, copy_log)

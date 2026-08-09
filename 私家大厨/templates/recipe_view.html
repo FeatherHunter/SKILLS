@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>{{ recipe.name }} · 私家大厨</title>
+<title>查看食谱 · 私家大厨</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
@@ -123,6 +123,11 @@
     font-size:11px;color:var(--text3);font-style:italic;
     margin-left:4px;
   }
+  .ing-item.swapped{background:rgba(255,149,0,0.06);border-radius:8px;padding:8px}
+  .ing-item.swapped .swapped-tag{
+    font-size:10px;background:rgba(255,149,0,0.15);color:#9B5500;
+    padding:2px 6px;border-radius:4px;margin-left:6px;font-weight:600;
+  }
   .toggle-row{
     margin-top:12px;display:flex;justify-content:flex-end;
   }
@@ -131,6 +136,60 @@
     cursor:pointer;padding:6px 10px;border-radius:6px;
   }
   .toggle-btn:hover{background:rgba(0,122,255,0.06)}
+
+  /* ── Swap preview (view-3 · 替换食材预览 · 不落库) ── */
+  .swap-preview{border:1px solid rgba(255,149,0,0.4);background:rgba(255,149,0,0.05)}
+  .swap-row{
+    display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    padding:10px 0;border-bottom:0.5px solid var(--border);
+  }
+  .swap-row:last-child{border-bottom:none}
+  .swap-orig{font-size:14px;color:var(--text2)}
+  .swap-arrow{font-size:16px;color:var(--warn);font-weight:700}
+  .swap-target{font-size:14px;font-weight:600}
+  .swap-qty-wrap{display:flex;align-items:center;gap:4px;margin-left:auto}
+  .swap-qty{
+    width:64px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;
+    font-size:13px;text-align:right;font-variant-numeric:tabular-nums;
+  }
+  .swap-confirm{
+    border:none;background:var(--warn);color:#fff;font-size:13px;font-weight:600;
+    padding:7px 14px;border-radius:8px;cursor:pointer;
+  }
+  .swap-confirm:disabled{opacity:0.4;cursor:not-allowed}
+  .swap-note{font-size:12px;color:var(--text3);margin-top:8px;line-height:1.5}
+  .swap-applied-banner{
+    background:rgba(255,149,0,0.1);color:#9B5500;font-size:13px;font-weight:600;
+    padding:10px 12px;border-radius:8px;margin-bottom:12px;display:flex;align-items:center;gap:8px;
+  }
+  .swap-applied-banner .restore-btn{
+    margin-left:auto;border:1px solid rgba(155,85,0,0.4);background:#fff;color:#9B5500;
+    font-size:12px;font-weight:600;padding:5px 10px;border-radius:6px;cursor:pointer;
+  }
+
+  /* ── Focus bar (只看 X · 锚点保留) ── */
+  .focus-bar{
+    background:var(--card);border-radius:var(--radius-sm);
+    padding:10px 14px;margin-bottom:16px;display:flex;align-items:center;gap:10px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.04);
+  }
+  .focus-bar .focus-label{font-size:13px;font-weight:600;color:var(--blue)}
+  .focus-bar .focus-restore{
+    margin-left:auto;border:1px solid var(--border);background:#fff;color:var(--text2);
+    font-size:12px;padding:5px 10px;border-radius:6px;cursor:pointer;
+  }
+  .card[data-section].focused-hidden{display:none}
+
+  /* ── Cookware strip (菜级炊具 · 步骤区顶部) ── */
+  .cookware-strip{
+    display:flex;flex-wrap:wrap;gap:6px;align-items:center;
+    background:var(--bg);border-radius:var(--radius-sm);padding:8px 12px;margin-bottom:12px;
+  }
+  .cookware-strip .cw-label{font-size:12px;font-weight:600;color:var(--text2)}
+  .cw-chip{
+    font-size:12px;padding:3px 10px;border-radius:6px;
+    background:rgba(0,122,255,0.1);color:var(--blue);font-weight:600;
+  }
 
   /* ── Steps ── */
   .step{
@@ -196,9 +255,9 @@
 
   /* ── Source photo (local) ── */
   .source-photo{margin-top:12px;padding:10px;background:#fafafa;border-radius:10px}
-  .source-photo-label{font-size:12px;color:var(--fg2);margin-bottom:6px}
+  .source-photo-label{font-size:12px;color:var(--text2);margin-bottom:6px}
   .source-photo img{max-width:100%;border-radius:8px;display:block}
-  .source-photo-path{font-size:11px;color:var(--fg3);margin-top:6px;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .source-photo-path{font-size:11px;color:var(--text3);margin-top:6px;word-break:break-all;font-family:ui-monospace,Menlo,Consolas,monospace}
 
   /* ── Footer ── */
   .footer{
@@ -267,7 +326,7 @@
   @media print{
     body{background:#fff;padding:0}
     .card{box-shadow:none;border:0.5px solid var(--border);page-break-inside:avoid}
-    .servings-control,.toggle-btn,.toggle-row,.hero-actions,.copy-feedback,.action-btn{display:none !important}
+    .servings-control,.toggle-btn,.toggle-row,.hero-actions,.copy-feedback,.action-btn,.focus-bar,.swap-confirm,.restore-btn{display:none !important}
     .ing-item.optional{opacity:1}
   }
 </style>
@@ -276,439 +335,543 @@
 <!--INJECT-DATA-->
 <div class="container">
 
-<!-- ── Header ── -->
-<div class="header">
-  <div class="badges">
-    {% if recipe.category and recipe.category.cuisine %}<span class="badge">{{ recipe.category.cuisine }}</span>{% endif %}
-    {% if recipe.difficulty %}<span class="badge">{{ recipe.difficulty }}</span>{% endif %}
-    {% if recipe.status == '已做' %}<span class="badge success">已做</span>
-    {% elif recipe.status == '已废弃' %}<span class="badge danger">已废弃</span>
-    {% else %}<span class="badge">未做</span>{% endif %}
-    {% for m in (recipe.meal_types or []) %}<span class="badge">{{ m }}</span>{% endfor %}
-    {% for s in (recipe.seasons or []) %}<span class="badge">{{ s }}季</span>{% endfor %}
-    {# ── Batch 3.1 (G1): flavors 口味标签 — 橙色 warn 配色 — #}
-    {% for f in (recipe.flavors or []) %}<span class="badge warn">{{ f }}</span>{% endfor %}
-    {# ── Batch 3.2 (G1): diet_tags 饮食标签 — 绿色 success 配色 — #}
-    {% for t in (recipe.diet_tags or []) %}<span class="badge success">{{ t }}</span>{% endfor %}
-  </div>
-  {# ── Batch 2.1: photo_url 显示(Jinja2 autoescape 防 XSS)── #}
-  {% if recipe.photo_url %}
-  <div style="margin-bottom:12px;border-radius:var(--radius);overflow:hidden;background:var(--bg)">
-    <img src="{{ recipe.photo_url }}" alt="{{ recipe.name }}" style="width:100%;max-height:280px;object-fit:cover;display:block" loading="lazy" onerror="this.parentElement.style.display='none'" />
-  </div>
-  {% endif %}
-  <h1 id="recipe-title">{{ recipe.name }}</h1>
-  {% if recipe.description %}<p class="desc">{{ recipe.description }}</p>{% endif %}
-  {% if recipe.history %}
-  {% set last = recipe.history[0] %}
-  <div class="notice-card">
-    <b>上次做菜经验</b> · {{ last.cook_date }}{% if last.rating %} · {{ last.rating }} 星{% endif %}<br>
-    {{ last.feedback or '上次没有填写反馈' }}
-  </div>
-  {% endif %}
+  <div id="focus-bar-slot"></div>
+
+  <!-- ── Header(JS 渲染) ── -->
+  <div class="header" id="js-header"></div>
+
+  <!-- ── Info Cards(JS 渲染) ── -->
+  <div class="card" id="js-info"></div>
+
+  <!-- ── 切配建议(JS 渲染 · 从 quantity_text 提取) ── -->
+  <div class="card" id="js-cutting" data-section="切配"></div>
+
+  <!-- ── Ingredients(JS 渲染 · 分组 + 份数切换 + 替换预览) ── -->
+  <div class="card" id="section-ingredients" data-section="食材"></div>
+
+  <!-- ── Steps(JS 渲染 · 每步内联食材 + 菜级炊具顶部) ── -->
+  <div class="card" id="section-steps" data-section="步骤"></div>
+
+  <!-- ── Techniques(JS 渲染) ── -->
+  <div class="card" id="js-techniques" data-section="技法"></div>
+
+  <!-- ── Tips(JS 渲染) ── -->
+  <div class="card" id="js-tips" data-section="小贴士"></div>
+
+  <!-- ── Nutrition(JS 渲染 · 随份量重算) ── -->
+  <div class="card" id="section-nutrition" data-section="营养"></div>
+
+  <!-- ── Background(JS 渲染) ── -->
+  <div class="card" id="section-background" data-section="背景"></div>
+
+  <!-- ── History(JS 渲染 · 星级) ── -->
+  <div class="card" id="js-history" data-section="历史"></div>
+
+  <!-- ── Relations(JS 渲染 · 关系箭头) ── -->
+  <div class="card" id="js-relations" data-section="派生"></div>
+
+  <!-- ── CTA: 跨 Skill 入口(仅复制 prompt) ── -->
+  <div class="card" id="js-cta"></div>
+
+  <!-- ── Footer(JS 渲染 · chef:// 解析) ── -->
+  <div class="footer" id="js-footer"></div>
+
 </div>
 
-<!-- ── Info Cards ── -->
-<div class="card">
-  <div class="info-grid">
-    {% if recipe.servings %}
-    <div class="info-cell">
-      <div class="label">份量</div>
-      <div class="value">{{ recipe.servings }}<span class="unit">人份</span></div>
-    </div>
-    {% endif %}
-    {% if recipe.total_time %}
-    <div class="info-cell">
-      <div class="label">总时间</div>
-      <div class="value">{{ recipe.total_time }}<span class="unit">分钟</span></div>
-    </div>
-    {% endif %}
-    {% if recipe.category and recipe.category.region %}
-    <div class="info-cell">
-      <div class="label">地域</div>
-      <div class="value" style="font-size:14px">{{ recipe.category.region }}</div>
-    </div>
-    {% endif %}
-    {# ── Batch 3.3 (G2): country 国家 — 智能去重,只在不冗余时显示 — #}
-    {% if recipe.category and recipe.category.country and not (recipe.category.region and recipe.category.country in recipe.category.region) %}
-    <div class="info-cell">
-      <div class="label">国家</div>
-      <div class="value" style="font-size:14px">{{ recipe.category.country }}</div>
-    </div>
-    {% endif %}
-    {% if recipe.cooking_methods %}
-    <div class="info-cell">
-      <div class="label">烹法</div>
-      <div class="value" style="font-size:14px">{{ recipe.cooking_methods | join(' / ') }}</div>
-    </div>
-    {% endif %}
-  </div>
-
-  <div class="insight-grid">
-    {% if recipe.flavors %}<div class="insight-card"><div class="label">口味定位</div><div class="value">{{ recipe.flavors | join(' / ') }}</div></div>{% endif %}
-    {% if recipe.seasons %}<div class="insight-card"><div class="label">适合季节</div><div class="value">{{ recipe.seasons | join(' / ') }}季</div></div>{% endif %}
-    {% if recipe.cooking_methods %}<div class="insight-card"><div class="label">核心技法</div><div class="value">{{ recipe.cooking_methods | join(' / ') }}</div></div>{% endif %}
-    {% if recipe.meal_types %}<div class="insight-card"><div class="label">适合餐次</div><div class="value">{{ recipe.meal_types | join(' / ') }}餐</div></div>{% endif %}
-  </div>
-
-  {% if recipe.nutrition and (recipe.nutrition.fat or recipe.nutrition.sodium or recipe.diet_tags) %}
-  <div class="notice-card">
-    <b>营养提醒</b> · {% if recipe.diet_tags %}{{ recipe.diet_tags | join('、') }}{% endif %}{% if recipe.nutrition.fat %} · 脂肪 {{ recipe.nutrition.fat }}g{% endif %}{% if recipe.nutrition.sodium %} · 钠 {{ recipe.nutrition.sodium }}mg{% endif %}
-  </div>
-  {% endif %}
-</div>
-
-<!-- ── Cutting plan (extracted from ingredients.quantity_text) ── -->
-{% if recipe.ingredients %}
-{% set cut_items = [] %}
-{% for ing in recipe.ingredients %}
-  {% set qt = ing.quantity_text or '' %}
-  {% if '切' in qt or '片' in qt or '块' in qt or '丝' in qt or '丁' in qt or '末' in qt or '段' in qt or '瓣' in qt %}
-    {% set _ = cut_items.append(ing) %}
-  {% endif %}
-{% endfor %}
-{% if cut_items %}
-<div class="card">
-  <div class="section-title">🔪 切配建议</div>
-  <div class="mini-list">
-    {% for ing in cut_items %}
-    <div class="mini-item"><b>{{ ing.name }}</b><br>{{ ing.quantity_text }}</div>
-    {% endfor %}
-  </div>
-</div>
-{% endif %}
-{% endif %}
-
-<!-- ── Ingredients (full) with serving switcher ── -->
-{% if recipe.ingredients %}
-<div class="card" id="section-ingredients">
-  <div class="section-title">
-    食材
-    <span class="count">{{ recipe.ingredients | length }} 项</span>
-  </div>
-
-  <div class="servings-control">
-    <label>份数(预览)</label>
-    <button type="button" class="serv-btn" id="serv-dec" aria-label="减少份数">−</button>
-    <span class="serv-value" id="serv-value">{{ recipe.servings or 1 }}</span>
-    <button type="button" class="serv-btn" id="serv-inc" aria-label="增加份数">+</button>
-    <span style="font-size:11px;color:var(--text3);margin-left:4px">人份(原方 {{ recipe.servings or 1 }})</span>
-  </div>
-
-  {% set ns = namespace(cats={}) %}
-  {% for ing in recipe.ingredients %}
-    {% set cat = ing.category or '其他' %}
-    {% if cat not in ns.cats %}{% set _ = ns.cats.update({cat: []}) %}{% endif %}
-    {% set _ = ns.cats[cat].append(ing) %}
-  {% endfor %}
-
-  {% for cat, items in ns.cats.items() %}
-  <div class="ing-group">
-    <div class="ing-group-title">{{ cat }} ({{ items | length }})</div>
-    <ul class="ing-list">
-      {% for ing in items %}
-      <li class="ing-item{% if ing.is_optional %} optional{% endif %}"
-          data-base-qty="{{ ing.quantity or 0 }}"
-          data-base-servings="{{ recipe.servings or 1 }}">
-        <span class="name">{{ ing.name }}{% if ing.is_optional %}<span class="opt-tag">可选</span>{% endif %}{% if ing.substitute %}<span class="sub">/ 可用 {{ ing.substitute }}</span>{% endif %}</span>
-        {# ── Batch 2.2: quantity_text 兜底 ── #}
-        {% if ing.quantity %}
-        <span class="qty">
-          <span class="qty-num">{{ ing.quantity }}</span>{{ ing.unit or '' }}
-        </span>
-        {% elif ing.quantity_text %}
-        <span class="qty" style="color:var(--text3);font-style:italic">{{ ing.quantity_text }}</span>
-        {% endif %}
-      </li>
-      {% endfor %}
-    </ul>
-  </div>
-  {% endfor %}
-
-  {% set optional_count = recipe.ingredients | selectattr('is_optional') | list | length %}
-  {% if optional_count > 0 %}
-  <div class="toggle-row">
-    <button type="button" class="toggle-btn" id="toggle-optional">只看必需</button>
-  </div>
-  {% endif %}
-
-  {% set seasonings = recipe.ingredients | selectattr('category', 'equalto', '调料') | list %}
-  {% if seasonings %}
-  <div class="section-title" style="font-size:15px;margin-top:18px">🧂 调味集中区</div>
-  <div class="mini-list">
-    {% for s in seasonings %}
-    <div class="mini-item"><b>{{ s.name }}</b>{% if s.quantity %} · {{ s.quantity }}{{ s.unit or '' }}{% endif %}{% if s.quantity_text and s.quantity_text != s.quantity|string ~ (s.unit or '') %} · <span class="muted">{{ s.quantity_text }}</span>{% endif %}</div>
-    {% endfor %}
-  </div>
-  {% endif %}
-</div>
-{% endif %}
-
-<!-- ── Steps ── -->
-{% if recipe.steps %}
-<div class="card" id="section-steps">
-  <div class="section-title">
-    步骤
-    <span class="count">{{ recipe.steps | length }} 步</span>
-  </div>
-
-  {% set expected_list = [] %}
-  {% for step in recipe.steps %}
-    {% if step.expected_result %}
-      {% set _ = expected_list.append({'seq': step.sequence, 'result': step.expected_result}) %}
-    {% endif %}
-  {% endfor %}
-  {% if expected_list %}
-  <div class="notice-card">
-    <b>🎯 关键成功点</b>
-    {% for e in expected_list %}<br>第 {{ e.seq }} 步 · {{ e.result }}{% endfor %}
-  </div>
-  {% endif %}
-
-  <div class="timeline">
-    {% for step in recipe.steps %}
-    <div class="timeline-item">
-      <div class="seq">第 {{ step.sequence }} 步</div>
-      <div class="time">{% if step.duration %}{{ step.duration }}'{% else %}-{% endif %}</div>
-      <div class="heat">{% if step.heat_level %}{{ step.heat_level }}{% else %}-{% endif %}</div>
-    </div>
-    {% endfor %}
-  </div>
-
-  {% for step in recipe.steps %}
-  <div class="step">
-    <div class="step-num">{{ step.sequence }}</div>
-    <div class="step-body">
-      <div class="step-action">{{ step.action }}</div>
-      <div class="step-meta">
-        {% if step.duration %}<span class="meta-chip">⏱ {{ step.duration }} 分钟</span>{% endif %}
-        {% if step.heat_level %}<span class="meta-chip">🔥 {{ step.heat_level }}</span>{% endif %}
-        {% if step.temperature %}<span class="meta-chip">🌡 {{ step.temperature }}</span>{% endif %}
-        {# ── Batch 3.4 (G3): step 内嵌技法 — 不再需要反查下方技法 section — #}
-        {% for t in (step.techniques or []) %}<span class="meta-chip technique">🥋 {{ t.technique_name }}</span>{% endfor %}
-      </div>
-      {% if step.expected_result %}
-      <div class="step-meta"><span class="meta-chip expected">✓ {{ step.expected_result }}</span></div>
-      {% endif %}
-      {% if step.ingredients_used %}
-      <ul class="step-ings">
-        {% for iu in step.ingredients_used %}
-        <li>· {{ iu.name }}{% if iu.quantity_used %} {{ iu.quantity_used }}{{ iu.unit or 'g' }}{% endif %}{% if iu.introduced_at and iu.introduced_at != '中途加入' %} ({{ iu.introduced_at }}){% endif %}</li>
-        {% endfor %}
-      </ul>
-      {% endif %}
-    </div>
-  </div>
-  {% endfor %}
-</div>
-{% endif %}
-
-<!-- ── Techniques ── -->
-{% if recipe.techniques %}
-<div class="card">
-  <div class="section-title">技法</div>
-  <ul class="simple-list">
-    {% for t in recipe.techniques %}
-    <li>
-      <span class="step-ref">第{{ t.step_sequence }}步</span>
-      <div class="body">
-        <b>{{ t.technique_name }}</b>
-        {% if t.description %}— {{ t.description }}{% endif %}
-        {% if t.key_points %}<div style="font-size:12px;color:var(--text2);margin-top:2px">要点: {{ t.key_points }}</div>{% endif %}
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
-
-<!-- ── Tips ── -->
-{% if recipe.tips %}
-<div class="card">
-  <div class="section-title">小贴士</div>
-  <ul class="simple-list">
-    {% for tip in recipe.tips %}
-    <li>
-      {% if tip.step_sequence %}<span class="step-ref">第{{ tip.step_sequence }}步</span>{% endif %}
-      <div class="body">
-        {{ tip.content }}
-        {# ── Batch 2.4a: priority 标记 ── #}
-        {% if tip.priority %}<span class="priority-tag" data-priority="{{ tip.priority }}">P{{ tip.priority }}</span>{% endif %}
-        {% if tip.category %}<span style="font-size:11px;color:var(--text3);margin-left:6px">#{{ tip.category }}</span>{% endif %}
-        {# ── Batch 2.4b: ingredient_id JOIN 显示关联食材名 ── #}
-        {% if tip.ingredient_name %}<span style="font-size:11px;color:var(--blue);margin-left:6px">@{{ tip.ingredient_name }}</span>{% endif %}
-      </div>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
-
-<!-- ── Cookware ── -->
-{% if recipe.cookware %}
-<div class="card">
-  <div class="section-title">炊具</div>
-  <ul class="simple-list">
-    {% for cw in recipe.cookware %}
-    <li>
-      <div class="body">{{ cw.name }}{% if cw.category %} <span style="color:var(--text3);font-size:12px">/ {{ cw.category }}</span>{% endif %}</div>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
-
-<!-- ── Nutrition ── -->
-{% if recipe.nutrition %}
-<div class="card" id="section-nutrition">
-  <div class="section-title">
-    营养成分
-    {# ── Batch 3.5 (G4): 营养联动份数 — 显示"每份基准" + "当前份数"信息 — #}
-    <span class="count" id="nutrition-meta">每 {{ recipe.nutrition.serving_size or '?' }}{{ recipe.nutrition.serving_unit or 'g' }} · 基准 {{ recipe.servings or 1 }} 人份</span>
-  </div>
-  <table class="nutrition-table" id="nutrition-table" data-base-servings="{{ recipe.servings or 1 }}">
-    <thead><tr><th>项目</th><th>含量</th></tr></thead>
-    <tbody>
-      {% if recipe.nutrition.calories is not none %}<tr><td>热量</td><td data-base="{{ recipe.nutrition.calories }}" data-unit=" kcal">{{ recipe.nutrition.calories }} kcal</td></tr>{% endif %}
-      {% if recipe.nutrition.protein is not none %}<tr><td>蛋白质</td><td data-base="{{ recipe.nutrition.protein }}" data-unit=" g">{{ recipe.nutrition.protein }} g</td></tr>{% endif %}
-      {% if recipe.nutrition.fat is not none %}<tr><td>脂肪</td><td data-base="{{ recipe.nutrition.fat }}" data-unit=" g">{{ recipe.nutrition.fat }} g</td></tr>{% endif %}
-      {% if recipe.nutrition.carbs is not none %}<tr><td>碳水</td><td data-base="{{ recipe.nutrition.carbs }}" data-unit=" g">{{ recipe.nutrition.carbs }} g</td></tr>{% endif %}
-      {% if recipe.nutrition.fiber is not none %}<tr><td>膳食纤维</td><td data-base="{{ recipe.nutrition.fiber }}" data-unit=" g">{{ recipe.nutrition.fiber }} g</td></tr>{% endif %}
-      {% if recipe.nutrition.sodium is not none %}<tr><td>钠</td><td data-base="{{ recipe.nutrition.sodium }}" data-unit=" mg">{{ recipe.nutrition.sodium }} mg</td></tr>{% endif %}
-    </tbody>
-  </table>
-</div>
-{% endif %}
-
-<!-- ── Background ── -->
-{% if recipe.background and (recipe.background.origin_story or recipe.background.historical_background or recipe.background.cultural_significance) %}
-<div class="card" id="section-background">
-  <div class="section-title">背景</div>
-  {% if recipe.background.origin_story %}<div class="bg-section"><div class="label">起源</div><div class="body">{{ recipe.background.origin_story }}</div></div>{% endif %}
-  {% if recipe.background.historical_background %}<div class="bg-section"><div class="label">历史</div><div class="body">{{ recipe.background.historical_background }}</div></div>{% endif %}
-  {% if recipe.background.cultural_significance %}<div class="bg-section"><div class="label">文化</div><div class="body">{{ recipe.background.cultural_significance }}</div></div>{% endif %}
-</div>
-{% endif %}
-
-{# ── Batch 1.2a: 烹饪历史 section ── #}
-{% if recipe.history %}
-<div class="card">
-  <div class="section-title">
-    烹饪历史
-    <span class="count">共 {{ recipe.history | length }} 次</span>
-  </div>
-  <ul class="history-list">
-    {% for h in recipe.history %}
-    <li class="history-item">
-      <span class="history-date">{{ h.cook_date }}</span>
-      {% if h.cook_sequence %}<span class="history-seq">第{{ h.cook_sequence }}次</span>{% endif %}
-      {% if h.rating %}
-      <span class="history-rating">
-        {% for i in range(5) %}{% if i < h.rating %}★{% else %}<span style="color:var(--text3)">★</span>{% endif %}{% endfor %}
-        <span style="margin-left:4px">{{ h.rating }}</span>
-      </span>
-      {% endif %}
-      {% if h.feedback %}<div class="history-feedback">{{ h.feedback }}</div>{% endif %}
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
-
-{# ── Batch 1.2b: 派生关系 section ── #}
-{% if recipe.relations %}
-<div class="card">
-  <div class="section-title">
-    派生关系
-    <span class="count">共 {{ recipe.relations | length }} 条</span>
-  </div>
-  <ul class="relations-list">
-    {% for r in recipe.relations %}
-    <li class="relation-item">
-      {% if r.direction == 'parent' %}
-        <span class="rel-arrow">←</span>
-        <span class="rel-type">{{ r.relation_type or '派生' }}</span>
-        <span class="rel-target">{{ r.child_name or '(已删除)' }}</span>
-        <span class="rel-role">本菜是父本</span>
-      {% else %}
-        <span class="rel-arrow">→</span>
-        <span class="rel-type">{{ r.relation_type or '派生' }}</span>
-        <span class="rel-target">{{ r.parent_name or '(已删除)' }}</span>
-        <span class="rel-role">本菜是子本</span>
-      {% endif %}
-      {% if r.change_summary %}<div class="rel-summary">{{ r.change_summary }}</div>{% endif %}
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
-
-<!-- ── CTA: 跨 Skill 入口(仅复制 prompt,实际触发由 AI 完成) ── -->
-<div class="card">
-  <div class="section-title">🔗 继续操作</div>
-  <p class="muted" style="font-size:13px;margin-bottom:12px">以下按钮只把自然语言指令复制到剪贴板,粘贴给 AI 后由 AI 调用对应脚本生成正式 HTML。</p>
-  <div class="hero-actions">
-    <button type="button" class="action-btn secondary no-focus-ring" id="copy-cook-prompt">📋 复制「开始做菜」指令</button>
-    <button type="button" class="action-btn secondary no-focus-ring" id="copy-shop-prompt">🛒 复制「采购清单」指令</button>
-  </div>
-  <div class="hero-actions" style="grid-template-columns:1fr;margin-top:10px">
-    <button type="button" class="action-btn secondary no-focus-ring" id="copy-ingredients-top">🥢 复制食材清单</button>
-  </div>
-  <div class="copy-feedback" id="copy-feedback-prompt">✓ 已复制,粘贴给 AI 即可</div>
-</div>
-
-<!-- 08 共享动作层(复制数据/复制日志双按钮 + 5 状态 · recipe_render.py 注入) -->
 <!--INJECT-08-->
 
-<!-- ── Footer ── -->
-<div class="footer">
-  {% if recipe.source %}来源: {{ recipe.source }}{% endif %}
-  {% if recipe.source_url %}
-    {% set su = recipe.source_url %}
-    {% set su_l = su | lower %}
-    {% if su.startswith('chef://') %}
-      {% set local_rel = su[7:] %}
-      {% set chef_dir = chef_output_dir | trim | replace('\\', '/') %}
-      {% if not chef_dir.endswith('/') %}{% set chef_dir = chef_dir + '/' %}{% endif %}
-      {% set local_path = chef_dir ~ local_rel | replace('\\', '/') %}
-      <div class="source-photo">
-        <div class="source-photo-label">原食谱图(本地)</div>
-        <img src="file:///{{ local_path }}" alt="原食谱图" loading="lazy" />
-        <div class="source-photo-path">{{ local_rel }}</div>
-      </div>
-    {% elif '.jpg' in su_l or '.jpeg' in su_l or '.png' in su_l or '.webp' in su_l or '.gif' in su_l or 'picsum' in su_l or 'loremflickr' in su_l or 'imgur' in su_l or 'unsplash' in su_l %}
-      · <a href="{{ su }}" target="_blank" rel="noopener">查看原食谱图</a>
-    {% else %}
-      · <a href="{{ su }}" target="_blank" rel="noopener">查看原文</a>
-    {% endif %}
-  {% endif %}
-  {# ── Batch 2.3: created_at / updated_at ── #}
-  {% if recipe.created_at %} · 创建于 {{ recipe.created_at }}{% endif %}
-  {% if recipe.updated_at and recipe.updated_at != recipe.created_at %} · 更新于 {{ recipe.updated_at }}{% endif %}
-  · 由「私家大厨」v4.0 生成 · {{ now if now else '' }}
-</div>
-
-</div>
-
 <script>
-// 08 5 状态(recipe_view 过渡态: T6 前仅做状态兜底,不碰动态区)
-(function(){
-  var A08 = window.A08;
+'use strict';
+
+// 08 5 状态: loading(注入前) → normal / empty / error
+var A08 = window.A08;
+function a08State(name, msg){
   if (!A08) return;
-  // loading → normal(window.__RECIPE__ 已注入即正常;缺则 error)
-  var ok = typeof window.__RECIPE__ === 'object' && window.__RECIPE__ !== null;
-  if (ok) {
-    A08.state.hide();
-  } else {
-    A08.state.show('error', '数据未注入', 'window.__RECIPE__ 缺失。这是模板,不是最终交付。请用 scripts/recipe_render.py 生成。');
+  if (name === 'normal') { A08.state.hide(); return; }
+  A08.state.show(name, null, msg || '');
+}
+a08State('loading', '食谱加载中…');
+
+var R = (window.__RECIPE__ && window.__RECIPE__.recipe) || null;
+var VIEW = (window.__RECIPE__ && window.__RECIPE__.view) || {};
+var CHEF_DIR = (window.__RECIPE__ && window.__RECIPE__.chef_output_dir) || '';
+
+// ── HTML 转义(注入数据防 XSS) ──
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function fmt(n){
+  var num = parseFloat(n);
+  if (isNaN(num)) return '';
+  var rounded = Math.round(num * 10) / 10;
+  return (rounded % 1 === 0) ? String(Math.round(rounded)) : String(rounded);
+}
+
+function starRow(rating){
+  var s = '';
+  var r = Math.round(parseFloat(rating) || 0);
+  for (var i = 0; i < 5; i++) {
+    s += (i < r) ? '★' : '<span style="color:var(--text3)">★</span>';
   }
-})();
-document.addEventListener('DOMContentLoaded', function(){
-  // ── Servings switcher (preview only) ──
+  return s;
+}
+
+// ── 切配提取(quantity_text 含 切/片/块/丝/丁/末/段/瓣) ──
+function cutItems(ings){
+  if (!ings) return [];
+  return ings.filter(function(ing){
+    var qt = ing.quantity_text || '';
+    return /切|片|块|丝|丁|末|段|瓣/.test(qt);
+  });
+}
+
+// ── 替换食材状态(纯前端 · 不落库) ──
+var swapsApplied = [];   // [{from, to, qty, unit}]
+
+function findSwapFor(name){
+  for (var i = 0; i < swapsApplied.length; i++) {
+    if (swapsApplied[i].from === name) return swapsApplied[i];
+  }
+  return null;
+}
+
+// ── Header ──
+function renderHeader(){
+  var el = document.getElementById('js-header');
+  if (!el) return;
+  var html = '<div class="badges">';
+  if (R.category && R.category.cuisine) html += '<span class="badge">' + esc(R.category.cuisine) + '</span>';
+  if (R.difficulty) html += '<span class="badge">' + esc(R.difficulty) + '</span>';
+  if (R.status === '已做') html += '<span class="badge success">已做</span>';
+  else if (R.status === '已废弃') html += '<span class="badge danger">已废弃</span>';
+  else html += '<span class="badge">未做</span>';
+  (R.meal_types || []).forEach(function(m){ html += '<span class="badge">' + esc(m) + '</span>'; });
+  (R.seasons || []).forEach(function(s){ html += '<span class="badge">' + esc(s) + '季</span>'; });
+  (R.flavors || []).forEach(function(f){ html += '<span class="badge warn">' + esc(f) + '</span>'; });
+  (R.diet_tags || []).forEach(function(t){ html += '<span class="badge success">' + esc(t) + '</span>'; });
+  html += '</div>';
+  if (R.photo_url) {
+    html += '<div style="margin-bottom:12px;border-radius:var(--radius);overflow:hidden;background:var(--bg)">' +
+      '<img src="' + esc(R.photo_url) + '" alt="' + esc(R.name) + '" style="width:100%;max-height:280px;object-fit:cover;display:block" loading="lazy" onerror="this.parentElement.style.display=\'none\'" />' +
+      '</div>';
+  }
+  html += '<h1 id="recipe-title">' + esc(R.name) + '</h1>';
+  if (R.description) html += '<p class="desc">' + esc(R.description) + '</p>';
+  if (R.history && R.history.length > 0) {
+    var last = R.history[0];
+    html += '<div class="notice-card"><b>上次做菜经验</b> · ' + esc(last.cook_date);
+    if (last.rating) html += ' · ' + esc(String(last.rating)) + ' 星';
+    html += '<br>' + esc(last.feedback || '上次没有填写反馈') + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ── Info Cards ──
+function renderInfo(){
+  var el = document.getElementById('js-info');
+  if (!el) return;
+  var html = '<div class="info-grid">';
+  if (R.servings) html += '<div class="info-cell"><div class="label">份量</div><div class="value">' + esc(String(R.servings)) + '<span class="unit">人份</span></div></div>';
+  if (R.total_time) html += '<div class="info-cell"><div class="label">总时间</div><div class="value">' + esc(String(R.total_time)) + '<span class="unit">分钟</span></div></div>';
+  if (R.category && R.category.region) html += '<div class="info-cell"><div class="label">地域</div><div class="value" style="font-size:14px">' + esc(R.category.region) + '</div></div>';
+  if (R.category && R.category.country && !(R.category.region && R.category.country && R.category.region.indexOf(R.category.country) >= 0)) {
+    html += '<div class="info-cell"><div class="label">国家</div><div class="value" style="font-size:14px">' + esc(R.category.country) + '</div></div>';
+  }
+  if (R.cooking_methods && R.cooking_methods.length) html += '<div class="info-cell"><div class="label">烹法</div><div class="value" style="font-size:14px">' + esc(R.cooking_methods.join(' / ')) + '</div></div>';
+  html += '</div>';
+
+  var insights = '';
+  if (R.flavors && R.flavors.length) insights += '<div class="insight-card"><div class="label">口味定位</div><div class="value">' + esc(R.flavors.join(' / ')) + '</div></div>';
+  if (R.seasons && R.seasons.length) insights += '<div class="insight-card"><div class="label">适合季节</div><div class="value">' + esc(R.seasons.join(' / ')) + '季</div></div>';
+  if (R.cooking_methods && R.cooking_methods.length) insights += '<div class="insight-card"><div class="label">核心技法</div><div class="value">' + esc(R.cooking_methods.join(' / ')) + '</div></div>';
+  if (R.meal_types && R.meal_types.length) insights += '<div class="insight-card"><div class="label">适合餐次</div><div class="value">' + esc(R.meal_types.join(' / ')) + '餐</div></div>';
+  if (insights) html += '<div class="insight-grid">' + insights + '</div>';
+
+  var notice = '';
+  if (R.nutrition && ((R.nutrition.fat && R.nutrition.fat !== null) || (R.nutrition.sodium && R.nutrition.sodium !== null) || (R.diet_tags && R.diet_tags.length))) {
+    notice = '<div class="notice-card"><b>营养提醒</b> · ';
+    if (R.diet_tags && R.diet_tags.length) notice += esc(R.diet_tags.join('、'));
+    if (R.nutrition.fat) notice += ' · 脂肪 ' + esc(String(R.nutrition.fat)) + 'g';
+    if (R.nutrition.sodium) notice += ' · 钠 ' + esc(String(R.nutrition.sodium)) + 'mg';
+    notice += '</div>';
+  }
+  html += notice;
+  el.innerHTML = html;
+}
+
+// ── 切配建议 ──
+function renderCutting(){
+  var el = document.getElementById('js-cutting');
+  if (!el) return;
+  var items = cutItems(R.ingredients || []);
+  if (items.length === 0) { el.innerHTML = ''; return; }
+  var html = '<div class="section-title">🔪 切配建议</div><div class="mini-list">';
+  items.forEach(function(ing){
+    html += '<div class="mini-item"><b>' + esc(ing.name) + '</b><br>' + esc(ing.quantity_text || '') + '</div>';
+  });
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+// ── 食材(分组 + 调味集中区) ──
+function renderIngredients(){
+  var el = document.getElementById('section-ingredients');
+  if (!el) return;
+  var ings = R.ingredients || [];
+  if (ings.length === 0) { el.innerHTML = ''; return; }
+  var baseServ = R.servings || 1;
+  var html = '<div class="section-title">食材 <span class="count">' + ings.length + ' 项</span></div>';
+
+  // view-3:替换预览(原→替换对照行 + 用量换算 + 确认)
+  var swaps = VIEW.swap || [];
+  if (swaps.length > 0 && swapsApplied.length === 0) {
+    html += '<div class="card swap-preview" style="margin-bottom:14px;padding:14px 16px">' +
+      '<div class="section-title" style="font-size:15px;margin-bottom:10px">🔄 替换食材预览<span class="count" style="font-size:11px">临时假设 · 不落库</span></div>';
+    swaps.forEach(function(sw, i){
+      var orig = null;
+      for (var k = 0; k < ings.length; k++) { if (ings[k].name === sw.from) { orig = ings[k]; break; } }
+      var defQty = (sw.qty != null && sw.qty !== '') ? sw.qty : (orig ? orig.quantity : '');
+      var unit = sw.unit || (orig ? orig.unit : '');
+      html += '<div class="swap-row" data-idx="' + i + '">' +
+        '<span class="swap-orig">' + esc(sw.from) + '</span>' +
+        '<span class="swap-arrow">→</span>' +
+        '<span class="swap-target">' + esc(sw.to) + '</span>' +
+        '<span class="swap-qty-wrap">' +
+        '<input type="number" class="swap-qty" id="swap-qty-' + i + '" value="' + esc(String(defQty == null ? '' : defQty)) + '" min="0" step="0.1" aria-label="替换用量" />' +
+        '<span style="font-size:12px;color:var(--text2)">' + esc(unit) + '</span>' +
+        '<button type="button" class="swap-confirm" data-idx="' + i + '">确认</button>' +
+        '</span></div>';
+    });
+    html += '<div class="swap-note">确认后仅在本页把「原食材」替换为「替换食材」并换算用量(预览,不会写入数据库)。真的要改菜谱请说「修改食材」。</div>';
+    html += '</div>';
+  } else if (swapsApplied.length > 0) {
+    html += '<div class="swap-applied-banner">🔄 替换预览已应用(未保存)' +
+      '<button type="button" class="restore-btn" id="swap-restore">恢复原食材</button></div>';
+  }
+
+  html += '<div class="servings-control">' +
+    '<label>份数(预览)</label>' +
+    '<button type="button" class="serv-btn" id="serv-dec" aria-label="减少份数">−</button>' +
+    '<span class="serv-value" id="serv-value">' + baseServ + '</span>' +
+    '<button type="button" class="serv-btn" id="serv-inc" aria-label="增加份数">+</button>' +
+    '<span style="font-size:11px;color:var(--text3);margin-left:4px">人份(原方 ' + baseServ + ')</span></div>';
+
+  // 分组(11 大类)
+  var groups = {};
+  ings.forEach(function(ing){
+    var cat = ing.category || '其他';
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(ing);
+  });
+  Object.keys(groups).forEach(function(cat){
+    var items = groups[cat];
+    html += '<div class="ing-group"><div class="ing-group-title">' + esc(cat) + ' (' + items.length + ')</div><ul class="ing-list">';
+    items.forEach(function(ing){
+      var sw = findSwapFor(ing.name);
+      var dispName = sw ? sw.to : ing.name;
+      var dispQty = sw ? sw.qty : ing.quantity;
+      var dispUnit = sw ? sw.unit : ing.unit;
+      html += '<li class="ing-item' + (ing.is_optional ? ' optional' : '') + (sw ? ' swapped' : '') + '"' +
+        ' data-base-qty="' + (dispQty == null ? 0 : dispQty) + '"' +
+        ' data-base-servings="' + baseServ + '">';
+      html += '<span class="name">' + esc(dispName);
+      if (sw) html += '<span class="swapped-tag">替代' + esc(ing.name) + '</span>';
+      if (ing.is_optional) html += '<span class="opt-tag">可选</span>';
+      if (ing.substitute && !sw) html += '<span class="sub">/ 可用 ' + esc(ing.substitute) + '</span>';
+      html += '</span>';
+      if (dispQty || dispQty === 0) {
+        html += '<span class="qty"><span class="qty-num">' + fmt(dispQty) + '</span>' + esc(dispUnit || '') + '</span>';
+      } else if (ing.quantity_text) {
+        html += '<span class="qty" style="color:var(--text3);font-style:italic">' + esc(ing.quantity_text) + '</span>';
+      }
+      html += '</li>';
+    });
+    html += '</ul></div>';
+  });
+
+  var optionalCount = ings.filter(function(i){ return i.is_optional; }).length;
+  if (optionalCount > 0) {
+    html += '<div class="toggle-row"><button type="button" class="toggle-btn" id="toggle-optional">只看必需</button></div>';
+  }
+
+  // 调味集中区(调料类)
+  var seasonings = ings.filter(function(i){ return i.category === '调料'; });
+  if (seasonings.length > 0) {
+    html += '<div class="section-title" style="font-size:15px;margin-top:18px">🧂 调味集中区</div><div class="mini-list">';
+    seasonings.forEach(function(s){
+      html += '<div class="mini-item"><b>' + esc(s.name) + '</b>';
+      if (s.quantity) html += ' · ' + fmt(s.quantity) + esc(s.unit || '');
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+  el.innerHTML = html;
+}
+
+// ── Steps(每步内联食材 + 菜级炊具顶部 + 时间轴 + 关键成功点) ──
+function renderSteps(){
+  var el = document.getElementById('section-steps');
+  if (!el) return;
+  var steps = R.steps || [];
+  if (steps.length === 0) { el.innerHTML = ''; return; }
+  var html = '<div class="section-title">步骤 <span class="count">' + steps.length + ' 步</span></div>';
+
+  // 菜级炊具(菜级数据 · G3 决策:步骤区顶部展示)
+  if (R.cookware && R.cookware.length > 0) {
+    html += '<div class="cookware-strip"><span class="cw-label">🍳 炊具</span>';
+    R.cookware.forEach(function(cw){
+      html += '<span class="cw-chip">' + esc(cw.name) + (cw.category ? ' · ' + esc(cw.category) : '') + '</span>';
+    });
+    html += '</div>';
+  }
+
+  // 关键成功点
+  var expected = steps.filter(function(s){ return s.expected_result; })
+    .map(function(s){ return {seq: s.sequence, result: s.expected_result}; });
+  if (expected.length > 0) {
+    html += '<div class="notice-card"><b>🎯 关键成功点</b>';
+    expected.forEach(function(e){ html += '<br>第 ' + e.seq + ' 步 · ' + esc(e.result); });
+    html += '</div>';
+  }
+
+  // 时间轴
+  html += '<div class="timeline">';
+  steps.forEach(function(step){
+    html += '<div class="timeline-item"><div class="seq">第 ' + step.sequence + ' 步</div>' +
+      '<div class="time">' + (step.duration ? esc(String(step.duration)) + "'" : '-') + '</div>' +
+      '<div class="heat">' + (step.heat_level ? esc(step.heat_level) : '-') + '</div></div>';
+  });
+  html += '</div>';
+
+  // 步骤体(每步内联本步食材)
+  steps.forEach(function(step){
+    html += '<div class="step"><div class="step-num">' + step.sequence + '</div><div class="step-body">';
+    html += '<div class="step-action">' + esc(step.action) + '</div>';
+    html += '<div class="step-meta">';
+    if (step.duration) html += '<span class="meta-chip">⏱ ' + esc(String(step.duration)) + ' 分钟</span>';
+    if (step.heat_level) html += '<span class="meta-chip">🔥 ' + esc(step.heat_level) + '</span>';
+    if (step.temperature) html += '<span class="meta-chip">🌡 ' + esc(step.temperature) + '</span>';
+    (step.techniques || []).forEach(function(t){
+      html += '<span class="meta-chip technique">🥋 ' + esc(t.technique_name) + '</span>';
+    });
+    html += '</div>';
+    if (step.expected_result) html += '<div class="step-meta"><span class="meta-chip expected">✓ ' + esc(step.expected_result) + '</span></div>';
+    // 每步内联本步食材(step_ingredients 真数据)
+    if (step.ingredients_used && step.ingredients_used.length > 0) {
+      html += '<ul class="step-ings">';
+      step.ingredients_used.forEach(function(iu){
+        var sw = findSwapFor(iu.name);
+        var dispName = sw ? sw.to : iu.name;
+        var qtyUsed = sw ? sw.qty : iu.quantity_used;
+        var unitUsed = sw ? (sw.unit || iu.step_unit) : (iu.step_unit || iu.unit || 'g');
+        html += '<li>· ' + esc(dispName);
+        if (qtyUsed) html += ' ' + fmt(qtyUsed) + esc(unitUsed);
+        if (iu.introduced_at && iu.introduced_at !== '中途加入') html += ' (' + esc(iu.introduced_at) + ')';
+        html += '</li>';
+      });
+      html += '</ul>';
+    }
+    html += '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+// ── 技法 ──
+function renderTechniques(){
+  var el = document.getElementById('js-techniques');
+  if (!el) return;
+  var ts = R.techniques || [];
+  if (ts.length === 0) { el.innerHTML = ''; return; }
+  var html = '<div class="section-title">技法</div><ul class="simple-list">';
+  ts.forEach(function(t){
+    html += '<li><span class="step-ref">第' + t.step_sequence + '步</span><div class="body"><b>' + esc(t.technique_name) + '</b>';
+    if (t.description) html += '— ' + esc(t.description);
+    if (t.key_points) html += '<div style="font-size:12px;color:var(--text2);margin-top:2px">要点: ' + esc(t.key_points) + '</div>';
+    html += '</div></li>';
+  });
+  html += '</ul>';
+  el.innerHTML = html;
+}
+
+// ── 小贴士 ──
+function renderTips(){
+  var el = document.getElementById('js-tips');
+  if (!el) return;
+  var tips = R.tips || [];
+  if (tips.length === 0) { el.innerHTML = ''; return; }
+  var html = '<div class="section-title">小贴士</div><ul class="simple-list">';
+  tips.forEach(function(tip){
+    html += '<li>';
+    if (tip.step_sequence) html += '<span class="step-ref">第' + tip.step_sequence + '步</span>';
+    html += '<div class="body">' + esc(tip.content);
+    if (tip.priority) html += '<span class="priority-tag" data-priority="' + tip.priority + '">P' + tip.priority + '</span>';
+    if (tip.category) html += '<span style="font-size:11px;color:var(--text3);margin-left:6px">#' + esc(tip.category) + '</span>';
+    if (tip.ingredient_name) html += '<span style="font-size:11px;color:var(--blue);margin-left:6px">@' + esc(tip.ingredient_name) + '</span>';
+    html += '</div></li>';
+  });
+  html += '</ul>';
+  el.innerHTML = html;
+}
+
+// ── 营养(每份基准 + 随份量重算) ──
+function renderNutrition(){
+  var el = document.getElementById('section-nutrition');
+  if (!el) return;
+  var nut = R.nutrition;
+  if (!nut) { el.innerHTML = ''; return; }
+  var baseServ = R.servings || 1;
+  var rows = [
+    ['热量', nut.calories, ' kcal'],
+    ['蛋白质', nut.protein, ' g'],
+    ['脂肪', nut.fat, ' g'],
+    ['碳水', nut.carbs, ' g'],
+    ['膳食纤维', nut.fiber, ' g'],
+    ['钠', nut.sodium, ' mg'],
+  ];
+  var html = '<div class="section-title">营养成分 <span class="count" id="nutrition-meta">每 ' +
+    esc(String(nut.serving_size != null ? nut.serving_size : '?')) + esc(nut.serving_unit || 'g') + ' · 基准 ' + baseServ + ' 人份</span></div>';
+  html += '<table class="nutrition-table" id="nutrition-table" data-base-servings="' + baseServ + '">' +
+    '<thead><tr><th>项目</th><th>含量</th></tr></thead><tbody>';
+  rows.forEach(function(row){
+    if (row[1] == null) return;
+    html += '<tr><td>' + row[0] + '</td><td data-base="' + row[1] + '" data-unit="' + esc(row[2].trim()) + '">' +
+      fmt(row[1]) + row[2] + '</td></tr>';
+  });
+  html += '</tbody></table>';
+  el.innerHTML = html;
+}
+
+// ── 背景 ──
+function renderBackground(){
+  var el = document.getElementById('section-background');
+  if (!el) return;
+  var bg = R.background;
+  if (!bg || !(bg.origin_story || bg.historical_background || bg.cultural_significance)) { el.innerHTML = ''; return; }
+  var html = '<div class="section-title">背景</div>';
+  if (bg.origin_story) html += '<div class="bg-section"><div class="label">起源</div><div class="body">' + esc(bg.origin_story) + '</div></div>';
+  if (bg.historical_background) html += '<div class="bg-section"><div class="label">历史</div><div class="body">' + esc(bg.historical_background) + '</div></div>';
+  if (bg.cultural_significance) html += '<div class="bg-section"><div class="label">文化</div><div class="body">' + esc(bg.cultural_significance) + '</div></div>';
+  el.innerHTML = html;
+}
+
+// ── 历史(星级) ──
+function renderHistory(){
+  var el = document.getElementById('js-history');
+  if (!el) return;
+  var history = R.history || [];
+  if (history.length === 0) { el.innerHTML = ''; return; }
+  var html = '<div class="section-title">烹饪历史 <span class="count">共 ' + history.length + ' 次</span></div><ul class="history-list">';
+  history.forEach(function(h){
+    html += '<li class="history-item"><span class="history-date">' + esc(h.cook_date) + '</span>';
+    if (h.cook_sequence) html += '<span class="history-seq">第' + h.cook_sequence + '次</span>';
+    if (h.rating) html += '<span class="history-rating">' + starRow(h.rating) + '<span style="margin-left:4px">' + esc(String(h.rating)) + '</span></span>';
+    if (h.feedback) html += '<div class="history-feedback">' + esc(h.feedback) + '</div>';
+    html += '</li>';
+  });
+  html += '</ul>';
+  el.innerHTML = html;
+}
+
+// ── 派生关系(箭头) ──
+function renderRelations(){
+  var el = document.getElementById('js-relations');
+  if (!el) return;
+  var rels = R.relations || [];
+  if (rels.length === 0) { el.innerHTML = ''; return; }
+  var html = '<div class="section-title">派生关系 <span class="count">共 ' + rels.length + ' 条</span></div><ul class="relations-list">';
+  rels.forEach(function(r){
+    if (r.direction === 'parent') {
+      html += '<li class="relation-item"><span class="rel-arrow">←</span><span class="rel-type">' + esc(r.relation_type || '派生') + '</span>' +
+        '<span class="rel-target">' + esc(r.child_name || '(已删除)') + '</span><span class="rel-role">本菜是父本</span>';
+    } else {
+      html += '<li class="relation-item"><span class="rel-arrow">→</span><span class="rel-type">' + esc(r.relation_type || '派生') + '</span>' +
+        '<span class="rel-target">' + esc(r.parent_name || '(已删除)') + '</span><span class="rel-role">本菜是子本</span>';
+    }
+    if (r.change_summary) html += '<div class="rel-summary">' + esc(r.change_summary) + '</div>';
+    html += '</li>';
+  });
+  html += '</ul>';
+  el.innerHTML = html;
+}
+
+// ── CTA ──
+function renderCta(){
+  var el = document.getElementById('js-cta');
+  if (!el) return;
+  el.innerHTML =
+    '<div class="section-title">🔗 继续操作</div>' +
+    '<p style="font-size:13px;margin-bottom:12px;color:var(--text2)">以下按钮只把自然语言指令复制到剪贴板,粘贴给 AI 后由 AI 调用对应脚本生成正式 HTML。</p>' +
+    '<div class="hero-actions">' +
+    '<button type="button" class="action-btn secondary no-focus-ring" id="copy-cook-prompt">📋 复制「开始做菜」指令</button>' +
+    '<button type="button" class="action-btn secondary no-focus-ring" id="copy-shop-prompt">🛒 复制「采购清单」指令</button>' +
+    '</div>' +
+    '<div class="hero-actions" style="grid-template-columns:1fr;margin-top:10px">' +
+    '<button type="button" class="action-btn secondary no-focus-ring" id="copy-ingredients-top">🥢 复制食材清单</button>' +
+    '</div>' +
+    '<div class="copy-feedback" id="copy-feedback-prompt">✓ 已复制,粘贴给 AI 即可</div>';
+}
+
+// ── Footer(chef:// 解析) ──
+function renderFooter(){
+  var el = document.getElementById('js-footer');
+  if (!el) return;
+  var html = '';
+  if (R.source) html += '来源: ' + esc(R.source);
+  if (R.source_url) {
+    var su = R.source_url;
+    var suLower = su.toLowerCase();
+    if (su.indexOf('chef://') === 0) {
+      var localRel = su.slice(7);
+      var chefDir = String(CHEF_DIR || '').replace(/\\/g, '/');
+      if (chefDir && chefDir.charAt(chefDir.length - 1) !== '/') chefDir += '/';
+      var localPath = chefDir + localRel.replace(/\\/g, '/');
+      html += '<div class="source-photo"><div class="source-photo-label">原食谱图(本地)</div>' +
+        '<img src="file:///' + esc(localPath) + '" alt="原食谱图" loading="lazy" />' +
+        '<div class="source-photo-path">' + esc(localRel) + '</div></div>';
+    } else if (/(\.jpg|\.jpeg|\.png|\.webp|\.gif|picsum|loremflickr|imgur|unsplash)/.test(suLower)) {
+      html += ' · <a href="' + esc(su) + '" target="_blank" rel="noopener">查看原食谱图</a>';
+    } else {
+      html += ' · <a href="' + esc(su) + '" target="_blank" rel="noopener">查看原文</a>';
+    }
+  }
+  if (R.created_at) html += ' · 创建于 ' + esc(R.created_at);
+  if (R.updated_at && R.updated_at !== R.created_at) html += ' · 更新于 ' + esc(R.updated_at);
+  var nowStr = new Date().toLocaleString('zh-CN', {hour12: false});
+  html += ' · 由「私家大厨」v4.0 生成 · ' + esc(nowStr);
+  el.innerHTML = html;
+}
+
+// ── 只看 X(隐藏其他 section · 锚点保留) ──
+var FOCUS_MAP = {食材: 'section-ingredients', 步骤: 'section-steps', 营养: 'section-nutrition', 背景: 'section-background'};
+
+function applyFocus(){
+  var focus = VIEW.focus;
+  if (!focus || !FOCUS_MAP[focus]) return;
+  var targetId = FOCUS_MAP[focus];
+  var bar = document.getElementById('focus-bar-slot');
+  if (bar) {
+    bar.innerHTML = '<div class="focus-bar"><span class="focus-label">👀 只看' + esc(focus) + '</span>' +
+      '<button type="button" class="focus-restore" id="focus-restore">查看完整食谱</button></div>';
+    var restore = document.getElementById('focus-restore');
+    if (restore) restore.addEventListener('click', function(){
+      document.querySelectorAll('.card[data-section]').forEach(function(c){ c.style.display = ''; });
+      bar.innerHTML = '';
+    });
+  }
+  document.querySelectorAll('.card[data-section]').forEach(function(c){
+    if (c.id !== targetId) c.style.display = 'none';
+  });
+}
+
+// ── Servings switcher + 营养缩放 ──
+function bindServings(){
   var valEl = document.getElementById('serv-value');
   var dec = document.getElementById('serv-dec');
   var inc = document.getElementById('serv-inc');
-  if (!valEl) return;
+  if (!valEl || !dec || !inc) return;
   var baseServings = parseInt(valEl.textContent, 10) || 1;
   var curServings = baseServings;
 
@@ -719,24 +882,19 @@ document.addEventListener('DOMContentLoaded', function(){
       var numEl = li.querySelector('.qty-num');
       if (!numEl || !baseQty) return;
       var scaled = baseQty * factor;
-      // 取整到 1 位小数
       var display = (Math.round(scaled * 10) / 10);
-      // 去掉 .0
       display = display % 1 === 0 ? display.toFixed(0) : display.toFixed(1);
       numEl.textContent = display;
     });
-    // ── Batch 3.6 (G4): 联动 nutrition 表 — 按份数缩放营养值 — #
+    // 营养随份量重算(G4)
     var nutTable = document.getElementById('nutrition-table');
     if (nutTable) {
       nutTable.querySelectorAll('td[data-base]').forEach(function(td){
         var base = parseFloat(td.dataset.base) || 0;
         var unit = td.dataset.unit || '';
         var scaled = base * factor;
-        // 热量取整,其他保留 1 位小数
         var display;
-        if (unit.trim() === 'kcal') {
-          display = Math.round(scaled);
-        } else if (unit.trim() === 'mg') {
+        if (unit.trim() === 'kcal' || unit.trim() === 'mg') {
           display = Math.round(scaled);
         } else {
           display = (Math.round(scaled * 10) / 10);
@@ -747,106 +905,130 @@ document.addEventListener('DOMContentLoaded', function(){
     }
   }
 
-  if (dec) dec.addEventListener('click', function(){
+  dec.addEventListener('click', function(){
     if (curServings <= 1) return;
     curServings--;
     valEl.textContent = curServings;
-    var baseEl = document.getElementById('serv-base');
-    if (baseEl) baseEl.textContent = curServings;
     updateQtys();
   });
-  if (inc) inc.addEventListener('click', function(){
+  inc.addEventListener('click', function(){
     if (curServings >= 20) return;
     curServings++;
     valEl.textContent = curServings;
-    var baseEl = document.getElementById('serv-base');
-    if (baseEl) baseEl.textContent = curServings;
     updateQtys();
   });
+}
 
-  // ── Fold optional ingredients ──
+// ── Fold optional ingredients ──
+function bindOptionalToggle(){
   var toggle = document.getElementById('toggle-optional');
+  if (!toggle) return;
   var optionalEls = document.querySelectorAll('.ing-item.optional');
   var showingOptional = true;
+  toggle.addEventListener('click', function(){
+    showingOptional = !showingOptional;
+    optionalEls.forEach(function(el){ el.style.display = showingOptional ? '' : 'none'; });
+    toggle.textContent = showingOptional ? '只看必需' : '显示全部';
+  });
+}
 
-  if (toggle) {
-    toggle.addEventListener('click', function(){
-      showingOptional = !showingOptional;
-      optionalEls.forEach(function(el){
-        el.style.display = showingOptional ? '' : 'none';
+// ── Swap 确认(不落库) ──
+function bindSwap(){
+  document.querySelectorAll('.swap-confirm').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var idx = parseInt(btn.dataset.idx, 10);
+      var sw = VIEW.swap[idx];
+      if (!sw) return;
+      var qtyInput = document.getElementById('swap-qty-' + idx);
+      var qty = qtyInput ? parseFloat(qtyInput.value) : null;
+      var orig = null;
+      (R.ingredients || []).forEach(function(i){ if (i.name === sw.from) orig = i; });
+      swapsApplied.push({
+        from: sw.from,
+        to: sw.to,
+        qty: (qty && !isNaN(qty)) ? qty : (orig ? orig.quantity : null),
+        unit: sw.unit || (orig ? orig.unit : ''),
       });
-      toggle.textContent = showingOptional ? '只看必需' : '显示全部';
+      renderIngredients();
+      bindServings();
+      bindOptionalToggle();
+      bindSwap();
     });
-  }
+  });
+  var restore = document.getElementById('swap-restore');
+  if (restore) restore.addEventListener('click', function(){
+    swapsApplied = [];
+    renderIngredients();
+    bindServings();
+    bindOptionalToggle();
+    bindSwap();
+  });
+}
 
-  // ── Copy helpers (ingredients / cook prompt / shopping prompt) ──
-  function currentServings(){
-    var el = document.getElementById('serv-value');
-    return el ? (parseInt(el.textContent, 10) || 1) : 1;
+// ── Copy helpers(食材 / 做菜 / 采购) ──
+function currentServings(){
+  var el = document.getElementById('serv-value');
+  return el ? (parseInt(el.textContent, 10) || 1) : 1;
+}
+function recipeTitle(){
+  var el = document.getElementById('recipe-title');
+  return el ? el.textContent.trim() : '食谱';
+}
+function buildIngredientText(){
+  var lines = [];
+  var cur = currentServings();
+  var title = recipeTitle();
+  var showingOptional = true;
+  var toggle = document.getElementById('toggle-optional');
+  if (toggle) showingOptional = (toggle.textContent === '只看必需');
+  document.querySelectorAll('.ing-item').forEach(function(li){
+    if (li.style.display === 'none') return;
+    var nameEl = li.querySelector('.name');
+    var name = nameEl ? nameEl.firstChild.textContent.trim() : '';
+    var qtyEl = li.querySelector('.qty-num');
+    var qtyText = li.querySelector('.qty') ? li.querySelector('.qty').textContent.trim() : '';
+    var qty = qtyEl ? qtyEl.textContent.trim() : qtyText;
+    var opt = li.classList.contains('optional') ? ' (可选)' : '';
+    if (name) lines.push('· ' + name + ' ' + qty + opt);
+  });
+  var mode = showingOptional ? '全部食材' : '只含必需';
+  return '【食材清单】' + title + '（' + cur + ' 人份 · ' + mode + '）\n' + lines.join('\n');
+}
+function buildCookPrompt(){
+  return '做菜模式 ' + recipeTitle() + '\n（请直接调 cooking_render.py render 生成正式 HTML）';
+}
+function buildShopPrompt(){
+  return '生成清单 ' + recipeTitle() + '\n（请直接调 shopping_manager.py generate 和 shopping_render.py render 生成正式 HTML）';
+}
+function doCopy(text, feedbackEl){
+  var fallback = function(){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+  };
+  var copied = false;
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){ copied = true; }).catch(fallback);
+  } else {
+    fallback();
+    copied = true;
   }
-  function recipeTitle(){
-    var el = document.getElementById('recipe-title');
-    return el ? el.textContent.trim() : '食谱';
+  if (feedbackEl) {
+    feedbackEl.textContent = copied ? '✓ 已复制,粘贴给 AI 即可' : '⚠️ 浏览器拦截了复制,请用 Ctrl+C';
+    feedbackEl.style.display = 'block';
+    clearTimeout(feedbackEl._timer);
+    feedbackEl._timer = setTimeout(function(){ feedbackEl.style.display = 'none'; }, 3500);
   }
-
-  function buildIngredientText(){
-    var lines = [];
-    var cur = currentServings();
-    var title = recipeTitle();
-    document.querySelectorAll('.ing-item').forEach(function(li){
-      if (li.style.display === 'none') return;
-      var name = li.querySelector('.name') ? li.querySelector('.name').firstChild.textContent.trim() : '';
-      var qtyEl = li.querySelector('.qty-num');
-      var qtyText = li.querySelector('.qty') ? li.querySelector('.qty').textContent.trim() : '';
-      var qty = qtyEl ? qtyEl.textContent.trim() : qtyText;
-      var opt = li.classList.contains('optional') ? ' (可选)' : '';
-      if (name) lines.push('· ' + name + ' ' + qty + opt);
-    });
-    var mode = showingOptional ? '全部食材' : '只含必需';
-    return '【食材清单】' + title + '（' + cur + ' 人份 · ' + mode + '）\n' + lines.join('\n');
-  }
-
-  function buildCookPrompt(){
-    return '做菜模式 ' + recipeTitle() + '\n（请直接调 cooking_render.py render 生成正式 HTML）';
-  }
-
-  function buildShopPrompt(){
-    return '生成清单 ' + recipeTitle() + '\n（请直接调 shopping_manager.py generate 和 shopping_render.py render 生成正式 HTML）';
-  }
-
-  function doCopy(text, feedbackEl){
-    var fallback = function(){
-      var ta = document.createElement('textarea');
-      ta.value = text;
-      ta.style.position = 'fixed';
-      ta.style.opacity = '0';
-      document.body.appendChild(ta);
-      ta.select();
-      try { document.execCommand('copy'); } catch(e) {}
-      document.body.removeChild(ta);
-    };
-    var copied = false;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function(){ copied = true; }).catch(fallback);
-    } else {
-      fallback();
-      copied = true;
-    }
-    if (feedbackEl) {
-      feedbackEl.textContent = copied ? '✓ 已复制,粘贴给 AI 即可' : '⚠️ 浏览器拦截了复制,请用 Ctrl+C';
-      feedbackEl.style.display = 'block';
-      clearTimeout(feedbackEl._timer);
-      feedbackEl._timer = setTimeout(function(){ feedbackEl.style.display = 'none'; }, 3500);
-    }
-  }
-
+}
+function bindCta(){
   var ingBtnTop = document.getElementById('copy-ingredients-top');
   if (ingBtnTop) ingBtnTop.addEventListener('click', function(){
     doCopy(buildIngredientText(), document.getElementById('copy-feedback-prompt'));
-  });
-  var ingBtnBottom = document.getElementById('copy-ingredients');
-  if (ingBtnBottom) ingBtnBottom.addEventListener('click', function(){
-    doCopy(buildIngredientText(), document.getElementById('copy-feedback'));
   });
   var cookBtn = document.getElementById('copy-cook-prompt');
   if (cookBtn) cookBtn.addEventListener('click', function(){
@@ -856,9 +1038,40 @@ document.addEventListener('DOMContentLoaded', function(){
   if (shopBtn) shopBtn.addEventListener('click', function(){
     doCopy(buildShopPrompt(), document.getElementById('copy-feedback-prompt'));
   });
+}
 
-  // ── Start cooking / Shopping CTA removed: 5 层架构不允许查看食谱页承担跨 Skill 跳转 ──
-});
+// ── 启动 ──
+function init(){
+  if (!R) {
+    a08State('error', '数据未注入(window.__RECIPE__ 缺失)。这是模板,不是最终交付。请用 scripts/recipe_render.py 生成。');
+    return;
+  }
+  renderHeader();
+  renderInfo();
+  renderCutting();
+  renderIngredients();
+  renderSteps();
+  renderTechniques();
+  renderTips();
+  renderNutrition();
+  renderBackground();
+  renderHistory();
+  renderRelations();
+  renderCta();
+  renderFooter();
+  bindServings();
+  bindOptionalToggle();
+  bindSwap();
+  bindCta();
+  applyFocus();
+  a08State('normal');
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
 </script>
 
 </body>

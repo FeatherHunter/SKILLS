@@ -57,6 +57,9 @@
   .copy-btn:hover{background:#0064D2}
   .copy-btn:active{transform:scale(0.97)}
   .copy-btn.copied{background:var(--success)}
+  .copy-btn.secondary{background:var(--bg);color:var(--text)}
+  .copy-btn.secondary:hover{background:#E5E5EA}
+  .copy-btn.warn{background:var(--warn);color:#fff}
   .copy-hint{font-size:12px;color:var(--text3);flex:1;line-height:1.5}
 
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--text);color:#fff;padding:12px 20px;border-radius:var(--radius);font-size:14px;box-shadow:0 4px 16px rgba(0,0,0,0.2);opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:1000;max-width:80%;text-align:center}
@@ -66,6 +69,23 @@
   .toast.error{background:var(--danger)}
 
   .empty{padding:32px 20px;text-align:center;color:var(--text3);font-size:14px}
+
+  /* 改前/改后对比确认(T13 · G8 补齐) */
+  .diff-panel{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .diff-panel .card-header{border-bottom-color:var(--warn-soft)}
+  .diff-group{padding:12px 18px;border-bottom:1px solid var(--separator)}
+  .diff-group:last-child{border-bottom:none}
+  .diff-group-title{font-size:13px;font-weight:700;color:var(--text2);margin-bottom:8px}
+  .diff-item{display:flex;gap:10px;align-items:baseline;font-size:13px;padding:4px 0}
+  .diff-field{min-width:52px;color:var(--text3);font-size:12px}
+  .diff-before{color:var(--danger);text-decoration:line-through;opacity:.85;flex:1;word-break:break-all}
+  .diff-arrow{color:var(--text4);flex:none}
+  .diff-after{color:var(--success);font-weight:600;flex:1;word-break:break-all}
+  .diff-none{padding:18px;text-align:center;color:var(--text3);font-size:13px}
+  .edit-input{width:100%;min-width:60px;border:1px solid transparent;background:transparent;border-radius:6px;padding:4px 6px;font-size:13px;font-family:inherit;color:var(--text);transition:all .15s}
+  .edit-input:hover{border-color:var(--separator);background:var(--bg)}
+  .edit-input:focus{outline:none;border-color:var(--blue);background:#fff;box-shadow:0 0 0 3px var(--blue-soft)}
+  .edit-input.changed{background:var(--warn-soft);border-color:var(--warn);font-weight:600}
 
   @media (max-width:600px){
     .container{padding:14px 10px}
@@ -137,11 +157,21 @@
     </div>
   </div>
 
+  <!-- 改前/改后对比确认(08 §1 流程 6 对比 · T13) -->
+  <div class="diff-panel hidden" id="diff-panel">
+    <div class="card-header">
+      <h2>🔍 改前 / 改后对比</h2>
+      <span class="count" id="diff-count">0 处修改</span>
+    </div>
+    <div id="diff-body"></div>
+  </div>
+
   <!-- 复制 prompt 浮动栏(单工铁律 · 复制 mod 模式) -->
   <div class="copy-bar">
     <div class="copy-hint">
-      <strong>📋 单工模式:</strong>HTML 直接调 AI 违反 §04 原则 10。本模板生成"修改 prompt"文本,粘贴给 AI,AI 调 manager CLI 改 DB。
+      <strong>📋 单工模式:</strong>HTML 直接调 AI 违反 §04 原则 10。先在表格里改(黄色=已改),点「预览差异」确认改前/改后,再复制修改 prompt 粘贴给 AI,AI 调 manager CLI 改 DB。
     </div>
+    <button class="copy-btn secondary" id="diff-btn">🔍 预览差异</button>
     <button class="copy-btn" id="copy-btn">📋 复制修改 prompt</button>
   </div>
 
@@ -217,14 +247,15 @@ document.addEventListener('DOMContentLoaded', function(){
   if (ings.length === 0) {
     document.getElementById('ing-empty').style.display = 'block';
   } else {
-    ings.forEach(i => {
+    ings.forEach((i, idx) => {
       const tr = document.createElement('tr');
+      const qty = i.quantity_text || ((i.quantity != null ? i.quantity : '') + (i.unit ? ' ' + i.unit : ''));
       tr.innerHTML = `
         <td class="id">${esc(i.id)}</td>
-        <td><strong>${esc(i.name)}</strong></td>
-        <td>${esc(i.quantity_text || (i.quantity + ' ' + (i.unit || '')))}</td>
-        <td>${esc(i.category || '')}</td>
-        <td class="muted">${esc(i.substitute || '无')}</td>
+        <td><input class="edit-input" data-group="ingredients" data-idx="${idx}" data-field="name" value="${esc(i.name || '')}"></td>
+        <td><input class="edit-input" data-group="ingredients" data-idx="${idx}" data-field="quantity_text" value="${esc(qty)}"></td>
+        <td><input class="edit-input" data-group="ingredients" data-idx="${idx}" data-field="category" value="${esc(i.category || '')}"></td>
+        <td class="muted"><input class="edit-input" data-group="ingredients" data-idx="${idx}" data-field="substitute" value="${esc(i.substitute || '无')}"></td>
       `;
       ingTbody.appendChild(tr);
     });
@@ -238,14 +269,14 @@ document.addEventListener('DOMContentLoaded', function(){
   if (steps.length === 0) {
     document.getElementById('step-empty').style.display = 'block';
   } else {
-    steps.forEach(s => {
+    steps.forEach((s, idx) => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
         <td class="id">第 ${esc(s.sequence)} 步</td>
-        <td>${esc(s.action)}</td>
-        <td>${esc(s.duration_minutes || '?')} 分钟</td>
-        <td>${esc(s.heat_level || '-')}</td>
-        <td class="muted">${esc(s.expected_result || '')}</td>
+        <td><input class="edit-input" data-group="steps" data-idx="${idx}" data-field="action" value="${esc(s.action || '')}"></td>
+        <td><input class="edit-input" data-group="steps" data-idx="${idx}" data-field="duration_minutes" value="${esc(s.duration_minutes != null ? s.duration_minutes : '')}" style="width:64px"> 分钟</td>
+        <td><input class="edit-input" data-group="steps" data-idx="${idx}" data-field="heat_level" value="${esc(s.heat_level || '')}" style="width:72px"></td>
+        <td class="muted"><input class="edit-input" data-group="steps" data-idx="${idx}" data-field="expected_result" value="${esc(s.expected_result || '')}"></td>
       `;
       stepTbody.appendChild(tr);
     });
@@ -260,53 +291,163 @@ document.addEventListener('DOMContentLoaded', function(){
   if (tagList.length === 0) {
     document.getElementById('tag-empty').style.display = 'block';
   } else {
-    tagList.forEach(([category, values]) => {
+    tagList.forEach(([category, values], idx) => {
       const tr = document.createElement('tr');
       const valuesStr = Array.isArray(values) ? values.join('/') : String(values || '');
       tr.innerHTML = `
         <td><strong>${esc(category)}</strong></td>
-        <td>${esc(valuesStr) || '<span class="muted">无</span>'}</td>
+        <td><input class="edit-input" data-group="tags" data-idx="${idx}" data-field="values" value="${esc(valuesStr)}"></td>
       `;
       tagTbody.appendChild(tr);
     });
   }
 
-  // 6. 复制 prompt 按钮(单工铁律)
+  // 6. 改前/改后对比确认(T13 · G8 补齐)
+  // 6.1 快照原始值(改前)
+  const origSnapshot = {
+    ingredients: ings.map(i => ({
+      name: i.name || '',
+      quantity_text: i.quantity_text || ((i.quantity != null ? i.quantity : '') + (i.unit ? ' ' + i.unit : '')),
+      category: i.category || '',
+      substitute: i.substitute || '无',
+    })),
+    steps: steps.map(s => ({
+      action: s.action || '',
+      duration_minutes: s.duration_minutes != null ? String(s.duration_minutes) : '',
+      heat_level: s.heat_level || '',
+      expected_result: s.expected_result || '',
+    })),
+    tags: tagList.map(([, values]) => Array.isArray(values) ? values.join('/') : String(values || '')),
+  };
+  // 6.2 标签类别名(显示用)
+  const tagNames = tagList.map(([cat]) => cat);
+  // 6.3 输入变化 → 黄底高亮
+  document.querySelectorAll('.edit-input').forEach(inp => {
+    inp.addEventListener('input', () => {
+      const cur = inp.value;
+      const snap = snapshotValue(inp);
+      inp.classList.toggle('changed', cur !== snap);
+    });
+  });
+  function snapshotValue(inp) {
+    const g = inp.dataset.group, idx = +inp.dataset.idx, f = inp.dataset.field;
+    return (origSnapshot[g][idx] || {})[f] ?? '';
+  }
+  // 6.4 收集差异(改前/改后)
+  function collectDiff() {
+    const groups = [];
+    const count = { total: 0, ingredients: 0, steps: 0, tags: 0 };
+    // 食材
+    const ingDiffs = [];
+    document.querySelectorAll('#panel-ingredients .edit-input').forEach(inp => {
+      const idx = +inp.dataset.idx, f = inp.dataset.field;
+      const before = (origSnapshot.ingredients[idx] || {})[f] ?? '';
+      const after = inp.value;
+      if (String(before) !== String(after)) {
+        ingDiffs.push({ row: ings[idx].name || `食材${idx + 1}`, field: f, before, after });
+      }
+    });
+    if (ingDiffs.length) groups.push({ title: '🥬 食材', items: ingDiffs });
+    // 步骤
+    const stepDiffs = [];
+    document.querySelectorAll('#panel-steps .edit-input').forEach(inp => {
+      const idx = +inp.dataset.idx, f = inp.dataset.field;
+      const before = (origSnapshot.steps[idx] || {})[f] ?? '';
+      const after = inp.value;
+      if (String(before) !== String(after)) {
+        stepDiffs.push({ row: `第 ${steps[idx].sequence} 步`, field: f, before, after });
+      }
+    });
+    if (stepDiffs.length) groups.push({ title: '📝 步骤', items: stepDiffs });
+    // 标签
+    const tagDiffs = [];
+    document.querySelectorAll('#panel-tags .edit-input').forEach(inp => {
+      const idx = +inp.dataset.idx;
+      const before = origSnapshot.tags[idx] ?? '';
+      const after = inp.value;
+      if (String(before) !== String(after)) {
+        tagDiffs.push({ row: tagNames[idx] || `标签${idx + 1}`, field: '值', before, after });
+      }
+    });
+    if (tagDiffs.length) groups.push({ title: '🏷️ 标签', items: tagDiffs });
+    count.total = ingDiffs.length + stepDiffs.length + tagDiffs.length;
+    count.ingredients = ingDiffs.length;
+    count.steps = stepDiffs.length;
+    count.tags = tagDiffs.length;
+    return { groups, count };
+  }
+  // 6.5 渲染差异面板
+  const diffPanel = document.getElementById('diff-panel');
+  const diffBody = document.getElementById('diff-body');
+  function renderDiff() {
+    const { groups, count } = collectDiff();
+    document.getElementById('diff-count').textContent = count.total + ' 处修改';
+    diffPanel.classList.remove('hidden');
+    if (count.total === 0) {
+      diffBody.innerHTML = '<div class="diff-none">✅ 没有检测到修改(所有字段与库中一致)</div>';
+      return;
+    }
+    diffBody.innerHTML = '';
+    groups.forEach(g => {
+      const groupEl = document.createElement('div');
+      groupEl.className = 'diff-group';
+      groupEl.innerHTML = `<div class="diff-group-title">${g.title}(${g.items.length})</div>`;
+      g.items.forEach(it => {
+        const item = document.createElement('div');
+        item.className = 'diff-item';
+        const fmap = { name: '名称', quantity_text: '用量', category: '类别', substitute: '替代',
+                       action: '动作', duration_minutes: '时长', heat_level: '火候',
+                       expected_result: '预期', values: '值' };
+        item.innerHTML = `
+          <span class="diff-field">${esc(it.row)}·${esc(fmap[it.field] || it.field)}</span>
+          <span class="diff-before">${esc(it.before)}</span>
+          <span class="diff-arrow">→</span>
+          <span class="diff-after">${esc(it.after)}</span>
+        `;
+        groupEl.appendChild(item);
+      });
+      diffBody.appendChild(groupEl);
+    });
+  }
+  document.getElementById('diff-btn').addEventListener('click', () => {
+    renderDiff();
+    diffPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const { count } = collectDiff();
+    showToast(count.total ? `已列出 ${count.total} 处修改(黄底=已改)` : '无修改', count.total ? '' : 'success');
+  });
+
+  // 7. 复制 prompt 按钮(单工铁律)
+  function fieldCn(f) {
+    return { name: '名称', quantity_text: '用量', category: '类别', substitute: '替代',
+             action: '动作', duration_minutes: '时长', heat_level: '火候',
+             expected_result: '预期', values: '值' }[f] || f;
+  }
   function generatePrompt() {
+    const { groups, count } = collectDiff();
     const lines = [
       '[批量编辑 · 私家大厨]',
       `recipe_id: ${D.recipe_id}`,
       `recipe_name: ${D.recipe_name}`,
       `生成时间: ${D.generated_at}`,
+      `修改处数: ${count.total} (食材 ${count.ingredients} / 步骤 ${count.steps} / 标签 ${count.tags})`,
       '',
-      '[用户编辑意图 · 待 AI 解析]',
-      '当前数据(从 DB 读取):',
+      '[改前/改后对比 · 用户已确认]',
     ];
 
-    if (ings.length > 0) {
-      lines.push('', '## 食材清单:');
-      ings.forEach(i => {
-        lines.push(`- ${i.id} | ${i.name} | ${i.quantity_text || (i.quantity + (i.unit || ''))} | ${i.category || '?'} | 替代: ${i.substitute || '无'}`);
-      });
+    if (count.total === 0) {
+      lines.push('(无修改,页面未做任何编辑)');
     }
-    if (steps.length > 0) {
-      lines.push('', '## 烹饪步骤:');
-      steps.forEach(s => {
-        lines.push(`- 第 ${s.sequence} 步 (id: ${s.id}): ${s.action} | ${s.duration_minutes || '?'}分钟 | ${s.heat_level || '-'} | ${s.expected_result || ''}`);
+    groups.forEach(g => {
+      lines.push('', `## ${g.title}(改前 → 改后):`);
+      g.items.forEach(it => {
+        lines.push(`- ${it.row} · ${fieldCn(it.field)}: ${it.before} → ${it.after}`);
       });
-    }
-    if (tagList.length > 0) {
-      lines.push('', '## 标签分类:');
-      tagList.forEach(([cat, vals]) => {
-        const v = Array.isArray(vals) ? vals.join('/') : vals;
-        lines.push(`- ${cat}: ${v}`);
-      });
-    }
+    });
 
     lines.push('', '[给 AI 的指令]');
-    lines.push('加载「私家大厨」技能,根据用户编辑意图(若用户已告诉我具体修改)调对应 manager:');
-    lines.push('- 食材管理: ingredient_manager.py update <ingredient_id>');
-    lines.push('- 步骤管理: step_manager.py update <step_id>');
+    lines.push('加载「私家大厨」技能,按上面「改前/改后对比」逐项调对应 manager 执行修改:');
+    lines.push('- 食材管理: ingredient_manager.py update <ingredient_id> [--name/--quantity/--quantity_text/--category/--substitute]');
+    lines.push('- 步骤管理: step_manager.py update <step_id> [--action/--duration/--heat_level/--expected_result]');
     lines.push('- 标签管理: category_manager / cooking_method_manager / cookware_manager / diet_tag_manager / flavor_manager / meal_type_manager / season_manager');
     lines.push('改完告诉我修改结果。');
 
@@ -315,8 +456,13 @@ document.addEventListener('DOMContentLoaded', function(){
 
   document.getElementById('copy-btn').addEventListener('click', async () => {
     // 08 5 状态 · confirm: 复制修改 prompt 前确认(08 §2 确认阶段)
+    const { count } = collectDiff();
+    if (count.total === 0) {
+      showToast('⚠️ 未检测到修改,请先在表格里改(黄底=已改)', 'error');
+      return;
+    }
     if (A08) {
-      A08.state.show('confirm', '确认复制修改 prompt?', '复制后将粘贴给 AI,由 AI 调 manager CLI 改 DB(单工铁律)。', [
+      A08.state.show('confirm', `确认复制修改 prompt?(${count.total} 处修改)`, '将复制「改前/改后对比」prompt,粘贴给 AI 后由 AI 调 manager CLI 改 DB(单工铁律)。', [
         { label: '确认复制', kind: 'primary', onclick: () => doCopyPrompt() },
         { label: '取消', onclick: () => A08.state.hide() },
       ]);

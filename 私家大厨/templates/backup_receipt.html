@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>🗄️ 备份完成 · 私家大厨</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{--blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);--bg:#F2F2F7;--card:#FFFFFF;--separator:rgba(60,60,67,0.12);--text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;--success:#34C759;--success-soft:rgba(52,199,89,0.12);--warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);--danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);--radius:14px;--radius-sm:10px;--radius-pill:100px;--font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif}
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 60px 0}
+  .container{max-width:820px;margin:0 auto;padding:20px 16px}
+  .hero{background:linear-gradient(135deg,#FFFFFF 0%,#E8F5E9 100%);border-radius:var(--radius);padding:24px 22px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:24px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-meta{font-size:13px;color:var(--text3);margin-bottom:0}
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border-radius:var(--radius);padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .kpi .num{font-size:32px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.1;margin-bottom:4px}
+  .kpi .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
+  .kpi.primary .num{color:var(--blue)}
+  .kpi.success .num{color:var(--success)}
+  .kpi.warn .num{color:var(--warn)}
+  .kpi.danger .num{color:var(--danger)}
+  .card{background:var(--card);border-radius:var(--radius);margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,0.04);overflow:hidden}
+  .hidden{display:none !important}
+  .card-header{padding:14px 18px 12px;border-bottom:1px solid var(--separator);display:flex;justify-content:space-between;align-items:center}
+  .card-header h2{font-size:16px;font-weight:700;margin:0}
+  .card-header .count{font-size:12px;color:var(--text3);font-weight:500}
+  .path-block{padding:14px 18px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--text2);word-break:break-all;line-height:1.6;background:var(--bg)}
+  .path-block strong{color:var(--text)}
+  .row{display:flex;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--separator);font-size:13px}
+  .row:last-child{border-bottom:none}
+  .row .label{color:var(--text3)}
+  .row .value{font-weight:600}
+  .tip{padding:12px 18px;background:var(--success-soft);border-radius:var(--radius-sm);margin:14px 18px;font-size:12px;color:var(--text2);line-height:1.7}
+  .tip strong{color:var(--success)}
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:14px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3);line-height:1.6}
+  @media (max-width:600px){.container{padding:14px 10px}.hero{padding:18px 16px}.hero h1{font-size:20px}.kpi .num{font-size:24px}}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <section class="hero">
+    <h1 id="page-title">🗄️ 备份完成</h1>
+    <div class="hero-meta" id="meta">生成中...</div>
+  </section>
+
+  <div class="kpi-grid" id="kpi-grid"></div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>备份文件</h2>
+      <span class="count" id="zip-name"></span>
+    </div>
+    <div class="path-block" id="zip-path">加载中...</div>
+    <div class="tip">
+      <strong>♻️ 完整恢复:</strong>解压 ZIP → 得到 17 表 JSON + 三照片目录 → 用
+      <code>import_orchestrator.py</code> 导入 JSON → 照片目录放回 <code>$CHEF_OUTPUT_DIR</code> 对应位置(纯文件操作,不碰 schema)。
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2>打包统计</h2>
+      <span class="count" id="stats-count"></span>
+    </div>
+    <div id="stats-detail"></div>
+  </div>
+
+  <footer class="footer" id="footer">
+    导出备份 · 全量 17 表 JSON + 三照片目录(photos / source_photos / work_photos)ZIP 打包
+  </footer>
+
+</div>
+
+<!-- 08 共享动作层(复制数据/复制日志双按钮 + 5 状态 · export_backup.py 注入) -->
+<!--INJECT-08-->
+
+<!--INJECT-DATA-->
+<script>
+(function(){
+  'use strict';
+
+  // 08 5 状态: loading(注入前) → normal / empty / error / confirm
+  var A08 = window.A08;
+  function state(name, msg){
+    if (!A08) return;
+    if (name === 'normal') { A08.state.hide(); return; }
+    A08.state.show(name, null, msg || '');
+  }
+  state('loading', '备份回执加载中…');
+
+  // 5 状态 fallback(显式 hidden)
+  const fallbackEl = document.createElement('div');
+  fallbackEl.id = 'state-error';
+  fallbackEl.className = 'hidden';
+  fallbackEl.style.cssText = 'background:#FEE;border-radius:14px;padding:48px 24px;text-align:center;color:#FF3B30;margin-bottom:14px';
+  fallbackEl.innerHTML = '<div style="font-size:48px;margin-bottom:12px">⚠️</div><div id="error-msg">数据加载失败</div>';
+  document.body.querySelector('.container').prepend(fallbackEl);
+
+  // §04 原则 4 #3:数据守卫
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    document.getElementById('error-msg').textContent = '数据未注入(window.__DATA__ 缺失)';
+    fallbackEl.classList.remove('hidden');
+    state('error', '数据未注入(window.__DATA__ 缺失)。这是模板,不是最终交付。请用 export_backup.py 生成。');
+    return;
+  }
+  const D = window.__DATA__;
+
+  // XSS 防护
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  // 1. 标题 + meta
+  document.getElementById('page-title').textContent = D.title || '🗄️ 备份完成';
+  document.getElementById('meta').textContent = `生成时间:${D.created_at} · ${D.recipe_count} 道菜`;
+
+  // 2. KPI 卡
+  const photoTotal = Object.values(D.photo_counts || {}).reduce((a, b) => a + b, 0);
+  const kpis = [
+    {label: '菜谱数', value: String(D.recipe_count || 0), style: 'primary'},
+    {label: '数据表', value: String(Object.keys(D.tables || {}).length || 0), style: 'success'},
+    {label: '照片数', value: String(photoTotal), style: 'success'},
+    {label: '含废弃', value: D.include_archived ? '是' : '否', style: D.include_archived ? 'warn' : 'primary'},
+  ];
+  const kpiGrid = document.getElementById('kpi-grid');
+  kpis.forEach(k => {
+    const card = document.createElement('div');
+    card.className = 'kpi ' + (k.style || 'primary');
+    card.innerHTML = `<div class="num">${esc(k.value)}</div><div class="lbl">${esc(k.label)}</div>`;
+    kpiGrid.appendChild(card);
+  });
+
+  // 3. 备份文件路径
+  document.getElementById('zip-name').textContent = (D.zip_path || '').split(/[\\\/]/).pop();
+  document.getElementById('zip-path').textContent = D.zip_path || '(未知)';
+
+  // 4. 打包统计明细
+  const stats = document.getElementById('stats-detail');
+  const tables = D.tables || {};
+  const tableRows = Object.entries(tables).map(([t, n]) =>
+    `<div class="row"><span class="label">${esc(t)}</span><span class="value">${n} 行</span></div>`
+  );
+  const photoRows = Object.entries(D.photo_counts || {}).map(([d, n]) =>
+    `<div class="row"><span class="label">${esc(d)}/</span><span class="value">${n} 文件</span></div>`
+  );
+  document.getElementById('stats-count').textContent = `${Object.keys(tables).length} 表 + ${Object.keys(D.photo_counts || {}).length} 目录`;
+
+  if (tableRows.length === 0 && photoRows.length === 0) {
+    stats.innerHTML = '<div class="row"><span class="label">暂无数据</span></div>';
+    state('empty', '备份完成但无数据(库中无食谱/照片)');
+    return;
+  }
+  stats.innerHTML = [...tableRows, ...photoRows].join('');
+
+  // 正常态(内容已渲染)
+  state('normal');
+
+})();
+</script>
+
+</body>
+</html>

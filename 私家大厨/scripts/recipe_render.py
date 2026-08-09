@@ -71,6 +71,61 @@ def inject_data(template_html: str, payload: dict) -> str:
     return template_html.replace(placeholder, script_tag, 1)
 
 
+# ── 查看域场景映射(view-1..8 · G3 决策)──────────────────────────
+# scene_id / command_cn / wake_word 随 --focus/--swap 参数切换
+FOCUS_SCENE = {
+    "食材": ("view-4", "查看食材", "查看食材"),
+    "步骤": ("view-6", "查看步骤", "查看步骤"),
+    "营养": ("view-7", "查看营养", "查看营养"),
+    "背景": ("view-8", "查看背景", "查看背景"),
+}
+
+
+def parse_swap(spec: str) -> list:
+    """解析 --swap 参数(可多次):'原:替换' 或 '原:替换:用量'
+
+    例: --swap 五花肉:鸡胸肉 --swap 螺丝椒:青椒:300
+    """
+    result = []
+    parts = [p.strip() for p in spec.split(",") if p.strip()]
+    for p in parts:
+        seg = [s.strip() for s in p.split(":")]
+        if len(seg) >= 2 and seg[0] and seg[1]:
+            entry = {"from": seg[0], "to": seg[1]}
+            if len(seg) >= 3 and seg[2]:
+                try:
+                    entry["qty"] = float(seg[2])
+                except ValueError:
+                    entry["qty"] = seg[2]
+            result.append(entry)
+    return result
+
+
+def build_view_config(args: dict) -> dict:
+    """构造 view 配置(focus 只看 X / swap 替换食材预览 · 均不落库)"""
+    view = {}
+    focus = args.get("--focus")
+    if focus in FOCUS_SCENE:
+        view["focus"] = focus
+    swaps = []
+    for key, val in args.items():
+        if key.startswith("--swap") and val:
+            swaps.extend(parse_swap(str(val)))
+    if swaps:
+        view["swap"] = swaps
+    return view
+
+
+def scene_meta(view: dict) -> tuple:
+    """根据 view 配置选场景元数据(scene_id/command_cn/wake_word)"""
+    if view.get("swap"):
+        return ("view-3", "查看食谱", "查看食谱(替换食材预览)")
+    if view.get("focus"):
+        sid, cn, ww = FOCUS_SCENE[view["focus"]]
+        return (sid, cn, ww)
+    return ("view-1", "查看食谱", "查看食谱 / 查看食材 / 查看步骤 / 查看营养 / 查看背景")
+
+
 # ── 渲染主函数────────────────────────────────────────────────────
 def render(args):
     """渲染单道食谱为 HTML"""
@@ -89,11 +144,18 @@ def render(args):
     # 2. 渲染(占位符注入)
     try:
         template = TEMPLATE_PATH.read_text(encoding="utf-8")
-        html = inject_data(template, {"recipe": recipe})
+        view = build_view_config(args)
+        scene_id, command_cn, wake_word = scene_meta(view)
+        payload = {
+            "recipe": recipe,
+            "view": view,
+            "chef_output_dir": str(get_output_root()),
+        }
+        html = inject_data(template, payload)
         # 08 对齐:复制数据(5 段)/复制日志(6 段)
         copy_data = build_copy_data(
-            scene_id="view-1",
-            command_cn="查看食谱",
+            scene_id=scene_id,
+            command_cn=command_cn,
             target=recipe.get("name") or name_or_id,
             payload={
                 "recipe_id": recipe.get("id"),
@@ -103,14 +165,15 @@ def render(args):
                 "difficulty": recipe.get("difficulty"),
                 "ingredients_count": len(recipe.get("ingredients") or []),
                 "steps_count": len(recipe.get("steps") or []),
+                "view": view,
             },
         )
         copy_log = build_copy_log(
-            scene_id="view-1",
-            command_cn="查看食谱",
-            wake_word="查看食谱 / 查看食材 / 查看步骤 / 查看营养 / 查看背景",
-            thinking=f"意图理解 → 查看食谱 → 调 export-json 取 {recipe.get('name')} 全量数据 → 注入 recipe_view.html",
-            data_structure="window.__RECIPE__(recipe/ingredients/steps/history)· 读库(只读)",
+            scene_id=scene_id,
+            command_cn=command_cn,
+            wake_word=wake_word,
+            thinking=f"意图理解 → {command_cn} → 调 export-json 取 {recipe.get('name')} 全量数据 → 注入 recipe_view.html",
+            data_structure="window.__RECIPE__(recipe/view/chef_output_dir)· 读库(只读)",
             call_chain=f"python recipe_manager.py export-json {name_or_id} --compact ; python recipe_render.py render {name_or_id}",
         )
         html = inject_08_layer(html, copy_data, copy_log)
@@ -149,11 +212,15 @@ def main():
     if len(sys.argv) < 2:
         print("""用法:
     python recipe_render.py render <菜名或ID> [--output <path>] [--no-clobber]
+                          [--focus 食材|步骤|营养|背景] [--swap 原食材:替换食材[:用量]]
 
 示例:
     python recipe_render.py render 宫保虾球
     python recipe_render.py render 宫保虾球 --output ./preview.html
     python recipe_render.py render <UUID> --no-clobber
+    python recipe_render.py render 辣椒炒肉 --focus 食材        # 只看食材(其他 section 隐藏)
+    python recipe_render.py render 辣椒炒肉 --swap 五花肉:鸡胸肉   # 替换食材预览(不落库)
+    python recipe_render.py render 辣椒炒肉 --swap 五花肉:鸡胸肉:250 --swap 螺丝椒:青椒
 
 环境变量:
     CHEF_OUTPUT_DIR   HTML 输出目录(默认:output)
@@ -168,7 +235,14 @@ def main():
         arg = sys.argv[i]
         if arg.startswith("--"):
             if i + 1 < len(sys.argv) and not sys.argv[i + 1].startswith("--"):
-                args[arg] = sys.argv[i + 1]
+                # 可重复参数(--swap):自动 _N 去重,保留全部
+                if arg.startswith("--swap"):
+                    n = 0
+                    while f"{arg}_{n}" in args:
+                        n += 1
+                    args[f"{arg}_{n}"] = sys.argv[i + 1]
+                else:
+                    args[arg] = sys.argv[i + 1]
                 i += 2
             else:
                 args[arg] = True

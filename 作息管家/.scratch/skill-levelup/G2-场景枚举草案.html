@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>G2 场景枚举草案 · 作息管家</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+    --warn: #ff9f0a; --warn-soft: rgba(255,159,10,.12);
+    --purple: #af52de; --purple-soft: rgba(175,82,222,.1);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 28px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--purple); background: var(--purple-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 680px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .badge-row { display: flex; gap: 10px; margin: 18px 0 26px; flex-wrap: wrap; }
+  .badge { display: flex; align-items: center; gap: 8px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 16px; font-size: 13px; color: var(--text2); box-shadow: 0 1px 0 rgba(0,0,0,.03); }
+  .badge b { color: var(--text); font-size: 16px; }
+
+  .domain { margin-bottom: 24px; }
+  .dhead { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .dhead .dtag { font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: 999px; }
+  .dhead .dtag.record { background: var(--accent-soft); color: var(--accent); }
+  .dhead .dtag.plan { background: var(--ok-soft); color: var(--ok); }
+  .dhead .dtag.cross { background: var(--purple-soft); color: var(--purple); }
+  .dhead .dtag.setup { background: var(--warn-soft); color: var(--warn); }
+  .dhead h3 { font-size: 16px; font-weight: 700; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 12px 14px; border-bottom: 1px solid var(--line); background: #fafafc; letter-spacing: .02em; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--line-soft); font-size: 13px; color: var(--text2); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.name { font-weight: 600; color: var(--text); }
+  td .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; margin-right: 4px; }
+  .pill.new { background: var(--ok-soft); color: var(--ok); }
+  .pill.keep { background: var(--line); color: var(--text2); }
+  .pill.hard { background: var(--accent-soft); color: var(--accent); }
+
+  .note-box { margin-top: 26px; background: var(--card); border: 1px dashed var(--line); border-radius: 16px; padding: 18px 20px; }
+  .note-box h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .note-box .item { display: flex; gap: 10px; padding: 7px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .note-box .item:last-child { border-bottom: none; }
+  .note-box .item .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--warn-soft); color: var(--warn); display: flex; align-items: center; justify-content: center; margin-top: 2px; font-size: 11px; font-weight: 700; }
+
+  footer { margin-top: 32px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } .dhead { flex-wrap: wrap; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">G2 场景枚举定标 · 草案（规格阶段收尾）</span>
+    <h1>完整场景清单 79 个</h1>
+    <p class="sub">输入：G1 功能定标清单（6 深度 + 5 基础）+ R3 onboarding + 现有 73 场景核对。依据「场景 = 独立呈现单元」，每个场景独立 prompt + HTML。</p>
+  </header>
+
+  <div class="badge-row">
+    <div class="badge"><b>79</b> 总场景（73 + 6 新）</div>
+    <div class="badge"><b>6</b> 新增（🟢 含首次使用）</div>
+    <div class="badge"><b>4</b> 域：record / plan / 跨域 / setup</div>
+  </div>
+
+  <div class="domain">
+    <div class="dhead"><span class="dtag record">record 域 · 作息记录</span><h3>回顾性输入 · 22 场景</h3></div>
+    <table>
+      <tr><th>#</th><th>场景名</th><th>状态</th><th>呈现/说明</th></tr>
+      <tr><td>1</td><td class="name">记录</td><td><span class="pill new">新增</span></td><td>记一笔 → 全天作息表三件套（G1-A1）</td></tr>
+      <tr><td>2</td><td class="name">批量导入</td><td><span class="pill new">新增</span></td><td>JSON 批量写入（batch-add，G1-B）</td></tr>
+      <tr><td>3</td><td class="name">周视图</td><td><span class="pill new">新增</span></td><td>7×24 一周总览（G1-A6）</td></tr>
+      <tr><td>4-14</td><td class="name">查询 / 时间线 / 日报告 / 区间报告 / 分类统计 / 分类区间 / 对比 / 月度对比 / 详情 / 单条 / 摘要</td><td><span class="pill keep">保留</span></td><td>现有场景核对 + L 级视觉统一</td></tr>
+      <tr><td>15-22</td><td class="name">分类管理（列表/提议/批准）· 修改记录 · 撤销/恢复 · 提醒 · 分类迁移等</td><td><span class="pill keep">保留</span></td><td>现有场景核对</td></tr>
+    </table>
+  </div>
+
+  <div class="domain">
+    <div class="dhead"><span class="dtag plan">plan 域 · 日程计划</span><h3>预测性输入 · 14 场景</h3></div>
+    <table>
+      <tr><th>#</th><th>场景名</th><th>状态</th><th>呈现/说明</th></tr>
+      <tr><td>1</td><td class="name">制定计划</td><td><span class="pill new">新增</span></td><td>次日 24h 计划，时间轴+色带+贴合提示（G1-A5，强化既有商量计划）</td></tr>
+      <tr><td>2</td><td class="name">计划事件管理</td><td><span class="pill keep">保留</span></td><td>upsert/update/deactivate/list 现有</td></tr>
+      <tr><td>3</td><td class="name">计划预览 / 计划对照</td><td><span class="pill keep">保留</span></td><td>render-plans-preview / review 现有</td></tr>
+      <tr><td>4-14</td><td class="name">计划查询 / 事件搜索 / 状态 / 飞书同步 / 幂等补事件 / 完成标记 / 计划回执等</td><td><span class="pill keep">保留</span></td><td>现有场景核对</td></tr>
+    </table>
+  </div>
+
+  <div class="domain">
+    <div class="dhead"><span class="dtag cross">跨域 · 每晚工作流</span><h3>重点深度 · 5 场景</h3></div>
+    <table>
+      <tr><th>#</th><th>场景名</th><th>状态</th><th>呈现/说明</th></tr>
+      <tr><td>1</td><td class="name">复盘今日</td><td><span class="pill new">新增</span></td><td>计划 vs 实际 + 4 段叙事 + 健康分 + 异常（G1-A2）</td></tr>
+      <tr><td>2</td><td class="name">复盘本周</td><td><span class="pill new">新增</span></td><td>7 维趋势 + 热力图 + 健康分均值 + 亮点/问题（G1-A3）</td></tr>
+      <tr><td>3</td><td class="name">复盘本月</td><td><span class="pill new">新增</span></td><td>月度聚合 + 环比 + 目标达成（G1-A4）</td></tr>
+      <tr><td>4</td><td class="name">复盘（start-end 对照）</td><td><span class="pill keep">保留</span></td><td>现有 render-replay，并入复盘今日</td></tr>
+      <tr><td>5</td><td class="name">异常识别</td><td><span class="pill keep">保留</span></td><td>并入复盘呈现（G1-Q11）</td></tr>
+    </table>
+  </div>
+
+  <div class="domain">
+    <div class="dhead"><span class="dtag setup">setup 域 · 首次使用</span><h3>初始化 · 1 场景</h3></div>
+    <table>
+      <tr><th>#</th><th>场景名</th><th>状态</th><th>呈现/说明</th></tr>
+      <tr><td>1</td><td class="name">首次使用</td><td><span class="pill new">新增</span></td><td>6 步初始化 + 初始化报告 HTML（R3，飞书强引导）</td></tr>
+    </table>
+  </div>
+
+  <div class="note-box">
+    <h3>需要你确认的 3 点</h3>
+    <div class="item"><span class="dot">1</span>「复盘 start-end 对照」（现有 render-replay）并进「复盘今日」还是保留独立场景？（我建议：并进，避免两个复盘场景重复）</div>
+    <div class="item"><span class="dot">2</span>「批量导入」作为独立场景（batch-add 命令）还是并入「记录」？（我建议：独立，batch 是一次性批量写入，交互形态不同）</div>
+    <div class="item"><span class="dot">3</span>现有 73 场景里，record 域 22 + plan 域 14 + 跨域 5 + setup 1 = 42 个明确；其余 31 个需要对照 scenarios.yaml 逐一核对——确认后我跑一遍完整盘点出最终编号清单</div>
+  </div>
+
+  <footer>G2 草案 · 2026-08-09 · 确认后出最终场景编号清单（73→79）· 规格 map 闭环</footer>
+</div>
+</body>
+</html>

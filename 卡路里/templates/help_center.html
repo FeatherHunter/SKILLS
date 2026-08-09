@@ -333,6 +333,8 @@ footer {
 @media (min-width: 601px) and (max-width: 900px) {
   .container { max-width: 720px; }
 }
+
+  @keyframes fadeup{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}
 </style>
 </head>
 <body>
@@ -413,12 +415,7 @@ const toastWakeEl = document.getElementById('toastWake');
 const toastCloseEl = document.getElementById('toastClose');
 let toastTimer = null;
 
-function showToast(wake) {
-  if (toastWakeEl) toastWakeEl.textContent = wake;
-  toastEl.classList.add('show');
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => toastEl.classList.remove('show'), 4500);
-}
+  function showToast(msg){var t=document.createElement('div');t.textContent=msg;t.style.cssText='position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:rgba(29,29,31,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:999;animation:fadeup .25s ease';document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(()=>t.remove(),420);},1400);}
 if (toastCloseEl) {
   toastCloseEl.addEventListener('click', () => {
     toastEl.classList.remove('show');

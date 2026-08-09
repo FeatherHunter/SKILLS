@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模板分合规则 · 复盘场景 · 作息管家</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+    --warn: #ff9f0a; --warn-soft: rgba(255,159,10,.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 26px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--accent); background: var(--accent-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 700px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .answer { background: var(--card); border-radius: 18px; padding: 20px 22px; margin: 20px 0 28px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  .answer h2 { font-size: 17px; font-weight: 700; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .answer p { font-size: 13.5px; color: var(--text2); }
+  .answer p b { color: var(--text); font-weight: 600; }
+
+  .sec-title { font-size: 16px; font-weight: 700; margin: 26px 0 12px; }
+
+  table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 14px; overflow: hidden; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  th { text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); padding: 12px 14px; border-bottom: 1px solid var(--line); background: #fafafc; }
+  td { padding: 12px 14px; border-bottom: 1px solid var(--line-soft); font-size: 13px; color: var(--text2); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td .hl { color: var(--accent); font-weight: 600; }
+
+  .cases { margin-top: 16px; }
+  .case { background: var(--card); border-radius: 16px; padding: 18px 20px; margin-bottom: 12px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  .case-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .case-name { font-size: 15.5px; font-weight: 700; }
+  .case-tag { font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+  .case-tag.tpl { background: var(--accent-soft); color: var(--accent); }
+  .case-tag.calc { background: var(--ok-soft); color: var(--ok); }
+  .case .row { display: grid; grid-template-columns: 60px 1fr; gap: 8px 12px; font-size: 13px; }
+  .case .row dt { color: var(--muted); font-weight: 500; }
+  .case .row dd { color: var(--text2); }
+
+  .rule { margin-top: 26px; background: var(--card); border: 1px dashed var(--line); border-radius: 16px; padding: 18px 20px; }
+  .rule h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .rule .item { display: flex; gap: 10px; padding: 7px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .rule .item:last-child { border-bottom: none; }
+  .rule .item .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+
+  footer { margin-top: 30px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">模板分合规则 · 你的问题</span>
+    <h1>一个场景 · 一个唤醒词 · 一个模板</h1>
+    <p class="sub">你的直觉是对的：<b>呈现数据不同 → 就该不同模板</b>。底层 start-end 计算可以复用，但那是「复用计算层」，不是「复用展示层」。</p>
+  </header>
+
+  <div class="answer">
+    <h2>回答：是，需要不同模板</h2>
+    <p>「复盘本周」和「复盘本月」虽然底层都走 start-end 区间聚合，但<b>用户看到的信息构成不同</b>（本周=7 维趋势+热力图+健康分均值；本月=月度聚合+环比+目标达成）——这就是两个不同的体验单元，按你定的「场景=独立呈现单元」原则，<b>各配独立模板</b>。复用的位置在<b>计算层</b>（区间聚合、7 维、健康分、环比这些函数），不在模板。</p>
+  </div>
+
+  <div class="sec-title">模板分合的判断标准</div>
+  <table>
+    <tr><th>情况</th><th>判断</th><th>例子</th></tr>
+    <tr><td><b>信息构成相同</b>，只换日期范围</td><td>复用同一模板</td><td>查今天/昨天/指定日期 → 都 record_day.html</td></tr>
+    <tr><td><b>信息构成不同</b>（呈现的数据集变了）</td><td class="hl">独立模板</td><td>本周(趋势结构) vs 本月(环比目标) → 两模板</td></tr>
+    <tr><td>底层计算相同</td><td>复用计算函数</td><td>区间聚合/7维/健康分 → schedule_replay 计算层复用</td></tr>
+  </table>
+
+  <div class="sec-title">落到复盘三件</div>
+  <div class="cases">
+
+    <div class="case">
+      <div class="case-head"><span class="case-name">复盘本周</span><span class="case-tag tpl">独立模板 · 周复盘.html</span><span class="case-tag calc">计算复用</span></div>
+      <div class="row">
+        <dt>呈现</dt><dd>7 维趋势 + 热力图 + 健康分均值（异常日标注）+ 本周亮点/问题</dd>
+        <dt>底层</dt><dd>start-end 区间聚合（本周一~周日）→ 复用现有计算</dd>
+      </div>
+    </div>
+
+    <div class="case">
+      <div class="case-head"><span class="case-name">复盘本月</span><span class="case-tag tpl">独立模板 · 月复盘.html</span><span class="case-tag calc">计算复用</span></div>
+      <div class="row">
+        <dt>呈现</dt><dd>月度聚合 + 环比对比 + 目标达成 + 健康分趋势</dd>
+        <dt>底层</dt><dd>start-end 区间聚合（本月 1 日~末日）→ 复用现有计算</dd>
+      </div>
+    </div>
+
+    <div class="case">
+      <div class="case-head"><span class="case-name">复盘区间（自由区间）</span><span class="case-tag tpl">按区间长度路由模板</span><span class="case-tag calc">计算复用</span></div>
+      <div class="row">
+        <dt>呈现</dt><dd>~7 天 → 周模板；~30 天 → 月模板；其他 → 通用区间摘要</dd>
+        <dt>底层</dt><dd>同一 start-end 聚合，区间长度路由决定用哪个模板</dd>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="rule">
+    <h3>一句话规则</h3>
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>一个场景 = 一个唤醒词 = 一个模板（呈现数据不同的场景，各自独立模板）</div>
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>复用只发生在计算层（函数），不发生模板层（呈现不同）</div>
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>自由区间场景按区间长度路由到最贴近的模板，不单独造第三套</div>
+  </div>
+
+  <footer>模板分合规则 · 2026-08-09 · 待你确认后写入 G1/G2 决策</footer>
+</div>
+</body>
+</html>

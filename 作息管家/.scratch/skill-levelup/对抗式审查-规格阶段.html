@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对抗式审查 · 规格阶段 · 作息管家</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+    --red: #ff3b30; --red-soft: rgba(255,59,48,.1);
+    --warn: #ff9f0a; --warn-soft: rgba(255,159,10,.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 26px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--red); background: var(--red-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 700px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .verdict { display: flex; align-items: center; gap: 12px; background: var(--card); border-radius: 16px; padding: 16px 20px; margin: 20px 0 28px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  .verdict .sev { flex: none; width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; }
+  .verdict .sev.high { background: var(--red-soft); color: var(--red); }
+  .verdict .sev.mid { background: var(--warn-soft); color: var(--warn); }
+  .verdict p { font-size: 13.5px; color: var(--text2); }
+  .verdict p b { color: var(--text); }
+
+  .issue { background: var(--card); border-radius: 18px; padding: 20px 22px; margin-bottom: 16px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); border-left: 3px solid var(--line); }
+  .issue.high { border-left-color: var(--red); }
+  .issue.mid { border-left-color: var(--warn); }
+  .issue-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .issue .sev-tag { flex: none; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+  .issue.high .sev-tag { background: var(--red-soft); color: var(--red); }
+  .issue.mid .sev-tag { background: var(--warn-soft); color: var(--warn); }
+  .issue-title { font-size: 16px; font-weight: 700; }
+  .issue .q { font-size: 13px; color: var(--text2); margin: 6px 0; }
+  .issue .q b { color: var(--text); font-weight: 600; }
+  .issue .ev { font-size: 12.5px; color: var(--muted); margin: 8px 0 12px; background: var(--bg); border-radius: 10px; padding: 10px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
+  .issue .fix { font-size: 13px; color: var(--text2); }
+  .issue .fix b { color: var(--accent); }
+
+  .summary { margin-top: 26px; background: var(--card); border: 1px dashed var(--line); border-radius: 16px; padding: 18px 20px; }
+  .summary h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .summary .item { display: flex; gap: 10px; padding: 6px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .summary .item:last-child { border-bottom: none; }
+  .summary .item .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: 2px; font-size: 11px; font-weight: 700; }
+  .summary .item.h .dot { background: var(--red-soft); color: var(--red); }
+  .summary .item.m .dot { background: var(--warn-soft); color: var(--warn); }
+
+  footer { margin-top: 32px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">对抗式审查 · 从第一性原理出发</span>
+    <h1>规格阶段产出的 4 个矛盾</h1>
+    <p class="sub">以「可开源（硬约束）→ 零基础 → 领域第一 → 可交付」第一性为标尺，审查已闭环的 R2/G1/R3/G2 四票。<b>结论：规格阶段不能直接进入实施，有 2 个高危 + 2 个中危矛盾需先解决。</b></p>
+  </header>
+
+  <div class="verdict">
+    <div class="sev high">!</div>
+    <p><b>核心矛盾：可开源（第一优先级）vs git 历史含真实作息数据（Q10 拍板不清洗）。</b>其余 3 个矛盾围绕实施可行性与规格自洽。</p>
+  </div>
+
+  <!-- 1 -->
+  <div class="issue high">
+    <div class="issue-head"><span class="sev-tag">高危</span><span class="issue-title">矛盾 1 · 可开源 vs git 历史真实数据</span></div>
+    <p class="q"><b>第一性追问</b>：目标 1 是「可开源 = 仓库全公开」。但历史 7 个 commit（e6b42b6 ~ ba3a0be）含 `作息管家/.db/schedule_data.db`（3252 条真实作息）+ 2 个备份 JSON + 白名单 YAML。Q10 拍板「不清洗、不提及」——<b>两者直接冲突</b>：任何 clone 都能 `git log -p` 挖出全部作息记录。</p>
+    <div class="ev">git log --all -- '作息管家/.db/'  →  7 commits 含 schedule_data.db / backup/*.json
+Q1 拍板: 可开源(硬约束) → 第一优先级
+Q10 拍板: 历史不清理, README 不提及</div>
+    <p class="fix"><b>建议</b>：不等实施阶段——现在重开 Q10。三选一：① filter-repo 清洗（push 前你确认）；② 仓库级公开前把历史归档到私有 branch；③ 接受风险但 README 加「历史 commit 含演示数据」免责声明（至少不做"此地无银"式沉默）。<b>这是唯一我建议打破"已拍板"的项</b>——因为当时拍板时「可开源」还没被定义为第一优先级硬约束，两个决策不在同一认知下做出的。</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="issue high">
+    <div class="issue-head"><span class="sev-tag">高危</span><span class="issue-title">矛盾 2 · scenarios.yaml 合并器 vs R2 删 .notes/</span></div>
+    <p class="q"><b>第一性追问</b>：G2 定「81 场景经合并器写入 scenarios.yaml」+ 跨技能规范「yaml 只经合并器写入」。但合并器 = `.notes/_gen_scenarios.py`（docstring 自述"一次性脚本,生成后废弃"），而 R2 处置清单第 1 项 = 删 `.notes/` 整目录（你已拍板）。<b>删了生成器，73→81 靠什么写入？</b></p>
+    <div class="ev">_gen_scenarios.py:2  """生成 scenarios.yaml — 一次性脚本,生成后废弃"""
+_notes/ 5 个文件 → R2 清单观察项1 → 你拍板「删除 + 忽略」
+SKILL.md:16  场景资产唯一事实源: references/scenarios.yaml(73 场景)</div>
+    <p class="fix"><b>建议</b>：实施前必须定「yaml 写入机制」——要么新建正式的合并器脚本（放 scripts/，非 .notes/），要么把「合并器」定义为 AI 按字段契约手工 patch（现有 73 场景本就是脚本生成+后续手工维护）。<b>现状是"宣称有合并器，实际没有"</b>，这是流程漏洞不是执行细节。</p>
+  </div>
+
+  <!-- 3 -->
+  <div class="issue mid">
+    <div class="issue-head"><span class="sev-tag">中危</span><span class="issue-title">矛盾 3 · 复盘场景重叠：复盘今日 vs 复盘区间 vs 复盘本周/本月</span></div>
+    <p class="q"><b>第一性追问</b>：G1 定「复盘今日（对照+叙事+健康分）」与「复盘本周/本月（趋势+热力图）」为新场景，G2 又把 start-end 更名「复盘区间」保留。但 SKILL.md 路由已存在「复盘本周 → start-end 工作流 → schedule_replay.html」——<b>同一唤醒词「复盘本周」既命中 start-end（现有）又命中 G1 新场景（计划中），路由冲突未解决</b>。</p>
+    <div class="ev">SKILL.md:478  "复盘本周" → 复盘 start-end → schedule_replay.html
+G1-A3: 复盘本周 = 7维趋势 + 热力图 + 健康分均值（新模板）
+G2: 复盘区间(原 start-end) 保留独立场景</div>
+    <p class="fix"><b>建议</b>：规格阶段定死「复盘本周/本月」最终归属——是 start-end 增强（换模板复用现有路由）还是独立新场景（新唤醒词/新路由）？G1 与 G2 的表述不一致，实施阶段必然撞车。</p>
+  </div>
+
+  <!-- 4 -->
+  <div class="issue mid">
+    <div class="issue-head"><span class="sev-tag">中危</span><span class="issue-title">矛盾 4 · 周视图 vs 已有「类别深挖 24h×N 热力图」</span></div>
+    <p class="q"><b>第一性追问</b>：G1 定新场景「周视图 = 7×24 一周作息总览（网格/热力图）」。但现有 T4 场景 `category_range` 已输出 `record_category.html`（24h × N 天热力图）——<b>周视图与既有热力图渲染能力高度重叠，且 record_category 是按单分类深挖，周视图是全分类总览，但渲染层大概率可复用</b>。</p>
+    <div class="ev">scenarios.yaml:621  category_range → record_category.html(24h × N 天热力图)
+G1-A6: 周视图 = 7×24 一周作息总览(网格/热力图) → 新模板</div>
+    <p class="fix"><b>建议</b>：实施阶段周视图优先评估复用 record_category 的热力图渲染组件（属于「复用仅必要时」的对立面——这里复用的成本远低于新写）。规格层面补一句：周视图数据层与渲染层复用标注。</p>
+  </div>
+
+  <div class="summary">
+    <h3>审查结论</h3>
+    <div class="item h"><span class="dot">高</span>矛盾 1（git 历史 vs 可开源）——唯一建议重开已拍板决策的项，需要你定</div>
+    <div class="item h"><span class="dot">高</span>矛盾 2（合并器不存在 vs G2 宣称经合并器写入）——流程漏洞，实施前必须定机制</div>
+    <div class="item m"><span class="dot">中</span>矛盾 3（复盘本周/本月路由冲突）——G1/G2 表述不一致，需定死归属</div>
+    <div class="item m"><span class="dot">中</span>矛盾 4（周视图 vs 既有热力图复用）——实施前补复用标注即可，不阻塞</div>
+  </div>
+
+  <footer>对抗式审查 · 2026-08-09 · 基于 09 门禁 B（第一性 5 问）精神</footer>
+</div>
+</body>
+</html>

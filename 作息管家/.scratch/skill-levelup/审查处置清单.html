@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对抗式审查 · 处置清单 · 作息管家</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+    --red: #ff3b30; --red-soft: rgba(255,59,48,.1);
+    --warn: #ff9f0a; --warn-soft: rgba(255,159,10,.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 28px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--ok); background: var(--ok-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 680px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .card { background: var(--card); border-radius: 18px; padding: 20px 22px; margin-bottom: 14px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); }
+  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .card .tag { flex: none; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+  .tag.done { background: var(--ok-soft); color: var(--ok); }
+  .tag.decide { background: var(--warn-soft); color: var(--warn); }
+  .card-title { font-size: 15.5px; font-weight: 700; }
+  .card .ctx { font-size: 13.5px; color: var(--text2); margin: 6px 0 4px; }
+  .card .ctx b { color: var(--text); font-weight: 600; }
+  .card .ev { font-size: 12.5px; color: var(--muted); margin: 8px 0 12px; background: var(--bg); border-radius: 10px; padding: 10px 14px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; white-space: pre-wrap; }
+
+  .opts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .opt { border: 1.5px solid var(--line); border-radius: 14px; padding: 12px 14px; cursor: pointer; transition: all .15s ease; background: var(--card); display: flex; align-items: flex-start; gap: 10px; }
+  .opt:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .opt .tag { flex: none; font-size: 12px; font-weight: 700; width: 24px; height: 24px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--line); color: var(--text2); }
+  .opt .txt { font-size: 13px; color: var(--text2); }
+  .opt .txt b { display: block; font-size: 13.5px; color: var(--text); margin-bottom: 2px; }
+  .opt.sel { border-color: var(--ok); background: var(--ok-soft); }
+  .opt.sel .tag { background: var(--ok); color: #fff; }
+  .opt .rec { margin-left: auto; align-self: flex-start; font-size: 10.5px; font-weight: 700; color: var(--ok); background: var(--ok-soft); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+
+  footer { margin-top: 30px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  footer code { background: var(--card); border: 1px solid var(--line); padding: 3px 10px; border-radius: 8px; font-size: 12px; }
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } .opts { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">对抗式审查 · 处置清单</span>
+    <h1>4 个矛盾 · 处置方案</h1>
+    <p class="sub">矛盾 1 你已拍板「可以接受」。剩下 2/3/4 各给推荐方案，确认后规格阶段正式收口，进实施 map。</p>
+  </header>
+
+  <!-- 1 -->
+  <div class="card">
+    <div class="card-head"><span class="tag done">已定</span><span class="card-title">矛盾 1 · git 历史 vs 可开源</span></div>
+    <p class="ctx"><b>你的决定：可以接受</b>——不洗历史、不加 README 说明，维持 Q10。历史 7 commit 含真实作息数据的风险已知且接受。</p>
+  </div>
+
+  <!-- 2 -->
+  <div class="card">
+    <div class="card-head"><span class="tag decide">待定</span><span class="card-title">矛盾 2 · scenarios.yaml 写入机制</span></div>
+    <p class="ctx">现状：「合并器」= `.notes/_gen_scenarios.py`（一次性脚本，即将被 R2 删除），<b>实际并不存在可用的合并器</b>。但跨技能规范说「yaml 只经合并器写入」。删了 .notes/ 后 73→81 靠什么写入？</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>新建正式合并器</b>scripts/update_scenarios.py（读 yaml → 按字段契约增删改 → 写回，幂等）</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>AI 手工 patch</b>定义为唯一写入方式（现有 73 场景本就是手工维护），废弃"合并器"说法</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3 -->
+  <div class="card">
+    <div class="card-head"><span class="tag decide">待定</span><span class="card-title">矛盾 3 · 复盘本周/本月归属</span></div>
+    <p class="ctx">「复盘本周」既命中现有 start-end 路由（schedule_replay.html），又是 G1 新场景（趋势+热力图+健康分）。归属必须定死。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>start-end 增强</b>复盘本周/本月 = 「复盘区间」预置粒度，升级 schedule_replay.html 呈现（趋势+热力图+健康分进现有模板），复用路由</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>独立新场景</b>复盘本周/本月 = 全新模板 + 全新路由，与复盘区间并存</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4 -->
+  <div class="card">
+    <div class="card-head"><span class="tag decide">待定</span><span class="card-title">矛盾 4 · 周视图复用既有热力图</span></div>
+    <p class="ctx">周视图（7×24 总览）与既有 T4 类别深挖（record_category.html 24h×N 热力图）渲染层重叠。</p>
+    <div class="opts">
+      <div class="opt sel" data-v="A">
+        <span class="tag">A</span>
+        <span class="txt"><b>复用 + 扩展</b>周视图复用 record_category 热力图组件，补全分类总览维度</span>
+        <span class="rec">推荐</span>
+      </div>
+      <div class="opt" data-v="B">
+        <span class="tag">B</span>
+        <span class="txt"><b>全新写</b>周视图独立热力图渲染，不复用</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>回复格式：<code>2A 3A 4A</code> · 全按推荐：<code>全A</code></footer>
+</div>
+
+<script>
+  const cards = document.querySelectorAll('.card');
+  cards.forEach(card => {
+    card.querySelectorAll('.opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        card.querySelectorAll('.opt').forEach(o => o.classList.remove('sel'));
+        opt.classList.add('sel');
+      });
+    });
+  });
+</script>
+</body>
+</html>

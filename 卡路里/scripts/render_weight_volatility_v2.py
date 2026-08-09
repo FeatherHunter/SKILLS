@@ -41,11 +41,11 @@ def _default_output_path(scene_label: str) -> Path:
         base = Path("D:/2Study/StudyNotes/.db/calorie_html")
     base.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_name = f"{scene_label}_{ts}.html"
+    base_name = f"{scene_label}_结果_{ts}.html"  # 2026-08-10 #43:R5 类型后缀
     out = base / base_name
     suffix = 2
     while out.exists():
-        out = base / f"{scene_label}_{ts}_{suffix}.html"
+        out = base / f"{scene_label}_结果_{ts}_{suffix}.html"
         suffix += 1
     return out
 
@@ -147,7 +147,15 @@ def main() -> int:
         data['early_warning'] = {}
         data['sigma_trend'] = []
 
-    scene_label = '看体重稳不稳（增强版）' if args.view == 'full' else '看波动异常点'
+    # 2026-08-10 #43:场景名按参数区分(R5)
+    if args.view == 'anomalies-only':
+        scene_label = '看波动异常点'
+    elif args.start and args.end:
+        scene_label = '看本月波动'
+    elif args.days and args.days >= 90:
+        scene_label = f'看最近 {args.days} 天波动'
+    else:
+        scene_label = '看体重稳不稳（增强版）'
 
     if args.text:
         out_text = _format_text_output(data, start_date, end_date)

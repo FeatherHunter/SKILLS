@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对抗审查补修战报 · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--accent-soft:rgba(0,113,227,.10);--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--purple:#af52de;--purple-soft:rgba(175,82,222,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#f0fbf3);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(52,199,89,.16)}
+.hero .eyebrow{font-size:12px;color:var(--green);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge.ok{background:var(--green-soft);color:var(--green)}
+.badge.skip{background:var(--orange-soft);color:var(--orange)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:12px;color:var(--ink3);margin-top:2px}
+.kpi.done .num{color:var(--green)}
+.kpi.test .num{color:var(--accent)}
+.kpi.commit .num{color:var(--orange)}
+.section{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.section .head{padding:16px 20px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.section .head h2{font-size:16px;font-weight:700}
+.section .head .count{font-size:12px;color:var(--ink3);font-weight:600}
+.item{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:none}
+.item .num-col{min-width:56px;text-align:right;padding-top:2px}
+.item .num-col a{font-size:14px;font-weight:700;color:var(--accent);text-decoration:none;font-variant-numeric:tabular-nums}
+.item .body{flex:1;min-width:0}
+.item .title{font-size:14px;font-weight:700}
+.item .meta{font-size:12px;color:var(--ink3);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.tag.p0{background:var(--red-soft);color:var(--red)}
+.tag.p1{background:var(--orange-soft);color:var(--orange)}
+.tag.p2{background:var(--purple-soft);color:var(--purple)}
+.tag.done{background:var(--green-soft);color:var(--green)}
+.item .note{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.6}
+.item .note b{color:var(--ink)}
+.item .fix{font-size:12px;background:var(--green-soft);color:var(--green);border-radius:8px;padding:6px 10px;margin-top:8px;line-height:1.5}
+.item .ev{font-size:11px;color:var(--ink3);margin-top:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:16px}
+.footer b{color:var(--ink2)}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}.item{padding:12px 16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">对抗审查 · 补修战报</div>
+    <h1>3 项遗留已补修 ✅ · 1 项否决</h1>
+    <div class="sub">2026-08-09 · 审查发现 4 项 → 修 3 项(全部验证+commit) → 否决 1 项(附理由)</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi done"><div class="num">3</div><div class="lbl">✅ 补修完成</div></div>
+    <div class="kpi test"><div class="num">+11</div><div class="lbl">🧪 新增测试</div></div>
+    <div class="kpi commit"><div class="num">3</div><div class="lbl">📦 提交</div></div>
+    <div class="kpi test"><div class="num">336</div><div class="lbl">全量通过</div></div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>✅ 补修完成(3)</h2><span class="count">每个都验证 + 独立 commit</span></div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/53">#53</a></div>
+      <div class="body">
+        <div class="title">P0 · 周/月/区间饮食文件名随 label 动态</div>
+        <div class="meta"><span class="tag p0">P0 数据正确性</span><span class="tag done">已修</span></div>
+        <div class="note">
+          <b>发现</b>:render_today_meals.py 输出写死「今日饮食」,而 h1 已按 meta.label 动态(本周/上周/本月/上月/最近 N 天/某段时间)→ 文件名与内容分裂,与 #53 原始 bug 同类,覆盖 6 个唤醒词。<br>
+          <b>修复</b>:文件名用与 h1 相同的 label + 模板 title 同步动态。
+        </div>
+        <div class="fix">实测:--week last → 上周饮食_*.html;--days 7 → 最近 7 天饮食_*.html ✅</div>
+        <div class="ev">commit a669340 · test_today_meals_filename.py 5 用例</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/198">#198</a></div>
+      <div class="body">
+        <div class="title">P1 · 近30天窗口 off-by-one</div>
+        <div class="meta"><span class="tag p1">P1 验收级</span><span class="tag done">已修</span></div>
+        <div class="note">
+          <b>发现</b>:_latest_history 用 today-30 → 含今天共 31 个日期,与「近 30 天趋势」标题不符;仓库其他视图(render_weight_history / render_today_meals / render_calorie_trend)统一是 <b>近 N 天 = 含今天共 N 个日期</b>(start = end-(N-1))。<br>
+          <b>修复</b>:窗口起点改 today-(days-1),边界测试同步(29 天前保留 / 31 天前排除)。
+        </div>
+        <div class="fix">实测:窗口 07-11 起共 30 个日期,与 issue #198 建议 date('now','-30 days') 语义一致 ✅</div>
+        <div class="ev">commit 44c2d96 · test_weight_receipt_history.py 边界断言更新</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/158">#158</a></div>
+      <div class="body">
+        <div class="title">P2 · 同餐合并 time 竞态</div>
+        <div class="meta"><span class="tag p2">P2 健壮性</span><span class="tag done">已修</span></div>
+        <div class="note">
+          <b>发现</b>:add_meals_batch 对未显式传 time 的条目各自取 datetime.now(),同餐多食物跨秒时各条 time 不同 → 回查 date+time 只命中部分/0 条 → 回执食物列表缺失。<br>
+          <b>修复</b>:build_live_diet_batch_meal 调 add_meals_batch 前<b>统一注入 date/time</b> 到每个 entry(同餐同时刻是语义要求)。
+        </div>
+        <div class="fix">新增回归:不传 time → 全部食物命中 + 同餐同时刻 ✅</div>
+        <div class="ev">commit 3d4f9f9 · test_diet_batch_meal_receipt.py +1 用例</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>🚫 否决(1)</h2><span class="count">对抗审查后主动否决</span></div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/51">#51</a></div>
+      <div class="body">
+        <div class="title">P2 · 缺失照片从旧目录回迁 — 否决</div>
+        <div class="meta"><span class="tag skip">否决</span></div>
+        <div class="note">
+          <b>原发现</b>:3 张 test_v1_1 照片(303 字节占位图)文件在旧目录 D:\2Study\Notes\.db\CalorieHub,可回迁。<br>
+          <b>否决理由(第一性原理)</b>:<br>
+          ① 这 3 张是 <b>303 字节的测试占位图</b>,回迁后用户看到的是灰图,无任何使用价值;<br>
+          ② 「旧目录自动发现」机制引入复杂度(路径探测/迁移状态机),收益 ≈ 0;<br>
+          ③ 真正有价值的是 8 张 5/30 真实照片,但全盘搜索确认物理丢失,回迁也无从谈起。<br>
+          <b>结论</b>:维持现状(缺失标记),不做回迁。
+        </div>
+        <div class="ev">证据: 旧目录仅 3 张 303B JPEG(占位图) · 全盘搜索 5/30 001-008 无果</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    补修累计:3 commit · +11 测试 · 全量 <b>336 passed · 20 xfailed</b><br>
+    <b>最终状态:5 个 issue 全部关闭,对抗审查遗留项 3 修 1 否决,无未决数据正确性问题</b>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对抗式审查 · 卡路里 5 Bug 修复 · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--accent-soft:rgba(0,113,227,.10);--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--purple:#af52de;--purple-soft:rgba(175,82,222,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:880px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#fff2f2);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(255,59,48,.14)}
+.hero .eyebrow{font-size:12px;color:var(--red);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge.p0{background:var(--red-soft);color:var(--red)}
+.badge.p1{background:var(--orange-soft);color:var(--orange)}
+.badge.p2{background:var(--purple-soft);color:var(--purple)}
+.verdict{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:16px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.verdict .ic{width:38px;height:38px;border-radius:50%;background:var(--red-soft);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.verdict .tx{flex:1;font-size:13px;line-height:1.6}
+.verdict .tx b{font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:12px;color:var(--ink3);margin-top:2px}
+.kpi.p0 .num{color:var(--red)}
+.kpi.p1 .num{color:var(--orange)}
+.kpi.p2 .num{color:var(--purple)}
+.kpi.ok .num{color:var(--green)}
+.section{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.section .head{padding:16px 20px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.section .head h2{font-size:16px;font-weight:700}
+.section .head .count{font-size:12px;color:var(--ink3);font-weight:600}
+.item{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:none}
+.item .badge-col{min-width:60px;padding-top:2px}
+.item .body{flex:1;min-width:0}
+.item .title{font-size:14px;font-weight:700}
+.item .ref{font-size:12px;color:var(--accent);margin-top:2px}
+.item .desc{font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.6}
+.item .desc b{color:var(--ink)}
+.item .fix{font-size:12px;background:var(--green-soft);color:var(--green);border-radius:8px;padding:6px 10px;margin-top:8px;line-height:1.5}
+.item .ev{font-size:11px;color:var(--ink3);margin-top:6px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:16px}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}.item{padding:12px 16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">对抗式审查 · 第一性原理</div>
+    <h1>5 Bug 修复审查报告</h1>
+    <div class="sub">2026-08-09 · 审查对象:本次 5 个 commit · 方法:假设每个修复都有洞,逐个用真实数据/代码验证</div>
+  </div>
+
+  <div class="verdict">
+    <div class="ic">⚠</div>
+    <div class="tx"><b>结论:5 修 5 关,但发现 1 个数据正确性级遗留(#53 同族命令)+ 3 个验收级缺口。</b><br>
+    5 个 issue 本体验收达标,但「对抗式」视角下 4 个问题没被原验收标准覆盖,需要补修。</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi p0"><div class="num">1</div><div class="lbl">🔴 P0 数据正确性</div></div>
+    <div class="kpi p1"><div class="num">1</div><div class="lbl">🟠 P1 验收级</div></div>
+    <div class="kpi p2"><div class="num">2</div><div class="lbl">🟣 P2 健壮性</div></div>
+    <div class="kpi ok"><div class="num">2</div><div class="lbl">✅ 经得起查</div></div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>🔴 P0 · 数据正确性</h2><span class="count">必须补修</span></div>
+
+    <div class="item">
+      <div class="badge-col"><span class="badge p0">P0</span></div>
+      <div class="body">
+        <div class="title">#53 只修了单日路径,「看上周/本月饮食」同样命名错误</div>
+        <div class="ref">render_today_meals.py:166 输出写死 <code>html_path(SKILL_DIR, '今日饮食')</code></div>
+        <div class="desc">
+          原验收 <b>V3「跨命令一致」</b> 明确要求「看这周/看上个月」等文件命名保持同一规则——我只修了 <code>render_today_diet.py</code>(单日),<b>漏了 <code>render_today_meals.py</code></b>(周/月视图,覆盖 看本周饮食/看上周饮食/看本月饮食/看上月饮食/看某段时间饮食 等唤醒词)。<br>
+          <b>证据</b>:<code>render_today_meals.py:166</code> 同样写死「今日饮食」——用户说「看上周饮食」,文件名仍是「今日饮食_&lt;TS&gt;.html」,与 #53 原始 bug 同类。<br>
+          <b>影响</b>:V3 未达标,同类问题换个入口继续存在。
+        </div>
+        <div class="fix">✅ 修复方向:把 #53 的 <code>diet_filename_label</code> 思路推广 —— render_today_meals.py 按窗口类型命名(本周饮食_&lt;范围&gt; / 上周饮食_&lt;范围&gt; / 本月饮食_&lt;月份&gt;),或复用同一命名函数。</div>
+        <div class="ev">证据: scripts/render_today_meals.py:166 写死 '今日饮食' · _triggers.py 有 6 个唤醒词走此脚本</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>🟠 P1 · 验收级缺口</h2><span class="count">原验收标准未覆盖</span></div>
+
+    <div class="item">
+      <div class="badge-col"><span class="badge p1">P1</span></div>
+      <div class="body">
+        <div class="title">#198 窗口 off-by-one:「近30天」实际取 31 天</div>
+        <div class="ref">render_weight_receipt.py _latest_history 窗口 = today - 30 天</div>
+        <div class="desc">
+          <code>date.today() - timedelta(days=30)</code> 得到的窗口起点比「30 天前」早 1 天 —— 含今天共 <b>31 个日期</b>,严格「近 30 天」应为 30 个日期(起点 today-29)。<br>
+          <b>影响</b>:轻微(多 1 天数据),但「近 30 天趋势」标题与数据窗口的天数语义不精确。
+        </div>
+        <div class="fix">✅ 修复方向:窗口起点改 <code>today - timedelta(days=29)</code> 或模板标题改「近 31 天」;对齐 issue #198 建议的 <code>date('now','-30 days')</code> 语义。</div>
+        <div class="ev">实测: 2026-08-09 窗口起点 07-10(31 天),严格 30 天应为 07-11</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>🟣 P2 · 健壮性 / 边界</h2><span class="count">不常见但真实存在</span></div>
+
+    <div class="item">
+      <div class="badge-col"><span class="badge p2">P2</span></div>
+      <div class="body">
+        <div class="title">#158 回查机制依赖 date+time 精确匹配,存在竞态窗口</div>
+        <div class="ref">render_crud_receipt.py _fetch_meal_items</div>
+        <div class="desc">
+          <code>add_meals_batch</code> 内部 <b>每个条目自己取 <code>datetime.now()</code></b> 当 time(条目未显式传 time 时)。若写入跨秒(循环 2+ 个食物,恰好撞上秒边界),各条 time 不同 → 回查 <code>WHERE date=? AND time=?</code> 用第一条的 time,<b>可能只回查到 1 条甚至 0 条</b> → 回执食物列表缺失。<br>
+          <b>实测</b>:同秒场景 OK(验证通过);跨秒是低概率竞态,但「数据正确性」不该赌概率。<br>
+          <b>影响</b>:回执明细可能不完整,但写库本身正确(数据没丢,只是展示少)。
+        </div>
+        <div class="fix">✅ 修复方向:batch-meal 入口<b>统一注入 date/time</b> 到每个 entry 再调 add_meals_batch(同餐同时刻是语义要求),消除竞态。</div>
+        <div class="ev">证据: diet.py add_meals_batch 循环内 str(e.get('time', datetime.now()...))</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="badge-col"><span class="badge p2">P2</span></div>
+      <div class="body">
+        <div class="title">#51 缺失照片的真实恢复路径未验证</div>
+        <div class="ref">render_body_photo_gallery.py file_exists 标记</div>
+        <div class="desc">
+          11 条缺失记录中 3 条(test_v1_1)文件实际在<b>旧目录</b> <code>D:\2Study\Notes\.db\CalorieHub</code>(路径迁移遗留)。当前实现只做「标记缺失」,<b>没有尝试从旧目录回迁</b> —— 这 3 张虽然 303 字节(占位图),但说明存在「目录迁移后 DB 引用失效」这类可恢复场景,当前只标不治。<br>
+          <b>影响</b>:V1「零丢失」对这 3 张本可恢复的照片未达成(虽然价值低)。
+        </div>
+        <div class="fix">✅ 修复方向(可选项):启动/渲染时检测 DB 引用文件缺失 → 若旧目录存在同名文件则提示回迁;或至少把「照片数据不存在」标记加<b>文件名 + 建议</b>(如「文件 2026-07-17_003.jpg 缺失,可检查是否移动过」)。</div>
+        <div class="ev">证据: 3 张 test 文件存在于 D:\2Study\Notes\.db\CalorieHub\ (303 字节 JPEG)</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>✅ 经得起对抗审查的 2 项</h2><span class="count">验证后无洞</span></div>
+
+    <div class="item">
+      <div class="badge-col"><span class="badge p2" style="background:var(--green-soft);color:var(--green)">OK</span></div>
+      <div class="body">
+        <div class="title">#158 同餐合并的「历史记录污染」场景 — 实测无洞</div>
+        <div class="desc">验证「同 date+time 已有历史记录时,回查 LIMIT N 是否混入旧记录」:实测 <code>ORDER BY id DESC</code> 取最新 N 条,恰好只取本次新增,不污染。✅</div>
+        <div class="ev">实测: 历史「隔夜饭」同 time 存在,回执 items 仍只有 [米饭, 清蒸鱼]</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="badge-col"><span class="badge p2" style="background:var(--green-soft);color:var(--green)">OK</span></div>
+      <div class="body">
+        <div class="title">#47 icon 对齐 — 数据层 + CSS 双保险成立</div>
+        <div class="desc">🛠(ZWJ 组合)→⚙️(单字符)消除根因,CSS 固定 1.6em 占位防未来回归。产物 __DATA__ 验证 11 分类 icon 全部单字符。✅(唯一未做:浏览器实测,建议用户打开看一眼)</div>
+        <div class="ev">产物验证: ⚙️ 1 次 / 🛠 0 次(数据层); CSS span:first-child 规则已注入</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    审查方法:每个修复用「真实数据 / 边界场景 / 同族代码」三角度验证 · 结论:5 issue 本体达标,补修 4 项后可全绿<br>
+    <b>建议补修顺序:P0 #53 同族 → P1 #198 窗口 → P2 #158 竞态 → P2 #51 回迁(可选)</b>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里 Bug 攻坚战报 · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--accent-soft:rgba(0,113,227,.10);--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:30px 26px 24px;margin-bottom:16px;background:linear-gradient(135deg,#fff,#f0fbf3);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(52,199,89,.16)}
+.hero .eyebrow{font-size:12px;color:var(--green);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:26px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge.all{background:var(--green-soft);color:var(--green)}
+.badge.left{background:var(--orange-soft);color:var(--orange)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:12px;color:var(--ink3);margin-top:2px}
+.kpi.done .num{color:var(--green)}
+.kpi.test .num{color:var(--accent)}
+.kpi.commit .num{color:var(--orange)}
+.kpi.all .num{color:var(--ink)}
+.section{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.section .head{padding:16px 20px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.section .head h2{font-size:16px;font-weight:700}
+.section .head .count{font-size:12px;color:var(--ink3);font-weight:600}
+.item{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:none}
+.item .num-col{min-width:56px;text-align:right;padding-top:2px}
+.item .num-col a{font-size:14px;font-weight:700;color:var(--accent);text-decoration:none;font-variant-numeric:tabular-nums}
+.item .body{flex:1;min-width:0}
+.item .title{font-size:14px;font-weight:600}
+.item .meta{font-size:12px;color:var(--ink3);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.tag.done{background:var(--green-soft);color:var(--green)}
+.tag.fix{background:var(--accent-soft);color:var(--accent)}
+.tag.verify{background:var(--orange-soft);color:var(--orange)}
+.item .note{font-size:12px;color:var(--ink2);margin-top:4px}
+.item .note .c{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--ink3)}
+.flag{background:var(--orange-soft);border:1px solid rgba(255,149,0,.35);border-radius:16px;padding:14px 18px;margin-bottom:14px;font-size:13px;color:#8a5a00;line-height:1.6}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:20px}
+.footer b{color:var(--ink2)}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}.item{padding:12px 16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里 · BUG 攻坚战报</div>
+    <h1>5 个 Bug 全部修复关闭 ✅</h1>
+    <div class="sub">2026-08-09 认领 → 逐个修复 → 全部关闭 · 累计 5 个 commit · 新增 3 个测试文件</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi done"><div class="num">5</div><div class="lbl">✅ Bug 关闭</div></div>
+    <div class="kpi test"><div class="num">+16</div><div class="lbl">🧪 新增测试</div></div>
+    <div class="kpi commit"><div class="num">5</div><div class="lbl">📦 提交</div></div>
+    <div class="kpi all"><div class="num">330</div><div class="lbl">全量测试通过</div></div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>修复明细</h2><span class="count">按处理顺序</span></div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/198">#198</a></div>
+      <div class="body">
+        <div class="title">记体重回执「近30天趋势」数据窗口错误</div>
+        <div class="meta"><span class="tag done">已关</span><span class="tag fix">SQL 窗口</span></div>
+        <div class="note">根因:取最新 30 条而非最近 30 天(稀疏记录横跨 45 天,x 轴出 6 月日期)<br>修复:date ≥ today-30 窗口过滤,与其余视图语义一致<br><span class="c">commit 81a1299</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/51">#51</a></div>
+      <div class="body">
+        <div class="title">查身材照:图片丢失 + HTML 体积过大</div>
+        <div class="meta"><span class="tag done">已关</span><span class="tag fix">体积预算</span><span class="tag fix">缺失标记</span></div>
+        <div class="note">根因1:11 条 DB 记录文件缺失(8 真丢 + 3 测试残留)<br>根因2:全量 base64 内嵌,照片多时体积失控(500 张 ~15MB)<br>修复:4MB 体积预算(超限标「未嵌入」)+ 缺失照片明确「数据不存在」标记<br><span class="c">commit 72b3949</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/53">#53</a></div>
+      <div class="body">
+        <div class="title">看昨日饮食:文件名与内容标题不一致</div>
+        <div class="meta"><span class="tag done">已关</span><span class="tag fix">命名</span></div>
+        <div class="note">根因:文件名写死「今日饮食总览」,不随 --date 变化<br>修复:今日→今日饮食总览 / 昨日→昨日饮食总览 / 其他→饮食总览_&lt;日期&gt;<br>+ 模板 title 动态注入<br><span class="c">commit f117783</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/158">#158</a></div>
+      <div class="body">
+        <div class="title">批量记一餐:每个食物单独回执,数量过多</div>
+        <div class="meta"><span class="tag done">已关</span><span class="tag fix">同餐合并</span></div>
+        <div class="note">根因:AI 逐个调 --live-diet-add → N 个回执<br>修复:新增 --live-diet-batch-meal 同餐 N 食物 → 单一回执(列表+营养合计+调用透明)<br>SKILL.md Step 1.5 同餐判定规则<br><span class="c">commit 8caf458</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/47">#47</a></div>
+      <div class="body">
+        <div class="title">HELP 分类列表基础信息文字未对齐</div>
+        <div class="meta"><span class="tag done">已关</span><span class="tag fix">icon 对齐</span></div>
+        <div class="note">根因:🛠(ZWJ 组合 emoji)渲染宽度 ≠ 单字符 emoji<br>修复:🛠→⚙️(数据层)+ icon span 固定 1.6em( CSS 层,根本性)<br><span class="c">commit 456b47a</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="flag">
+    ⚠️ <b>一个诚实说明</b>:f117783(#53)和 8d6b84a→456b47a(#47)在提交瞬间,把并行会话刚 staged 的作息管家文件一起带进了 commit(共享工作区并发踩踏)。已用 <b>git commit -- &lt;限定路径&gt;</b> 拆分修正,最终提交干净;被带走的作息管家文件内容完整、未丢失,由并行会话另行提交。
+  </div>
+
+  <div class="footer">
+    新增测试:test_goal_weight 修复(flaky) + test_body_photo_gallery(4) + test_today_diet_filename(5) + test_diet_batch_meal_receipt(4) + test_weight_receipt_history(+2)<br>
+    全量验证:<b>330 passed · 20 xfailed</b>(pre-commit 每次提交全量跑)
+  </div>
+
+</div>
+</body>
+</html>

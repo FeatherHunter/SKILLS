@@ -128,3 +128,12 @@ Thumbs.db
 
 # 居家管家个人想法目录(私人内容,不入版本控制)
 居家管家/.个人想法目录禁止看里面文件/
+
+# ===== 卡路里验收正式产物放行(2026-08-09 持久化审查 · 关 session 无损失) =====
+# 验收记录 *.md + 交付报告 *.html 入版本控制;调试脚本/截图仍忽略
+!卡路里/.scratch/
+!卡路里/.scratch/review/
+!卡路里/.scratch/review/*.md
+!卡路里/.scratch/issue-status/
+!卡路里/.scratch/issue-status/*.html
+卡路里/.scratch/issue-status/_gallery_*.html

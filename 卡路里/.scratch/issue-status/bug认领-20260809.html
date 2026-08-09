@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bug 认领确认 · 卡路里 · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--accent-soft:rgba(0,113,227,.10);--green:#34c759;--green-soft:rgba(52,199,89,.12);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#fff5f2);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(255,149,0,.16)}
+.hero .eyebrow{font-size:12px;color:var(--orange);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:24px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:13px;color:var(--ink3);margin-top:8px}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.badge.ok{background:var(--green-soft);color:var(--green)}
+.claimed{display:flex;align-items:center;gap:8px;background:var(--card);border-radius:16px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.claimed .ic{width:34px;height:34px;border-radius:50%;background:var(--green-soft);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:16px}
+.claimed .tx{flex:1}
+.claimed .tx b{font-size:14px}
+.claimed .tx .d{font-size:12px;color:var(--ink3);margin-top:2px}
+.section{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.section .head{padding:16px 20px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.section .head h2{font-size:16px;font-weight:700}
+.section .head .count{font-size:12px;color:var(--ink3);font-weight:600}
+.item{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:none}
+.item .num-col{min-width:56px;text-align:right;padding-top:2px}
+.item .num-col a{font-size:14px;font-weight:700;color:var(--accent);text-decoration:none;font-variant-numeric:tabular-nums}
+.item .body{flex:1;min-width:0}
+.item .title{font-size:14px;font-weight:600}
+.item .meta{font-size:12px;color:var(--ink3);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.tag.done{background:var(--green-soft);color:var(--green)}
+.tag.next{background:var(--accent-soft);color:var(--accent)}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-size:12px;font-weight:700;margin-right:8px}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里 · BUG 攻坚</div>
+    <h1>5 个 Bug 已全部认领</h1>
+    <div class="sub">2026-08-09 01:40 · assignee = FeatherHunter · #198 已从 needs-triage 转入 ready-for-agent</div>
+  </div>
+
+  <div class="claimed">
+    <div class="ic">✓</div>
+    <div class="tx"><b>认领完成</b><div class="d">5/5 已认领 · 现在开始按优先级逐个修复</div></div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>认领清单（按处理顺序）</h2><span class="count">5 个</span></div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/198">#198</a></div>
+      <div class="body">
+        <div class="title">记体重回执「近30天趋势」数据窗口错误（取最新30条而非最近30天）</div>
+        <div class="meta"><span class="tag done">已认领</span><span class="tag next">正在修 · 第一个</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/51">#51</a></div>
+      <div class="body">
+        <div class="title">查身材照 Bug：部分图片丢失 + HTML 体积过大飞书发不出</div>
+        <div class="meta"><span class="tag done">已认领</span><span class="tag next">排第 2</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/53">#53</a></div>
+      <div class="body">
+        <div class="title">查看昨天饮食：HTML 文件名与内容标题不一致</div>
+        <div class="meta"><span class="tag done">已认领</span><span class="tag next">排第 3</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/158">#158</a></div>
+      <div class="body">
+        <div class="title">批量记一餐：每个食物单独回执，数量过多</div>
+        <div class="meta"><span class="tag done">已认领</span><span class="tag next">排第 4</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/47">#47</a></div>
+      <div class="body">
+        <div class="title">HELP 页面分类列表基础信息文字未对齐</div>
+        <div class="meta"><span class="tag done">已认领</span><span class="tag next">排第 5 · 轻量</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">修复节奏：#198（SQL 日期窗口）→ #51（图片/体积）→ #53（文件名）→ #158（批量回执）→ #47（对齐）</div>
+
+</div>
+</body>
+</html>

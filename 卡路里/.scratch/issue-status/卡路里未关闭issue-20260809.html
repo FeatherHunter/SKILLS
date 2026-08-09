@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>卡路里未关闭 Issue · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--accent-soft:rgba(0,113,227,.10);--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--purple:#af52de;--purple-soft:rgba(175,82,222,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#f0f4ff);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(0,113,227,.12)}
+.hero .eyebrow{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:26px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.badge{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12px;font-weight:600;vertical-align:middle}
+.badge.open{background:var(--green-soft);color:var(--green)}
+.badge.done{background:var(--accent-soft);color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:12px;color:var(--ink3);margin-top:2px}
+.kpi.bug .num{color:var(--red)}
+.kpi.verify .num{color:var(--purple)}
+.kpi.dev .num{color:var(--accent)}
+.kpi.enh .num{color:var(--orange)}
+.section{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.section .head{padding:16px 20px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.section .head h2{font-size:16px;font-weight:700}
+.section .head .count{font-size:12px;color:var(--ink3);font-weight:600}
+.item{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border-bottom:1px solid var(--line)}
+.item:last-child{border-bottom:none}
+.item .num-col{min-width:52px;text-align:right;padding-top:2px}
+.item .num-col a{font-size:13px;font-weight:700;color:var(--accent);text-decoration:none;font-variant-numeric:tabular-nums}
+.item .body{flex:1;min-width:0}
+.item .title{font-size:14px;font-weight:600;color:var(--ink);line-height:1.4}
+.item .meta{font-size:12px;color:var(--ink3);margin-top:4px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:600}
+.tag.bug{background:var(--red-soft);color:var(--red)}
+.tag.enh{background:var(--orange-soft);color:var(--orange)}
+.tag.verify{background:var(--purple-soft);color:var(--purple)}
+.tag.dev{background:var(--accent-soft);color:var(--accent)}
+.tag.triage{background:var(--green-soft);color:var(--green)}
+.tag.new{background:var(--red);color:#fff}
+.item .note{font-size:12px;color:var(--ink2);margin-top:4px}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:20px}
+.footer b{color:var(--ink2)}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}.item{padding:12px 16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里</div>
+    <h1>未关闭 Issue 总览</h1>
+    <div class="sub">数据来源 GitHub Issues · 拉取时间 2026-08-09 01:28 · 卡路里 open 共 <span class="badge open">16 个</span></div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi bug"><div class="num">5</div><div class="lbl">🐛 Bug</div></div>
+    <div class="kpi verify"><div class="num">7</div><div class="lbl">🧪 人工验收</div></div>
+    <div class="kpi dev"><div class="num">2</div><div class="lbl">🤖 待开发</div></div>
+    <div class="kpi enh"><div class="num">2</div><div class="lbl">✨ 体验增强</div></div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>🐛 Bug（5）</h2><span class="count">数据正确性 & 日活路径 · 建议最先处理</span></div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/198">#198</a></div>
+      <div class="body">
+        <div class="title">记体重回执「近30天趋势」数据窗口错误：取最新30条而非最近30天（x轴出现6月日期）</div>
+        <div class="meta"><span class="tag bug new">BUG</span><span class="tag new">新增</span><span class="tag triage">needs-triage</span></div>
+        <div class="note">8/8 新报 · 趋势图数据窗口逻辑错，展示的是历史堆积而非近30天</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/51">#51</a></div>
+      <div class="body">
+        <div class="title">查身材照唤醒词 Bug：部分图片显示已丢失 + HTML 体积过大飞书发不出</div>
+        <div class="meta"><span class="tag bug">BUG</span><span class="tag dev">ready-for-agent</span></div>
+        <div class="note">功能半坏 + 架构隐患（HTML 内嵌图片）</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/53">#53</a></div>
+      <div class="body">
+        <div class="title">查看昨天饮食唤醒词，HTML 文件名为今日饮食总览与内容标题不一致</div>
+        <div class="meta"><span class="tag bug">BUG</span><span class="tag dev">ready-for-agent</span></div>
+        <div class="note">文件名误导 · 用户可能把昨天数据当今天看</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/158">#158</a></div>
+      <div class="body">
+        <div class="title">批量记一餐时，每个食物都被单独回执，回执数量过多</div>
+        <div class="meta"><span class="tag bug">BUG</span><span class="tag dev">ready-for-agent</span></div>
+        <div class="note">批量想省事，结果回执轰炸 · 反效果</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/47">#47</a></div>
+      <div class="body">
+        <div class="title">HELP 页面根级分类列表中基础信息文字左侧与其他分类未对齐</div>
+        <div class="meta"><span class="tag bug">BUG</span><span class="tag dev">ready-for-agent</span></div>
+        <div class="note">轻微视觉瑕疵 · 可随 #50 一起处理</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>🧪 人工验收（7）</h2><span class="count">ready-for-human · 等你逐场景拍板</span></div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/45">#45</a></div>
+      <div class="body">
+        <div class="title">主页 9 场景人工审查与验收（ticket #2 交付终审）</div>
+        <div class="meta"><span class="tag verify">验收</span></div>
+        <div class="note">枢纽域 · 建议第一个过</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/43">#43</a></div>
+      <div class="body">
+        <div class="title">体重 58 场景人工审查与验收（ticket #4 交付终审）</div>
+        <div class="meta"><span class="tag verify">验收</span></div>
+        <div class="note">#78 已关（速率/警示已修）· 验收可放心开始</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/42">#42</a></div>
+      <div class="body">
+        <div class="title">健身计划 29 场景人工验收审查（ticket #6 完成态 · 5 层工作流）</div>
+        <div class="meta"><span class="tag verify">验收</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/40">#40</a></div>
+      <div class="body">
+        <div class="title">运动 39 场景人工验收审查（用户逐场景拍板 · AI 辅助协议）</div>
+        <div class="meta"><span class="tag verify">验收</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/39">#39</a></div>
+      <div class="body">
+        <div class="title">身体细节 13 场景全流程人工验收（用户实测 · 2026-08-02）</div>
+        <div class="meta"><span class="tag verify">验收</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/38">#38</a></div>
+      <div class="body">
+        <div class="title">身材照片 10 场景 · 逐场景人工验收（5 层链路 · 开发者引导实测）</div>
+        <div class="meta"><span class="tag verify">验收</span></div>
+        <div class="note">建议等 #51（图片丢失）修完再验</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/41">#41</a></div>
+      <div class="body">
+        <div class="title">分析 154 场景 · 人工逐场景审查（验收闭环）</div>
+        <div class="meta"><span class="tag verify">验收</span></div>
+        <div class="note">最大域 · 建议压轴</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>✨ 体验增强（2）</h2><span class="count">ready-for-agent · 不改变正确性</span></div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/50">#50</a></div>
+      <div class="body">
+        <div class="title">HELP 页面 UI 整体升级 + 顶部布局优化（从第一性原理）</div>
+        <div class="meta"><span class="tag enh">增强</span><span class="tag dev">ready-for-agent</span></div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/49">#49</a></div>
+      <div class="body">
+        <div class="title">记一餐回执文件名不含食物名，下载多时无法快速识别</div>
+        <div class="meta"><span class="tag enh">增强</span><span class="tag dev">ready-for-agent</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="head"><h2>🤖 待开发 / 待排期（2）</h2><span class="count">其中 1 个依赖外部</span></div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/1">#1</a></div>
+      <div class="body">
+        <div class="title">wayfinder 决策地图 · v1.0 重设计 446 场景（11 分类全定稿）</div>
+        <div class="meta"><span class="tag dev">ready-for-agent</span></div>
+        <div class="note">决策地图 · 全程参考索引，非阻塞待办</div>
+      </div>
+    </div>
+
+    <div class="item">
+      <div class="num-col"><a href="https://github.com/FeatherHunter/SKILLS/issues/12">#12</a></div>
+      <div class="body">
+        <div class="title">技能协同 37 场景的最后开发（依赖外部技能接口）</div>
+        <div class="meta"><span class="tag triage">needs-triage</span></div>
+        <div class="note">依赖外部接口 · 确认依赖方状态再排期</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    昨日已关闭：<b>#78</b>（体重目标速率/警示）与 <b>#79</b>（录入型结果反馈 HTML）✅<br>
+    建议顺序：先 Bug（#198 → #51 → #53 → #158）→ 验收（#45 → #43 → #42 → #40 → #39 → #38 → #41）→ 增强
+  </div>
+
+</div>
+</body>
+</html>

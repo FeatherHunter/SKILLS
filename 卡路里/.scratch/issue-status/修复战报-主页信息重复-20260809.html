@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主页信息重复修复 · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--purple:#af52de;--purple-soft:rgba(175,82,222,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#f0f4ff);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(0,113,227,.12)}
+.hero .eyebrow{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:12px;color:var(--ink3);margin-top:2px}
+.kpi.ok .num{color:var(--green)}
+.principle{background:var(--card);border-radius:16px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.principle h3{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:6px}
+.principle .row{font-size:13px;color:var(--ink2);line-height:1.7}
+.principle .row b{color:var(--ink)}
+.fix{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.fix .head{padding:16px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.fix .head .lv{min-width:56px;padding:3px 8px;border-radius:8px;text-align:center;font-size:12px;font-weight:800;color:#fff}
+.fix .head .lv.p0{background:var(--red)}
+.fix .head .lv.p1{background:var(--orange)}
+.fix .head h2{font-size:16px;font-weight:700}
+.fix .body{padding:14px 20px;font-size:13px;color:var(--ink2)}
+.fix .before,.fix .after{display:flex;gap:8px;margin:8px 0;align-items:flex-start}
+.fix .lbl{min-width:52px;font-weight:800;font-size:12px;padding-top:2px}
+.fix .before .lbl{color:var(--red)}
+.fix .after .lbl{color:var(--green)}
+.fix .box{background:#f7f7f9;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12px;flex:1}
+.fix .before .box{color:var(--ink3);text-decoration:line-through}
+.fix .after .box{color:var(--ink)}
+.fix .why{background:var(--green-soft);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--green);font-weight:600;margin-top:6px}
+.scenes{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+.scene{background:var(--card);border-radius:16px;box-shadow:var(--shadow);overflow:hidden}
+.scene .name{padding:10px 14px 6px;font-size:13px;font-weight:700}
+.scene .sum{padding:0 14px 10px;font-size:11.5px;color:var(--green);font-weight:600;background:var(--green-soft);}
+.scene img{width:100%;display:block}
+.scene .num{font-size:10px;color:var(--ink3);padding:4px 14px 8px}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:20px}
+.footer b{color:var(--ink2)}
+@media(max-width:700px){.kpis{grid-template-columns:repeat(2,1fr)}.scenes{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里 · 对抗式审查修复</div>
+    <h1>主页信息重复 · 修复战报</h1>
+    <div class="sub">2026-08-09 · 从第一性原理:一个信息只出现一次,出现的位置决定它的作用</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi ok"><div class="num">4/4</div><div class="lbl">重复点已修复</div></div>
+    <div class="kpi ok"><div class="num">9/9</div><div class="lbl">页面无 JS 错误</div></div>
+    <div class="kpi ok"><div class="num">9/9</div><div class="lbl">summary 不再复述卡片</div></div>
+    <div class="kpi ok"><div class="num">336</div><div class="lbl">pytest 全绿(20 xfailed)</div></div>
+  </div>
+
+  <div class="principle">
+    <h3>修复遵循的信息架构(第一性原理)</h3>
+    <div class="row">① <b>KPI 卡 = 唯一事实源</b> —— 所有数字只出现在卡片</div>
+    <div class="row">② <b>summary = 判断句</b> —— 解读数字含义,不复述数字(卡片负责"是多少",总结负责"意味着什么")</div>
+    <div class="row">③ <b>状态只保留一处</b> —— statusPill 是唯一"完成状态"表达,待办区空时隐藏</div>
+    <div class="row">④ <b>目标卡 vs 进度卡语义分离</b> —— 目标=达标计数(结果),进度=记录完整度(过程)</div>
+  </div>
+
+  <div class="fix">
+    <div class="head"><div class="lv p0">P0</div><h2>进度卡「25% 25%」双显示</h2><span class="where">render_home.py · kpis 构造</span></div>
+    <div class="body">
+      <div class="before"><span class="lbl">改前</span><div class="box">value=25%(progress_pct) + badge=25%(pct) → 同一百分比卡内出现两次</div></div>
+      <div class="after"><span class="lbl">改后</span><div class="box">value=「4/4」类已记录(记录完整度) + badge=100% → 计数与百分比不同维度</div></div>
+      <div class="why">根因:value 和 pct 塞了同一个 progress_pct。现进度卡改表达"记录完整度"(4 类里记了几类),与百分比不同语义</div>
+    </div>
+  </div>
+
+  <div class="fix">
+    <div class="head"><div class="lv p0">P0</div><h2>「今日全部完成」×4</h2><span class="where">render_home.py + home_dashboard.html</span></div>
+    <div class="body">
+      <div class="before"><span class="lbl">改前</span><div class="box">statusPill「今日全部完成 ✓」+ 进度卡「今日记录 0 项待办」+ 待办区标题「全部记录完成」+ 内容「今日记录完整 ✓」= 4 次</div></div>
+      <div class="after"><span class="lbl">改后</span><div class="box">statusPill 唯一表达 ✓ · 进度卡 detail 空 · 待办区完成时整体隐藏</div></div>
+      <div class="why">同一状态 4 遍 = 用户多读 3 遍无新信息。完成状态一个视觉锚点足够,待办区只在该显示时(有待办)出现</div>
+    </div>
+  </div>
+
+  <div class="fix">
+    <div class="head"><div class="lv p1">P1</div><h2>「目标」卡 vs「进度」卡同指标</h2><span class="where">render_home.py · kpis 构造</span></div>
+    <div class="body">
+      <div class="before"><span class="lbl">改前</span><div class="box">目标卡「1/4 项达标 · 25%」与进度卡「25%」共用同一 progress_pct → 两卡同值</div></div>
+      <div class="after"><span class="lbl">改后</span><div class="box">目标卡「1/4 项达标 · 25%」(结果:达标几项) vs 进度卡「4/4 类已记录 · 100%」(过程:记录几类)</div></div>
+      <div class="why">推荐方案:两卡从"同一指标两种说法"变成"结果 vs 过程"互补。清单 6 卡保留不动,只改语义</div>
+    </div>
+  </div>
+
+  <div class="fix">
+    <div class="head"><div class="lv p1">P1</div><h2>9 页 summary 复述卡片数字</h2><span class="where">render_home.py + home_dashboard.html · 全场景</span></div>
+    <div class="body">
+      <div class="before"><span class="lbl">改前</span><div class="box">「已摄入 1,425 卡(目标 71.2%) · 运动消耗 320 卡」→ 与下方卡片逐字重复</div></div>
+      <div class="after"><span class="lbl">改后</span><div class="box">「热量偏少 · 运动超额完成 · 近7天体重下降」→ 判断句,数字交给卡片</div></div>
+      <div class="why">推荐方案:summary 从"复述"变"解读"。数字看卡片(0.5 秒),判断看总结(1 秒)——两层信息互补不重叠</div>
+    </div>
+  </div>
+
+  <div class="principle">
+    <h3>修复后 · 9 页一句话总结(全部判断句 · 零卡片数字)</h3>
+  </div>
+  <div class="scenes">
+    <div class="scene"><div class="name">1 看今日主页</div><div class="sum">热量偏少 · 运动超额完成 · 近7天体重下降</div><img src="../review/shots/s01_home.png" alt=""><div class="num">进度卡 4/4 · 待办区已隐藏</div></div>
+    <div class="scene"><div class="name">2 看今日饮食概览</div><div class="sum">热量未达标 · 蛋白接近达标</div><img src="../review/shots/s02_diet.png" alt=""><div class="num"></div></div>
+    <div class="scene"><div class="name">3 看今日运动概览</div><div class="sum">运动超额完成</div><img src="../review/shots/s03_exercise.png" alt=""><div class="num"></div></div>
+    <div class="scene"><div class="name">4 看今日体重概览</div><div class="sum">体重高于目标 · 近7天在回落</div><img src="../review/shots/s04_weight.png" alt=""><div class="num"></div></div>
+    <div class="scene"><div class="name">5 看今日目标进度</div><div class="sum">4 项中 1 项达标 · 最需补热量</div><img src="../review/shots/s05_goals.png" alt=""><div class="num">计数是卡片没有的增量</div></div>
+    <div class="scene"><div class="name">6 看本周主页</div><div class="sum">体重下降 · 记录稳定</div><img src="../review/shots/s06_week.png" alt=""><div class="num"></div></div>
+    <div class="scene"><div class="name">7 看本月主页</div><div class="sum">体重下降 · 记录稳定</div><img src="../review/shots/s07_month.png" alt=""><div class="num"></div></div>
+    <div class="scene"><div class="name">8 看连续记录天数</div><div class="sum">连续记录追平历史最长 · 保持住</div><img src="../review/shots/s08_streak.png" alt=""><div class="num"></div></div>
+    <div class="scene"><div class="name">9 看今日热量预算</div><div class="sum">今日额度内 · 可正常安排正餐</div><img src="../review/shots/s09_budget.png" alt=""><div class="num"></div></div>
+  </div>
+
+  <div class="footer">
+    测试:336 passed · 20 xfailed(pre-commit 同基线) · 修改文件:scripts/render_home.py + templates/home_dashboard.html<br>
+    <b>你核对 9 页截图:✅ 认可 → 我更新 #45 review 记录 + 关 issue;某句 summary 措辞不满意 → 直接说,我改</b>
+  </div>
+
+</div>
+</body>
+</html>

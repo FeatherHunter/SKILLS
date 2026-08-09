@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主页 9 场景 · 信息重复审查 · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--purple:#af52de;--purple-soft:rgba(175,82,222,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#f0f4ff);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(0,113,227,.12)}
+.hero .eyebrow{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:12px;color:var(--ink3);margin-top:2px}
+.kpi.p0 .num{color:var(--red)}
+.kpi.p1 .num{color:var(--orange)}
+.kpi.all .num{color:var(--purple)}
+.summary-box{background:var(--card);border-radius:16px;padding:16px 20px;margin-bottom:14px;box-shadow:var(--shadow)}
+.summary-box h3{font-size:14px;font-weight:700;margin-bottom:8px}
+.summary-box .row{font-size:13px;color:var(--ink2);line-height:1.8}
+.summary-box .row b{color:var(--ink)}
+.summary-box .row .tag{display:inline-block;padding:1px 8px;border-radius:6px;font-size:11px;font-weight:700;margin-right:6px}
+.tag.p0{background:var(--red-soft);color:var(--red)}
+.tag.p1{background:var(--orange-soft);color:var(--orange)}
+.tag.sys{background:var(--purple-soft);color:var(--purple)}
+.find{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.find .head{padding:16px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.find .head .lv{min-width:56px;padding:3px 8px;border-radius:8px;text-align:center;font-size:12px;font-weight:800;color:#fff}
+.find .head .lv.p0{background:var(--red)}
+.find .head .lv.p1{background:var(--orange)}
+.find .head .lv.sys{background:var(--purple)}
+.find .head h2{font-size:16px;font-weight:700}
+.find .head .where{margin-left:auto;font-size:12px;color:var(--ink3);font-weight:600}
+.find .body{padding:14px 20px;font-size:13px;color:var(--ink2)}
+.find .body .evi{background:#f7f7f9;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--ink);margin:8px 0;white-space:pre-wrap;font-family:"SF Mono",Consolas,monospace}
+.find .body .hit{color:var(--red);font-weight:700}
+.find .body .fix{background:var(--green-soft);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--green);font-weight:600;margin-top:8px}
+.page-table{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.page-table .head{padding:16px 20px 12px;border-bottom:1px solid var(--line)}
+.page-table .head h2{font-size:16px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;color:var(--ink3);font-weight:700;background:#fafafa}
+td .dup{color:var(--red)}
+td.ok{color:var(--green);font-weight:700}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:20px}
+.footer b{color:var(--ink2)}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里 · 对抗式审查</div>
+    <h1>主页 9 场景 · 信息重复审查</h1>
+    <div class="sub">2026-08-09 · 从第一性原理:同一信息出现两次 = 用户多看一遍同样内容,信息密度下降</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi p0"><div class="num">2</div><div class="lbl">P0 硬伤(模板 bug)</div></div>
+    <div class="kpi p1"><div class="num">2</div><div class="lbl">P1 重复(需你拍板)</div></div>
+    <div class="kpi all"><div class="num">9/9</div><div class="lbl">页面有 summary 复述模式</div></div>
+    <div class="kpi all"><div class="num">4</div><div class="lbl">S01「今日完成」出现次数</div></div>
+  </div>
+
+  <div class="summary-box">
+    <h3>一句话结论</h3>
+    <div class="row">
+      <span class="tag p0">P0-1</span><b>S01 进度卡「25% 25%」</b>:同一百分比在卡片内显示两遍(value 和 badge 同值)——模板数据构造 bug。<br>
+      <span class="tag p0">P0-2</span><b>S01「今日全部完成」×4</b>:statusPill「今日全部完成 ✓」+ 进度卡 detail「0 项待办」+ 待办区标题「全部记录完成」+ 「今日记录完整 ✓」——同一状态说了四遍。<br>
+      <span class="tag p1">P1-1</span><b>S01「目标」卡 vs「进度」卡</b>:「1/4 项达标」=「25%」,两张卡是同一指标(共用同一个 progress_pct),语义重叠。<br>
+      <span class="tag p1">P1-2</span><b>9 页全部:一句话总结复述卡片数字</b>:summary 把卡片的关键数字再念一遍(如「已摄入 1,425 卡(目标 71.2%)」→ 饮食卡又显示「1425 卡 / 71.2%」),总结沦为复述。<br>
+      <span class="tag sys">旁注</span>缺口公式条(仅 S01)中「运动消耗 320 / 实际摄入 1,425」与运动卡/饮食卡重复,但属于收支分解视角,列为观察项。
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="head"><div class="lv p0">P0</div><h2>进度卡内部「25% 25%」双显示</h2><span class="where">S01 看今日主页 · KPI 第 5 张</span></div>
+    <div class="body">
+      进度卡的 value 与 badge 都是 progress_pct,渲染为同一数字出现两次。
+      <div class="evi">📊 进度
+<span class="hit">25%</span>        ← badge(pct)
+<span class="hit">25%</span>        ← main value(也是 pct)
+今日记录 0 项待办</div>
+      根因:<span class="hit">render_home.py:411-412</span> `'value': f"{progress_pct}%", 'pct': progress_pct` —— value 和 pct 塞了同一个数。
+      <div class="fix">修法:value 换成有增量的信息(如「2/4 项」或去掉 value 只留 badge),pct 保留进度条语义</div>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="head"><div class="lv p0">P0</div><h2>「今日全部完成」出现 4 次</h2><span class="where">S01 看今日主页</span></div>
+    <div class="body">
+      同一个状态(今日无待办)在页面 4 个位置重复宣告:
+      <div class="evi">① statusPill:   <span class="hit">今日全部完成 ✓</span>
+② KPI 进度卡 detail: <span class="hit">今日记录 0 项待办</span>
+③ 待办区标题:       <span class="hit">全部记录完成</span>
+④ 待办区内容:       <span class="hit">今日记录完整 ✓</span></div>
+      用户打开页面 0.5 秒内会连续读到 4 次「今天完成了」。同一信息 4 遍 = 信息密度稀释。
+      <div class="fix">修法:保留 ①(statusPill 一眼状态),③④ 合并为一行「今日记录完整 ✓」或直接隐藏空待办区;② 的 detail 改放别的信息(如「热量/蛋白/饮水/运动」完成汇总)</div>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="head"><div class="lv p1">P1</div><h2>「目标」卡与「进度」卡同一指标</h2><span class="where">S01 看今日主页 · KPI 第 4/5 张</span></div>
+    <div class="body">
+      「1/4 项达标」=「25%」,两张卡共用同一个 progress_pct,表达的是同一件事。
+      <div class="evi">🎯 目标    <span class="hit">25%</span> · 1/4 项达标 · 热量/蛋白/饮水/运动
+📊 进度    <span class="hit">25%</span> · 今日记录 0 项待办</div>
+      从第一性原理:用户关心的是「今天目标完成得怎样」,一个指标两张卡 = 变相重复。
+      <div class="fix">修法(需你拍板):① 合并为一张卡;② 或「目标」= 完成度(1/4),「进度」= 待办数(0 项)语义彻底分开</div>
+    </div>
+  </div>
+
+  <div class="find">
+    <div class="head"><div class="lv sys">SYS</div><h2>9 页全部:一句话总结复述卡片数字</h2><span class="where">系统性模式 · 每页 summary vs 卡片</span></div>
+    <div class="body">
+      每页顶部一句话总结,把下方卡片的数字几乎原样念一遍——用户先看总结再扫卡片,得到的是同一批数字:
+      <div class="evi">S01 「已摄入 1,425 卡(目标 71.2%) · 运动消耗 320 卡 · 体重 68.4 kg。已连续记录 8 天!」
+   vs 饮食卡「1425 卡 / 71.2%」· 运动卡「320 卡」· 体重卡「68.4 kg」· 连续卡「8 天」→ 全量复述
+
+S05 「完成最好的是运动(106.7%),最需补的是热量(71.2%)」
+   vs 卡片「运动 完成 106.7%」「热量 完成 71.2%」→ 复述
+
+S09 「今天还能吃 1,426 卡」
+   vs 卡片「剩余可吃 1,426」→ 复述</div>
+      注意:一句话是验收清单「呈现数据」的组成部分,不能删;问题是它没有提供增量信息。
+      <div class="fix">建议(需你拍板):summary 改提供卡片没有的「判断/建议/异常」——如 S01 改「热量缺口 −1,439 卡,按此速率 5 天减 1 kg」;S05 改「今天运动超标,蛋白还差 4g,建议晚餐补一勺蛋白粉」。让总结做解读,卡片做事实。</div>
+    </div>
+  </div>
+
+  <div class="page-table">
+    <div class="head"><h2>逐页重复清单</h2></div>
+    <table>
+      <tr><th>页面</th><th>重复点</th><th>程度</th></tr>
+      <tr><td>S01 看今日主页</td><td>进度卡「25% 25%」内部双显 · 「今日完成」×4 · 「目标/进度」双卡同值 · summary 复述 4 张卡 · 公式条复述运动/摄入</td><td class="dup">P0 ×2 · P1 ×2</td></tr>
+      <tr><td>S02 看今日饮食概览</td><td>summary「完成 71.2% · 96.8%」vs 卡片「完成 71.2% / 96.8%」</td><td class="dup">summary 复述</td></tr>
+      <tr><td>S03 看今日运动概览</td><td>summary「完成 106.7%」vs 卡片「完成 106.7%」</td><td class="dup">summary 复述</td></tr>
+      <tr><td>S04 看今日体重概览</td><td>summary「已超出目标 0.4 kg」vs 卡片「距目标 +0.4kg」</td><td class="dup">summary 复述</td></tr>
+      <tr><td>S05 看今日目标进度</td><td>summary「运动 106.7% / 热量 71.2%」vs 卡片同值</td><td class="dup">summary 复述</td></tr>
+      <tr><td>S06 看本周主页</td><td>summary「本周体重下降 0.6 kg」vs 卡片「体重变化 -0.6kg」</td><td class="dup">summary 复述</td></tr>
+      <tr><td>S07 看本月主页</td><td>同 S06</td><td class="dup">summary 复述</td></tr>
+      <tr><td>S08 看连续记录天数</td><td>summary「已连续记录 8 天」vs 卡片「当前连续记录 8 天」</td><td class="dup">summary 复述</td></tr>
+      <tr><td>S09 看今日热量预算</td><td>summary「还能吃 1,426 卡」vs 卡片「剩余可吃 1,426」</td><td class="dup">summary 复述</td></tr>
+    </table>
+  </div>
+
+  <div class="footer">
+    P0 模板 bug(进度卡 25%×2、完成×4)我可以直接修;<br>
+    <b>P1 语义决策(目标/进度双卡、summary 是否改判断句)需要你拍板方向</b>
+  </div>
+
+</div>
+</body>
+</html>

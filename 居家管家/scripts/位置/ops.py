@@ -244,8 +244,91 @@ def rename_preview(conn, old_raw, new_raw):
             "fixed_affected": fixed, "paths": affected[:20]}
 
 
+def _merge_cascade(conn, src, tgt, scene_id="SM2-1", cli_cmd=""):
+    """相似位置合并级联:条目/固定位前缀改写 src→tgt(去重)+ 子节点级联 + 删 src 节点 + 空父链清理
+
+    与 _rename_cascade 的区别:合并的目标 tgt 节点通常已存在(相似检测的典型场景:
+    同一位置两种写法,两节点都已建),不能对节点做「改名到 tgt」——那会撞
+    location_nodes.path 的 UNIQUE 约束;正确做法是条目迁移 + 删源节点。
+    """
+    cursor = conn.cursor()
+    # 1. 受影响物品收集(条目 + 固定位,事件用)
+    clause, params = _prefix_clause(src)
+    cursor.execute(f"SELECT DISTINCT item_id FROM item_locations WHERE {clause}", params)
+    item_ids = [r["item_id"] for r in cursor.fetchall()]
+    cursor.execute(
+        f"SELECT DISTINCT id FROM items WHERE fixed_location IS NOT NULL "
+        f"AND ({_prefix_clause(src, 'fixed_location')[0]})",
+        _prefix_clause(src, "fixed_location")[1])
+    for r in cursor.fetchall():
+        if r["id"] not in item_ids:
+            item_ids.append(r["id"])
+    # 2. 条目迁移 + 去重(同 item 同目标路径只留一条,数量已在目标行)
+    rows = cursor.execute(
+        "SELECT id, item_id, location FROM item_locations "
+        "WHERE location = ? OR location LIKE ?",
+        (src, src + "/%")).fetchall()
+    for row in rows:
+        new_loc = tgt + row["location"][len(src):]
+        dup = cursor.execute(
+            "SELECT id FROM item_locations WHERE item_id = ? AND location = ? AND id != ?",
+            (row["item_id"], new_loc, row["id"])).fetchone()
+        if dup:
+            cursor.execute("DELETE FROM item_locations WHERE id = ?", (row["id"],))
+        else:
+            cursor.execute("UPDATE item_locations SET location = ?, updated_at = ? WHERE id = ?",
+                           (new_loc, _now(), row["id"]))
+    # 3. 固定位级联(src 前缀改写;fixed_location 无唯一约束,直接 UPDATE)
+    cursor.execute(
+        f"UPDATE items SET fixed_location = ? || substr(fixed_location, ?), updated_at = ? "
+        f"WHERE fixed_location LIKE ?",
+        (tgt, len(src) + 1, _now(), src + "/%"))
+    cursor.execute(
+        "UPDATE items SET fixed_location = ?, updated_at = ? WHERE fixed_location = ?",
+        (tgt, _now(), src))
+    # 4. 子节点级联:目标子路径已存在 → 删源子节点(条目已在第 2 步迁移),否则改路径
+    for row in cursor.execute(
+            "SELECT id, path FROM location_nodes WHERE path LIKE ?",
+            (src + "/%",)).fetchall():
+        new_p = tgt + row["path"][len(src):]
+        dup = cursor.execute(
+            "SELECT id FROM location_nodes WHERE path = ?", (new_p,)).fetchone()
+        if dup:
+            cursor.execute("DELETE FROM location_nodes WHERE id = ?", (row["id"],))
+        else:
+            cursor.execute("UPDATE location_nodes SET path = ? WHERE id = ?",
+                           (new_p, row["id"]))
+    # 5. 删 src 节点
+    cursor.execute("DELETE FROM location_nodes WHERE path = ?", (src,))
+    # 6. 空父链清理(父节点无子无条目 → 一并删除)
+    parts = src.split(SEP)
+    for i in range(len(parts) - 1, 0, -1):
+        anc = SEP.join(parts[:i])
+        clause_a, params_a = _prefix_clause(anc)
+        cursor.execute(f"SELECT COUNT(*) AS n FROM item_locations WHERE {clause_a}", params_a)
+        if cursor.fetchone()["n"] > 0:
+            break
+        cursor.execute("SELECT COUNT(*) AS n FROM location_nodes WHERE path LIKE ? AND path != ?",
+                       (anc + "/%", anc))
+        if cursor.fetchone()["n"] > 0:
+            break
+        cursor.execute("DELETE FROM location_nodes WHERE path = ?", (anc,))
+    # 7. 事件:每个受影响物品一条(记录契约)
+    summary = f"位置合并:{src} → {tgt}(位置管理)"
+    events = 0
+    for iid in item_ids:
+        _record_event(conn, iid, EVENT_LOCATION_RENAMED, summary,
+                      payload={"before": {"location_prefix": src},
+                               "after": {"location_prefix": tgt}},
+                      scene_id=scene_id, cli_cmd=cli_cmd)
+        events += 1
+    conn.commit()
+    return {"renamed_items": len(item_ids), "events": events,
+            "renamed": (src, tgt)}
+
+
 def merge_node(conn, src_raw, tgt_raw, cli_cmd=""):
-    """相似位置合并:src → tgt(同改名级联 + 删 src 节点 + 去重)"""
+    """相似位置合并:src → tgt(tgt 节点通常已存在;条目迁移 + 删源节点,不崩 UNIQUE)"""
     ensure_schema(conn)
     src = normalize_path(src_raw)
     tgt = normalize_path(tgt_raw)
@@ -255,10 +338,7 @@ def merge_node(conn, src_raw, tgt_raw, cli_cmd=""):
         return False, "合并双方相同", None
     if is_descendant_or_self(src, tgt) or is_descendant_or_self(tgt, src):
         return False, "父子位置不可互相合并(先确认层级)", None
-    result = _rename_cascade(conn, src, tgt, cli_cmd=cli_cmd)
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM location_nodes WHERE path = ?", (src,))
-    conn.commit()
+    result = _merge_cascade(conn, src, tgt, cli_cmd=cli_cmd)
     return True, f"已合并:「{src}」→「{tgt}」(涉及 {result['renamed_items']} 件物品)", result
 
 

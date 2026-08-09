@@ -202,6 +202,32 @@ def test_merge_node(seeded):
     assert cursor.fetchone()["n"] == 0
 
 
+def test_merge_node_tgt_exists(seeded):
+    """相似检测典型:src/tgt 两节点都已存在 → 合并不崩(UNIQUE path),条目迁移+去重+固定位级联"""
+    from 位置 import ops
+    ops.create_node(seeded, "客厅/冰箱/上层")
+    ops.create_node(seeded, "客厅/冰箱上层")
+    _seed_item(seeded, 9, "TEST_牛奶2", 3, "客厅/冰箱/上层", qty=1)
+    _seed_item(seeded, 10, "TEST_鸡蛋", 3, "客厅/冰箱上层", qty=2)
+    ops.fixed_set(seeded, 9, "客厅/冰箱/上层", cli_cmd="t")
+    ok, msg, result = ops.merge_node(seeded, "客厅/冰箱/上层", "客厅/冰箱上层", cli_cmd="t")
+    assert ok and "涉及 1 件物品" in msg
+    cursor = seeded.cursor()
+    cursor.execute("SELECT location FROM item_locations WHERE item_id = 9")
+    assert cursor.fetchone()["location"] == "客厅/冰箱上层"
+    cursor.execute("SELECT location FROM item_locations WHERE item_id = 10")
+    assert cursor.fetchone()["location"] == "客厅/冰箱上层"
+    cursor.execute("SELECT fixed_location FROM items WHERE id = 9")
+    assert cursor.fetchone()["fixed_location"] == "客厅/冰箱上层"
+    cursor.execute("SELECT COUNT(*) AS n FROM location_nodes WHERE path = '客厅/冰箱/上层'")
+    assert cursor.fetchone()["n"] == 0
+    cursor.execute("SELECT COUNT(*) AS n FROM location_nodes WHERE path = '客厅/冰箱上层'")
+    assert cursor.fetchone()["n"] == 1
+    # 事件(记录契约)
+    cursor.execute("SELECT COUNT(*) AS n FROM item_events WHERE event_type = 'location_renamed'")
+    assert cursor.fetchone()["n"] >= 1
+
+
 def test_delete_blocked_by_items(seeded):
     from 位置 import ops
     ok, msg, _ = ops.delete_node(seeded, "厨房")

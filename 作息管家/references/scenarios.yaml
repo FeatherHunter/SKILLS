@@ -30,7 +30,7 @@
     category: 未在白名单的二级
   prompt: 记一笔:14:00 写了代码
   status: 【待开发】
-  result: '校验会报错,提示''提议新增 X''等心法 #5 申请流程'
+  result: '校验会报错,提示''提议新增 X''等心法 #5 申请流程,不生成结果 HTML'
 - wake_word: '#0 记作息'
   scenario_id: record_add_l1_only
   scenario_title: 只传一级 category

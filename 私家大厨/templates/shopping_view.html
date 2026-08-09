@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-<title>采购清单 · {{ data.recipe_names | join(' + ') }}</title>
+<title>采购清单</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
@@ -231,6 +231,16 @@
   }
 
   .footer{text-align:center;font-size:12px;color:var(--text4);margin-top:32px}
+
+  /* ── Toast ── */
+  .toast{
+    position:fixed;bottom:100px;left:50%;transform:translateX(-50%);
+    background:var(--success);color:white;
+    padding:10px 20px;border-radius:100px;font-size:14px;font-weight:500;
+    box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:9999;
+    animation:toastIn 0.3s ease;
+  }
+  @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 </style>
 </head>
 <body>
@@ -240,21 +250,18 @@
   <!-- Hero(H2: 纯白底 + 大标题) -->
   <div class="hero">
     <h1>采购清单</h1>
-    <div class="hero-meta">
-      <span>📅 {{ data.generated_at[:10] }}</span>
-      <span>🍳 {{ data.recipe_names | join(' + ') }}</span>
-    </div>
+    <div class="hero-meta" id="hero-meta"></div>
   </div>
 
-  <!-- Summary(3 格,H3: "食谱" 不是 "菜数") -->
+  <!-- Summary(3 格) -->
   <div class="summary">
     <div class="summary-card">
       <div class="summary-label">食谱</div>
-      <div class="summary-value">{{ data.summary.recipe_count }}</div>
+      <div class="summary-value" id="sum-recipes">—</div>
     </div>
     <div class="summary-card">
       <div class="summary-label">食材</div>
-      <div class="summary-value">{{ data.summary.ingredient_count }}</div>
+      <div class="summary-value" id="sum-ingredients">—</div>
     </div>
     <div class="summary-card">
       <div class="summary-label">已勾选</div>
@@ -262,30 +269,10 @@
     </div>
   </div>
 
-  {% if data.summary.allergens %}
-  <div class="allergen-banner">
-    ⚠️ 含过敏原:<strong>{{ data.summary.allergens | join(' · ') }}</strong>
-    <span style="margin-left:auto;color:#B86E00;font-size:12px">仅供参考</span>
-  </div>
-  {% endif %}
+  <div id="allergen-slot"></div>
 
   <!-- Servings -->
-  <div class="control-card">
-    <div class="control-title">份数</div>
-    {% for r in data.recipes %}
-    <div class="servings-row" data-recipe-id="{{ r.id }}" data-base="{{ r.servings_base }}">
-      <div class="servings-recipe-name">
-        {{ r.name }}
-        <span class="sub">原 {{ r.servings_base }} 人份 · 现共 <span class="total-servings">{{ r.servings_actual }}</span> 人份</span>
-      </div>
-      <div class="stepper">
-        <button class="stepper-btn" data-action="dec" data-recipe-id="{{ r.id }}" aria-label="减少份数">−</button>
-        <div class="stepper-value"><span class="mult" data-recipe-id="{{ r.id }}">{{ r.servings_multiplier }}</span> 份</div>
-        <button class="stepper-btn" data-action="inc" data-recipe-id="{{ r.id }}" aria-label="增加份数">+</button>
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+  <div class="control-card" id="servings-card"></div>
 
   <!-- Tabs -->
   <div class="tabs-card" role="tablist">
@@ -294,87 +281,10 @@
   </div>
 
   <!-- View: 按分类 -->
-  <div id="view-cat" class="view active" role="tabpanel">
-    {% for cat, items in data.ingredients_by_category.items() %}
-    <div class="group-card open" data-group="cat-{{ loop.index }}">
-      <div class="group-header" data-toggle aria-expanded="true">
-        <div class="group-name">
-          <span class="group-icon">
-            {% if cat == '肉类' %}🥩{% elif cat == '海鲜' %}🐟{% elif cat == '蛋类' %}🥚
-            {% elif cat == '蔬菜' %}🥬{% elif cat == '葱姜蒜' %}🧄
-            {% elif cat == '香草' %}🌿{% elif cat == '调料' %}🧂
-            {% elif cat == '豆制品' %}🫘{% elif cat == '主食' %}🍚
-            {% elif cat == '干货' %}🍄{% else %}📦{% endif %}
-          </span>
-          {{ cat }}
-        </div>
-        <div class="group-progress" data-total="{{ items|length }}"><span class="checked">0</span>/{{ items|length }}</div>
-      </div>
-      <div class="group-body">
-        {% for item in items %}
-        <div class="ing-item" data-ingredient="{{ item.name }}">
-          <div class="checkbox"></div>
-          <div class="ing-content">
-            <div class="ing-line1">
-              <span class="ing-name">{{ item.name }}</span>
-              <span class="ing-qty" data-base-qty="{{ item.quantity }}" data-base-unit="{{ item.unit }}" data-ingredient="{{ item.name }}">{{ "%g"|format(item.quantity) }}<span class="unit">{{ item.unit }}</span></span>
-              {% if item.is_optional %}<span class="badge badge-optional">可选</span>{% endif %}
-              {# 来源 pill 与食材名同行(line1) ── A 方案:同色 18% 背景 + 同色 100% 文字 ── #}
-              {% for src in item.sources %}
-              <span class="src-pill" data-ingredient="{{ item.name }}" data-recipe-id="{{ src.recipe_id }}" style="--r:var(--r{{ src.color_index }})">
-                {{ src.recipe_name }} <span class="mult" data-mult-target="{{ src.recipe_id }}">×{{ src.multiplier }}</span>
-              </span>
-              {% endfor %}
-            </div>
-            {# 替代品独立行(line2) ── #}
-            {% if item.substitute %}
-            <div class="ing-sub ing-substitute">
-              <span class="src-pill is-sub">{{ item.substitute }}</span>
-            </div>
-            {% endif %}
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+  <div id="view-cat" class="view active" role="tabpanel"></div>
 
   <!-- View: 按菜谱 -->
-  <div id="view-recipe" class="view" role="tabpanel">
-    {% for r in data.recipes %}
-    <div class="group-card open" data-recipe-id="{{ r.id }}">
-      <div class="group-header">
-        <div class="group-name">
-          <span class="group-icon">🍳</span>
-          {{ r.name }}
-        </div>
-        <div class="group-progress">×{{ r.servings_multiplier }} 份 · {{ r.servings_actual }} 人份</div>
-      </div>
-      <div class="group-body">
-        {% for cat, items in data.ingredients_by_category.items() %}
-          {% for item in items %}
-            {% for src in item.sources %}
-              {% if src.recipe_id == r.id %}
-              <div class="ing-item" data-ingredient="{{ item.name }}">
-                <div class="checkbox"></div>
-                <div class="ing-content">
-                  <div class="ing-line1">
-                    <span class="ing-name">{{ item.name }}</span>
-                    <span class="ing-qty" data-base-qty="{{ src.quantity }}" data-base-unit="{{ item.unit }}" data-ingredient="{{ item.name }}">{{ "%g"|format(src.quantity) }}<span class="unit">{{ item.unit }}</span></span>
-                    {% if item.is_optional %}<span class="badge badge-optional">可选</span>{% endif %}
-                  </div>
-                  {% if item.substitute %}<div class="ing-sub">→ <span style="color:var(--text3)">{{ item.substitute }}</span></div>{% endif %}
-                </div>
-              </div>
-              {% endif %}
-            {% endfor %}
-          {% endfor %}
-        {% endfor %}
-      </div>
-    </div>
-    {% endfor %}
-  </div>
+  <div id="view-recipe" class="view" role="tabpanel"></div>
 
   <!-- Toolbar -->
   <div class="toolbar">
@@ -387,43 +297,209 @@
 
 </div>
 
+<!--INJECT-DATA-->
+
 <script>
 'use strict';
 
-const DATA = {{ data | tojson }};
+const DATA = (window.__DATA__ && window.__DATA__.data) || null;
+
+// 分类图标映射
+const CAT_ICONS = {
+  '肉类':'🥩','海鲜':'🐟','蛋类':'🥚','蔬菜':'🥬','葱姜蒜':'🧄',
+  '香草':'🌿','调料':'🧂','豆制品':'🫘','主食':'🍚','干货':'🍄'
+};
 
 // 状态:按食材名统一(A/B/F 解决的核心问题)
 let checkedState = {};
 
 // 当前份数倍数
 const multipliers = {};
-DATA.recipes.forEach(r => multipliers[r.id] = r.servings_multiplier);
+
+// ── HTML 转义(注入数据防 XSS) ──
+function esc(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function formatNum(n) {
+  const num = parseFloat(n);
+  if (isNaN(num)) return '';
+  const rounded = Math.round(num);
+  if (Math.abs(num - rounded) < 0.05) return rounded;
+  return num.toFixed(1).replace(/\.0$/, '');
+}
+
+// ── 渲染: Hero meta ──
+function renderHero(){
+  const el = document.getElementById('hero-meta');
+  if (!el || !DATA) return;
+  const date = (DATA.generated_at || '').slice(0, 10);
+  const names = (DATA.recipe_names || []).join(' + ');
+  el.innerHTML = `<span>📅 ${esc(date)}</span><span>🍳 ${esc(names)}</span>`;
+}
+
+// ── 渲染: Summary ──
+function renderSummary(){
+  if (!DATA || !DATA.summary) return;
+  document.getElementById('sum-recipes').textContent = DATA.summary.recipe_count || 0;
+  document.getElementById('sum-ingredients').textContent = DATA.summary.ingredient_count || 0;
+}
+
+// ── 渲染: Allergen banner ──
+function renderAllergen(){
+  const slot = document.getElementById('allergen-slot');
+  if (!slot || !DATA || !DATA.summary) return;
+  const allergens = DATA.summary.allergens || [];
+  if (allergens.length === 0) { slot.innerHTML = ''; return; }
+  slot.innerHTML =
+    '<div class="allergen-banner">⚠️ 含过敏原:<strong>' + esc(allergens.join(' · ')) +
+    '</strong><span style="margin-left:auto;color:#B86E00;font-size:12px">仅供参考</span></div>';
+}
+
+// ── 渲染: Servings rows ──
+function renderServings(){
+  const card = document.getElementById('servings-card');
+  if (!card || !DATA) return;
+  const rows = (DATA.recipes || []).map(r => {
+    const base = r.servings_base != null ? r.servings_base : (r.servings || 1);
+    const actual = r.servings_actual != null ? r.servings_actual : base;
+    const mult = r.servings_multiplier != null ? r.servings_multiplier : 1;
+    multipliers[r.id] = mult;
+    return (
+      '<div class="servings-row" data-recipe-id="' + esc(r.id) + '" data-base="' + base + '">' +
+        '<div class="servings-recipe-name">' + esc(r.name) +
+          '<span class="sub">原 ' + base + ' 人份 · 现共 <span class="total-servings">' + actual + '</span> 人份</span>' +
+        '</div>' +
+        '<div class="stepper">' +
+          '<button class="stepper-btn" data-action="dec" data-recipe-id="' + esc(r.id) + '" aria-label="减少份数">−</button>' +
+          '<div class="stepper-value"><span class="mult" data-recipe-id="' + esc(r.id) + '">' + mult + '</span> 份</div>' +
+          '<button class="stepper-btn" data-action="inc" data-recipe-id="' + esc(r.id) + '" aria-label="增加份数">+</button>' +
+        '</div>' +
+      '</div>'
+    );
+  }).join('');
+  card.innerHTML = '<div class="control-title">份数</div>' + rows;
+}
+
+// ── 渲染: 分类视图 ──
+function renderCatView(){
+  const view = document.getElementById('view-cat');
+  if (!view || !DATA) return;
+  const cats = DATA.ingredients_by_category || {};
+  let idx = 0;
+  let html = '';
+  for (const cat in cats) {
+    idx++;
+    const items = cats[cat] || [];
+    const icon = CAT_ICONS[cat] || '📦';
+    html += '<div class="group-card open" data-group="cat-' + idx + '">';
+    html += '<div class="group-header" data-toggle aria-expanded="true">';
+    html += '<div class="group-name"><span class="group-icon">' + icon + '</span>' + esc(cat) + '</div>';
+    html += '<div class="group-progress" data-total="' + items.length + '"><span class="checked">0</span>/' + items.length + '</div>';
+    html += '</div><div class="group-body">';
+    for (const item of items) {
+      html += renderIngItemCat(item);
+    }
+    html += '</div></div>';
+  }
+  view.innerHTML = html || '<p style="padding:20px;color:var(--text3)">暂无食材</p>';
+}
+
+// 分类视图食材项(合并数量 + 来源 pill)
+function renderIngItemCat(item){
+  const name = esc(item.name);
+  const qty = formatNum(item.quantity);
+  const unit = esc(item.unit || '');
+  let html = '<div class="ing-item" data-ingredient="' + name + '">';
+  html += '<div class="checkbox"></div>';
+  html += '<div class="ing-content"><div class="ing-line1">';
+  html += '<span class="ing-name">' + name + '</span>';
+  html += '<span class="ing-qty" data-base-qty="' + (item.quantity != null ? item.quantity : 0) + '" data-base-unit="' + unit + '" data-ingredient="' + name + '">' + qty + '<span class="unit">' + unit + '</span></span>';
+  if (item.is_optional) html += '<span class="badge badge-optional">可选</span>';
+  for (const src of (item.sources || [])) {
+    html += '<span class="src-pill" data-ingredient="' + name + '" data-recipe-id="' + esc(src.recipe_id) + '" style="--r:var(--r' + (src.color_index || 1) + ')">' +
+            esc(src.recipe_name) + ' <span class="mult" data-mult-target="' + esc(src.recipe_id) + '">×' + (src.multiplier || 1) + '</span></span>';
+  }
+  html += '</div>';
+  if (item.substitute) {
+    html += '<div class="ing-sub ing-substitute"><span class="src-pill is-sub">' + esc(item.substitute) + '</span></div>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+// ── 渲染: 菜谱视图 ──
+function renderRecipeView(){
+  const view = document.getElementById('view-recipe');
+  if (!view || !DATA) return;
+  const cats = DATA.ingredients_by_category || {};
+  let html = '';
+  for (const r of (DATA.recipes || [])) {
+    html += '<div class="group-card open" data-recipe-id="' + esc(r.id) + '">';
+    html += '<div class="group-header"><div class="group-name"><span class="group-icon">🍳</span>' + esc(r.name) + '</div>';
+    html += '<div class="group-progress">×' + (r.servings_multiplier || 1) + ' 份 · ' + (r.servings_actual || r.servings_base || 1) + ' 人份</div>';
+    html += '</div><div class="group-body">';
+    for (const cat in cats) {
+      for (const item of (cats[cat] || [])) {
+        const src = (item.sources || []).find(s => s.recipe_id === r.id);
+        if (src) {
+          html += renderIngItemRecipe(item, src);
+        }
+      }
+    }
+    html += '</div></div>';
+  }
+  view.innerHTML = html || '';
+}
+
+// 菜谱视图食材项(该菜贡献量 + 来源)
+function renderIngItemRecipe(item, src){
+  const name = esc(item.name);
+  const qty = formatNum(src.quantity);
+  const unit = esc(item.unit || '');
+  let html = '<div class="ing-item" data-ingredient="' + name + '">';
+  html += '<div class="checkbox"></div>';
+  html += '<div class="ing-content"><div class="ing-line1">';
+  html += '<span class="ing-name">' + name + '</span>';
+  html += '<span class="ing-qty" data-base-qty="' + (src.quantity != null ? src.quantity : 0) + '" data-base-unit="' + unit + '" data-ingredient="' + name + '">' + qty + '<span class="unit">' + unit + '</span></span>';
+  if (item.is_optional) html += '<span class="badge badge-optional">可选</span>';
+  html += '</div>';
+  if (item.substitute) html += '<div class="ing-sub">→ <span style="color:var(--text3)">' + esc(item.substitute) + '</span></div>';
+  html += '</div></div>';
+  return html;
+}
 
 // ── 1. tab 切换 ──
-document.querySelectorAll('.tab').forEach(tab => {
-  tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => {
-      t.classList.remove('active');
-      t.setAttribute('aria-selected', 'false');
+function bindTabs(){
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => {
+        t.classList.remove('active');
+        t.setAttribute('aria-selected', 'false');
+      });
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected', 'true');
+      document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+      const v = tab.dataset.view;
+      document.getElementById('view-' + v).classList.add('active');
     });
-    tab.classList.add('active');
-    tab.setAttribute('aria-selected', 'true');
-    document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
-    const v = tab.dataset.view;
-    document.getElementById('view-' + v).classList.add('active');
   });
-});
+}
 
-// ── 2. group 折叠(I/M 修复:移除 inline onclick,改 addEventListener + aria) ──
-document.querySelectorAll('.group-header[data-toggle]').forEach(header => {
-  header.addEventListener('click', () => {
-    const card = header.parentElement;
-    const opened = card.classList.toggle('open');
-    header.setAttribute('aria-expanded', String(opened));
+// ── 2. group 折叠(I/M 修复:addEventListener + aria) ──
+function bindGroups(){
+  document.querySelectorAll('.group-header[data-toggle]').forEach(header => {
+    header.addEventListener('click', () => {
+      const card = header.parentElement;
+      const opened = card.classList.toggle('open');
+      header.setAttribute('aria-expanded', String(opened));
+    });
   });
-});
+}
 
-// ── 3. 问题 2:checkbox 按食材名统一(全视图同步) ──
+// ── 3. checkbox 按食材名统一(全视图同步) ──
 function toggleIng(itemEl) {
   const name = itemEl.dataset.ingredient;
   if (!name) return;
@@ -433,18 +509,18 @@ function toggleIng(itemEl) {
   saveState();
 }
 
-// F 修复:事件委托,点击 src-pill 不触发勾选(阻止冒泡到 ing-item)
-document.querySelectorAll('.ing-item').forEach(item => {
-  item.addEventListener('click', e => {
-    // 防止 stepper / pill / badge 触发误勾
-    if (e.target.closest('.stepper-btn, .src-pill, .badge')) return;
-    toggleIng(item);
+function bindCheckboxes(){
+  document.querySelectorAll('.ing-item').forEach(item => {
+    item.addEventListener('click', e => {
+      if (e.target.closest('.stepper-btn, .src-pill, .badge')) return;
+      toggleIng(item);
+    });
   });
-});
+}
 
 function applyStateToAll(name) {
   const checked = !!checkedState[name];
-  document.querySelectorAll(`.ing-item[data-ingredient="${name}"]`).forEach(el => {
+  document.querySelectorAll('.ing-item[data-ingredient="' + CSS.escape(name) + '"]').forEach(el => {
     el.classList.toggle('checked', checked);
   });
 }
@@ -467,60 +543,55 @@ function updateProgress() {
   });
 }
 
-// ── 4. 问题 3 · 份数加减 ──
-document.querySelectorAll('.stepper-btn').forEach(btn => {
-  btn.addEventListener('click', e => {
-    e.stopPropagation();  // F 修复:防止冒泡
-    const rid = btn.dataset.recipeId;
-    const action = btn.dataset.action;
-    let mult = multipliers[rid];
-    if (action === 'inc') mult = Math.min(mult + 1, 20);
-    if (action === 'dec') mult = Math.max(mult - 1, 1);
-    multipliers[rid] = mult;
-    document.querySelector(`.mult[data-recipe-id="${rid}"]`).textContent = mult;
-    recalculateAll();
-    saveState();
+// ── 4. 份数加减 ──
+function bindSteppers(){
+  document.querySelectorAll('.stepper-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const rid = btn.dataset.recipeId;
+      const action = btn.dataset.action;
+      let mult = multipliers[rid] || 1;
+      if (action === 'inc') mult = Math.min(mult + 1, 20);
+      if (action === 'dec') mult = Math.max(mult - 1, 1);
+      multipliers[rid] = mult;
+      document.querySelector('.mult[data-recipe-id="' + CSS.escape(rid) + '"]').textContent = mult;
+      recalculateAll();
+      saveState();
+    });
   });
-});
+}
 
 function recalculateAll() {
-  // 重算每菜的"共 N 人份"
+  if (!DATA) return;
   DATA.recipes.forEach(r => {
-    const total = r.servings_base * multipliers[r.id];
-    const el = document.querySelector(`.servings-row[data-recipe-id="${r.id}"] .total-servings`);
+    const total = (r.servings_base != null ? r.servings_base : 1) * (multipliers[r.id] || 1);
+    const el = document.querySelector('.servings-row[data-recipe-id="' + CSS.escape(r.id) + '"] .total-servings');
     if (el) el.textContent = total;
-    // 同步按菜视图的份数 meta
-    const metaEl = document.querySelector(`#view-recipe .group-card[data-recipe-id="${r.id}"] .group-progress`);
-    if (metaEl) metaEl.textContent = `×${multipliers[r.id]} 份 · ${total} 人份`;
+    const metaEl = document.querySelector('#view-recipe .group-card[data-recipe-id="' + CSS.escape(r.id) + '"] .group-progress');
+    if (metaEl) metaEl.textContent = '×' + (multipliers[r.id] || 1) + ' 份 · ' + total + ' 人份';
   });
 
-  // 重算所有 qty(分类视图 + 按菜视图都更新,G 修复)
   document.querySelectorAll('.ing-qty[data-ingredient]').forEach(qtyEl => {
     const name = qtyEl.dataset.ingredient;
     const unit = qtyEl.dataset.baseUnit;
     const baseQty = parseFloat(qtyEl.dataset.baseQty || 0);
 
-    // 找来源(sources)按 multipliers 重算
     let total = 0;
-    for (const cat in DATA.ingredients_by_category) {
+    for (const cat in (DATA.ingredients_by_category || {})) {
       for (const ing of DATA.ingredients_by_category[cat]) {
         if (ing.name === name) {
-          // 这个 qty 元素可能代表单一来源(按菜视图)或合并(分类视图)
-          // 看 data-base-qty 是不是 ing.quantity(分类)或 src.quantity(按菜)
           if (Math.abs(baseQty - ing.quantity) < 0.001) {
-            // 分类视图:合并所有 sources
             for (const src of ing.sources) {
               const base = src.quantity / src.multiplier;
               total += base * (multipliers[src.recipe_id] || 1);
             }
           } else {
-            // 按菜视图:qty 来自某个 src,按该 src 的 recipe 重算
             const src = ing.sources.find(s => Math.abs(s.quantity - baseQty) < 0.001);
             if (src) {
               const base = src.quantity / src.multiplier;
               total = base * (multipliers[src.recipe_id] || 1);
             } else {
-              total = baseQty;  // fallback:保持原值
+              total = baseQty;
             }
           }
           break;
@@ -528,10 +599,9 @@ function recalculateAll() {
       }
     }
 
-    qtyEl.innerHTML = `${formatNum(total)}<span class="unit">${unit}</span>`;
+    qtyEl.innerHTML = formatNum(total) + '<span class="unit">' + esc(unit) + '</span>';
   });
 
-  // K4 修复:同步 src-pill 的 ×N 文字(改份数后 "辣椒炒肉 ×1" → "辣椒炒肉 ×2")
   document.querySelectorAll('.src-pill').forEach(pill => {
     const rid = pill.dataset.recipeId;
     if (rid && multipliers[rid] !== undefined) {
@@ -541,20 +611,12 @@ function recalculateAll() {
   });
 }
 
-// K 修复:格式化函数边界处理
-function formatNum(n) {
-  const rounded = Math.round(n);
-  if (Math.abs(n - rounded) < 0.05) return rounded;
-  return n.toFixed(1).replace(/\.0$/, '');
-}
-
-// ── 5. D 修复:localStorage key 只用倍数组,去掉 generated_at ──
+// ── 5. localStorage(保留作增强,失败静默) ──
 function storageKey() {
-  // 不同份数倍数 → 不同 key(同份数复用)
-  // 不含 generated_at,因为同一份清单不同 session 应共享状态
+  if (!DATA) return 'shopping_empty';
   const ridSet = DATA.recipes.map(r => r.id).join('-');
-  const multSet = DATA.recipes.map(r => multipliers[r.id]).join('-');
-  return `shopping_${ridSet}_${multSet}`;
+  const multSet = DATA.recipes.map(r => multipliers[r.id] || 1).join('-');
+  return 'shopping_' + ridSet + '_' + multSet;
 }
 
 function saveState() {
@@ -575,58 +637,52 @@ function loadState() {
 function resetAll() {
   if (!confirm('清空所有勾选?')) return;
   checkedState = {};
-  Object.keys(checkedState).forEach(applyStateToAll);
   document.querySelectorAll('.ing-item.checked').forEach(el => el.classList.remove('checked'));
   updateProgress();
   saveState();
 }
 
-// ── 6. C 修复:copyAsText 加份数 + 来源信息 ──
+// ── 6. copyAsText(份数 + 来源信息) ──
 function copyAsText() {
+  if (!DATA) return;
   const lines = [];
-  lines.push(`采购清单 · ${DATA.recipe_names.join(' + ')}`);
+  lines.push('采购清单 · ' + (DATA.recipe_names || []).join(' + '));
 
-  // 份数说明
   const servingsDesc = DATA.recipes.map(r => {
-    const m = multipliers[r.id];
-    return m === 1 ? r.name : `${r.name} ×${m}`;
+    const m = multipliers[r.id] || 1;
+    return m === 1 ? r.name : r.name + ' ×' + m;
   }).join(' · ');
   lines.push(servingsDesc);
-  lines.push(`共 ${DATA.summary.ingredient_count} 项`);
+  lines.push('共 ' + (DATA.summary.ingredient_count || 0) + ' 项');
 
-  if (DATA.summary.allergens) lines.push(`⚠️ 过敏原: ${DATA.summary.allergens.join('、')}`);
+  if (DATA.summary.allergens) lines.push('⚠️ 过敏原: ' + DATA.summary.allergens.join('、'));
   lines.push('');
 
-  for (const cat in DATA.ingredients_by_category) {
-    lines.push(`【${cat}】`);
+  for (const cat in (DATA.ingredients_by_category || {})) {
+    lines.push('【' + cat + '】');
     for (const ing of DATA.ingredients_by_category[cat]) {
       const mark = checkedState[ing.name] ? '✓' : '☐';
-      // 重算当前数量(考虑倍数)
       let qty = 0;
       for (const src of ing.sources) {
         const base = src.quantity / src.multiplier;
         qty += base * (multipliers[src.recipe_id] || 1);
       }
-      // 来源标注
       let sourceStr = '';
       if (ing.sources && ing.sources.length > 0) {
-        const srcs = ing.sources.map(s => `${s.recipe_name}×${multipliers[s.recipe_id] || 1}`).join(', ');
-        sourceStr = ` (${srcs})`;
+        const srcs = ing.sources.map(s => s.recipe_name + '×' + (multipliers[s.recipe_id] || 1)).join(', ');
+        sourceStr = ' (' + srcs + ')';
       }
-      let sub = ing.substitute ? ` · 替代 ${ing.substitute}` : '';
+      let sub = ing.substitute ? ' · 替代 ' + ing.substitute : '';
       let opt = ing.is_optional ? ' · 可选' : '';
-      lines.push(`${mark} ${ing.name} ${formatNum(qty)}${ing.unit}${sourceStr}${sub}${opt}`);
+      lines.push(mark + ' ' + ing.name + ' ' + formatNum(qty) + (ing.unit || '') + sourceStr + sub + opt);
     }
     lines.push('');
   }
 
   const text = lines.join('\n');
-
-  // J 修复:不用 alert(阻塞),改用临时 toast
   navigator.clipboard.writeText(text).then(() => {
     showToast('✅ 已复制,可贴备忘录');
   }).catch(() => {
-    // 降级方案:用 textarea 选区 + document.execCommand('copy')
     const ta = document.createElement('textarea');
     ta.value = text;
     ta.style.position = 'fixed';
@@ -650,29 +706,44 @@ function showToast(msg, isError) {
   const t = document.createElement('div');
   t.className = 'toast';
   t.textContent = msg;
-  t.style.cssText = `
-    position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-    background: ${isError ? '#FF3B30' : '#34C759'}; color: white;
-    padding: 10px 20px; border-radius: 100px; font-size: 14px; font-weight: 500;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 9999;
-    animation: toastIn 0.3s ease;
-  `;
+  t.style.background = isError ? '#FF3B30' : '#34C759';
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 2000);
 }
 
-// ── 7. toolbar buttons(I 修复:移除 inline onclick) ──
-document.querySelectorAll('.toolbar [data-action]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const a = btn.dataset.action;
-    if (a === 'copy') copyAsText();
-    else if (a === 'print') window.print();
-    else if (a === 'reset') resetAll();
+// ── 7. toolbar buttons ──
+function bindToolbar(){
+  document.querySelectorAll('.toolbar [data-action]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const a = btn.dataset.action;
+      if (a === 'copy') copyAsText();
+      else if (a === 'print') window.print();
+      else if (a === 'reset') resetAll();
+    });
   });
-});
+}
 
 // ── 启动 ──
-loadState();
+function init(){
+  if (!DATA) {
+    document.getElementById('hero-meta').textContent = '数据未注入';
+    return;
+  }
+  renderHero();
+  renderSummary();
+  renderAllergen();
+  renderServings();
+  renderCatView();
+  renderRecipeView();
+  bindTabs();
+  bindGroups();
+  bindCheckboxes();
+  bindSteppers();
+  bindToolbar();
+  loadState();
+}
+
+init();
 </script>
 
 </body>

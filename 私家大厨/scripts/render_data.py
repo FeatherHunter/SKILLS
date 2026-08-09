@@ -28,6 +28,7 @@ from datetime import datetime
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
+from output_config import get_output_root, get_output_dir
 TEMPLATE_PATH = SKILL_DIR / "templates" / "data_view.html"
 
 # ── 文件名清洗 ──
@@ -239,8 +240,9 @@ def render_html(payload: dict, slug: str, output_path: str = None) -> bool:
     if output_path:
         out = Path(output_path)
     else:
-        base_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub"))
-        sub = payload["type"]  # list/timeline/dashboard
+        out_base = get_output_root()
+        sub = payload["type"]
+        target_dir = out_base / sub  # list/timeline/dashboard
         target_dir = base_dir / sub
         target_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")

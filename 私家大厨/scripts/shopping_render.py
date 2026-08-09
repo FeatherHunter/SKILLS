@@ -3,14 +3,13 @@
 私家大厨 - 采购清单 HTML 渲染器
 
 数据流:
-    shopping_manager.py generate → JSON → Jinja2 模板 → HTML 文件
+    shopping_manager.py generate → JSON → 占位符注入模板 → HTML 文件
 
 设计:
     - 不直连数据库,所有数据通过 shopping_manager.py 拿(单一数据源)
-    - 模板用 Jinja2 + autoescape 防 XSS
+    - 模板用 <!--INJECT-DATA--> 占位符 + window.__DATA__ 注入(去 Jinja2 · T1)
     - 输出文件名 slugify(防 Windows 非法字符)
-    - 尊重 CHEF_OUTPUT_DIR 环境变量
-    - 输出目录:CookHub/shopping/(与 recipes/ 分离)
+    - 输出目录: output_config 统一解析(env 优先 + 平台感知兜底)
 """
 import sys
 import os
@@ -20,17 +19,13 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# 依赖:Jinja2
-try:
-    from jinja2 import Environment, FileSystemLoader, select_autoescape
-except ImportError:
-    print("错误:缺少依赖 jinja2。请运行:pip install jinja2", file=sys.stderr)
-    sys.exit(1)
+from output_config import get_output_root, get_output_dir
 
 
 # 路径常量
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
+from output_config import get_output_root, get_output_dir
 TEMPLATE_PATH = SKILL_DIR / "templates" / "shopping_view.html"
 SHOPPING_MANAGER = SCRIPT_DIR / "shopping_manager.py"
 RECIPE_MANAGER = SCRIPT_DIR / "recipe_manager.py"
@@ -90,17 +85,17 @@ def fetch_shopping_json(recipe_ids_str: str, exclude_optional: bool = False) -> 
     return data.get("data", {})
 
 
-# ── Jinja2 环境──
-def make_env() -> Environment:
-    if not TEMPLATE_PATH.exists():
-        raise FileNotFoundError(f"模板不存在: {TEMPLATE_PATH}")
-    env = Environment(
-        loader=FileSystemLoader(str(TEMPLATE_PATH.parent)),
-        autoescape=select_autoescape(["html", "xml"]),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
-    return env
+# ── 占位符注入(去 Jinja2 · T1 · 对齐 data_view 范式)──
+def inject_data(template_html: str, payload: dict) -> str:
+    """注入 payload 到 <!--INJECT-DATA--> 占位符(唯一 1 次)"""
+    placeholder = "<!--INJECT-DATA-->"
+    count = template_html.count(placeholder)
+    if count != 1:
+        raise ValueError(f"占位符必须唯一 1 次,实际 {count} 次")
+    payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), default=str)
+    payload_json = payload_json.replace("</", "<\\/")
+    script_tag = f'<script>window.__DATA__ = {payload_json};</script>'
+    return template_html.replace(placeholder, script_tag, 1)
 
 
 # ── 渲染主函数──
@@ -120,12 +115,11 @@ def render(args):
         print(f"错误:{e}", file=sys.stderr)
         return False
 
-    # 2. 渲染
+    # 2. 渲染(占位符注入)
     try:
-        env = make_env()
-        template = env.get_template(TEMPLATE_PATH.name)
-        html = template.render(data=data)
-    except Exception as e:
+        template = TEMPLATE_PATH.read_text(encoding="utf-8")
+        html = inject_data(template, {"data": data})
+    except ValueError as e:
         print(f"渲染失败:{e}", file=sys.stderr)
         return False
 
@@ -135,7 +129,7 @@ def render(args):
         output_path = Path(output_arg)
     else:
         # 默认:$CHEF_OUTPUT_DIR/shopping/<slug>.html
-        base_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub"))
+        base_dir = get_output_root()
         shopping_dir = base_dir / "shopping"
         shopping_dir.mkdir(parents=True, exist_ok=True)
 

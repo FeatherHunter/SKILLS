@@ -22,6 +22,7 @@ from datetime import datetime
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
+from output_config import get_output_root, get_output_dir
 TEMPLATE_PATH = SKILL_DIR / "templates" / "cooking_mode.html"
 RECIPE_MANAGER = SCRIPT_DIR / "recipe_manager.py"
 
@@ -94,7 +95,7 @@ def render(args):
     if output_arg:
         output_path = Path(output_arg)
     else:
-        base_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub"))
+        base_dir = get_output_root()
         cooking_dir = base_dir / "cooking"
         cooking_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")

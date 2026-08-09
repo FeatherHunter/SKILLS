@@ -30,6 +30,7 @@ from datetime import datetime
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 SCENARIOS_PATH = SKILL_DIR / "references" / "scenarios.yaml"
+from output_config import get_output_root, get_output_dir
 TEMPLATE_PATH = SKILL_DIR / "templates" / "help.html"
 
 
@@ -183,7 +184,7 @@ def render(args) -> bool:
         output_path = Path(output_arg)
     else:
         # 默认:$CHEF_OUTPUT_DIR/help/私家大厨_HELP_<YYYYMMDD_HHMMSS>.html
-        base_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub"))
+        base_dir = get_output_root()
         help_dir = base_dir / "help"
         help_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")

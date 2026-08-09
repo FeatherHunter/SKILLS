@@ -29,6 +29,7 @@ from datetime import datetime
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
+from output_config import get_output_root, get_output_dir
 TEMPLATE_PATH = SKILL_DIR / "templates" / "batch_edit.html"
 
 
@@ -190,7 +191,7 @@ def render_batch_edit_html(recipe_id: str, out_path=None) -> str:
     if out_path:
         out = Path(out_path)
     else:
-        base_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub")) / "batch_edit"
+        base_dir = get_output_root() / "batch_edit"
         base_dir.mkdir(parents=True, exist_ok=True)
         slug = basics["recipe_id"][:8] if len(basics["recipe_id"]) >= 8 else basics["recipe_id"]
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")

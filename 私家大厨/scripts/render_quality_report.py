@@ -11,6 +11,7 @@ from datetime import datetime
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
+from output_config import get_output_root, get_output_dir
 TEMPLATE_PATH = SKILL_DIR / "templates" / "data_quality_report.html"
 
 
@@ -75,7 +76,7 @@ def render_html_report(report: dict) -> str:
     payload = transform_quality_payload(report)
     output = inject_data(template, payload)
 
-    out_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub")) / "quality"
+    out_dir = get_output_root() / "quality"
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_path = out_dir / f"数据质量报告_{ts}.html"

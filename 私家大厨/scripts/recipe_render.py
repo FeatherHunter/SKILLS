@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
 私家大厨 - 食谱渲染器
-数据流: recipe_manager.py export-json  →  Jinja2 模板  →  HTML 文件
+数据流: recipe_manager.py export-json  →  占位符注入模板  →  HTML 文件
 
 设计原则:
 - 不直连数据库,所有数据通过 recipe_manager.py 拿(单一数据源)
-- 模板用 Jinja2 + autoescape 防 XSS
+- 模板用 <!--INJECT-DATA--> 占位符 + window.__RECIPE__ 注入(去 Jinja2 · T1)
 - 输出文件名 slugify(防 Windows 非法字符)
-- 尊重 CHEF_OUTPUT_DIR 环境变量
+- 输出目录: output_config 统一解析(env 优先 + 平台感知兜底)
 """
 
 import sys
@@ -18,17 +18,13 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# 依赖:Jinja2(项目级 venv 装,或全局 pip)
-try:
-    from jinja2 import Environment, FileSystemLoader, select_autoescape
-except ImportError:
-    print("错误:缺少依赖 jinja2。请运行:pip install jinja2", file=sys.stderr)
-    sys.exit(1)
+from output_config import get_output_root, get_output_dir
 
 
 # 路径常量 - 跨平台,基于 __file__
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
+from output_config import get_output_root, get_output_dir
 TEMPLATE_PATH = SKILL_DIR / "templates" / "recipe_view.html"
 RECIPE_MANAGER = SCRIPT_DIR / "recipe_manager.py"
 
@@ -61,17 +57,17 @@ def fetch_recipe_json(name_or_id: str) -> dict:
     return json.loads(result.stdout)
 
 
-# ── Jinja2 环境───────────────────────────────────────────────────
-def make_env() -> Environment:
-    if not TEMPLATE_PATH.exists():
-        raise FileNotFoundError(f"模板不存在: {TEMPLATE_PATH}")
-    env = Environment(
-        loader=FileSystemLoader(str(TEMPLATE_PATH.parent)),
-        autoescape=select_autoescape(["html", "xml"]),
-        trim_blocks=True,
-        lstrip_blocks=True,
-    )
-    return env
+# ── 占位符注入(去 Jinja2 · T1 · 对齐 data_view/shopping 范式)──
+def inject_data(template_html: str, payload: dict) -> str:
+    """注入 payload 到 <!--INJECT-DATA--> 占位符(唯一 1 次)"""
+    placeholder = "<!--INJECT-DATA-->"
+    count = template_html.count(placeholder)
+    if count != 1:
+        raise ValueError(f"占位符必须唯一 1 次,实际 {count} 次")
+    payload_json = json.dumps(payload, ensure_ascii=False, separators=(",", ":"), default=str)
+    payload_json = payload_json.replace("</", "<\\/")
+    script_tag = f'<script>window.__RECIPE__ = {payload_json};</script>'
+    return template_html.replace(placeholder, script_tag, 1)
 
 
 # ── 渲染主函数────────────────────────────────────────────────────
@@ -89,16 +85,11 @@ def render(args):
         print(f"错误:{e}", file=sys.stderr)
         return False
 
-    # 2. 渲染
+    # 2. 渲染(占位符注入)
     try:
-        env = make_env()
-        template = env.get_template(TEMPLATE_PATH.name)
-        html = template.render(
-            recipe=recipe,
-            now=datetime.now().strftime("%Y-%m-%d %H:%M"),
-            chef_output_dir=os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub"),
-        )
-    except Exception as e:
+        template = TEMPLATE_PATH.read_text(encoding="utf-8")
+        html = inject_data(template, {"recipe": recipe})
+    except ValueError as e:
         print(f"渲染失败:{e}", file=sys.stderr)
         return False
 
@@ -108,7 +99,7 @@ def render(args):
         output_path = Path(output_arg)
     else:
         # 默认:$CHEF_OUTPUT_DIR/recipes/<slug>.html(尊重环境变量)
-        base_dir = Path(os.environ.get("CHEF_OUTPUT_DIR", "D:/CookHub"))
+        base_dir = get_output_root()
         recipes_dir = base_dir / "recipes"
         recipes_dir.mkdir(parents=True, exist_ok=True)
         slug = slugify(recipe.get("name") or "") or recipe.get("id", "untitled")[:8]

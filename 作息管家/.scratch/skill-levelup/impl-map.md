@@ -25,6 +25,8 @@
 - [T0 开源清仓+路径统一](https://github.com/FeatherHunter/SKILLS/issues/225) — 处置清单 #2-#16 全落地（#1 batch-add 归 T4）：Q6 路径统一链 get_db_base_dir 单一解析器 + 白名单迁出 .db/ + direct_add/batch_add_morning/plan*.json 删除 + LICENSE + .gitignore 修正 + 文档绝对路径 8 处；pytest 212 全过；门禁 A 5 层 PASS；4 commits 未 push
 - [T1 注册通道+合并器](https://github.com/FeatherHunter/SKILLS/issues/226) — 渐进式注册通道（schedule_cli.py 末尾追加 discover_domain_commands/_dispatch_domain：域模块自带模块级 COMMANDS 注册表 → CLI 自动发现 dispatch；现有 49 if/elif 分发只加 else 钩子一行，未重构；sys.modules 零副作用：已导入模块跳过 + exec 后还原，杜绝测试污染）+ update_scenarios.py 场景合并器（读 scenarios/*.yaml 片段 → 7 字段契约校验 → scenario_id 命中覆盖/未命中追加 → 幂等写回 + 头部契约注释保留 + 场景总数行自动更新）+ fixture 隔离约定成文（操作规范 §7 + conftest）；pytest 230 全绿（212+18）；门禁 A 5 层 PASS；commit 2fcaaa0（混入并行 session 已 staged 总纲改名，零丢失，透明记录）
 - [T4 批量导入](https://github.com/FeatherHunter/SKILLS/issues/229) — batch-add 命令模块 batch_scenarios.py 域模块自注册（COMMANDS{"batch-add"}，不碰 schedule_cli.py）；校验复用 add 链路（必填 field_map 语义 / 时间归一 24:00→23:59 / duration 省略自动算 / category 白名单下沉 add_record_full）；幂等不提供（记录无唯一键，文档注明）；git rm batch_add.py（R2 #1）；add_record_full 空串语义修正（source_timestamps/analysis_reasoning 空串合法，对齐 R2「缺省填空串」）；scenarios/batch.yaml 片段（#0-json 家族衔接，精确替换关系归 T8）+ 19 测试 + test_domain_channel 空注册表断言更新（并行 T5-T7 域模块已落地）；pytest 301 全绿（230+19+并行 52）+ E2E 冒烟（临时 SKILLS_DB_PATH：happy/dry-run/partial/stop-on-error/BOM 兼容）
+- [T6 周视图](https://github.com/FeatherHunter/SKILLS/issues/231) — week_view.py 域模块自注册（COMMANDS{"render-record-week"}，不碰 schedule_cli.py / scenarios.yaml，schedule_html_render.py 零改动：命名/注入/复制 prompt 全部本地构建）；周视图 = 日历周一~周日 7×24 全分类总览（热力图格 = 该小时主导 L1 分类，cell 形态同 record_category）+ 每日时长 + L1 分类总览 + AI 钩子 + 4 段复制 prompt；前端复用+扩展热力图组件（_record_engine.js renderWeek，复用 .heatmap/hm-* 网格与 statBlock/recordsCollapsible/copyPromptBlock，对抗式审查矛盾 4）；输出 record/week/查作息周视图_<stamp>.html（中文命名合规）；10 测试；pytest 全绿（300 过 1 挂，挂=并行 T2 半成品 test_record_result 模板缺失，非本票）+ E2E 实测（真实进程 else 钩子 dispatch + 单文件 52KB HTML 写盘，临时 SKILLS_DB_PATH）
+- [T7 首次使用+onboarding](https://github.com/FeatherHunter/SKILLS/issues/232) — 首次使用 6 步向导（环境检测→路径确认→建库→状态确认→初始化报告→完成）：setup_scenarios.py 域模块自注册 COMMANDS{check, render-first-use}（init/status 为既有内置命令，域注册表同名不可覆盖 → 编排由流程承担，偏离记录三问见 #232）；模块级零副作用（域注册通道 exec 安全，DB/飞书延迟 import）；check 输出 OS/Python≥3.7/数据目录可写/DB 状态/分类白名单/飞书三档 JSON；render-first-use 注入 $SKILLS_DB_PATH/schedule_html/setup/首次使用_<stamp>.html（锚点注入对齐 schedule_html_render 约定）；first_use_wizard.html 对标居家管家 6 步卡片式 + 08 双按钮（复制数据 5 段/复制日志 6 段）+ 阶段指示 chip + 移动端 820px 断点；报告契约 {items/todos/verify} 对标备忘录 init-report（飞书项三态 ok/skip/fail）；飞书强引导（2026-08-09 人类修正：配合飞书效果最好，明确拒绝才跳过并标注「飞书同步不可用」，授权强制非阻塞）；scenarios/setup.yaml 片段（first_use，7 字段契约过合并器校验，写回 T8）；14 测试；pytest 296 全绿 + 域通道 E2E（check/init/render-first-use 实测）+ 浏览器双视口 DOM 断言（1280x900 already / 390x844 need_init · 6步/5区/双按钮/无死页）+ node --check JS；commit 5bd98c0（⚠️ 卷入并行 T6 已 staged 4 文件：week_view.py/_record_engine.js/week_view.html/test_week_view.py，内容完整零丢失，仅提交归属错位，T6 知悉；按红线未回写）
 
 ## Child tickets（本地附录 · GitHub 父子关系为准）
 
@@ -36,11 +38,11 @@
 | #228 | [T3 复盘链路升级](https://github.com/FeatherHunter/SKILLS/issues/228) | task | 1 串行 | open | ← T2（同文件串行） |
 | #229 | [T4 批量导入](https://github.com/FeatherHunter/SKILLS/issues/229) | task | 2 并行 | ✅ closed 2026-08-09 | ← T1（已解） |
 | #230 | [T5 制定次日计划](https://github.com/FeatherHunter/SKILLS/issues/230) | task | 2 并行 | open | ← T1 |
-| #231 | [T6 周视图](https://github.com/FeatherHunter/SKILLS/issues/231) | task | 2 并行 | open | ← T1 |
-| #232 | [T7 首次使用+onboarding](https://github.com/FeatherHunter/SKILLS/issues/232) | task | 2 并行 | open | ← T1 |
+| #231 | [T6 周视图](https://github.com/FeatherHunter/SKILLS/issues/231) | task | 2 并行 | ✅ closed 2026-08-09 | ← T1（已解） |
+| #232 | [T7 首次使用+onboarding](https://github.com/FeatherHunter/SKILLS/issues/232) | task | 2 并行 | ✅ closed 2026-08-09 | ← T1（已解） |
 | #233 | [T8 场景资产+文档+镜像](https://github.com/FeatherHunter/SKILLS/issues/233) | task | 3 收尾 | open | ← 全部 |
 
-Frontier（可认领）：#227 T2（阶段 1 串行下一票）+ #230-#232 T5-T7（←T1 已解，阶段 2 并行可并行认领）。阶段 1 与阶段 2 并存：T2/T3 动共享文件须串行，T4-T7 真新增自包含可与 T2 并行。
+Frontier（可认领）：#227 T2（阶段 1 串行下一票）+ #230 T5（已认领在途）。阶段 1 与阶段 2 并存：T2/T3 动共享文件须串行，T4-T7 真新增自包含可与 T2 并行。
 
 ## Not yet specified
 

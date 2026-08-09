@@ -736,7 +736,7 @@ function card(label, value, unit, sub, p) {
     <div class="mini-card">
       <div class="k">${escapeHTML(label)}</div>
       <div class="v">${escapeHTML(value)}<small>${escapeHTML(unit || '')}</small></div>
-      ${p != null ? `<div class="bar"><i class="${barClass(p)}" style="width:${Math.min(100,p)}%"></i></div><div class="sub">完成 ${p}%</div>` : (sub ? `<div class="sub">${escapeHTML(sub)}</div>` : '')}
+      ${p != null ? `<div class="bar"><i class="${barClass(p)}" style="width:${Math.min(100,p)}%"></i></div><div class="sub">完成 ${p}%${sub ? ' · ' + escapeHTML(sub) : ''}</div>` : (sub ? `<div class="sub">${escapeHTML(sub)}</div>` : '')}
     </div>`;
 }
 

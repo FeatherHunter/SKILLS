@@ -43,13 +43,13 @@
 | #230 | [T5 制定次日计划](https://github.com/FeatherHunter/SKILLS/issues/230) | task | 2 并行 | ✅ closed 2026-08-09 | ← T1（已解） |
 | #231 | [T6 周视图](https://github.com/FeatherHunter/SKILLS/issues/231) | task | 2 并行 | ✅ closed 2026-08-09 | ← T1（已解） |
 | #232 | [T7 首次使用+onboarding](https://github.com/FeatherHunter/SKILLS/issues/232) | task | 2 并行 | ✅ closed 2026-08-09 | ← T1（已解） |
-| #233 | [T8 场景资产+文档+镜像](https://github.com/FeatherHunter/SKILLS/issues/233) | task | 3 收尾 | open | ← 全部 |
+| #233 | [T8 场景资产+文档+镜像](https://github.com/FeatherHunter/SKILLS/issues/233) | task | 3 收尾 | ✅ closed 2026-08-09 | ← 全部（已解） |
 
-Frontier（可认领）：**无**。阶段 1 串行 4 票（T0-T3）与阶段 2 并行 4 票（T4-T7）已全部 closed；仅剩 T8（阶段 3 收尾，← 全部，本 session 无阻塞未闭环票）。T3 交付的人类参与点待办：4 粒度截图人工双浏览器审查（t3_{day/week/month/range}.png · 临时库）+ push（本地 main 含 T2/T3/T5/T6/T7 未 push commits）。
+Frontier（可认领）：**无**。T0-T8 全部 closed，实施地图全票闭环。人类参与点待办：push（本地 main 含 T2-T8 未 push commits）+ T3 4 粒度截图人工双浏览器审查（t3_{day/week/month/range}.png · 临时库）+ T8 偏离记录确认（G2 定标 81 vs 实测 85）。
 
+- [T8 场景资产+文档+镜像](https://github.com/FeatherHunter/SKILLS/issues/233) — 场景资产全量合并 73→85（6 片段全并入：batch+1/plan+5/record 更新 5/replay 更新 4/setup+1/week+1[周视图注册归 T8，T6 不碰 scenarios.yaml]；无重复、幂等 byte-identical）+ README.md 新建（30 秒开始三段式）+ SKILL.md 首次使用章节/模板分合规则/场景注册替换 + 场景数行 73→85（34 唤醒词）+ help 镜像（ADR-0001：34 唤醒词/85 场景/1 待开发）+ 修复 help_render escape_for_js 二次转义 bug（plan_result_history_none 引号文本触发，HELP 页 JS 全灭；round-trip 回归测试）；偏离记录：G2 定标 81 vs 实测 85（复盘 start-end 从未注册=净新增+1 / 制定计划 5 vs 1=+4）；pytest 315 全绿；commit 47dc790/a6f465a/f4572d7（help_render 修复被并行饼干记账 13c633e add -A 扫入，零丢失透明记录）
 ## Not yet specified
 
-- T8 场景替换关系的精确映射（记录→#0 系列 / 制定计划→#17 / 批量导入→#0-json）
 
 ## Out of scope
 

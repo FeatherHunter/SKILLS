@@ -54,8 +54,19 @@ def list_all_photos(date_from=None, date_to=None, limit=500):
     return [dict(zip(['id', 'date', 'time', 'photo_path', 'tag', 'note'], r)) for r in rows]
 
 
-def build(date_from, date_to, tag_filter, limit=500, embed=True):
-    """组装看身材照 result 数据契约"""
+# 飞书单消息体积上限的保守预算:HTML 全文件 ≤ 4MB(issue #51 · 2026-08-09)
+# 原因:身材照数量多时,base64 全量内嵌会让 HTML 超出飞书发送限制 → 核心场景(查身材照)断在最后一步。
+# 方案:嵌入累计超预算 → 剩余照片标 embed_skipped,前端显示"未嵌入(体积超限)"而非 broken;
+# 配合模板提示按时间/标签筛选查看,保证「能发出去」永远优先于「一次看全」。
+MAX_EMBED_BYTES = 4 * 1024 * 1024
+
+
+def build(date_from, date_to, tag_filter, limit=500, embed=True, max_embed_bytes=MAX_EMBED_BYTES):
+    """组装看身材照 result 数据契约
+
+    2026-08-09 体积预算(issue #51 Bug 2):embed 累计超过 max_embed_bytes 后,
+    剩余照片不再内嵌(标 embed_skipped),保证 HTML 体积可控、飞书可发。
+    """
     import body_photo_tracker as bpt
     photos = list_all_photos(date_from, date_to, limit)
 
@@ -69,12 +80,26 @@ def build(date_from, date_to, tag_filter, limit=500, embed=True):
         photos_dir = bpt.get_photos_dir()
     except SystemExit:
         photos_dir = None
+    embed_budget = max_embed_bytes
+    skipped_embeds = 0
     for i, p in enumerate(photos):
         p['tag_list'] = bpt.parse_tags(p['tag'])
         if photos_dir:
             p['file_exists'] = (photos_dir / p['photo_path']).exists()
             if p['file_exists'] and embed:
-                photos[i] = embed_photo_as_base64(p, photos_dir, max_dim=500)
+                if embed_budget > 0:
+                    photo = embed_photo_as_base64(p, photos_dir, max_dim=500)
+                    embedded_size = len(photo.get('photo_data_base64', ''))
+                    if photo.get('photo_data_base64'):
+                        embed_budget -= embedded_size
+                        photos[i] = photo
+                    else:
+                        # 文件存在但嵌入失败(读图/转码异常)→ 也按缺失处理
+                        p['embed_error'] = True
+                else:
+                    # 体积预算耗尽 → 标跳过,前端显示"未嵌入"而非 broken
+                    p['embed_skipped'] = True
+                    skipped_embeds += 1
 
     # 标签计数(全量,不受筛选影响 → 前端展示"该标签有几张")
     tag_counts = {}
@@ -101,6 +126,8 @@ def build(date_from, date_to, tag_filter, limit=500, embed=True):
                 'action_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
                 'entity_type': '看身材照', 'wake_word': '查身材照',
                 'source': 'body_photos (只读)',
+                'embed_budget_bytes': max_embed_bytes,
+                'embed_skipped_count': skipped_embeds,
             },
         },
         'message': f'看身材照 · {len(photos)} 张',

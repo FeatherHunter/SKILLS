@@ -50,30 +50,31 @@ def _active_condition(alias="items"):
 def top_category_rows(conn, exclude_status=False):
     """顶级 L1 分类分布: [{id, name, count, total_value}] (count 降序)
 
+    物品按顶级分类归并(子分类物品计入其顶级祖先,与 idle/expiring 的
+    top_category 口径一致);category_id 为空/失效 → 归入「(未分类)」。
     exclude_status=True 时只统计活跃物品(排除 已废弃/已用完)。
     """
     cursor = conn.cursor()
-    extra = ""
+    cond = "1=1"
     params = []
     if exclude_status:
         cond, params = _active_condition(alias="i")
-        extra = f" AND {cond}"
     cursor.execute(
         f"""
         WITH RECURSIVE cat_path AS (
-          SELECT id, parent_id, name, 1 AS lvl
+          SELECT id, parent_id, name, id AS top_id, name AS top_name
           FROM categories WHERE parent_id IS NULL
           UNION ALL
-          SELECT c.id, c.parent_id, c.name, cp.lvl + 1
+          SELECT c.id, c.parent_id, c.name, cp.top_id, cp.top_name
           FROM categories c JOIN cat_path cp ON c.parent_id = cp.id
         )
-        SELECT cp.id, cp.name,
-               COUNT(i.id) AS cnt,
+        SELECT cp.top_id AS id, cp.top_name AS name,
+               COUNT(DISTINCT i.id) AS cnt,
                ROUND(SUM(COALESCE(i.purchase_price, 0)), 2) AS total_value
         FROM cat_path cp
         LEFT JOIN items i ON i.category_id = cp.id
-        WHERE cp.lvl = 1 {extra}
-        GROUP BY cp.id, cp.name
+        WHERE {cond}
+        GROUP BY cp.top_id, cp.top_name
         HAVING cnt > 0
         ORDER BY cnt DESC
         """,

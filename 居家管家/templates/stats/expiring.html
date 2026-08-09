@@ -48,7 +48,7 @@ h1{font-size:30px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
 .btn.primary{background:var(--blue);color:#fff}
 .btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line);box-shadow:none}
 .btn.copied{background:var(--green);color:#fff}
-.fixed{position:sticky;bottom:14px;display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.fixed{display:flex;gap:10px;justify-content:center;margin-top:20px;flex-wrap:wrap}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
 .empty h2{font-size:18px;color:var(--fg);margin-bottom:6px}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
@@ -155,7 +155,7 @@ function renderItems(){
     let badge='';
     if(dl<0)badge='<span class="badge danger">已过期 '+(-dl)+' 天</span>';
     else if(dl===0)badge='<span class="badge warn">今天到期</span>';
-    else if(dl<=3)badge='<span class="badge warn">'+dl+' 天后到期</span>';
+    else if(dl<=7)badge='<span class="badge warn">'+dl+' 天后到期</span>';
     else badge='<span class="badge info">'+dl+' 天后到期</span>';
     return `<div class="item ${esc(it.severity)}" id="item-${it.id}" data-cat="${esc(it.top_category_id||'')}">
 <div class="photo">${photo}</div>

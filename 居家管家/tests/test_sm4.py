@@ -88,9 +88,10 @@ def test_overview_structure(seeded):
     # 状态分布
     st = {s["name"]: s["count"] for s in d["statuses"]}
     assert st.get("在家") == 3 and st.get("已废弃") == 1
-    # 分类分布(排除废弃 → 衣物 1 件)
+    # 分类分布(排除废弃 → 衣物 2 件: 旧毛衣[上装子类] + 健身垫[顶级],子分类归并)
     cats = {c["name"]: c["count"] for c in d["categories"]}
-    assert cats.get("衣物与穿戴") == 1
+    assert cats.get("衣物与穿戴") == 2
+    assert cats.get("食物与饮品") == 1  # 牛奶(零食子类)归并,废弃物(已废弃)排除
     # 位置分布: 顶级位置
     locs = {l["name"]: l["count"] for l in d["locations"]}
     assert locs.get("客厅") == 2 and locs.get("厨房") == 1

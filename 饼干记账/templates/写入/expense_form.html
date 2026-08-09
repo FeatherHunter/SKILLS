@@ -138,6 +138,7 @@
     expense: { wake: '记支出', action: '记一笔支出', sub: '支出采集' },
     income:  { wake: '记收入', action: '记一笔收入', sub: '收入采集' },
     photo:   { wake: '拍账单', action: '拍账单记账', sub: '图片识别确认' },
+    reimburse: { wake: '记报销', action: '记一笔报销支出', sub: '报销采集' },
   };
   var TM = TYPE_META[TYPE] || TYPE_META.expense;
   var WAKE = meta.wake_word || TM.wake;
@@ -162,6 +163,12 @@
   if (form.prefill_source && TYPE !== 'photo') {
     document.getElementById('prefillBox').textContent = '⚡ ' + form.prefill_source + '(可直接确认或修改)';
     document.getElementById('prefillBox').hidden = false;
+  }
+  // 记报销:标注自动 #待报销
+  if (TYPE === 'reimburse') {
+    var rbox = document.getElementById('prefillBox');
+    if (!form.prefill_source) { rbox.textContent = '📌 将自动标记 #待报销(垫付等报销)'; rbox.hidden = false; }
+    else { rbox.textContent = rbox.textContent + ' · 📌 将自动标记 #待报销'; }
   }
   if (form.duplicate_hint) {
     document.getElementById('dupBox').innerHTML = '⚠️ <b>疑似重复:</b>' + esc(form.duplicate_hint);

@@ -34,12 +34,14 @@ if str(_SCRIPT_DIR) not in sys.path:
 SKILL_DIR = _SCRIPT_DIR.parent
 TEMPLATE = SKILL_DIR / "templates" / "写入" / "expense_form.html"
 BATCH_TEMPLATE = SKILL_DIR / "templates" / "写入" / "batch_confirm.html"
+FLOW_TEMPLATE = SKILL_DIR / "templates" / "写入" / "flow_confirm.html"
 SKILL_VERSION = "2.0"
 
 FORM_TYPES = {
     "expense": {"scene_id": "write_expense", "wake_word": "记支出", "action": "记一笔支出", "command_cn": "记支出"},
     "income":  {"scene_id": "write_income",  "wake_word": "记收入", "action": "记一笔收入", "command_cn": "记收入"},
     "photo":   {"scene_id": "write_bill_photo", "wake_word": "拍账单", "action": "拍账单记账", "command_cn": "拍账单"},
+    "reimburse": {"scene_id": "write_reimburse", "wake_word": "记报销", "action": "记一笔报销支出", "command_cn": "记报销"},
 }
 
 
@@ -140,6 +142,12 @@ def build_payload(form_type: str, fields: dict, category_hint: str, note_hint: s
 
     filled, prefill_src = _prefill(records, fields, category_hint, note_hint)
 
+    # 记报销:备注自动附加 #待报销(未显式给 #tag 时)
+    if form_type == "reimburse":
+        note = filled.get("note") or ""
+        if "#待报销" not in note:
+            filled["note"] = (note + " " if note else "") + "#待报销"
+
     amount = None
     try:
         amount = float(filled.get("amount")) if filled.get("amount") not in (None, "") else None
@@ -225,9 +233,77 @@ def default_output_path(command_name: str) -> Path:
     return html_path(command_name)
 
 
+def build_flow_payload(flow_type: str, amount: str, search_hint: str, reason: str = "",
+                       records: list = None) -> dict:
+    """构建复合确认 payload(记退款 / 报销到账)
+
+    数据侧:按 hint 查候选原记录(脚本纯查询);AI 语义定位(传 search_hint)
+    refund:        候选 = 备注/分类含 hint 的支出记录
+    reimburse_done:候选 = 备注含 #待报销 的记录(金额/时间匹配 hint 优先)
+    """
+    records = records if records is not None else _load_history()
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    if flow_type == "refund":
+        meta = {"scene_id": "write_refund", "wake_word": "记退款", "command_cn": "记退款 确认"}
+        category, note_tag, op2_label = "退款/冲销", "#退款", "标记 #已退款"
+        # 候选:支出记录(备注/分类含 hint;hint 空 → 最近支出)
+        pool = [r for r in records if float(r.get("amount") or 0) < 0]
+        cands = []
+        if search_hint:
+            cands = [r for r in pool if search_hint in (r.get("note") or "") or search_hint in (r.get("category") or "")]
+        if not cands:
+            cands = pool[:5]
+        cands = cands[:5]
+    else:  # reimburse_done
+        meta = {"scene_id": "write_reimburse_done", "wake_word": "报销到账", "command_cn": "报销到账 确认"}
+        category, note_tag, op2_label = "其他收入/报销回款", "#报销到账", "标记 #报销到账"
+        pool = [r for r in records if "#待报销" in (r.get("note") or "")]
+        cands = []
+        if search_hint:
+            cands = [r for r in pool if search_hint in (r.get("note") or "") or search_hint in (r.get("category") or "")]
+        if not cands:
+            cands = pool[:5]
+        cands = cands[:5]
+
+    candidates = [{
+        "id": r["id"],
+        "time": str(r.get("time") or ""),
+        "category": str(r.get("category") or ""),
+        "amount": float(r.get("amount") or 0),
+        "note": str(r.get("note") or ""),
+    } for r in cands]
+
+    # 两步操作预览
+    amt = amount or "____"
+    operations = [
+        {"label": "① 记一笔收入", "text": f"{category} {amt} 元", "detail": f"备注自动 {note_tag}"},
+        {"label": "② 原记录标记", "text": op2_label, "detail": "执行后回执展示两笔状态"},
+    ]
+
+    return {
+        "status": "ok",
+        "data": {
+            "title": meta["command_cn"].replace(" 确认", ""),
+            "generated_at": now,
+            "meta": {**meta, "occurred_at": now, "render_cmd": f"render_write.py {flow_type}",
+                     "version": SKILL_VERSION},
+            "form": {
+                "type": flow_type,
+                "amount": amount or "",
+                "reason": reason or "",
+                "candidates": candidates,
+                "operations": operations,
+            },
+        },
+        "message": meta["command_cn"],
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="饼干记账 · 写入域采集表单渲染")
-    parser.add_argument("form_type", choices=list(FORM_TYPES.keys()) + ["batch"], help="expense / income / photo / batch")
+    parser.add_argument("form_type", choices=list(FORM_TYPES.keys()) + ["batch", "refund", "reimburse_done"],
+                        help="expense / income / photo / reimburse / batch / refund / reimburse_done")
     parser.add_argument("--amount", default=None, help="金额")
     parser.add_argument("--category", default=None, help="分类(已确定)")
     parser.add_argument("--category-hint", default=None, help="分类名目意图(AI 语义推荐)")
@@ -239,10 +315,22 @@ def main():
     parser.add_argument("--images", type=int, default=1, help="拍账单:已收图片数")
     parser.add_argument("--photo-note", default=None, help="拍账单:识别说明(如:识别自外卖截图)")
     parser.add_argument("--items", default=None, help="批量:条目 JSON 数组字符串")
+    parser.add_argument("--search-hint", default=None, help="退款/到账:原记录定位提示(AI 语义)")
+    parser.add_argument("--reason", default=None, help="退款原因")
     parser.add_argument("--out", default=None, help="输出路径")
     args = parser.parse_args()
 
     records = _load_history()
+
+    # ── 复合流程分支(refund / reimburse_done) ──
+    if args.form_type in ("refund", "reimburse_done"):
+        payload = build_flow_payload(args.form_type, args.amount or "", args.search_hint or "",
+                                     args.reason or "", records)
+        template_path = FLOW_TEMPLATE
+        out_name = "记退款确认" if args.form_type == "refund" else "报销到账确认"
+        _write_html(payload, template_path, out_name, args.out)
+        print(f"  候选: {len(payload['data']['form']['candidates'])} 笔")
+        return 0
 
     # ── batch 分支 ──
     if args.form_type == "batch":
@@ -257,45 +345,46 @@ def main():
         payload = build_batch_payload(items, args.ledger or "", records)
         template_path = BATCH_TEMPLATE
         out_name = "批量录入确认"
-    else:
-        fields = {
-            "amount": args.amount or "",
-            "category": args.category or "",
-            "account": args.account or "",
-            "ledger": args.ledger or "",
-            "time": args.time or "",
-            "note": args.note or "",
-            "currency": args.currency or "",
-        }
-        photo_meta = None
-        if args.form_type == "photo":
-            photo_meta = {
-                "image_count": args.images or 1,
-                "note": args.photo_note or "AI 识别结果，请核对金额",
-            }
-        payload = build_payload(args.form_type, fields, args.category_hint or "", args.note or "",
-                                records, photo_meta=photo_meta)
-        template_path = TEMPLATE
-        out_name = FORM_TYPES[args.form_type]["command_cn"] + "采集"
+        _write_html(payload, template_path, out_name, args.out)
+        print(f"  条目: {len(payload['data']['form']['items'])} 笔,缺金额: {payload['data']['form']['missing_count']}")
+        return 0
 
+    fields = {
+        "amount": args.amount or "",
+        "category": args.category or "",
+        "account": args.account or "",
+        "ledger": args.ledger or "",
+        "time": args.time or "",
+        "note": args.note or "",
+        "currency": args.currency or "",
+    }
+    photo_meta = None
+    if args.form_type == "photo":
+        photo_meta = {
+            "image_count": args.images or 1,
+            "note": args.photo_note or "AI 识别结果，请核对金额",
+        }
+    payload = build_payload(args.form_type, fields, args.category_hint or "", args.note or "",
+                            records, photo_meta=photo_meta)
+    _write_html(payload, TEMPLATE, FORM_TYPES[args.form_type]["command_cn"] + "采集", args.out)
+    print(f"  分类建议: {[s['name'] for s in payload['data']['form']['category_suggestions']]}")
+    if payload["data"]["form"]["prefill_source"]:
+        print(f"  预填: {payload['data']['form']['prefill_source']}")
+    return 0
+
+
+def _write_html(payload: dict, template_path: Path, out_name: str, out_arg: str = None):
+    """注入 payload 到模板并写文件"""
     if not template_path.exists():
         print(f"✗ 模板不存在: {template_path}", file=sys.stderr)
         sys.exit(1)
     template = template_path.read_text(encoding="utf-8")
     payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
     html = template.replace("<!--INJECT-DATA-->", payload_json, 1)
-
-    out = Path(args.out) if args.out else default_output_path(out_name)
+    out = Path(out_arg) if out_arg else default_output_path(out_name)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8-sig")
     print(f"✓ 已生成采集表单: {out}")
-    if args.form_type == "batch":
-        print(f"  条目: {len(payload['data']['form']['items'])} 笔,缺金额: {payload['data']['form']['missing_count']}")
-    else:
-        print(f"  分类建议: {[s['name'] for s in payload['data']['form']['category_suggestions']]}")
-        if payload["data"]["form"]["prefill_source"]:
-            print(f"  预填: {payload['data']['form']['prefill_source']}")
-    return 0
 
 
 if __name__ == "__main__":

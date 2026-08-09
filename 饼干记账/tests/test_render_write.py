@@ -20,8 +20,14 @@ if str(SCRIPTS_DIR) not in sys.path:
 import render_write as rw  # noqa: E402
 
 
-def _rec(category, amount, time_str, note="", account="", ledger="生活"):
-    return {"category": category, "amount": amount, "time": time_str, "note": note,
+_ID_SEQ = [100]
+
+
+def _rec(category, amount, time_str, note="", account="", ledger="生活", rid=None):
+    if rid is None:
+        rid = _ID_SEQ[0]
+        _ID_SEQ[0] += 1
+    return {"id": rid, "category": category, "amount": amount, "time": time_str, "note": note,
             "account": account, "ledger": ledger, "currency": "人民币"}
 
 
@@ -182,3 +188,65 @@ class TestBatch:
         assert "missingBanner" in text          # 缺金额警示条
         assert "id=\"totalAmt\"" in text        # 总计
         assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
+
+
+class TestReimburse:
+    def test_reimburse_payload_adds_tag(self):
+        p = rw.build_payload("reimburse", {"amount": "120", "category": "餐饮/堂食/晚餐"}, "晚餐", "", RECORDS)
+        form = p["data"]["form"]
+        assert form["type"] == "reimburse"
+        assert "#待报销" in form["fields"]["note"]
+        assert p["data"]["meta"]["wake_word"] == "记报销"
+
+    def test_reimburse_html_marks_tag(self, tmp_path):
+        p = rw.build_payload("reimburse", {"amount": "120", "category": "餐饮/堂食/晚餐"}, "晚餐", "", RECORDS)
+        template = rw.TEMPLATE.read_text(encoding="utf-8")
+        html = template.replace("<!--INJECT-DATA-->",
+                                json.dumps(p, ensure_ascii=False).replace("</", "<\\/"), 1)
+        out = tmp_path / "reimburse.html"
+        out.write_text(html, encoding="utf-8-sig")
+        text = out.read_text(encoding="utf-8-sig")
+        assert "记报销" in text
+        assert "#待报销" in text  # 自动标记标注
+
+
+class TestFlow:
+    def test_refund_payload_finds_candidates(self):
+        p = rw.build_flow_payload("refund", "35", "午饭", "退货", RECORDS)
+        form = p["data"]["form"]
+        assert form["type"] == "refund"
+        assert form["reason"] == "退货"
+        assert len(form["candidates"]) >= 1
+        assert form["candidates"][0]["note"] == "午饭" or "午饭" in form["candidates"][0]["category"]
+        ops = form["operations"]
+        assert len(ops) == 2
+        assert "退款/冲销" in ops[0]["text"]
+        assert "#已退款" in ops[1]["text"]
+
+    def test_refund_no_hint_falls_back_recent(self):
+        p = rw.build_flow_payload("refund", "35", "", "", RECORDS)
+        assert len(p["data"]["form"]["candidates"]) >= 1
+
+    def test_reimburse_done_finds_pending(self):
+        recs = RECORDS + [_rec("餐饮/差旅", -100.0, "2026-07-28 10:00:00", "#待报销 出差餐")]
+        p = rw.build_flow_payload("reimburse_done", "100", "出差", "", recs)
+        form = p["data"]["form"]
+        assert form["type"] == "reimburse_done"
+        assert len(form["candidates"]) >= 1
+        assert "#待报销" in form["candidates"][0]["note"]
+
+    def test_flow_html_structure(self, tmp_path):
+        p = rw.build_flow_payload("refund", "35", "午饭", "退货", RECORDS)
+        template = rw.FLOW_TEMPLATE.read_text(encoding="utf-8")
+        html = template.replace("<!--INJECT-DATA-->",
+                                json.dumps(p, ensure_ascii=False).replace("</", "<\\/"), 1)
+        out = tmp_path / "flow.html"
+        out.write_text(html, encoding="utf-8-sig")
+        raw = out.read_bytes()
+        assert raw[:3] == b"\xef\xbb\xbf"
+        text = raw.decode("utf-8-sig")
+        assert "id=\"ops\"" in text          # 两步操作预览
+        assert "id=\"cands\"" in text        # 候选 radio
+        assert "id=\"warnBox\"" in text      # 超支警示
+        assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
+        assert "toastClose" in text

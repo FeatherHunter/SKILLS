@@ -50,7 +50,7 @@
   /* Account cards */
   .acct-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
   .acct-card { background: var(--card); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); border-left: 3px solid var(--blue); }
-  .acct-card.disabled { opacity: .45; border-left-color: var(--fg3); }
+  .acct-card.disabled { opacity: .65; border-left-color: var(--fg3); filter: saturate(.6); }
   .acct-card.unregistered { border-left-color: var(--orange); }
   .acct-card .head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .acct-card .name { font-size: 16px; font-weight: 700; }
@@ -109,6 +109,9 @@
   .toast-close { background: rgba(255,255,255,.10); color: #34c759; border: 0; border-radius: 8px; padding: 5px 9px; font-size: 10.5px; margin-left: 6px; cursor: pointer; flex-shrink: 0; }
 
   .offline { background: #fff7e8; border: 1px solid #ffe3b3; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 14px; color: #b25b00; font-size: 13.5px; }
+
+  /* 停用账户余额注记(门禁 B 发现 3 · 口径透明) */
+  .note-chip { display: flex; align-items: center; gap: 8px; background: rgba(142,142,147,.12); border: 1px solid rgba(142,142,147,.25); border-radius: 12px; padding: 10px 14px; margin: 12px 0 0; color: var(--fg2); font-size: 12.5px; }
 
   @media (max-width: 640px) {
     .container { padding: 16px 12px; }
@@ -236,6 +239,9 @@
         ${kpiCard('净额', fmtMoney(totals.net), '元', (totals.net || 0) >= 0 ? 'green' : 'red')}
         ${kpiCard('转账', totals.transfer_count || 0, '笔 · ' + fmtMoney(totals.transfer_total) + ' 元', 'purple', 'compact')}
       </div>
+      ${(totals.disabled_balance || 0) > 0.005 ? `
+        <div class="note-chip">💤 停用账户(${escapeHTML((totals.disabled_accounts || []).join('、'))})另有 ${fmtMoney(totals.disabled_balance)} 元,未计入总余额</div>
+      ` : ''}
 
       <div class="section-title" style="margin-top:18px;">各账户余额卡 <span class="count">${cards.length} 个账户</span></div>
       <div class="acct-grid">

@@ -260,13 +260,18 @@ class TestSummary:
         assert round(t["balance"], 2) == round(t["net"], 2)
 
     def test_disabled_account_greyed_and_excluded(self, tmp_db_dir):
-        """停用账户:disabled=True + 不含于合计"""
+        """停用账户:disabled=True + 不含于合计 + 停用余额单列(门禁 B 发现 3 口径透明)"""
         _seed_accounts(tmp_db_dir)
         _run_cli(tmp_db_dir, "update", "--name", "花呗", "--disable")
         data = _run_cli(tmp_db_dir, "summary")
         by_name = {a["name"]: a for a in data["data"]["accounts"]}
         assert by_name["花呗"]["disabled"] is True
         assert data["data"]["totals"]["count"] == 4  # 活跃账户全部流水(招行 2 + 支付宝 2)
+        t = data["data"]["totals"]
+        # 停用余额单列:disabled_balance = 花呗余额;总余额 = 活跃口径,与净额差 = 停用转入
+        assert t["disabled_balance"] == by_name["花呗"]["balance"]
+        assert t["disabled_accounts"] == ["花呗"]
+        assert t["disabled_count"] == 1
 
     def test_unregistered_account_surfaced(self, tmp_db_dir):
         """bills 有流水但未登记 → 自动暴露(registered=False),不丢数据"""
@@ -309,8 +314,10 @@ class TestRender:
         m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
         assert m, "缺 payload 注入点"
         payload = json.loads(m.group(1))
-        # 08 §4 硬标准:复制按钮 + B1 toast
+        # 08 §4 硬标准:复制按钮 + 弹层三选一(全部模板 · 门禁 B 修复)+ B1 toast
         assert 'id="copyDataBtn"' in text and 'id="copyLogBtn"' in text, "缺复制按钮"
+        assert 'data-f="text"' in text and 'data-f="json"' in text and 'data-f="csv"' in text, \
+            "缺复制数据弹层三选一(纯文本/JSON/CSV)"
         assert 'id="toastClose"' in text and "4500" in text, "缺 B1 toast"
         # meta 对齐 scenes/account.yaml(门禁 A 层 1)
         meta = payload.get("data", {}).get("meta", {})
@@ -366,7 +373,7 @@ class TestRender:
         assert "不在账户表" in result.stderr
 
     def test_view_summary(self, tmp_db_dir):
-        """看账户汇总结果型 HTML(account-4-1):余额卡 + KPI + 最近流水 + 弹层三选一"""
+        """看账户汇总结果型 HTML(account-4-1):余额卡 + KPI + 最近流水 + 弹层三选一 + 副标题"""
         _seed_accounts(tmp_db_dir)
         result, out_path = _run_render(tmp_db_dir, "view")
         assert result.returncode == 0, result.stderr
@@ -374,13 +381,15 @@ class TestRender:
         d = payload["data"]
         assert len(d["accounts"]) == 3
         assert d["totals"]["income"] == 8000.0
+        # 副标题信息密度(门禁 B 发现 5):账户数 + 流水笔数
+        assert d["subtitle"] and "个账户" in d["subtitle"] and "笔流水" in d["subtitle"]
         # 弹层三选一(结果型 · 08 §4)
         assert 'data-f="text"' in text and 'data-f="json"' in text and 'data-f="csv"' in text
         # 停用灰显样式类
         assert "acct-card" in text and "disabled" in text
 
     def test_view_summary_with_disabled_and_unregistered(self, tmp_db_dir):
-        """汇总 HTML:停用账户 badge + 未登记账户 badge"""
+        """汇总 HTML:停用账户 badge + 停用余额注记(门禁 B 发现 3)+ 未登记账户 badge"""
         _seed_accounts(tmp_db_dir)
         _run_cli(tmp_db_dir, "update", "--name", "花呗", "--disable")
         _insert(tmp_db_dir, "餐饮", -15.0, "2026-08-09 13:00:00", "水", "微信")
@@ -389,6 +398,9 @@ class TestRender:
         by_name = {a["name"]: a for a in payload["data"]["accounts"]}
         assert by_name["花呗"]["disabled"] is True
         assert by_name["微信"]["registered"] is False
+        # 停用账户余额注记(未计入总余额)
+        assert payload["data"]["totals"]["disabled_accounts"] == ["花呗"]
+        assert "未计入总余额" in text
 
     def test_view_empty(self, tmp_db_dir):
         """无账户 → 空态 HTML 正常生成"""

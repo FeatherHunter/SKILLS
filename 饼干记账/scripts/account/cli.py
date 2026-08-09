@@ -296,6 +296,11 @@ def cmd_summary(args):
     totals["net"] = round(totals["income"] - totals["expense"], 2)
     totals["transfer_count"] = sum(1 for r in records if _is_transfer(r))
     totals["transfer_total"] = round(sum(abs(r["amount"]) for r in records if _is_transfer(r)), 2)
+    # 停用账户口径透明(门禁 B 发现 3):总余额 = 活跃口径,停用账户余额单列
+    disabled_cards = [c for c in cards if c["disabled"]]
+    totals["disabled_balance"] = round(sum(c["balance"] for c in disabled_cards), 2)
+    totals["disabled_accounts"] = [c["name"] for c in disabled_cards]
+    totals["disabled_count"] = len(disabled_cards)
 
     # 最近流水摘要(全账户最近 12 笔)
     recent = sorted(records, key=lambda r: r.get("time") or "", reverse=True)[:12]

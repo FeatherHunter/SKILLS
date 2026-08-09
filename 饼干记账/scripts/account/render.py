@@ -223,6 +223,9 @@ def build_summary_payload() -> dict:
     now = _now()
     data = dict(cli.get("data") or {})
     data["title"] = "账户汇总"
+    data["subtitle"] = (
+        f"{len(data.get('accounts') or [])} 个账户 · 最近 {data.get('flow_count') or 0} 笔流水"
+    )
     data["generated_at"] = now
     data["meta"] = _build_meta("summary", "account/render.py view")
     return {"status": "ok", "data": data, "message": cli.get("message", "账户汇总")}

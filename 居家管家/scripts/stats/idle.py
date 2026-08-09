@@ -8,7 +8,7 @@
 #   排除 已废弃/已用完(物品至少一个位置非这两种状态)
 #   AI 断舍离建议一句:规则式生成(按顶级分类集中度)
 
-from datetime import date, datetime, timedelta
+from datetime import datetime, timezone
 
 from . import (
     build_meta, item_with_photo, expand_category_ids, _active_condition,
@@ -20,7 +20,9 @@ DEFAULT_THRESHOLD = 90
 
 
 def _today():
-    return date.today()
+    # 对齐 SQL date('now') 口径(UTC): 本地凌晨 0-8 点 date.today() 与 UTC 差一天,
+    # 导致 days_idle 凌晨漂移 ±1(test seed 已是 UTC 口径, 2026-08-10 修复)
+    return datetime.now(timezone.utc).date()
 
 
 def _parse_dt(s):

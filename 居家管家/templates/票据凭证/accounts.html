@@ -30,6 +30,7 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 .notice b{color:var(--fg)}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
 .actions{margin-top:14px}
+.btn-hint{font-size:11px;color:var(--fg3);text-align:center;margin-top:2px}
 .btn{border:none;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2);transition:filter .15s,transform .08s}
 .btn:hover{background:#e5e9ef}
 .btn:active{filter:brightness(.92);transform:scale(.97)}
@@ -56,6 +57,7 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 <div id="app"></div>
 <div class="actions">
 <button class="btn primary" id="addBtn">存账号</button>
+<p class="btn-hint">点击复制登记 prompt → 粘贴给 AI</p>
 </div>
 <div class="fixed">
 <button class="copy" id="copyData">复制数据</button>
@@ -123,7 +125,7 @@ return lines.join('\n');
 }
 $('copyData').onclick=()=>copyText(buildCopyData());
 $('copyLog').onclick=()=>copyText(buildCopyLog());
-$('addBtn').onclick=()=>copyText('请存账号(唤醒词:账号):\n\n  平  台: _____________ (如:淘宝/微信)\n  用户名: _____________\n  密  码: _____________ (将加密存储)\n  类  型: _____________ (购物/银行/社交/其他)\n  主密钥: _____________ (验证用)\n\n  (复制本段发给 AI, AI 将调用 scripts/票据凭证/cli.py account add 加密存储)');
+$('addBtn').onclick=()=>copyText('请存账号(唤醒词:账号):\n\n  平  台: _____________ (如:淘宝/微信)\n  用户名: _____________\n  密  码: _____________ (将加密存储)\n  类  型: _____________ (购物/银行/社交/其他)\n  主密钥: _____________ (验证用)');
 render();
 </script>
 </body>

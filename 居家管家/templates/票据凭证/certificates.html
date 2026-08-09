@@ -35,6 +35,7 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 .remind b{color:#6b4700}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
 .actions{margin-top:14px}
+.btn-hint{font-size:11px;color:var(--fg3);text-align:center;margin-top:2px}
 .btn{border:none;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2);transition:filter .15s,transform .08s}
 .btn:hover{background:#e5e9ef}
 .btn:active{filter:brightness(.92);transform:scale(.97)}
@@ -61,6 +62,7 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 <div id="app"></div>
 <div class="actions">
 <button class="btn primary" id="addBtn">登记证件</button>
+<p class="btn-hint">点击复制登记 prompt → 粘贴给 AI</p>
 </div>
 <div class="fixed">
 <button class="copy" id="copyData">复制数据</button>
@@ -130,7 +132,7 @@ return lines.join('\n');
 }
 $('copyData').onclick=()=>copyText(buildCopyData());
 $('copyLog').onclick=()=>copyText(buildCopyLog());
-$('addBtn').onclick=()=>copyText('请登记证件(唤醒词:证件):\n\n  类  型: _____________ (护照/身份证/驾照/签证/保险单/其他)\n  持有人: _____________ (选填)\n  号  码: _____________ (选填, 将脱敏显示)\n  签发日: _____________ (选填, YYYY-MM-DD)\n  到期日: _____________ (YYYY-MM-DD)\n  归档照片: 【照片即将发送:】\n\n  (复制本段发给 AI, AI 将调用 scripts/票据凭证/cli.py cert add 登记)');
+$('addBtn').onclick=()=>copyText('请登记证件(唤醒词:证件):\n\n  类  型: _____________ (护照/身份证/驾照/签证/保险单/其他)\n  持有人: _____________ (选填)\n  号  码: _____________ (选填, 将脱敏显示)\n  签发日: _____________ (选填, YYYY-MM-DD)\n  到期日: _____________ (YYYY-MM-DD)\n  归档照片: 【照片即将发送:】');
 render();
 </script>
 </body>

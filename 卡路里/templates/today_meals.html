@@ -234,6 +234,8 @@ function fmt2(v) {
   // #44:标题动态(本周饮食/最近 7 天饮食…)
   const h1 = document.querySelector('h1');
   h1.textContent = `🍱 ${meta.label || ''}饮食`;
+  // issue #53 同族修复(2026-08-09 对抗审查):title 与 h1/文件名口径一致
+  document.title = `卡路里 · ${meta.label || ''}饮食 ${meta.start} ~ ${meta.end}`;
 
   document.getElementById('metaLeft').textContent =
     `${meta.start} ~ ${meta.end} · 共 ${items.length} 条`;

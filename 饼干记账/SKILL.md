@@ -85,12 +85,12 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 | 查询 | `查区间` | 查任意时间段 | `query list --from --to` | **HTML** |
 | 查询 | `查分类` | 查某分类的账 | `query list --category` | **HTML** |
 | 查询 | `搜备注` | 搜索备注关键词 | `query search` | **HTML** |
-| 查询 | `查标签` | 查标签(#tag 聚合) | `query search #tag` | **HTML** |
+| 查询 | `查标签` | 查标签(#tag 聚合) | `query tag --tag` | **HTML** |
 | 查询 | `查账户` | 查某账户流水 | `query list --account` | **HTML** |
 | 查询 | `查账本` | 查某账本的记录 | `query list --ledger` | **HTML** |
-| 查询 | `查欠款` | 查未还欠款(借贷状态) | `query search #未还(+聚合·待实施)` | **HTML** |
-| 查询 | `查待报销` | 查待报销 | `query search #待报销(待实施)` | **HTML** |
-| 查询 | `查分期` | 查进行中的分期 | `query search #分期(待实施)` | **HTML** |
+| 查询 | `查欠款` | 查未还欠款(借贷状态) | `query debt` | **HTML** |
+| 查询 | `查待报销` | 查待报销 | `query reimburse` | **HTML** |
+| 查询 | `查分期` | 查进行中的分期 | `query installment` | **HTML** |
 | 分析 | `看月度` | 某月收支汇总 | `analysis monthly` | **HTML** |
 | 分析 | `看年度` | 年度收支汇总 | `analysis monthly(年) + trend` | **HTML** |
 | 分析 | `看总览` | 时间段收支总览 | `analysis overview` | **HTML** |
@@ -258,7 +258,9 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 
 #### 查今天
 
-无参数。返回今日 count / expense / income / net。
+无参数。返回今日 count / expense / income / net + 分类聚合 + 明细。
+
+> **查询域通用规则**：全部查询 = 仅结果型 HTML（缺参 → AI 文字反问，不猜不补）；结果 HTML 默认动作区「复制数据 / 复制日志」；无数据 → 空态提示。
 
 #### 查日期
 
@@ -282,8 +284,10 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 |--------|----------|
 | "餐饮类的记录" | --category 餐饮 |
 | "交通花了多少" | --category 交通 |
+| "支付宝里餐饮花了多少" | --category 餐饮 --account 支付宝 --type expense |
+| "旅行账本这个月的" | --category + --ledger 旅行 + --from/--to |
 
-注意：此命令返回该分类下的逐条记录。如需分类汇总统计，使用「看分类」。
+注意：分类支持 L1 前缀匹配（传「餐饮」命中 餐饮/外卖/午餐 等全部子分类）；可组合 时间/账户/账本/收支方向。返回 KPI(支出/收入/净额)+ 分类聚合 + 逐条记录。如需分类汇总统计，使用「看分类」。
 
 #### 查最近
 
@@ -291,6 +295,10 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 |--------|----------|
 | "最近5条" | --limit 5 |
 | "最近的记录" | --limit 10（默认） |
+| "近7天的记录" | --days 7 |
+| "最近按金额从大到小" | --limit 10 --sort amount_desc |
+
+返回：KPI(笔数/支出/收入/净额)+ 明细（默认时间倒序，可金额排序）。
 
 #### 搜备注
 
@@ -298,6 +306,59 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 |--------|----------|
 | "搜午饭" | keyword = 午饭 |
 | "有没有咖啡的记录" | keyword = 咖啡 |
+
+#### 查标签
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "查 #旅行 的记录" | --tag 旅行 |
+| "带 #待报销 的" | --tag 待报销 |
+
+返回：#tag 聚合卡(笔数/支出/收入)+ 命中明细。精确匹配（#旅行 不误伤 #旅行计划）。
+
+#### 查账户
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "支付宝的流水" | --account 支付宝 |
+| "招行这个月的" | --account 招行 --from/--to |
+
+返回：该账户 KPI(支出/收入/净额)+ 明细。
+
+#### 查账本
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "旅行账本的记录" | --ledger 旅行 |
+| "借贷账本" | --ledger 借贷 |
+
+返回：该账本 KPI(支出/收入/净额)+ 明细。
+
+#### 查欠款
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "查欠款" | debt |
+| "小明还欠多少" | debt --target 小明 |
+
+聚合 `#未还` 记录：借出未还总额 + 借入未还总额 + 未还列表(对象/方向/金额/时间)。对象从备注 `#借给{X}` / `#向{X}借` 提取。
+
+#### 查待报销
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "查待报销" | reimburse |
+
+聚合 `#待报销` 记录：总额 + 列表(金额/分类/日期)。
+
+#### 查分期
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "查分期" | installment |
+| "手机的期数" | installment --name 手机 |
+
+按备注 `#分期 {名目} 第X期/N` 分组：分期卡(名目/总额/每期/期数/已还期数/剩余期数+金额)+ 记录明细。已还期数按「日期 ≤ 今天」推断（分期写入即固定）。
 
 #### 看月度
 
@@ -419,9 +480,18 @@ python3 scripts/scripts/query/cli.py list --category 餐饮
 
 # 查最近
 python3 scripts/scripts/query/cli.py recent --limit 10
+python3 scripts/scripts/query/cli.py recent --days 7 --sort amount_desc
 
 # 搜备注
 python3 scripts/scripts/query/cli.py search "午饭"
+
+# 查标签(#tag 聚合)
+python3 scripts/scripts/query/cli.py tag --tag 旅行
+
+# 查欠款 / 查待报销 / 查分期(状态族聚合)
+python3 scripts/scripts/query/cli.py debt --target 小明
+python3 scripts/scripts/query/cli.py reimburse
+python3 scripts/scripts/query/cli.py installment --name 手机
 
 # 看月度
 python3 scripts/scripts/analysis/cli.py monthly --month 2026-05
@@ -453,12 +523,16 @@ python3 scripts/scripts/analysis/cli.py stats
 > 所有查询/分析/统计类唤醒词命中后，AI **默认** 调用 `scripts/bill_inject.py` 生成可视化 HTML 交付给用户。
 > 文字答仅在用户**明确说**「不要 HTML」「给我文字版」「就告诉我数字」时才走。
 
-**支持 9 种查询类型（全部默认 HTML）：**
+**支持 13 种查询类型（全部默认 HTML）：**
 
 | 类型 | CLI 子命令 | 适用场景 | bill_inject.py 调用 |
 |---|---|---|---|
 | 今日摘要 | `summary` | 看今日收支 | `bill_inject.py summary` |
 | 列表 | `list` / `recent` / `search` | 看记录明细 | `bill_inject.py list --date 2026-07-27` |
+| 查标签 | `tag` | #tag 聚合 | `bill_inject.py tag --tag 旅行` |
+| 查欠款 | `debt` | 未还借贷聚合 | `bill_inject.py debt` |
+| 查待报销 | `reimburse` | #待报销 清单 | `bill_inject.py reimburse` |
+| 查分期 | `installment` | #分期 分期卡 | `bill_inject.py installment` |
 | 月度汇总 | `monthly` | 看月度分类排行 | `bill_inject.py monthly --month 2026-07` |
 | 周期对比 | `compare` | 本周 vs 上周 / 本月 vs 上月 | `bill_inject.py compare --period week` |
 | 分类明细 | `breakdown` | 看各类支出占比（SVG 环形图） | `bill_inject.py breakdown --from ... --to ...` |
@@ -533,12 +607,16 @@ python3 scripts/render_help.py --check
 |--------|------|----------|----------|
 | `add` | 添加账单 | `--category`, `--amount` | `--time`, `--account`, `--ledger`, `--currency`, `--note` |
 | `update` | 修改账单 | `--id` (必需) | `--category`, `--amount`, `--time`, `--account`, `--ledger`, `--currency`, `--note`(至少传一个) |
-| `list` | 查询记录 | （无） | `--date`, `--from`+`--to`, `--category`, **`--json`** |
+| `list` | 查询记录 | （无） | `--date`, `--from`+`--to`, `--category`, `--account`, `--ledger`, `--type`(expense/income), **`--json`** |
 | `search` | 搜索备注 | `keyword`（位置参数） | **`--json`** |
 | `summary` | 今日摘要 | （无） | **`--json`** |
+| `tag` | 查标签(#tag 聚合) | `--tag` | **`--json`** |
+| `debt` | 查欠款(#未还 聚合) | （无） | `--target`, **`--json`** |
+| `reimburse` | 查待报销(#待报销) | （无） | **`--json`** |
+| `installment` | 查分期(#分期 聚合) | （无） | `--name`, **`--json`** |
 | `monthly` | 月度汇总 | `--month` | **`--json`** |
 | `compare` | 周期对比 | （无） | `--period` (week/month, 默认 week), **`--json`** |
-| `recent` | 最近N条 | （无） | `--limit` (默认 10), **`--json`** |
+| `recent` | 最近N条 | （无） | `--limit` (默认 10), `--days`, `--sort`(amount_desc/amount_asc), **`--json`** |
 | `breakdown` | 分类明细 | （无） | `--from`, `--to`, **`--json`** |
 | `overview` | 收支总览 | （无） | `--month` (默认当月), **`--json`** |
 | `stats` | 记账统计 | （无） | **`--json`** |

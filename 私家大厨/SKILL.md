@@ -14,7 +14,7 @@
 
 > 当用户唤醒词可能路由到多个 Skill 时,本表声明归属。AI 收到跨边界提问时,**严格按本表路由**,**禁止擅自跨 skill 调用**。
 
-### ✅ 已确定路由(10 项 · 基于现有实现)
+### ✅ 已确定路由(11 项 · 基于现有实现)
 
 | 用户原话 | 归属 | 判定依据 |
 |----------|------|----------|
@@ -26,11 +26,12 @@
 | 添加派生关系 / 查看派生关系 | **私家大厨** | relation_manager.py |
 | 搜索食谱 / 筛选 X | **私家大厨** | recipe_manager.py |
 | 修改食谱 / 修改步骤 / 修改食材 / 修改难度 / 修改份量 / 废弃食谱 | **私家大厨** | 各 *_manager.py |
+| 体检 / 批量改 / 备份 | **私家大厨** | data_quality_report.py + render_batch_edit.py + export_backup.py(数据管理域) |
 | 记体重 / 查体重 / 查体重趋势 | **卡路里** | 卡路里 body_metrics 模块 |
 | 查热量 / 查营养 / 查营养结构 / 查营养目标 / 查健康报告 | **卡路里** | 卡路里主战场 |
 | 汇总作息 / 查作息 / 查日程 / 商量计划 | **作息管家** | 作息管家 record + plan |
 
-### ✅ 已确定边界(3 项 · 用户 2026-07-27 拍板)
+### ✅ 已确定边界(4 项 · 用户 2026-07-27 拍板)
 
 | 用户原话 | 归属 | 边界判定 |
 |----------|------|---------|
@@ -38,6 +39,7 @@
 | "采购清单 + 营养" | **不联动**(默认) | 采购清单 = "这次买菜要买啥";卡路里食品库 = "我常吃的食物";除非用户明确说"顺便存到食品库"才联动 |
 | "炊具"(做菜需要哪些) | **私家大厨** | recipes.cookware 表(做菜角度,需要哪些炊具) |
 | "炊具"(实物管理) | **居家管家** | "我家有几个炒锅/锅在哪" → 居家管家(实物角度) |
+| "采购清单 + 核对库存" | **居家管家**(联动) | 库存核对走居家管家「囤货盘点/查物品」(G6 3a);**prompt 单工闭环,禁写死调用居家管家 CLI/底层路径** |
 
 ### ⚠️ 不实现(用户决策 · 2026-07-27)
 
@@ -75,7 +77,7 @@
 
 ---
 
-## 唤醒词清单（36个）
+## 唤醒词清单（39个）
 
 > 全部为动词+名词格式，指令化，不追求自然。
 > 总览词和细分词并列共存，互不冲突。
@@ -88,7 +90,7 @@
 > **变体方向简写**:`✓` = 有此方向变体 / `-` = 无明显变体。具体例子见 `references/wake_word_variants.md`。
 >
 > **5 核心词**(开始做菜/查看食谱/搜索食谱/生成清单/记录做菜)各 3 方向全覆盖(对应 P0-4 预演 9 个 fail prompt)。
-> **其他 31 唤醒词**至少 1 方向(基础覆盖)。
+> **其他 34 唤醒词**至少 1 方向(基础覆盖)。
 
 ### A. 做菜模式（2个）
 
@@ -180,6 +182,17 @@
 > **HELP 唤醒词属性**：本身**不属于普通业务词**，**不出现在它自己生成的 HELP HTML 中**（防死循环，§07 §1）。
 > **触发机制**：用户说"私家大厨 HELP"或"菜谱 HELP" → AI 必须 invoke HELP HTML（原则 11 HTML-First），**禁止文字答**。
 
+### J. 数据管理（3个 · G10 定案 · 唤醒词 ≠ 场景名）
+
+> **唤醒词 = AI 路由准星**（准确即可，不要求口语化）；**场景名 = HELP 展示**（精简全面）。yaml 两字段分开设计。
+> **数据管理三卡底层均已实现**（render_quality_report / render_batch_edit / export_backup），本组为登记 + 增强（批量编辑对比确认 + 导出 ZIP）。
+
+| 唤醒词 | 说明 | 同义(S) | 口语(O) | 模糊(F) |
+|--------|------|--------|--------|--------|
+| 体检 | 数据质量报告（5 维度完整度评分，最差排前） | ✓ 数据体检/质量报告 | ✓ 帮我体检下 | ✓ 看看库咋样 |
+| 批量改 | 3-tab 批量编辑（食材/步骤/标签）→ 改前/改后对比确认 → 复制修改 prompt | ✓ 批量编辑 | ✓ 帮我批量改下 | - |
+| 备份 | 导出备份 ZIP（17 表 JSON + 三照片目录），恢复=解压+导入 | ✓ 导出备份/打包下载 | ✓ 帮我备份下 | - |
+
 ---
 
 ## 依赖
@@ -252,6 +265,9 @@ python scripts/import_orchestrator.py <json_file> [--dry-run] [--json]
 | 查看历史 | `render_data.py history` | `$CHEF_OUTPUT_DIR/timeline/` | `数据视图_history_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 查看统计 | `render_data.py stats` | `$CHEF_OUTPUT_DIR/dashboard/` | `数据视图_stats_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
 | 查看派生关系 | `render_data.py relations` | `$CHEF_OUTPUT_DIR/list/` | `数据视图_relations_<slug>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 体检(数据质量报告) | `render_quality_report.py` | `$CHEF_OUTPUT_DIR/quality/` | `数据质量报告_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 批量改(批量编辑) | `render_batch_edit.py` | `$CHEF_OUTPUT_DIR/batch_edit/` | `批量编辑_<recipe_id8>_<YYYYMMDD_HHMMSS>.html` | **12.A** 数据/过程 |
+| 备份(导出 ZIP) | `export_backup.py` | `$CHEF_OUTPUT_DIR/backup/` | `私家大厨备份_<YYYYMMDD_HHMMSS>.zip` + 回执 `备份回执_<ts>.html` | **12.A** 数据/过程 |
 | HELP 能力速查 | `render_help.py` | `$CHEF_OUTPUT_DIR/help/` | `私家大厨_HELP_<YYYYMMDD_HHMMSS>.html` | **12.B** HELP |
 
 > **冲突解决**：12.X 共同基础规定 `_N` 自动后缀(N=1 起步,绝不覆盖)。`render_help.py` 当前实现是单次覆盖(因 HELP 渲染幂等),不符合 12.X 严格规定——**Phase 1.7 待优化**(改用 `_N` 后缀)。
@@ -390,12 +406,12 @@ L1 阶段 `migrations/004_all_fields_not_null.sql` 漏设 `unit` NOT NULL,12 行
 | 🔴 **必问用户** | 用户专属(口味偏好 / 来源 / 食材品牌 / 这菜给谁吃) | 用 `validators.suggested_user_question()` 一次性打包问 |
 | 🟡 **必推算** | `diet_tags` 从 nutrition 推 / `total_time` 从步骤求和 / `cooking_methods` 从步骤动作推 | AI 主动算,过 validators 校验 |
 | 🟢 **可补常识** | `tips` / `techniques` / `background.origin_story` / 经典菜起源 | AI 主动补常识,过 validators 校验(标"AI 补"在内容里) |
-| ⚪ **可显式 null** | 用户说"没/不知道/不重要" / 通用字段无数据 | AI 标 `null`,不省略字段 |
+| ⚪ **不允许 null/空串**(v4.0) | 任何字段 | 缺了 = 校验拒绝 + 缺失清单一次列全;AI 必须问用户补齐;无真实值(如无照片)时用户显式确认后才可用占位图并注明;DB 可空字段(tips.step_id/ingredient_id)由写库层从 step_sequence 派生,JSON 不携带 |
 
 **原则**:
 - 录入时**不主动问**用户"这道菜 X 字段填什么"——除非是用户专属信息
 - AI 推算/补常识后**仍然过 validators 校验**(避免推算出"香"这种枚举外的值)
-- 用户说"我也不知道" → AI 用 `null`,不是省略字段
+- **v4.0 缺字段拒绝制**:不允许 `null`、不允许空字符串;用户说"不知道" → AI 如实问用户/汇报缺失,不录入没有意义的菜谱
 
 ### 调用任何manager前，必须：
 
@@ -443,16 +459,16 @@ python scripts/recipe_render.py render <菜名或ID>
 
 **「做菜模式」** 收到时必须调用 `python scripts/cooking_render.py render <菜名或ID>` 生成正式 HTML;禁止 AI 手动复制模板再临时命名。`cooking_render.py` 会自动 show --json、注入 `templates/cooking_mode.html`、输出 `$CHEF_OUTPUT_DIR/cooking/做菜模式_<recipe_slug>_<YYYYMMDD_HHMMSS>.html`。做饭页右侧"剩余约 N 分钟"必须按 `references/cooking_mode.md` 的剩余时间规则计算:当前步骤显示剩余分钟 + 后续所有步骤计划分钟之和;暂停保持、重做重置、归零/超时时当前步骤最低按计划时长显示。
 
-### 采购清单 HTML 强制（v5.2 新增）
+### 采购清单 HTML 强制（v5.2 新增 · T9 库存核对接入）
 
-**「生成清单 / 排除可选」** AI 收到时**必须自动**按以下 2 步走：
+**「生成清单 / 排除可选」** AI 收到时**必须自动**按以下步骤走：
 
 ```bash
 # 第 1 步:拿数据(必跑,可省略文本直接给 HTML)
 python scripts/shopping_manager.py generate <recipe_id1>[,<recipe_id2>,...]
 
 # 第 2 步:渲染 HTML(必跑)
-python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...]
+python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...] [库存核对参数]
 ```
 
 **3 条执行规则**:
@@ -460,6 +476,27 @@ python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...]
 1. **跨食谱合并自动跑** —— 用户说"宫保虾球和辣炒虾球的采购清单",AI **自动解析**所有菜名,一次性调 generate + render(逗号分隔)
 2. **HTML 必发** —— render 成功后,**用 `<media>` 标签**推给用户(同查看食谱规则)
 3. **失败降级** —— render 失败时静默降级,JSON 数据照常展示
+
+**核对库存(已有vs需买详情层 · G6 · 默认开启)**:
+
+用户未明确「不核对」→ AI **必须**执行库存核对,4 步:
+
+```bash
+# 1. 会话内加载「居家管家」技能查本次清单食材库存(唤醒词:囤货盘点 / 查物品)
+#    ❌ 禁止在脚本中写死调用居家管家 CLI/底层路径(跨技能物理隔离 · prompt 单工闭环)
+# 2. AI 对居家管家返回做同名/同义匹配(鸡蛋↔鸡蛋;葱↔小葱 等)
+# 3. 把匹配结果传给 render(库存原文数量 + 名称里的单位线索;无线索省略 unit):
+python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...] \
+  --stock-check --stock-json '{"items":[{"name":"鸡蛋","qty":2,"unit":"盒"},{"name":"葱","qty":1}]}'
+# 4. 无数据/无匹配 → 只加 --stock-check 不带 --stock-json → 页面顶部淡提示「未核对库存(居家管家暂无数据)」,不打勾
+```
+
+4 条执行细则:
+
+1. **匹配由 AI 完成** —— `--stock-json` 的 name 必须等于清单食材名(AI 做完同义匹配),渲染器只做精确匹配,不做数量比较、不替用户决定(信息给全,够不够用户自己判断)
+2. **已有项 = 灰色勾 + 划线 + 「已有 N盒」标注,不进用户勾选进度**;进度条只统计需买项;顶部摘要显示「已有 N 项」
+3. **无数据降级** —— 居家管家无数据/无匹配 → 不打勾 + 顶部淡提示;**本会话只提示一次**(AI 记住已提示过,后续生成不再重复),避免每次生成清单都啰嗦
+4. **不核对** —— 用户说「不核对」→ 不传 `--stock-check`,无提示无灰勾
 
 **features/shopping.md** 里 14 项 HTML 要求已由 `templates/shopping_view.html` 实现,AI 无需自写 HTML。
 
@@ -519,7 +556,7 @@ python scripts/shopping_render.py render <recipe_id1>[,<recipe_id2>,...]
 
 ---
 
-## 路由表（36个唤醒词）
+## 路由表（39个唤醒词）
 
 > 全部为动词+名词格式。总览词和细分词并列共存，由 R2（最长匹配）保证不冲突。
 

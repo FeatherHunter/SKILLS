@@ -892,6 +892,7 @@ with get_read_only_connection() as conn:
 ## JSON校验命令
 
 > 导入前校验JSON文件的完整性和格式。
+> **v4.0 缺字段拒绝制(2026-08-09 用户拍板):不允许 null、不允许空字符串;缺失项一次列全成清单,不在写库阶段连环炸。**
 
 ```bash
 # 校验JSON文件
@@ -899,16 +900,17 @@ python scripts/recipe_json_validate.py <json_file>
 ```
 
 校验内容：
-- 字段完整性（所有字段是否都存在）
-- 必填字段（name/ingredients[].name/steps[].action）
+- 缺失清单（null / 空字符串 / 字段缺失 → 一次列全拒绝）
+- 步骤关联（tips/techniques 的 step_sequence 必须指向存在的步骤）
+- 必填字段（name/ingredients[].name/steps[].action 等全部为真实值）
 - 数据类型（数值/数组/字符串）
 - 外键引用（步骤引用的食材是否存在）
 - 枚举警告（非标准值提示）
 
 输出：
-- ❌ 错误：必须修正
+- ❌ 错误：必须修正（含缺失清单）
 - ⚠️ 警告：建议修正
-- 📎 缺失字段：建议补充
+- 📎 缺失字段：一次列全（null/空串/缺 key/步骤关联失效）
 
 ---
 

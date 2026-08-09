@@ -1,6 +1,13 @@
 """pytest 配置 — 共享 fixture
 
 添加 scripts/ 到 sys.path,让测试可 import schedule_db / validators / render 等.
+
+fixture 隔离约定(实施 T1 成文 · 详见 references/操作规范.md §7):
+  任何测试/验证不得触碰真实 `.db/` 生产库。
+  - 本 conftest 的 `conn` fixture:tmp_path 临时文件 DB + monkeypatch get_connection
+  - 涉路径解析的用例:monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path)),
+    或 monkeypatch 目标模块的 SKILL_DIR/路径常量
+  - 禁止: 无 SKILLS_DB_PATH 直接跑 CLI(会落 D:/.db win / ~/.local/share/schedule-guardian/db linux)
 """
 import sys
 from pathlib import Path

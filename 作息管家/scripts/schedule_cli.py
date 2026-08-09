@@ -793,6 +793,10 @@ def main(argv=None):
         cmd_help()
 
     else:
+        # === 2026-08-09 新增:渐进式注册通道(实施 T1 · 对抗式审查矛盾 5 修正)
+        # 现有 if/elif 49 命令分发不动;新域命令先查域模块注册表,命中即 dispatch ===
+        if _dispatch_domain(cmd, args):
+            return
         print(f"未知命令: {cmd}")
         cmd_help()
 # ============================================================
@@ -3116,6 +3120,80 @@ HTML 渲染(可视化查询结果):
   3. 飞书能力探测（lark-cli 安装/auth/权限）— 自动检测
   4. 删一条事件 = 软删（is_active=0），同步飞书时也会询问是否删飞书那边
 """)
+
+# ============================================================
+# 2026-08-09 新增：渐进式注册通道（实施 T1 · 对抗式审查矛盾 5 修正）
+#
+# 域模块（scripts/*.py）自带模块级 COMMANDS 注册表 → CLI 自动发现 dispatch；
+# 现有 if/elif 49 命令分发不动，新域命令只写域模块，不碰本文件。
+#
+# 域模块约定：
+#   COMMANDS = {"<cmd>": <handler>, ...}   # handler(args: list[str])，解析并执行
+#   例：COMMANDS = {"batch-add": batch_add_main}
+#
+# 发现时机：main() 的 else 分支（未知命令）首次触发时扫描并缓存。
+# ============================================================
+import importlib.util
+
+_DOMAIN_COMMANDS = None          # {"cmd": handler} 惰性缓存
+_DOMAIN_SKIP = {"schedule_cli"}  # 自身模块不扫描
+
+
+def discover_domain_commands(scripts_dir=None):
+    """扫描 scripts/*.py，收集模块级 COMMANDS 注册表 → {cmd: handler}。
+
+    按文件名排序保证确定性；模块 import 失败仅告警不中断；
+    同名命令冲突时先到先得（排序靠前者生效），后注册者告警忽略。
+    """
+    scripts_dir = Path(scripts_dir) if scripts_dir else Path(__file__).parent
+    registry = {}
+    for py in sorted(scripts_dir.glob("*.py")):
+        if py.stem in _DOMAIN_SKIP or py.name.startswith("_"):
+            continue
+        # 已在 sys.modules 的模块跳过:避免二次 exec 制造同名双对象,
+        # 否则 monkeypatch/依赖绑定会劈成两份,污染测试环境
+        if py.stem in sys.modules:
+            continue
+        prev = sys.modules.get(py.stem)
+        try:
+            spec = importlib.util.spec_from_file_location(py.stem, py)
+            mod = importlib.util.module_from_spec(spec)
+            sys.modules[py.stem] = mod  # 先注册再 exec:模块级 @dataclass 依赖 sys.modules 自引用
+            spec.loader.exec_module(mod)
+            commands = getattr(mod, "COMMANDS", None)
+        except Exception as e:
+            print(f"[域注册] 跳过 {py.name}: {e}", file=sys.stderr)
+            continue
+        finally:
+            # 还原 sys.modules:本函数不留任何模块级副作用
+            if prev is not None:
+                sys.modules[py.stem] = prev
+            else:
+                sys.modules.pop(py.stem, None)
+        if isinstance(commands, dict):
+            for cmd, handler in commands.items():
+                if cmd in registry:
+                    print(f"[域注册] 命令冲突 {cmd!r}（{py.name} 忽略）", file=sys.stderr)
+                    continue
+                registry[cmd] = handler
+    return registry
+
+
+def _domain_commands():
+    global _DOMAIN_COMMANDS
+    if _DOMAIN_COMMANDS is None:
+        _DOMAIN_COMMANDS = discover_domain_commands()
+    return _DOMAIN_COMMANDS
+
+
+def _dispatch_domain(cmd, args):
+    """查域注册表 dispatch。命中则执行 handler(args) 返回 True；未命中返回 False。"""
+    handler = _domain_commands().get(cmd)
+    if handler is None:
+        return False
+    handler(args)
+    return True
+
 
 if __name__ == "__main__":
     main()

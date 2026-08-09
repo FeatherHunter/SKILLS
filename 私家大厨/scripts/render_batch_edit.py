@@ -30,6 +30,7 @@ from datetime import datetime
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 from output_config import get_output_root, get_output_dir
+from align_08 import (build_copy_data, build_copy_log, inject_08_layer, unique_output_path)
 TEMPLATE_PATH = SKILL_DIR / "templates" / "batch_edit.html"
 
 
@@ -188,6 +189,29 @@ def render_batch_edit_html(recipe_id: str, out_path=None) -> str:
         raise ValueError(f"占位符必须唯一 1 次,实际 {count} 次")
     output = template.replace(placeholder, script_tag, 1)
 
+    # 08 对齐:复制数据(5 段)/复制日志(6 段)
+    copy_data = build_copy_data(
+        scene_id="edit-1",
+        command_cn="批量改",
+        target=basics["recipe_name"],
+        payload={
+            "recipe_id": basics["recipe_id"],
+            "recipe_name": basics["recipe_name"],
+            "ingredients_count": len(ingredients),
+            "steps_count": len(steps),
+            "tags": tags,
+        },
+    )
+    copy_log = build_copy_log(
+        scene_id="edit-1",
+        command_cn="批量改",
+        wake_word="批量改 / 批量编辑",
+        thinking=f"意图理解 → 批量改 → 收集 {basics['recipe_name']} 9 个 manager 数据 → 3-tab 编辑",
+        data_structure="window.__DATA__(ingredients/steps/tags)· 读库(只读)",
+        call_chain="python render_batch_edit.py <recipe_id_or_name>",
+    )
+    output = inject_08_layer(output, copy_data, copy_log)
+
     if out_path:
         out = Path(out_path)
     else:
@@ -195,12 +219,11 @@ def render_batch_edit_html(recipe_id: str, out_path=None) -> str:
         base_dir.mkdir(parents=True, exist_ok=True)
         slug = basics["recipe_id"][:8] if len(basics["recipe_id"]) >= 8 else basics["recipe_id"]
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out = base_dir / f"批量编辑_{slug}_{ts}.html"
+        out = unique_output_path(base_dir, f"批量编辑_{slug}_{ts}")
 
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(output, encoding="utf-8")
     return str(out)
-
 
 if __name__ == "__main__":
     if len(sys.argv) < 2 or sys.argv[1] in ("--help", "-h"):

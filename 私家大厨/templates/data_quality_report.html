@@ -68,10 +68,22 @@
 
 </div>
 
+<!-- 08 共享动作层(复制数据/复制日志双按钮 + 5 状态 · render_quality_report.py 注入) -->
+<!--INJECT-08-->
+
 <!--INJECT-DATA-->
 <script>
 (function(){
   'use strict';
+
+  // 08 5 状态: loading(注入前) → normal / empty / error / confirm
+  var A08 = window.A08;
+  function state(name, msg){
+    if (!A08) return;
+    if (name === 'normal') { A08.state.hide(); return; }
+    A08.state.show(name, null, msg || '');
+  }
+  state('loading', '数据质量报告加载中…');
 
   // 5 状态 fallback(显式 hidden)
   const fallbackEl = document.createElement('div');
@@ -85,6 +97,7 @@
   if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
     document.getElementById('error-msg').textContent = '数据未注入(window.__DATA__ 缺失)';
     fallbackEl.classList.remove('hidden');
+    state('error', '数据未注入(window.__DATA__ 缺失)。这是模板,不是最终交付。请用 render_quality_report.py 生成。');
     return;
   }
   const D = window.__DATA__;
@@ -116,6 +129,7 @@
 
   if (recipes.length === 0) {
     detail.innerHTML = '<div class="recipe" style="text-align:center;color:var(--text3)">未找到菜谱</div>';
+    state('empty', '未找到菜谱(库中无食谱数据)');
     return;
   }
 
@@ -153,6 +167,9 @@
     `;
     detail.appendChild(div);
   });
+
+  // 正常态(内容已渲染)
+  state('normal');
 
 })();
 </script>

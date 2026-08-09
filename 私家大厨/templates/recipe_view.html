@@ -657,6 +657,9 @@
   <div class="copy-feedback" id="copy-feedback-prompt">✓ 已复制,粘贴给 AI 即可</div>
 </div>
 
+<!-- 08 共享动作层(复制数据/复制日志双按钮 + 5 状态 · recipe_render.py 注入) -->
+<!--INJECT-08-->
+
 <!-- ── Footer ── -->
 <div class="footer">
   {% if recipe.source %}来源: {{ recipe.source }}{% endif %}
@@ -688,6 +691,18 @@
 </div>
 
 <script>
+// 08 5 状态(recipe_view 过渡态: T6 前仅做状态兜底,不碰动态区)
+(function(){
+  var A08 = window.A08;
+  if (!A08) return;
+  // loading → normal(window.__RECIPE__ 已注入即正常;缺则 error)
+  var ok = typeof window.__RECIPE__ === 'object' && window.__RECIPE__ !== null;
+  if (ok) {
+    A08.state.hide();
+  } else {
+    A08.state.show('error', '数据未注入', 'window.__RECIPE__ 缺失。这是模板,不是最终交付。请用 scripts/recipe_render.py 生成。');
+  }
+})();
 document.addEventListener('DOMContentLoaded', function(){
   // ── Servings switcher (preview only) ──
   var valEl = document.getElementById('serv-value');

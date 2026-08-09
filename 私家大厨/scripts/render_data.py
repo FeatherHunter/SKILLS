@@ -29,6 +29,7 @@ from datetime import datetime
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 from output_config import get_output_root, get_output_dir
+from align_08 import (build_copy_data, build_copy_log, inject_08_layer, unique_output_path)
 TEMPLATE_PATH = SKILL_DIR / "templates" / "data_view.html"
 
 # ── 文件名清洗 ──
@@ -177,45 +178,97 @@ def inject_data(template_html: str, payload: dict) -> str:
     return template_html.replace(placeholder, script_tag, 1)
 
 
+# ── 08 对齐:复制数据(5 段)/复制日志(6 段)─────────────────────
+# 子命令 → 场景标识 / 中文场景名(08 契约 scene_id/command_cn)
+SUBCOMMAND_SCENE = {
+    "search":    ("search-1",  "搜索食谱"),
+    "history":   ("hist-1",    "查看历史"),
+    "stats":     ("stats-1",   "查看统计"),
+    "relations": ("rel-1",     "查看派生关系"),
+}
+SUBCOMMAND_WAKE = {
+    "search":    "搜索食谱 / 筛选 X / 查看全部",
+    "history":   "查看历史",
+    "stats":     "查看统计",
+    "relations": "查看派生关系",
+}
+
+
+def build_08(payload: dict, sub: str, keyword: str, cli_cmd: str) -> tuple:
+    """构造本视图的复制数据/复制日志"""
+    scene_id, command_cn = SUBCOMMAND_SCENE.get(sub, (sub, sub))
+    wake = SUBCOMMAND_WAKE.get(sub, sub)
+    target = keyword or "全部"
+    copy_data = build_copy_data(
+        scene_id=scene_id,
+        command_cn=command_cn,
+        target=target,
+        payload={
+            "type": payload.get("type"),
+            "title": payload.get("title"),
+            "items_count": payload.get("items_count", 0),
+            "generated_at": payload.get("generated_at"),
+        },
+    )
+    copy_log = build_copy_log(
+        scene_id=scene_id,
+        command_cn=command_cn,
+        wake_word=wake,
+        thinking=f"意图理解 → 「{wake}」 → 调 {cli_cmd} 取数据 → 聚合 {payload.get('items_count', 0)} 项",
+        data_structure="window.__DATA__(type/title/items/kpis)· 读库(recipe/history/relation)",
+        call_chain=cli_cmd,
+    )
+    return copy_data, copy_log
+
+
 # ── 4 个子命令入口 ──
 def cmd_search(keyword: str, output_path: str = None) -> bool:
     try:
         if keyword:
+            cli_cmd = f"python3 scripts/recipe_manager.py search {keyword} --json"
             cli_data = call_cli("recipe_manager.py", "search", keyword)
         else:
+            cli_cmd = "python3 scripts/recipe_manager.py list --json"
             cli_data = call_cli("recipe_manager.py", "list")
     except (RuntimeError, FileNotFoundError) as e:
         print(f"❌ search 失败: {e}", file=sys.stderr)
         sys.exit(1)
         return False
     payload = adapt_search(keyword, cli_data)
-    return render_html(payload, f"search_{slugify(keyword) if keyword else 'all'}", output_path)
+    return render_html(payload, f"search_{slugify(keyword) if keyword else 'all'}", output_path,
+                       sub="search", keyword=keyword, cli_cmd=cli_cmd)
 
 
 def cmd_history(keyword: str, output_path: str = None) -> bool:
     try:
+        cli_cmd = f"python3 scripts/history_manager.py list {keyword} --json"
         cli_data = call_cli("history_manager.py", "list", keyword)
     except (RuntimeError, FileNotFoundError) as e:
         print(f"❌ history 失败: {e}", file=sys.stderr)
         sys.exit(1)
         return False
     payload = adapt_history(keyword, cli_data)
-    return render_html(payload, f"history_{slugify(keyword)}", output_path)
+    return render_html(payload, f"history_{slugify(keyword)}", output_path,
+                       sub="history", keyword=keyword, cli_cmd=cli_cmd)
 
 
 def cmd_stats(keyword: str, output_path: str = None) -> bool:
     try:
+        cli_cmd = f"python3 scripts/history_manager.py stats {keyword} --json"
         cli_data = call_cli("history_manager.py", "stats", keyword)
     except (RuntimeError, FileNotFoundError) as e:
         print(f"❌ stats 失败: {e}", file=sys.stderr)
         sys.exit(1)
         return False
     payload = adapt_stats(keyword, cli_data)
-    return render_html(payload, f"stats_{slugify(keyword)}", output_path)
+    return render_html(payload, f"stats_{slugify(keyword)}", output_path,
+                       sub="stats", keyword=keyword, cli_cmd=cli_cmd)
 
 
 def cmd_relations(keyword: str, output_path: str = None) -> bool:
     try:
+        cli_cmd = (f"python3 scripts/relation_manager.py list-parent {keyword} --json ; "
+                   f"python3 scripts/relation_manager.py list-child {keyword} --json")
         parent = call_cli("relation_manager.py", "list-parent", keyword)
         child = call_cli("relation_manager.py", "list-child", keyword)
     except (RuntimeError, FileNotFoundError) as e:
@@ -223,17 +276,21 @@ def cmd_relations(keyword: str, output_path: str = None) -> bool:
         sys.exit(1)
         return False
     payload = adapt_relations(keyword, parent, child)
-    return render_html(payload, f"relations_{slugify(keyword)}", output_path)
+    return render_html(payload, f"relations_{slugify(keyword)}", output_path,
+                       sub="relations", keyword=keyword, cli_cmd=cli_cmd)
 
 
 # ── 渲染主函数 ──
-def render_html(payload: dict, slug: str, output_path: str = None) -> bool:
+def render_html(payload: dict, slug: str, output_path: str = None, sub: str = "",
+                keyword: str = "", cli_cmd: str = "") -> bool:
     if not TEMPLATE_PATH.exists():
         print(f"❌ 模板不存在: {TEMPLATE_PATH}", file=sys.stderr)
         return False
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     try:
         output = inject_data(template, payload)
+        copy_data, copy_log = build_08(payload, sub, keyword, cli_cmd)
+        output = inject_08_layer(output, copy_data, copy_log)
     except ValueError as e:
         print(f"❌ 注入失败: {e}", file=sys.stderr)
         return False
@@ -241,15 +298,15 @@ def render_html(payload: dict, slug: str, output_path: str = None) -> bool:
         out = Path(output_path)
     else:
         out_base = get_output_root()
-        sub = payload["type"]
-        target_dir = out_base / sub  # list/timeline/dashboard
-        target_dir = base_dir / sub
+        subdir = payload["type"]
+        target_dir = out_base / subdir
         target_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out = target_dir / f"数据视图_{slug}_{ts}.html"
+        out = unique_output_path(target_dir, f"数据视图_{slug}_{ts}")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(output, encoding="utf-8")
     print(f"✅ 已渲染: {out}  ({len(output)/1024:.1f} KB) · type={payload['type']} · {payload.get('items_count', 0)} 项")
+    print(f"   复制数据/复制日志: 页面底部动作栏(08 硬标准)")
     return True
 
 
@@ -266,7 +323,7 @@ def main():
 
 环境变量:
     CHEF_OUTPUT_DIR   HTML 输出目录(默认 D:/CookHub)
-    输出子目录: \$CHEF_OUTPUT_DIR/{list,timeline,dashboard}/
+    输出子目录: $CHEF_OUTPUT_DIR/{list,timeline,dashboard}/
 
 子命令对应 4 类榜单(§04 原则 0):
     search    → 搜索/筛选结果(11 唤醒词)

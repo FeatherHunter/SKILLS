@@ -265,13 +265,26 @@
 <!-- ──────── 占位符 · 渲染器注入点(§04 原则 4 唯一) ──────── -->
 <!--INJECT-DATA-->
 
+<!-- 08 共享动作层(复制数据/复制日志双按钮 + 5 状态 · render_help.py 注入) -->
+<!--INJECT-08-->
+
 <script>
 (function(){
   'use strict';
 
+  // 08 5 状态: loading(注入前) → normal / empty / error / confirm
+  var A08 = window.A08;
+  function state(name, msg){
+    if (!A08) return;
+    if (name === 'normal') { A08.state.hide(); return; }
+    A08.state.show(name, null, msg || '');
+  }
+  state('loading', 'HELP 加载中…');
+
   // ── 数据守卫(§04 原则 4 #3 防未注入白屏) ──
   if (typeof window.__HELP__ !== 'object' || window.__HELP__ === null) {
     showState('error', '数据未注入(window.__HELP__ 缺失)。这是模板,不是最终交付。请用 scripts/render_help.py 生成。');
+    state('error', '数据未注入(window.__HELP__ 缺失)。这是模板,不是最终交付。请用 scripts/render_help.py 生成。');
     return;
   }
   const DATA = window.__HELP__;
@@ -300,6 +313,10 @@
         document.getElementById('error-msg').textContent = msg;
       }
     }
+    // 08 5 状态联动
+    if (state === 'error') A08 && A08.state.show('error', null, msg || '加载失败');
+    else if (state === 'empty' || state === 'missing') A08 && A08.state.show('empty', null, 'HELP 暂无内容');
+    else A08 && A08.state.hide();
   }
 
   // ── 主渲染 ──
@@ -495,6 +512,7 @@
   // ── 启动 ──
   try {
     render();
+    state('normal');
   } catch (err) {
     showState('error', '渲染异常: ' + (err && err.message ? err.message : String(err)));
     console.error('HELP render error:', err);

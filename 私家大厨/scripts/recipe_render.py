@@ -19,6 +19,7 @@ from pathlib import Path
 from datetime import datetime
 
 from output_config import get_output_root, get_output_dir
+from align_08 import (build_copy_data, build_copy_log, inject_08_layer, unique_output_path)
 
 
 # 路径常量 - 跨平台,基于 __file__
@@ -89,6 +90,30 @@ def render(args):
     try:
         template = TEMPLATE_PATH.read_text(encoding="utf-8")
         html = inject_data(template, {"recipe": recipe})
+        # 08 对齐:复制数据(5 段)/复制日志(6 段)
+        copy_data = build_copy_data(
+            scene_id="view-1",
+            command_cn="查看食谱",
+            target=recipe.get("name") or name_or_id,
+            payload={
+                "recipe_id": recipe.get("id"),
+                "name": recipe.get("name"),
+                "servings": recipe.get("servings"),
+                "total_time": recipe.get("total_time"),
+                "difficulty": recipe.get("difficulty"),
+                "ingredients_count": len(recipe.get("ingredients") or []),
+                "steps_count": len(recipe.get("steps") or []),
+            },
+        )
+        copy_log = build_copy_log(
+            scene_id="view-1",
+            command_cn="查看食谱",
+            wake_word="查看食谱 / 查看食材 / 查看步骤 / 查看营养 / 查看背景",
+            thinking=f"意图理解 → 查看食谱 → 调 export-json 取 {recipe.get('name')} 全量数据 → 注入 recipe_view.html",
+            data_structure="window.__RECIPE__(recipe/ingredients/steps/history)· 读库(只读)",
+            call_chain=f"python recipe_manager.py export-json {name_or_id} --compact ; python recipe_render.py render {name_or_id}",
+        )
+        html = inject_08_layer(html, copy_data, copy_log)
     except ValueError as e:
         print(f"渲染失败:{e}", file=sys.stderr)
         return False
@@ -99,11 +124,12 @@ def render(args):
         output_path = Path(output_arg)
     else:
         # 默认:$CHEF_OUTPUT_DIR/recipes/<slug>.html(尊重环境变量)
+        # _N 防覆盖:同秒连跑互不覆盖(SKILL.md 12.X 冲突处理)
         base_dir = get_output_root()
         recipes_dir = base_dir / "recipes"
         recipes_dir.mkdir(parents=True, exist_ok=True)
         slug = slugify(recipe.get("name") or "") or recipe.get("id", "untitled")[:8]
-        output_path = recipes_dir / f"{slug}.html"
+        output_path = unique_output_path(recipes_dir, slug)
 
     # 4. 覆盖保护
     if output_path.exists() and args.get("--no-clobber"):
@@ -114,6 +140,7 @@ def render(args):
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(html, encoding="utf-8")
     print(f"✅ 已渲染:{output_path}  ({len(html)} bytes)")
+    print(f"   复制数据/复制日志: 页面底部动作栏(08 硬标准)")
     return True
 
 

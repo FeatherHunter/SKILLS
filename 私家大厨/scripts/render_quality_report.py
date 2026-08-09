@@ -12,6 +12,7 @@ from datetime import datetime
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 from output_config import get_output_root, get_output_dir
+from align_08 import (build_copy_data, build_copy_log, inject_08_layer, unique_output_path)
 TEMPLATE_PATH = SKILL_DIR / "templates" / "data_quality_report.html"
 
 
@@ -76,10 +77,31 @@ def render_html_report(report: dict) -> str:
     payload = transform_quality_payload(report)
     output = inject_data(template, payload)
 
+    # 08 对齐:复制数据(5 段)/复制日志(6 段)
+    copy_data = build_copy_data(
+        scene_id="quality-1",
+        command_cn="数据体检",
+        target="全部食谱",
+        payload={
+            "total_recipes": payload.get("total_recipes"),
+            "kpis": payload.get("kpis"),
+            "generated_at": payload.get("generated_at"),
+        },
+    )
+    copy_log = build_copy_log(
+        scene_id="quality-1",
+        command_cn="数据体检",
+        wake_word="数据体检 / 数据质量",
+        thinking="意图理解 → 数据体检 → 逐菜评估 5 维度 → 聚合 KPI + 明细",
+        data_structure="window.__DATA__(kpis/items)· 读库(只读)",
+        call_chain="python data_quality_report.py | python render_quality_report.py",
+    )
+    output = inject_08_layer(output, copy_data, copy_log)
+
     out_dir = get_output_root() / "quality"
     out_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    out_path = out_dir / f"数据质量报告_{ts}.html"
+    out_path = unique_output_path(out_dir, f"数据质量报告_{ts}")
     out_path.write_text(output, encoding="utf-8")
     return str(out_path)
 

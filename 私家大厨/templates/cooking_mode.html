@@ -379,6 +379,9 @@
   </div>
 </div>
 
+<!-- 08 共享动作层(复制数据/复制日志双按钮 + 5 状态 · cooking_render.py 注入) -->
+<!--INJECT-08-->
+
 <script>
 // ============== 状态(必须在前面声明,避免 init() TDZ) ==============
 const STATE = {
@@ -397,11 +400,16 @@ const STATE = {
   servingsMultiplier: 1.0,  // 份数倍数(默认原方 1.0,可调到 0.5/2/3 等)
 };
 
+// 08 5 状态 · loading(数据注入前)
+if (window.A08) window.A08.state.show('loading', null, '做菜模式加载中…');
+
 // ============== 数据注入检查 ==============
 const RECIPE = window.__RECIPE__;
 const RECIPE_ID = window.__RECIPE_ID__;
 
 if (!RECIPE) {
+  // 08 5 状态 · error(注入失败)
+  if (window.A08) window.A08.state.show('error', '数据未注入', 'window.__RECIPE__ 缺失。这是模板,不是最终交付。请用 scripts/cooking_render.py 生成。');
   document.getElementById('error-screen').classList.add('active');
   document.getElementById('stage-prep').classList.remove('active');
 } else {
@@ -451,6 +459,8 @@ function init(){
   renderAll();
   // ⚠ 关键修复:init 后必须激活第一个阶段,否则 .stage{display:none} 让所有内容不显示
   document.getElementById('stage-prep').classList.add('active');
+  // 08 5 状态 · normal(数据注入完成)
+  if (window.A08) window.A08.state.hide();
 }
 
 // ============== 工具函数 ==============
@@ -950,6 +960,18 @@ document.addEventListener('input', e => {
 });
 
 function copyRecord(){
+  // 08 5 状态 · confirm: 保存前确认
+  if (window.A08) {
+    window.A08.state.show('confirm', '确认保存这次做菜记录?', '点击「确认保存」将复制记录 prompt,粘贴给 AI 后由 AI 调 history_manager add 写入。', [
+      { label: '确认保存', kind: 'primary', onclick: () => { doCopyRecord(); window.A08.state.hide(); } },
+      { label: '取消', onclick: () => window.A08.state.hide() },
+    ]);
+    return;
+  }
+  doCopyRecord();
+}
+
+function doCopyRecord(){
   const text = document.getElementById('copy-preview').textContent;
   navigator.clipboard.writeText(text).then(() => {
     const fb = document.getElementById('copy-feedback');
@@ -966,6 +988,14 @@ function copyRecord(){
 }
 
 function skipDone(){
+  // 08 5 状态 · confirm: 跳过保存确认
+  if (window.A08) {
+    window.A08.state.show('confirm', '确定跳过保存吗?', '本次做菜记录不会写入 history。', [
+      { label: '跳过不保存', kind: 'danger', onclick: () => { goCleanUp(); window.A08.state.hide(); } },
+      { label: '取消', onclick: () => window.A08.state.hide() },
+    ]);
+    return;
+  }
   if (confirm('确定跳过保存吗?本次做菜记录不会写入 history。')){
     goCleanUp();
   }

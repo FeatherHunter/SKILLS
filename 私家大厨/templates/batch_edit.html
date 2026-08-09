@@ -154,6 +154,14 @@
 document.addEventListener('DOMContentLoaded', function(){
   'use strict';
 
+  // 08 5 状态: loading(注入前) → normal / empty / error / confirm
+  var A08 = window.A08;
+  function state(name, msg){
+    if (!A08) return;
+    if (name === 'normal') { A08.state.hide(); return; }
+    A08.state.show(name, null, msg || '');
+  }
+
   // 5 状态 fallback
   const fallbackEl = document.createElement('div');
   fallbackEl.id = 'state-error';
@@ -166,6 +174,7 @@ document.addEventListener('DOMContentLoaded', function(){
   if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
     document.getElementById('error-msg').textContent = '数据未注入(window.__DATA__ 缺失)。请用 scripts/render_batch_edit.py 生成。';
     fallbackEl.classList.remove('hidden');
+    state('error', '数据未注入(window.__DATA__ 缺失)。请用 scripts/render_batch_edit.py 生成。');
     return;
   }
   const D = window.__DATA__;
@@ -179,6 +188,14 @@ document.addEventListener('DOMContentLoaded', function(){
   // 1. Hero
   document.getElementById('page-title').textContent = '📝 批量编辑 · ' + D.recipe_name;
   document.getElementById('meta').textContent = `recipe_id: ${D.recipe_id} · 生成时间: ${D.generated_at}`;
+
+  // 空态:recipe 完全无内容(食材/步骤/标签全空)
+  const ingsAll = D.ingredients || [];
+  const stepsAll = D.steps || [];
+  const tagsAll = D.tags || {};
+  if (ingsAll.length === 0 && stepsAll.length === 0 && Object.keys(tagsAll).length === 0) {
+    state('empty', `「${D.recipe_name}」暂无食材/步骤/标签数据`);
+  }
 
   // 2. Tabs 切换
   const tabs = document.querySelectorAll('.tab');
@@ -297,6 +314,18 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 
   document.getElementById('copy-btn').addEventListener('click', async () => {
+    // 08 5 状态 · confirm: 复制修改 prompt 前确认(08 §2 确认阶段)
+    if (A08) {
+      A08.state.show('confirm', '确认复制修改 prompt?', '复制后将粘贴给 AI,由 AI 调 manager CLI 改 DB(单工铁律)。', [
+        { label: '确认复制', kind: 'primary', onclick: () => doCopyPrompt() },
+        { label: '取消', onclick: () => A08.state.hide() },
+      ]);
+    } else {
+      doCopyPrompt();
+    }
+  });
+
+  async function doCopyPrompt() {
     const prompt = generatePrompt();
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -334,8 +363,13 @@ document.addEventListener('DOMContentLoaded', function(){
       t.className = 'toast';
     }, 2500);
   }
+
+  // 正常态(内容已渲染)
+  state('normal');
 });
 </script>
+
+<!--INJECT-08-->
 
 <!--INJECT-DATA-->
 

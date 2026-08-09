@@ -130,11 +130,22 @@
 
 </div>
 
+<!--INJECT-08-->
+
 <!--INJECT-DATA-->
 
 <script>
 (function(){
   'use strict';
+
+  // 08 5 状态: loading(注入前) → normal / empty / error / confirm
+  var A08 = window.A08;
+  function state(name, msg){
+    if (!A08) return;
+    if (name === 'normal') { A08.state.hide(); return; }
+    A08.state.show(name, null, msg || '');
+  }
+  state('loading', '数据加载中…');
 
   // §04 原则 4 #3:数据守卫
   if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
@@ -167,6 +178,10 @@
         if (msgEl) msgEl.textContent = msg;
       }
     }
+    // 08 5 状态联动:空/错 状态同时进共享层(error/empty),正常态 hide
+    if (type === 'error') state('error', msg || '数据加载失败');
+    else if (type === 'empty') state('empty', msg || '暂无数据');
+    else state('normal');
   }
 
   // ── type=list 渲染(搜索/筛选/派生)──
@@ -262,6 +277,7 @@
       return;
     }
     document.getElementById('main-content').classList.remove('hidden');
+    state('normal');
   } catch (err) {
     showState('error', '渲染异常: ' + (err && err.message ? err.message : String(err)));
     console.error('data_view render error:', err);

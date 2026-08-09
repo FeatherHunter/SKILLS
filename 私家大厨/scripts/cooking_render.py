@@ -23,6 +23,7 @@ from datetime import datetime
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 from output_config import get_output_root, get_output_dir
+from align_08 import (build_copy_data, build_copy_log, inject_08_layer, unique_output_path)
 TEMPLATE_PATH = SKILL_DIR / "templates" / "cooking_mode.html"
 RECIPE_MANAGER = SCRIPT_DIR / "recipe_manager.py"
 
@@ -91,6 +92,30 @@ def render(args):
     )
     html = template.replace("<body>", inject, 1)
 
+    # 08 对齐:复制数据(5 段)/复制日志(6 段)
+    steps = recipe.get("steps") or []
+    copy_data = build_copy_data(
+        scene_id="cook-1",
+        command_cn="做菜模式",
+        target=recipe_name,
+        payload={
+            "recipe_id": recipe_id,
+            "name": recipe_name,
+            "servings": recipe.get("servings"),
+            "steps_count": len(steps),
+            "total_time_minutes": recipe.get("total_time_minutes"),
+        },
+    )
+    copy_log = build_copy_log(
+        scene_id="cook-1",
+        command_cn="做菜模式",
+        wake_word="开始做菜 / 做菜模式",
+        thinking=f"意图理解 → 开始做菜 → 调 show 取 {recipe_name} 全量数据 → 注入 cooking_mode.html",
+        data_structure="window.__RECIPE__(recipe/steps/ingredients)· 读库(只读)",
+        call_chain=f"python recipe_manager.py show {name_or_id} --json ; python cooking_render.py render {name_or_id}",
+    )
+    html = inject_08_layer(html, copy_data, copy_log)
+
     output_arg = args.get("--output")
     if output_arg:
         output_path = Path(output_arg)
@@ -99,7 +124,7 @@ def render(args):
         cooking_dir = base_dir / "cooking"
         cooking_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = cooking_dir / f"做菜模式_{slugify(recipe_name)}_{ts}.html"
+        output_path = unique_output_path(cooking_dir, f"做菜模式_{slugify(recipe_name)}_{ts}")
 
     if output_path.exists() and args.get("--no-clobber"):
         print(f"⏭ 跳过(已存在):{output_path}", file=sys.stderr)
@@ -108,6 +133,7 @@ def render(args):
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(html, encoding="utf-8")
     print(f"✅ 已渲染:{output_path}  ({len(html)} bytes)")
+    print(f"   复制数据/复制日志: 页面底部动作栏(08 硬标准)")
     return True
 
 

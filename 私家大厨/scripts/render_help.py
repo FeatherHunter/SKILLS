@@ -31,6 +31,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 SCENARIOS_PATH = SKILL_DIR / "references" / "scenarios.yaml"
 from output_config import get_output_root, get_output_dir
+from align_08 import (build_copy_data, build_copy_log, inject_08_layer, unique_output_path)
 TEMPLATE_PATH = SKILL_DIR / "templates" / "help.html"
 
 
@@ -174,6 +175,30 @@ def render(args) -> bool:
     # 4. 注入
     try:
         output_html = inject_data(template_html, payload)
+        # 08 对齐:复制数据(5 段)/复制日志(6 段)
+        avail = sum(1 for s in payload['scenarios'] if s.get('status') != '【待开发】')
+        pending = sum(1 for s in payload['scenarios'] if s.get('status') == '【待开发】')
+        copy_data = build_copy_data(
+            scene_id="help-1",
+            command_cn="私家大厨 HELP",
+            target="HELP 能力速查",
+            payload={
+                "wake_words": len(wake_words),
+                "aliases_expanded": expanded_count,
+                "scenarios_total": len(payload['scenarios']),
+                "scenarios_available": avail,
+                "scenarios_pending": pending,
+            },
+        )
+        copy_log = build_copy_log(
+            scene_id="help-1",
+            command_cn="私家大厨 HELP",
+            wake_word="私家大厨 HELP / 菜谱 HELP / 能做什么",
+            thinking="意图理解 → HELP 唤醒词 → 读 references/scenarios.yaml → 聚合唤醒词+场景",
+            data_structure="window.__HELP__(meta/wake_words/scenarios)· 读 yaml 资产(只读)",
+            call_chain="python render_help.py",
+        )
+        output_html = inject_08_layer(output_html, copy_data, copy_log)
     except ValueError as e:
         print(f"❌ 注入失败: {e}", file=sys.stderr)
         return False
@@ -183,12 +208,12 @@ def render(args) -> bool:
     if output_arg:
         output_path = Path(output_arg)
     else:
-        # 默认:$CHEF_OUTPUT_DIR/help/私家大厨_HELP_<YYYYMMDD_HHMMSS>.html
+        # 默认:$CHEF_OUTPUT_DIR/help/私家大厨_HELP_<YYYYMMDD_HHMMSS>.html(_N 防覆盖 · 12.X)
         base_dir = get_output_root()
         help_dir = base_dir / "help"
         help_dir.mkdir(parents=True, exist_ok=True)
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_path = help_dir / f"私家大厨_HELP_{ts}.html"
+        output_path = unique_output_path(help_dir, f"私家大厨_HELP_{ts}")
 
     # 6. 覆盖保护
     if output_path.exists() and args.get("--no-clobber"):
@@ -204,6 +229,7 @@ def render(args) -> bool:
     print(f"   场景: {len(payload['scenarios'])} "
           f"(可用 {sum(1 for s in payload['scenarios'] if s.get('status') != '【待开发】')}, "
           f"待开发 {sum(1 for s in payload['scenarios'] if s.get('status') == '【待开发】')})")
+    print(f"   复制数据/复制日志: 页面底部动作栏(08 硬标准)")
     return True
 
 

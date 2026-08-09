@@ -567,7 +567,7 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 
 ### 账户流程细则（4 场景 · 2026-08-09 落地）
 
-账户 = `bills.account` 字段（无独立账户表）；账户清单 = `goals.json` 顶层 `accounts` 键（账户表，与目标域 `budgets/savings` 键隔离）；余额 = 该账户收入 − 支出累计推算。
+账户 = `bills.account` 字段（无独立账户表）；账户清单 = `goals.json` 顶层 `accounts` 键（账户表，与目标域 `budgets/savings` 键隔离）；余额 = 收支累计推算（该账户收入 − 支出）。
 
 **载体契约：**
 - 新增/改名/停用/启用 → 写 `goals.json`（原子写，保留其他键）

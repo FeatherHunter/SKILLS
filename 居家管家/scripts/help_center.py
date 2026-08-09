@@ -27,11 +27,11 @@ SCENARIOS = SKILL_DIR / "references" / "scenarios.yaml"
 TEMPLATE = "help_center.html"
 
 # 联系作者(仅 HELP · G7 决策补充 2026-08-04)
+# 不含手机号:开源 PII 保护(issue #150 · 人类明确约束)
 CONTACT = {
     "email": "975559549@qq.com",
     "github": "https://github.com/FeatherHunter/SKILLS",
     "issues": "https://github.com/FeatherHunter/SKILLS/issues",
-    "phone": "17372067837",
 }
 
 

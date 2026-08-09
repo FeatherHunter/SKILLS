@@ -18,8 +18,7 @@ from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 
-# ── 路径注入(不设模块级 env:collection 阶段 setenv 会污染共享环境,
-#    导致后续字母序 subprocess 测试继承未初始化库 — 见对抗式审查发现)──
+# ── 路径注入 ──
 sys.path.insert(0, str(SKILL_DIR / "scripts"))
 sys.path.insert(0, str(SKILL_DIR / "references"))
 
@@ -34,21 +33,27 @@ from 派生 import ops
 TEMPLATE_PATH = SKILL_DIR / "templates" / "recipe_template.json"
 TEMPLATE_DIR = SKILL_DIR / "templates" / "派生"
 
+# ── 共享 env 基线修复(对抗式审查发现 · 2026-08-09)─────────────
+# 本文件字母序最后,模块级代码在收集阶段最后执行。此时共享 os.environ 已被
+# 并行 T8 会话的 test_做菜.py 模块级 setenv 指向「它自己的空临时库」
+# (其 init_db 建表落在首个导入者缓存的 DB_PATH,env 与库错位)→ 全量跑时
+# test_render_data 等 subprocess 测试继承错误 env 报 no such table: recipes。
+# 修复:把 SKILLS_DB_PATH 纠正回「首个导入者缓存的 DB 目录」(有表,test_add 基线)。
+# 不动 T8 文件(隔离契约),只在本域做防御;fixture 内不再动 env(进程内走 DB_PATH patch)。
+import db_config  # noqa: E402
+os.environ["SKILLS_DB_PATH"] = str(Path(db_config.DB_PATH).parent)
+
 
 @pytest.fixture(scope="session", autouse=True)
 def _t12_isolated_db():
-    """T12 隔离测试库:session 内临时 DB + 临时输出目录,用毕还原。
+    """T12 进程内 DB 隔离:patch db_config.DB_PATH 到本 session 临时库(用毕还原)。
 
-    先例核对(T5/T7):T4/T7 全部走 per-subprocess make_env,只有排第一的
-    test_add 做模块级 setenv;本文件字母序最后,模块级 setenv 会让
-    test_render_data 等 subprocess 测试继承未初始化库(全量跑复现,
-    排除本文件后 195 全绿)。改用 fixture:env + db_config.DB_PATH 只在
-    本 session 生效,teardown 还原,不污染任何前后文件。
+    共享 env 已由模块级基线修复处理(见上);进程内 DB_PATH 是 import 时缓存常量,
+    env 对已导入模块无效,因此直接 patch DB_PATH,避免测试数据落进共享测试库。
     """
-    tmp = Path(tempfile.mkdtemp(prefix="chef_t12_"))
-    os.environ["SKILLS_DB_PATH"] = str(tmp)
-    os.environ["CHEF_OUTPUT_DIR"] = str(tmp / "out")
     import db_config
+    tmp = Path(tempfile.mkdtemp(prefix="chef_t12_"))
+    os.environ["CHEF_OUTPUT_DIR"] = str(tmp / "out")
     original_db_path = db_config.DB_PATH
     db_config.DB_PATH = tmp / "chef_data.db"
     import init_db

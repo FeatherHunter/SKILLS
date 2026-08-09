@@ -87,3 +87,25 @@ def test_batch_meal_empty_input_rejected(meal_input):
     with pytest.raises(ValueError):
         rcr.build_live_diet_batch_meal(str(p))
     p.unlink(missing_ok=True)
+
+
+def test_batch_meal_without_time_same_instant(temp_db):
+    """对抗审查(2026-08-09):不传 time/date → 统一注入同时刻,回查必命中全部食物
+
+    此前 add_meals_batch 对未传 time 的条目各自取 datetime.now(),跨秒竞态
+    导致回查 date+time 只命中部分 → 回执列表缺失。修复后同餐同时刻。
+    """
+    import render_crud_receipt as rcr
+    entries = [
+        {'food_name': '面条', 'grams': 200, 'calories': 280, 'protein': 10, 'carbs': 55, 'fat': 2},
+        {'food_name': '鸡蛋', 'grams': 50, 'calories': 72, 'protein': 6, 'carbs': 0, 'fat': 5},
+    ]
+    p = Path(temp_db.parent) / 'meal_no_time.json'
+    p.write_text(json.dumps(entries, ensure_ascii=False), encoding='utf-8')
+    data = rcr.build_live_diet_batch_meal(str(p))
+    items = data['data']['context']['items']
+    foods = {it['food_name'] for it in items}
+    assert foods == {'面条', '鸡蛋'}, f'不传 time 也必须回查命中全部,实际 {foods}'
+    # 两条写库 time 必须一致(同餐同时刻)
+    assert data['data']['new_record']['food_count'] == 2
+    p.unlink(missing_ok=True)

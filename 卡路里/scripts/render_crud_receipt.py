@@ -508,6 +508,13 @@ def build_live_diet_batch_meal(input_path):
     d = entries[0].get('date') or date.today().isoformat()
     t = entries[0].get('time') or datetime.now().strftime('%H:%M:%S')
 
+    # 竞态修复(2026-08-09 对抗审查):add_meals_batch 内部对未显式传 time 的条目
+    # 各自取 datetime.now(),跨秒时各条 time 不同 → 回查 date+time 只命中部分/0 条。
+    # 同餐同时刻是语义要求 → 统一注入 date/time 到每个 entry,消除竞态。
+    for e in entries:
+        e['date'] = d
+        e['time'] = t
+
     r = diet.add_meals_batch(entries)
     added = r['added']
     if added == 0:

@@ -28,6 +28,11 @@
 - [R2 开源准备处置](https://github.com/FeatherHunter/SKILLS/issues/191) — 16 项清仓清单定稿并**人类采纳**（2026-08-07）：删 direct_add/batch_add_morning/plan_*.json；batch_add 收敛为 CLI `batch-add`；路径统一 `get_db_base_dir()` 解析器；白名单迁出 .db/；新增 MIT 子 LICENSE；文档 8 处清理。观察项：`.notes/` 删、`.out-of-scope/README.md` 留、跨技能 pycache 不动、migrate_plan_to_events.py 保留（已走统一路径）。
 - [G1 领域第一功能定标](https://github.com/FeatherHunter/SKILLS/issues/193) — **人类 Q1-Q12 全采纳**（2026-08-09）：功能定标清单定稿（6 深度场景：记录/复盘今日/复盘本周/复盘本月/制定次日计划/周视图 + 5 基础覆盖 + 跨场景约定：复盘→计划衔接引导、缺数据提示补齐、健康分全粒度、场景独立呈现、daily_summary 待评估）。清单见 `.scratch/skill-levelup/issues/G1-功能定标清单.md`。G2 解封需 R3。顶层体验（每晚工作流/记录结果 HTML/场景原则）已作为最高优先级输入吸收。
 - [R3 onboarding 三段式设计](https://github.com/FeatherHunter/SKILLS/issues/192) — **人类确认**（2026-08-09）：复制即装 prompt + 首次使用 6 步 + 初始化报告原型全认可；**飞书强引导**（配合飞书效果最好，拒绝才跳过）。原型资产 `.scratch/skill-levelup/r3/`（README 草案 / 首次使用工作流 / first_use_wizard.html）。落地归实施阶段。
+- [G2 场景枚举定标](https://github.com/FeatherHunter/SKILLS/issues/194) — **人类确认**（2026-08-09）：81 场景清单（73 现有 + 8 新增/强化），「复盘 start-end」保留独立场景并**更名「复盘区间」**；批量导入独立场景；完整盘点已跑。清单见 `.scratch/skill-levelup/issues/G2-场景枚举定标.md`。
+
+## ✅ 规格 map 全部闭环（2026-08-09）
+
+R2 / G1 / R3 / G2 四票全部关闭，规格阶段决策全部定案。下一步：建**实施 map**（09 两阶段流程第 2 阶段）。
 
 ## Not yet specified
 
@@ -53,6 +58,6 @@
 | #191 | [R2 开源准备处置](https://github.com/FeatherHunter/SKILLS/issues/191) | wayfinder:research | ✅ closed | — |
 | #192 | [R3 onboarding 三段式设计](https://github.com/FeatherHunter/SKILLS/issues/192) | wayfinder:prototype | ✅ closed（飞书强引导确认） | — |
 | #193 | [G1 领域第一功能定标](https://github.com/FeatherHunter/SKILLS/issues/193) | wayfinder:grilling | ✅ closed（功能定标清单） | — |
-| #194 | [G2 场景枚举定标](https://github.com/FeatherHunter/SKILLS/issues/194) | wayfinder:task | 🟢 unblocked · 可认领 | — |
+| #194 | [G2 场景枚举定标](https://github.com/FeatherHunter/SKILLS/issues/194) | wayfinder:task | ✅ closed（81 场景清单） | — |
 
-Frontier（可认领）：#194 G2（场景枚举，规格阶段最后一张票）。
+**规格 map 全部闭环（2026-08-09）**——无 open 票。下一步：建实施 map（09 两阶段第 2 阶段）。

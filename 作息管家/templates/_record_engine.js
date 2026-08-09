@@ -11,7 +11,8 @@
     "record-compare": "作息记录 · 区间对比",
     "record-category":"作息记录 · 类别深挖",
     "record-anomaly": "作息记录 · 异常检测",
-    "record-detail":  "作息记录 · 详情溯源"
+    "record-detail":  "作息记录 · 详情溯源",
+    "record-week":    "作息记录 · 周视图"
   };
 
   // 2026-07-25 mode-specific AI 钩子 emoji(第一性:6 个 mode 不再共用同一 💡,
@@ -22,7 +23,8 @@
     "record-compare":  "💡⚖️",     // ⚖️ 对比权衡
     "record-category": "💡🎯",     // 🎯 类别聚焦
     "record-anomaly":  "💡🩺",    // 🩺 异常诊断
-    "record-detail":   "💡🔬"     // 🔬 详情溯源
+    "record-detail":   "💡🔬",    // 🔬 详情溯源
+    "record-week":     "💡🗓️"    // 🗓️ 周视图总览
   };
 
   function hookEmoji(mode){
@@ -72,7 +74,8 @@
     "record-compare":  renderCompare,
     "record-category": renderCategory,
     "record-anomaly":  renderAnomaly,
-    "record-detail":   renderDetail
+    "record-detail":   renderDetail,
+    "record-week":     renderWeek
   };
   var handler = MODE_HANDLERS[meta.mode];
   if (handler) return handler(data, meta);
@@ -454,6 +457,86 @@
       aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
       html += '</ul></div>';
     }
+
+    html += copyPromptBlock(data);
+    document.getElementById("root").innerHTML = html;
+  }
+
+  // ===== T7: 周视图(7×24 全分类总览 · 复用 record_category 热力图组件)=====
+  // 对抗式审查矛盾 4 修正:扩展共享组件,不复制热力图渲染代码。
+  // 复用:renderCategory 同款 .heatmap 网格(行=天,列=24h) + hm-* 类 + statBlock/
+  // recordsCollapsible/copyPromptBlock;cell 数据形态同 record_category(主导分类色)。
+  function renderWeek(data, meta){
+    var records = data.records || [];
+    var heatmap = data.heatmap || [];
+    var days = data.days || [];
+    var labels = data.weekday_labels || days;
+    var dayTotals = data.day_totals || [];
+    var summaryItems = data.summary_items || [];
+    var aiQs = data.ai_questions || [];
+    var totalMin = meta.total_minutes || 0;
+
+    if (records.length === 0) {
+      document.getElementById("root").innerHTML =
+        '<div class="empty"><h3>' + escapeHTML((meta.start || "") + " ~ " + (meta.end || "")) + ' · 本周无作息记录</h3>' +
+        '<p>该周 schedule_records 表没有记录,可先补录或查看其他周</p></div>';
+      return;
+    }
+
+    var html = "";
+    html += statBlock("", fmtMin(totalMin), "总时长", "7 天");
+    html += statBlock("", (meta.active_days || 0) + " / 7", "活跃天数", "");
+    html += statBlock("", records.length + " 条", "记录数", "");
+    html += statBlock("", summaryItems.length + " 类", "L1 分类", "");
+
+    if (heatmap.length > 0) {
+      html += '<div class="card"><h2><span class="icon">🗓️</span> 7×24 全分类热力图</h2>';
+      html += '<div style="overflow-x:auto"><div class="heatmap" style="grid-template-columns:60px repeat(24,1fr);min-width:640px">';
+      html += '<div class="hm-row-label" style="background:#fff"></div>';
+      for (var h = 0; h < 24; h++) {
+        html += '<div class="hm-col-label" style="background:#fff">' + (h%3===0?pad2(h):"") + '</div>';
+      }
+      days.forEach(function(d, i){
+        html += '<div class="hm-row-label" style="flex-direction:column;line-height:1.2">' +
+                '<div>' + escapeHTML(labels[i] || "") + '</div>' +
+                '<div style="font-size:8px;color:var(--fg3)">' + escapeHTML((d || "").slice(5)) + '</div></div>';
+        for (var j = 0; j < 24; j++) {
+          var cell = heatmap[i] && heatmap[i][j] || {color:"#f5f5f7"};
+          html += '<div class="hm-cell" style="background:' + escapeHTML(cell.color) + '" title="' +
+                  escapeHTML((labels[i] || d || "") + " " + pad2(j) + ":00 " + (cell.cat || "无记录")) + '"></div>';
+        }
+      });
+      html += '</div></div></div>';
+    }
+
+    if (dayTotals.length > 0) {
+      html += '<div class="card"><h2><span class="icon">📅</span> 每日时长</h2>' +
+              '<div style="display:flex;gap:6px;flex-wrap:wrap">';
+      dayTotals.forEach(function(t, i){
+        html += '<div style="flex:1;min-width:76px;text-align:center;background:#f5f5f7;border-radius:8px;padding:8px 4px">' +
+                '<div style="font-size:10px;color:var(--fg2)">' + escapeHTML(labels[i] || "") + '</div>' +
+                '<div style="font-size:13px;font-weight:600">' + escapeHTML(fmtMin(t)) + '</div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    if (summaryItems.length > 0) {
+      html += '<div class="card"><h2><span class="icon">📊</span> 分类总览</h2><div class="cat-grid">';
+      summaryItems.forEach(function(s){
+        var pctNum = parseFloat(s.pct) || 0;
+        html += '<div class="cat-row"><span class="emoji">' + escapeHTML(s.emoji) + '</span>' +
+                '<div style="flex:1"><div style="display:flex;justify-content:space-between"><span class="name">' + escapeHTML(s.category) + '</span><span class="dur">' + escapeHTML(s.duration_text) + '</span></div>' +
+                '<div class="bar"><div class="bar-fill" style="width:' + pctNum + '%;background:' + escapeHTML(s.color || "#8E8E93") + '"></div></div></div></div>';
+      });
+      html += '</div></div>';
+    }
+
+    if (aiQs.length > 0) {
+      html += '<div class="ai-hooks"><h3>' + hookEmoji(meta.mode) + ' AI 思考钩子</h3><ul>';
+      aiQs.forEach(function(q){ html += '<li>' + escapeHTML(q) + '</li>'; });
+      html += '</ul></div>';
+    }
+    html += recordsCollapsible(records);
 
     html += copyPromptBlock(data);
     document.getElementById("root").innerHTML = html;

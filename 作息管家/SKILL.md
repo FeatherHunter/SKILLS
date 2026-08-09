@@ -13,7 +13,7 @@ description: >
 
   HELP 命中后 invoke `scripts/help_render.py`,输出 `$SKILLS_DB_PATH/schedule_html/help/作息管家_HELP_<YYYYMMDD>_<HHMMSS>.html`(作息管家内部一致性 + 对标饼干记账命名)。
   HELP 不在自身生成的 HTML 中展示(避免死循环,§07 §1)。
-  场景资产唯一事实源:`references/scenarios.yaml`(73 场景 / 27 唤醒词,Phase C.1 落地)。
+  场景资产唯一事实源:`references/scenarios.yaml`(85 场景 / 34 唤醒词,Phase C.1 落地 · 2026-08-09 L 级重构收尾 73→85)。
 
   ## 业务唤醒词
 
@@ -1481,6 +1481,8 @@ python scripts/schedule_cli.py amend-record 123 --json '{"category":"工作.AI�
 | 首次使用 / 复盘今日 / 复盘本周 / 复盘本月 / 周视图 | 5 个新注册场景（R3 onboarding / G1 深度场景） |
 
 81 = 73 现有（全部保留，无删除）+ 8 新注册/强化（记录 / 批量导入 / 周视图 / 制定计划 / 复盘今日 / 复盘本周 / 复盘本月 / 首次使用）。
+
+> **偏离记录（T8 合并实测 2026-08-09 · 09 军规 T-D 三问）**：G2 定标 81，合并器全量拼接后为 **85**（无重复、幂等 byte-identical）。差异来源：① 复盘 start-end 在 Phase E 时**从未注册进 scenarios.yaml**（G2「换名」前提不成立，实际为净新增 +1）；② 「制定计划」强化 #17 注册了 5 个场景（plan_result_tomorrow/adjust/history_none/conflict/drift，多轮交互变体独立呈现，G2 按 1 个计数，+4）。人类确认后按此落库；定标清单口径偏差已在 T8 票内记录。
 
 ---
 

@@ -170,7 +170,12 @@ def init_db():
         # 老 items 表可能还没 category_id 列(新装机),先补上避免 SELECT 失败
         if "category_id" not in items_cols_meta:
             cursor.execute("ALTER TABLE items ADD COLUMN category_id INTEGER REFERENCES categories(id)")
-        cursor.execute("""
+        # D1 #120:源表若已有 fixed_location(T3 ensure_schema 已加),重建必须保留,
+        # 否则列与数据被重建补丁丢弃(对抗审查 2026-08-09 修复)
+        has_fixed_location = "fixed_location" in items_cols_meta
+        fixed_ddl = ", fixed_location TEXT" if has_fixed_location else ""
+        fixed_io = ", fixed_location" if has_fixed_location else ""
+        cursor.execute(f"""
             CREATE TABLE items_new (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -181,16 +186,16 @@ def init_db():
                 photo TEXT,
                 access_count INTEGER DEFAULT 0,
                 last_accessed_at TIMESTAMP,
-                category_id INTEGER REFERENCES categories(id),
+                category_id INTEGER REFERENCES categories(id){fixed_ddl},
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cursor.execute("""
+        cursor.execute(f"""
             INSERT INTO items_new (id, name, category, owner, purchase_price, remark,
-                photo, access_count, last_accessed_at, category_id, created_at, updated_at)
+                photo, access_count, last_accessed_at, category_id{fixed_io}, created_at, updated_at)
             SELECT id, name, category, owner, purchase_price, remark,
-                photo, access_count, last_accessed_at, category_id, created_at, updated_at
+                photo, access_count, last_accessed_at, category_id{fixed_io}, created_at, updated_at
             FROM items
         """)
         cursor.execute("DROP TABLE items")
@@ -217,6 +222,7 @@ def migrate_add_location_nodes(conn):
     """迁移:#119 location_nodes 位置体系表(树/规范化)+ 全量回填
 
     位置 = 自由层级(树),树结构隐含在路径字符串;节点只存规范化路径。
+    回填语义:段 trim + 空段剔除 + 全角斜杠统一(与位置/schema.py normalize_path 一致)。
     来源:SM2 实施载体 scripts/位置/schema.py ensure_schema → 本批正式收编。
     """
     cursor = conn.cursor()
@@ -227,18 +233,30 @@ def migrate_add_location_nodes(conn):
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-    # 回填:从 item_locations.location 去重导入既有路径(全量,展示层过滤)
-    cursor.execute("""
-        INSERT OR IGNORE INTO location_nodes (path)
-        SELECT DISTINCT location FROM item_locations
-        WHERE location IS NOT NULL AND trim(location) != ''
-    """)
+    # 回填:从 item_locations.location 去重导入既有路径(全量,展示层过滤);
+    # 规范化后再入库,避免全角斜杠/首尾空白造成重复节点(对抗审查 2026-08-09 收紧)
+    rows = cursor.execute(
+        "SELECT DISTINCT location FROM item_locations "
+        "WHERE location IS NOT NULL AND trim(location) != ''"
+    ).fetchall()
+    seen = set()
+    for (loc,) in rows:
+        segs = [s.strip() for s in str(loc).replace("／", "/").split("/")]
+        segs = [s for s in segs if s]
+        if not segs:
+            continue
+        p = "/".join(segs)
+        if p in seen:
+            continue
+        seen.add(p)
+        cursor.execute("INSERT OR IGNORE INTO location_nodes (path) VALUES (?)", (p,))
 
 
 def migrate_add_fixed_location_column(conn):
     """迁移:#120 items.fixed_location 固定位锚定路径(可空,规范化)
 
     固定位 = 物品一等属性,与「当前位置」分离;老数据零迁移(全新属性)。
+    索引始终幂等创建:items 重建补丁可能保留列但丢掉索引(对抗审查 2026-08-09)。
     来源:SM2 实施载体 scripts/位置/schema.py ensure_schema → 本批正式收编。
     """
     cursor = conn.cursor()
@@ -246,9 +264,9 @@ def migrate_add_fixed_location_column(conn):
     items_cols = {row[1] for row in cursor.fetchall()}
     if "fixed_location" not in items_cols:
         cursor.execute("ALTER TABLE items ADD COLUMN fixed_location TEXT")
-        cursor.execute(
-            "CREATE INDEX IF NOT EXISTS idx_items_fixed_location ON items(fixed_location)"
-        )
+    cursor.execute(
+        "CREATE INDEX IF NOT EXISTS idx_items_fixed_location ON items(fixed_location)"
+    )
 
 
 def migrate_add_date_columns(conn):
@@ -267,7 +285,12 @@ def migrate_add_date_columns(conn):
     items_columns = {row[1] for row in cursor.fetchall()}
 
     if "purchase_date" in items_columns or "expiration_date" in items_columns:
-        cursor.execute("""
+        # D1 #120:源表若已有 fixed_location(T3 ensure_schema 已加),重建必须保留,
+        # 否则列与数据被重建补丁丢弃(对抗审查 2026-08-09 修复)
+        has_fixed_location = "fixed_location" in items_columns
+        fixed_ddl = ", fixed_location TEXT" if has_fixed_location else ""
+        fixed_io = ", fixed_location" if has_fixed_location else ""
+        cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS items_new (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
@@ -277,14 +300,14 @@ def migrate_add_date_columns(conn):
                 remark TEXT,
                 photo TEXT,
                 access_count INTEGER DEFAULT 0,
-                last_accessed_at TIMESTAMP,
+                last_accessed_at TIMESTAMP{fixed_ddl},
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        cursor.execute("""
-            INSERT INTO items_new (id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at, created_at, updated_at)
-            SELECT id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at, created_at, updated_at FROM items
+        cursor.execute(f"""
+            INSERT INTO items_new (id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at{fixed_io}, created_at, updated_at)
+            SELECT id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at{fixed_io}, created_at, updated_at FROM items
         """)
         cursor.execute("DROP TABLE items")
         cursor.execute("ALTER TABLE items_new RENAME TO items")

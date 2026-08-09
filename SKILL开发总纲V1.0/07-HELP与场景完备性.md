@@ -34,7 +34,7 @@
 |---|---|
 | 做什么 | 定义每个 Skill 的 HELP 唤醒词、场景资产、稳定 prompt、二态状态和 HTML 交付规则 |
 | 怎么用 | 写 Skill 时:**先列场景清单**,再写 prompt,再写底层,最后生成 HELP HTML |
-| 何时不读 | 写单条脚本 / CRUD / 不写 Skill 的工作(参见 06 附录 D) |
+| 何时不读 | 写单条脚本 / CRUD / 不写 Skill 的工作(是否 Skill 化,参见 [ADR-0002](./docs/adr/0002-remove-scale-flexibility.md)) |
 | 不做什么 | **不**规定具体 CLI 命令、不**暴露**数据库字段名、不**锁定** prompt 文案 |
 
 ## ⭐ 核心规则一览

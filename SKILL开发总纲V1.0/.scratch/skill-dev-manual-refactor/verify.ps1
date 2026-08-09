@@ -47,18 +47,22 @@ function CountHits($file, $needle) {
     return (ContainsLiteral $file $needle)
 }
 
-$mdFiles = @('01-第一性原理.md','02-5层骨架.md','03-触发词设计v2.md','04-可视化与注入v2.md','05-工程仪式.md','06-附录.md','07-HELP与场景完备性.md','README.md','SKILL.md')
+$mdFiles = @('01-第一性原理.md','02-5层骨架.md','03-触发词设计.md','04-可视化与注入.md','05-工程仪式.md','06-附录.md','07-HELP与场景完备性.md','08-HTML交互规范.md','README.md','SKILL.md')
 
 Write-Output "=== Module 1: Count checks ==="
 Check "README has 7 hooks" ((CountHits 'README.md' '7 个不可违背的钩子') -ge 1)
 Check "SKILL.md has 7 hooks" ((CountHits 'SKILL.md' '7 个不可违背的钩子') -ge 1)
-Check "HTML has 7 hooks" ((CountHits 'SKILL开发总纲V1.0.html' '7 个不可违背的钩子') -ge 1)
-Check "s04 has 13 principles" ((CountHits '04-可视化与注入v2.md' '13 原则') -ge 1)
-Check "HTML has 13 principles" ((CountHits 'SKILL开发总纲V1.0.html' '13 原则') -ge 1)
-$htmlContent = Get-Content -LiteralPath (Join-Path $repo 'SKILL开发总纲V1.0.html') -Raw -Encoding UTF8
+Check "HTML has 7 hooks" ((CountHits 'SKILL开发总纲.html' '7 个不可违背的钩子') -ge 1)
+Check "s04 has 13 principles" ((CountHits '04-可视化与注入.md' '13 原则') -ge 1)
+Check "HTML has 13 principles" ((CountHits 'SKILL开发总纲.html' '13 原则') -ge 1)
+$htmlContent = Get-Content -LiteralPath (Join-Path $repo 'SKILL开发总纲.html') -Raw -Encoding UTF8
 $principleRows = ([regex]::Matches($htmlContent, '<tr><td>(\d+)</td>')).Count
 Check "HTML table has 13 rows" ($principleRows -eq 13)
 Check "s06 no 4 fail mode title" ((CountHits '06-附录.md' '4 个常见 fail mode') -eq 0)
+Check "s08 exists" (Test-Path -LiteralPath (Join-Path $repo '08-HTML交互规范.md'))
+Check "HTML has 08 section" ((CountHits 'SKILL开发总纲.html' '08-HTML交互规范') -ge 1)
+Check "HTML has 8 flows" ((CountHits 'SKILL开发总纲.html' '8 类流程') -ge 1)
+Check "HTML has image contract" ((CountHits 'SKILL开发总纲.html' '图片接收') -ge 1)
 
 Write-Output ""
 Write-Output "=== Module 2: Non-existence checks ==="
@@ -72,24 +76,24 @@ foreach ($f in $mdFiles) { if ((CountHits $f '3 层合并') -gt 0) { $foundScale
 Check "no scale flexibility in md" (-not $foundScale)
 Check "s06 no appendix D" ((CountHits '06-附录.md' '附录 D') -eq 0)
 Check "s06 no should-not-skillize" ((CountHits '06-附录.md' '何时不该 Skill 化') -eq 0)
-Check "s03 no iron-rule-4" ((CountHits '03-触发词设计v2.md' '铁律 4') -eq 0)
-Check "s04 no V3 in principle 12" ((CountHits '04-可视化与注入v2.md' '原则 12 · HTML 输出路径约定(V3') -eq 0)
-Check "HTML no 6+1" ((CountHits 'SKILL开发总纲V1.0.html' '6+1') -eq 0)
+Check "s03 no iron-rule-4" ((CountHits '03-触发词设计.md' '铁律 4') -eq 0)
+Check "s04 no V3 in principle 12" ((CountHits '04-可视化与注入.md' '原则 12 · HTML 输出路径约定(V3') -eq 0)
+Check "HTML no 6+1" ((CountHits 'SKILL开发总纲.html' '6+1') -eq 0)
 Check "s07 no dead links" ((CountHits '07-HELP与场景完备性.md' 'docs/superpowers') -eq 0)
 $archPath = Join-Path $repo '架构图.html'
 Check "architecture.html deleted" (-not (Test-Path -LiteralPath $archPath))
 
 Write-Output ""
 Write-Output "=== Module 3: Literal correspondence ==="
-Check "s04 pseudocode has timeout=30" ((CountHits '04-可视化与注入v2.md' 'timeout=30') -ge 1)
-Check "s04 pseudocode has 5MB" ((CountHits '04-可视化与注入v2.md' '5MB') -ge 1)
-Check "s04 has secondary validation" ((CountHits '04-可视化与注入v2.md' '二次校验') -ge 1)
-Check "s04 principle 10 title" ((CountHits '04-可视化与注入v2.md' '最高优先级') -ge 1)
-Check "HTML principle 10 matches md" ((CountHits 'SKILL开发总纲V1.0.html' '最高优先级') -ge 1)
-Check "s04 principle 11 complementary" ((CountHits '04-可视化与注入v2.md' '与原则 10 互补') -ge 1)
-Check "HTML principle 11 complementary" ((CountHits 'SKILL开发总纲V1.0.html' '与原则 10 互补') -ge 1)
-Check "s04 principle 12 no V3" ((CountHits '04-可视化与注入v2.md' '原则 12 · HTML 输出路径约定') -ge 1)
-Check "HTML table has principle 12" ((CountHits 'SKILL开发总纲V1.0.html' '<td>12</td>') -ge 1)
+Check "s04 pseudocode has timeout=30" ((CountHits '04-可视化与注入.md' 'timeout=30') -ge 1)
+Check "s04 pseudocode has 5MB" ((CountHits '04-可视化与注入.md' '5MB') -ge 1)
+Check "s04 has secondary validation" ((CountHits '04-可视化与注入.md' '二次校验') -ge 1)
+Check "s04 principle 10 title" ((CountHits '04-可视化与注入.md' '最高优先级') -ge 1)
+Check "HTML principle 10 matches md" ((CountHits 'SKILL开发总纲.html' '最高优先级') -ge 1)
+Check "s04 principle 11 complementary" ((CountHits '04-可视化与注入.md' '与原则 10 互补') -ge 1)
+Check "HTML principle 11 complementary" ((CountHits 'SKILL开发总纲.html' '与原则 10 互补') -ge 1)
+Check "s04 principle 12 no V3" ((CountHits '04-可视化与注入.md' '原则 12 · HTML 输出路径约定') -ge 1)
+Check "HTML table has principle 12" ((CountHits 'SKILL开发总纲.html' '<td>12</td>') -ge 1)
 Check "s02 full name reference" ((CountHits '02-5层骨架.md' '钩子:Fresh Agent 验证') -ge 1)
 Check "s05 full name reference" ((CountHits '05-工程仪式.md' '钩子:Fresh Agent 验证') -ge 1)
 

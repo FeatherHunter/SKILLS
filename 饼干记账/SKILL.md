@@ -1,6 +1,6 @@
 ﻿---
 name: 饼干记账
-description: 记账技能。写入类:记支出、记收入、拍账单、批量录入、改记录、撤销、恢复、记报销、记退款、记借出、记借入、记收回、记偿还、记分期。查询类:查今天、查某天、查月、查区间、查分类、搜备注、查标签、查账户、查账本、查欠款、查待报销。分析类:看月度、看总览、看分类、看对比、看趋势、看大额、做统计、看洞察、看借贷。目标/账户/联动:设定预算、看预算、设定目标、账户转账、买东西联动、吃饭联动。**所有查询/分析类唤醒词默认 invoke HTML 工作流**(scripts/bill_inject.py + templates),写入类保持文字回执。能力速查:说「饼干记账 HELP」/「查帮助」/「能做什么」。完整 70 个唤醒词见 references/路由表.md
+description: 记账技能。写入类:记支出、记收入、拍账单、批量录入、改记录、撤销、恢复、记报销、记退款、记借出、记借入、记收回、记偿还、记分期。查询类:查今天、查某天、查月、查区间、查分类、搜备注、查标签、查账户、查账本、查欠款、查待报销。分析类:看月度、看总览、看分类、看对比、看趋势、看大额、做统计、看洞察、看借贷。目标/账户/联动:设定预算、看预算、设定目标、看目标、账户转账、买东西联动、吃饭联动。**所有查询/分析类唤醒词默认 invoke HTML 工作流**(scripts/bill_inject.py + templates),写入类保持文字回执。能力速查:说「饼干记账 HELP」/「查帮助」/「能做什么」。完整 70 个唤醒词见 references/路由表.md
 ---
 
 **🔗 联动提示：** 完成本技能主操作后，检查技能路由器（`图片路由/SKILL.md`）的联动规则，判断是否需要联动其他技能（如用户提到买了实物→询问是否录入居家管家；用户提到食物→询问是否记录卡路里）。详见路由器的联动规则表。
@@ -116,16 +116,16 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 | 分析 | `看报销` | 报销汇总 | `analysis reimburse(待实施·#待报销)` | **HTML** |
 | 分析 | `看分期` | 分期总览 | `analysis installment(待实施·#分期)` | **HTML** |
 | 分析 | `看退款` | 退款统计 | `analysis refund(待实施·#退款)` | **HTML** |
-| 目标 | `设定预算` | 设定月度预算 | `goal set(待实施)` | **HTML** |
-| 目标 | `看预算` | 查看预算执行 | `goal view(待实施)` | **HTML** |
-| 目标 | `设定目标` | 设定储蓄目标 | `goal set(待实施)` | **HTML** |
-| 目标 | `看目标` | 查看目标进度 | `goal view(待实施)` | **HTML** |
+| 目标 | `设定预算` | 设定月度预算 | `goal set-budget --amount X [--month] [--category]` | **HTML 表单+回执** |
+| 目标 | `看预算` | 查看预算执行 | `goal budget [--month]` | **HTML** |
+| 目标 | `设定目标` | 设定储蓄目标 | `goal set-saving --name X --amount Y [--deadline]` | **HTML 表单+回执** |
+| 目标 | `看目标` | 查看目标进度 | `goal saving [--name]` | **HTML** |
 | 账户 | `新增账户` | 新增账户 | `account add(待实施)` | **HTML** |
 | 账户 | `改账户` | 修改账户 | `account update(待实施)` | **HTML** |
 | 账户 | `账户转账` | 账户间转账 | `account transfer(待实施·#转账)` | **HTML** |
 | 账户 | `看账户汇总` | 查看账户汇总 | `account summary(待实施)` | **HTML** |
-| 联动 | `买东西` | 买东西联动(记账 + 录物品) | `link purchase(待实施)` | 回执 |
-| 联动 | `吃饭` | 吃饭联动(记账 + 记卡路里) | `link meal(待实施)` | 回执 |
+| 联动 | `买东西` | 买东西联动(记账 + 录物品) | `link form + receipt` | **HTML 表单+回执** |
+| 联动 | `吃饭` | 吃饭联动(记账 + 记卡路里) | `link form + receipt` | **HTML 表单+回执** |
 | 开始使用 | `初始化` | 首次使用向导(4 步零决策) | `setup init(待实施·4 步向导)` | **HTML** |
 | 开始使用 | `初始化状态` | 初始化状态(是否已就绪) | `setup init-status(待实施)` | **HTML** |
 | 开始使用 | `备份` | 一键备份 | `backup create ✓` | **HTML** |
@@ -400,6 +400,49 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 
 无参数。返回总笔数、记账天数、首笔时间、最近记录时间。
 
+### 目标域流程细则（4 场景 · 2026-08-09 落地 · 载体 goals.json）
+
+目标域 4 场景统一遵守：
+
+- **载体**：`goals.json`（与 db 同级，跟随 `SKILLS_DB_PATH`，备份机制已包含）。结构 = `{"budgets": [...], "savings": [...]}`，全部由 CLI 读写，AI 不手改。
+- **实际数据 = bills 聚合**：预算执行 = 当月支出 vs 预算；目标进度 = 目标期内收入-支出累计（目标期 = 创建当月起 ~ 截止日/今天）。
+- **渲染**：全部走 `scripts/goal/render.py <mode>`（采集表单 ×2 + 进度条视图 ×2），结果视图带「复制数据 / 复制日志」（B1 toast）。
+
+#### 设定预算
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "设个3000的月预算" | `set-budget --amount 3000`（默认本月） |
+| "8月餐饮预算500" | `set-budget --amount 500 --month 2026-08 --category 餐饮` |
+| "预算提到4000" | 先 `budget` 查现有 → 冲突提示 → 用户确认后加 `--force` |
+
+**覆盖语义（数据契约）**：同月同类预算已存在 → CLI 返回 `conflict` + 原值（不覆盖）；AI 展示「已存在 X 元预算，确认覆盖为 Y？」→ 用户确认 → 加 `--force` 重跑。采集表单在渲染时自动查冲突并在表单顶部展示警示条。
+
+#### 看预算
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "预算花到哪了" | `budget`（默认本月） |
+| "8月的预算执行" | `budget --month 2026-08` |
+
+返回：结果型 HTML（进度条：预算 vs 实际 / 剩余 / 超支提示）。每预算进度条含状态机：≤90% 预算内（绿）/ 90%~100% 接近上限（橙）/ >100% 已超支（红，警示色）。KPI 汇总口径：总预算存在 → （总预算金额，当月全部支出）；否则 → 分类预算之和 vs 分类实际之和（避免重复计数）。
+
+#### 设定目标
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "存个换手机的目标10000" | `set-saving --name 换手机 --amount 10000` |
+| "年底前存到1万" | `set-saving --name X --amount 10000 --deadline 2026-12-31` |
+
+#### 看目标
+
+| 用户说 | 解析结果 |
+|--------|----------|
+| "目标存到多少了" | `saving` |
+| "看换手机那个目标" | `saving --name 换手机` |
+
+返回：结果型 HTML（各目标进度：已存 / 目标 / 百分比 / 剩余 / 预计达成日）。预计达成日 = 按月均净存（已存 ÷ 目标期月数）推算；月均 ≤ 0 → 暂无预计；已达 → 标记 🎉；预计日晚于截止日 → 进度落后（红）。
+
 ### 写入流程细则（内置能力 + 特殊场景 · 2026-08-08 定稿）
 
 所有写入类场景（记支出/记收入/拍账单/批量录入/记退款/记借出/记借入/记收回/记偿还/记分期）统一遵守：
@@ -450,6 +493,29 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 **记收回/记偿还**：① 查 `#未还` 记录定位（对象/金额匹配）② 记反向（收回=收入 / 偿还=支出，分类=借贷/收回|偿还，账本=借贷，备注=`#收回 原记录ID`）③ 原记录备注 `#未还`→`#已还` ④ 回执两笔
 
 **记分期**：每期=总价÷期数（除不尽首期补差额）→ 写 N 笔支出（分类=分期/{名目}，金额=每期，时间=首期日起每月同日，备注=`#分期 {名目} 第X期/N`）→ 向导确认（分摊预览）→ 回执总览；记录=消费分摊，写入即固定（提前还清不影响记录）
+
+### 联动流程细则（买东西联动 / 吃饭联动 · 2026-08-09 落地）
+
+联动域 2 场景 = **场景簇 + 回执按钮**（G2 决议）：主操作 = 记支出（复用 write add），联动 = 回执按钮（可选）。
+
+#### 买东西联动（唤醒词：买东西）
+
+1. AI 解析 金额/物品/分类（选填，默认 居家/家电）→ 调 `link/cli.py form purchase` 渲染采集表单（含联动预告条）
+2. 用户确认（复制 prompt）→ AI 调 `write/cli.py add` 记支出（分类/金额/备注，备注建议含物品名，如 `空气炸锅`）
+3. AI 调 `link/cli.py receipt purchase --id <ID> --item <物品>` 渲染回执 HTML：
+   - 已记录账单卡（ID/金额/分类/账户/账本/时间/备注）
+   - 联动按钮「🔗 同时录入居家管家」→ 点击复制联动 prompt（预告式：请加载「居家管家」技能,帮我录入刚买的物品(唤醒词:录物品)：物品/数量/金额/分类）→ 用户粘贴给 AI → AI 调居家管家「录物品」
+   - 「↩ 撤销这笔」+ 复制数据/复制日志（08 硬标准）
+4. 用户只记账不联动 → 正常回执，按钮可选不用
+
+#### 吃饭联动（唤醒词：吃饭）
+
+1. AI 解析 金额/吃了/分类（选填，默认 餐饮）→ 调 `link/cli.py form meal` 渲染采集表单
+2. 用户确认 → AI 调 `write/cli.py add` 记支出
+3. AI 调 `link/cli.py receipt meal --id <ID> --ate <吃了>` 渲染回执 HTML：
+   - 联动按钮「🔗 同时记卡路里」→ 点击复制联动 prompt（请加载「卡路里」技能,帮我记一餐(唤醒词:记一餐)：吃了/餐别/备注）→ AI 调卡路里「记一餐」
+
+**通用**：联动 prompt 只在回执按钮上（预告式，点击才复制）；缺金额 → AI 反问（不猜测）；联动 = 可选，不强制。
 
 ### Step 4：执行指令
 
@@ -572,6 +638,49 @@ python3 scripts/bill_inject.py search "咖啡"
 - SVG 环形图（breakdown 用）
 - 一键复制 ID 回 AI（每条记录含 ID）
 
+**目标域 HTML（goal/render.py · 2026-08-09 落地）：**
+
+| 场景 | CLI 子命令 | 模板 | goal/render.py 调用 |
+|---|---|---|---|
+| 设定预算（采集表单） | `set-budget` | `templates/目标/budget_form.html` | `goal/render.py set-budget --amount 3000 --month 2026-08` |
+| 看预算（进度条） | `budget` | `templates/目标/budget_view.html` | `goal/render.py budget --month 2026-08` |
+| 设定目标（采集表单） | `set-saving` | `templates/目标/saving_form.html` | `goal/render.py set-saving --name 换手机 --amount 10000` |
+| 看目标（进度条） | `saving` | `templates/目标/saving_view.html` | `goal/render.py saving` |
+
+目标域结果视图同样默认 HTML 交付（进度条 + 复制数据/日志），采集表单默认「填写确认 + 复制确认 prompt」。
+
+**调用流程（AI 必走）：**
+
+```bash
+# 标准路径（自动调 CLI + 注入 HTML 模板 + 输出文件）
+python3 scripts/goal/render.py set-budget --amount 3000
+python3 scripts/goal/render.py budget
+python3 scripts/goal/render.py set-saving --name 换手机 --amount 10000 --deadline 2026-12-31
+python3 scripts/goal/render.py saving
+```
+
+**错误处理（§04 原则 11 反模式 #3）：**
+- HTML 生成失败 → **保留错误页 HTML** 交付给用户（goal/render.py 自动处理）
+- ❌ **禁止**降级为文字答（这是 fail mode,不是 fallback）
+- 用户明确要文字 → 才走 `python3 scripts/scripts/goal/cli.py budget`（无 --json）
+
+**默认输出路径（v2.5 同步卡路里 §4.1）**：`$DATA_DIR/biscuit_accountant_html/<command_zh>_<YYYYMMDD>_<HHMMSS>[_N].html`
+  - `DATA_DIR` 跟随 `SKILLS_DB_PATH` 环境变量（fallback `D:/.db/`）
+  - 中文化 command 名：set-budget → 设定预算 / budget → 看预算 / set-saving → 设定目标 / saving → 看目标
+  - 同秒冲突自动追加 `_2` / `_3` 后缀
+
+**指定输出路径**：`python3 scripts/goal/render.py budget --out C:/Users/xxx/Desktop/x.html`
+
+**交付给用户**：用 `<media src="..." type="file" />` 把生成的 HTML 文件交付，用户双击在浏览器打开即可看到可视化效果。
+
+**模板特性（templates/目标/*.html）**：
+- 单文件离线运行（无 CDN / 无图表库依赖）
+- Apple 视觉风格（圆角卡片 / 系统字体 / 蓝橙绿红配色）
+- 自适应桌面 + 平板 + 手机
+- 结果视图 5 种状态：正常 / 空态 / 缺数据 / 错误 / 离线
+- 进度条组件（预算 vs 实际 / 已存 vs 目标）+ 状态机警示色（预算内绿 / 接近上限橙 / 已超支红；目标进行中蓝 / 落后红 / 达成绿）
+- 采集表单：字段回显 + 覆盖冲突警示条 + 一键复制确认 prompt（对齐 scenes/goal.yaml）
+
 ### Step 7：HELP 能力速查（v2.4 升级）
 
 当用户说「饼干记账 HELP」「饼干记账 帮助」「查帮助」「能做什么」时，AI 调用 `scripts/render_help.py` 生成 HELP HTML 并交付。
@@ -620,8 +729,14 @@ python3 scripts/render_help.py --check
 | `breakdown` | 分类明细 | （无） | `--from`, `--to`, **`--json`** |
 | `overview` | 收支总览 | （无） | `--month` (默认当月), **`--json`** |
 | `stats` | 记账统计 | （无） | **`--json`** |
+| `form` | 联动采集表单渲染(买东西联动/吃饭联动) | `purchase`/`meal`(位置参数) | `--amount`, `--item`/`--ate`, `--category`, `--category-hint`, `--account`, `--ledger`, `--time`, `--note`, `--currency`, `--out` |
+| `receipt` | 联动回执渲染(回执带联动按钮) | `purchase`/`meal` + `--id`(必需) | `--item`/`--ate`, `--out` |
+| `set-budget` | 设定月度预算(goal) | `--amount` | `--month`(默认本月), `--category`(不填=总预算), `--force`(覆盖), **`--json`** |
+| `budget` | 查看预算执行(goal) | （无） | `--month`, `--category`, **`--json`** |
+| `set-saving` | 设定储蓄目标(goal) | `--name`, `--amount` | `--deadline`, **`--json`** |
+| `saving` | 查看目标进度(goal) | （无） | `--name`, **`--json`** |
 
-> **JSON 契约**：所有查询命令加 `--json` 后输出 `{status: "ok"|"error", data: {...}, message: "..."}` 三段式。`bill_inject.py` 用此契约注入 HTML 模板。写入类命令（add/update）不支持 `--json`，保持纯文本输出。
+> **JSON 契约**：所有查询命令加 `--json` 后输出 `{status: "ok"|"error", data: {...}, message: "..."}` 三段式。`bill_inject.py` 用此契约注入 HTML 模板。写入类命令（add/update）不支持 `--json`，保持纯文本输出。目标域 4 命令（`set-budget` / `budget` / `set-saving` / `saving`）在 `scripts/goal/cli.py`（HTML 渲染走 `scripts/goal/render.py`）；`set-budget` 覆盖冲突时返回 `status: "ok"` + `data.conflict: true`（原值在 `data.existing`），AI 据此提示用户确认后加 `--force`。
 
 ---
 

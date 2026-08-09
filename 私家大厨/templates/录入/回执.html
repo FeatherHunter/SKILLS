@@ -1,0 +1,325 @@
+<!--
+私家大厨 · 录入域回执(成功 / 失败 · T5 v4.0 · 08 §4 回执 + §6.1 错误回执)
+由 scripts/render_add.py receipt 注入数据,占位符 INJECT-DATA 唯一 1 次。
+
+成功回执: 结果 + diff + 撤销 + 顺路提醒 + 复制数据(5 段 JSON)/ 复制日志(6 段)
+失败回执: ①操作名 ②失败原因 ③关键数据 ④建议下一步 + 修正重试 + 复制数据/复制日志
+模式由 payload.mode 决定: success / failure。
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="私家大厨 · render_add.py · v4.0 T5">
+<title>私家大厨 · 录入回执</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 110px 0}
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  .hero{background:var(--card);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:26px;font-weight:700;letter-spacing:-0.025em;margin-bottom:4px}
+  .hero h1 .st{font-size:13px;font-weight:700;vertical-align:middle;padding:3px 10px;border-radius:var(--radius-pill);margin-right:8px;letter-spacing:0.02em}
+  .hero h1 .st.ok{background:var(--success-soft);color:var(--success)}
+  .hero h1 .st.fail{background:var(--danger-soft);color:var(--danger)}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--text3);margin:10px 0 6px}
+  .hero-meta span{display:inline-flex;align-items:center;gap:4px}
+  .stage-bar{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text3)}
+  .stage-bar .step{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:var(--radius-pill);background:var(--bg)}
+  .stage-bar .step.done{background:var(--success-soft);color:var(--success)}
+  .stage-bar .step.fail{background:var(--danger-soft);color:var(--danger)}
+  .stage-bar .arrow{color:var(--text4)}
+
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .card h3{font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text)}
+  .result-line{font-size:15px;color:var(--text);font-weight:500;margin-bottom:8px}
+  .result-line .id{font-size:12px;color:var(--text3);font-family:ui-monospace,Menlo,monospace;font-weight:400}
+
+  .diff-row{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-top:0.5px solid var(--separator);font-size:13px}
+  .diff-row:first-child{border-top:none;padding-top:0}
+  .diff-row .act{flex:none;font-size:11px;font-weight:700;padding:1px 8px;border-radius:var(--radius-pill)}
+  .diff-row .act.add{background:var(--success-soft);color:var(--success)}
+  .diff-row .act.del{background:var(--danger-soft);color:var(--danger)}
+  .diff-row .act.mod{background:var(--warn-soft);color:var(--warn)}
+  .diff-row .fd{color:var(--text2)}
+  .diff-row .fd code{font-size:12px;background:var(--bg);padding:1px 6px;border-radius:6px}
+
+  .fail-card{background:var(--card);border-radius:var(--radius);padding:18px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);border-left:4px solid var(--danger)}
+  .fail-card h3{font-size:14px;font-weight:600;margin-bottom:10px}
+  .fail-item{margin-bottom:10px}
+  .fail-item .k{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:2px}
+  .fail-item .v{font-size:14px;color:var(--text2);word-break:break-all}
+  .fail-item .v.reason{color:var(--danger)}
+  .fail-item .v.next{color:var(--blue)}
+
+  .reminder{background:var(--warn-soft);border-radius:var(--radius);padding:12px 16px;margin-bottom:12px;font-size:13px;color:#9A5B00}
+
+  .actions{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,0.94);backdrop-filter:blur(10px);border-top:0.5px solid var(--separator);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .actions .inner{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+  .btn{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;padding:13px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer;text-align:center}
+  .btn.primary{background:var(--blue);color:#fff}
+  .btn.primary.danger{background:var(--danger)}
+  .btn.ghost{background:var(--bg);color:var(--blue)}
+  .btn-row{display:flex;gap:8px}
+  .btn-row .btn{flex:1}
+  .btn small{font-weight:400;font-size:11px;opacity:0.8}
+
+  /* 5 状态 fallback */
+  .state{background:var(--card);border-radius:var(--radius);padding:48px 24px;text-align:center;color:var(--text3);box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px}
+  .hidden{display:none !important}
+  .state .icon{font-size:48px;margin-bottom:12px;opacity:0.6}
+  .state.error{color:var(--danger)}
+
+  .toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);background:rgba(28,28,30,0.92);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--radius-pill);opacity:0;pointer-events:none;transition:opacity 0.25s;z-index:99;max-width:80vw}
+  .toast.show{opacity:1}
+
+  @media (max-width:480px){
+    .container{padding:16px 12px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:22px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="state-error" class="state error hidden">
+  <div class="icon">⚠️</div>
+  <div id="error-msg">数据加载失败</div>
+</div>
+
+<div id="main-content" class="hidden">
+
+  <!-- 头部:场景名 + 阶段指示 -->
+  <section class="hero">
+    <h1><span class="st" id="stage-badge">成功</span><span id="page-title">录入回执</span></h1>
+    <div class="hero-meta">
+      <span>📅 <span id="generated-at"></span></span>
+      <span>🎙️ 唤醒词:<span id="wake-word"></span></span>
+      <span>🔖 <span id="scene-id"></span></span>
+    </div>
+    <div class="stage-bar" id="stage-bar">
+      <span class="step done">✏️ 填写</span><span class="arrow">→</span>
+      <span class="step done">✅ 确认</span><span class="arrow">→</span>
+      <span class="step done" id="stage-final">📦 已完成</span>
+    </div>
+  </section>
+
+  <!-- 成功区:结果 + diff + 撤销 -->
+  <div id="success-block" class="hidden">
+    <div class="card">
+      <div class="result-line" id="result-line"></div>
+      <div id="diff-list"></div>
+    </div>
+    <div class="reminder hidden" id="reminder"></div>
+  </div>
+
+  <!-- 失败区:08 §6.1 错误回执 ①操作名 ②失败原因 ③关键数据 ④建议下一步 -->
+  <div id="failure-block" class="hidden">
+    <div class="fail-card">
+      <div class="fail-item">
+        <div class="k">① 操作名</div>
+        <div class="v" id="f-operation"></div>
+      </div>
+      <div class="fail-item">
+        <div class="k">② 失败原因</div>
+        <div class="v reason" id="f-reason"></div>
+      </div>
+      <div class="fail-item">
+        <div class="k">③ 关键数据</div>
+        <div class="v" id="f-keydata"></div>
+      </div>
+      <div class="fail-item">
+        <div class="k">④ 建议下一步</div>
+        <div class="v next" id="f-next"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 动作区 -->
+<div class="actions hidden" id="actions">
+  <div class="inner">
+    <button class="btn primary" id="btn-primary">下一步</button>
+    <div class="btn-row">
+      <button class="btn ghost" id="btn-copy-data">📋 复制数据</button>
+      <button class="btn ghost" id="btn-copy-log">🧾 复制日志</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!--INJECT-DATA-->
+
+<script>
+(function(){
+  'use strict';
+
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    showState('error', '数据未注入(window.__DATA__ 缺失)。这是模板,不是最终交付。请用 scripts/render_add.py receipt 生成。');
+    return;
+  }
+  const D = window.__DATA__;
+
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function showState(type, msg) {
+    const main = document.getElementById('main-content');
+    const actions = document.getElementById('actions');
+    if (main) main.classList.add('hidden');
+    if (actions) actions.classList.add('hidden');
+    const el = document.getElementById('state-' + type);
+    if (el) {
+      el.classList.remove('hidden');
+      if (msg) { const m = document.getElementById('error-msg'); if (m) m.textContent = msg; }
+    }
+  }
+
+  const isSuccess = D.mode === 'success';
+  let toastTimer = null;
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1600);
+  }
+  function copyText(text, okMsg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast(okMsg), () => fallbackCopy(text, okMsg));
+    } else {
+      fallbackCopy(text, okMsg);
+    }
+  }
+  function fallbackCopy(text, okMsg) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); toast(okMsg); } catch (e) { toast('复制失败,请手动复制'); }
+    document.body.removeChild(ta);
+  }
+
+  // ── 头部 ──
+  document.getElementById('page-title').textContent = D.scene_title || '录入回执';
+  document.getElementById('generated-at').textContent = D.occurred_at || D.generated_at || '未知';
+  document.getElementById('wake-word').textContent = D.wake_word || '—';
+  document.getElementById('scene-id').textContent = (D.scene_id || 'add') + ' · ' + (D.target || '—');
+
+  const badge = document.getElementById('stage-badge');
+  const final = document.getElementById('stage-final');
+  if (isSuccess) {
+    badge.textContent = '成功'; badge.className = 'st ok';
+    final.textContent = '📦 已完成'; final.className = 'step done';
+    document.getElementById('success-block').classList.remove('hidden');
+  } else {
+    badge.textContent = '失败'; badge.className = 'st fail';
+    final.textContent = '⛔ 失败'; final.className = 'step fail';
+    document.getElementById('failure-block').classList.remove('hidden');
+    fillFailure();
+  }
+
+  function fillFailure() {
+    document.getElementById('f-operation').textContent = D.operation || '(未知操作)';
+    document.getElementById('f-reason').textContent = D.failure_reason || '(未提供原因)';
+    document.getElementById('f-keydata').textContent = typeof D.key_data === 'string'
+      ? D.key_data : JSON.stringify(D.key_data || {}, null, 2);
+    document.getElementById('f-next').textContent = D.next_step || '修正后重试';
+  }
+
+  // ── 成功:结果 + diff + 撤销 ──
+  function fillSuccess() {
+    document.getElementById('result-line').innerHTML =
+      esc(D.result || '完成') + (D.recipe_id ? ' <span class="id">' + esc(D.recipe_id.slice(0, 8)) + '…</span>' : '');
+    const diff = D.diff || [];
+    const list = document.getElementById('diff-list');
+    list.innerHTML = '';
+    diff.forEach(d => {
+      const row = document.createElement('div');
+      row.className = 'diff-row';
+      const actCls = (d.action === 'add') ? 'add' : (d.action === 'del' ? 'del' : 'mod');
+      row.innerHTML = '<span class="act ' + actCls + '">' + esc(d.action || 'mod') + '</span>' +
+        '<span class="fd"><code>' + esc(d.field || '') + '</code> ' + esc(d.summary || '') + '</span>';
+      list.appendChild(row);
+    });
+    if (diff.length === 0) list.innerHTML = '<div class="diff-row"><span class="fd" style="color:var(--text3)">无内容变化</span></div>';
+    if (D.reminder) {
+      const r = document.getElementById('reminder');
+      r.textContent = '💡 ' + D.reminder;
+      r.classList.remove('hidden');
+    }
+  }
+  if (isSuccess) fillSuccess();
+
+  // ── 主按钮:成功=撤销,失败=修正重试(08 §4 带参数 prompt · 单工闭环)──
+  const primary = document.getElementById('btn-primary');
+  if (isSuccess) {
+    primary.classList.add('danger');
+    primary.textContent = '↩️ 撤销';
+    primary.addEventListener('click', function () {
+      copyText(D.undo_prompt || ('请撤销刚才的录入【' + (D.operation || '') + '】'),
+        '已复制撤销 prompt,发给 AI 执行');
+    });
+  } else {
+    primary.textContent = '🔧 修正重试';
+    primary.addEventListener('click', function () {
+      copyText(D.retry_prompt || '请修正后重新导入:' + (D.operation || ''), '已复制修正 prompt,发给 AI 重新导入');
+    });
+  }
+
+  // ── 复制数据(硬标准 · 5 段 JSON)──
+  document.getElementById('btn-copy-data').addEventListener('click', function () {
+    const data = {
+      scene_id: D.scene_id || 'add',
+      command_cn: D.command_cn || '导入食谱',
+      occurred_at: D.occurred_at || '',
+      target: D.target || '',
+      payload: D.payload || {}
+    };
+    copyText(JSON.stringify(data, null, 2), '已复制数据(5 段 JSON)');
+  });
+
+  // ── 复制日志(硬标准 · 6 段;错误回执自动携带完整日志)──
+  document.getElementById('btn-copy-log').addEventListener('click', function () {
+    const logs = D.logs || {};
+    const lines = [
+      '① 场景标识: command_cn=' + (D.command_cn || '') + ' · 唤醒词=' + (D.wake_word || '') + ' · 场景=' + (D.scene_title || ''),
+      '② AI 思考链: ' + (logs.thought_chain || '意图理解 → 校验 → 写入'),
+      '③ 底层数据结构: payload=' + JSON.stringify(D.payload || {}) + ' · DB 操作=' + (isSuccess ? 'INSERT recipes+17 子表(事务)' : '(未写库,校验拒绝)'),
+      '④ 调用链: ' + (logs.call_chain || 'render_add.py receipt → import_orchestrator.py <json>'),
+      '⑤ 时间戳+版本: ' + (D.occurred_at || '') + ' · skill v4.0',
+      '⑥ 异常信息(如有): ' + (logs.exception || (isSuccess ? '无' : D.failure_reason || '无'))
+    ];
+    copyText(lines.join('\n'), '已复制日志(6 段)');
+  });
+
+  document.getElementById('main-content').classList.remove('hidden');
+  document.getElementById('actions').classList.remove('hidden');
+})();
+</script>
+
+</body>
+</html>

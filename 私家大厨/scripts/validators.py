@@ -118,8 +118,170 @@ def validate_full_coverage(data: Any) -> List[Dict[str, Any]]:
             "count": len(missing),
             "fields": [f"{m['field']} ({m['label']})" for m in missing],
             "field_names": [m["field"] for m in missing],
-            "hint": "JSON 必须包含所有字段,值可以是真实数据或 null,但字段本身不能缺失"
+            "hint": "JSON 必须包含所有字段,且不允许 null / 空字符串(v4.0 缺字段拒绝制);缺失项会一次列全在缺失清单"
         })
+
+    return errors
+
+
+# ====================================================================
+# 缺失清单校验(T5 · v4.0 导入缺字段拒绝制)
+#
+# 用户拍板(2026-08-09): 字段不允许 null,也不允许空字符串。
+# 原则: 早失败 + 一次列全缺失清单,不在写库阶段连环炸(R1 F1 断点 a/b/d)。
+#   - null / 空串 → 缺失清单(硬拒)
+#   - tips/techniques 的步骤关联(step_sequence)失效 → 缺失清单(F1 断点 c)
+#   - 可空兜底: step.ingredients_used[].unit 缺时从 ingredients[].unit 派生(写库层同逻辑);
+#     tips.step_id / tips.ingredient_id 不在 JSON 契约内(写库层从 step_sequence 派生)
+# ====================================================================
+
+def _is_missing_value(value: Any) -> bool:
+    """null 或去空白后为空的字符串 → 缺失。其余(含 0/False/空列表)不算缺失。"""
+    if value is None:
+        return True
+    if isinstance(value, str) and not value.strip():
+        return True
+    return False
+
+
+# 嵌套对象字段(对象存在时,其下字段全部必填非空)
+NESTED_REQUIRED_FIELDS: Dict[str, List[str]] = {
+    "category": ["cuisine", "region", "country"],
+    "nutrition": ["serving_size", "serving_unit", "calories", "protein", "fat",
+                  "carbs", "fiber", "sodium"],
+    "background": ["origin_story", "historical_background", "cultural_significance"],
+}
+
+# 数组元素字段(元素存在时,其下字段全部必填非空 · 对齐 DB NOT NULL)
+ARRAY_REQUIRED_FIELDS: Dict[str, List[str]] = {
+    "ingredients": ["name", "quantity", "unit", "category", "sequence",
+                    "is_optional", "quantity_text", "substitute"],
+    "steps": ["sequence", "action", "duration", "heat_level",
+              "temperature", "expected_result"],
+    "tips": ["content", "category", "priority"],
+    "techniques": ["technique_name", "description", "key_points"],
+    "cookware": ["name", "category"],
+    "history": ["cook_date", "cook_sequence", "rating", "feedback"],
+    "relations": ["parent_name", "relation_type", "change_summary"],
+}
+
+
+def _append_missing(errors: List[Dict[str, Any]], path: str, value: Any, label: str) -> None:
+    """追加一条缺失清单条目(path 为纯字段路径,label 为人类可读中文)"""
+    errors.append({
+        "type": "missing_field",
+        "field": f"{path} ({label})" if label else path,
+        "path": path,
+        "current_value": "(缺失)" if value is None else "(空串)",
+        "expected": "必填,不允许 null / 空字符串",
+        "hint": f"字段 {path} 不允许为 null 或空字符串(v4.0 缺字段拒绝制);请补真实值后重新校验"
+    })
+
+
+def validate_missing_manifest(data: Any) -> List[Dict[str, Any]]:
+    """缺失清单校验:null/空串/步骤关联失效 → 一次列全缺失项(早失败,拒绝制)。
+
+    覆盖: 顶层字段 / category / nutrition / background / ingredients /
+          steps(+ingredients_used) / tips / techniques / cookware / history / relations。
+    """
+    errors: List[Dict[str, Any]] = []
+    if not isinstance(data, dict):
+        return errors  # 顶层非 dict 由 validate_full_coverage 处理
+
+    # 1. 顶层字段: 缺失 key 或 null / 空串
+    for field in REQUIRED_TOP_LEVEL_FIELDS:
+        if field not in data:
+            _append_missing(errors, field, None, FIELD_LABELS.get(field, field))
+        elif _is_missing_value(data[field]):
+            _append_missing(errors, field, data[field], FIELD_LABELS.get(field, field))
+
+    # 2. 嵌套对象字段
+    for obj_name, fields in NESTED_REQUIRED_FIELDS.items():
+        obj = data.get(obj_name)
+        if obj is None:
+            continue  # 整个对象缺 → 顶层缺失清单已覆盖(或可整体省略,写库层跳过)
+        if not isinstance(obj, dict):
+            continue  # 类型错误由 validate_value_types 处理
+        for f in fields:
+            if f not in obj or _is_missing_value(obj.get(f)):
+                _append_missing(errors, f"{obj_name}.{f}", obj.get(f), FIELD_LABELS.get(obj_name, obj_name))
+
+    # 3. 数组元素字段
+    ingredient_units = {}
+    if isinstance(data.get("ingredients"), list):
+        for ing in data["ingredients"]:
+            if isinstance(ing, dict) and not _is_missing_value(ing.get("name")):
+                ingredient_units[ing["name"]] = ing.get("unit")
+
+    step_sequences = set()
+    if isinstance(data.get("steps"), list):
+        for s in data["steps"]:
+            if isinstance(s, dict) and isinstance(s.get("sequence"), int):
+                step_sequences.add(s["sequence"])
+
+    for arr_name, fields in ARRAY_REQUIRED_FIELDS.items():
+        arr = data.get(arr_name)
+        if arr is None:
+            continue
+        if not isinstance(arr, list):
+            continue  # 类型错误由 validate_value_types 处理
+        for i, item in enumerate(arr):
+            if not isinstance(item, dict):
+                continue
+            for f in fields:
+                if f not in item or _is_missing_value(item.get(f)):
+                    _append_missing(errors, f"{arr_name}[{i}].{f}", item.get(f), FIELD_LABELS.get(f, f))
+
+    # 4. steps[].ingredients_used[]: unit 缺时从 ingredients[].unit 兜底(F1 断点 a 同源)
+    if isinstance(data.get("steps"), list):
+        for i, step in enumerate(data["steps"]):
+            if not isinstance(step, dict):
+                continue
+            used = step.get("ingredients_used")
+            if not isinstance(used, list):
+                continue
+            for j, si in enumerate(used):
+                if not isinstance(si, dict):
+                    continue
+                for f in ("name", "quantity_used", "introduced_at"):
+                    if f not in si or _is_missing_value(si.get(f)):
+                        _append_missing(errors, f"steps[{i}].ingredients_used[{j}].{f}", si.get(f), f)
+                unit = si.get("unit")
+                if _is_missing_value(unit) and not _is_missing_value(ingredient_units.get(si.get("name"))):
+                    continue  # 显式缺,但 ingredients[].unit 可兜底(写库层同逻辑)
+                if _is_missing_value(unit):
+                    _append_missing(errors, f"steps[{i}].ingredients_used[{j}].unit", unit, "单位")
+
+    # 5. tips/techniques 步骤关联(F1 断点 c + R1 断点 i): step_sequence 存在但指向不存在的步骤 → 缺失清单
+    #    - techniques 的 step_id NOT NULL 且无菜级概念 → step_sequence 必填(缺了无法写库)
+    #    - tips 的 step_id 可空(菜级 tip 合法)→ step_sequence 可缺省
+    for arr_name in ("tips", "techniques"):
+        arr = data.get(arr_name)
+        if not isinstance(arr, list):
+            continue
+        for i, item in enumerate(arr):
+            if not isinstance(item, dict):
+                continue
+            seq = item.get("step_sequence")
+            if arr_name == "techniques" and seq is None:
+                _append_missing(errors, f"techniques[{i}].step_sequence", None, "步骤关联")
+                errors[-1]["expected"] = "必填(step_techniques.step_id NOT NULL)"
+                errors[-1]["hint"] = (
+                    f"techniques[{i}] 缺少 step_sequence:技法必须挂到某个步骤"
+                    f"(step_techniques.step_id 不允许空)。请补步骤序号。"
+                )
+                continue
+            if seq is not None:
+                if not isinstance(seq, int):
+                    _append_missing(errors, f"{arr_name}[{i}].step_sequence", seq, "步骤序号")
+                elif seq not in step_sequences:
+                    _append_missing(errors, f"{arr_name}[{i}].step_sequence", seq, "步骤关联")
+                    errors[-1]["expected"] = "必须指向 steps[] 中存在的 sequence"
+                    errors[-1]["hint"] = (
+                        f"{arr_name}[{i}].step_sequence={seq} 指向不存在的步骤"
+                        f"(steps 的 sequence 有: {sorted(step_sequences) or '无'})。"
+                        f"请修正序号,或去掉该字段表示菜级关联。"
+                    )
 
     return errors
 
@@ -962,8 +1124,8 @@ def build_user_question(missing_field_names: List[str]) -> str:
 
 def validate_recipe_for_import(data: Any) -> Dict[str, Any]:
     """校验导入用的食谱 JSON,返回 {valid, errors, suggested_user_question, warnings, warnings_for_ai}。"""
-    # 1. 全字段必填校验
-    coverage_errors = validate_full_coverage(data)
+    # 1. 缺失清单校验(v4.0 拒绝制 · 一次列全 null/空串/步骤关联失效;取代 validate_full_coverage)
+    manifest_errors = validate_missing_manifest(data)
     # 2. 值类型 + 枚举强校验
     type_errors = validate_value_types(data) if isinstance(data, dict) else []
     # 3. 步骤子结构校验(v5.1 新增)
@@ -972,8 +1134,13 @@ def validate_recipe_for_import(data: Any) -> Dict[str, Any]:
     inventory_errors = validate_step_ingredient_inventory(data) if isinstance(data, dict) else []
     # 5. 食材分类 11 类强校验(v5.2 新增)
     category_errors = validate_ingredient_categories(data) if isinstance(data, dict) else []
-    # 6. 占位符黑名单 + 0 值白名单(L2 新增)
+    # 6. 占位符黑名单 + 0 值白名单(L2 新增;空串已由缺失清单覆盖,这里去重)
     placeholder_errors = validate_full_no_placeholder(data) if isinstance(data, dict) else []
+    manifest_paths = {e.get("path") for e in manifest_errors}
+    placeholder_errors = [
+        e for e in placeholder_errors
+        if e.get("field") not in manifest_paths or "=''" not in e.get("error", "")
+    ]
 
     # 6.5 (2026-07-27 P0 修复):tips + techniques 至少 1 个(设计意图与实现统一)
     mandatory_errors = []
@@ -993,7 +1160,7 @@ def validate_recipe_for_import(data: Any) -> Dict[str, Any]:
                 "hint": "techniques 是 L1 设计意图——技法是私有大厨的核心价值。建议加 1-3 条具体技法,标记该步骤的关键操作。"
             })
 
-    all_errors = mandatory_errors + coverage_errors + type_errors + step_errors + inventory_errors + category_errors + placeholder_errors
+    all_errors = mandatory_errors + manifest_errors + type_errors + step_errors + inventory_errors + category_errors + placeholder_errors
 
     # 7. tips 业务规则(警告版,L2 新增)—— 不阻断,只警告
     tips_warnings = []

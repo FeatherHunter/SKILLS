@@ -137,19 +137,23 @@ def orchestrate_import(data: dict, dry_run: bool = False) -> dict:
             # validate_tip_minimum 已被 validate_tip_scope 取代:
             # - scope=step 强制 step_id → 等价于"只缺 step_id 警告"
             # - scope=recipe 显式声明 → 等价于"菜级 tip 警告"
+            # T5 修复(R1 F1 断点 c):JSON 契约用 step_sequence(步骤 UUID 写库时才生成),
+            # 这里先经 seq_id_map 解析成 step_id,再走 scope 校验;校验链与 validators 一致(断点 i)
             if data.get("tips"):
                 for i, tip in enumerate(data["tips"]):
-                    scope = tip.get("scope")
+                    seq = tip.get("step_sequence")
+                    resolved_step_id = seq_id_map.get(seq) if seq is not None else None
+                    scope = tip.get("scope") or ("step" if seq is not None else "recipe")
                     scope_result = validators.validate_tip_scope(
                         scope,
-                        step_id=tip.get("step_id"),
+                        step_id=resolved_step_id or tip.get("step_id"),
                         ingredient_id=tip.get("ingredient_id"),
                     )
                     if not scope_result["valid"]:
                         raise ValueError(
                             f"tips[{i}]: {scope_result['error']}\n"
                             f"   合法 scope 值:step / ingredient / recipe\n"
-                            f"   - scope=step 需 step_id\n"
+                            f"   - scope=step 需 step_sequence 指向存在的步骤(JSON 契约)或 step_id\n"
                             f"   - scope=ingredient 需 ingredient_id\n"
                             f"   - scope=recipe 整道菜级,两个 ID 都可空"
                         )

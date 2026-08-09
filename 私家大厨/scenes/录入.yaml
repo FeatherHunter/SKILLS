@@ -91,7 +91,7 @@ scenes:
     scenario_title: 结构化模板录入(表单)
     dimensions: {input: 表单}
     type: 采集+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       用表单方式录入这道菜。
     result: "生成填写表单:AI 已填的标注、缺失的标红,你补全后确认入库。"

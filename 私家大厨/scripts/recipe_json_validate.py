@@ -452,17 +452,20 @@ def validate_recipe(data):
             check_fields(tip, TIP_FIELDS, path, errors, warnings, missing_fields)
             if tip.get("category"):
                 check_enum(tip["category"], "tip_category", f"{path}.category", warnings)
-            # step_sequence 引用检查
-            if tip.get("step_sequence") and tip["step_sequence"] not in step_sequences:
-                warnings.append(f"⚠️ {path}.step_sequence {tip['step_sequence']} 在 steps 中不存在对应序号")
+            # step_sequence 引用检查(T5 · 断点 i 对齐:校验链与 validators 一致,升级为错误)
+            if tip.get("step_sequence") is not None and tip["step_sequence"] not in step_sequences:
+                errors.append(f"❌ {path}.step_sequence {tip['step_sequence']} 在 steps 中不存在对应序号")
 
     # ── 12. techniques 检查 ──
     if "techniques" in data and data["techniques"]:
         for i, tech in enumerate(data["techniques"]):
             path = f"root.techniques[{i}]"
             check_fields(tech, TECHNIQUE_FIELDS, path, errors, warnings, missing_fields)
-            if tech.get("step_sequence") and tech["step_sequence"] not in step_sequences:
-                warnings.append(f"⚠️ {path}.step_sequence {tech['step_sequence']} 在 steps 中不存在对应序号")
+            if tech.get("step_sequence") is not None and tech["step_sequence"] not in step_sequences:
+                errors.append(f"❌ {path}.step_sequence {tech['step_sequence']} 在 steps 中不存在对应序号")
+            # step_techniques.step_id NOT NULL,技法必须挂步骤(T5 · 与 validators 缺失清单对齐)
+            if tech.get("step_sequence") is None:
+                errors.append(f"❌ {path}.step_sequence 必填:技法必须挂到某个步骤(step_techniques.step_id NOT NULL)")
 
     # ── 13. cookware 检查 ──
     if "cookware" in data and data["cookware"]:

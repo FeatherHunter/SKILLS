@@ -5,9 +5,9 @@
   "servings": 2,
   "total_time": 25,
   "status": "未做",
-  "photo_url": null,
-  "source": null,
-  "source_url": null,
+  "photo_url": "https://placeholder.example/photos/gongbao-shrimp.jpg",
+  "source": "家常菜谱整理",
+  "source_url": "https://placeholder.example/sources/gongbao-shrimp",
 
   "category": {
     "cuisine": "川菜",
@@ -29,8 +29,8 @@
       "category": "海鲜",
       "sequence": 1,
       "is_optional": false,
-      "substitute": null,
-      "quantity_text": null
+      "substitute": "无替代品",
+      "quantity_text": "300克"
     },
     {
       "name": "花生",
@@ -40,7 +40,7 @@
       "sequence": 2,
       "is_optional": true,
       "substitute": "腰果",
-      "quantity_text": null
+      "quantity_text": "50克"
     }
   ],
 
@@ -72,8 +72,7 @@
       "step_sequence": 1,
       "content": "开背时去虾线更入味",
       "category": "刀工",
-      "priority": 1,
-      "ingredient_id": null
+      "priority": 1
     }
   ],
 

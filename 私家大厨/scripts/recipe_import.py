@@ -294,11 +294,16 @@ def add_techniques(conn, recipe_id, techniques, seq_id_map):
     if not techniques:
         return
     cursor = conn.cursor()
-    for tech in techniques:
+    for i, tech in enumerate(techniques):
         tech_id = str(uuid.uuid4())
-        step_id = None
-        if tech.get("step_sequence") and tech["step_sequence"] in seq_id_map:
-            step_id = seq_id_map[tech["step_sequence"]]
+        seq = tech.get("step_sequence")
+        # T5 防御(校验层缺失清单已早失败):技法必须挂到存在的步骤,否则 NOT NULL 连环炸
+        if seq is not None and seq not in seq_id_map:
+            raise ValueError(
+                f"techniques[{i}].step_sequence={seq} 指向不存在的步骤"
+                f"(step_techniques.step_id NOT NULL)。请修正序号或先定义该步骤。"
+            )
+        step_id = seq_id_map.get(seq) if seq is not None else None
 
         cursor.execute("""
             INSERT INTO step_techniques (id, step_id, recipe_id, technique_name, description, key_points)

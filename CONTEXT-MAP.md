@@ -1,4 +1,4 @@
-# CONTEXT-MAP
+﻿# CONTEXT-MAP
 
 本仓库的领域上下文索引。每个技能是一个独立上下文，对应一份 `<技能>/CONTEXT.md`。本表只列已生成或承诺生成的技能。
 
@@ -12,7 +12,7 @@
 | 饼干记账 | `饼干记账/` | `饼干记账/CONTEXT.md` | 待确认 |
 | 智剪工坊 | `智剪工坊/` | `智剪工坊/CONTEXT.md` | 待确认 |
 | 作息管家 | `作息管家/` | `作息管家/CONTEXT.md` | 待确认 |
-| SKILL开发总纲V1.0 | `SKILL开发总纲V1.0/` | `SKILL开发总纲V1.0/CONTEXT.md` | 待确认 |
+| SKILL开发总纲V1.0 | `SKILL开发总纲/` | `SKILL开发总纲/CONTEXT.md` | 待确认 |
 
 > 状态列说明：
 > - **已存在**：`CONTEXT.md` 已在该目录中存在，未做改动

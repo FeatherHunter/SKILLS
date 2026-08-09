@@ -1,5 +1,5 @@
----
-name: SKILL开发总纲V1.0
+﻿---
+name: SKILL开发总纲
 description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 之前必读。覆盖 5 层架构、触发词、可视化、注入机制、工程仪式,以及 HELP 唤醒词 + 场景完备性。不提供完整 Skill 代码示例(避免硬编码影响 AI 自由),只给原则 + 可加载的工具资产(_assets/)。SKILL 实例代码由各 skill 自己维护。"
 ---
 
@@ -13,7 +13,7 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 >
 > 用户说"查询健身计划"(变体)= 用户说"查健身计划"(核心)= 都要 invoke HTML。AI 不要凭"似不似"主观降级为文字答。
 >
-> 详细推导见 [04-可视化与注入v2.md §原则 11](./04-可视化与注入v2.md)。
+> 详细推导见 [04-可视化与注入.md §原则 11](./04-可视化与注入.md)。
 >
 > **HELP 唤醒词与场景契约(原则 12):** 每个 Skill 必须登记至少 1 个 HELP 唤醒词；HELP 自身不在其生成的 HTML 中展示；HELP 命中后必须 invoke HELP HTML，未就绪属于违规/待开发，可用简短文字告知状态而非伪装。业务唤醒词可执行性由场景资产的 `status` 决定；`【待开发】` 时 AI 必须停止业务执行并明确告知，不绕过 / 假装 / 降级。详细规则见 [07-HELP与场景完备性.md](./07-HELP与场景完备性.md)。
 
@@ -32,8 +32,8 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 |---|---|
 | [01-第一性原理.md](./01-第一性原理.md) | 第一次接触总纲 |
 | [02-5层骨架.md](./02-5层骨架.md) | 任何 Skill 设计的起点 |
-| [03-触发词设计v2.md](./03-触发词设计v2.md) | 设计 SKILL.md 触发词 |
-| [04-可视化与注入v2.md](./04-可视化与注入v2.md) | 设计 / 改造 HTML 模板 |
+| [03-触发词设计.md](./03-触发词设计.md) | 设计 SKILL.md 触发词 |
+| [04-可视化与注入.md](./04-可视化与注入.md) | 设计 / 改造 HTML 模板 |
 | [05-工程仪式.md](./05-工程仪式.md) | 动手前最后一道防线 |
 | [06-附录.md](./06-附录.md) | 演化规则(RULE Forms)| 改造前评估 |
 | [07-HELP与场景完备性.md](./07-HELP与场景完备性.md) | HELP 唤醒词 + 场景资产 + HELP HTML 契约 |
@@ -41,7 +41,7 @@ description: "SKILL 设计/改造总纲。开发新 Skill 或改造现有 Skill 
 | [_assets/style.css](./_assets/style.css) | HTML 模板设计令牌 |
 | [_assets/injector.py](./_assets/injector.py) | 占位符注入函数 |
 | [_assets/template_skeleton.html](./_assets/template_skeleton.html) | 4 段式骨架 |
-| [SKILL开发总纲V1.0.html](./SKILL开发总纲V1.0.html) | 可视化镜像(主入口 HTML) |
+| [SKILL开发总纲.html](./SKILL开发总纲.html) | 可视化镜像(主入口 HTML) |
 
 ## 7 个不可违背的钩子
 

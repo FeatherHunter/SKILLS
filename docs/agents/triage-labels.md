@@ -1,4 +1,4 @@
-# Triage 标签
+﻿# Triage 标签
 
 技能以七个标准 triage 角色表述。本文件把这些角色映射到本仓库 issue tracker（GitHub Issues）实际使用的 label 字符串。
 
@@ -29,7 +29,7 @@
 | `饼干记账/` | `skill:饼干记账` |
 | `智剪工坊/` | `skill:智剪工坊` |
 | `作息管家/` | `skill:作息管家` |
-| `SKILL开发总纲V1.0/` | `skill:SKILL开发总纲V1.0` |
+| `SKILL开发总纲/` | `skill:SKILL开发总纲` |
 
 ## 跨技能主题（可选）
 

@@ -1,4 +1,4 @@
-# 问题追踪：GitHub Issues
+﻿# 问题追踪：GitHub Issues
 
 本仓库的问题（issue）与规格（PRD）统一发布到 GitHub Issues（`FeatherHunter/SKILLS`），通过 `gh` CLI 读写。各技能共享同一份 issue 列表，靠**标题前缀 + label 命名空间**做分区。
 
@@ -14,7 +14,7 @@
 - `[饼干记账] 月度对比页的加载态缺失`
 - `[智剪工坊] 模板 `健身vlog` 渲染失败`
 - `[作息管家] 帮助页 73 场景首次打开报错`
-- `[SKILL开发总纲V1.0] 待开发章节的占位规则`
+- `[SKILL开发总纲] 待开发章节的占位规则`
 
 ### Label 命名空间
 

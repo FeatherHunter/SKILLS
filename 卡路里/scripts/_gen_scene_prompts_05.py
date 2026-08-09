@@ -4,6 +4,7 @@
 防止手抄漂移:prompt 文本直接从 JSON 提取。
 用法: python scripts/_gen_scene_prompts_05.py
 """
+from _io_guard import guard_io; guard_io()
 import json
 from pathlib import Path
 

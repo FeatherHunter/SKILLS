@@ -255,4 +255,5 @@ def main():
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     main()

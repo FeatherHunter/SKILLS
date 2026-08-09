@@ -104,6 +104,7 @@ def resume_all_goals():
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     cmd = sys.argv[1] if len(sys.argv) > 1 else ''
     if cmd == 'pause':
         r = pause_all_goals()

@@ -105,6 +105,7 @@ def list_completed_goals(days=30):
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     import json
     days = int(sys.argv[1]) if len(sys.argv) > 1 and sys.argv[1].isdigit() else 30
     result = list_completed_goals(days)

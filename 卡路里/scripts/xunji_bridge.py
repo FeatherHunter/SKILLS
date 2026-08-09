@@ -20,4 +20,5 @@ if str(_SCRIPTS_DIR) not in sys.path:
 from xunji_bridge.__main__ import main  # noqa: E402
 
 if __name__ == "__main__":
+    from _io_guard import guard_io; guard_io()
     sys.exit(main())

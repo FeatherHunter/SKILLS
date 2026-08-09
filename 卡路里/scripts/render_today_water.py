@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_today_water.py — 今日饮水 HTML 渲染器(报告型 · 进度环 + 7 天 mini-chart)
 
-对应 SKILL.md 唤醒词: 查今天喝水(ADR-0003 · 2026-07-29 加)
+对应 SKILL.md 唤醒词: 看今日喝水
 对应模板: templates/today_water.html
 - 输出目录: $DATA_DIR/calorie_html/今日饮水_<TS>.html (手册 §4.1 · v2.4.8 中文化)
 - 占位符: <!--INJECT-DATA--> 恰好 1 次
@@ -141,4 +141,5 @@ def main():
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     sys.exit(main())

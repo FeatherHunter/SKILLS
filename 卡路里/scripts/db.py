@@ -23,15 +23,23 @@ DB_FILENAME = "calorie_data.db"
 
 
 def _fallback_db_dir():
-    """全局 fallback DB 目录：Windows → D:/.db，WSL → /mnt/d/.db"""
+    """全局 fallback DB 目录(跨机器兼容 · #242 配套)
+
+    - Windows: D:/.db(用户规定,保持不变;无 SKILLS_DB_PATH 时唯一出口)
+    - WSL:     /mnt/d/.db(保持现状,D: 盘 automount 场景)
+    - macOS/Linux: 用户主目录 ~/.db(XDG 惯例;不再因缺 D 盘/无 /mnt/d 而崩)
+    """
     if sys.platform == 'win32':
         return Path('D:/.db')
     d_drive = Path('/mnt/d')
     if d_drive.exists():
         return d_drive / '.db'
+    home = Path.home()
+    if home:
+        return home / '.db'
     raise RuntimeError(
-        'SKILLS_DB_PATH 未设置，且 D: 盘未挂载到 /mnt/d/。'
-        '请检查 WSL automount 配置或设置 SKILLS_DB_PATH 环境变量。'
+        'SKILLS_DB_PATH 未设置，且无法解析用户主目录。'
+        '请设置 SKILLS_DB_PATH 环境变量。'
     )
 
 def find_db_path(skill_dir, db_filename=DB_FILENAME):

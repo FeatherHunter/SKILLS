@@ -76,6 +76,7 @@ def build_progress(backfill_path: str, out_path: str):
 
 
 if __name__ == "__main__":
+    from _io_guard import guard_io; guard_io()
     bf = sys.argv[1]
     out = sys.argv[2]
     build_progress(bf, out)

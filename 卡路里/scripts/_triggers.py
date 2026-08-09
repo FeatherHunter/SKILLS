@@ -10,14 +10,15 @@ v2.4.10 起 · 给 templates/help_center.html 提供结构化数据。
   - main_prompt: { cli, text }   默认/最常用场景
   - variants:    [ { label, cli, prompt }, ... ]   详细用法(原文照搬 SKILL.md §触发词速查表)
 
-约束(必须满足,否则 check_trigger_consistency.py 报错):
-  - wake_word ⊆ SKILL.md frontmatter 触发词
-  - aliases 项 ⊆ SKILL.md frontmatter 触发词
+约束(必须满足,否则 check_trigger_consistency.py 报错;v2.4.19 起本文件是触发词权威源):
+  - wake_word 唯一且非空(权威源:HTML 模板表 / render docstring 必须 ⊆ 本文件)
+  - aliases 项 ⊆ wake_word 全集(口语变体,不单独作为权威词)
   - cli 必须是可执行的相对路径(python scripts/<file>.py ...)
 
 维护规则:
-  - 新增 trigger:同步 SKILL.md frontmatter + 本文件 + render_help_center.py 一致
-  - 修改 cli:必须更新 SKILL.md §触发词速查表 + 本文件 + render_*.py docstring
+  - 新增 trigger:同步本文件(权威)+ SKILL.md frontmatter description(路由摘要,高频词)+ SKILL.md §触发词速查表
+  - frontmatter description 不再需要全量触发词(≤1024 字符路由契约 · #235),
+    全量以本文件为准;修改 cli 必须更新 SKILL.md §触发词速查表 + 本文件 + render_*.py docstring
 
 ⚠️ **2026-08-01 场景体系重构中(Phase 2 数据填充)**
 本文件旧版 80 个 wake_word(v2.x 时代)已部分替换:
@@ -4427,5 +4428,6 @@ def get_summary():
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     import json
     print(json.dumps(get_summary(), ensure_ascii=False, indent=2))

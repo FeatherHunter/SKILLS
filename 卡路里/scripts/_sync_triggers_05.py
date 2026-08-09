@@ -4,6 +4,7 @@
 生成 13 字段新格式条目(对齐 07-基础信息/08-身体细节 先例),插入原旧块位置。
 用法: python scripts/_sync_triggers_05.py
 """
+from _io_guard import guard_io; guard_io()
 import json
 import re
 from pathlib import Path

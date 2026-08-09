@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """记吃了:香蕉 200g + 山姆快熟燕麦片 50g"""
+from _io_guard import guard_io; guard_io()
 import subprocess
 import sys
 

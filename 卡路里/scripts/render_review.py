@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_review.py — 渲染复盘 HTML 报告
 
-对应 SKILL.md 唤醒词:`复盘 / 复盘今日 / 复盘本周 / 复盘本月 / 复盘本年 / 复盘日期范围`
+对应 SKILL.md 唤醒词:`复盘 / 今日复盘 / 本周复盘 / 本月复盘 / 复盘日期范围`
 
 设计原则(《预置 HTML + 注入数据指导手册》):
 - 复用 review_cli.py gen 已经生成的 enriched 数据(避免重复 SQL)
@@ -122,4 +122,5 @@ def main():
 
 
 if __name__ == "__main__":
+    from _io_guard import guard_io; guard_io()
     sys.exit(main())

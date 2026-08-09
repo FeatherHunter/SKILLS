@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_nutrition_label.py — 拍营养表 · AI 识别预览向导 HTML 渲染器
 
-对应 SKILL.md 唤醒词:拍营养表 / 识别营养表 / 营养成分确认
+对应 SKILL.md 唤醒词:拍营养表记一餐 / 拍营养表补记一餐
 
 设计原则:
 - 过程型 HTML(AI 协同模式 · 原则 10)
@@ -141,4 +141,5 @@ def main():
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     sys.exit(main())

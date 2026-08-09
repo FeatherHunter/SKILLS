@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """用 Python 跑 backfill,保存为 UTF-8 JSON(避免 PowerShell 重定向的 UTF-16 问题)"""
+from _io_guard import guard_io; guard_io()
 import subprocess
 import json
 import sys

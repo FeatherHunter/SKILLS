@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """把 Jimmy Dean 鸡排/松饼的营养成分存到卡路里食品库(nutrition_products)"""
+from _io_guard import guard_io; guard_io()
 import sqlite3
 import subprocess
 import sys

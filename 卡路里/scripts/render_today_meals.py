@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_today_meals.py — 吃的记录 HTML 渲染器(报告型 · 详细列表)
 
-对应 SKILL.md 唤醒词: 查吃的记录 / 看本周饮食 / 看上周饮食 / 看本月饮食 / 看上月饮食 / 看最近 7 天饮食 / 看最近 30 天饮食 / 看某段时间饮食 / 看「有备注」的饮食记录
+对应 SKILL.md 唤醒词: 看本周饮食 / 看上周饮食 / 看本月饮食 / 看上月饮食 / 看最近 7 天饮食 / 看最近 30 天饮食 / 看某段时间饮食 / 看「有备注」的饮食记录
 对应模板: templates/today_meals.html
 
 v1.0 扩展(ticket #3):
@@ -176,4 +176,5 @@ def main():
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     sys.exit(main())

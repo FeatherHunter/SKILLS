@@ -1,11 +1,18 @@
 #!/usr/bin/env python3
 """check_trigger_consistency.py — 卡路里 SKILL trigger 一致性检查
 
-3 边单向对照:
-  1. SKILL.md §完整 HTML 模板清单 的"强制 trigger"列  ⊆  SKILL.md frontmatter 触发词
-  2. scripts/render_*.py docstring 声明的 trigger  ⊆  SKILL.md frontmatter 触发词
+3 边单向对照(v2.4.19 · #242/#235 配套 · 权威源迁移):
+  1. SKILL.md §完整 HTML 模板清单 的"强制 trigger"列  ⊆  scripts/_triggers.py 权威源
+  2. scripts/render_*.py docstring 声明的 trigger  ⊆  scripts/_triggers.py 权威源
+  3. frontmatter description 路由契约:≤1024 字符 + 含「卡路里HELP」锚点
 
-注意:frontmatter 触发词可以不在 HTML 模板表(那是"可文字答 trigger",V1.3 §⚠️ 强制性规定 第 4 条明示合法)。
+历史(v2.4.18c 前):对照基准是 frontmatter description 全量触发词。
+#235 发现:9855 字符 description 把 HELP 触发词埋没在注意力盲区(92.9% 位置),
+opencode 规范 description ≤ 1024 字符。故权威源迁移到 _triggers.py(运行时 SoT,
+ADR-0001),frontmatter 只做路由摘要(HELP 置顶 + 高频词),全量触发词以
+_triggers.py + SKILL.md §触发词速查表 为准。
+
+注意:权威源 trigger 可以不在 HTML 模板表(那是"可文字答 trigger",V1.3 §⚠️ 强制性规定 第 4 条明示合法)。
 
 docstring 格式:
   A. 单行: 对应 SKILL.md 唤醒词:trigger1 / trigger2 / ...
@@ -194,6 +201,16 @@ def main():
 
     issues = []
 
+    # 权威源(v2.4.19 · #242/#235 配套):触发词权威 = _triggers.py 运行时 SoT,
+    # 不是 frontmatter。frontmatter description 只做路由摘要(HELP 置顶 + 高频词),
+    # 全量触发词以 _triggers.py + SKILL.md §触发词速查表 为准。
+    try:
+        from _triggers import TRIGGERS as _TRIG
+        authority = {t['wake_word'] for t in _TRIG}
+    except Exception as e:
+        issues.append(f'[_triggers.py 导入失败] {e}')
+        authority = set()
+
     # ticket 03 · ADR-0002: 校验 _triggers.py 中 alias_of 关系(指向已存在的 wake_word)
     sys.path.insert(0, str(RENDER_DIR))
     try:
@@ -211,39 +228,86 @@ def main():
     except Exception as e:
         issues.append(f'[_triggers.py 导入失败] {e}')
 
-    # 对照 1: HTML 模板表 ⊆ frontmatter
-    only_html = html - fm
+    # 对照 1: HTML 模板表 ⊆ 权威源(_triggers.py)
+    # 元词豁免:卡路里HELP 渲染的是速查台本身(render_help_center.py 专属),
+    # 不是场景数据,允许不在 _triggers.py(_triggers.py 是速查台的数据源,不能自指)。
+    META_WORDS = {'卡路里HELP'}
+    only_html = (html - authority) - META_WORDS
     if only_html:
-        issues.append(f'[HTML 模板 → frontmatter] {len(only_html)} 个 trigger 在强制表但 frontmatter 未列:')
+        issues.append(f'[HTML 模板 → _triggers.py] {len(only_html)} 个 trigger 在强制表但权威源未列:')
         for t in sorted(only_html):
             issues.append(f'  - {t}')
 
-    # 对照 2: render docstring ⊆ frontmatter
+    # 对照 2: render docstring ⊆ 权威源(_triggers.py)(同样豁免元词)
     for fn, ts in sorted(render_map.items()):
         if not ts:
             continue
-        not_in_fm = ts - fm
+        not_in_fm = (ts - authority) - META_WORDS
         if not_in_fm:
-            issues.append(f'[{fn} docstring → frontmatter] {len(not_in_fm)} 个 trigger 不在 frontmatter:')
+            issues.append(f'[{fn} docstring → _triggers.py] {len(not_in_fm)} 个 trigger 不在权威源:')
             for t in sorted(not_in_fm):
                 issues.append(f'  - {t}')
 
-    print(f'frontmatter trigger 数: {len(fm)}')
+    # 对照 3(v2.4.19 · #235 配套):frontmatter description 路由契约
+    #   - description ≤ 1024 字符(opencode 规范;超长稀释注意力,HELP 触发词被埋没)
+    #   - 「卡路里HELP」必须在 description 中(HELP 是路由首要锚点)
+    import re as _re
+    fm_text = _re.search(r'^description:\s*[>|]?\s*\n?(.*?)(?=\n\s*metadata:|\n---)', text, _re.M | _re.S)
+    desc_len = len(''.join(fm_text.group(1).split())) if fm_text else 0
+    if desc_len > 1024:
+        issues.append(
+            f'[frontmatter description] {desc_len} 字符 > 1024 上限(opencode 规范;'
+            f'超长会把「卡路里HELP」等路由锚点埋没在注意力盲区)'
+        )
+    if '卡路里HELP' not in (fm_text.group(1) if fm_text else ''):
+        issues.append('[frontmatter description] 缺少「卡路里HELP」路由锚点(必须置顶)')
+
+    # 对照 4(v2.4.19 · #242 配套):所有 render 入口脚本必须带 _io_guard 编码防护
+    # (GBK/cp1252 控制台 print emoji 会 UnicodeEncodeError → AI 误判渲染失败)
+    # 只扫入口脚本(有 __main__ 块);纯库模块(如 render_goal_common.py)被入口 import,
+    # 其 print 由入口进程的 stdout 承载,guard 由入口提供。
+    import ast as _ast
+    no_guard = []
+    for _f in sorted(RENDER_DIR.glob('render_*.py')):
+        _t = _f.read_text(encoding='utf-8', errors='replace')
+        if '_io_guard' in _t:
+            continue
+        try:
+            _tree = _ast.parse(_t)
+        except SyntaxError:
+            continue
+        _is_entry = any(
+            isinstance(_n, _ast.If) and isinstance(_n.test, _ast.Compare)
+            and isinstance(_n.test.left, _ast.Name) and _n.test.left.id == '__name__'
+            for _n in _ast.walk(_tree)
+        )
+        if _is_entry:
+            no_guard.append(_f.name)
+    if no_guard:
+        issues.append(
+            f'[_io_guard 编码防护] {len(no_guard)} 个 render 入口脚本缺少 guard_io()'
+            f'(GBK 控制台 print emoji 会崩 · #242):'
+        )
+        for _n in no_guard:
+            issues.append(f'  - {_n}')
+
+    print(f'权威源(_triggers.py) trigger 数: {len(authority)}')
     print(f'HTML 模板表 trigger 数: {len(html)}')
     all_render = set().union(*render_map.values())
     print(f'render docstring 涉及 trigger 数: {len(all_render)}')
+    print(f'frontmatter description 长度: {desc_len} 字符(规范 ≤1024)')
 
-    # 信息输出:frontmatter 有但 HTML 表无的 trigger(可文字答,合法但需开发者主动确认)
-    text_only = fm - html
+    # 信息输出:权威源有但 HTML 表无的 trigger(可文字答,合法但需开发者主动确认)
+    text_only = authority - html
     if text_only:
-        print(f'\n[info] frontmatter 有但 HTML 表无({len(text_only)} 个,可文字答,合法):')
+        print(f'\n[info] 权威源有但 HTML 表无({len(text_only)} 个,可文字答,合法):')
         for t in sorted(text_only):
             print(f'  - {t}')
         print('  提示:这些 trigger 无 HTML 模板,AI 可文字答。如有 HTML 模板请加 §完整 HTML 模板清单。')
 
     print()
     if not issues:
-        print('✅ HTML 模板表 ↔ frontmatter ↔ render docstring 三边一致')
+        print('✅ HTML 模板表 ↔ _triggers.py ↔ render docstring 三边一致 + description 路由契约合规')
         sys.exit(0)
 
     n_classes = sum(1 for x in issues if x.startswith('['))
@@ -254,4 +318,5 @@ def main():
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     main()

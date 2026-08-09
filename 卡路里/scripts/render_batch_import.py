@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """render_batch_import.py — 批量导入预览 HTML 渲染器
 
-对应 SKILL.md 唤醒词:批量导入 / 校验批量 / 查食品库去重
+对应 SKILL.md 唤醒词:批量导入食品 / 校验批量导入 / 看食品库（去重）
 
 设计原则:
 - 过程型 HTML(AI 协同模式 · 原则 10)
@@ -155,4 +155,5 @@ def main():
 
 
 if __name__ == '__main__':
+    from _io_guard import guard_io; guard_io()
     sys.exit(main())

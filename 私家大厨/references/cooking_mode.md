@@ -19,10 +19,23 @@
 ## 2. HTML 生成(必做)
 
 ```bash
-python scripts/cooking_render.py render <菜名或ID>
+python scripts/cooking_render.py render <菜名或ID> [--step N]
 ```
 
 `cooking_render.py` 会自动完成 3 件事:调用 `recipe_manager.py show <菜名或ID> --json` 拿完整 17 张表 JSON 数据、把数据注入 `templates/cooking_mode.html`、按统一命名规则输出到 `$CHEF_OUTPUT_DIR/cooking/`。
+
+### 2.1 断点续做(T8 cook-4 · AI 会话记忆为主)
+
+> G5 决策: 飞书内置浏览器 localStorage 不可靠 → 恢复机制 = **AI 会话记忆为主**,localStorage 仅增强。
+
+- 用户在做菜页点「📋 复制进度」→ 生成「正在做 X,做到第 N 步」prompt → 粘贴给 AI → **AI 记住进度**
+- 下次用户说「继续做 X / 我刚才做到第 N 步」→ AI 必须加 `--step N` 重新渲染:
+  ```bash
+  python scripts/cooking_render.py render <菜名> --step N
+  ```
+- 渲染结果: 页面从第 N 步开始(URL 锚点 `#step=N`,页面 init 直接定位该步,跳过准备页,顶部显示「断点续做」横幅)
+- `--step` 越界自动钳制(>总步数 → 最后一步;≤0 → 第 1 步);非数字 → 报错
+- localStorage 恢复仅作增强: 系统浏览器可用则弹「上次做到第 N 步」确认,不可用不阻塞;`--step`/`#step=N` 优先于 localStorage
 
 数据格式:
 ```json
@@ -84,12 +97,22 @@ AI 必须通过 `scripts/cooking_render.py render <菜名或ID>` 生成注入后
 
 ## 4. 用户做完菜后 · 反馈接收(必做)
 
-用户在 HTML 完结页:
+用户在 HTML 完结页(T8 完结闭环 · G5 决策):
 1. 选 1-5 星评分
 2. 填反馈(可选)
 3. 答 3 道反思题(跳步/最难/下次改)
-4. 点"📋 一键复制,贴回 AI 即可保存" → 复制到剪贴板
-5. 切回 AI 对话 → 粘贴
+4. **4 个单动作按钮,每个都是「复制 prompt」**:⭐ 复制评分 / 📝 复制点评 / 🤔 复制反思 / 📷 完成拍照
+   (另有「📋 一键复制完整记录」= 评分+点评+反思三合一,兼容旧流程)
+5. 点对应按钮复制 → 切回 AI 对话 → 粘贴
+
+### 4.0 完结页四按钮的 AI 处理(T8)
+
+| 按钮 | 用户粘贴内容要点 | AI 处理 |
+|---|---|---|
+| ⭐ 复制评分 | 菜谱 + ID + 评分 N/5 | history_manager add(含评分;同一天已有记录 → update 补评分) |
+| 📝 复制点评 | 菜谱 + ID + 反馈文本 | add(含 feedback;已有记录 → update 补 feedback) |
+| 🤔 复制反思 | 菜谱 + ID + 跳过/最难/下次改 | add 或 update,反思并入 feedback 字段 |
+| 📷 完成拍照 | **预告式 prompt**:「【作品照片即将发送:】」 | **先回「请发照片」,不要提前写库**;用户第二次消息只发图 → 收图 → 存 work_photos/ + --photo 入库 |
 
 ### 4.1 复制内容格式(用户会粘贴的内容)
 
@@ -133,7 +156,50 @@ python scripts/history_manager.py add <recipe_id> \
 
 5. **反馈结果**:告知用户保存成功/失败
 
-### 4.3 反馈组装示例
+### 4.3 作品照片契约(T8 · G5 决策)
+
+「📷 完成拍照」按钮复制的是**预告式 prompt**(08 §4 预告-等待-接收模式):
+
+```
+[做菜记录] 我完成了「X」(日期)。
+评分:N / 5
+【作品照片即将发送:】
+[给 AI 的指令]
+1. 先回复「请发照片」,等我发图(不要提前写库)
+2. 收到照片后: 存到 work_photos/ 目录,命名 <recipe_slug>__work__<YYYYMMDD>.<ext>
+3. 用 history_manager add 写入作品照片(--photo chef://work_photos/<文件名>;同一天已有记录则 update --photo)
+```
+
+AI 处理流程:
+1. 收到预告 prompt → **只回「请发照片」**,进入等待态,不写库(08 §4)
+2. 用户第二次消息只发图(08 §7 图片接收契约: 图 + 上文指令 → 立即处理该图)
+3. 保存照片:
+   - 目录:`$CHEF_OUTPUT_DIR/work_photos/`(作品照 · 三目录契约: photos/ 成品照 + source_photos/ 来源图 + work_photos/ 作品照)
+   - 命名:`<recipe_slug>__work__<YYYYMMDD>.<ext>`(如 `辣椒炒肉__work__20260809.jpg`;短码 work=作品照 / photo=成品照 / source=来源图)
+   - 入库:**chef:// 命名空间,不存绝对路径**(跨设备迁移): `--photo "chef://work_photos/辣椒炒肉__work__20260809.jpg"`
+4. 写库:
+   ```bash
+   # 当天没有记录 → add(含 photo)
+   python scripts/history_manager.py add <recipe_id> --rating N --feedback "..." --photo "chef://work_photos/xxx.jpg"
+   # 当天已有记录 → update 补 photo
+   python scripts/history_manager.py update <history_id> --photo "chef://work_photos/xxx.jpg"
+   ```
+5. 无照片不造假值:`--photo` 省略 → 入库 NULL(G5 决策)
+
+**值类型判定表(photo_utils.classify_media · 渲染时用)**:
+
+| 值形态 | 判定 | 渲染 |
+|---|---|---|
+| `chef://...` | local | 拼输出根目录 → `<img src="file:///...">` |
+| 图片扩展名(.jpg/.png/.webp/.gif 等)或图床域名(picsum/imgur/unsplash 等) | image | `<img src="URL">` |
+| 视频平台域名(bilibili/youtube/vimeo 等)或视频扩展名(.mp4/.webm 等) | video | 外链 + 「🎬 视频」标识 |
+| 其他 URL | link | 外链 |
+
+**三目录契约命名**:`<recipe_slug>__<类型短码>__<YYYYMMDD>.<ext>`
+- `photos/`(成品照,短码 photo)+ `source_photos/`(来源图,短码 source,已有)+ `work_photos/`(作品照,短码 work,新建)
+- 渲染用 `photo_utils.build_media_html(value, output_root)` 或 `resolve_chef` 拼本地路径
+
+### 4.4 反馈组装示例
 
 用户反馈原文 + 反思 → 写入 DB 的 feedback 字段:
 

@@ -52,6 +52,13 @@ def add(args):
         emit(error("缺少 --feedback(L1 NOT NULL 兜底,DB 不允许 NULL) 这是 L1 设计 —— 缺字段说明 AI 没问用户就调用了。请拿 hint 去问用户,这次做菜的反馈/改进建议是什么?"), json_mode=json_mode)
         return False
 
+    # T8 作品照片(2026-08-09 · G5 决策):recipe_history.photo 可空,无照片=NULL 不造假值
+    # 契约: chef:// 命名空间入库(work_photos/ 目录),渲染时拼输出根目录(photo_utils.resolve_chef)
+    photo = args.get("--photo")
+    if photo is not None and str(photo).strip() == "":
+        emit(error("--photo 不能是空字符串(无照片请省略该参数,入库 NULL)"), json_mode=json_mode)
+        return False
+
     # L4: db.query 替代 conn/cursor
     recipes = query("SELECT id, name, status FROM recipes WHERE id = ? OR name LIKE ?", (recipe_id, f"%{recipe_id}%"))
     if not recipes:
@@ -71,8 +78,8 @@ def add(args):
     try:
         with transaction() as conn:
             execute(
-                "INSERT INTO recipe_history (id, recipe_id, cook_date, cook_sequence, rating, feedback) VALUES (?, ?, ?, ?, ?, ?)",
-                (history_id, recipe_id, cook_date, new_seq, rating, feedback)
+                "INSERT INTO recipe_history (id, recipe_id, cook_date, cook_sequence, rating, feedback, photo) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (history_id, recipe_id, cook_date, new_seq, rating, feedback, photo)
             )
 
             # 如果是第一次,更新 recipes 状态
@@ -90,6 +97,7 @@ def add(args):
         "cook_sequence": new_seq,
         "rating": rating,
         "feedback": feedback,
+        "photo": photo,
     }
     if json_mode:
         emit({"status": "success", "data": data,
@@ -103,6 +111,8 @@ def add(args):
         if rating is not None:
             print(f"   评分:{rating}")
         print(f"   反馈:{feedback}")
+        if photo:
+            print(f"   作品照片:{photo}(chef:// 命名空间)")
     return True
 
 
@@ -360,6 +370,12 @@ def update(args):
     if args.get("--feedback"):
         updates.append("feedback = ?")
         params.append(args["--feedback"])
+    if args.get("--photo") is not None:
+        if str(args["--photo"]).strip() == "":
+            print("错误:--photo 不能是空字符串(清空照片请省略参数,或由删除流程处理)")
+            return False
+        updates.append("photo = ?")
+        params.append(args["--photo"])
 
     if not updates:
         print("没有提供要更新的字段")
@@ -386,6 +402,7 @@ def main():
     --cook_date 烹饪日期(YYYY-MM-DD)
     --rating 评分(1-5)
     --feedback 反馈内容
+    --photo 作品照片 chef:// 值(如 chef://work_photos/辣椒炒肉__work__20260809.jpg;无照片省略)
 """)
         return
 
@@ -411,7 +428,8 @@ def main():
             i += 1
 
     if action == "add":
-        add(args)
+        if add(args) is False:
+            sys.exit(1)
     elif action == "list":
         list_items(args)
     elif action == "stats":

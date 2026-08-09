@@ -92,7 +92,7 @@ scenarios:
       recipe: 指定菜名
       progress: 已做 N 步
     prompt: 我刚才做到第 {{N}} 步,继续帮我做完。
-    status: 【待开发】
+    status: ''
     result: AI 凭会话记忆生成从第 N 步开始的做菜页(不依赖浏览器本地存储);页面顶部进度条显示位置。
     wake_word: 做菜模式
     type: 向导+选择+回执

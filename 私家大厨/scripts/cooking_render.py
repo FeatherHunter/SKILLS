@@ -79,6 +79,26 @@ def render(args):
     recipe = data.get("recipe") or {}
     recipe_id = recipe.get("id") or ""
     recipe_name = recipe.get("name") or name_or_id
+    steps = data.get("steps") or recipe.get("steps") or []
+
+    # T8 cook-4 断点续做: --step N(AI 会话记忆为主,localStorage 仅增强)
+    # AI 凭会话记忆「做到第 N 步」→ 生成从第 N 步开始的做菜页(URL 带 #step=N 定位)
+    start_step = 1
+    step_arg = args.get("--step")
+    if step_arg is not None:
+        try:
+            start_step = int(step_arg)
+        except (ValueError, TypeError):
+            print(f"错误:--step 必须是正整数,收到:{step_arg!r}", file=sys.stderr)
+            return False
+        if start_step < 1:
+            start_step = 1
+        if steps:
+            total = len(steps)
+            if start_step > total:
+                print(f"⚠ 提示:--step {start_step} 超过总步数 {total},按 {total}(最后一步)处理", file=sys.stderr)
+                start_step = total
+            print(f"   断点续做:从第 {start_step} / {total} 步开始", file=sys.stderr)
 
     template = TEMPLATE_PATH.read_text(encoding="utf-8")
     payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
@@ -88,14 +108,14 @@ def render(args):
         "<script>\n"
         f"window.__RECIPE__ = {payload_json};\n"
         f"window.__RECIPE_ID__ = {recipe_id_json};\n"
+        f"window.__START_STEP__ = {start_step};\n"
         "</script>"
     )
     html = template.replace("<body>", inject, 1)
 
     # 08 对齐:复制数据(5 段)/复制日志(6 段)
-    steps = recipe.get("steps") or []
     copy_data = build_copy_data(
-        scene_id="cook-1",
+        scene_id="cook-4" if start_step > 1 else "cook-1",
         command_cn="做菜模式",
         target=recipe_name,
         payload={
@@ -104,15 +124,19 @@ def render(args):
             "servings": recipe.get("servings"),
             "steps_count": len(steps),
             "total_time_minutes": recipe.get("total_time_minutes"),
+            "start_step": start_step,
+            "mode": "断点续做" if start_step > 1 else "全新开始",
         },
     )
     copy_log = build_copy_log(
-        scene_id="cook-1",
+        scene_id="cook-4" if start_step > 1 else "cook-1",
         command_cn="做菜模式",
         wake_word="开始做菜 / 做菜模式",
-        thinking=f"意图理解 → 开始做菜 → 调 show 取 {recipe_name} 全量数据 → 注入 cooking_mode.html",
+        thinking=f"意图理解 → 开始做菜 → 调 show 取 {recipe_name} 全量数据 → 注入 cooking_mode.html"
+                 + (f" → 断点续做:从第 {start_step} 步开始(--step {start_step})" if start_step > 1 else ""),
         data_structure="window.__RECIPE__(recipe/steps/ingredients)· 读库(只读)",
-        call_chain=f"python recipe_manager.py show {name_or_id} --json ; python cooking_render.py render {name_or_id}",
+        call_chain=f"python recipe_manager.py show {name_or_id} --json ; python cooking_render.py render {name_or_id}"
+                   + (f" --step {start_step}" if start_step > 1 else ""),
     )
     html = inject_08_layer(html, copy_data, copy_log)
 
@@ -134,21 +158,28 @@ def render(args):
     output_path.write_text(html, encoding="utf-8")
     print(f"✅ 已渲染:{output_path}  ({len(html)} bytes)")
     print(f"   复制数据/复制日志: 页面底部动作栏(08 硬标准)")
+    if start_step > 1:
+        print(f"   断点续做: 页面已从第 {start_step} 步开始(URL 锚点 #step={start_step})")
     return True
 
 
 def main():
     if len(sys.argv) < 2:
         print("""用法:
-    python cooking_render.py render <菜名或ID> [--output <path>] [--no-clobber]
+    python cooking_render.py render <菜名或ID> [--step N] [--output <path>] [--no-clobber]
 
 示例:
     python cooking_render.py render 辣椒炒肉
+    python cooking_render.py render 辣椒炒肉 --step 3   # 断点续做:从第 3 步开始
     python cooking_render.py render 辣椒炒肉 --output C:/Users/辰辰洋洋/AppData/Local/Temp/opencode/做菜模式_辣椒炒肉_debug_20260723_183000.html  # 仅调试
 
 环境变量:
     CHEF_OUTPUT_DIR   HTML 输出目录(默认:D:/CookHub)
     输出子目录: $CHEF_OUTPUT_DIR/cooking/
+
+断点续做(T8 cook-4):
+    AI 凭会话记忆「做到第 N 步」→ render 时加 --step N → 页面从第 N 步开始
+    (URL 锚点 #step=N;localStorage 仅作增强,系统浏览器可用则用,不可用不阻塞)
 """)
         return
 

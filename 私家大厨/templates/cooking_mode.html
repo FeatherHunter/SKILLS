@@ -74,7 +74,8 @@
   .cookware-grid span{background:#f0f0f3;padding:6px 14px;border-radius:999px;font-size:14px;}
 
   /* 做饭页 */
-  .cook-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:13px;color:var(--gray);}
+  .cook-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-size:13px;color:var(--gray);gap:8px;flex-wrap:wrap;}
+  .cook-top-actions{display:inline-flex;gap:8px;}
   .cook-progress{height:6px;background:#f0f0f3;border-radius:3px;margin-bottom:16px;overflow:hidden;}
   .cook-progress-bar{height:100%;background:var(--blue);border-radius:3px;transition:width 0.3s;}
 
@@ -167,6 +168,10 @@
   .radio-list label.checked{background:var(--blue-soft);border-color:var(--blue);color:var(--blue-deep);}
 
   .copy-block{background:#fafafa;border-radius:10px;padding:14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;line-height:1.6;white-space:pre-wrap;word-break:break-all;border:1px solid var(--border);max-height:280px;overflow-y:auto;}
+
+  .done-action-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px;}
+  @media (max-width:480px){.done-action-grid{grid-template-columns:1fr 1fr;}}
+  .done-action-grid .btn{padding:12px 8px;font-size:14px;text-align:center;}
 
   .copy-feedback{text-align:center;color:var(--green);font-size:13px;margin:8px 0;display:none;}
 
@@ -274,7 +279,10 @@
     <div class="cook-top">
       <button class="btn" onclick="prevStep()">← 上一步</button>
       <span id="cook-step-indicator"></span>
-      <button class="btn" onclick="nextStep()">下一步 →</button>
+      <span class="cook-top-actions">
+        <button class="btn" onclick="copyProgress()" title="复制当前进度 prompt,发给 AI 记住进度,下次断点续做">📋 复制进度</button>
+        <button class="btn" onclick="nextStep()">下一步 →</button>
+      </span>
     </div>
     <div class="cook-progress"><div class="cook-progress-bar" id="cook-progress-bar"></div></div>
 
@@ -328,6 +336,7 @@
       <div class="done-emoji">🎉</div>
       <div class="done-title">做完了!</div>
       <div class="done-stats" id="done-stats"></div>
+      <p class="muted" id="done-time" style="margin-top:6px;"></p>
     </div>
 
     <div class="card">
@@ -364,9 +373,15 @@
     </div>
 
     <div class="card">
-      <h2>📋 一键复制,贴回 AI 即可保存</h2>
-      <p class="muted">点击下面按钮复制记录。粘贴回 AI,AI 会保存到 cooking history(用 history_manager add 命令)。</p>
-      <button class="btn btn-primary btn-large" style="width:100%;padding:14px;" onclick="copyRecord()">📋 一键复制</button>
+      <h2>📋 复制动作 prompt,贴回 AI 即可保存</h2>
+      <p class="muted">每个动作独立按钮:先填好评分/反馈/反思,再点对应按钮复制 prompt。粘贴回 AI 后,AI 会写入 history(评分/点评/反思各一条动作;完成拍照走预告式,AI 先回「请发照片」)。</p>
+      <div class="done-action-grid">
+        <button class="btn" onclick="copyRatingPrompt()">⭐ 复制评分</button>
+        <button class="btn" onclick="copyFeedbackPrompt()">📝 复制点评</button>
+        <button class="btn" onclick="copyReflectionPrompt()">🤔 复制反思</button>
+        <button class="btn btn-primary" onclick="copyPhotoPrompt()">📷 完成拍照</button>
+      </div>
+      <button class="btn btn-large" style="width:100%;margin-top:12px;padding:14px;" onclick="copyRecord()">📋 一键复制完整记录(评分+点评+反思)</button>
       <div class="copy-feedback" id="copy-feedback">✓ 已复制!现在切回 AI 对话,粘贴发送即可。</div>
 
       <details style="margin-top:14px;">
@@ -398,6 +413,8 @@ const STATE = {
     next: '',
   },
   servingsMultiplier: 1.0,  // 份数倍数(默认原方 1.0,可调到 0.5/2/3 等)
+  startStep: 1,             // T8 cook-4 断点续做: 起始步(默认 1 = 全新开始)
+  actualSeconds: 0,         // T8 完结闭环: 实际用时累计(秒,每步完成时累加)
 };
 
 // 08 5 状态 · loading(数据注入前)
@@ -457,10 +474,41 @@ function init(){
   STATE.usageOrder = computeUsageOrder();
   STATE.overnightItems = detectOvernightPrep();
   renderAll();
-  // ⚠ 关键修复:init 后必须激活第一个阶段,否则 .stage{display:none} 让所有内容不显示
-  document.getElementById('stage-prep').classList.add('active');
+
+  // T8 cook-4 断点续做: 起始步解析(优先级: 注入 __START_STEP__ > URL #step=N > 1)
+  STATE.startStep = resolveStartStep();
+
+  if (STATE.startStep > 1){
+    // 断点续做: 跳过准备页,直接进入第 N 步做菜页
+    const total = (STATE.recipe.steps || []).length;
+    STATE.currentStep = Math.min(STATE.startStep, total);
+    switchStage('stage-cook');
+    renderCook();
+    showResumeBanner(STATE.currentStep, total);
+  } else {
+    // ⚠ 关键修复:init 后必须激活第一个阶段,否则 .stage{display:none} 让所有内容不显示
+    document.getElementById('stage-prep').classList.add('active');
+  }
   // 08 5 状态 · normal(数据注入完成)
   if (window.A08) window.A08.state.hide();
+}
+
+// T8 cook-4: 解析起始步(注入优先,URL 锚点 #step=N 兜底)
+function resolveStartStep(){
+  if (typeof window.__START_STEP__ === 'number' && window.__START_STEP__ >= 1){
+    return Math.floor(window.__START_STEP__);
+  }
+  const m = (location.hash || '').match(/step=(\d+)/);
+  if (m) return parseInt(m[1], 10);
+  return 1;
+}
+
+// T8 cook-4: 断点续做横幅(页面顶部进度提示)
+function showResumeBanner(step, total){
+  const banner = document.createElement('div');
+  banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:999;background:var(--orange-bg);color:#5D4037;text-align:center;padding:8px 12px;font-size:14px;font-weight:600;box-shadow:0 1px 4px rgba(0,0,0,.1);';
+  banner.textContent = `↩ 断点续做: 从第 ${step} / ${total} 步继续`;
+  document.body.appendChild(banner);
 }
 
 // ============== 工具函数 ==============
@@ -802,9 +850,139 @@ function toggleMute(){
 
 function finishStep(){
   stopTimer();
+  // T8 完结闭环: 累计实际用时(计划时长 - 剩余秒数,>=0)
+  const planned = (STATE.recipe.steps[STATE.currentStep - 1]?.duration_minutes || 0) * 60;
+  if (planned > 0){
+    STATE.actualSeconds += Math.max(0, planned - STATE.timer.remaining);
+  }
   // 记录这一步为"已完成"(反选跳出反射题)
   STATE.reflection.skipped.delete(STATE.currentStep);
   nextStep();
+}
+
+// T8 cook-4 断点续做: 复制当前进度 prompt(AI 会话记忆为主)
+// 用户: 点按钮 → 复制 → 发给 AI → AI 记住「做到第 N 步」→ 下次断点续做
+function copyProgress(){
+  const total = (STATE.recipe.steps || []).length;
+  const cur = STATE.currentStep;
+  const next = (STATE.recipe.steps[cur] || {});
+  const text = [
+    '[做菜进度]',
+    `菜谱:${STATE.recipe.name}`,
+    `菜谱 ID:${STATE.recipe.id}`,
+    `当前进度:第 ${cur} 步 / 共 ${total} 步`,
+    `下一步:${next.action ? next.action.slice(0, 40) + (next.action.length > 40 ? '...' : '') : '(最后一步)'}`,
+    '',
+    '[给 AI 的指令]',
+    '我正在做「' + STATE.recipe.name + '」,刚做到第 ' + cur + ' 步,请记住这个进度。',
+    '下次我说「继续做 ' + STATE.recipe.name + '」时,请用 cooking_render.py render 生成从第 ' + cur + ' 步开始的做菜页(--step ' + cur + ')。',
+  ].join('\n');
+  doCopyText(text, '进度已复制!切回 AI 对话粘贴,AI 会记住进度');
+}
+
+// T8 完结闭环: 复制评分 prompt(单动作)
+function copyRatingPrompt(){
+  const text = [
+    '[做菜记录]',
+    `菜谱:${STATE.recipe.name}`,
+    `菜谱 ID:${STATE.recipe.id}`,
+    `日期:${new Date().toISOString().slice(0, 10)}`,
+    `评分:${STATE.rating || '未评分'} / 5`,
+    '',
+    '[给 AI 的指令]',
+    '帮我保存这次做菜评分:',
+    '1. 加载「私家大厨」技能',
+    '2. 用 history_manager 的 add 子命令写入(含评分;若同一天已有记录则用 update 补评分)',
+    '   - recipe_id = ' + STATE.recipe.id,
+    `   - rating = ${STATE.rating}`,
+    '3. 完成后告诉我结果',
+  ].join('\n');
+  doCopyText(text, '评分 prompt 已复制!粘贴给 AI 即可保存');
+}
+
+// T8 完结闭环: 复制点评 prompt(反馈,单动作)
+function copyFeedbackPrompt(){
+  const fb = document.getElementById('feedback-text').value.trim();
+  const text = [
+    '[做菜记录]',
+    `菜谱:${STATE.recipe.name}`,
+    `菜谱 ID:${STATE.recipe.id}`,
+    `日期:${new Date().toISOString().slice(0, 10)}`,
+    `反馈:${fb || '(未填)'}`,
+    '',
+    '[给 AI 的指令]',
+    '帮我保存这次做菜的点评:',
+    '1. 加载「私家大厨」技能',
+    '2. 用 history_manager 的 add 子命令写入(若同一天已有记录则用 update 补 feedback)',
+    '   - recipe_id = ' + STATE.recipe.id,
+    `   - feedback = "${fb}"`,
+    '3. 完成后告诉我结果',
+  ].join('\n');
+  doCopyText(text, '点评 prompt 已复制!粘贴给 AI 即可保存');
+}
+
+// T8 完结闭环: 复制反思 prompt(单动作)
+function copyReflectionPrompt(){
+  const skipped = Array.from(document.querySelectorAll('#refl-skipped label.checked'))
+    .map(l => l.dataset.seq).filter(s => s !== 'none')
+    .map(s => `第 ${s} 步`).join('、') || '无';
+  const hardest = document.querySelector('#refl-hardest label.checked')?.dataset.seq || '-';
+  const next = document.getElementById('refl-next').value.trim();
+  const text = [
+    '[反思]',
+    `跳过/重做:${skipped}`,
+    `最难:第 ${hardest} 步`,
+    `下次改:${next || '(未填)'}`,
+    '',
+    '[给 AI 的指令]',
+    '帮我保存这次做菜的反思(追加到 feedback):',
+    '1. 加载「私家大厨」技能',
+    '2. 用 history_manager 的 update 子命令把反思补进 feedback(若还没有记录则用 add 创建)',
+    '   - recipe_id = ' + STATE.recipe.id,
+    `   - feedback = "${STATE.recipe.name}\\n跳过/重做:${skipped}\\n最难:第 ${hardest} 步\\n下次改:${next}"`,
+    '3. 完成后告诉我结果',
+  ].join('\n');
+  doCopyText(text, '反思 prompt 已复制!粘贴给 AI 即可保存');
+}
+
+// T8 完结闭环: 完成拍照(预告式 prompt · 08 §4 预告-等待-接收模式)
+// 用户: 复制 → 发给 AI(消息 1 = 指令预告)→ AI 答「请发照片」→ 用户第二次消息只发图(消息 2 = 资源)
+// AI: 收到图后存 work_photos/ 并 history_manager add/update --photo chef:// 入库
+function copyPhotoPrompt(){
+  const today = new Date().toISOString().slice(0, 10);
+  const text = [
+    `[做菜记录] 我完成了「${STATE.recipe.name}」(${today})。`,
+    `评分:${STATE.rating || '未评分'} / 5`,
+    '【作品照片即将发送:】',
+    '',
+    '[给 AI 的指令]',
+    '1. 先回复「请发照片」,等我发图(不要提前写库)',
+    '2. 收到照片后: 存到 work_photos/ 目录,命名 ' + slugifyForPrompt(STATE.recipe.name) + '__work__' + today.replace(/-/g, '') + '.jpg',
+    '3. 用 history_manager add 写入作品照片(--photo chef://work_photos/<文件名>;同一天已有记录则 update --photo)',
+    '   - recipe_id = ' + STATE.recipe.id,
+  ].join('\n');
+  doCopyText(text, '拍照 prompt 已复制!发给 AI 后,AI 会让你发照片,你直接发图即可');
+}
+
+function slugifyForPrompt(name){
+  return String(name).replace(/[\\/:*?"<>|]/g, '_').replace(/\s+/g, '_');
+}
+
+function doCopyText(text, okMsg){
+  const done = () => {
+    if (window.A08) { window.A08.toast(okMsg); }
+    else { alert(okMsg); }
+  };
+  const fallback = () => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch(e){ alert('复制失败,请手动复制'); }
+    document.body.removeChild(ta);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done).catch(fallback);
+  } else { fallback(); }
 }
 
 function resetCurrentStep(){
@@ -859,6 +1037,15 @@ function renderDone(){
   const total = (STATE.recipe.steps || []).length;
   document.getElementById('done-stats').textContent =
     `${STATE.recipe.name} · 预估 ${STATE.recipe.total_time_minutes} 分钟 · 共 ${total} 步`;
+  // T8 完结闭环: 实际用时(成品 + 用时 + 跳过步骤复盘)
+  const timeEl = document.getElementById('done-time');
+  if (STATE.actualSeconds > 0){
+    const m = Math.floor(STATE.actualSeconds / 60);
+    const s = STATE.actualSeconds % 60;
+    timeEl.textContent = `⏱ 实际用时 ${m} 分 ${s} 秒`;
+  } else {
+    timeEl.textContent = '';
+  }
 
   // 评分(bug D 修复:点击后调 updateCopyPreview 实时刷新复制内容)
   document.querySelectorAll('.star').forEach(s => {
@@ -1058,8 +1245,9 @@ prevStep = function(){
   saveProgress();
 };
 
-// 恢复进度(在 init 后尝试)
+// 恢复进度(在 init 后尝试 · T8: 仅增强 —— 显式 --step/URL #step 优先,localStorage 不可用不阻塞)
 function tryResume(){
+  if (STATE.startStep > 1) return;   // 已按 URL #step=N 断点续做,不再弹 localStorage
   const data = loadProgress();
   if (!data || data.step < 2) return;
   if (confirm(`上次做到第 ${data.step} 步,继续吗?`)){

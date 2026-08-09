@@ -102,7 +102,7 @@ scenes:
     scenario_title: 断点续做(AI 会话记忆)
     dimensions: {recipe: 指定菜名, progress: 已做 N 步}
     type: 向导+选择+回执
-    status: "【待开发】"
+    status: ""
     prompt: |-
       我刚才做到第 {{N}} 步,继续帮我做完。
     result: "AI 凭会话记忆生成从第 N 步开始的做菜页(不依赖浏览器本地存储);页面顶部进度条显示位置。"

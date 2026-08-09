@@ -168,7 +168,7 @@
       <p>「做菜模式 宫保虾球」「开始做红酒慢炖牛腩」</p>
     </div>
     <details class="cli">
-      <summary><span class="cli-name">cooking_render.py render &lt;菜名或ID&gt;</span></summary>
+      <summary><span class="cli-name">cooking_render.py render &lt;菜名或ID&gt; [--step N]</span></summary>
       <div class="cli-body">
         <p>AI 收到此唤醒词必须自动调用此命令。脚本内部自动执行 <code>recipe_manager.py show --json</code> 拿 17 表全量数据,然后注入 <code>templates/cooking_mode.html</code> 渲染。</p>
         <table class="flow-table">
@@ -177,6 +177,7 @@
           <tr><th>副作用</th><td>无(纯渲染)</td></tr>
           <tr><th>必发规则</th><td>渲染成功后必须用 <code>&lt;media&gt;</code> 标签把 HTML 推给用户,不能只给路径</td></tr>
         </table>
+        <p style="margin-top:8px"><b>T8 断点续做(2026-08-09)</b>: 用户说「我刚才做到第 N 步,继续帮我做完」→ AI 必须加 <code>--step N</code> 重新渲染,页面从第 N 步开始(URL 锚点 <code>#step=N</code>);进度来源 = AI 会话记忆(用户粘贴「📋 复制进度」按钮生成的 prompt),localStorage 仅增强。渲染后复制数据 scene_id = <code>cook-4</code>。</p>
       </div>
     </details>
   </div>

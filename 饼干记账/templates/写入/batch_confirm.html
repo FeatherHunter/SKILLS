@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>饼干记账 · 批量录入确认</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --bg:#f5f5f7; --card:#fff; --line:#e5e5ea; --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b; --blue:#007aff; --blue2:#0a63ce; --green:#34c759; --red:#ff3b30; --soft:#f5f8ff; --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05); }
+  body { font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--fg); line-height:1.6; -webkit-font-smoothing:antialiased; padding:0 0 90px; }
+  .wrap { max-width:720px; margin:0 auto; padding:24px 16px; }
+  .header { padding:6px 0 18px; }
+  .eyebrow { font-size:12px; color:var(--fg3); font-weight:600; letter-spacing:.06em; margin-bottom:6px; }
+  h1 { font-size:27px; font-weight:700; letter-spacing:-.02em; }
+  .chips { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .chip { font-size:11.5px; font-weight:600; padding:3px 10px; border-radius:999px; background:var(--soft); color:var(--blue2); border:1px solid #d7e6ff; }
+  .card { background:var(--card); border-radius:16px; box-shadow:var(--shadow); padding:18px 20px; margin-bottom:14px; }
+  .hint { font-size:12.5px; color:var(--fg2); margin-bottom:10px; }
+  .missing-banner { background:#ffeaea; border:1px solid #ffc9c9; border-radius:12px; padding:10px 14px; font-size:13px; color:#a33; margin-bottom:12px; display:none; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; }
+  th { text-align:left; font-size:11px; color:var(--fg3); font-weight:600; padding:6px 6px; border-bottom:1px solid var(--line); }
+  td { padding:6px; border-bottom:1px dashed var(--line); }
+  td input { width:100%; border:1px solid var(--line); border-radius:8px; padding:6px 9px; font-size:13px; font-family:inherit; outline:none; }
+  td input:focus { border-color:var(--blue); box-shadow:0 0 0 2px rgba(0,122,255,.12); }
+  tr.missing td input.amt { border-color:var(--red); background:#fff5f5; }
+  tr.missing .flag { color:var(--red); font-size:11px; font-weight:700; }
+  .row-num { color:var(--fg3); font-size:12px; font-weight:700; width:28px; }
+  .total { display:flex; justify-content:space-between; align-items:baseline; padding:12px 4px 0; border-top:1px solid var(--line); margin-top:6px; }
+  .total .t { font-size:13px; color:var(--fg3); font-weight:600; }
+  .total .v { font-size:18px; font-weight:700; color:var(--red); font-variant-numeric:tabular-nums; }
+  .total .n { font-size:12.5px; color:var(--fg3); margin-left:8px; }
+
+  .actions { display:flex; justify-content:flex-end; gap:10px; flex-wrap:wrap; margin:4px 0 16px; }
+  .btn-main { display:inline-flex; align-items:center; gap:6px; border:0; background:var(--blue); color:#fff; border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
+  .btn-main:hover { background:var(--blue2); }
+  .btn-main.copied { background:var(--green); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; border:0; background:#fff; color:var(--fg); border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
+  .btn:hover { background:var(--bg); }
+
+  .toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) scale(.9); opacity:0; background:rgba(28,28,30,.94); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); color:#f0f0f0; border-radius:14px; padding:13px 14px 13px 16px; display:flex; align-items:flex-start; gap:12px; max-width:480px; min-width:300px; box-shadow:0 10px 32px rgba(0,0,0,.32); pointer-events:none; transition:opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index:99; }
+  .toast.show { opacity:1; transform:translateX(-50%) scale(1); pointer-events:auto; }
+  .toast-title { font-weight:600; font-size:12.5px; color:#fff; margin-bottom:2px; }
+  .toast-detail { font-size:11px; color:#c8c8cc; }
+  .toast-close { background:rgba(255,255,255,.10); color:#34c759; border:0; border-radius:8px; padding:5px 9px; font-size:10.5px; margin-left:6px; cursor:pointer; flex-shrink:0; }
+  @media (max-width:640px) { .wrap { padding:18px 12px 70px; } h1 { font-size:23px; } td input { padding:7px 8px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="header">
+    <div class="eyebrow">饼干记账 · 批量录入</div>
+    <h1>批量录入多笔</h1>
+    <div class="chips" id="chips"></div>
+  </header>
+
+  <main>
+    <div class="card">
+      <div class="hint" id="ledgerHint"></div>
+      <div class="missing-banner" id="missingBanner">⚠️ <b>有条目缺金额</b> —— 标红行请补金额后再确认（AI 不会替你猜）。</div>
+      <table>
+        <thead><tr><th class="row-num">#</th><th>金额(元)</th><th style="width:38%">分类</th><th>备注</th><th style="width:30px"></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="total"><span class="t">合计</span><span><span class="v" id="totalAmt">0.00</span><span class="n" id="totalCnt">0 笔</span></span></div>
+    </div>
+  </main>
+
+  <div class="actions">
+    <button class="btn-main" id="copyPromptBtn">📋 复制确认 prompt</button>
+    <button class="btn" id="copyDataBtn">复制数据</button>
+    <button class="btn" id="copyLogBtn">🛠 复制日志</button>
+  </div>
+
+  <script id="payload" type="application/json"><!--INJECT-DATA--></script>
+
+  <div class="toast" id="toast">
+    <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+    <div class="toast-detail" id="toastDetail"></div>
+    <button class="toast-close" id="toastClose">✓ 知道了</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var esc = function (s) { return String(s ?? '').replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); };
+
+  var payload;
+  try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
+  if (!payload || payload.status !== 'ok') return;
+  var d = payload.data || {};
+  var meta = d.meta || {};
+  var form = d.form || {};
+  var items = form.items || [];
+  var ledger = form.ledger || '';
+
+  document.getElementById('chips').innerHTML =
+    '<span class="chip">⚡ 批量录入</span>' +
+    '<span class="chip">● 逐笔确认</span>' +
+    '<span class="chip">🕒 ' + esc(d.generated_at || '') + '</span>';
+  document.getElementById('ledgerHint').textContent =
+    (ledger ? '账本: ' + ledger : '账本: 生活(默认)') + ' · ' + items.length + ' 笔待确认';
+
+  // ── 表格渲染 ──
+  var tbody = document.getElementById('rows');
+  var rows = [];
+  items.forEach(function (it, i) {
+    var tr = document.createElement('tr');
+    if (it.missing) tr.className = 'missing';
+    tr.innerHTML =
+      '<td class="row-num">' + (i + 1) + '</td>' +
+      '<td><input class="amt" value="' + esc(it.amount || '') + '" placeholder="必填"></td>' +
+      '<td><input class="cat" value="' + esc(it.category || '') + '" placeholder="如:餐饮"></td>' +
+      '<td><input class="note" value="' + esc(it.note || '') + '" placeholder="选填"></td>' +
+      '<td class="flag">' + (it.missing ? '缺金额' : '') + '</td>';
+    tbody.appendChild(tr);
+    rows.push(tr);
+  });
+
+  function collect() {
+    return rows.map(function (tr) {
+      return {
+        amount: tr.querySelector('.amt').value.trim(),
+        category: tr.querySelector('.cat').value.trim(),
+        note: tr.querySelector('.note').value.trim(),
+      };
+    });
+  }
+  function refresh() {
+    var data = collect();
+    var missing = data.filter(function (x) { return !x.amount; });
+    document.getElementById('missingBanner').style.display = missing.length ? 'block' : 'none';
+    rows.forEach(function (tr, i) {
+      tr.classList.toggle('missing', !data[i].amount);
+      tr.querySelector('.flag').textContent = data[i].amount ? '' : '缺金额';
+    });
+    var total = data.reduce(function (s, x) { return s + (parseFloat(x.amount) || 0); }, 0);
+    document.getElementById('totalAmt').textContent = total.toFixed(2);
+    document.getElementById('totalCnt').textContent = data.length + ' 笔';
+  }
+  tbody.addEventListener('input', refresh);
+  refresh();
+
+  // ── 确认 prompt ──
+  function buildPrompt() {
+    var data = collect();
+    var lines = [];
+    lines.push('请加载「饼干记账」技能,帮我批量记几笔账(唤醒词:批量录入):');
+    lines.push('');
+    lines.push('  条\u2003目:');
+    data.forEach(function (x, i) {
+      var cat = x.category || '__(请 AI 判断分类)__';
+      var note = x.note ? (' ' + x.note) : '';
+      lines.push('  ' + (i + 1) + '. ' + x.amount + '元 ' + cat + note);
+    });
+    lines.push('  账\u2003本: ' + (ledger || '生活'));
+    return lines.join('\n');
+  }
+
+  // ── 复制 ──
+  var toastTimer = null;
+  function showToast(fmt) {
+    var detailMap = { prompt: '粘贴给 AI 即可记账', data: '粘贴到聊天/笔记', log: '发给开发者排障' };
+    document.getElementById('toastFmt').textContent = fmt === 'log' ? '日志' : fmt.toUpperCase();
+    document.getElementById('toastDetail').textContent = detailMap[fmt] || '';
+    document.getElementById('toast').classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { document.getElementById('toast').classList.remove('show'); }, 4500);
+  }
+  function doCopy(text, fmt, btn) {
+    function done() { if (btn) { btn.classList.add('copied'); setTimeout(function () { btn.classList.remove('copied'); }, 1600); } showToast(fmt); }
+    function fb() { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fb);
+    else fb();
+  }
+  document.getElementById('copyPromptBtn').onclick = function () { doCopy(buildPrompt(), 'prompt', this); };
+  document.getElementById('copyDataBtn').onclick = function () {
+    doCopy(JSON.stringify({ form: { ledger: ledger, items: collect() } }, null, 2), 'data');
+  };
+  document.getElementById('copyLogBtn').onclick = function () {
+    var lines = [];
+    lines.push('① 场景标识');
+    lines.push('  command_cn: 批量录入 确认');
+    lines.push('  唤醒词: 批量录入');
+    lines.push('  场景名: 批量录入多笔');
+    lines.push('');
+    lines.push('② AI 思考链: 逐笔解析 → 表格确认 → 用户补缺 → 写入');
+    lines.push('');
+    lines.push('③ 底层数据结构');
+    lines.push('  items: ' + JSON.stringify(collect()));
+    lines.push('  DB 操作: INSERT bills ×' + items.length + '(待用户确认后)');
+    lines.push('');
+    lines.push('④ 调用链');
+    lines.push('  渲染脚本: ' + (meta.render_cmd || '(未知)'));
+    lines.push('');
+    lines.push('⑤ 时间戳 + 版本');
+    lines.push('  本地时间: ' + (d.generated_at || '(未知)'));
+    lines.push('  skill 版本: ' + (meta.version || '(未知)'));
+    lines.push('');
+    lines.push('⑥ 异常信息: ' + (form.missing_count ? '有 ' + form.missing_count + ' 条缺金额(用户补)' : '无'));
+    doCopy(lines.join('\n'), 'log');
+  };
+  document.getElementById('toastClose').onclick = function () {
+    document.getElementById('toast').classList.remove('show');
+    clearTimeout(toastTimer);
+  };
+})();
+</script>
+</body>
+</html>

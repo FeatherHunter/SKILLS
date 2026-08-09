@@ -33,11 +33,13 @@ if str(_SCRIPT_DIR) not in sys.path:
 
 SKILL_DIR = _SCRIPT_DIR.parent
 TEMPLATE = SKILL_DIR / "templates" / "写入" / "expense_form.html"
+BATCH_TEMPLATE = SKILL_DIR / "templates" / "写入" / "batch_confirm.html"
 SKILL_VERSION = "2.0"
 
 FORM_TYPES = {
     "expense": {"scene_id": "write_expense", "wake_word": "记支出", "action": "记一笔支出", "command_cn": "记支出"},
     "income":  {"scene_id": "write_income",  "wake_word": "记收入", "action": "记一笔收入", "command_cn": "记收入"},
+    "photo":   {"scene_id": "write_bill_photo", "wake_word": "拍账单", "action": "拍账单记账", "command_cn": "拍账单"},
 }
 
 
@@ -130,8 +132,9 @@ def _category_suggestions(records: list, category_hint: str, form_type: str) -> 
     return [{"name": category_hint, "kind": "new"}]
 
 
-def build_payload(form_type: str, fields: dict, category_hint: str, note_hint: str, records: list) -> dict:
-    """构建采集表单 payload"""
+def build_payload(form_type: str, fields: dict, category_hint: str, note_hint: str, records: list,
+                  photo_meta: dict = None) -> dict:
+    """构建采集表单 payload(expense/income/photo)"""
     meta = FORM_TYPES[form_type]
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -161,8 +164,9 @@ def build_payload(form_type: str, fields: dict, category_hint: str, note_hint: s
             "form": {
                 "type": form_type,
                 "fields": filled,
-                "prefill_source": prefill_src,
-                "duplicate_hint": dup_hint,
+                "prefill_source": None if form_type == "photo" else prefill_src,
+                "duplicate_hint": dup_hint if form_type != "photo" else None,
+                "photo_meta": photo_meta,
                 "category_suggestions": _category_suggestions(records, category_hint, form_type),
                 "categories_history": _extract_categories(records),
                 "categories_all": _all_l1(),
@@ -172,19 +176,58 @@ def build_payload(form_type: str, fields: dict, category_hint: str, note_hint: s
     }
 
 
+def build_batch_payload(items: list, ledger: str, records: list) -> dict:
+    """构建批量录入确认 payload(form.type=batch)"""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    normalized = []
+    missing = 0
+    for it in items:
+        amount = str(it.get("amount") or "").strip()
+        category = str(it.get("category") or "").strip()
+        note = str(it.get("note") or "").strip()
+        is_missing = not amount
+        if is_missing:
+            missing += 1
+        normalized.append({"amount": amount, "category": category, "note": note, "missing": is_missing})
+    return {
+        "status": "ok",
+        "data": {
+            "title": "批量录入多笔",
+            "generated_at": now,
+            "meta": {
+                "scene_id": "write_batch",
+                "wake_word": "批量录入",
+                "command_cn": "批量录入 确认",
+                "occurred_at": now,
+                "render_cmd": "render_write.py batch",
+                "version": SKILL_VERSION,
+            },
+            "form": {
+                "type": "batch",
+                "items": normalized,
+                "ledger": ledger or "生活",
+                "missing_count": missing,
+                "categories_history": _extract_categories(records),
+                "categories_all": _all_l1(),
+            },
+        },
+        "message": "批量录入确认",
+    }
+
+
 def _all_l1() -> list:
     from validators import ALL_L1
     return sorted(ALL_L1)
 
 
-def default_output_path(form_type: str) -> Path:
+def default_output_path(command_name: str) -> Path:
     from html_paths import html_path
-    return html_path(FORM_TYPES[form_type]["command_cn"] + "采集")
+    return html_path(command_name)
 
 
 def main():
     parser = argparse.ArgumentParser(description="饼干记账 · 写入域采集表单渲染")
-    parser.add_argument("form_type", choices=list(FORM_TYPES.keys()), help="expense / income")
+    parser.add_argument("form_type", choices=list(FORM_TYPES.keys()) + ["batch"], help="expense / income / photo / batch")
     parser.add_argument("--amount", default=None, help="金额")
     parser.add_argument("--category", default=None, help="分类(已确定)")
     parser.add_argument("--category-hint", default=None, help="分类名目意图(AI 语义推荐)")
@@ -193,36 +236,65 @@ def main():
     parser.add_argument("--time", default=None, help="时间")
     parser.add_argument("--note", default=None, help="备注")
     parser.add_argument("--currency", default=None, help="币种")
+    parser.add_argument("--images", type=int, default=1, help="拍账单:已收图片数")
+    parser.add_argument("--photo-note", default=None, help="拍账单:识别说明(如:识别自外卖截图)")
+    parser.add_argument("--items", default=None, help="批量:条目 JSON 数组字符串")
     parser.add_argument("--out", default=None, help="输出路径")
     args = parser.parse_args()
 
-    fields = {
-        "amount": args.amount or "",
-        "category": args.category or "",
-        "account": args.account or "",
-        "ledger": args.ledger or "",
-        "time": args.time or "",
-        "note": args.note or "",
-        "currency": args.currency or "",
-    }
-
     records = _load_history()
-    payload = build_payload(args.form_type, fields, args.category_hint or "", args.note or "", records)
 
-    if not TEMPLATE.exists():
-        print(f"✗ 模板不存在: {TEMPLATE}", file=sys.stderr)
+    # ── batch 分支 ──
+    if args.form_type == "batch":
+        if not args.items:
+            print("✗ batch 需要 --items(JSON 数组字符串,如 '[{\"amount\":\"35\",\"category\":\"餐饮\"}]')", file=sys.stderr)
+            sys.exit(1)
+        try:
+            items = json.loads(args.items)
+        except json.JSONDecodeError as e:
+            print(f"✗ --items 不是合法 JSON: {e}", file=sys.stderr)
+            sys.exit(1)
+        payload = build_batch_payload(items, args.ledger or "", records)
+        template_path = BATCH_TEMPLATE
+        out_name = "批量录入确认"
+    else:
+        fields = {
+            "amount": args.amount or "",
+            "category": args.category or "",
+            "account": args.account or "",
+            "ledger": args.ledger or "",
+            "time": args.time or "",
+            "note": args.note or "",
+            "currency": args.currency or "",
+        }
+        photo_meta = None
+        if args.form_type == "photo":
+            photo_meta = {
+                "image_count": args.images or 1,
+                "note": args.photo_note or "AI 识别结果，请核对金额",
+            }
+        payload = build_payload(args.form_type, fields, args.category_hint or "", args.note or "",
+                                records, photo_meta=photo_meta)
+        template_path = TEMPLATE
+        out_name = FORM_TYPES[args.form_type]["command_cn"] + "采集"
+
+    if not template_path.exists():
+        print(f"✗ 模板不存在: {template_path}", file=sys.stderr)
         sys.exit(1)
-    template = TEMPLATE.read_text(encoding="utf-8")
+    template = template_path.read_text(encoding="utf-8")
     payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
     html = template.replace("<!--INJECT-DATA-->", payload_json, 1)
 
-    out = Path(args.out) if args.out else default_output_path(args.form_type)
+    out = Path(args.out) if args.out else default_output_path(out_name)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(html, encoding="utf-8-sig")
     print(f"✓ 已生成采集表单: {out}")
-    print(f"  分类建议: {[s['name'] for s in payload['data']['form']['category_suggestions']]}")
-    if payload["data"]["form"]["prefill_source"]:
-        print(f"  预填: {payload['data']['form']['prefill_source']}")
+    if args.form_type == "batch":
+        print(f"  条目: {len(payload['data']['form']['items'])} 笔,缺金额: {payload['data']['form']['missing_count']}")
+    else:
+        print(f"  分类建议: {[s['name'] for s in payload['data']['form']['category_suggestions']]}")
+        if payload["data"]["form"]["prefill_source"]:
+            print(f"  预填: {payload['data']['form']['prefill_source']}")
     return 0
 
 

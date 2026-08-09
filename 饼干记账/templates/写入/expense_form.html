@@ -134,18 +134,32 @@
   var form = d.form || {};
   var fields = form.fields || {};
   var TYPE = form.type || 'expense';
-  var WAKE = meta.wake_word || (TYPE === 'expense' ? '记支出' : '记收入');
-  var ACTION = TYPE === 'expense' ? '记一笔支出' : '记一笔收入';
+  var TYPE_META = {
+    expense: { wake: '记支出', action: '记一笔支出', sub: '支出采集' },
+    income:  { wake: '记收入', action: '记一笔收入', sub: '收入采集' },
+    photo:   { wake: '拍账单', action: '拍账单记账', sub: '图片识别确认' },
+  };
+  var TM = TYPE_META[TYPE] || TYPE_META.expense;
+  var WAKE = meta.wake_word || TM.wake;
+  var ACTION = meta.action || TM.action;
 
   document.getElementById('title').textContent = ACTION;
-  document.getElementById('eyebrow').textContent = '饼干记账 · ' + (TYPE === 'expense' ? '支出' : '收入') + '采集';
+  document.getElementById('eyebrow').textContent = '饼干记账 · ' + TM.sub;
   document.getElementById('chips').innerHTML =
     '<span class="chip">⚡ ' + esc(WAKE) + '</span>' +
     '<span class="chip">● 填写确认</span>' +
     '<span class="chip">🕒 ' + esc(d.generated_at || '') + '</span>';
 
+  // ── 拍账单模式:AI 识别标注 ──
+  if (TYPE === 'photo' && form.photo_meta) {
+    var pm = form.photo_meta;
+    document.getElementById('prefillBox').textContent =
+      '🖼 已收到 ' + pm.image_count + ' 张账单图片 · ' + (pm.note || 'AI 识别结果，请核对金额');
+    document.getElementById('prefillBox').hidden = false;
+  }
+
   // ── 预填 + 重复提示 ──
-  if (form.prefill_source) {
+  if (form.prefill_source && TYPE !== 'photo') {
     document.getElementById('prefillBox').textContent = '⚡ ' + form.prefill_source + '(可直接确认或修改)';
     document.getElementById('prefillBox').hidden = false;
   }
@@ -231,7 +245,7 @@
   // 新建输入聚焦即视为选新分类
   elNewCat.onfocus = function () { curCat = this.value.trim(); };
 
-  // ── 确认 prompt 生成 ──
+  // ── 确认 prompt 生成(photo 模式带识别字段确认) ──
   function fmtField(k, v, hint) { return '  ' + k + ': ' + (v || '__' + (hint || '') + '__'); }
   function buildPrompt() {
     var lines = [];

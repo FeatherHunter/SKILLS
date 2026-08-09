@@ -114,3 +114,71 @@ class TestPayload:
         assert "AI 推荐的已有分类" in text             # 已有标记
         assert "copyDataBtn" in text and "copyLogBtn" in text  # 复制数据/日志
         assert "toastClose" in text                    # B1 toast
+
+
+class TestPhoto:
+    def test_photo_payload(self):
+        p = rw.build_payload("photo", {"amount": "35.5", "category": "餐饮/外卖/午餐"}, "午餐", "",
+                             RECORDS, photo_meta={"image_count": 1, "note": "AI 识别结果，请核对金额"})
+        d = p["data"]
+        assert d["meta"]["wake_word"] == "拍账单"
+        assert d["form"]["type"] == "photo"
+        assert d["form"]["photo_meta"]["image_count"] == 1
+        # photo 模式:不显示预填/重复(识别来源标注替代)
+        assert d["form"]["prefill_source"] is None
+        assert d["form"]["duplicate_hint"] is None
+
+    def test_photo_html_has_identify_banner(self, tmp_path):
+        p = rw.build_payload("photo", {"amount": "35.5", "category": "餐饮/外卖/午餐"}, "午餐", "",
+                             RECORDS, photo_meta={"image_count": 1, "note": "AI 识别结果，请核对金额"})
+        template = rw.TEMPLATE.read_text(encoding="utf-8")
+        html = template.replace("<!--INJECT-DATA-->",
+                                json.dumps(p, ensure_ascii=False).replace("</", "<\\/"), 1)
+        out = tmp_path / "photo.html"
+        out.write_text(html, encoding="utf-8-sig")
+        text = out.read_text(encoding="utf-8-sig")
+        assert "拍账单" in text
+        # 识别标注在 payload JSON(JS 渲染 prefillBox),静态断言 payload 数据
+        assert '"photo_meta"' in text
+        assert '"image_count": 1' in text
+        # photo 模式模板含识别标注渲染逻辑(JS 分支)
+        assert "AI 识别结果，请核对金额" in text
+
+
+class TestBatch:
+    def test_batch_payload_normal(self):
+        items = [{"amount": "35", "category": "餐饮/外卖/午餐", "note": "午饭"},
+                 {"amount": "25", "category": "餐饮/咖啡奶茶/奶茶", "note": "奶茶"}]
+        p = rw.build_batch_payload(items, "生活", RECORDS)
+        d = p["data"]
+        assert d["meta"]["wake_word"] == "批量录入"
+        assert d["form"]["type"] == "batch"
+        assert len(d["form"]["items"]) == 2
+        assert d["form"]["missing_count"] == 0
+
+    def test_batch_missing_amount_flagged(self):
+        items = [{"amount": "", "category": "餐饮", "note": "午饭"},
+                 {"amount": "25", "category": "奶茶", "note": ""}]
+        p = rw.build_batch_payload(items, "", RECORDS)
+        form = p["data"]["form"]
+        assert form["missing_count"] == 1
+        assert form["items"][0]["missing"] is True
+        assert form["items"][1]["missing"] is False
+
+    def test_batch_html_table(self, tmp_path):
+        items = [{"amount": "35", "category": "餐饮/外卖/午餐", "note": "午饭"},
+                 {"amount": "", "category": "奶茶", "note": "下午茶"}]
+        p = rw.build_batch_payload(items, "生活", RECORDS)
+        template = rw.BATCH_TEMPLATE.read_text(encoding="utf-8")
+        html = template.replace("<!--INJECT-DATA-->",
+                                json.dumps(p, ensure_ascii=False).replace("</", "<\\/"), 1)
+        out = tmp_path / "batch.html"
+        out.write_text(html, encoding="utf-8-sig")
+        raw = out.read_bytes()
+        assert raw[:3] == b"\xef\xbb\xbf"
+        text = raw.decode("utf-8-sig")
+        assert "id=\"rows\"" in text            # 表格行容器
+        assert "缺金额" in text                 # 缺金额标记
+        assert "missingBanner" in text          # 缺金额警示条
+        assert "id=\"totalAmt\"" in text        # 总计
+        assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text

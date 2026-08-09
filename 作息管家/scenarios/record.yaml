@@ -1,0 +1,12 @@
+# 作息管家 · 记录域场景片段(「记录」= 合并 #0 记作息 5 子场景 · T2 · 2026-08-09)
+# 字段契约(§07 §2.2): wake_word / scenario_id / scenario_title / dimensions / prompt / status / result
+- wake_word: '#0 记作息'
+  scenario_id: record_add_single
+  scenario_title: 添加单条作息记录
+  dimensions:
+    activity: 任意活动
+    duration_minutes: 1-1440
+    category: 白名单二级
+  prompt: 请帮我记一条作息:今天 14:00-15:00 写了 AI 调优代码
+  status: ''
+  result: 写入 1 条作息记录,自动生成三件套结果 HTML(全天时间轴 + 过去几小时推断高亮 + 状态总览)

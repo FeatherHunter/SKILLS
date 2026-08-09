@@ -46,7 +46,7 @@
     missing: 任一必填
   prompt: 请帮我记一条作息(用户漏说活动名)
   status: ''
-  result: 校验报错,提示缺哪个字段 + 当前值 + 期望值
+  result: 校验报错,提示缺哪个字段 + 当前值 + 期望值,不生成结果 HTML
 - wake_word: '#1 准备消息'
   scenario_id: prep_default
   scenario_title: 默认游标到当前时间拉取

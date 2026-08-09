@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>实施 MAP 全部 ISSUE · 作息管家</title>
+<style>
+  :root { --bg:#f5f5f7; --card:#fff; --line:#e5e5ea; --text:#1d1d1f; --text2:#515154; --muted:#86868b; --accent:#0071e3; --accent-soft:rgba(0,113,227,.08); --ok:#34c759; --ok-soft:rgba(52,199,89,.12); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','PingFang SC','Microsoft YaHei',sans-serif; font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased; }
+  .wrap { max-width:900px; margin:0 auto; padding:48px 20px 80px; }
+  header { margin-bottom:26px; }
+  .kicker { display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:600; letter-spacing:.04em; color:var(--ok); background:var(--ok-soft); padding:5px 14px; border-radius:999px; }
+  h1 { font-size:28px; font-weight:700; letter-spacing:-0.01em; margin:14px 0 6px; }
+  .sub { color:var(--text2); font-size:14px; }
+  .issue { background:var(--card); border-radius:18px; padding:20px 24px; margin-bottom:16px; box-shadow:0 1px 0 rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.05); }
+  .issue-head { display:flex; align-items:center; gap:10px; margin-bottom:10px; border-bottom:1px solid var(--line); padding-bottom:10px; }
+  .no { flex:none; font-size:13px; font-weight:700; color:var(--accent); background:var(--accent-soft); padding:3px 10px; border-radius:999px; }
+  .title { font-size:16px; font-weight:700; }
+  .md-h { font-size:14px; font-weight:700; margin:12px 0 6px; color:var(--text); }
+  .md-p { font-size:13px; color:var(--text2); margin:4px 0; }
+  .md-ul { margin:4px 0 8px 6px; padding-left:20px; }
+  .md-ul li { font-size:13px; color:var(--text2); margin:3px 0; }
+  .link { margin-top:10px; font-size:11.5px; }
+  .link a { color:var(--accent); text-decoration:none; }
+  footer { margin-top:30px; text-align:center; color:var(--muted); font-size:12.5px; }
+  @media (max-width:640px) { h1 { font-size:24px; } .wrap { padding:32px 14px 56px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="kicker">实施 MAP · 全部 ISSUE</span>
+    <h1>10 个 issue（#224-#233）</h1>
+    <p class="sub">实施 map #224 + 9 张子票。GitHub 实时源见各 issue 链接。</p>
+  </header>
+  
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#224</span>
+            <span class="title">[作息管家] L级重构 · 实施 map</span>
+          </div>
+          <div class="body"><h3 class='md-h'>作息管家 L 级重构 · 实施 map（wayfinder · 第 2 阶段）</h3>
+<p class='md-p'>&gt; 本地镜像 = 真相源（09 军规 8）。GitHub 正文与本文件同步维护。</p>
+<p class='md-p'>&gt; 来源：规格 map #190 全票闭环（R2/G1/R3/G2）+ 对抗式审查（第一性原理 × 2 轮，9 票最终版）。</p>
+<p class='md-p'>&gt; 创建：2026-08-09</p>
+<h3 class='md-h'>Destination</h3>
+<p class='md-p'>作息管家 L 级重构**实施交付**：开源清仓落地、记录/复盘/计划链路升级、81 场景全部可执行、onboarding 三段式上线。规格决策全部在实施中兑现，交付清单 + 考题对齐完成。</p>
+<h3 class='md-h'>Notes</h3>
+<ul class='md-ul'>
+<li>**流程**：09 L 级两阶段第 2 阶段；规格决策全部定案（规格 map #190，勿重开）</li>
+<li>**依赖拓扑**（第一性原理定）：阶段 1 串行 4 票（T0-T3，动共享文件）→ 阶段 2 并行 4 票（T4-T7，真新增自包含）→ 阶段 3 收尾 1 票（T8 合并）</li>
+<li>**架构原则**（对抗式审查修正）：记录/复盘 = 现有链路改造（归阶段 1）；渐进式注册通道（不动现有 49 命令分发）；复盘周/月/区间 = 一体模板（不双模板并存）；运行时隔离 = `SKILLS_DB_PATH` 指向临时目录（env 级）</li>
+<li>**人类参与点**（09 §11）：push / 数据层（动 DB 结构前确认）/ 规格口径 / 人工双浏览器审查 / 考题判定 / 最终交付</li>
+<li>**协议红线**：gh = `&amp; &quot;D:\0Tools\GitHubCLI\gh.exe&quot;`；Git 只 `add`/`commit`；全中文 commit + `Tested-By:`；双门禁 A/B；偏离记录三问</li>
+<li>**提交纪律**：commit 前 `git status` 检查工作区（他人未提交改动 → 等/告知）；只 add 自己路径；禁 add -A / reset --hard / clean / 动历史</li>
+<li>规格决策索引：`.scratch/skill-levelup/`（specs/、issues/、各轮决议）</li>
+</ul>
+<h3 class='md-h'>Decisions so far</h3>
+<h3 class='md-h'>Not yet specified</h3>
+<ul class='md-ul'>
+<li>T2/T3 具体改造点的行级清单（认领票时展开）</li>
+<li>T8 场景替换关系的精确映射（记录→#0 系列 / 制定计划→#17 / 批量导入→#0-json）</li>
+</ul>
+<h3 class='md-h'>Out of scope</h3>
+<ul class='md-ul'>
+<li>git 历史清洗（Q10 + 对抗式审查矛盾 1，人类接受）</li>
+<li>macOS / CI（Q2 / Q12）</li>
+<li>新增规格级决策（实施阶段禁止新增功能，只修规格内缺陷）</li>
+</ul></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/224" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/224</a></div>
+        </div>
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#225</span>
+            <span class="title">[作息管家] T0 开源清仓+路径统一（实施）</span>
+          </div>
+          <div class="body"><h3 class='md-h'>Question</h3>
+<p class='md-p'>执行 R2 处置清单：开源清仓 + 路径统一。实施 map T0（先决，无依赖）。</p>
+<h3 class='md-h'>文件</h3>
+<ul class='md-ul'>
+<li>`scripts/schedule_db.py`（get_db_base_dir 统一链：env → D:/.db(win) → ~/.local/share/schedule-guardian/db(linux)）</li>
+<li>`scripts/schedule_html_render.py:377` / `scripts/help_render.py:50`（import 复用统一解析器）</li>
+<li>`scripts/validators.py`（白名单路径）+ `scripts/migrate_categories.py`（引用 DB_PATH）</li>
+<li>删除：`scripts/direct_add.py` / `batch_add_morning.py` / `plan*.json`（git rm）</li>
+<li>`.gitignore` 修正 + `LICENSE`（MIT 王辰浩）+ 文档绝对路径 8 处</li>
+</ul>
+<h3 class='md-h'>交付</h3>
+<p class='md-p'>处置清单 16 项全落地（清单见规格 `.scratch/skill-levelup/issues/R2-开源准备处置.md`）；pytest 全过。</p>
+<h3 class='md-h'>门禁</h3>
+<p class='md-p'>门禁 A（垂直 5 层对账）+ 偏离记录三问 + Tested-By。</p></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/225" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/225</a></div>
+        </div>
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#226</span>
+            <span class="title">[作息管家] T1 注册通道+合并器（实施）</span>
+          </div>
+          <div class="body"><h3 class='md-h'>Question</h3>
+<p class='md-p'>实现渐进式注册通道 + 场景合并器（对抗式审查矛盾 5 修正：不动现有 49 命令分发）。</p>
+<h3 class='md-h'>文件</h3>
+<ul class='md-ul'>
+<li>`scripts/schedule_cli.py`（**末尾追加**动态加载段：发现域模块 `COMMANDS` 注册表，自动 dispatch；现有 if/elif 不动）</li>
+<li>`scripts/update_scenarios.py`（合并器：读 `scenarios/*.yaml` 片段 → 校验字段契约 → 拼接待办 T8 写回 references/scenarios.yaml，幂等）</li>
+</ul>
+<h3 class='md-h'>交付</h3>
+<p class='md-p'>域模块自带 COMMANDS → CLI 自动发现；合并器可运行（T8 用）；fixture 隔离约定成文（SKILLS_DB_PATH=临时目录）。</p>
+<h3 class='md-h'>依赖</h3>
+<p class='md-p'>← T0（路径统一先落）</p></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/226" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/226</a></div>
+        </div>
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#227</span>
+            <span class="title">[作息管家] T2 记录链路升级（实施）</span>
+          </div>
+          <div class="body"><h3 class='md-h'>Question</h3>
+<p class='md-p'>记录链路升级：add 回执 → 三件套结果 HTML（对抗式审查矛盾 1 修正：这是现有链路改造，非纯新增）。</p>
+<h3 class='md-h'>文件</h3>
+<ul class='md-ul'>
+<li>`scripts/schedule_cli.py` cmd_add_record 区 + `scripts/schedule_html_render.py`（回执渲染）</li>
+<li>`templates/record_result.html`（三件套：全天时间轴 + 过去几小时推断高亮 + 状态总览）</li>
+</ul>
+<h3 class='md-h'>交付</h3>
+<p class='md-p'>记录一笔 → 三件套结果 HTML；「记录」场景合并 #0 记作息 5 子场景（record_add_single/json/illegal/l1/missing 变体）；一 commit 一场景。</p>
+<h3 class='md-h'>依赖</h3>
+<p class='md-p'>← T1（注册通道）；与 T3 串行（同改 schedule_cli.py）</p></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/227" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/227</a></div>
+        </div>
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#228</span>
+            <span class="title">[作息管家] T3 复盘链路升级（实施）</span>
+          </div>
+          <div class="body"><h3 class='md-h'>Question</h3>
+<p class='md-p'>复盘链路升级：周/月/区间一体模板（对抗式审查矛盾 2 修正：不双模板并存）。</p>
+<h3 class='md-h'>文件</h3>
+<ul class='md-ul'>
+<li>`scripts/schedule_cli.py` render-replay 区 + 复盘编排（区间聚合复用现有 calculations.py）</li>
+<li>`templates/schedule_replay.html`（升级一体模板：今日=对照+叙事+健康分 / 周=趋势+热力图+均值 / 月=聚合+环比+目标；区间按长度路由区块）</li>
+</ul>
+<h3 class='md-h'>交付</h3>
+<p class='md-p'>「复盘今日/本周/本月/区间」一个模板承载；健康分全粒度；缺计划提示补齐；复盘→计划衔接引导。一 commit 一粒度。</p>
+<h3 class='md-h'>依赖</h3>
+<p class='md-p'>← T1；与 T2 串行（同改 schedule_cli.py）；编排接口冻结供后续</p></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/228" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/228</a></div>
+        </div>
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#229</span>
+            <span class="title">[作息管家] T4 批量导入 batch-add（实施）</span>
+          </div>
+          <div class="body"><h3 class='md-h'>Question</h3>
+<p class='md-p'>批量导入 batch-add（真新增，自包含）。</p>
+<h3 class='md-h'>文件</h3>
+<ul class='md-ul'>
+<li>`scripts/batch_scenarios.py`（自带 COMMANDS 注册表：batch-add &lt;date&gt; --json @records.json，校验复用 add 链路）</li>
+<li>`scenarios/batch.yaml`（场景片段）+ `tests/`（fixture DB）</li>
+</ul>
+<h3 class='md-h'>交付</h3>
+<p class='md-p'>batch-add 命令模块，自注册进 CLI；幂等不提供（记录无唯一键，文档注明）；一 commit。</p>
+<h3 class='md-h'>依赖</h3>
+<p class='md-p'>← T1（注册通道）；不碰 schedule_cli.py / scenarios.yaml</p></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/229" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/229</a></div>
+        </div>
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#230</span>
+            <span class="title">[作息管家] T5 制定次日计划（实施）</span>
+          </div>
+          <div class="body"><h3 class='md-h'>Question</h3>
+<p class='md-p'>制定次日计划（真新增，强化 #17 商量计划）。</p>
+<h3 class='md-h'>文件</h3>
+<ul class='md-ul'>
+<li>`scripts/plan_scenarios.py`（COMMANDS）+ `templates/plan_result.html`（时间轴 + 分类色带 + 历史贴合提示）</li>
+<li>`scenarios/plan.yaml` + `tests/`</li>
+</ul>
+<h3 class='md-h'>交付</h3>
+<p class='md-p'>计划结果 HTML 呈现强化；多轮交互（生成→调整→再生成）走既有商量计划流程；一 commit。</p>
+<h3 class='md-h'>依赖</h3>
+<p class='md-p'>← T1；不碰 schedule_cli.py / scenarios.yaml</p></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/230" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/230</a></div>
+        </div>
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#231</span>
+            <span class="title">[作息管家] T6 周视图（实施）</span>
+          </div>
+          <div class="body"><h3 class='md-h'>Question</h3>
+<p class='md-p'>周视图（真新增，复用热力图组件）。</p>
+<h3 class='md-h'>文件</h3>
+<ul class='md-ul'>
+<li>`scripts/week_view.py`（COMMANDS）+ `templates/week_view.html`（7×24 全分类总览，复用 record_category 热力图组件）</li>
+<li>`tests/`</li>
+</ul>
+<h3 class='md-h'>交付</h3>
+<p class='md-p'>周视图场景；复用+扩展热力图组件（对抗式审查矛盾 4）；一 commit。</p>
+<h3 class='md-h'>依赖</h3>
+<p class='md-p'>← T1；不碰 schedule_cli.py / scenarios.yaml</p></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/231" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/231</a></div>
+        </div>
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#232</span>
+            <span class="title">[作息管家] T7 首次使用+onboarding（实施）</span>
+          </div>
+          <div class="body"><h3 class='md-h'>Question</h3>
+<p class='md-p'>首次使用 + onboarding（真新增；依赖仅 T0+T1，零基础优先——对抗式审查矛盾 4 修正）。</p>
+<h3 class='md-h'>文件</h3>
+<ul class='md-ul'>
+<li>`scripts/setup_scenarios.py`（COMMANDS：check/init/status 编排）+ `templates/开始使用/first_use_wizard.html`（对标居家管家）</li>
+<li>`scenarios/setup.yaml`（「首次使用」场景定义）</li>
+</ul>
+<h3 class='md-h'>交付</h3>
+<p class='md-p'>复制即装（R3 三段式）+ 6 步初始化 + 飞书强引导（配合飞书效果最好，拒绝才跳过）+ 初始化报告 HTML；一 commit。</p>
+<h3 class='md-h'>依赖</h3>
+<p class='md-p'>← T1（不需等 T2/T3/T4/T5/T6）</p></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/232" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/232</a></div>
+        </div>
+        <div class="issue">
+          <div class="issue-head">
+            <span class="no">#233</span>
+            <span class="title">[作息管家] T8 场景资产+文档+镜像（实施）</span>
+          </div>
+          <div class="body"><h3 class='md-h'>Question</h3>
+<p class='md-p'>场景资产合并 + 文档 + 镜像（收尾，依赖全部）。</p>
+<h3 class='md-h'>文件</h3>
+<ul class='md-ul'>
+<li>`references/scenarios.yaml`（合并器全量拼接：73→81，含替换关系）</li>
+<li>`README.md`（新建，30 秒开始）+ `SKILL.md`（首次使用章节 + 场景注册替换 + 模板分合规则）</li>
+<li>help 镜像（跑 `help_render.py` 同步 `作息管家.html`，ADR-0001）</li>
+</ul>
+<h3 class='md-h'>交付</h3>
+<p class='md-p'>81 场景落 yaml；替换关系落文（记录→#0 系列 / 制定计划→#17 / 批量导入→#0-json / 复盘区间=start-end 更名）；场景片段全部合并校验。</p>
+<h3 class='md-h'>依赖</h3>
+<p class='md-p'>← 全部 T0-T7</p></div>
+          <div class="link"><a href="https://github.com/FeatherHunter/SKILLS/issues/233" target="_blank">https://github.com/FeatherHunter/SKILLS/issues/233</a></div>
+        </div>
+  <footer>实施 map · 2026-08-09 · 生成于本地镜像</footer>
+</div>
+</body>
+</html>

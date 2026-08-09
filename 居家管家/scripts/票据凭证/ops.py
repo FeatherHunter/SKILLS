@@ -135,7 +135,7 @@ def purchase_stats(conn, year=None):
 # ── 保修与保养 ──────────────────────────────────────────────────────
 
 def warranty_register(conn, item_id, kind, start_date, duration_days,
-                      last_done_date=None, note=""):
+                      last_done_date=None, photo="", note=""):
     if kind not in ("保修", "保养"):
         raise ValueError("kind 必须是 保修 或 保养")
     parse_date(start_date)
@@ -146,8 +146,8 @@ def warranty_register(conn, item_id, kind, start_date, duration_days,
     cur = conn.cursor()
     cur.execute(
         "INSERT INTO warranties (item_id, kind, start_date, duration_days, "
-        "last_done_date, note) VALUES (?, ?, ?, ?, ?, ?)",
-        (item_id, kind, start_date, duration_days, last_done_date, note),
+        "last_done_date, photo, note) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (item_id, kind, start_date, duration_days, last_done_date, photo, note),
     )
     conn.commit()
     return cur.lastrowid

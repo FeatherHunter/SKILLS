@@ -68,6 +68,7 @@ def init_domain_tables(conn):
             start_date TEXT NOT NULL,
             duration_days INTEGER NOT NULL,
             last_done_date TEXT,
+            photo TEXT DEFAULT '',
             note TEXT DEFAULT '',
             created_at TEXT DEFAULT (datetime('now', 'localtime')),
             updated_at TEXT DEFAULT (datetime('now', 'localtime'))
@@ -75,6 +76,12 @@ def init_domain_tables(conn):
     """)
     cur.execute("CREATE INDEX IF NOT EXISTS idx_w_item ON warranties(item_id)")
     cur.execute("CREATE INDEX IF NOT EXISTS idx_w_kind ON warranties(kind)")
+
+    # 保修卡照片(票据归档): 幂等迁移(老库已建表 → ALTER 补列, 新库建表自带)
+    cols = {r[1] for r in cur.execute("PRAGMA table_info(warranties)").fetchall()}
+    if "photo" not in cols:
+        cur.execute("ALTER TABLE warranties ADD COLUMN photo TEXT DEFAULT ''")
+        conn.commit()
 
     # 服务事件: 维修记录 + 保养执行历史(轻量)
     cur.execute("""

@@ -37,7 +37,7 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 .fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
 .copy.log{background:#6e6e73}
-@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.fixed{position:static}}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.fixed{position:static}.btn{min-height:44px;padding:10px 16px;font-size:13px}.copy{min-height:48px;font-size:15px}}
 </style>
 </head>
 <body>
@@ -119,12 +119,6 @@ lines.push('⑤ 时间戳+版本: '+DATA.occurred_at+' · v'+DATA.version);
 lines.push('⑥ 异常信息: (无)');
 return lines.join('\n');
 }
-function copyText(txt){
-if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(txt).then(()=>flash('已复制 ✓'));}
-else{const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();flash('已复制 ✓');}
-}
-let flashTimer=null;
-function flash(msg){const b=$('copyData');b.textContent=msg;clearTimeout(flashTimer);flashTimer=setTimeout(()=>b.textContent='复制数据',1500);}
 $('copyData').onclick=()=>copyText(buildCopyData());
 $('copyLog').onclick=()=>copyText(buildCopyLog());
 $('addBtn').onclick=()=>copyText('请存账号(唤醒词:账号):\n\n  平  台: _____________ (如:淘宝/微信)\n  用户名: _____________\n  密  码: _____________ (将加密存储)\n  类  型: _____________ (购物/银行/社交/其他)\n  主密钥: _____________ (验证用)\n\n  (复制本段发给 AI, AI 将调用 scripts/票据凭证/cli.py account add 加密存储)');

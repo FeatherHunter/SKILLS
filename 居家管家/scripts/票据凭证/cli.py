@@ -162,7 +162,7 @@ def _warranty_register(args):
         try:
             wid = ops.warranty_register(
                 conn, args.item_id, args.kind, args.start_date, args.duration_days,
-                last_done_date=args.last_done, note=args.note or "")
+                last_done_date=args.last_done, photo=args.photo or "", note=args.note or "")
         finally:
             conn.close()
     except ValueError as e:
@@ -348,6 +348,7 @@ def main(argv=None):
     wr.add_argument("--start-date", required=True)
     wr.add_argument("--duration-days", type=int, required=True)
     wr.add_argument("--last-done", default=None, help="保养: 上次保养日")
+    wr.add_argument("--photo", default="", help="保修卡照片路径(票据归档)")
     wr.add_argument("--note", default="")
     wre = wp.add_parser("repair", help="记录维修")
     wre.add_argument("--warranty-id", type=int, required=True)

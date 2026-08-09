@@ -107,6 +107,8 @@ def warranty_payload(conn, status_filter=None):
     n_warn = sum(1 for i in items if i["status"] == "即将到期")
     n_over = sum(1 for i in items if i["status"] in ("已过", "到期未做"))
     reminders = ops.reminders_cert(conn)
+    for i in items:
+        i["photo_base64"] = _photo_base64(i.get("photo", ""))
     return {
         "status": "ok",
         "data": {

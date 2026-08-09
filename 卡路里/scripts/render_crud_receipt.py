@@ -1095,24 +1095,39 @@ def main():
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-weight-delete') + 1:]
             pos = []
+            kw = {}
             i = 0
             while i < len(rest):
                 if rest[i].startswith('--'):
-                    i += 2 if (i + 1 < len(rest) and not rest[i+1].startswith('--')) else 1
+                    if i + 1 < len(rest) and not rest[i + 1].startswith('--'):
+                        kw[rest[i][2:]] = rest[i + 1]
+                        i += 2
+                    else:
+                        i += 1
                 else:
                     pos.append(rest[i])
                     i += 1
-            if not pos:
+            # 2026-08-09 #43 验收修复:原逻辑跳过 flag 值,data_source 的
+            # --id/--date/--start+--end 写法全部不可复现(第 4 层链路断)
+            # → 支持 flag 形式 + 兼容裸位置参数
+            if 'id' in kw:
+                data = build_live_weight_delete(target_id=int(kw['id']))
+            elif 'date' in kw:
+                data = build_live_weight_delete(target_date=kw['date'])
+            elif 'start' in kw and 'end' in kw:
+                data = build_live_weight_delete(start=kw['start'], end=kw['end'])
+            elif pos:
+                if len(pos) >= 2:
+                    data = build_live_weight_delete(start=pos[0], end=pos[1])
+                else:
+                    target = pos[0]
+                    try:
+                        data = build_live_weight_delete(target_id=int(target))
+                    except ValueError:
+                        data = build_live_weight_delete(target_date=target)
+            else:
                 print('❌ --live-weight-delete 需要 <id|date|start end>', file=sys.stderr)
                 return 1
-            if len(pos) >= 2:
-                data = build_live_weight_delete(start=pos[0], end=pos[1])
-            else:
-                target = pos[0]
-                try:
-                    data = build_live_weight_delete(target_id=int(target))
-                except ValueError:
-                    data = build_live_weight_delete(target_date=target)
         else:
             data = build_live_profile_update(list(zip(fields, values)))
         # AI 思考链注入 meta(复制日志带出 · 2026-08-02)

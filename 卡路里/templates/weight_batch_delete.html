@@ -26,12 +26,13 @@ table{width:100%;border-collapse:collapse;font-size:13px}
 th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line)}
 th{font-size:11px;color:var(--ink3);font-weight:700;background:#fafafa}
 td.kg{font-weight:700;font-feature-settings:"tnum"}
-.actions{display:flex;gap:10px;margin-bottom:14px}
-.btn{flex:1;border:0;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.btn{flex:1;border:0;border-radius:12px;padding:13px 16px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
 .btn.primary{background:var(--bad);color:#fff}
 .btn.ghost{background:var(--card);color:var(--ink2);box-shadow:var(--shadow)}
 .footer{text-align:center;font-size:11px;color:var(--ink3);margin-top:16px}
-@media(max-width:480px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.kpi .value{font-size:19px}}
+@media(max-width:480px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.kpi .value{font-size:19px}
+.actions .btn{flex:1 1 45%;min-height:42px;padding:10px 12px;font-size:13px}}
 </style>
 </head>
 <body>

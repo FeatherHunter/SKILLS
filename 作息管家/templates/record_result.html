@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>已记录 · 三件套结果 · {{ date }}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
+    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:linear-gradient(180deg,#f7fdf9 0%,#fafafa 100%);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:920px;margin:0 auto;padding:64px 28px 80px}
+  .hero{background:linear-gradient(135deg,#e6f7ec 0%,#d6f5e0 100%);border-radius:28px;padding:48px 42px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+  .hero .check{width:80px;height:80px;border-radius:50%;background:var(--good);color:#fff;font-size:48px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:18px;box-shadow:0 4px 16px rgba(52,199,89,.3);animation:popIn .6s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes popIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.15)}100%{transform:scale(1);opacity:1}}
+  .hero h1{font-size:36px;line-height:1.15;letter-spacing:-.03em;margin-bottom:8px;color:#1f8c3d;font-weight:700}
+  .hero .sub{font-size:16px;color:#3a8c4f;margin-bottom:14px}
+  .hero .meta{font-size:13px;color:#5a8c6f;display:flex;justify-content:center;gap:16px;flex-wrap:wrap}
+  .hero .meta b{color:#1f8c3d}
+
+  .warning-banner{background:#fff7ec;border:1.5px solid var(--warn);color:#8a5a00;border-radius:14px;padding:12px 18px;font-size:13px;margin:8px 0 18px;display:none}
+
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:8px 0 10px}
+  .stat{background:var(--card);border-radius:16px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:4px;border:1px solid var(--line)}
+  .stat .n{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .stat .d{font-size:12px;color:var(--fg2);margin-top:2px;line-height:1.5}
+  .stat.good .n{color:var(--good)}
+  .stat.warn .n{color:var(--warn)}
+  .stat.danger .n{color:var(--danger)}
+  .stat.blue .n{color:var(--blue)}
+
+  .cov{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 20px;margin:0 0 18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .cov .cov-head{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:var(--fg2);margin-bottom:8px}
+  .cov .cov-head b{color:var(--fg);font-size:13px}
+  .cov .bar{height:10px;border-radius:99px;background:#f0f0f2;overflow:hidden}
+  .cov .bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#34c759,#30d158);transition:width .6s ease}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 32px;margin:18px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  section h2{font-size:22px;letter-spacing:-.02em;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  section h2 .sec-num{font-size:13px;color:var(--blue);font-weight:700;letter-spacing:.04em;margin-right:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  section .sub{color:var(--fg2);font-size:13.5px;margin-bottom:16px;line-height:1.65}
+
+  /* ⭐ ① 全天作息时间轴(高中作息表升级版 · 24h 分类色带) */
+  .tl{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin:8px 0 10px}
+  .tl .cell{position:relative;height:52px;border-radius:7px;display:flex;align-items:flex-end;justify-content:center;font-size:9.5px;font-weight:600;color:rgba(29,29,31,.72);padding-bottom:4px;cursor:default;transition:transform .12s;border:1.5px solid transparent}
+  .tl .cell:hover{transform:translateY(-2px);z-index:2;box-shadow:0 4px 10px rgba(0,0,0,.14)}
+  .tl .cell.empty{background:#f0f0f2;border-color:#e5e5e8;color:var(--fg3)}
+  .tl .cell.window{border-color:rgba(0,122,255,.5)}
+  .tl .cell.window::before{content:"";position:absolute;inset:0;border-radius:7px;background:repeating-linear-gradient(135deg,rgba(0,122,255,.10) 0 6px,transparent 6px 12px);pointer-events:none}
+  .tl .cell.new{border-color:var(--good);border-width:2.5px;animation:newPulse 1.8s ease-in-out infinite}
+  @keyframes newPulse{0%,100%{box-shadow:0 0 0 0 rgba(52,199,89,.35)}50%{box-shadow:0 0 0 6px rgba(52,199,89,0)}}
+  .tl .cell .new-badge{position:absolute;top:-9px;right:-5px;background:var(--good);color:#fff;font-size:8px;font-weight:800;padding:1px 5px;border-radius:99px;letter-spacing:.04em}
+  .tl .hour-labels{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin-bottom:4px}
+  .tl .hour-labels span{font-size:9px;color:var(--fg3);text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .legend .lg{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--fg2);background:#fafbfc;border:1px solid var(--line);border-radius:99px;padding:3px 11px}
+  .legend .lg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .tl-hint{margin-top:10px;font-size:12px;color:var(--fg3);display:flex;gap:16px;flex-wrap:wrap}
+  .tl-hint .hint-item{display:inline-flex;align-items:center;gap:6px}
+  .tl-hint .sw-window{width:14px;height:14px;border-radius:4px;border:1.5px solid rgba(0,122,255,.5);background:repeating-linear-gradient(135deg,rgba(0,122,255,.10) 0 4px,transparent 4px 8px)}
+  .tl-hint .sw-new{width:14px;height:14px;border-radius:4px;border:2.5px solid var(--good)}
+
+  /* ⭐ ② 过去几小时推断高亮 */
+  .ph-list{display:flex;flex-direction:column;gap:10px}
+  .ph-card{display:flex;align-items:flex-start;gap:14px;padding:16px 18px;border:1.5px solid var(--line);border-radius:16px;background:linear-gradient(180deg,#fafbff 0%,#fff 100%)}
+  .ph-card.is-new{border-color:var(--good);border-width:2.5px;background:linear-gradient(180deg,#f2fbf5 0%,#fff 100%);animation:newPulse 1.8s ease-in-out infinite}
+  .ph-card .ph-time{flex-shrink:0;width:120px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;font-weight:700;color:var(--blue2);padding-top:2px}
+  .ph-card .ph-main{flex:1;min-width:0}
+  .ph-card .ph-top{display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+  .ph-card .ph-act{font-size:15px;font-weight:700;color:var(--fg);letter-spacing:-.01em}
+  .ph-card .ph-cat{font-size:11.5px;padding:2px 10px;border-radius:999px;font-weight:600;color:#fff}
+  .ph-card .ph-dur{font-size:11.5px;color:var(--fg3);background:#fafbfc;border:1px solid var(--line);border-radius:99px;padding:1px 9px}
+  .ph-card .ph-new-tag{font-size:10px;font-weight:800;color:#fff;background:var(--good);border-radius:99px;padding:1px 8px;letter-spacing:.05em}
+  .ph-card .ph-src{font-size:12px;color:var(--fg2);line-height:1.6;margin-top:2px}
+  .ph-card .ph-src b{color:var(--fg3);font-weight:600}
+  .ph-card .ph-reason{font-size:11.5px;color:var(--fg3);line-height:1.6;margin-top:2px;border-top:1px dashed var(--line);padding-top:6px}
+
+  /* ⭐ 3 个操作按钮(回执型铁律 · 每个按钮 = 用户决策 + AI 指令合一) */
+  .actions{background:linear-gradient(180deg,#f0f4ff 0%,#fff 100%);border:2px solid var(--blue);border-radius:20px;padding:24px 28px;margin:8px 0 24px}
+  .actions h2-act{font-size:18px;font-weight:700;color:var(--fg);margin-bottom:6px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+  .actions h2-act::before{content:"📤";font-size:20px}
+  .actions .act-desc{font-size:13px;color:var(--fg2);line-height:1.65;margin-bottom:18px}
+  .actions .act-list{display:flex;flex-direction:column;gap:10px}
+  .actions .act-btn{display:flex;align-items:center;gap:14px;padding:16px 18px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);text-align:left;cursor:pointer;transition:all .15s;font-family:inherit;width:100%;position:relative;overflow:hidden}
+  .actions .act-btn:hover{border-color:var(--blue);background:#fafbff;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,122,255,.08)}
+  .actions .act-btn.copied{border-color:var(--good);background:#e6f7ec}
+  .actions .act-btn .icon{font-size:28px;flex-shrink:0;width:48px;height:48px;border-radius:12px;background:var(--soft);display:flex;align-items:center;justify-content:center}
+  .actions .act-btn.copied .icon{background:#e6f7ec}
+  .actions .act-btn .info{flex:1;min-width:0}
+  .actions .act-btn .label{font-size:14px;font-weight:600;color:var(--fg);margin-bottom:3px}
+  .actions .act-btn .desc{font-size:12px;color:var(--fg3);line-height:1.5}
+  .actions .act-btn .copied-badge{position:absolute;top:8px;right:12px;font-size:11px;color:var(--good);font-weight:600;display:none}
+  .actions .act-btn.copied .copied-badge{display:block}
+
+  details.field{background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:10px 0;font-size:13px}
+  details.field summary{cursor:pointer;font-weight:600;color:var(--blue2);outline:none;font-size:13.5px;user-select:none}
+  details.field summary::marker{color:var(--blue)}
+  details.field[open] summary{margin-bottom:10px}
+  details.field pre{background:#fafbfc;border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.55;overflow:auto;white-space:pre-wrap;margin:6px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .footer{margin-top:40px;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7}
+  .footer .note{font-size:11px;color:var(--fg2);margin-top:4px}
+
+  @media(max-width:760px){
+    .wrap{padding:40px 14px 60px}
+    .hero{padding:32px 22px;border-radius:22px}
+    h1{font-size:28px}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    section{padding:22px 18px}
+    section h2{font-size:18px}
+    .tl{grid-template-columns:repeat(12,1fr)}
+    .tl .hour-labels{display:none}
+    .ph-card{flex-direction:column;gap:6px}
+    .ph-card .ph-time{width:auto}
+    .actions .act-btn{flex-direction:column;text-align:center;align-items:flex-start;gap:8px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="check">✓</div>
+  <h1 id="page-title">已记录</h1>
+  <p class="sub">「<span id="hero-activity">—</span>」 · <span id="hero-time">—</span></p>
+  <div class="meta">
+    <span>📅 <b id="meta-date">—</b></span>
+    <span>🆔 id=<b id="meta-id">—</b></span>
+    <span>🕐 <b id="meta-time">—</b></span>
+  </div>
+</header>
+
+<div class="warning-banner" id="warning-banner"></div>
+
+<!-- ⭐ ③ 当前状态总览 -->
+<div class="summary">
+  <div class="stat blue">
+    <div class="n" id="stat-today-count">—</div>
+    <div class="l">今日已记录</div>
+    <div class="d">schedule_records 笔数</div>
+  </div>
+  <div class="stat good">
+    <div class="n" id="stat-today-mins">—</div>
+    <div class="l">覆盖时长</div>
+    <div class="d">今日累计分钟</div>
+  </div>
+  <div class="stat warn">
+    <div class="n" id="stat-gap-count">—</div>
+    <div class="l">缺口时段</div>
+    <div class="d" id="stat-gap-detail">—</div>
+  </div>
+  <div class="stat danger">
+    <div class="n" id="stat-week-count">—</div>
+    <div class="l">本周累计</div>
+    <div class="d">最近 7 天</div>
+  </div>
+</div>
+<div class="cov">
+  <div class="cov-head"><span>今日覆盖进度</span><b id="cov-text">—</b></div>
+  <div class="bar"><i id="cov-bar" style="width:0%"></i></div>
+</div>
+
+<!-- ⭐ ① 全天作息时间轴 -->
+<section>
+  <h2><span class="sec-num">①</span>全天作息时间轴<span id="tl-window-tag" style="display:none"></span></h2>
+  <p class="sub" id="tl-sub">24 小时主导分类色带 · 斜纹 = 过去几小时推断回溯窗口 · 绿圈 = 刚记录</p>
+  <div class="hour-labels" id="tl-labels"></div>
+  <div class="tl" id="tl-grid"></div>
+  <div class="tl-hint">
+    <span class="hint-item"><span class="sw-window"></span>过去几小时(已推断)</span>
+    <span class="hint-item"><span class="sw-new"></span>刚记录的时段</span>
+  </div>
+  <div class="legend" id="tl-legend"></div>
+</section>
+
+<!-- ⭐ ② 过去几小时推断高亮 -->
+<section>
+  <h2><span class="sec-num">②</span>过去几小时 · 推断回溯</h2>
+  <p class="sub" id="ph-sub">每段记录回溯到来源消息与推理链 · 绿框 = 刚写入这条</p>
+  <div class="ph-list" id="ph-list"></div>
+</section>
+
+<!-- ⭐ 3 个操作按钮 -->
+<div class="actions">
+  <h2 class="h2-act">选一个操作 · 复制完整 prompt 给 AI</h2>
+  <p class="act-desc">每个按钮 = 1 次"我决定了下一步 + 已发 AI"的动作。点击 → 复制该操作专属的完整 4 部分 prompt → 粘贴给 AI → AI 收到今日进度 + 具体指令,自主执行。</p>
+  <div class="act-list">
+    <button class="act-btn" id="act-continue" data-prompt-key="continue">
+      <span class="icon">➕</span>
+      <div class="info">
+        <div class="label">继续记下一条</div>
+        <div class="desc">AI 调 add CLI 写库(自动生成三件套结果 HTML)。等我输入"我刚才在做 X"。</div>
+      </div>
+      <span class="copied-badge">✅ 已复制</span>
+    </button>
+    <button class="act-btn" id="act-overview" data-prompt-key="overview">
+      <span class="icon">📊</span>
+      <div class="info">
+        <div class="label">看今日全貌</div>
+        <div class="desc">AI 调 render-record-day,生成今日 24h 报告 HTML,让我扫读全部记录。</div>
+      </div>
+      <span class="copied-badge">✅ 已复制</span>
+    </button>
+    <button class="act-btn" id="act-review" data-prompt-key="review">
+      <span class="icon">🔄</span>
+      <div class="info">
+        <div class="label">晚点复盘</div>
+        <div class="desc">一天结束 AI 调 render-plans-review,我标状态 + 写原因,完成后给我复盘小结。</div>
+      </div>
+      <span class="copied-badge">✅ 已复制</span>
+    </button>
+  </div>
+</div>
+
+<section>
+  <h2><span class="sec-num">§2</span>3 个操作 prompt 完整内容(供高级用户)</h2>
+  <details class="field">
+    <summary>点击查看 3 个操作 prompt 完整文本</summary>
+    <pre id="prompts-full">加载中…</pre>
+  </details>
+</section>
+
+<div class="footer">
+  <p>本 HTML 由 <code>render-record-result &lt;id&gt;</code>(旧名 <code>render-receipt</code>)命令生成 · 模板: <code>record_result.html</code></p>
+  <p class="note">记录三件套结果 HTML(G1-A1 · 2026-08-09 T2) · 全天时间轴 + 过去几小时推断高亮 + 状态总览</p>
+</div>
+
+</div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+(function(){
+  "use strict";
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  var raw = document.getElementById("payload");
+  var payload, err = null;
+  try { payload = JSON.parse(raw.textContent || "{}"); }
+  catch(e){ err = e.message; }
+
+  if (err) {
+    document.body.insertAdjacentHTML("afterbegin",
+      '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据解析失败:' + esc(err) + '</div>');
+    return;
+  }
+  if (payload.status !== "ok" || !payload.data) {
+    document.body.insertAdjacentHTML("afterbegin",
+      '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据加载失败:' + esc(payload.message || "未知错误") + '</div>');
+    return;
+  }
+
+  var data = payload.data;
+  var meta = data.meta || {};
+  var record = data.record || {};
+  var stats = data.stats || {};
+  var prompts = data.prompts || {};
+
+  // 1. Hero
+  document.getElementById("hero-activity").textContent = record.activity || "—";
+  document.getElementById("hero-time").textContent = (record.time_start || "—") + " – " + (record.time_end || "—");
+  document.getElementById("meta-date").textContent = record.date || "—";
+  document.getElementById("meta-id").textContent = record.id || "—";
+  document.getElementById("meta-time").textContent = meta.generated_at || "—";
+
+  // 1.5 警示条(一级 category 建议细化等)
+  if (data.warning) {
+    var wb = document.getElementById("warning-banner");
+    wb.textContent = "💡 " + data.warning;
+    wb.style.display = "block";
+  }
+
+  // 2. ⭐ ③ 状态总览
+  document.getElementById("stat-today-count").textContent = stats.today_count ?? "—";
+  var mins = stats.today_mins || 0;
+  document.getElementById("stat-today-mins").textContent = (mins >= 60 ? Math.floor(mins/60) + "h" + (mins%60 ? mins%60 + "m" : "") : mins + "m");
+  var gaps = stats.gap_slots || [];
+  document.getElementById("stat-gap-count").textContent = gaps.length + " 段";
+  document.getElementById("stat-gap-detail").textContent = gaps.length ? gaps.slice(0,3).map(function(g){return g.text;}).join(" · ") : "无缺口";
+  document.getElementById("stat-week-count").textContent = stats.week_count ?? "—";
+  var covPct = stats.coverage_pct || 0;
+  var passedTxt = stats.passed_min >= 24*60 ? "全天" : (stats.passed_min >= 60 ? Math.floor(stats.passed_min/60) + "h" + (stats.passed_min%60 ? stats.passed_min%60 + "m" : "") : (stats.passed_min||0) + "m");
+  document.getElementById("cov-text").textContent = "覆盖 " + covPct + "% · 已过 " + passedTxt + " 已记录 " + (mins >= 60 ? Math.floor(mins/60) + "h" + (mins%60 ? mins%60 + "m" : "") : mins + "m");
+  document.getElementById("cov-bar").style.width = covPct + "%";
+
+  // 3. ⭐ ① 全天时间轴
+  var win = meta.inference_window || {};
+  var winStartH = win.start ? parseInt(String(win.start).split(":")[0], 10) : -1;
+  var winEndH = win.end ? parseInt(String(win.end).split(":")[0], 10) : -1;
+  var newRecordHour = null;
+  if (record.time_start) {
+    newRecordHour = parseInt(String(record.time_start).split(":")[0], 10);
+  }
+  var tlGrid = document.getElementById("tl-grid");
+  var legend = {};
+  var cells = "";
+  (data.timeline || []).forEach(function(c){
+    var cls = "cell";
+    if (!c.records_count) cls += " empty";
+    if (c.records_count && c.hour >= winStartH && c.hour <= winEndH) cls += " window";
+    if (c.hour === newRecordHour) cls += " new";
+    var badge = (c.hour === newRecordHour) ? '<span class="new-badge">NEW</span>' : "";
+    var bg = c.records_count ? ("background:" + c.color) : "";
+    cells += '<div class="' + cls + '" title="' + esc(c.tip) + '" style="' + bg + '">' +
+             (c.records_count ? esc(c.hour + "h") : "") + badge + "</div>";
+    if (c.records_count && c.category) legend[c.category] = c.color;
+  });
+  tlGrid.innerHTML = cells;
+  var lbls = "";
+  for (var h = 0; h < 24; h++) lbls += "<span>" + (h % 3 === 0 ? h + "h" : "") + "</span>";
+  document.getElementById("tl-labels").innerHTML = lbls;
+  if (win.start) {
+    document.getElementById("tl-window-tag").textContent = "· 回溯窗口 " + win.start + " → " + win.end;
+    document.getElementById("tl-window-tag").style.display = "inline";
+  }
+  var lgHtml = "";
+  Object.keys(legend).forEach(function(cat){
+    lgHtml += '<span class="lg"><i style="background:' + legend[cat] + '"></i>' + esc(cat) + "</span>";
+  });
+  document.getElementById("tl-legend").innerHTML = lgHtml || '<span style="color:var(--fg3);font-size:12px">今天还没有记录 — 时间轴从第一条开始点亮</span>';
+
+  // 4. ⭐ ② 过去几小时推断回溯
+  var phArr = (data.past_hours || []).slice().reverse(); // 最近在前
+  var phHtml = "";
+  phArr.forEach(function(p){
+    phHtml += '<div class="ph-card' + (p.is_new ? " is-new" : "") + '">' +
+      '<div class="ph-time">' + esc(p.time) + "</div>" +
+      '<div class="ph-main">' +
+        '<div class="ph-top">' +
+          '<span class="ph-act">' + esc(p.activity || "—") + "</span>" +
+          '<span class="ph-cat" style="background:' + (p.color || "#9b9ba0") + '">' + esc(p.category || "未分类") + "</span>" +
+          '<span class="ph-dur">' + (p.duration_minutes || 0) + " 分钟</span>" +
+          (p.is_new ? '<span class="ph-new-tag">刚记录</span>' : "") +
+        "</div>" +
+        '<div class="ph-src">📨 <b>来源:</b> ' + esc(p.source_summary || "（无原文）") + "</div>" +
+        '<div class="ph-reason">🧠 <b>推断:</b> ' + esc(p.reasoning_summary || "（无推理链）") + "</div>" +
+      "</div></div>";
+  });
+  document.getElementById("ph-list").innerHTML = phHtml || '<p style="color:var(--fg3);font-size:13px">回溯窗口内还没有记录 — 这是窗口里的第一笔。</p>';
+  document.getElementById("ph-sub").textContent = (phArr.length + " 段 · 回溯窗口 ") + (win.start || "—") + " → " + (win.end || "—") + " · 每段回溯来源消息与推理链 · 绿框 = 刚写入这条";
+
+  // 5. 完整 prompts 折叠区
+  var fullText = "";
+  if (prompts.continue) fullText += "【1. 继续记下一条】\n" + prompts.continue + "\n\n";
+  if (prompts.overview) fullText += "【2. 看今日全貌】\n" + prompts.overview + "\n\n";
+  if (prompts.review) fullText += "【3. 晚点复盘】\n" + prompts.review + "\n";
+  document.getElementById("prompts-full").textContent = fullText.trim();
+
+  // 6. ⭐ 3 个操作按钮 = 各自复制专属 prompt
+  function copyToClipboard(text, onSuccess){
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(onSuccess).catch(function(){
+        fallbackCopy(text); onSuccess();
+      });
+    } else {
+      fallbackCopy(text); onSuccess();
+    }
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+
+  document.querySelectorAll(".act-btn").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      var key = btn.getAttribute("data-prompt-key");
+      var prompt = prompts[key];
+      if (!prompt) return;
+      copyToClipboard(prompt, function(){
+        btn.classList.add("copied");
+        setTimeout(function(){
+          btn.classList.remove("copied");
+        }, 2500);
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>

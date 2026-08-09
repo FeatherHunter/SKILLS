@@ -359,6 +359,8 @@ CN_COMMAND_MAP = {
     # === receipt 域(5) === 回执型:record-receipt×2 + plan-receipt×3 ===
     "record_receipt":      "记作息回执",
     "record_receipt_edit": "修正作息回执",
+    # === 结果域(1) === 记录三件套结果 HTML(T2 · 2026-08-09 升级 add 回执链路 · G1-A1)
+    "record_result":       "记作息结果",
     "plan_receipt":        "改日程回执",
     "plan_receipt_add":    "补日程回执",
     "plan_receipt_write":  "写日程回执",
@@ -516,6 +518,9 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         return _naming_path(CN_COMMAND_MAP["record_receipt"], "record/receipt")
     if mode == "record-receipt-edit":
         return _naming_path(CN_COMMAND_MAP["record_receipt_edit"], "record/receipt")
+    # === 结果域(1 mode · T2 · 记录三件套结果 HTML · 独立 subdir record/result)===
+    if mode == "record-result":
+        return _naming_path(CN_COMMAND_MAP["record_result"], "record/result")
     if mode == "plan-receipt":
         # plan-receipt 也走此函数(向后兼容),实际由 plan_receipt 中文映射处理
         return _naming_path(CN_COMMAND_MAP["plan_receipt"], "plan/receipt")
@@ -561,6 +566,9 @@ def title_for_mode(meta: dict) -> str:
         return f"作息深挖 · {cat} · {s}~{e}" if s and e else f"作息深挖 · {cat}"
     if mode == "record-anomaly":
         return f"作息异常检测 · 最近 {meta.get('window', 7)} 天"
+    if mode == "record-result":
+        d = meta.get("date", "")
+        return f"记录结果 · {d}" if d else "记录结果"
     return "作息管家"
 
 
@@ -1275,6 +1283,258 @@ def render_receipt(record_id: int) -> dict:
         "status": "ok",
         "data": payload,
         "message": f"✓ id={record_id} 漂亮回执已生成(今日 {today_count} 条,本周 {week_count} 条)",
+    }
+
+
+# ============================================================
+# T2 · 记录三件套结果 HTML(G1-A1 · 2026-08-09 升级 add 回执链路,非纯新增)
+# ============================================================
+# 顶层体验 §5:记录每一笔之后,返回一个结果型 HTML,设计好看、信息全面。
+# 三件套 = ① 全天作息时间轴 + ② 过去几小时推断高亮 + ③ 当前状态总览(笔数/覆盖时长/缺口)。
+# 分类统计 / 计划对照不叠入(归复盘场景 · G1 Q1 定标)。
+
+RECENT_HOURS = 3  # 「过去几小时」= 新记录时段结束前推 3 小时(推断回溯窗口)
+
+
+def _snip(text, max_len):
+    """摘要截断:超过 max_len 用省略号"""
+    text = str(text or "").strip()
+    return text if len(text) <= max_len else text[:max_len] + "…"
+
+
+def _fmt_hhmm(mins: int) -> str:
+    """分钟数 → HH:MM(1440 → 24:00,跨日边界)"""
+    if mins >= 24 * 60:
+        return "24:00"
+    return f"{mins // 60:02d}:{mins % 60:02d}"
+
+
+def _day_gap_slots(records):
+    """计算单日记录间的缺口时段列表(三件套 ③ 状态总览)。
+
+    按 time_start 排序,区间合并(cursor 前滚)后取:
+    首条前(00:00→) + 相邻记录间隔 + 末条后(→24:00)。
+    返回 [{"start","end","text","minutes"}, ...],按时间顺序。
+    """
+    sorted_recs = sorted(
+        [r for r in records if r.get("time_start") and r.get("time_end")],
+        key=lambda r: (r.get("time_start", ""), r.get("id") or 0),
+    )
+    slots = []
+    cursor = 0
+    for r in sorted_recs:
+        ts = _to_min(r.get("time_start"))
+        te = max(_to_min(r.get("time_end")), ts)
+        if ts > cursor:
+            slots.append({
+                "start": _fmt_hhmm(cursor),
+                "end": _fmt_hhmm(ts),
+                "text": f"{_fmt_hhmm(cursor)} → {_fmt_hhmm(ts)}",
+                "minutes": ts - cursor,
+            })
+        if te > cursor:
+            cursor = te
+    if cursor < 24 * 60:
+        slots.append({
+            "start": _fmt_hhmm(cursor),
+            "end": "24:00",
+            "text": f"{_fmt_hhmm(cursor)} → 24:00",
+            "minutes": 24 * 60 - cursor,
+        })
+    return slots
+
+
+def _build_record_result_prompts(record, record_id, today_count, today_mins,
+                                 week_count, category, category_rank,
+                                 category_total, record_json):
+    """三件套 3 个操作按钮 prompt(T2 · 2026-08-09)
+
+    §1 三个操作按钮 = 3 种具体 prompt(用户决策 + AI 指令合一)。
+    指令指向三件套新链路:add 自动渲染 / render-record-result <新 id>。
+    """
+    date = record.get("date")
+    base_prompt = f"""① 场景: 我刚记录了一条作息(id={record_id} · {date} {record.get('time_start')}–{record.get('time_end')} {category})
+
+② 数据(今日进度):
+  - 今日已记录 {today_count} 条,总时长 {today_mins} 分钟({today_mins // 60}h{today_mins % 60}m)
+  - 本周累计 {week_count} 条(最近 7 天)
+  - 在「{category}」分类中,本条排第 {category_rank} / 共 {category_total} 条
+  - 刚记录:
+{record_json}
+
+④ 来源: 记作息结果 id={record_id} 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+"""
+    prompt_continue = base_prompt + """
+③ 期望: 用户即将告诉你"我刚才在做 X"。
+请调 schedule_cli.py add 写库(add 会自动生成三件套结果 HTML,无需再调 render 命令)。
+不要做其他事,等用户输入。"""
+
+    prompt_overview = base_prompt + f"""
+③ 期望: 请调 schedule_cli.py render-record-day {date} 生成今日报告 HTML,
+让我扫读全部记录(包含今日所有作息 + 24h 时间轴 + 分类进度)。
+不要做复盘,纯展示。"""
+
+    prompt_review = base_prompt + f"""
+③ 期望: 请调 schedule_cli.py render-plans-review {date} 生成复盘报告 HTML,
+让我逐条标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)" + 写完成原因。
+完成后给我返回复盘小结(完成率 + 各类占比 + 1-2 句今日总结)。"""
+
+    return {
+        "continue": prompt_continue,  # §1 按钮 1:继续记
+        "overview": prompt_overview,  # §1 按钮 2:看今日全貌
+        "review":   prompt_review,    # §1 按钮 3:晚点复盘
+    }
+
+
+def render_record_result(record_id: int, warning: str = None) -> dict:
+    """T2 · 记录三件套结果 HTML(G1-A1 · 2026-08-09)
+
+    记录一笔 → 三件套结果 HTML:
+      ① 全天作息时间轴(24h 主导分类色带 · 高中作息表升级版)
+      ② 过去几小时推断高亮(回溯窗口 = 新记录 time_end 前推 3 小时,
+         每条回溯来源消息 + 推理链;补记日不会把"未来"记录误标已推断)
+      ③ 当前状态总览(今日笔数 / 覆盖时长 / 缺口时段 / 本周累计)
+
+    Args:
+        record_id: 刚写入的作息记录 id
+        warning: add 链路的附加提示(如一级 category 建议细化),注入模板警示条
+
+    Returns:
+        {status, data: {meta, record, stats, timeline, past_hours, prompts, warning}, message}
+    """
+    from schedule_db import get_record_by_id, get_records_by_date, get_records_range
+    from calculations import build_hourly_dominant
+    from datetime import timedelta
+
+    record = get_record_by_id(record_id)
+    if not record:
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"未找到 id={record_id} 的作息记录",
+        }
+
+    date = record.get("date")
+    category = record.get("category") or ""
+    today_records = get_records_by_date(date) if date else []
+    today_records_sorted = sorted(
+        today_records,
+        key=lambda r: (r.get("time_start") or "", r.get("id") or 0),
+    )
+    today_count = len(today_records)
+    today_mins = sum(int(r.get("duration_minutes") or 0) for r in today_records)
+
+    # === ③ 状态总览:缺口 / 覆盖 / 周累计 ===
+    gap_slots = _day_gap_slots(today_records_sorted)
+    try:
+        end_dt = datetime.fromisoformat(date)
+        start_dt = end_dt - timedelta(days=6)
+        week_count = len(get_records_range(start_dt.strftime("%Y-%m-%d"), end_dt.strftime("%Y-%m-%d")))
+    except Exception:
+        week_count = today_count
+
+    category_records = [r for r in today_records if r.get("category") == category]
+    category_total = len(category_records)
+    sorted_cats = sorted(category_records, key=lambda r: r.get("time_start", ""))
+    category_rank = next(
+        (i + 1 for i, r in enumerate(sorted_cats) if r.get("id") == record_id),
+        category_total,
+    )
+
+    is_today = (date == datetime.now().strftime("%Y-%m-%d"))
+    now_min = datetime.now().hour * 60 + datetime.now().minute
+    passed_min = now_min if is_today else 24 * 60
+    coverage_pct = round(min(today_mins / passed_min * 100, 100), 1) if passed_min else 0.0
+
+    # === ② 过去几小时推断高亮:窗口 = [新记录 time_end − 3h, 新记录 time_end] ===
+    anchor_min = _to_min(record.get("time_end") or "00:00")
+    window_start_min = max(0, anchor_min - RECENT_HOURS * 60)
+    past_hours = [
+        {
+            "id": r.get("id"),
+            "time": f"{r.get('time_start')} → {r.get('time_end')}",
+            "activity": r.get("activity"),
+            "category": r.get("category"),
+            "color": _cat_color(r.get("category", "")),
+            "duration_minutes": int(r.get("duration_minutes") or 0),
+            "source_summary": _snip(r.get("source_contents") or "", 40),
+            "reasoning_summary": _snip(r.get("analysis_reasoning") or "", 60),
+            "is_new": r.get("id") == record_id,
+        }
+        for r in today_records_sorted
+        if _to_min(r.get("time_end") or "00:00") > window_start_min
+        and _to_min(r.get("time_start") or "00:00") < anchor_min
+    ]
+
+    # === ① 全天作息时间轴(24h 主导分类,每小时一条) ===
+    timeline = [
+        {
+            "hour": h["hour"],
+            "category": h["dominant_cat"],
+            "color": _cat_color(h["dominant_cat"]),
+            "tip": f"{h['hour']:02d}:00 {h['dominant_cat']}",
+            "records_count": h["records_count"],
+        }
+        for h in build_hourly_dominant(today_records)
+    ]
+
+    record_json = json.dumps({
+        "id": record.get("id"),
+        "date": record.get("date"),
+        "time_start": record.get("time_start"),
+        "time_end": record.get("time_end"),
+        "duration_minutes": int(record.get("duration_minutes") or 0),
+        "activity": record.get("activity"),
+        "category": category,
+        "source_contents": record.get("source_contents") or "",
+        "source_timestamps": record.get("source_timestamps") or "",
+        "analysis_reasoning": record.get("analysis_reasoning") or "",
+        "created_at": record.get("created_at"),
+    }, ensure_ascii=False, indent=2)
+
+    prompts = _build_record_result_prompts(
+        record, record_id, today_count, today_mins, week_count,
+        category, category_rank, category_total, record_json,
+    )
+
+    payload = {
+        "meta": {
+            "mode": "record-result",
+            "title": "已记录",
+            "record_id": record_id,
+            "date": date,
+            "is_today": is_today,
+            "inference_window": {
+                "start": _fmt_hhmm(window_start_min),
+                "end": record.get("time_end") or "00:00",
+                "hours": RECENT_HOURS,
+            },
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "_template_version": "v2026-08-09-T2",
+            "_snapshot_at": datetime.now().isoformat(),
+        },
+        "record": record,
+        "stats": {
+            "today_count": today_count,
+            "today_mins": today_mins,
+            "coverage_pct": coverage_pct,
+            "passed_min": passed_min,
+            "week_count": week_count,
+            "category": category,
+            "category_rank": category_rank,
+            "category_total": category_total,
+            "gap_slots": gap_slots,
+        },
+        "timeline": timeline,
+        "past_hours": past_hours,
+        "prompts": prompts,
+        "warning": warning,
+        "errors": [],
+    }
+    return {
+        "status": "ok",
+        "data": payload,
+        "message": f"✓ id={record_id} 三件套结果已生成(今日 {today_count} 条,缺口 {len(gap_slots)} 段)",
     }
 
 
@@ -2596,6 +2856,7 @@ def render_and_write(payload: dict, output_path: Path = None) -> dict:
         "plan-review":     "schedule_plan_review.html",   # 复盘报告(过程型第2款,2026-07-24)
         "record-receipt":  "schedule_record_receipt.html", # 漂亮回执(回执型首款,2026-07-24)
         "record-receipt-edit":  "schedule_record_receipt_edit.html", # 纠正记录回执(回执型第2款,蓝调,diff 视图,2026-07-24)
+        "record-result":   "record_result.html",   # 记录三件套结果 HTML(T2 · 2026-08-09 · G1-A1)
         "plan-receipt":     "schedule_plan_receipt.html",   # 改/删计划回执(回执型第2款,2026-07-24)
         "plan-receipt-add": "schedule_plan_receipt_add.html", # 补计划回执(回执型第3款,2026-07-24)
         "plan-receipt-write": "schedule_plan_receipt_write.html", # 写摘要回执(回执型第4款,2026-07-24)

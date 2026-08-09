@@ -157,6 +157,12 @@ class TestRenderWizard:
         assert "复制数据" in content
         assert "复制日志" in content
 
+    def test_template_guard_reads_top_level_envelope(self):
+        """守卫必须读顶层信封(payload.scene),禁止 payload.data 残留(信封无 data 包裹)"""
+        content = TEMPLATE.read_text(encoding="utf-8")
+        assert "!payload.scene" in content
+        assert "payload.data" not in content
+
     def test_render_wizard_writes_html(self, tmp_path):
         env = make_env(tmp_path)
         r = run_render(env, "render")

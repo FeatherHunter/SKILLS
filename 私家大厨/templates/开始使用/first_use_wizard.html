@@ -63,7 +63,7 @@ function copyBtn(label,text,cls){return '<button class="copy '+(cls||'')+'" oncl
 var app=document.getElementById('app');
 function render(){
 var payload=(typeof window.__DATA__==='object'&&window.__DATA__!==null)?window.__DATA__:null;
-if(!payload||!payload.data){app.innerHTML='<section><h2 class="bad">数据未注入或格式错误</h2><p>这是模板,不是最终交付。请用 scripts/render_开始使用.py 生成。</p></section>';return}
+if(!payload||!payload.scene){app.innerHTML='<section><h2 class="bad">数据未注入或格式错误</h2><p>这是模板,不是最终交付。请用 scripts/render_开始使用.py 生成。</p></section>';return}
 var d=payload, s=payload.scene||{}, m=payload.meta||{}, cd=payload.copy_data||{}, cl=payload.copy_log||{};
 var wiz=s.wizard||{}, stage=wiz.stage||'error', env=s.env||{}, persist=s.persist||{};
 var init=s.init||{}, install=s.install||{}, next=s.next||{}, hint=s.hint||'';

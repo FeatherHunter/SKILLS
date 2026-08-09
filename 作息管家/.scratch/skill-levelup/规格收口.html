@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>规格阶段正式收口 · 作息管家</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 840px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 26px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--ok); background: var(--ok-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 680px; }
+
+  .chain { display: flex; align-items: center; gap: 6px; margin: 22px 0 28px; flex-wrap: wrap; }
+  .chain .node { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px 16px; font-size: 13px; font-weight: 600; box-shadow: 0 1px 0 rgba(0,0,0,.03); }
+  .chain .node.done { border-color: var(--ok); color: var(--ok); background: var(--ok-soft); }
+  .chain .node.next { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .chain .arrow { color: var(--muted); font-weight: 700; }
+
+  .ticket { background: var(--card); border-radius: 16px; padding: 14px 18px; margin-bottom: 10px; box-shadow: 0 1px 0 rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05); display: flex; align-items: center; gap: 12px; }
+  .ticket .st { flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; }
+  .ticket .info { flex: 1; }
+  .ticket .info b { font-size: 14px; display: block; }
+  .ticket .info span { font-size: 12.5px; color: var(--text2); }
+
+  .sec-title { font-size: 16px; font-weight: 700; margin: 26px 0 12px; }
+
+  .verdict { margin-top: 16px; background: var(--card); border: 1px dashed var(--line); border-radius: 16px; padding: 18px 20px; }
+  .verdict h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .verdict .item { display: flex; gap: 10px; padding: 6px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .verdict .item:last-child { border-bottom: none; }
+  .verdict .item .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--ok-soft); color: var(--ok); display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+
+  footer { margin-top: 32px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">✅ 规格阶段正式收口</span>
+    <h1>对抗式审查处置完毕</h1>
+    <p class="sub">4 个矛盾全部处置定案（人类确认），模板分合规则写入决策。规格 map 无遗留，可以建实施 map。</p>
+  </header>
+
+  <div class="chain">
+    <div class="node done">四票闭环</div><div class="arrow">→</div>
+    <div class="node done">对抗式审查</div><div class="arrow">→</div>
+    <div class="node done">处置定案</div><div class="arrow">→</div>
+    <div class="node next">实施 map</div>
+  </div>
+
+  <div class="sec-title">审查处置结果</div>
+  <div class="ticket"><div class="st">✓</div><div class="info"><b>矛盾 1 · git 历史</b><span>人类接受：不洗历史、不说明，风险显式接受（维持 Q10）</span></div></div>
+  <div class="ticket"><div class="st">✓</div><div class="info"><b>矛盾 2 · 合并器</b><span>新建 scripts/update_scenarios.py 正式合并器（替代 .notes 一次性脚本）</span></div></div>
+  <div class="ticket"><div class="st">✓</div><div class="info"><b>矛盾 3 · 复盘归属</b><span>start-end 增强：复盘本周/本月 = 预置粒度，升级 schedule_replay.html 呈现</span></div></div>
+  <div class="ticket"><div class="st">✓</div><div class="info"><b>矛盾 4 · 周视图复用</b><span>复用 record_category 热力图组件 + 扩展全分类总览</span></div></div>
+
+  <div class="sec-title">模板分合规则（写入决策）</div>
+  <div class="verdict">
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>一个场景 = 一个唤醒词 = 一个模板；呈现数据不同 → 独立模板</div>
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>复用只在计算层（函数），不在模板层（呈现不同）</div>
+    <div class="item"><span class="dot"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>自由区间按长度路由：~7天→周模板 / ~30天→月模板 / 其他→通用</div>
+  </div>
+
+  <footer>规格阶段收口 · 2026-08-09 · commit dc4bf37 · 下一步：建实施 map</footer>
+</div>
+</body>
+</html>

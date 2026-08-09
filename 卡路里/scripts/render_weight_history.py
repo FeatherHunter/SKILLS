@@ -366,16 +366,32 @@ def main():
             show_milestones=args.show_milestones, show_anomalies=args.show_anomalies,
             note_only=args.note_only)
         if 'mode' not in data['data']: data['data']['mode'] = mode
+        # 场景名(2026-08-09 #43):先于 render_html 注入,模板标题显示真实场景名
+        scene_name = {
+            'trend': '看体重曲线', 'volatility': '看体重稳不稳',
+            'compare': '对比体重', 'notes': '看「有备注」的体重记录',
+        }.get(mode)
+        if mode == 'history':
+            if args.week == 'current':
+                scene_name = '看本周体重'
+            elif args.week == 'last':
+                scene_name = '看上周体重'
+            elif args.month == 'current':
+                scene_name = '看本月体重'
+            elif args.month == 'last':
+                scene_name = '看上月体重'
+            elif args.days:
+                scene_name = f'看最近 {args.days} 天体重'
+            elif args.start and args.end:
+                scene_name = '看某段时间体重'
+            else:
+                scene_name = '看体重明细'
+        data['data']['scene_name'] = scene_name
         html = render_html(data)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    # 场景 HTML 命名(ticket #4 · 场景名_类型_TS)
-    scene_name = {
-        'history': '看体重明细', 'trend': '看体重曲线', 'volatility': '看体重稳不稳',
-        'compare': '对比体重', 'notes': '看「有备注」的体重记录',
-    }.get(mode, '体重')
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene_name, 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')

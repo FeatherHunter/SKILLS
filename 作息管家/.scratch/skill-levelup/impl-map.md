@@ -22,12 +22,14 @@
 
 <!-- 实施阶段开始，暂无 closed ticket；每关一张在此补一行 -->
 
+- [T0 开源清仓+路径统一](https://github.com/FeatherHunter/SKILLS/issues/225) — 处置清单 #2-#16 全落地（#1 batch-add 归 T4）：Q6 路径统一链 get_db_base_dir 单一解析器 + 白名单迁出 .db/ + direct_add/batch_add_morning/plan*.json 删除 + LICENSE + .gitignore 修正 + 文档绝对路径 8 处；pytest 212 全过；门禁 A 5 层 PASS；4 commits 未 push
+
 ## Child tickets（本地附录 · GitHub 父子关系为准）
 
 | # | 票名 | 类型 | 阶段 | 状态 | 阻塞 |
 |---|---|---|---|---|---|
-| #225 | [T0 开源清仓+路径统一](https://github.com/FeatherHunter/SKILLS/issues/225) | task | 1 串行 | open | — |
-| #226 | [T1 注册通道+合并器](https://github.com/FeatherHunter/SKILLS/issues/226) | task | 1 串行 | open | ← T0 |
+| #225 | [T0 开源清仓+路径统一](https://github.com/FeatherHunter/SKILLS/issues/225) | task | 1 串行 | ✅ closed 2026-08-09 | — |
+| #226 | [T1 注册通道+合并器](https://github.com/FeatherHunter/SKILLS/issues/226) | task | 1 串行 | open | —（已解锁） |
 | #227 | [T2 记录链路升级](https://github.com/FeatherHunter/SKILLS/issues/227) | task | 1 串行 | open | ← T1 |
 | #228 | [T3 复盘链路升级](https://github.com/FeatherHunter/SKILLS/issues/228) | task | 1 串行 | open | ← T2（同文件串行） |
 | #229 | [T4 批量导入](https://github.com/FeatherHunter/SKILLS/issues/229) | task | 2 并行 | open | ← T1 |
@@ -36,7 +38,7 @@
 | #232 | [T7 首次使用+onboarding](https://github.com/FeatherHunter/SKILLS/issues/232) | task | 2 并行 | open | ← T1 |
 | #233 | [T8 场景资产+文档+镜像](https://github.com/FeatherHunter/SKILLS/issues/233) | task | 3 收尾 | open | ← 全部 |
 
-Frontier（可认领）：#225 T0（唯一无阻塞，先决）。
+Frontier（可认领）：#226 T1（唯一无阻塞）。
 
 ## Not yet specified
 

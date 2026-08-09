@@ -30,7 +30,7 @@
 
 ```
 [技能名] <主题> · <细节(可选)>
-Tested-By: exempt(无 fresh agent · 详见 ADR-0005)
+Tested-By: exempt(无 fresh agent · 详见 备忘录/docs/adr/0005-d-exemptions-and-rituals.md)
 ```
 
 ❌ 禁用英文类型前缀（`fix:` `docs:` `feat:` `chore:`）与英文括号类型（`fix(...)` 等）。

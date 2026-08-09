@@ -251,6 +251,9 @@ def main():
     # 对照 3(v2.4.19 · #235 配套):frontmatter description 路由契约
     #   - description ≤ 1024 字符(opencode 规范;超长稀释注意力,HELP 触发词被埋没)
     #   - 「卡路里HELP」必须在 description 中(HELP 是路由首要锚点)
+    #   - 触发词有效性:description 里每个触发词必须能在权威源(_triggers.py)定位
+    #     (v2.4.19 对抗审查补 · #235):精确命中 或 是权威词的裸词别名
+    #     (如「对比体重」⊂「对比体重：本周 vs 上周」,SKILL.md L447 明示裸词别名机制)
     import re as _re
     fm_text = _re.search(r'^description:\s*[>|]?\s*\n?(.*?)(?=\n\s*metadata:|\n---)', text, _re.M | _re.S)
     desc_len = len(''.join(fm_text.group(1).split())) if fm_text else 0
@@ -261,15 +264,38 @@ def main():
         )
     if '卡路里HELP' not in (fm_text.group(1) if fm_text else ''):
         issues.append('[frontmatter description] 缺少「卡路里HELP」路由锚点(必须置顶)')
+    if fm_text:
+        _fm_seg = _re.search(r'触发词:(.+?)(?:完整触发词|\Z)', fm_text.group(1), _re.S)
+        _seg = _fm_seg.group(1) if _fm_seg else ''
+        _desc_words = [w.strip() for w in _seg.split('、') if w.strip()]
+        _bad = []
+        for _w in _desc_words:
+            if _w in authority:
+                continue
+            # 裸词别名:某权威词以该词开头且去掉变体部分(：/（ 后的描述)后等于该词
+            _is_alias = any(
+                a.startswith(_w) and a[len(_w):].startswith(('：', '（', '(', ':'))
+                for a in authority
+            )
+            if not _is_alias:
+                _bad.append(_w)
+        if _bad:
+            issues.append(
+                f'[frontmatter description] {len(_bad)} 个触发词无法在权威源定位'
+                f'(须为 _triggers.py 精确词或裸词别名):'
+            )
+            for _b in _bad:
+                issues.append(f'  - {_b}')
 
-    # 对照 4(v2.4.19 · #242 配套):所有 render 入口脚本必须带 _io_guard 编码防护
+    # 对照 4(v2.4.19 · #242 配套):所有入口脚本必须带 _io_guard 编码防护
     # (GBK/cp1252 控制台 print emoji 会 UnicodeEncodeError → AI 误判渲染失败)
-    # 只扫入口脚本(有 __main__ 块);纯库模块(如 render_goal_common.py)被入口 import,
-    # 其 print 由入口进程的 stdout 承载,guard 由入口提供。
+    # 覆盖范围(v2.4.19 对抗审查补):全部 scripts/*.py 入口(有 __main__ 块),
+    # 不只 render_*.py —— 未来新增 CLI 缺 guard 也要被抓住(防回归盲区修复)。
+    # 纯库模块(如 render_goal_common.py)被入口 import,其 print 由入口进程承载,guard 由入口提供。
     import ast as _ast
     no_guard = []
-    for _f in sorted(RENDER_DIR.glob('render_*.py')):
-        _t = _f.read_text(encoding='utf-8', errors='replace')
+    for _f in sorted(RENDER_DIR.glob('*.py')):
+        _t = _f.read_text(encoding='utf-8-sig', errors='replace')
         if '_io_guard' in _t:
             continue
         try:
@@ -285,7 +311,7 @@ def main():
             no_guard.append(_f.name)
     if no_guard:
         issues.append(
-            f'[_io_guard 编码防护] {len(no_guard)} 个 render 入口脚本缺少 guard_io()'
+            f'[_io_guard 编码防护] {len(no_guard)} 个入口脚本缺少 guard_io()'
             f'(GBK 控制台 print emoji 会崩 · #242):'
         )
         for _n in no_guard:

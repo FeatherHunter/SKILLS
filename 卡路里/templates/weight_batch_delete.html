@@ -62,10 +62,15 @@ td.kg{font-weight:700;font-feature-settings:"tnum"}
       <thead><tr><th>日期</th><th>时间</th><th>体重</th><th>BMI</th><th>备注</th></tr></thead>
       <tbody id="itemsBody"></tbody>
     </table>
+    <div class="insight" id="changeLine" style="padding:10px 16px;font-size:12.5px;color:var(--ink2);border-top:1px solid var(--line);display:none"></div>
+  </div>
+
+  <div class="status-card" id="statusCard" style="display:none;background:var(--card);border-radius:16px;padding:12px 16px;margin-bottom:14px;box-shadow:var(--shadow);font-size:13px;color:var(--ink2);border-left:3px solid var(--good)">
+    <b id="statusTitle"></b> <span id="statusDetail"></span>
   </div>
 
   <div class="actions">
-    <button class="btn primary" id="undoBtn">↩ 撤销删除</button>
+    <button class="btn primary" id="undoBtn">↩ 复制撤销指令</button>
     <button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
     <button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
   </div>
@@ -104,6 +109,26 @@ if (items.length) {
   });
 } else {
   body.innerHTML = '<tr><td colspan="5" style="color:#86868b;text-align:center;padding:16px">无删除记录</td></tr>';
+}
+
+// 区间变化摘要(2026-08-09 #43 审查建议②)
+if (items.length >= 2) {
+  const fw = items[0].weight_kg, lw = items[items.length - 1].weight_kg;
+  if (fw != null && lw != null) {
+    const delta = lw - fw;
+    const sign = delta > 0 ? '+' : '';
+    document.getElementById('changeLine').style.display = 'block';
+    document.getElementById('changeLine').innerHTML =
+      '📈 区间变化: <b>' + fw + ' → ' + lw + ' kg</b> (' + sign + delta.toFixed(1) + ' kg, ' +
+      (delta > 0 ? '上升' : delta < 0 ? '下降' : '持平') + ')';
+  }
+}
+// 删除后最新体重提示(2026-08-09 #43 审查建议①)
+if (d.latest_after && d.latest_after.weight_kg != null) {
+  document.getElementById('statusCard').style.display = 'block';
+  document.getElementById('statusTitle').textContent = '删除后最新体重:';
+  document.getElementById('statusDetail').textContent =
+    d.latest_after.weight_kg + ' kg (' + d.latest_after.date + ')';
 }
 
 // 复制数据

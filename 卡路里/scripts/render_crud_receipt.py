@@ -383,14 +383,24 @@ def build_live_weight_delete(target_id=None, target_date=None, start=None, end=N
                   {'label': '删除条数', 'value': str(r['deleted_count']), 'unit': '条'}]
         undo = f"python scripts/calorie_tracker.py weight {first['weight_kg']} --date {first['date']}"
         # 2026-08-09 #43 用户拍板:批量删除用专门回执(全量明细表)
+        # 2026-08-09 #43 审查建议①:删除后最新体重提示(破坏性操作后用户关心数据现状)
+        import sqlite3 as _sq
+        import db as db_module
+        _db = db_module.find_db_path(SKILL_DIR)
+        _conn = _sq.connect(str(_db))
+        _latest = _conn.execute(
+            'SELECT date, weight_kg FROM weight_log ORDER BY date DESC, time DESC LIMIT 1').fetchone()
+        _conn.close()
+        latest_after = {'date': _latest[0], 'weight_kg': _latest[1]} if _latest else None
         return _weight_delete_receipt('delete', first['id'], r['snapshot'][0], totals, summary,
-                                      f'{start} ~ {end}', undo, items=r['snapshot'], batch=True)
+                                      f'{start} ~ {end}', undo, items=r['snapshot'], batch=True,
+                                      latest_after=latest_after)
 
     raise ValueError('--live-weight-delete 需要 --id / --date / --start+--end 之一')
 
 
 def _weight_delete_receipt(op, record_id, snapshot, totals, summary, action_at, undo_cli,
-                           items=None, batch=False):
+                           items=None, batch=False, latest_after=None):
     return {
         'status': 'ok',
         'data': {
@@ -400,6 +410,7 @@ def _weight_delete_receipt(op, record_id, snapshot, totals, summary, action_at, 
             'new_record': {},
             'items': items or [],
             'batch': batch,
+            'latest_after': latest_after,
             'context': {'kpis': [], 'totals': totals},
             'meta': {'action_at': action_at, 'entity_type': '体重记录', 'undo_cli': undo_cli},
             'summary': summary,

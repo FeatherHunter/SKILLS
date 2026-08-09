@@ -633,9 +633,7 @@ function updatePrompt() {
     if (text.startsWith('//')) { toast('请先填好所有必填项'); return; }
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(() => {
-        this.textContent = '✓ 已复制'; this.classList.add('copied');
         toast('prompt 已复制,发给 AI 即可');
-        setTimeout(() => { this.textContent = '📋 复制 prompt'; this.classList.remove('copied'); }, 2000);
       }, () => fallbackCopy(this, text));
     } else fallbackCopy(this, text);
   };
@@ -643,10 +641,8 @@ function updatePrompt() {
   function fallbackCopy(btn, text) {
     const ta = document.createElement('textarea');
     ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); btn.textContent = '✓ 已复制'; btn.classList.add('copied');
-      toast('prompt 已复制,发给 AI 即可');
-      setTimeout(() => { btn.textContent = '📋 复制 prompt'; btn.classList.remove('copied'); }, 2000);
-    } catch(e) { toast('复制失败,请手动复制'); }
+    try { document.execCommand('copy'); toast('prompt 已复制,发给 AI 即可'); }
+    catch(e) { toast('复制失败,请手动复制'); }
     document.body.removeChild(ta);
   }
 

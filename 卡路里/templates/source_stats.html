@@ -103,8 +103,7 @@
     let r = `食品来源统计 (共 ${summary.total} 条)\n`;
     items.forEach(it => { r += `${it.source}: ${it.count} 条 (${it.pct}%)\n`; });
     navigator.clipboard.writeText(r).then(() => {
-      this.textContent = '✓ 已复制';
-      setTimeout(() => this.textContent = '📋 复制数据', 2000);
+      toast('已复制');
     });
   };
 })();
@@ -139,6 +138,14 @@
       }
     };
   })();
+
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:rgba(29,29,31,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:999;';
+    document.body.appendChild(t);
+    setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .4s'; setTimeout(function () { t.remove(); }, 420); }, 1400);
+  }
 </script>
 
 </body>

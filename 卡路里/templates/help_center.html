@@ -383,15 +383,9 @@ function copyText(text, btn) {
   if (btn && btn.dataset) {
     wake = btn.dataset.wake || '';
   }
-  showToast(wake || 'prompt');
+  showToast('已复制');
 
-  const after = () => {
-    if (!btn) return;
-    const orig = btn.textContent;
-    btn.textContent = '✓ 已复制';
-    btn.classList.add('copied');
-    setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2000);
-  };
+  const after = () => {};
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(after).catch(() => { fallback(text); after(); });
   } else { fallback(text); after(); }
@@ -407,7 +401,7 @@ function copyMainPrompt(i) {
 
 function fallback(text) {
   const ta = document.createElement('textarea');
-  ta.value = text; ta.style.csssheet = 'position:fixed;opacity:0';
+  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
   document.body.appendChild(ta); ta.focus(); ta.select();
   try { document.execCommand('copy'); } catch(e) {}
   document.body.removeChild(ta);

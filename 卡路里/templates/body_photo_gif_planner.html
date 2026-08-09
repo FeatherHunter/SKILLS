@@ -291,7 +291,7 @@
   const D = window.__DATA__;
   if (!D || D.status !== 'ok') {
     // v2.3.6 fix(2026-07-25):不清空 photoList,保留 Python 预填的 <img src="data:..."> 静态图
-    // 飞书 webview 审查会截断 <script>__DATA__</script> 段,这里不改 photoList 就能让用户看到预填图
+    // 飞书 webview 审查会截断 script__DATA__script 段,这里不改 photoList 就能让用户看到预填图
     // Chrome 里 __DATA__ 没被截断,JS 会继续走 renderList() 整段覆盖(正常)
     console.warn('__DATA__ 加载失败,可能飞书 webview 审查截断。请在 Chrome 打开重试以获得完整功能。');
     return;
@@ -576,12 +576,7 @@
     const text = document.getElementById('promptBox').textContent;
     if (text.startsWith('//')) { alert('请先选至少 1 张照片'); return; }
     navigator.clipboard.writeText(text).then(() => {
-      this.textContent = '✓ 已复制';
-      this.classList.add('copied');
-      setTimeout(() => {
-        this.textContent = '📋 复制并发送给 AI';
-        this.classList.remove('copied');
-      }, 2000);
+      toast('已复制');
     }).catch(() => {
       // 飞书 webview 可能不支持 clipboard API
       alert('复制失败(飞书 webview 限制)。请长按上方 prompt 框手动选中文本复制。');
@@ -591,6 +586,14 @@
   renderList();
   updatePrompt();
 })();
+
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:rgba(29,29,31,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:999;';
+    document.body.appendChild(t);
+    setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .4s'; setTimeout(function () { t.remove(); }, 420); }, 1400);
+  }
 </script>
 
 <!--INJECT-DATA-->

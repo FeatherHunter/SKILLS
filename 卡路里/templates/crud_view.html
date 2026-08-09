@@ -160,12 +160,7 @@
     t._timer = setTimeout(() => { t.style.display = 'none'; }, 3200);
   }
   function copyText(text, btn, okMsg) {
-    const after = () => {
-      const orig = btn.textContent;
-      btn.textContent = '✓ 已复制';
-      setTimeout(() => btn.textContent = orig, 2000);
-      showToast(okMsg);
-    };
+    const after = () => showToast(okMsg);
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
     } else { fallbackCopy(text); after(); }

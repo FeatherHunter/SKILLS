@@ -134,15 +134,21 @@
     const text = ['[运动趋势 · 排障日志]', '',
       '唤醒词: ' + (d.meta.wake_word || '--'), '思考链: ' + (d.meta.chain || '--'),
       '时间: ' + d.meta.today, '', '原始数据: ' + JSON.stringify(d)].join('\n');
-    navigator.clipboard.writeText(text).then(() => { this.textContent = '✓ 已复制';
-      setTimeout(() => { this.textContent = '📋 复制日志'; }, 1500); }).catch(() => {
+    navigator.clipboard.writeText(text).then(() => { toast('已复制'); }).catch(() => {
       const ta = document.createElement('textarea'); ta.value = text;
       document.body.appendChild(ta); ta.select(); document.execCommand('copy');
-      document.body.removeChild(ta); this.textContent = '✓ 已复制';
-      setTimeout(() => { this.textContent = '📋 复制日志'; }, 1500);
+      document.body.removeChild(ta); toast('已复制');
     });
   });
 })();
+
+  function toast(msg) {
+    var t = document.createElement('div');
+    t.textContent = msg;
+    t.style.cssText = 'position:fixed;bottom:26px;left:50%;transform:translateX(-50%);background:rgba(29,29,31,.92);color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;z-index:999;';
+    document.body.appendChild(t);
+    setTimeout(function () { t.style.opacity = '0'; t.style.transition = 'opacity .4s'; setTimeout(function () { t.remove(); }, 420); }, 1400);
+  }
 </script>
 </body>
 </html>

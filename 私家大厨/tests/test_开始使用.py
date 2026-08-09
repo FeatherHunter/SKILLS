@@ -54,6 +54,20 @@ def table_count(db_path: Path) -> int:
     return n
 
 
+def simulate_browser_parse(html: str) -> dict:
+    """军规 11 · DOM 渲染级断言(事故 #127 教训): 模拟浏览器解析注入结果
+
+    私家大厨注入约定 = 裸注释占位符 + <script>window.__DATA__ = {...};</script>;
+    浏览器只会执行真正的 script 元素,payload 若被 JSON 元素吞没则解析失败 → 页面死。
+    断言: 无嵌套吞没(payload script 直接可执行)+ JSON 可解析。
+    """
+    import re as _re
+    assert '<script id="payload"' not in html, "模板不得再用 json-payload 元素(私家大厨约定 = 裸注释占位符)"
+    m = _re.search(r'<script>window\.__DATA__ = (\{.*\});</script>', html, _re.S)
+    assert m, "未找到可执行的 window.__DATA__ 注入脚本(可能被 JSON 元素吞没)"
+    return json.loads(m.group(1))
+
+
 class TestEnvCheck:
     """环境检测(check)幂等只读"""
 
@@ -102,7 +116,7 @@ class TestInit:
         assert data["status"] == "ok"
         assert data.get("created") is not True
         assert "跳过建库" in data["skipped"]
-        assert data["migration_hint"] and "init_db.py" in data["migration_hint"]
+        assert data["migration_hint"] and "migrations/*.sql" in data["migration_hint"]
 
     def test_empty_db_file_completes_to_17_tables(self, tmp_path):
         """空库文件(0 表)→ init 补全到 17 表(幂等补全)"""
@@ -153,6 +167,20 @@ class TestRenderWizard:
         html = files[0].read_text(encoding="utf-8")
         assert "window.__DATA__" in html
         assert "<!--INJECT-DATA-->" not in html
+        data = simulate_browser_parse(html)
+        assert data["scene"]["wizard"]["stage"] in ("need_env", "need_init", "already", "done")
+
+    def test_render_wizard_html_executes_in_browser_simulation(self, tmp_path):
+        """军规 11: 注入必须是可执行的 script,不是被 JSON 元素吞没的死 payload(#127 教训)"""
+        env = make_env(tmp_path)
+        r = run_render(env, "render")
+        assert r["rc"] == 0, r["err"]
+        out_dir = tmp_path / "chef_out" / "setup"
+        html = sorted(out_dir.glob("首次使用_*.html"))[-1].read_text(encoding="utf-8")
+        data = simulate_browser_parse(html)
+        d = data
+        assert d["copy_data"]["scene_id"] == "first_use"
+        assert "复制数据" in html and "复制日志" in html
 
     def test_render_receipt_with_init_result(self, tmp_path):
         env = make_env(tmp_path)
@@ -166,8 +194,9 @@ class TestRenderWizard:
         files = sorted(out_dir.glob("首次使用_*.html"))
         assert files
         html = files[-1].read_text(encoding="utf-8")
-        assert "完成回执" in html
-        assert "chef_data.db" in html
+        data = simulate_browser_parse(html)
+        assert data["scene"]["wizard"]["stage"] == "done"
+        assert data["scene"]["init"]["db_path"] == str(tmp_path / "chef_data.db")
 
     def test_render_wizard_after_init_shows_already(self, tmp_path):
         env = make_env(tmp_path)

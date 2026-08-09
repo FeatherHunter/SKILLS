@@ -49,7 +49,7 @@ h3{font-size:15px;margin:14px 0 8px;color:var(--fg2)}
 </header>
 <div id="app"></div>
 </div>
-<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<!--INJECT-DATA-->
 <div class="toast" id="toast"></div>
 <script>
 var toastTimer=null;
@@ -62,8 +62,9 @@ function flashBtn(btn,msg,ms){var old=btn.textContent;btn.textContent=msg;btn.cl
 function copyBtn(label,text,cls){return '<button class="copy '+(cls||'')+'" onclick="safeWriteText(this.dataset.p).then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))" data-p="'+esc(text)+'">'+esc(label)+'</button>'}
 var app=document.getElementById('app');
 function render(){
-var payload;try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
-var d=payload.data||{}, s=d.scene||{}, m=d.meta||{}, cd=d.copy_data||{}, cl=d.copy_log||{};
+var payload=(typeof window.__DATA__==='object'&&window.__DATA__!==null)?window.__DATA__:null;
+if(!payload||!payload.data){app.innerHTML='<section><h2 class="bad">数据未注入或格式错误</h2><p>这是模板,不是最终交付。请用 scripts/render_开始使用.py 生成。</p></section>';return}
+var d=payload, s=payload.scene||{}, m=payload.meta||{}, cd=payload.copy_data||{}, cl=payload.copy_log||{};
 var wiz=s.wizard||{}, stage=wiz.stage||'error', env=s.env||{}, persist=s.persist||{};
 var init=s.init||{}, install=s.install||{}, next=s.next||{}, hint=s.hint||'';
 var steps=arr(wiz.steps);
@@ -107,7 +108,7 @@ if(init.db_path){
     +'</section>';
 }else if(stage==='already'){
   initHtml='<section><h2>步骤 3 · 建库结果</h2><p class="ok" style="font-weight:650">✅ 已有数据库('+esc(String(env.db_tables||0))+' 表齐全),跳过建库</p>'
-    +'<p class="warn">💡 老库仅提示迁移命令,不自动迁移: python scripts/init_db.py(幂等,不破坏现有数据)</p></section>';
+    +'<p class="warn">💡 老库仅提示迁移,不自动迁移: 需补的迁移见 scripts/migrations/*.sql(手动执行,勿直接跑 init_db 重建)</p></section>';
 }
 var nextBtn=next.prompt?copyBtn(next.label||'下一步',next.prompt):'';
 var copyDataBtn=copyBtn('复制数据',JSON.stringify(cd).replace(/'/g,"&#39;").replace(/"/g,'&quot;'),'alt');

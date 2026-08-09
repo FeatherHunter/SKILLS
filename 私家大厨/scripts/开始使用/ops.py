@@ -197,7 +197,7 @@ def init_payload() -> dict:
             "skipped": f"老库已初始化({tables} 表齐全),跳过建库",
             "db_path": str(DB_PATH),
             "tables": tables,
-            "migration_hint": "如需补迁移: python scripts/init_db.py(幂等,不破坏现有数据)",
+            "migration_hint": "老库仅提示迁移,不自动迁移: 需补的迁移见 scripts/migrations/*.sql(手动执行,勿直接跑 init_db 重建)",
         }
 
     try:

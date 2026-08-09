@@ -143,14 +143,20 @@ def escape_for_js(s: str) -> str:
 
     嵌入位置:window.__SCENARIOS__ = <JSON>;  (JS object literal 语法)
 
-    JSON 与 JS object literal 在结构语法上兼容({"key": "value"}),
-    所以结构 " 不应 escape(由 json.dumps 已正确处理字符串值内的 ")。
+    输入恒为 json.dumps 输出(见 inject_data):JSON 与 JS object literal
+    在结构语法上兼容({"key": "value"}),结构 " 不应 escape(由 json.dumps 已
+    正确处理字符串值内的 ")。
 
     只需 escape 防 </script> 提前闭合 + JS 转义歧义:
-    - \\ → \\\\ (防 JS 二次转义)
     - < → \\u003c (防 </script>)
     - > → \\u003e (同上)
-    - / → \\/ (总纲 §04 原则 4 习惯)
+    - / → \\/ (总纲 §04 原则 4 习惯;JSON 合法转义,语义等价)
+
+    ⚠️ 2026-08-09 T8 修复:禁止对 json.dumps 输出再执行 `\\` → `\\\\` 二次转义。
+    历史 bug 链:json.dumps 已把内容里的 `"` 编码为 `\\"`、换行编码为 `\\n`,
+    若再整体替换 backslash → `\\\\"` 到达浏览器端,JS 解析 `\\\\` 为单个反斜杠后
+    `"` 提前闭合字符串 → "Invalid or unexpected token"(plan_result_history_none
+    的 `"0%"` 首次触发)。json.dumps 输出本身即安全 JSON,二次转义恒为错误。
 
     历史 bug:旧版本把 " 也 escape,导致 {" 变 {\",JSON.parse 失败,
     浏览器端 sections 数组为空,用户看到"没有任何数据"。
@@ -159,7 +165,6 @@ def escape_for_js(s: str) -> str:
         return ""
     return (
         str(s)
-        .replace("\\", "\\\\")
         .replace("<", "\\u003c")
         .replace(">", "\\u003e")
         .replace("/", "\\/")

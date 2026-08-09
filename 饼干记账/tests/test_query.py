@@ -276,7 +276,7 @@ class TestStatusFamily:
         assert data["data"]["count"] == 0
 
     def test_installment_groups(self, tmp_db_dir):
-        """查分期:#分期 按名目分组 → 分期卡(总额/每期/期数/已还/剩余)"""
+        """查分期:#分期 按名目分组 → 分期卡(总额/首期/每期/期数/已还/剩余)"""
         self._seed_status_db(tmp_db_dir)
         data = _run_query_cli(tmp_db_dir, "installment")
         d = data["data"]
@@ -287,9 +287,14 @@ class TestStatusFamily:
         assert g["name"] == "手机"
         assert g["total"] == 10000.0
         assert g["periods"] == 3
+        # 首期补差 3400,常规期 3300(众数判定)
+        assert g["first"] == 3400.0
+        assert g["each"] == 3300.0
         # 已还期数按日期 ≤ 今天(2026-07/08 期已到)
         assert g["paid"] >= 1
         assert g["remaining"] == g["periods"] - g["paid"]
+        # 剩余金额 = 未来期实际金额(2026-09 期 3300)
+        assert g["remaining_amount"] == 3300.0
 
     def test_installment_name_filter(self, tmp_db_dir):
         """查分期:--name 手机 → 只留手机;--name 不存在 → 空"""

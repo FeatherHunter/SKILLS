@@ -613,7 +613,7 @@
                   <div class="cat">${escapeHTML(it.direction)} · ${escapeHTML(it.target || '(未知对象)')}</div>
                   ${it.note ? `<div class="note">${escapeHTML(it.note)}</div>` : ''}
                 </div>
-                <div class="amt ${it.direction === '借出' ? 'expense' : 'income'}">${fmtMoney(Math.abs(it.amount || 0))}</div>
+                <div class="amt" style="color:${it.direction === '借出' ? 'var(--orange)' : 'var(--purple)'}">${fmtMoney(Math.abs(it.amount || 0))}</div>
               </div>
             `).join('')}
           </div>
@@ -646,6 +646,7 @@
           <div class="section-title">${escapeHTML(g.name)} <span class="count">${g.paid}/${g.periods} 期已还</span></div>
           <div class="kpi-grid" style="margin-bottom:0;">
             ${kpiCard('总额', fmtMoney(g.total), '元', 'purple', 'compact')}
+            ${kpiCard('首期', fmtMoney(g.first), '元', '', 'compact')}
             ${kpiCard('每期', fmtMoney(g.each), '元', '', 'compact')}
             ${kpiCard('剩余', g.remaining, '期', 'orange', 'compact')}
             ${kpiCard('剩余金额', fmtMoney(g.remaining_amount), '元', 'red', 'compact')}

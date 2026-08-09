@@ -332,12 +332,16 @@ def cmd_installment(args):
         name, seq, total_n = _parse_installment_note(r.get("note") or "")
         name = name or "未命名分期"
         g = groups.setdefault(name, {"name": name, "total": 0.0, "count": 0,
-                                     "periods": total_n or 0, "paid": 0, "first_date": None})
+                                     "periods": total_n or 0, "paid": 0, "first_date": None,
+                                     "amounts": [], "future_amount": 0.0})
         g["total"] += abs(r.get("amount", 0))
         g["count"] += 1
+        g["amounts"].append(abs(r.get("amount", 0)))
         d = str(r.get("time") or "")[:10]
         if d and d <= today_str:
             g["paid"] += 1
+        else:
+            g["future_amount"] += abs(r.get("amount", 0))
         if g["first_date"] is None or (d and d < g["first_date"]):
             g["first_date"] = d
     if args.name:
@@ -345,12 +349,17 @@ def cmd_installment(args):
 
     cards = []
     for name, g in groups.items():
-        each = round(g["total"] / g["periods"], 2) if g["periods"] else round(g["total"] / max(g["count"], 1), 2)
+        # 常规期 = 出现次数最多的金额(首期补差只出现一次);无法判定时取最小额
+        amounts = g["amounts"]
+        mode = max(set(amounts), key=lambda a: amounts.count(a)) if amounts else 0
+        each = mode if amounts.count(mode) >= 2 else (min(amounts) if amounts else 0)
+        first = max(amounts) if amounts else 0
         remaining = max(g["periods"] - g["paid"], 0)
         cards.append({
-            "name": name, "total": round(g["total"], 2), "each": each,
+            "name": name, "total": round(g["total"], 2), "each": round(each, 2),
+            "first": round(first, 2),
             "periods": g["periods"], "paid": g["paid"], "remaining": remaining,
-            "remaining_amount": round(each * remaining, 2),
+            "remaining_amount": round(g["future_amount"], 2),
             "first_date": g["first_date"], "count": g["count"],
         })
     cards.sort(key=lambda x: x["total"], reverse=True)
@@ -364,7 +373,7 @@ def cmd_installment(args):
         print("(无进行中的分期)")
         return data
     for c in cards:
-        print(f"{c['name']}: 总额 {c['total']:.2f} · {c['each']:.2f}/期 × {c['periods']} 期 · "
+        print(f"{c['name']}: 总额 {c['total']:.2f} · 首期 {c['first']:.2f} / 每期 {c['each']:.2f} × {c['periods']} 期 · "
               f"已还 {c['paid']} 期 · 剩余 {c['remaining']} 期 {c['remaining_amount']:.2f}")
     return data
 

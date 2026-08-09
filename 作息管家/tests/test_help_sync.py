@@ -91,3 +91,33 @@ def test_render_message_includes_mirror(tmp_path, monkeypatch):
     assert "已同步" in result["message"] or "镜像" in result["message"], (
         f"message 应提及镜像同步,实际: {result['message']}"
     )
+
+
+def test_escape_for_js_preserves_json_quotes():
+    """T8 修复 · escape_for_js 不得二次转义 json.dumps 的 backslash
+
+    历史 bug 链(2026-08-09 T8 实测):旧实现对 json.dumps 输出再执行 `\` → `\\`,
+    把内容里的 `\"`(JSON 对双引号的编码)破坏成 `\\"`,浏览器端 JS 解析 `\\` 为
+    单个反斜杠后 `"` 提前闭合字符串 → "Invalid or unexpected token"
+    (plan_result_history_none 的 `"0%"` 首次触发,HELP 页 cat-block 全灭)。
+    修复:escape_for_js 只做 < / > / 转义,不再动 backslash。
+    断言:escape_for_js(json.dumps(x)) 仍是合法 JSON,且 round-trip 无损。
+    """
+    import json
+    import help_render
+
+    payload = {
+        "text": '贴合率显示"0%",逐段"无参考"提示',
+        "multiline": "第一行\n第二行",
+        "backslash": "C:\\temp\\x",
+        "script": "</script><b>",
+    }
+    encoded = help_render.escape_for_js(json.dumps(payload, ensure_ascii=False))
+    # 仍是合法 JSON
+    decoded = json.loads(encoded)
+    assert decoded["text"] == payload["text"]
+    assert decoded["multiline"] == payload["multiline"]
+    assert decoded["backslash"] == payload["backslash"]
+    # 防 </script> 提前闭合仍生效
+    assert "<" not in encoded.replace("\\u003c", "")
+    assert "\\u003c" in encoded

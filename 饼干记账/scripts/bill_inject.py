@@ -159,6 +159,55 @@ def _list_meta(extra_args: list) -> dict:
     return LIST_META["default"]
 
 
+def _human_args(query_type: str, extra_args: list) -> str:
+    """把 CLI 参数翻译成人话(副标题用,不显示 --xxx 原始参数)
+
+    规则:每个 --flag value 转成中文片段;值本身是人话时直接透传。
+    """
+    if not extra_args:
+        return ""
+    labels = {
+        "--date": "", "--from": "~", "--to": "",
+        "--category": "分类", "--account": "账户", "--ledger": "账本",
+        "--tag": "标签", "--target": "对象", "--name": "名目",
+        "--limit": "最近", "--days": "近", "--month": "月份",
+    }
+    values = {"--sort": {"amount_desc": "金额从大到小", "amount_asc": "金额从小到大"},
+              "--type": {"expense": "支出", "income": "收入"}}
+    out = []
+    i = 0
+    while i < len(extra_args):
+        a = extra_args[i]
+        if not a.startswith("--"):
+            i += 1
+            continue
+        val = extra_args[i + 1] if i + 1 < len(extra_args) else ""
+        label = labels.get(a, "")
+        v = values.get(a, {}).get(val, val)
+        if a == "--date":
+            out.append(v)
+        elif a in ("--from", "--to"):
+            out.append(v)
+        elif a == "--days":
+            out.append(f"近 {v} 天")
+        elif a == "--limit":
+            out.append(f"最近 {v} 条")
+        elif label:
+            out.append(f"{label} {v}")
+        else:
+            out.append(v)
+        i += 2
+    # 区间:from/to 相邻时拼成 "X ~ Y"
+    if "--from" in extra_args and "--to" in extra_args:
+        idx_from = extra_args.index("--from")
+        idx_to = extra_args.index("--to")
+        joined = f"{extra_args[idx_from + 1]} ~ {extra_args[idx_to + 1]}"
+        # 从 out 中移除两个孤立日期,替换为拼接
+        out = [x for x in out if x not in (extra_args[idx_from + 1], extra_args[idx_to + 1])]
+        out.append(joined)
+    return " · ".join(x for x in out if x)
+
+
 def build_payload(cli_json: dict, query_type: str, extra_args: list) -> dict:
     """把 CLI JSON 包成模板期望的 payload 结构"""
     meta = QUERY_TYPES.get(query_type, {"title": query_type, "subtitle": ""})
@@ -176,7 +225,8 @@ def build_payload(cli_json: dict, query_type: str, extra_args: list) -> dict:
     enriched = dict(data)
     enriched["type"] = query_type
     enriched["title"] = meta["title"]
-    enriched["subtitle"] = meta["subtitle"] + (f" · 参数: {' '.join(extra_args)}" if extra_args else "")
+    human = _human_args(query_type, extra_args)
+    enriched["subtitle"] = meta["subtitle"] + (f" · {human}" if human else "")
     enriched["generated_at"] = now
     m = QUERY_META.get(query_type, {"scene_id": query_type, "wake_word": query_type})
     # list 变体:按参数细分场景(对齐 scenes/query.yaml · 门禁 A 层 1)

@@ -653,12 +653,13 @@ def cmd_distribution(args):
         else:
             cnt = sum(1 for r in recs if lo <= abs(r["amount"]) < hi)
         items.append({"bucket": name, "count": cnt, "pct": round(cnt / total * 100, 1)})
-    data = {"period": label, "type": "支出" if type_ == "expense" else "收入",
+    # 口径字段名用 direction(避免与 bill_inject 注入元数据 type 冲突)
+    data = {"period": label, "direction": "支出" if type_ == "expense" else "收入",
             "total": len(recs), "buckets": items}
     if getattr(args, 'json', False):
         emit_ok(data, f"{label} 金额分布")
         return data
-    print(f"=== {label} 金额分布({data['type']}) ===")
+    print(f"=== {label} 金额分布({data['direction']}) ===")
     for x in items:
         bar = "█" * min(x["count"], 30)
         print(f"  {x['bucket']}: {x['count']}笔 ({x['pct']:.1f}%) {bar}")

@@ -888,7 +888,7 @@
     const buckets = data.buckets || [];
     $('#app').innerHTML = `
       <div class="kpi-grid">
-        ${kpiCard('统计口径', data.type || '支出', '', 'blue', 'compact')}
+        ${kpiCard('统计口径', data.direction || data.type || '支出', '', 'blue', 'compact')}
         ${kpiCard('总笔数', data.total || 0, '笔', 'purple', 'compact')}
         ${kpiCard('期间', data.period || '-', '', 'orange', 'compact')}
       </div>

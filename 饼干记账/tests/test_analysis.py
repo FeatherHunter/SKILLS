@@ -399,6 +399,14 @@ class TestAmountFamily:
         assert by["500 以上"]["count"] == 1
         assert by["100~500"]["count"] == 1
 
+    def test_distribution_direction_field_not_type(self, tmp_db_dir):
+        """看分布:口径字段名 = direction(防与 bill_inject 注入元数据 type 冲突,门禁 A/B 垂直验证发现)"""
+        _insert(tmp_db_dir, "餐饮", -35.0, "2026-03-01 12:00:00", "午饭")
+        data = _run_analysis_cli(tmp_db_dir, "distribution", "--month", "2026-03")
+        d = data["data"]
+        assert d["direction"] == "支出"
+        assert "type" not in d, "distribution 不应输出 type 字段(会被 bill_inject 的注入元数据覆盖)"
+
 
 # ── 统计洞察 4 ────────────────────────────────────────────────────────────────
 

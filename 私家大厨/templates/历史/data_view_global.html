@@ -1,0 +1,312 @@
+<!--
+私家大厨 · 历史域全局画像(hist-4 · 整体画像版 · T10)
+由 scripts/render_历史.py global 注入数据,占位符 INJECT-DATA 唯一 1 次。
+画像内容(一次查询即得):做过几道菜/总次数/最爱(均分最高+做得最多)/最近吃了啥/还没做过的菜。
+08 契约:复制数据(5 段 JSON)+ 复制日志(6 段)双按钮 + 5 状态。
+-->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<meta name="generator" content="私家大厨 · render_历史.py · v4.0 T10">
+<title>私家大厨 · 全局统计(整体画像)</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --blue:#007AFF;--blue-soft:rgba(0,122,255,0.1);
+    --bg:#F2F2F7;--card:#FFFFFF;
+    --separator:rgba(60,60,67,0.12);
+    --text:#1C1C1E;--text2:#3C3C43;--text3:#8E8E93;--text4:#AEAEB2;
+    --success:#34C759;--success-soft:rgba(52,199,89,0.12);
+    --warn:#FF9500;--warn-soft:rgba(255,149,0,0.12);
+    --danger:#FF3B30;--danger-soft:rgba(255,59,48,0.12);
+    --radius:14px;--radius-sm:10px;--radius-pill:100px;
+    --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC",sans-serif;
+  }
+  html{font-size:17px;-webkit-text-size-adjust:100%}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.5;min-height:100vh;-webkit-font-smoothing:antialiased;letter-spacing:-0.01em;padding:0 0 100px 0}
+  .container{max-width:760px;margin:0 auto;padding:24px 16px}
+
+  .hero{background:var(--card);border-radius:var(--radius);padding:24px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .hero h1{font-size:28px;font-weight:700;letter-spacing:-0.025em;margin-bottom:6px}
+  .hero-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:13px;color:var(--text3);margin-bottom:14px}
+  .hero-meta span{display:inline-flex;align-items:center;gap:4px}
+
+  .state{background:var(--card);border-radius:var(--radius);padding:48px 24px;text-align:center;color:var(--text3);box-shadow:0 1px 3px rgba(0,0,0,0.04);margin-bottom:16px}
+  .hidden{display:none !important}
+  .state .icon{font-size:48px;margin-bottom:12px;opacity:0.6}
+  .state.error{color:var(--danger)}
+
+  /* KPI 网格 */
+  .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+  .kpi{background:var(--card);border-radius:var(--radius);padding:18px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .kpi .num{font-size:32px;font-weight:700;letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.1;margin-bottom:4px}
+  .kpi .lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
+  .kpi.primary .num{color:var(--blue)}
+  .kpi.success .num{color:var(--success)}
+  .kpi.warn .num{color:var(--warn)}
+  .kpi.danger .num{color:var(--danger)}
+
+  .card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+  .card h3{font-size:14px;font-weight:600;margin-bottom:10px;color:var(--text)}
+  .fav-row{display:flex;gap:10px;flex-wrap:wrap}
+  .fav{flex:1;min-width:200px;background:var(--bg);border-radius:var(--radius-sm);padding:12px 14px}
+  .fav .k{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:4px}
+  .fav .v{font-size:15px;font-weight:700;color:var(--text)}
+  .fav .v small{font-size:12px;color:var(--text3);font-weight:500}
+
+  .tl{position:relative;padding:0 0 0 20px}
+  .tl::before{content:"";position:absolute;left:6px;top:4px;bottom:4px;width:2px;background:var(--separator)}
+  .tl-item{position:relative;margin-bottom:10px;font-size:14px}
+  .tl-item::before{content:"";position:absolute;left:-17px;top:6px;width:8px;height:8px;border-radius:50%;background:var(--blue)}
+  .tl-item .d{font-size:11px;color:var(--text3);margin-right:6px}
+  .tl-rating{display:inline-block;background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:600;padding:1px 8px;border-radius:var(--radius-pill)}
+
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{background:var(--bg);color:var(--text2);border-radius:var(--radius-pill);padding:4px 12px;font-size:13px}
+
+  .empty-note{color:var(--text3);font-size:13px}
+
+  .footer{background:var(--card);border-radius:var(--radius);padding:16px;margin-top:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);font-size:12px;color:var(--text3)}
+
+  /* 08 动作条(复制数据/复制日志) */
+  .actions{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,0.94);backdrop-filter:blur(10px);border-top:0.5px solid var(--separator);padding:12px 16px calc(12px + env(safe-area-inset-bottom))}
+  .actions .inner{max-width:760px;margin:0 auto;display:flex;gap:8px}
+  .btn{flex:1;padding:13px;border:none;border-radius:var(--radius-sm);font-size:15px;font-weight:600;font-family:var(--font);cursor:pointer}
+  .btn.dark{background:#1C1C1E;color:#fff}
+  .btn.ghost{background:var(--bg);color:var(--blue)}
+
+  .toast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);background:rgba(28,28,30,0.92);color:#fff;font-size:13px;padding:10px 18px;border-radius:var(--radius-pill);opacity:0;pointer-events:none;transition:opacity 0.25s;z-index:99;max-width:80vw}
+  .toast.show{opacity:1}
+
+  @media (max-width:480px){
+    .container{padding:16px 12px}
+    .hero{padding:18px 16px}
+    .hero h1{font-size:22px}
+    body{padding:0 0 130px 0}
+    .kpi-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .kpi{padding:14px 6px}
+    .kpi .num{font-size:22px}
+    .kpi .lbl{font-size:10px}
+    .fav-row{flex-direction:column}
+    .fav{min-width:0}
+    .tl{padding:0 0 0 16px}
+    .actions .inner{flex-direction:column}
+    .toast{bottom:150px}
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div id="state-error" class="state error hidden">
+  <div class="icon">⚠️</div>
+  <div id="error-msg">数据加载失败</div>
+</div>
+
+<div id="main-content" class="hidden">
+
+  <section class="hero">
+    <h1 id="page-title">全局统计(整体画像)</h1>
+    <div class="hero-meta">
+      <span>📅 <span id="generated-at"></span></span>
+      <span>🔖 类型:<span id="data-type">global</span></span>
+    </div>
+  </section>
+
+  <div id="body-content"></div>
+
+</div>
+
+<footer class="footer">
+  数据来自 recipes + recipe_history 全表聚合(单查询) · CLI: <code>history_manager.py global-stats --json</code> · 唤醒词「查看统计」(不带菜名 → 全局画像;带菜名 → 单菜统计)
+</footer>
+
+</div>
+
+<div class="actions hidden" id="actions">
+  <div class="inner">
+    <button class="btn dark" id="btn-copy-data">📋 复制数据</button>
+    <button class="btn ghost" id="btn-copy-log">🧾 复制日志</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!--INJECT-DATA-->
+
+<script>
+(function(){
+  'use strict';
+
+  var toastTimer = null;
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.classList.remove('show'); }, 1600);
+  }
+  function esc(s) {
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function copyText(text, okMsg) {
+    var done = function(){ toast(okMsg || '已复制'); };
+    var fallback = function(){
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); done(); } catch(e) { toast('复制失败,请手动复制'); }
+      document.body.removeChild(ta);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, fallback);
+    } else { fallback(); }
+  }
+
+  // 数据守卫(§04 原则 4 #3)
+  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) {
+    document.getElementById('error-msg').textContent = '数据未注入(window.__DATA__ 缺失)。这是模板,不是最终交付。请用 scripts/render_历史.py global 生成。';
+    document.getElementById('state-error').classList.remove('hidden');
+    return;
+  }
+  var D = window.__DATA__;
+
+  function showState(type, msg) {
+    document.getElementById('main-content').classList.add('hidden');
+    document.getElementById('actions').classList.add('hidden');
+    document.getElementById('state-error').classList.add('hidden');
+    if (type === 'error') {
+      document.getElementById('error-msg').textContent = msg || '数据加载失败';
+      document.getElementById('state-error').classList.remove('hidden');
+    }
+  }
+
+  function renderKpis(g) {
+    var kpis = [
+      {label:'做过几道菜', value:String(g.cooked_count), unit:'道', style:'primary'},
+      {label:'总次数', value:String(g.total_cooks), unit:'次', style:'success'},
+      {label:'还没做过的菜', value:String(g.never_cooked_count), unit:'道', style:'warn'}
+    ];
+    var grid = document.createElement('div');
+    grid.className = 'kpi-grid';
+    kpis.forEach(function(k){
+      var card = document.createElement('div');
+      card.className = 'kpi ' + k.style;
+      card.innerHTML = '<div class="num">' + esc(k.value) + '<span style="font-size:16px;color:var(--text3)"> ' + esc(k.unit) + '</span></div><div class="lbl">' + esc(k.label) + '</div>';
+      grid.appendChild(card);
+    });
+    return grid;
+  }
+
+  function renderFavorites(g) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>❤️ 最爱</h3>';
+    var row = document.createElement('div');
+    row.className = 'fav-row';
+    var fa = g.favorite_avg;
+    var fm = g.favorite_most;
+    var faHtml = fa
+      ? '<div class="fav"><div class="k">均分最高</div><div class="v">' + esc(fa.name) + ' <small>★ ' + esc(String(fa.avg_rating)) + ' · ' + esc(String(fa.times)) + ' 次</small></div></div>'
+      : '<div class="fav"><div class="k">均分最高</div><div class="v empty-note">暂无评分记录</div></div>';
+    var fmHtml = fm
+      ? '<div class="fav"><div class="k">做得最多</div><div class="v">' + esc(fm.name) + ' <small>做了 ' + esc(String(fm.times)) + ' 次</small></div></div>'
+      : '<div class="fav"><div class="k">做得最多</div><div class="v empty-note">还没有做过菜</div></div>';
+    row.innerHTML = faHtml + fmHtml;
+    card.appendChild(row);
+    return card;
+  }
+
+  function renderRecent(g) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>🍽️ 最近吃了啥</h3>';
+    if (!g.recent || g.recent.length === 0) {
+      card.insertAdjacentHTML('beforeend', '<div class="empty-note">还没有做菜记录</div>');
+      return card;
+    }
+    var tl = document.createElement('div');
+    tl.className = 'tl';
+    g.recent.forEach(function(r){
+      var item = document.createElement('div');
+      item.className = 'tl-item';
+      var rating = r.rating ? '<span class="tl-rating">★ ' + esc(String(r.rating)) + '</span>' : '';
+      item.innerHTML = '<span class="d">' + esc(r.last_date || '') + '</span>' + rating + esc(r.name);
+      tl.appendChild(item);
+    });
+    card.appendChild(tl);
+    return card;
+  }
+
+  function renderNever(g) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = '<h3>🥚 还没做过的菜</h3>';
+    if (!g.never_cooked || g.never_cooked.length === 0) {
+      card.insertAdjacentHTML('beforeend', '<div class="empty-note">全部做过了,没有未做过的新菜</div>');
+      return card;
+    }
+    var chips = document.createElement('div');
+    chips.className = 'chips';
+    g.never_cooked.forEach(function(name){
+      var c = document.createElement('span');
+      c.className = 'chip';
+      c.textContent = name;
+      chips.appendChild(c);
+    });
+    card.appendChild(chips);
+    return card;
+  }
+
+  try {
+    var g = D.global || {};
+    document.getElementById('generated-at').textContent = D.generated_at || '未知';
+    document.getElementById('page-title').textContent = D.title || '全局统计(整体画像)';
+    var body = document.getElementById('body-content');
+    body.appendChild(renderKpis(g));
+    body.appendChild(renderFavorites(g));
+    body.appendChild(renderRecent(g));
+    body.appendChild(renderNever(g));
+    document.getElementById('main-content').classList.remove('hidden');
+    document.getElementById('actions').classList.remove('hidden');
+  } catch (err) {
+    showState('error', '渲染异常: ' + (err && err.message ? err.message : String(err)));
+  }
+
+  // 08 双按钮:复制数据(5 段 JSON)/ 复制日志(6 段)
+  document.getElementById('btn-copy-data').addEventListener('click', function(){
+    var data = {
+      scene_id: D.scene_id || 'view_stats_global',
+      command_cn: D.command_cn || '查看统计',
+      occurred_at: D.occurred_at || '',
+      target: D.target || '全部食谱',
+      payload: D.payload || D.global || {}
+    };
+    copyText(JSON.stringify(data, null, 2), '已复制数据(5 段 JSON)');
+  });
+  document.getElementById('btn-copy-log').addEventListener('click', function(){
+    var logs = D.logs || {};
+    var lines = [
+      '① 场景标识: command_cn=' + (D.command_cn || '查看统计') + ' · 唤醒词「' + (D.wake_word || '查看统计') + '」 · 场景=' + (D.scene_title || 'view_stats_global'),
+      '② AI 思考链: ' + (logs.thought_chain || '意图理解 → 无菜名 → 全局画像(hist-4) → 调 history_manager global-stats'),
+      '③ 底层数据结构: recipe_history + recipes 全表聚合(单查询) · ' + (D.items_count || 0) + ' 道菜参与画像',
+      '④ 调用链: ' + (logs.call_chain || 'history_manager.py global-stats --json → render_历史.py global'),
+      '⑤ 时间戳+版本: ' + (D.generated_at || '') + ' · skill v4.0',
+      '⑥ 异常信息(如有): ' + (logs.exception || '无')
+    ];
+    copyText(lines.join('\n'), '已复制日志(6 段)');
+  });
+})();
+</script>
+
+</body>
+</html>

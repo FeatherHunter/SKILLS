@@ -603,7 +603,7 @@ scenarios:
     dimensions:
       scope: 全部食谱
     prompt: 帮我看看我最近的厨艺整体情况。
-    status: 【待开发】
+    status: ''
     result: 全局画像:做过几道菜/总次数/最爱(均分最高+做得最多)/最近吃了啥/还没做过的菜;带菜名则走单菜统计(hist-3)。
     wake_word: 查看统计
     type: 查看

@@ -32,7 +32,9 @@
 # status 判定原则(07 §4/§6 五者对应):
 #   hist-1/2/3: 唤醒词路由 ✓ + 场景资产 ✓(本文件)+ prompt ✓ + 底层工作流
 #   (history_manager/render_data 已实现)+ HELP 映射 ✓ → status = ""(可用)
-#   hist-4: 全局统计未实现 → 【待开发】;实施期 render_data 加全局聚合视图
+#   hist-4: T10 已实现(history_manager global-stats 单查询 + render_历史.py global
+#   + templates/历史/data_view_global.html)→ status = ""(可用)
+#   实施期 08 对齐: timeline/dashboard 双按钮 = data_view.html 共享层(T3);记录回执双按钮 = record_receipt.html
 version: "1.0"
 
 domain:
@@ -112,7 +114,7 @@ scenes:
     scenario_title: 全局统计(整体画像)
     dimensions: {scope: 全部食谱}
     type: 查看
-    status: "【待开发】"
+    status: ""
     prompt: |-
       帮我看看我最近的厨艺整体情况。
     result: "全局画像:做过几道菜/总次数/最爱(均分最高+做得最多)/最近吃了啥/还没做过的菜;带菜名则走单菜统计(hist-3)。"

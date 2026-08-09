@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>R3 onboarding 三段式原型 · 作息管家</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+    --warn: #ff9f0a; --warn-soft: rgba(255,159,10,.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 840px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 30px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--accent); background: var(--accent-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 680px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .flow { display: flex; align-items: stretch; gap: 8px; margin: 22px 0 30px; flex-wrap: wrap; }
+  .fstep { flex: 1; min-width: 150px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: 0 1px 0 rgba(0,0,0,.03); position: relative; }
+  .fstep .n { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: .05em; }
+  .fstep b { display: block; font-size: 14px; margin: 4px 0 2px; }
+  .fstep span { font-size: 12px; color: var(--text2); }
+  .fstep::after { content: "→"; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 700; z-index: 2; }
+  .fstep:last-child::after { display: none; }
+
+  .sec-title { font-size: 16px; font-weight: 700; margin: 28px 0 12px; display: flex; align-items: center; gap: 8px; }
+  .sec-title .tag { font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 999px; }
+  .tag.prompt { background: var(--accent-soft); color: var(--accent); }
+  .tag.flow { background: var(--ok-soft); color: var(--ok); }
+  .tag.assets { background: var(--line); color: var(--text2); }
+
+  .prompt-box { background: #1d1d1f; color: #f5f5f7; border-radius: 16px; padding: 18px 20px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; line-height: 1.7; white-space: pre-wrap; }
+  .copy-btn { border: none; background: var(--accent); color: #fff; border-radius: 999px; padding: 9px 18px; font-weight: 700; cursor: pointer; margin-top: 12px; font-size: 13.5px; }
+  .copy-btn.copied { background: var(--ok); }
+
+  .steps-list { counter-reset: st; }
+  .st { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+  .st:last-child { border-bottom: none; }
+  .st .idx { flex: none; width: 24px; height: 24px; border-radius: 8px; background: var(--ok-soft); color: var(--ok); font-weight: 700; font-size: 12.5px; display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+  .st .body b { font-size: 13.5px; display: block; }
+  .st .body span { font-size: 12.5px; color: var(--text2); }
+  .st .body code { background: var(--line); padding: 1px 6px; border-radius: 5px; font-size: 11.5px; }
+
+  .asset { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 10px; }
+  .asset .ico { flex: none; width: 36px; height: 36px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
+  .asset .info b { font-size: 14px; display: block; }
+  .asset .info span { font-size: 12.5px; color: var(--text2); }
+
+  .decide { margin-top: 26px; background: var(--card); border: 1px dashed var(--line); border-radius: 16px; padding: 18px 20px; }
+  .decide h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .decide .item { display: flex; gap: 10px; padding: 7px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .decide .item:last-child { border-bottom: none; }
+  .decide .item .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--warn-soft); color: var(--warn); display: flex; align-items: center; justify-content: center; margin-top: 2px; font-size: 11px; font-weight: 700; }
+
+  footer { margin-top: 32px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">R3 onboarding 三段式设计 · 原型（prototype）</span>
+    <h1>零基础用户怎么装、怎么开始</h1>
+    <p class="sub">依据 Q8（完整三段式）+ Q9（首次使用唤醒词）+ Q13（对标居家管家向导）。四个原型资产已产出，请看下方要点，确认或提出修改。</p>
+  </header>
+
+  <div class="flow">
+    <div class="fstep"><div class="n">第 1 段</div><b>README 30 秒开始</b><span>找到复制即装 prompt</span></div>
+    <div class="fstep"><div class="n">第 2 段</div><b>复制即装 prompt</b><span>找仓库目录 → 复制到技能目录 → 回复安装完成</span></div>
+    <div class="fstep"><div class="n">第 3 段</div><b>首次使用工作流</b><span>6 步初始化 → 初始化报告 HTML</span></div>
+  </div>
+
+  <div class="sec-title"><span class="tag prompt">复制即装 prompt · 草案</span></div>
+  <div class="prompt-box" id="promptText">请帮我安装「作息管家」技能。这是一个作息记录、日程计划、AI 复盘闭环的作息管理技能。
+请按以下步骤操作:
+1. 在 https://github.com/FeatherHunter/SKILLS 仓库中找到「作息管家」目录(含 scripts/schedule_cli.py 的目录)
+2. 把整个「作息管家」目录复制到你本机的技能目录:
+   - Claude Code: ~/.claude/skills/作息管家
+   - opencode: ~/.config/opencode/skill/作息管家
+3. 复制完成后告诉我「安装完成」,然后我会说「首次使用」,请你按首次使用流程帮我完成初始化</div>
+  <button class="copy-btn" id="copyPrompt">复制 prompt</button>
+
+  <div class="sec-title"><span class="tag flow">首次使用 · 6 步工作流</span></div>
+  <div class="steps-list">
+    <div class="st"><span class="idx">1</span><div class="body"><b>环境检测</b><span><code>schedule_cli.py check</code> —— OS / Python ≥3.7 / 目录可写 / DB 状态（检测全面，禁止误判"没装"）</span></div></div>
+    <div class="st"><span class="idx">2</span><div class="body"><b>路径确认</b><span>展示 DB 基目录（env → <code>D:/.db</code>(win) → <code>~/.local/share/schedule-guardian/db</code>(linux)），<b>征求用户确认不静默</b></span></div></div>
+    <div class="st"><span class="idx">3</span><div class="body"><b>建库 + 初始化</b><span><code>schedule_cli.py init</code> —— 幂等（已有库跳过）</span></div></div>
+    <div class="st"><span class="idx">4</span><div class="body"><b>状态确认</b><span><code>schedule_cli.py status</code> —— 未初始化 / 库已建 / 就绪</span></div></div>
+    <div class="st"><span class="idx">5</span><div class="body"><b>渲染初始化报告 HTML</b><span>6 步步骤条 + 环境信息 + 建库结果 + 下一步按钮（对标居家管家 first_use_wizard）</span></div></div>
+    <div class="st"><span class="idx">6</span><div class="body"><b>完成 / 失败重试</b><span>提示说「作息管家 help」浏览功能；失败 → 错误回执（步骤/原因/建议）+ 一键重试</span></div></div>
+  </div>
+
+  <div class="sec-title"><span class="tag assets">原型资产 · 4 个</span></div>
+  <div class="asset"><div class="ico">MD</div><div class="info"><b>README-草案.md</b><span>完整 README：30 秒开始 + 这是什么 + 功能速览 + 数据与隐私 + 文件清单 + License</span></div></div>
+  <div class="asset"><div class="ico">MD</div><div class="info"><b>首次使用工作流.md</b><span>行为规范草案：核心原则 8 条（对标备忘录 9 步）+ 6 步流程 + 报告页内容契约</span></div></div>
+  <div class="asset"><div class="ico">⚡</div><div class="info"><b>first_use_wizard.html</b><span>初始化报告原型（对标居家管家模板：hero + 步骤条 + 环境信息 + 检查项 + 复制按钮 + 错误重试）</span></div></div>
+  <div class="asset"><div class="ico">PG</div><div class="info"><b>G1 功能定标清单（引用）</b><span>首次使用完成后引导浏览的功能域 = G1 六深度场景 + 五基础覆盖</span></div></div>
+
+  <div class="decide">
+    <h3>需要你确认的 3 点</h3>
+    <div class="item"><span class="dot">1</span>复制即装 prompt 措辞：直接复制给 AI 就能装——「找到仓库目录 → 复制到技能目录 → 回复安装完成」三段式，对标备忘录，OK？</div>
+    <div class="item"><span class="dot">2</span>首次使用 6 步：环境检测 → 路径确认 → 建库 → 状态确认 → 报告 → 完成。比居家管家少「建分类」（作息管家分类白名单随技能自带），比备忘录少飞书强引导（作息管家飞书可选），OK？</div>
+    <div class="item"><span class="dot">3</span>初始化报告形态：对标居家管家向导式（步骤条 + 检查项 + 待办 + 验证清单 + 复制按钮），错误回执一键重试，OK？</div>
+  </div>
+
+  <footer>R3 原型 · 2026-08-09 · 确认后闭环 #192，解封 #194 G2 场景枚举</footer>
+</div>
+
+<script>
+  document.getElementById('copyPrompt').addEventListener('click', function() {
+    var txt = document.getElementById('promptText').textContent.trim();
+    var btn = this;
+    function done(ok){ btn.textContent = ok ? '已复制 ✓' : '复制失败'; btn.classList.add('copied'); setTimeout(function(){ btn.textContent = '复制 prompt'; btn.classList.remove('copied'); }, 1800); }
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(txt).then(function(){done(true)}).catch(function(){done(false)}); }
+    else { var ta = document.createElement('textarea'); ta.value = txt; document.body.appendChild(ta); ta.select(); var ok = document.execCommand('copy'); document.body.removeChild(ta); done(ok); }
+  });
+</script>
+</body>
+</html>

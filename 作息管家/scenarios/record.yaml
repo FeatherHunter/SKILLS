@@ -10,3 +10,11 @@
   prompt: 请帮我记一条作息:今天 14:00-15:00 写了 AI 调优代码
   status: ''
   result: 写入 1 条作息记录,自动生成三件套结果 HTML(全天时间轴 + 过去几小时推断高亮 + 状态总览)
+- wake_word: '#0 记作息'
+  scenario_id: record_add_json
+  scenario_title: 通过 JSON 文件批量添加
+  dimensions:
+    input: JSON 文件路径
+  prompt: 请帮我批量导入这些作息数据(从 JSON 文件)
+  status: ''
+  result: 逐条校验后写入,自动生成三件套结果 HTML(多条记录;批量场景由「批量导入」强化)

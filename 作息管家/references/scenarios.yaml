@@ -22,7 +22,7 @@
     input: JSON 文件路径
   prompt: 请帮我批量导入这些作息数据(从 JSON 文件)
   status: ''
-  result: 逐条校验后写入,生成多条回执 HTML
+  result: 逐条校验后写入,自动生成三件套结果 HTML(多条记录;批量场景由「批量导入」强化)
 - wake_word: '#0 记作息'
   scenario_id: record_add_illegal_category
   scenario_title: category 不在白名单

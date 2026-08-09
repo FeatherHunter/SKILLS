@@ -74,9 +74,10 @@
   .delta-down { color:var(--good); }
   .delta-up   { color:var(--bad); }
   .delta-flat { color:var(--fg3); }
-  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; }
+  .footer { margin-top:24px; padding:14px 18px; background:var(--soft); border-radius:12px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
   .footer .src { font-size:12px; color:var(--fg3); }
-  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); }
+  .footer .btn-row { display:flex; gap:10px; flex-shrink:0; }
+  .btn { border:1px solid var(--border); background:var(--card); padding:6px 12px; border-radius:8px; cursor:pointer; font-size:12px; color:var(--fg); white-space:nowrap; }
   .btn:hover { background:var(--accent); color:#fff; border-color:var(--accent); }
   .meta-bar { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
   .meta-bar .left { font-size:12px; color:var(--fg2); }
@@ -90,7 +91,10 @@
     .kpi .value { font-size:17px; }
     .section { padding:16px 8px; border-radius:12px; }
     .section h2 { font-size:15px; }
-    .footer { flex-direction:column; gap:8px; align-items:flex-start; }
+    .footer { flex-direction:column; gap:8px; align-items:stretch; }
+    /* 2026-08-10 #43 审查:移动端按钮横排半宽 + 44px 触控高度 */
+    .footer .btn-row { width:100%; }
+    .footer .btn-row .btn { flex:1; min-height:44px; padding:10px 14px; font-size:13px; }
     /* H2 fix: note 列 padding 6px 6px(原 6px 4px 太挤 4 字符) */
     .table-wrap table { font-size:11px; }
     /* V2.1 fix: 不再用 word-break:break-all(否则 '90.9 kg' 换行成 '90.9 k\\ng') */
@@ -158,8 +162,10 @@
 
 <div class="footer">
   <div class="src" id="srcLine">📊 数据来源--</div>
-  <button class="btn" id="copyBtn">📋 复制数据</button>
-  <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  <div class="btn-row">
+    <button class="btn" id="copyBtn">📋 复制数据</button>
+    <button class="btn" id="copyLogBtn">📋 复制日志</button>
+  </div>
 </div>
 
 <script>

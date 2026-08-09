@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>持久化审查 · 关 session 无损失 · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#f0f4ff);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(0,113,227,.12)}
+.hero .eyebrow{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:12px;color:var(--ink3);margin-top:2px}
+.kpi.ok .num{color:var(--green)}
+.kpi.warn .num{color:var(--orange)}
+table{width:100%;border-collapse:collapse;font-size:13px;background:var(--card);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:14px}
+th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-size:11px;color:var(--ink3);font-weight:700;background:#fafafa}
+td.ok{color:var(--green);font-weight:700}
+td.warn{color:var(--orange);font-weight:700}
+td .c{font-family:"SF Mono",Consolas,monospace;font-size:12px;background:#f2f2f4;padding:1px 6px;border-radius:6px}
+.fix{background:var(--card);border-radius:16px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.fix h3{font-size:14px;font-weight:700;color:var(--green);margin-bottom:6px}
+.fix .row{font-size:13px;color:var(--ink2);line-height:1.7}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:20px}
+.footer b{color:var(--ink2)}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里 · 对抗式持久化审查</div>
+    <h1>关掉这个 session 会损失什么?—— 零损失核查</h1>
+    <div class="sub">2026-08-09 · 第一性原理:一切成果必须落盘到「不依赖本会话」的地方(git 远端 / GitHub / 仓库内文件)</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi ok"><div class="num">✅</div><div class="lbl">代码修复全部 push</div></div>
+    <div class="kpi ok"><div class="num">✅</div><div class="lbl">issue 状态在云端</div></div>
+    <div class="kpi ok"><div class="num">✅</div><div class="lbl">验收记录已入库</div></div>
+    <div class="kpi warn"><div class="num">1</div><div class="lbl">归档 commit 未 push</div></div>
+  </div>
+
+  <table>
+    <tr><th>成果类别</th><th>存放位置</th><th>关 session 后</th><th>状态</th></tr>
+    <tr><td>5 bug 修复 + 验收修复代码</td><td>git 本地 + <b>origin/main</b>(81a1299…5793c71 全在远端)</td><td>✅ 安全(可 clone 恢复)</td><td class="ok">已 push</td></tr>
+    <tr><td>#45 关闭状态 + 结论表</td><td>GitHub issue 云端</td><td>✅ 安全(任何人可见)</td><td class="ok">已 close</td></tr>
+    <tr><td>验收记录 01/02/03-review.md</td><td>仓库 `卡路里/.scratch/review/`(本 commit 入库)</td><td>✅ 安全</td><td class="ok">已入库</td></tr>
+    <tr><td>11 个交付报告 HTML</td><td>仓库 `卡路里/.scratch/issue-status/`</td><td>✅ 安全</td><td class="ok">已入库</td></tr>
+    <tr><td>handoff 交接文档</td><td>仓库 `卡路里/.scratch/review/handoff-卡路里-20260809.md`(原 Temp 版已弃)</td><td>✅ 安全</td><td class="ok">已入库</td></tr>
+    <tr><td>剩余 11 issue 推荐顺序</td><td>`剩余issue顺序-20260809.html` 已入库</td><td>✅ 安全</td><td class="ok">已入库</td></tr>
+    <tr><td><b>归档 commit 4bdbe5e</b></td><td>git 本地</td><td>⚠ 单机风险(磁盘坏即丢)</td><td class="warn">未 push</td></tr>
+  </table>
+
+  <div class="fix">
+    <h3>✅ 审查发现并已修复的缺口</h3>
+    <div class="row">① <b>验收记录/交付报告原在 .gitignore 忽略的 .scratch/ 下</b> → 放行入库(commit <span class="c">4bdbe5e</span>):review 3 份记录 + 10 份报告 + handoff</div>
+    <div class="row">② <b>handoff 原在系统 Temp 目录(重启即清)</b> → 已重写最新版并归档到仓库</div>
+    <div class="row">③ 调试产物(_gallery_*/审计脚本)仍在 .gitignore 忽略范围,不入库(正确)</div>
+  </div>
+
+  <div class="footer">
+    唯一待办:<b>push 归档 commit 4bdbe5e</b>(会连带并行会话的作息管家 aa4b7dc 一起推)—— 你确认后我推,推完即全量零损失<br>
+    <b>其余工作(#43 起 6 个验收 issue)尚未开始,不涉及持久化</b>
+  </div>
+
+</div>
+</body>
+</html>

@@ -128,7 +128,7 @@
       lines.push('原始数据:');
       lines.push(JSON.stringify(D0, null, 2));
       const txt = lines.join('\n');
-      const done = function () { logBtn.textContent = '✅ 已复制'; setTimeout(function () { logBtn.textContent = '📋 复制日志'; }, 2000); };
+      const done = function () { toast('已复制'); };
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(txt).then(done);
       } else {

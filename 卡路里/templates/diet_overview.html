@@ -95,19 +95,7 @@
 <script>
 // #44:复制工具全局函数(统一标准:文字不变 + 绿闪 + toast + .catch fallback)
 let toastTimer = null;
-function showToast(msg) {
-  let t = document.getElementById('copyToast');
-  if (!t) {
-    t = document.createElement('div');
-    t.id = 'copyToast';
-    t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(28,28,30,.92);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,.2);transition:opacity .3s;';
-    document.body.appendChild(t);
-  }
-  t.textContent = msg;
-  t.style.opacity = '1';
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { t.style.opacity = '0'; }, 2000);
-}
+function showToast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
 function fallbackCopyText(txt) {
   const ta = document.createElement('textarea');
   ta.value = txt; ta.style.position = 'fixed'; ta.style.left = '-9999px';

@@ -2745,7 +2745,7 @@ def cmd_list_categories(args):
     list-categories [--level 1|2] [--json]
     列出分类白名单。默认同时显示一级+二级。
     """
-    from validators import list_level1, list_level2
+    from validators import list_level1, list_level2, WHITELIST_PATH
 
     level = None
     as_json = False
@@ -2775,7 +2775,7 @@ def cmd_list_categories(args):
         print("二级白名单(含 YAML 扩展):")
         for lv1, lv2_list in result["level2"].items():
             print(f"  {lv1}: {' / '.join(lv2_list)}")
-    print(f"\n(YAML 路径: {Path(__file__).parent.parent / '.db' / 'category_whitelist.yaml'})")
+    print(f"\n(YAML 路径: {WHITELIST_PATH})")
 
 
 def cmd_propose_category(args):
@@ -2866,7 +2866,8 @@ def cmd_approve_category(args):
         }, ensure_ascii=False))
         return
 
-    yaml_path = Path(__file__).parent.parent / ".db" / "category_whitelist.yaml"
+    from validators import WHITELIST_PATH
+    yaml_path = WHITELIST_PATH
     data = {}
     if yaml_path.exists():
         try:

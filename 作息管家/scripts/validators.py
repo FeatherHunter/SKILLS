@@ -9,7 +9,7 @@
         raise ValueError(err)
 
 白名单加载顺序:
-    1. .db/category_whitelist.yaml (用户/AI 维护)
+    1. category_whitelist.yaml (用户/AI 维护,技能根目录)
     2. 内置 DEFAULT_WHITELIST (兜底,YAML 不存在/损坏时使用)
 """
 import re
@@ -19,7 +19,7 @@ from pathlib import Path
 LEVEL1_WHITELIST = {"维持", "健康", "工作", "学习", "创作", "投入", "调整", "日常"}
 
 # === YAML 白名单路径 ===
-WHITELIST_PATH = Path(__file__).parent.parent / ".db" / "category_whitelist.yaml"
+WHITELIST_PATH = Path(__file__).parent.parent / "category_whitelist.yaml"
 
 # === 内置默认白名单(YAML 不存在/损坏时的兜底)===
 DEFAULT_WHITELIST = {
@@ -44,7 +44,7 @@ _LEVEL2_RE = re.compile(r"^[\u4e00-\u9fa5A-Za-z0-9 ]+$")
 def load_whitelist() -> dict:
     """
     加载二级白名单。
-    优先级:.db/category_whitelist.yaml > DEFAULT_WHITELIST
+    优先级:category_whitelist.yaml > DEFAULT_WHITELIST
     YAML 加载失败 fallback 到 DEFAULT,不抛异常(可恢复原则)。
     """
     if not WHITELIST_PATH.exists():

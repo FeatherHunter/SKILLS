@@ -783,7 +783,7 @@ scenarios:
     scenario_title: 首次使用(初始化工作流)
     dimensions: {}
     type: 向导+回执
-    status: 【待开发】
+    status: ''
     prompt: '请加载「私家大厨」技能,帮我完成首次使用初始化(唤醒词:首次使用):'
     result: 4 步向导(环境检测→环境变量配置→建库→回执),幂等可重试,已有库不重置。
     html:

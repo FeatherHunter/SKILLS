@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>饼干记账 · 查看目标进度</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --border: #e5e5ea;
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --blue: #007aff; --green: #34c759; --orange: #ff9500; --red: #ff3b30; --purple: #af52de;
+    --shadow: 0 1px 3px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --radius: 14px;
+  }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--fg); line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh; padding: 0 0 80px;
+  }
+  .container { max-width: 920px; margin: 0 auto; padding: 24px 16px; }
+
+  .header { padding: 8px 0 24px; }
+  .eyebrow { font-size: 12px; color: var(--fg3); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  h1.title { font-size: 32px; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+  .subtitle { color: var(--fg2); font-size: 15px; margin-top: 6px; }
+
+  .card { background: var(--card); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 14px; box-shadow: var(--shadow); }
+  .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .section-title .count { font-size: 13px; font-weight: 500; color: var(--fg3); margin-left: auto; }
+  .empty { color: var(--fg3); font-size: 14px; text-align: center; padding: 24px 0; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .kpi { background: var(--card); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+  .kpi .label { font-size: 12px; color: var(--fg2); margin-bottom: 6px; font-weight: 500; }
+  .kpi .value { font-size: 26px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kpi .unit { font-size: 13px; color: var(--fg2); font-weight: 400; margin-left: 4px; }
+  .kpi.blue .value { color: var(--blue); }
+  .kpi.green .value { color: var(--green); }
+  .kpi.orange .value { color: var(--orange); }
+  .kpi.red .value { color: var(--red); }
+  .kpi.purple .value { color: var(--purple); }
+
+  .saving-bar { background: var(--card); border-radius: var(--radius); padding: 16px 18px; margin-bottom: 10px; box-shadow: var(--shadow); }
+  .saving-bar .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; gap: 10px; flex-wrap: wrap; }
+  .saving-bar .name { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .saving-bar .stats { font-size: 12.5px; color: var(--fg2); font-variant-numeric: tabular-nums; }
+  .saving-bar .stats b { color: var(--fg); font-weight: 700; font-size: 15px; }
+  .saving-bar .track { height: 12px; background: var(--bg); border-radius: 6px; overflow: hidden; }
+  .saving-bar .fill { height: 100%; border-radius: 6px; }
+  .saving-bar .foot { display: flex; justify-content: space-between; margin-top: 7px; font-size: 12px; color: var(--fg3); gap: 10px; flex-wrap: wrap; }
+  .status-chip { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; background: rgba(0,0,0,.05); }
+  .status-chip.done { color: var(--green); background: rgba(52,199,89,.12); }
+  .status-chip.on_track { color: var(--blue); background: rgba(0,122,255,.1); }
+  .status-chip.behind { color: var(--red); background: rgba(255,59,48,.1); }
+  .status-chip.na { color: var(--fg3); background: rgba(0,0,0,.05); }
+
+  .footer { text-align: center; color: var(--fg3); font-size: 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .footer code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--fg2); }
+
+  .error-card { background: rgba(255,59,48,.08); border: 1px solid rgba(255,59,48,.2); border-radius: var(--radius); padding: 24px; text-align: center; }
+  .error-card h3 { color: var(--red); margin-bottom: 8px; font-size: 18px; }
+  .error-card p { color: var(--fg2); font-size: 14px; }
+
+  /* 模板能力接口(08 §4 硬标准 · G4):toolbar 动作区 / 弹层三选一 / B1 toast / 离线态 */
+  .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin: 4px 0 16px; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; border: 0; background: var(--blue); color: #fff; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .btn:hover { background: #0a63ce; }
+  .btn.ghost { background: #fff; color: var(--fg); border: 1px solid var(--border); }
+  .btn.ghost:hover { background: var(--bg); }
+
+  .sheet-mask { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 90; display: none; align-items: flex-end; justify-content: center; }
+  .sheet-mask.show { display: flex; }
+  .sheet { background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 10px 14px calc(14px + env(safe-area-inset-bottom,0)); box-shadow: 0 -8px 32px rgba(0,0,0,.12); }
+  .sheet-title { font-size: 15px; font-weight: 700; text-align: center; padding: 10px 0 4px; }
+  .sheet-sub { font-size: 12px; color: var(--fg3); text-align: center; padding-bottom: 10px; }
+  .sheet-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--bg); border: 0; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+  .sheet-item .f { font-weight: 700; font-size: 14px; min-width: 56px; }
+  .sheet-item .d { font-size: 11.5px; color: var(--fg3); }
+  .sheet-cancel { width: 100%; background: var(--bg); border: 0; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 600; color: var(--fg2); cursor: pointer; }
+
+  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom,0)); transform: translateX(-50%) scale(.9); opacity: 0; background: rgba(28,28,30,.94); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); color: #f0f0f0; border-radius: 14px; padding: 13px 14px 13px 16px; display: flex; align-items: flex-start; gap: 12px; max-width: 480px; min-width: 300px; box-shadow: 0 10px 32px rgba(0,0,0,.32); pointer-events: none; transition: opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index: 99; }
+  .toast.show { opacity: 1; transform: translateX(-50%) scale(1); pointer-events: auto; }
+  .toast-title { font-weight: 600; font-size: 12.5px; color: #fff; margin-bottom: 2px; }
+  .toast-detail { font-size: 11px; color: #c8c8cc; }
+  .toast-close { background: rgba(255,255,255,.10); color: #34c759; border: 0; border-radius: 8px; padding: 5px 9px; font-size: 10.5px; margin-left: 6px; cursor: pointer; flex-shrink: 0; }
+
+  .offline { background: #fff7e8; border: 1px solid #ffe3b3; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 14px; color: #b25b00; font-size: 13.5px; }
+
+  @media (max-width: 640px) {
+    .container { padding: 16px 12px; }
+    h1.title { font-size: 26px; }
+    .kpi .value { font-size: 22px; }
+    .saving-bar .stats { font-size: 11.5px; }
+    .saving-bar .stats b { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header class="header" id="header"></header>
+  <main id="app"></main>
+  <!-- 动作区(08 §2 通用骨架:内容区下方,页面底部) -->
+  <div class="toolbar">
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn ghost" id="copyLogBtn">🛠 复制日志</button>
+  </div>
+  <footer class="footer" id="footer"></footer>
+</div>
+
+<!-- 注入点：goal/render.py 会把 CLI JSON 输出包成 {status, data, message} 后注入这里 -->
+<script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>
+
+<!-- 模板能力接口(08 §4 · G4):复制数据弹层三选一 + B1 toast -->
+<div class="sheet-mask" id="sheetMask">
+  <div class="sheet">
+    <div class="sheet-title">复制数据</div>
+    <div class="sheet-sub">选格式,点哪个复制哪个</div>
+    <button class="sheet-item" data-f="text"><span class="f">纯文本</span><span class="d">粘贴到聊天/笔记</span></button>
+    <button class="sheet-item" data-f="json"><span class="f">JSON</span><span class="d">粘贴给 AI 记账</span></button>
+    <button class="sheet-item" data-f="csv"><span class="f">CSV</span><span class="d">粘贴到 Excel 存档</span></button>
+    <button class="sheet-cancel" id="sheetCancel">取消</button>
+  </div>
+</div>
+<div class="toast" id="toast">
+  <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
+  <div class="toast-detail" id="toastDetail"></div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // ── 工具函数 ──────────────────────────────────────────────
+  const $ = (sel) => document.querySelector(sel);
+  const fmtMoney = (n) => (Math.round((n || 0) * 100) / 100).toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtPct = (n) => (Math.round((n || 0) * 10) / 10).toFixed(1) + '%';
+  const escapeHTML = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  const STATUS_META = {
+    done:     { label: '已达成',  color: 'var(--green)' },
+    on_track: { label: '进行中',  color: 'var(--blue)' },
+    behind:   { label: '进度落后', color: 'var(--red)' },
+    na:       { label: '暂无进度', color: 'var(--fg3)' },
+  };
+
+  // ── 主路由 ────────────────────────────────────────────────
+  function init() {
+    const raw = document.getElementById('payload').textContent;
+    let payload;
+    try {
+      payload = JSON.parse(raw);
+    } catch (e) {
+      renderError('JSON 解析失败：' + e.message);
+      return;
+    }
+    if (!payload || payload.status === 'empty') {
+      renderError('数据未注入（payload 为空）');
+      return;
+    }
+    if (payload.status === 'error') {
+      renderError(payload.message || '查询失败', payload.data);
+      return;
+    }
+    const data = payload.data || {};
+    const type = data.type;
+    const title = data.title || payload.message || '饼干记账 · 查看目标进度';
+
+    window._payloadData = data;
+    renderHeader(title, data);
+    if (data.offline) {
+      $('#app').insertAdjacentHTML('afterbegin', '<div class="offline">⚠️ 离线态:展示本地缓存数据,可能过期</div>');
+    }
+    if (type !== 'saving') {
+      renderError('未知视图类型：' + escapeHTML(type));
+      return;
+    }
+    renderSaving(data);
+    renderFooter(data);
+  }
+
+  function renderHeader(title, data) {
+    const subtitle = data.subtitle || data.message || '';
+    $('#header').innerHTML = `
+      <div class="eyebrow">饼干记账 · 目标视图</div>
+      <h1 class="title">${escapeHTML(title)}</h1>
+      ${subtitle ? `<div class="subtitle">${escapeHTML(subtitle)}</div>` : ''}
+    `;
+  }
+
+  function renderFooter(data) {
+    $('#footer').innerHTML = `
+      生成于 ${escapeHTML(data.generated_at || new Date().toLocaleString('zh-CN'))} · 类型 <code>saving</code><br>
+      数据载体: <code>goals.json(目标) + bills 聚合(目标期内收入-支出)</code>
+    `;
+  }
+
+  function renderError(msg, hint) {
+    $('#app').innerHTML = `
+      <div class="error-card">
+        <h3>⚠️ 出错了</h3>
+        <p>${escapeHTML(msg)}</p>
+        ${hint ? `<p style="margin-top:8px;font-size:12px;">${escapeHTML(JSON.stringify(hint))}</p>` : ''}
+      </div>
+    `;
+  }
+
+  // ── 模板能力接口(08 §4 · G4 决议):复制数据弹层三选一 + 复制日志 + B1 toast ──
+  const TOAST_NEXT = { text: '粘贴到聊天/笔记保存', json: '粘贴给 AI 即可记账', csv: '粘贴到 Excel 存档', log: '发给开发者排障' };
+  let _toastTimer = null;
+
+  function showToast(fmt) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastFmt').textContent = (fmt === 'log') ? '日志' : fmt.toUpperCase();
+    document.getElementById('toastDetail').textContent = TOAST_NEXT[fmt] || '';
+    t.classList.add('show');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
+  }
+
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    ta.remove();
+    done();
+  }
+
+  function doCopy(text, fmt) {
+    const done = () => showToast(fmt);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+
+  // 复制数据:结构化 JSON 固定 5 段(08 §4.1) { scene_id, command_cn, occurred_at, target, payload }
+  function pickPayload(d) {
+    const out = {};
+    for (const k in d) {
+      if (['type', 'title', 'subtitle', 'generated_at', 'meta'].includes(k)) continue;
+      out[k] = d[k];
+    }
+    return out;
+  }
+
+  function buildData5() {
+    const d = window._payloadData || {};
+    const m = d.meta || {};
+    return {
+      scene_id: m.scene_id || d.type || '',
+      command_cn: m.command_cn || ((d.title || '') + ' 结果'),
+      occurred_at: m.occurred_at || d.generated_at || '',
+      target: 'goals.json/savings',
+      payload: pickPayload(d),
+    };
+  }
+
+  function toCSV(d5) {
+    const p = d5.payload || {};
+    const arr = p.savings || null;
+    if (Array.isArray(arr) && arr.length) {
+      const keys = Object.keys(arr[0]);
+      return [keys.join(','), ...arr.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
+    }
+    return Object.entries(p).map(([k, v]) => k + ',' + JSON.stringify(v ?? '')).join('\n');
+  }
+
+  function buildDataText(fmt) {
+    const d5 = buildData5();
+    if (fmt === 'json') return JSON.stringify(d5, null, 2);
+    if (fmt === 'text') {
+      return [
+        '场景: ' + d5.command_cn,
+        '时间: ' + d5.occurred_at,
+        '目标: ' + d5.target,
+        '数据: ' + JSON.stringify(d5.payload),
+      ].join('\n');
+    }
+    return toCSV(d5);
+  }
+
+  // 复制日志:6 段(08 §4.2)
+  function buildLogText() {
+    const d = window._payloadData || {};
+    const m = d.meta || {};
+    const lines = [];
+    lines.push('① 场景标识');
+    lines.push('  command_cn: ' + (m.command_cn || '(未知)'));
+    lines.push('  唤醒词: ' + (m.wake_word || '(未知)'));
+    lines.push('  场景名: ' + (d.title || '(未知)') + ' (scene_id=' + (m.scene_id || '') + ')');
+    lines.push('');
+    lines.push('② AI 思考链');
+    lines.push('  ' + (m.chain || '(未注入)'));
+    lines.push('');
+    lines.push('③ 底层数据结构');
+    lines.push('  payload: ' + JSON.stringify(pickPayload(d)));
+    lines.push('  DB 操作: SELECT bills(只读聚合) + goals.json(目标计划值)');
+    lines.push('');
+    lines.push('④ 调用链');
+    lines.push('  渲染脚本: ' + (m.render_cmd || '(未知)'));
+    lines.push('');
+    lines.push('⑤ 时间戳 + 版本');
+    lines.push('  本地时间: ' + (m.occurred_at || d.generated_at || '(未知)'));
+    lines.push('  skill 版本: ' + (m.version || '(未知)'));
+    lines.push('');
+    lines.push('⑥ 异常信息');
+    lines.push('  无');
+    return lines.join('\n');
+  }
+
+  function bindCopyActions() {
+    const sheetMask = document.getElementById('sheetMask');
+    const closeSheet = () => sheetMask.classList.remove('show');
+
+    document.getElementById('copyDataBtn').onclick = () => sheetMask.classList.add('show');
+    document.getElementById('sheetCancel').onclick = closeSheet;
+    sheetMask.addEventListener('click', (e) => { if (e.target === sheetMask) closeSheet(); });
+    sheetMask.querySelectorAll('.sheet-item').forEach((b) => {
+      b.onclick = () => {
+        const f = b.getAttribute('data-f');
+        closeSheet();
+        doCopy(buildDataText(f), f);
+      };
+    });
+
+    document.getElementById('copyLogBtn').onclick = () => doCopy(buildLogText(), 'log');
+    document.getElementById('toastClose').onclick = () => {
+      document.getElementById('toast').classList.remove('show');
+      clearTimeout(_toastTimer);
+    };
+  }
+
+  // ── 看目标 saving(已存/目标/百分比/剩余/预计达成日 · 进度条) ──
+  function renderSaving(data) {
+    const savings = data.savings || [];
+    const totalSaved = savings.reduce((s, g) => s + (g.saved || 0), 0);
+    const totalGoal = savings.reduce((s, g) => s + (g.amount || 0), 0);
+    $('#app').innerHTML = `
+      <div class="kpi-grid">
+        ${kpiCard('目标数', data.count || 0, '个', 'blue')}
+        ${kpiCard('已完成', data.done_count || 0, '个', 'green')}
+        ${kpiCard('累计已存', fmtMoney(totalSaved), '元', 'purple')}
+        ${kpiCard('目标总额', fmtMoney(totalGoal), '元', 'orange')}
+      </div>
+      ${savings.length ? `
+        <div class="card" style="margin-top:14px;">
+          <div class="section-title">目标进度 <span class="count">${savings.length} 个</span></div>
+          ${savings.map(s => savingCard(s)).join('')}
+        </div>
+      ` : '<div class="card empty" style="margin-top:14px;">还没有储蓄目标,说「设定目标」即可开始</div>'}
+    `;
+  }
+
+  function savingCard(s) {
+    const sm = STATUS_META[s.status] || STATUS_META.na;
+    const pct = Math.min(Math.max(s.pct, 0), 100);
+    const etaText = s.status === 'done' ? '🎉 目标已达成'
+      : (s.eta ? `预计 ${escapeHTML(s.eta)} 达成` : '暂无预计(先存一笔吧)');
+    const deadlineText = s.deadline ? ` · 截止 ${escapeHTML(s.deadline)}` : ' · 无截止日期';
+    return `
+      <div class="saving-bar">
+        <div class="head">
+          <span class="name">${escapeHTML(s.name)} <span class="status-chip ${s.status}">${sm.label}</span></span>
+          <span class="stats">已存 <b>${fmtMoney(s.saved)}</b> / ${fmtMoney(s.amount)} 元</span>
+        </div>
+        <div class="track"><div class="fill" style="width:${pct}%;background:${sm.color}"></div></div>
+        <div class="foot">
+          <span>进度 ${fmtPct(Math.max(s.pct, 0))} · 月均净存 ${fmtMoney(s.monthly_avg)} 元</span>
+          <span>${etaText}${deadlineText}</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // ── 组件：KPI 卡 ─────────────────────────────────────────
+  function kpiCard(label, value, unit, color) {
+    return `<div class="kpi ${color || ''}">
+      <div class="label">${escapeHTML(label)}</div>
+      <div class="value">${escapeHTML(value)}${unit ? `<span class="unit">${escapeHTML(unit)}</span>` : ''}</div>
+    </div>`;
+  }
+
+  // ── 启动 ──────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', () => {
+    bindCopyActions();
+    init();
+  });
+})();
+</script>
+</body>
+</html>

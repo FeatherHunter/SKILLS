@@ -2307,31 +2307,35 @@ def check_offline() -> bool:
         return False
 
 
-def render_replay(start: str, end: str, ai_engine: str = "mock") -> dict:
-    """Phase E · 复盘 start-end · 跨域 dual-domain 分析(任意 start-end 区间)
+def render_replay(start: str, end: str, ai_engine: str = "mock",
+                  granularity: str = "range") -> dict:
+    """T3 · 复盘一体模板渲染(2026-08-09 · G1-A2/A3/A4 · 对抗式审查矛盾 2 修正:不双模板并存)
 
-    4 段叙事骨架(T03-T06 各自填充实数据):
-      - record_aggregate: 分类时长 / 7 维趋势 / 24h 热力图 (T03 填充)
-      - plan_aggregate:   completion 6 类分布 + 分类拆解 (T04 填充)
-      - cross_domain:     planned_actual_pairs / unexecuted / unexpected / overrun (T05 填充)
-      - ai_insights:      mock 异常检测 + 周期对比 + 建议 (T06 填充)
-      - copy_prompt:      4 部分结构(单工铁律,总纲 §04 原则 10)
+    粒度路由(meta.granularity):
+      - day   (复盘今日):  计划 vs 实际对照 + 单日 4 段叙事 + 单日健康分 + 缺计划补齐引导
+      - week  (复盘本周):  7 维趋势 + 24h 热力图 + 健康分均值趋势
+      - month (复盘本月):  月度聚合 + 环比对比(上月同期) + 目标达成(完成率 + 维持占比)
+      - range (复盘区间):  现有 4 段叙事(模板按区间长度自动路由区块:1 天→day / ≤7 天→week / ≤31 天→month / 其他→通用)
 
-    5 状态 fallback(T01 + T07):
-      - empty: 两域都空(刚装完数据库)
-      - incomplete: 单域有数据(缺失域标 incomplete=True + 友好提示)
-      - ok: 两域数据完整
-      - error: DB 错误(ConnectionError 等)
-      - offline: 网络不通(单文件 HTML 仍可查看,主流程不依赖网络)
+    健康分全粒度;缺计划提示补齐(不降级);复盘→计划衔接引导(底部复制 prompt)。
+    Phase E 4 段叙事 + 5 状态 fallback 保留(ok/empty/incomplete/error/offline)。
 
     Args:
         start: 起始日期 YYYY-MM-DD
         end:   结束日期 YYYY-MM-DD (含)
         ai_engine: AI 洞察引擎,默认 "mock"(规则生成,无需外部 LLM)。
+        granularity: 复盘粒度 day/week/month/range,默认 range。
 
     Returns:
         {"status": "ok"|"empty"|"incomplete"|"error"|"offline", "data": payload|None, "message": str}
     """
+    if granularity not in ("day", "week", "month", "range"):
+        return {
+            "status": "error",
+            "data": None,
+            "message": f"granularity 非法: '{granularity}'(期望 day/week/month/range)",
+        }
+
     from schedule_db import _normalize_date, get_records_range, get_plan_events_range
 
     start = _normalize_date(start)
@@ -2367,7 +2371,7 @@ def render_replay(start: str, end: str, ai_engine: str = "mock") -> dict:
     # 复用 calculations 模块算法:summary_items / trend / heatmap
     from calculations import (
         aggregate_by_category, build_dimension_aggregates, build_trend_series,
-        build_24h_heatmap, cat_emoji, cat_color, fmt_dur,
+        build_24h_heatmap, cat_emoji, cat_color, fmt_dur, compute_health_score,
     )
     HEALTH_DIMS = ["维持", "健康", "工作", "学习", "调整", "日常", "投入"]
 
@@ -2711,13 +2715,137 @@ def render_replay(start: str, end: str, ai_engine: str = "mock") -> dict:
     online = check_offline()
     status_badge = "📡 offline" if not online else None  # None = 不强制标 offline,留给下游判定
 
+    # === T3 · 粒度数据(2026-08-09 · G1-A2/A3/A4 一体模板) ===
+    from datetime import date as _cdate
+    from calendar import monthrange as _monthrange
+    GRANULARITY_CN = {"day": "今日", "week": "本周", "month": "本月", "range": "区间"}
+    # 区间按长度路由区块(服务端定,模板直接用):≤1 天→day / ≤7 天→week / ≤31 天→month / 其他→range 通用
+    # 路由按"区间跨度"(start~end 长度)而非数据天数:30 天区间即使只记了 3 天也走月视图
+    span_days = 1
+    try:
+        span_days = max(1, (_cdate.fromisoformat(end) - _cdate.fromisoformat(start)).days + 1)
+    except ValueError:
+        span_days = days_count
+    effective_granularity = granularity
+    if granularity == "range":
+        if span_days <= 1:
+            effective_granularity = "day"
+        elif span_days <= 7:
+            effective_granularity = "week"
+        elif span_days <= 31:
+            effective_granularity = "month"
+    granularity_cn = GRANULARITY_CN.get(effective_granularity, "区间")
+
+    # 健康分全粒度:day=单日 / week+month=每日序列 + 均值 / range=序列 + 均值(模板兜底)
+    health_score = compute_health_score(records) if records else 0
+    health_series: list[dict] = []
+    if records:
+        by_date: dict[str, list] = {}
+        for r in records:
+            by_date.setdefault(r.get("date", ""), []).append(r)
+        for d_str in sorted(by_date):
+            health_series.append({
+                "date": d_str,
+                "score": compute_health_score(by_date[d_str]),
+            })
+    health_mean = round(sum(h["score"] for h in health_series) / len(health_series)) if health_series else 0
+
+    # month 环比:上一整月同期对比(仅 month 粒度计算,其他粒度给空)
+    def _shift_month(d: _cdate, n: int) -> _cdate:
+        y, m = d.year, d.month + n
+        while m < 1:
+            m += 12; y -= 1
+        while m > 12:
+            m -= 12; y += 1
+        return _cdate(y, m, min(d.day, _monthrange(y, m)[1]))
+
+    month_compare: list[dict] = []        # [{category, current, previous, delta_pct}]
+    month_rate_compare: dict = None       # {current_rate, previous_rate, delta_pct}
+    if effective_granularity == "month":
+        try:
+            s_dt = _cdate.fromisoformat(start)
+            e_dt = _cdate.fromisoformat(end)
+            prev_start = _shift_month(s_dt, -1).isoformat()
+            prev_end = _shift_month(e_dt, -1).isoformat()
+            prev_records = get_records_range(prev_start, prev_end)
+            prev_cat = aggregate_by_category(prev_records)
+            prev_total = sum(prev_cat.values())
+            cur_total = sum(cat_minutes.values())
+            for cat, cur_mins in sorted(cat_minutes.items(), key=lambda x: -x[1]):
+                prev_mins = prev_cat.get(cat, 0)
+                if prev_mins == 0 and cur_mins == 0:
+                    continue
+                if prev_mins == 0:
+                    delta_pct = 100.0 if cur_mins > 0 else 0.0
+                else:
+                    delta_pct = round((cur_mins - prev_mins) / prev_mins * 100, 1)
+                month_compare.append({
+                    "category": cat,
+                    "current": cur_mins, "previous": prev_mins,
+                    "delta_pct": delta_pct,
+                })
+            # 完成率环比
+            prev_plans = get_plan_events_range(prev_start, prev_end, include_inactive=False)
+            prev_completed = sum(1 for p in prev_plans if p.get("completion") == "已完成")
+            prev_undone = sum(1 for p in prev_plans if p.get("completion") in ("未完成", "未完成(不可抗力)"))
+            prev_rate = (prev_completed / (prev_completed + prev_undone)) if (prev_completed + prev_undone) > 0 else None
+            if prev_rate is not None and (completed_count + not_completed) > 0:
+                cur_rate = completed_count / (completed_count + not_completed)
+                month_rate_compare = {
+                    "current_rate": round(cur_rate, 3),
+                    "previous_rate": round(prev_rate, 3),
+                    "delta_pct": round((cur_rate - prev_rate) * 100, 1),
+                }
+        except Exception:
+            month_compare = []
+            month_rate_compare = None
+
+    # day 缺计划 → 补齐引导(不降级 · G1-A2 交互形态)
+    plan_guide = None
+    if effective_granularity == "day" and not has_plans:
+        plan_guide = {
+            "hint": "今天还没有日程计划,无法做计划 vs 实际对照。",
+            "prompt": (
+                f"请帮我把今天的计划补齐:调 schedule_cli.py 用商量计划流程"
+                f"(ensure-plan-event 或 upsert-plan-events)先制定今天剩余时段的日程,"
+                f"然后再调 render-replay {start} {end} --granularity day 重新复盘。"
+            ),
+        }
+
+    def _make_granularity_data() -> dict:
+        return {
+            "granularity": effective_granularity,
+            "requested_granularity": granularity,
+            "granularity_cn": granularity_cn,
+            "health_score": health_score,
+            "health_series": health_series,
+            "health_mean": health_mean,
+            "month_compare": month_compare,
+            "month_rate_compare": month_rate_compare,
+            "plan_guide": plan_guide,
+        }
+
+    def _make_title() -> str:
+        if effective_granularity == "day":
+            return f"今日复盘 · {start}"
+        if effective_granularity == "week":
+            return f"本周复盘 · {start} ~ {end}"
+        if effective_granularity == "month":
+            return f"本月复盘 · {start} ~ {end}"
+        return f"区间复盘 · {start} ~ {end}"
+
     # 空骨架 payload(各状态共用基础)
     def _make_meta(extra: dict) -> dict:
         base = {
             "mode": "replay",
             "start": start, "end": end, "days": days_count,
             "total_records": total_records, "total_minutes": total_minutes,
-            "title": f"区间复盘 · {start} ~ {end}",
+            "title": _make_title(),
+            "granularity": effective_granularity,
+            "requested_granularity": granularity,
+            "granularity_cn": granularity_cn,
+            "health_score": health_score,
+            "health_mean": health_mean,
             "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "status_badge": status_badge,
         }
@@ -2781,7 +2909,10 @@ def render_replay(start: str, end: str, ai_engine: str = "mock") -> dict:
                     "unexpected_records": [], "overrun_plans": [],
                 },
                 "ai_insights": {"anomalies": [], "periodic_compare": [], "suggestions": []},
-                "copy_prompt": _build_replay_copy_prompt(start, end, 0, 0, 0, 0),
+                "granularity_data": _make_granularity_data(),
+                "copy_prompt": _build_replay_copy_prompt(
+                    start, end, 0, 0, 0, 0, granularity=granularity,
+                ),
                 "errors": [],
             },
             "message": f"📭 {start} ~ {end} 区间无数据(空态)",
@@ -2810,10 +2941,12 @@ def render_replay(start: str, end: str, ai_engine: str = "mock") -> dict:
         "plan_aggregate": _make_plan_aggregate(incomplete=not has_plans),
         "cross_domain": _make_cross_domain(),
         "ai_insights": ai_insights,
+        "granularity_data": _make_granularity_data(),
         "copy_prompt": _build_replay_copy_prompt(
             start, end, total_records, total_minutes,
             sum(1 for p in plans if p.get("completion") == "已完成"),
             len(plans),
+            granularity=granularity,
         ),
         "errors": [],
     }
@@ -2835,18 +2968,27 @@ def render_replay(start: str, end: str, ai_engine: str = "mock") -> dict:
 
 def _build_replay_copy_prompt(start: str, end: str, total_records: int,
                               total_minutes: int, completed_events: int,
-                              total_events: int) -> str:
-    """T01 · copy_prompt 4 部分结构(单工铁律,总纲 §04 原则 10)骨架。
+                              total_events: int,
+                              granularity: str = "range") -> str:
+    """T3 · copy_prompt 4 部分结构(单工铁律,总纲 §04 原则 10)
 
-    T08 视觉打磨阶段会完善 prompt 内容(参考 record-range 的 _build_record_copy_prompt)。
-    T01 仅给骨架,让契约不空。
+    2026-08-09 T3 升级:带粒度文案 + 复盘→计划衔接引导(去制定明日计划)。
     """
     completion_rate = (completed_events / total_events * 100) if total_events else 0.0
+    gran_cn = {"day": "今日", "week": "本周", "month": "本月", "range": "区间"}.get(granularity, "区间")
+    if granularity == "day":
+        scene = f"复盘今日 {start}"
+    elif granularity in ("week", "month"):
+        scene = f"复盘{gran_cn} {start} ~ {end}"
+    else:
+        scene = f"复盘区间 {start} ~ {end}"
     return (
-        f"① 场景: 复盘 {start} ~ {end} 区间的作息与计划执行情况\n"
+        f"① 场景: {scene}({gran_cn}粒度 · 一体模板)\n"
         f"② 数据: {total_records} 条记录,总时长 {total_minutes} 分钟,"
         f"计划完成 {completed_events}/{total_events} ({completion_rate:.1f}%)\n"
-        f"③ 用户原话: 请帮我复盘这一段\n"
+        f"③ 期望: 基于以上复盘数据给我总结 + 建议;如果今天/明天还没有计划,"
+        f"请引导我调商量计划(ensure-plan-event / upsert-plan-events)制定下一天日程,形成"
+        f"「复盘 → 制定明日计划」衔接闭环\n"
         f"④ 来源: schedule_replay.html 生成于 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')},"
         f"数据源 schedule_records + schedule_plans"
     )

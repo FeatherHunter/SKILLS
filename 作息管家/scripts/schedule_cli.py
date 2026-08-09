@@ -2376,26 +2376,40 @@ def cmd_render_record_range(args):
 
 
 def cmd_render_replay(args):
-    """Phase E · render-replay <开始> <结束> · 跨域 dual-domain 分析
+    """T3 · render-replay <开始> <结束> [--granularity day|week|month|range]
 
-    复用 _render_record_cmd 的渲染 + 写入流程,但兼容 empty 状态
-    (区间无数据 → 仍生成空态 HTML,友好提示而非假装成功)。
-    T01 仅做骨架;T03-T06 填充 4 段叙事;T07 补 5 状态 fallback 完整版。
+    复盘一体模板(2026-08-09 · G1-A2/A3/A4 · 不双模板并存):
+      - day   复盘今日:   计划 vs 实际对照 + 叙事 + 单日健康分 + 缺计划补齐引导
+      - week  复盘本周:   7 维趋势 + 热力图 + 健康分均值
+      - month 复盘本月:   月度聚合 + 环比 + 目标达成
+      - range 复盘区间:   4 段叙事(模板按区间长度自动路由区块)
+    默认 range。复用 _render_record_cmd 的渲染 + 写入流程,兼容 empty 状态。
     """
     from schedule_html_render import render_replay, render_and_write
     from pathlib import Path as _P
 
-    if len(args) < 2:
+    granularity = "range"
+    positional = []
+    i = 0
+    while i < len(args):
+        if args[i] == "--granularity" and i + 1 < len(args):
+            granularity = args[i + 1]
+            i += 2
+        else:
+            positional.append(args[i])
+            i += 1
+
+    if len(positional) < 2:
         print(_json.dumps({
             "status": "error",
-            "message": "用法: render-replay <开始> <结束>",
-            "example": "render-replay 2026-07-01 2026-07-30",
+            "message": "用法: render-replay <开始> <结束> [--granularity day|week|month|range]",
+            "example": "render-replay 2026-07-01 2026-07-30 / render-replay 2026-08-09 2026-08-09 --granularity day",
         }, ensure_ascii=False))
         return
 
-    payload = render_replay(args[0], args[1])
-    # empty 状态: 仍生成空态 HTML(让用户能看到友好提示)
-    if payload.get("status") in ("ok", "empty"):
+    payload = render_replay(positional[0], positional[1], granularity=granularity)
+    # empty / incomplete: 仍生成 HTML(友好提示而非假装成功;incomplete 标缺失域)
+    if payload.get("status") in ("ok", "empty", "incomplete"):
         try:
             # render_and_write 期望 outer payload 结构 {data:{meta:...}, ...}
             # render_replay 返回的 payload 已经是 outer 形式
@@ -2417,8 +2431,9 @@ def cmd_render_replay(args):
                 "bytes": fp.stat().st_size,
                 "size_kb": result["data"]["size_kb"],
                 "mode": "replay",
-                "start": args[0],
-                "end": args[1],
+                "granularity": payload["data"]["meta"].get("granularity", granularity),
+                "start": positional[0],
+                "end": positional[1],
                 "days": payload["data"]["meta"]["days"],
                 "total_records": payload["data"]["meta"]["total_records"],
             },

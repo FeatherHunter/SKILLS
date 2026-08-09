@@ -135,7 +135,7 @@ def replay_30d_html(tmp_path, monkeypatch):
 # ---- T09 acceptance 端到端断言 ----
 
 def test_e2e_30d_4_segments_visible(replay_30d_html):
-    """T09 · 30 天大 fixture 下 4 段叙事标题可见(playwright 1 视口 sanity check)"""
+    """T3 · 30 天大 fixture 按长度路由 month 区块(一体模板 · G1-A4 月度聚合)"""
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -150,17 +150,18 @@ def test_e2e_30d_4_segments_visible(replay_30d_html):
                 "() => document.querySelectorAll('.card-stat').length >= 4",
                 timeout=10000,
             )
-            # 4 段叙事 segment 标题可见
+            # 一体模板 · 30 天 → month 区块(月度聚合 + 环比 + 目标 + 健康分 + AI)
             titles = page.evaluate(
                 """() => {
                     const segs = document.querySelectorAll('.segment h2, .ai-section h2');
                     return Array.from(segs).map(s => s.textContent.trim());
                 }"""
             )
-            assert any("实际作息" in t for t in titles), "缺'实际作息'段"
-            assert any("计划执行" in t for t in titles), "缺'计划执行'段"
-            assert any("跨域对比" in t for t in titles), "缺'跨域对比'段"
+            assert any("实际作息" in t for t in titles), "缺'实际作息'(月度聚合)段"
+            assert any("环比对比" in t for t in titles), "缺'环比对比'段"
+            assert any("目标达成" in t for t in titles), "缺'目标达成'段"
             assert any("AI 洞察" in t for t in titles), "缺'AI 洞察'段"
+            assert any("健康分均值" in t for t in titles), "缺'健康分均值'段(健康分全粒度)"
         finally:
             browser.close()
 

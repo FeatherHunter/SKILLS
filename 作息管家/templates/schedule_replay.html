@@ -5,9 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>{{ title }}</title>
 <style>
-/* === Phase E · 复盘 start-end · T08 视觉打磨 (4 卡 + 4 段叙事 + 复制 prompt + 移动端适配) ===
- * Spec: .scratch/replay-start-end/spec.md § 4 段叙事 + § 5 状态 fallback
- * 总纲 §04 原则 10: 单工铁律,过程型 HTML 必有"复制 prompt"按钮 + 4 部分结构
+/* === T3 · 复盘一体模板(2026-08-09 · G1-A2/A3/A4 · 对抗式审查矛盾 2 修正:不双模板并存) ===
+ * 粒度路由:day(今日=对照+叙事+健康分) / week(趋势+热力图+均值) / month(聚合+环比+目标)
+ *          range(区间=4 段叙事,模板按长度自动路由:≤1天→day / ≤7天→week / ≤31天→month / 其他→通用)
+ * 健康分全粒度 · 缺计划提示补齐 · 复盘→计划衔接引导
+ * Spec: .scratch/replay-start-end/spec.md + G1-功能定标清单 A2/A3/A4 + C 跨场景约定
  */
 *,*::before,*::after { box-sizing: border-box; }
 * { margin: 0; padding: 0; }
@@ -62,7 +64,7 @@ body {
 .hero .status-badge.warn { background: rgba(255,149,0,0.12); color: var(--warn); }
 .hero .status-badge.error { background: rgba(255,59,48,0.12); color: var(--danger); }
 
-/* === 4 卡总览 grid(总时长 / 记录数 / 完成率 / 健康分)=== */
+/* === 4 卡总览 grid(总时长 / 记录数 / 完成率 / 健康分 · 健康分全粒度) === */
 .cards-4 {
   display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px; margin-bottom: 20px;
@@ -80,7 +82,7 @@ body {
 .card-stat.danger .value { color: var(--danger); }
 .card-stat.mute .value { color: var(--mute); }
 
-/* === 4 段叙事 segment === */
+/* === 段 segment === */
 .segment {
   background: var(--card); border-radius: 16px; padding: 20px 24px;
   margin-bottom: 16px;
@@ -93,6 +95,7 @@ body {
   padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600;
   margin-left: auto;
 }
+.segment .seg-sub { font-size: 12px; color: var(--fg3); margin: -8px 0 12px; }
 
 /* Top-N 折叠:cat-row 列表(默认 10 + "展开全部"按钮) */
 .cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
@@ -111,7 +114,7 @@ body {
   border: 1px solid var(--line); background: var(--card);
   border-radius: 8px; color: var(--fg); font-size: 13px;
   cursor: pointer; font-family: inherit;
-  min-height: 44px;  /* 移动端触控友好(总纲 §04 原则 12) */
+  min-height: 44px;
 }
 
 /* 6 类 completion 分布堆叠柱 */
@@ -135,9 +138,7 @@ body {
   display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px;
   font-size: 11px; color: var(--fg2);
 }
-.completion-legend span::before {
-  content: '● '; font-size: 14px; vertical-align: middle;
-}
+.completion-legend span::before { content: '● '; font-size: 14px; vertical-align: middle; }
 .completion-legend .l-done::before { color: var(--good); }
 .completion-legend .l-done-late::before { color: #5acd5a; }
 .completion-legend .l-partial::before { color: var(--warn); }
@@ -156,6 +157,113 @@ body {
 .cross-item.overrun-medium { background: rgba(255,149,0,0.08); }
 .cross-item .title { flex: 1; font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cross-item .meta { font-size: 11px; color: var(--fg2); font-variant-numeric: tabular-nums; }
+
+/* === T3 · 计划 vs 实际对照表(day 粒度) === */
+.pa-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.pa-table th {
+  text-align: left; font-size: 10.5px; color: var(--fg3); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em;
+  padding: 8px 10px; border-bottom: 1.5px solid var(--line);
+}
+.pa-table td { padding: 9px 10px; border-bottom: 1px solid #ececf0; vertical-align: middle; }
+.pa-table tr:last-child td { border-bottom: none; }
+.pa-table .t-title { font-weight: 500; min-width: 140px; }
+.pa-table .t-delta.plus { color: var(--warn); font-weight: 600; }
+.pa-table .t-delta.minus { color: var(--good); font-weight: 600; }
+.pa-table .comp-chip { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 10.5px; font-weight: 600; }
+.pa-table .comp-chip.done { background: rgba(52,199,89,0.14); color: #1f8c3d; }
+.pa-table .comp-chip.done-late { background: rgba(90,205,90,0.16); color: #2f8f2f; }
+.pa-table .comp-chip.partial { background: rgba(255,149,0,0.14); color: #a25b00; }
+.pa-table .comp-chip.undone { background: rgba(255,59,48,0.12); color: #c1352b; }
+.pa-table .comp-chip.unreviewed { background: rgba(155,155,160,0.14); color: #6e6e73; }
+
+/* === T3 · 缺计划补齐引导(day 粒度 · 不降级) === */
+.plan-guide {
+  background: linear-gradient(180deg, #fff8ec 0%, #fffdf7 100%);
+  border: 1.5px solid rgba(255,149,0,0.45);
+  border-radius: 14px; padding: 16px 20px; margin-bottom: 16px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.plan-guide .pg-icon { font-size: 26px; flex-shrink: 0; }
+.plan-guide .pg-main { flex: 1; min-width: 220px; }
+.plan-guide .pg-title { font-size: 14px; font-weight: 700; color: #a25b00; margin-bottom: 2px; }
+.plan-guide .pg-hint { font-size: 12px; color: var(--fg2); }
+.plan-guide .pg-btn {
+  background: var(--warn); color: #fff; border: none;
+  padding: 9px 16px; border-radius: 10px;
+  font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+  min-height: 40px; white-space: nowrap; transition: background .15s;
+}
+.plan-guide .pg-btn:hover { background: #e08500; }
+.plan-guide .pg-btn.copied { background: var(--good); }
+
+/* === T3 · 7 维趋势折线(week 粒度) === */
+.trend-chart { width: 100%; height: auto; }
+.trend-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; font-size: 11px; color: var(--fg2); }
+.trend-legend span::before { content: '— '; font-weight: 700; }
+.trend-legend .lw-dim { display: inline-flex; align-items: center; gap: 5px; }
+.trend-legend .sw { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+/* === T3 · 24h × N 天热力图(week 粒度) === */
+.heatmap-wrap { overflow-x: auto; }
+.heatmap {
+  display: grid; grid-auto-flow: column; gap: 3px; min-width: 560px;
+  margin-bottom: 8px;
+}
+.heatmap .hm-day { display: grid; grid-template-rows: repeat(24, 10px); gap: 2px; }
+.heatmap .hm-cell { border-radius: 2px; background: #f0f0f2; }
+.heatmap .hm-cell[title]:hover { outline: 1.5px solid var(--blue); outline-offset: 1px; }
+.hm-axis { display: grid; grid-auto-flow: column; gap: 3px; min-width: 560px; font-size: 9px; color: var(--fg3); }
+.hm-axis span { text-align: center; }
+
+/* === T3 · 健康分均值趋势(week/month 粒度 · 全粒度) === */
+.health-block { display: grid; grid-template-columns: 200px 1fr; gap: 16px; align-items: center; }
+.health-block .hb-score { text-align: center; }
+.health-block .hb-num { font-size: 44px; font-weight: 800; letter-spacing: -.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+.health-block .hb-label { font-size: 11px; color: var(--fg3); margin-top: 4px; }
+.health-block .hb-num.good { color: var(--good); }
+.health-block .hb-num.warn { color: var(--warn); }
+.health-block .hb-num.danger { color: var(--danger); }
+.health-block .hb-bars { display: flex; gap: 3px; align-items: flex-end; height: 64px; }
+.health-block .hb-bar { flex: 1; border-radius: 3px 3px 0 0; background: var(--blue); min-width: 3px; opacity: .85; }
+.health-block .hb-bar.anomaly { background: var(--warn); }
+
+/* === T3 · 月环比表(month 粒度) === */
+.mc-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.mc-table th {
+  text-align: left; font-size: 10.5px; color: var(--fg3); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em;
+  padding: 8px 10px; border-bottom: 1.5px solid var(--line);
+}
+.mc-table td { padding: 8px 10px; border-bottom: 1px solid #ececf0; }
+.mc-table tr:last-child td { border-bottom: none; }
+.mc-table .delta-up { color: var(--warn); font-weight: 600; }
+.mc-table .delta-down { color: var(--good); font-weight: 600; }
+.mc-table .delta-flat { color: var(--fg3); }
+
+/* === T3 · 目标达成(month 粒度) === */
+.goal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.goal-card { background: var(--soft); border-radius: 12px; padding: 14px 16px; }
+.goal-card .g-label { font-size: 11px; color: var(--fg3); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px; }
+.goal-card .g-value { font-size: 22px; font-weight: 700; }
+.goal-card .g-delta { font-size: 11.5px; color: var(--fg2); margin-top: 3px; }
+.goal-card.good .g-value { color: var(--good); }
+.goal-card.warn .g-value { color: var(--warn); }
+.goal-card.danger .g-value { color: var(--danger); }
+.goal-bar { height: 6px; background: #e5e5e5; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.goal-bar > i { display: block; height: 100%; border-radius: 3px; background: var(--blue); }
+
+/* === T3 · 复盘→计划衔接引导(底部 · 跨场景约定 C) === */
+.plan-link-zone {
+  background: linear-gradient(180deg, #eef7ff 0%, #fff 100%);
+  border: 1.5px dashed var(--blue);
+  border-radius: 14px; padding: 16px 20px; margin: 20px 0 4px;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.plan-link-zone .pl-icon { font-size: 26px; flex-shrink: 0; }
+.plan-link-zone .pl-main { flex: 1; min-width: 220px; }
+.plan-link-zone .pl-title { font-size: 14px; font-weight: 700; color: var(--blue2, #0a63ce); margin-bottom: 2px; }
+.plan-link-zone .pl-hint { font-size: 12px; color: var(--fg2); }
 
 /* AI 洞察 */
 .ai-section { background: linear-gradient(180deg, #fff5e0 0%, #fffbf0 100%); border: 1px solid #ffd9a8; border-radius: 16px; padding: 16px 20px; margin-bottom: 16px; }
@@ -225,6 +333,8 @@ body {
   .card-stat { padding: 14px 16px; }
   .card-stat .value { font-size: 24px; }
   .cat-grid { grid-template-columns: 1fr; }
+  .health-block { grid-template-columns: 1fr; }
+  .goal-grid { grid-template-columns: 1fr; }
   .wrap { padding: 20px 12px 60px; }
   .hero { padding: 20px 18px; border-radius: 18px; }
   .hero h1 { font-size: 22px; }
@@ -250,7 +360,7 @@ body {
 <div class="offline-banner" id="offline-banner" style="display:none">📡 网络不可用 · 本页面仍可查看离线数据</div>
 
 <header class="hero">
-  <div class="eyebrow">区间复盘</div>
+  <div class="eyebrow" id="page-eyebrow">复盘</div>
   <h1 id="page-title">…</h1>
   <p class="lead" id="page-subtitle">加载中…</p>
   <div class="meta">
@@ -259,21 +369,33 @@ body {
   </div>
 </header>
 
-<!-- 4 卡总览 -->
+<!-- 4 卡总览(健康分全粒度) -->
 <div class="cards-4" id="cards-overview"></div>
 
-<!-- 4 段叙事容器 -->
-<div id="segments-container"></div>
+<!-- 缺计划补齐引导(day 粒度 · 不降级) -->
+<div id="plan-guide-zone"></div>
+
+<!-- 粒度区块容器 -->
+<div id="blocks-container"></div>
+
+<!-- 复盘→计划衔接引导(跨场景约定 C) -->
+<div class="plan-link-zone" id="plan-link-zone" style="display:none">
+  <div class="pl-icon">📝</div>
+  <div class="pl-main">
+    <div class="pl-title">复盘 → 制定明日计划</div>
+    <div class="pl-hint">复盘完成,下一步给明天安排日程:说「商量计划 / 规划明天」,或把下方完整 prompt 复制给 AI 直接衔接。</div>
+  </div>
+</div>
 
 <!-- 复制 prompt 4 部分结构(单工铁律) -->
 <div class="copy-prompt-zone" id="copy-prompt-zone">
-  <h3>📋 复制 4 部分 prompt 给 AI</h3>
+  <h3>📋 复制 4 部分 prompt 给 AI(含复盘 → 计划衔接引导)</h3>
   <pre class="copy-preview" id="copy-preview"></pre>
   <button class="copy-prompt-btn" id="copy-prompt-btn" type="button">复制完整 prompt</button>
 </div>
 
 <div class="footer">
-  数据源:<code>schedule_records</code> + <code>schedule_plans</code> · 模板:<code>{{ template_name }}</code> · 输出:<code>SKILLS_DB_PATH/schedule_html/replay/</code>
+  数据源:<code>schedule_records</code> + <code>schedule_plans</code> · 模板:<code>schedule_replay.html</code>(一体模板 · T3 粒度路由) · 输出:<code>SKILLS_DB_PATH/schedule_html/replay/</code>
 </div>
 </div>
 
@@ -282,13 +404,13 @@ body {
   <div class="toast-icon">📋</div>
   <div class="toast-body">
     <div class="toast-title">已复制 prompt</div>
-    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),复盘跨域分析会基于此上下文给出洞察</div>
+    <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),复盘跨域分析会基于此上下文给出洞察 + 计划衔接引导</div>
   </div>
 </div>
 
-<script id="payload" type="application/json"></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
 <script>
-/* === Phase E · schedule_replay.html · T08 完整渲染(4 卡 + 4 段叙事 + 复制 prompt)=== */
+/* === T3 · schedule_replay.html 一体模板渲染(粒度路由 · 健康分全粒度 · 缺计划补齐 · 计划衔接)=== */
 (function(){
   "use strict";
   function safeJSON(s){ try { return JSON.parse(s); } catch(e){ return null; } }
@@ -296,8 +418,8 @@ body {
     return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; });
   }
   function fmtMin(m){ if (!m) return "0m"; var h = Math.floor(m / 60), mn = m % 60; return h > 0 ? h + "h" + (mn > 0 ? mn + "m" : "") : mn + "m"; }
+  function healthVariant(score){ return score >= 70 ? "good" : (score >= 50 ? "warn" : "danger"); }
 
-  // === 1. 读 payload + hero ===
   var raw = document.getElementById("payload");
   if (!raw) return;
   var payload = safeJSON(raw.textContent || "");
@@ -307,8 +429,12 @@ body {
   }
   var d = payload.data;
   var meta = d.meta;
+  var gd = d.granularity_data || {};
+
+  // === 1. Hero ===
   document.getElementById("page-title").textContent = meta.title || ("区间复盘 · " + meta.start + " ~ " + meta.end);
   document.getElementById("page-subtitle").textContent = meta.subtitle || (meta.days + " 天 · " + meta.total_records + " 条记录");
+  document.getElementById("page-eyebrow").textContent = (gd.granularity_cn || "区间") + "复盘";
 
   // === 2. 状态徽章(5 状态 fallback)===
   var badge = meta.status_badge || "✅ ok";
@@ -320,25 +446,19 @@ body {
   else if (badge.indexOf("incomplete") >= 0) badgeEl.className = "status-badge warn";
   else if (badge.indexOf("error") >= 0) badgeEl.className = "status-badge error";
   else badgeEl.className = "status-badge";
-
-  // offline 横幅
   if (badge.indexOf("offline") >= 0) {
     document.getElementById("offline-banner").style.display = "block";
   }
 
-  // === 3. 4 卡总览 ===
-  var totalHours = Math.round(meta.total_minutes / 60);
+  // === 3. 4 卡总览(健康分全粒度) ===
   var completionRate = (d.plan_aggregate && d.plan_aggregate.completion_rate != null) ? Math.round(d.plan_aggregate.completion_rate * 100) : 0;
-  // 健康分代理:维持(睡眠/用餐等)占总时长比例,50% 满分配
-  var dimTotals = (d.record_aggregate && d.record_aggregate.dim_totals) || {};
-  var dimSum = 0; var maintainSum = 0;
-  for (var k in dimTotals) { if (dimTotals.hasOwnProperty(k)) { dimSum += dimTotals[k] || 0; if (k === "维持") maintainSum += dimTotals[k] || 0; } }
-  var healthScore = dimSum > 0 ? Math.round(maintainSum / dimSum * 100) : 0;
+  var healthScore = (gd.health_score != null && gd.health_score > 0) ? gd.health_score : (gd.health_mean || 0);
+  var healthLabel = (meta.days <= 1) ? "单日健康分" : "健康分均值";
   var cards = [
-    { label: "总时长", value: fmtMin(meta.total_minutes), delta: totalHours + " 小时" },
+    { label: "总时长", value: fmtMin(meta.total_minutes), delta: Math.round(meta.total_minutes / 60) + " 小时" },
     { label: "记录数", value: meta.total_records + " 条", delta: meta.days + " 天" },
     { label: "完成率", value: completionRate + "%", delta: d.plan_aggregate && d.plan_aggregate.incomplete ? "⚠️ 数据不全" : "按时完成", variant: completionRate >= 80 ? "good" : (completionRate >= 50 ? "warn" : "danger") },
-    { label: "健康分", value: healthScore + "%", delta: "维持(睡眠)占比 · T08 代理", variant: healthScore >= 35 ? "good" : (healthScore >= 25 ? "warn" : "mute") },
+    { label: "健康分", value: healthScore + "", delta: healthLabel + " · 全粒度", variant: healthVariant(healthScore) },
   ];
   var cardsHtml = "";
   for (var i = 0; i < cards.length; i++) {
@@ -351,87 +471,82 @@ body {
   }
   document.getElementById("cards-overview").innerHTML = cardsHtml;
 
-  // === 4. 4 段叙事渲染 ===
-  var segsHtml = "";
+  // === 4. 粒度区块(服务端已路由:requested=range 时按区间长度映射 day/week/month/通用) ===
+  var gran = gd.granularity || "range";
 
-  // 4.1 record_aggregate
-  var ra = d.record_aggregate || {};
-  var incompleteRa = !!ra.incomplete;
-  segsHtml += '<section class="segment" id="seg-record">' +
-              '<h2><span class="icon">📊</span>实际作息' +
-              (incompleteRa ? '<span class="incomplete-mark">⚠️ 记录域 incomplete</span>' : '') +
-              '</h2>';
-  if (incompleteRa) {
-    segsHtml += '<p style="color:var(--warn);font-size:13px">⚠️ 此区间只有计划无作息记录,记录域无数据。</p>';
-  } else if ((ra.summary_items || []).length > 0) {
-    // Top-N 折叠
-    var items = ra.summary_items;
-    var visible = ra.top_n_visible || 10;
-    var gridHtml = '<div class="cat-grid">';
-    for (var i = 0; i < items.length; i++) {
-      var it = items[i];
-      var cls = i >= visible ? "cat-row hidden" : "cat-row";
-      gridHtml += '<div class="' + cls + '" data-idx="' + i + '">' +
-                  '<span class="emoji">' + esc(it.emoji) + '</span>' +
-                  '<div style="flex:1;min-width:0">' +
-                    '<div style="display:flex;justify-content:space-between"><span class="name">' + esc(it.category) + '</span><span class="dur">' + esc(it.duration_text) + '</span></div>' +
-                    '<div class="bar"><div class="bar-fill" style="width:' + Math.min(100, it.pct || 0) + '%;background:' + esc(it.color || '#999') + '"></div></div>' +
-                  '</div>' +
-                  '</div>';
-    }
-    gridHtml += '</div>';
-    if (items.length > visible) {
-      gridHtml += '<button class="expand-btn" id="expand-cat-rows" type="button">展开全部 ' + items.length + ' 个分类</button>';
-    }
-    segsHtml += gridHtml;
-  } else {
-    segsHtml += '<p style="color:var(--fg3);font-size:13px">📭 此区间无作息记录</p>';
-  }
-  segsHtml += '</section>';
+  // ==== 各区块渲染函数 ====
 
-  // 4.2 plan_aggregate
-  var pa = d.plan_aggregate || {};
-  var incompletePa = !!pa.incomplete;
-  segsHtml += '<section class="segment" id="seg-plan">' +
-              '<h2><span class="icon">📅</span>计划执行' +
-              (incompletePa ? '<span class="incomplete-mark">⚠️ 计划域 incomplete</span>' : '') +
-              '</h2>';
-  if (incompletePa) {
-    segsHtml += '<p style="color:var(--warn);font-size:13px">⚠️ 此区间只有作息无计划事件,计划域无数据。</p>';
-  } else {
-    var dist = pa.completion_distribution || {};
-    var totalP = (dist["已完成"] || 0) + (dist["已完成(超时)"] || 0) + (dist["部分完成"] || 0) + (dist["未完成"] || 0) + (dist["未完成(不可抗力)"] || 0) + (dist["未复盘"] || 0);
-    if (totalP > 0) {
-      var barHtml = '<div class="completion-bar">';
-      var segs = [["已完成","c-done"],["已完成(超时)","c-done-late"],["部分完成","c-partial"],["未完成","c-undone"],["未完成(不可抗力)","c-undone-force"],["未复盘","c-unreviewed"]];
-      for (var i = 0; i < segs.length; i++) {
-        var k = segs[i][0], cls = segs[i][1];
-        var v = dist[k] || 0;
-        if (v > 0) barHtml += '<div class="' + cls + '" style="width:' + (v / totalP * 100) + '%">' + v + '</div>';
+  // 实际作息 Top-N 段
+  function segRecord(ra){
+    var incompleteRa = !!ra.incomplete;
+    var h = '<section class="segment"><h2><span class="icon">📊</span>实际作息' +
+            (incompleteRa ? '<span class="incomplete-mark">⚠️ 记录域 incomplete</span>' : '') + '</h2>';
+    if (incompleteRa) {
+      h += '<p style="color:var(--warn);font-size:13px">⚠️ 此区间只有计划无作息记录,记录域无数据。</p>';
+    } else if ((ra.summary_items || []).length > 0) {
+      var items = ra.summary_items;
+      var visible = ra.top_n_visible || 10;
+      var gridHtml = '<div class="cat-grid">';
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        gridHtml += '<div class="' + (i >= visible ? "cat-row hidden" : "cat-row") + '">' +
+                    '<span class="emoji">' + esc(it.emoji) + '</span>' +
+                    '<div style="flex:1;min-width:0">' +
+                      '<div style="display:flex;justify-content:space-between"><span class="name">' + esc(it.category) + '</span><span class="dur">' + esc(it.duration_text) + '</span></div>' +
+                      '<div class="bar"><div class="bar-fill" style="width:' + Math.min(100, it.pct || 0) + '%;background:' + esc(it.color || '#999') + '"></div></div>' +
+                    '</div></div>';
       }
-      barHtml += '</div>';
-      var legendHtml = '<div class="completion-legend">';
-      for (var i = 0; i < segs.length; i++) {
-        var k = segs[i][0], cls = segs[i][1];
-        legendHtml += '<span class="l-' + cls.replace("c-", "") + '">' + k + ': ' + (dist[k] || 0) + '</span>';
+      gridHtml += '</div>';
+      if (items.length > visible) {
+        gridHtml += '<button class="expand-btn" id="expand-cat-rows" type="button" data-expand>展开全部 ' + items.length + ' 个分类</button>';
       }
-      legendHtml += '</div>';
-      segsHtml += barHtml + legendHtml;
+      h += gridHtml;
     } else {
-      segsHtml += '<p style="color:var(--fg3);font-size:13px">📭 此区间无计划事件</p>';
+      h += '<p style="color:var(--fg3);font-size:13px">📭 此区间无作息记录</p>';
     }
+    return h + '</section>';
   }
-  segsHtml += '</section>';
 
-  // 4.3 cross_domain
-  var cd = d.cross_domain || {};
-  segsHtml += '<section class="segment" id="seg-cross">' +
-              '<h2><span class="icon">🔀</span>跨域对比</h2>';
-  var hasCross = (cd.planned_actual_pairs || []).length > 0 || (cd.unexecuted_plans || []).length > 0 ||
-                 (cd.unexpected_records || []).length > 0 || (cd.overrun_plans || []).length > 0;
-  if (!hasCross) {
-    segsHtml += '<p style="color:var(--fg3);font-size:13px">📭 此区间无跨域对比数据</p>';
-  } else {
+  // 计划执行段(completion 堆叠柱)
+  function segPlan(pa){
+    var incompletePa = !!pa.incomplete;
+    var h = '<section class="segment"><h2><span class="icon">📅</span>计划执行' +
+            (incompletePa ? '<span class="incomplete-mark">⚠️ 计划域 incomplete</span>' : '') + '</h2>';
+    if (incompletePa) {
+      h += '<p style="color:var(--warn);font-size:13px">⚠️ 此区间只有作息无计划事件,计划域无数据。</p>';
+    } else {
+      var dist = pa.completion_distribution || {};
+      var totalP = 0;
+      for (var k in dist) if (dist.hasOwnProperty(k)) totalP += dist[k] || 0;
+      if (totalP > 0) {
+        var segs = [["已完成","c-done"],["已完成(超时)","c-done-late"],["部分完成","c-partial"],["未完成","c-undone"],["未完成(不可抗力)","c-undone-force"],["未复盘","c-unreviewed"]];
+        var barHtml = '<div class="completion-bar">';
+        for (var i = 0; i < segs.length; i++) {
+          var v = dist[segs[i][0]] || 0;
+          if (v > 0) barHtml += '<div class="' + segs[i][1] + '" style="width:' + (v / totalP * 100) + '%">' + v + '</div>';
+        }
+        barHtml += '</div>';
+        var legendHtml = '<div class="completion-legend">';
+        for (var i = 0; i < segs.length; i++) {
+          legendHtml += '<span class="l-' + segs[i][1].replace("c-", "") + '">' + segs[i][0] + ': ' + (dist[segs[i][0]] || 0) + '</span>';
+        }
+        legendHtml += '</div>';
+        h += barHtml + legendHtml;
+      } else {
+        h += '<p style="color:var(--fg3);font-size:13px">📭 此区间无计划事件</p>';
+      }
+    }
+    return h + '</section>';
+  }
+
+  // 跨域对比段
+  function segCross(cd){
+    var hasCross = (cd.planned_actual_pairs || []).length > 0 || (cd.unexecuted_plans || []).length > 0 ||
+                   (cd.unexpected_records || []).length > 0 || (cd.overrun_plans || []).length > 0;
+    var h = '<section class="segment"><h2><span class="icon">🔀</span>跨域对比</h2>';
+    if (!hasCross) {
+      return h + '<p style="color:var(--fg3);font-size:13px">📭 此区间无跨域对比数据</p></section>';
+    }
     var listHtml = '<div class="cross-list">';
     (cd.planned_actual_pairs || []).forEach(function(p){
       listHtml += '<div class="cross-item"><span class="title">📋 ' + esc(p.title) + '</span><span class="meta">计划 ' + p.plan_duration_minutes + 'min / 实际 ' + p.actual_duration_minutes + 'min (Δ ' + (p.delta_minutes >= 0 ? '+' : '') + p.delta_minutes + ')</span></div>';
@@ -447,92 +562,272 @@ body {
       listHtml += '<div class="cross-item ' + sev + '"><span class="title">⏰ 超时:' + esc(o.title) + '</span><span class="meta">' + o.plan_duration_minutes + 'min / ' + o.actual_duration_minutes + 'min (' + o.ratio + 'x)</span></div>';
     });
     listHtml += '</div>';
-    segsHtml += listHtml;
+    return h + listHtml + '</section>';
   }
-  segsHtml += '</section>';
 
-  // 4.4 ai_insights
-  var ai = d.ai_insights || {};
-  segsHtml += '<section class="ai-section" id="seg-ai"><h2><span class="icon">🤖</span>AI 洞察(mock)</h2>';
-  var anomalies = ai.anomalies || [];
-  var suggestions = ai.suggestions || [];
-  if (anomalies.length === 0 && suggestions.length === 0) {
-    segsHtml += '<p style="color:var(--fg2);font-size:13px">📊 区间数据平稳,无显著异常</p>';
-  } else {
+  // AI 洞察段
+  function segAi(ai){
+    var anomalies = ai.anomalies || [];
+    var suggestions = ai.suggestions || [];
+    var h = '<section class="ai-section"><h2><span class="icon">🤖</span>AI 洞察(mock · 亮点 / 问题)</h2>';
+    if (anomalies.length === 0 && suggestions.length === 0) {
+      return h + '<p style="color:var(--fg2);font-size:13px">📊 区间数据平稳,无显著异常</p></section>';
+    }
     anomalies.forEach(function(a){
-      segsHtml += '<div class="ai-anomaly ' + esc(a.severity) + '">' +
-                  '<b>' + esc(a.category) + '</b> · ' +
-                  'baseline ' + a.baseline_value + 'min → current ' + a.current_value + 'min ' +
-                  '(ratio ' + a.ratio + ', ' + a.severity + ')' +
-                  '</div>';
+      h += '<div class="ai-anomaly ' + esc(a.severity) + '"><b>' + esc(a.category) + '</b> · ' +
+           'baseline ' + a.baseline_value + 'min → current ' + a.current_value + 'min (ratio ' + a.ratio + ', ' + a.severity + ')</div>';
     });
     suggestions.forEach(function(s){
-      segsHtml += '<div class="ai-suggestion">💡 ' + esc(s.text) + '</div>';
+      h += '<div class="ai-suggestion">💡 ' + esc(s.text) + '</div>';
     });
+    return h + '</section>';
   }
-  segsHtml += '</section>';
 
-  document.getElementById("segments-container").innerHTML = segsHtml;
+  // day:计划 vs 实际对照表
+  function segPlanActual(cd){
+    var pairs = cd.planned_actual_pairs || [];
+    var unexecuted = cd.unexecuted_plans || [];
+    var compClass = { "已完成": "done", "已完成(超时)": "done-late", "部分完成": "partial", "未完成": "undone", "未完成(不可抗力)": "undone", "未复盘": "unreviewed" };
+    var compCn = { "已完成": "已完成", "已完成(超时)": "已完成(超时)", "部分完成": "部分完成", "未完成": "未完成", "未完成(不可抗力)": "不可抗力", "未复盘": "未复盘" };
+    var rows = pairs.map(function(p){
+      return '<tr><td class="t-title">' + esc(p.title) + '</td>' +
+             '<td>' + p.plan_duration_minutes + 'min</td>' +
+             '<td>' + p.actual_duration_minutes + 'min</td>' +
+             '<td class="t-delta ' + (p.delta_minutes >= 0 ? "plus" : "minus") + '">' + (p.delta_minutes >= 0 ? "+" : "") + p.delta_minutes + 'min</td>' +
+             '<td><span class="comp-chip ' + (compClass[p.completion] || "unreviewed") + '">' + esc(compCn[p.completion] || "未复盘") + '</span></td></tr>';
+    }).join("");
+    unexecuted.forEach(function(p){
+      rows += '<tr><td class="t-title">⚠️ ' + esc(p.title) + '</td><td colspan="3">' + esc(p.time_start) + '-' + esc(p.time_end) + ' · 未执行</td>' +
+              '<td><span class="comp-chip ' + (compClass[p.completion] || "undone") + '">' + esc(compCn[p.completion] || "未完成") + '</span></td></tr>';
+    });
+    var h = '<section class="segment"><h2><span class="icon">⚖️</span>计划 vs 实际对照</h2>';
+    if (!rows) {
+      return h + '<p style="color:var(--fg3);font-size:13px">📭 今天没有可对照的计划/记录</p></section>';
+    }
+    h += '<table class="pa-table"><thead><tr><th>计划</th><th>计划时长</th><th>实际时长</th><th>差值</th><th>完成状态</th></tr></thead><tbody>' + rows + '</tbody></table></section>';
+    return h;
+  }
 
-  // 5. Top-N 折叠按钮绑定(如果存在)
-  var expandBtn = document.getElementById("expand-cat-rows");
-  if (expandBtn) {
-    expandBtn.addEventListener("click", function(){
-      var hidden = document.querySelectorAll(".cat-row.hidden");
+  // week:7 维趋势折线(SVG)
+  function segTrend(ra){
+    var trend = ra.trend || [];
+    if (!trend.length) return "";
+    var dimColors = ["#007aff", "#34c759", "#ff9500", "#ff3b30", "#af52de", "#5ac8fa", "#ff2d55"];
+    var W = 900, H = 180, padL = 30, padB = 20, padT = 8;
+    var allDates = [];
+    trend.forEach(function(t){ t.series.forEach(function(s){ if (allDates.indexOf(s.date) < 0) allDates.push(s.date); }); });
+    allDates.sort();
+    var maxMins = 60 * 16;
+    trend.forEach(function(t){ t.series.forEach(function(s){ if (s.mins > maxMins) maxMins = s.mins; }); });
+    function x(i){ return padL + (allDates.length > 1 ? i * (W - padL - 12) / (allDates.length - 1) : (W - padL - 12) / 2); }
+    function y(m){ return H - padB - (m / maxMins) * (H - padB - padT); }
+    var svg = '<svg class="trend-chart" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">';
+    for (var i = 0; i < allDates.length; i++) {
+      svg += '<line x1="' + x(i) + '" y1="' + padT + '" x2="' + x(i) + '" y2="' + (H - padB) + '" stroke="#ececf0" stroke-width="1"/>';
+    }
+    trend.forEach(function(t, idx){
+      var pts = t.series.map(function(s, i){ return x(i) + "," + y(s.mins); }).join(" ");
+      svg += '<polyline points="' + pts + '" fill="none" stroke="' + dimColors[idx % dimColors.length] + '" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>';
+    });
+    svg += '</svg>';
+    var legend = '<div class="trend-legend">';
+    trend.forEach(function(t, idx){
+      legend += '<span class="lw-dim"><span class="sw" style="background:' + dimColors[idx % dimColors.length] + '"></span>' + esc(t.dim) + '</span>';
+    });
+    legend += '</div>';
+    return '<section class="segment"><h2><span class="icon">📈</span>7 维趋势</h2><p class="seg-sub">每日各维度时长(分钟)</p>' + svg + legend + '</section>';
+  }
+
+  // week:24h × N 天热力图
+  function segHeatmap(ra){
+    var hm = ra.heatmap || [];
+    if (!hm.length) return "";
+    var dayHtml = "", axisHtml = "";
+    hm.forEach(function(day, di){
+      var cells = "";
+      for (var h = 0; h < 24; h++) {
+        var cell = day.hours[h] || null;
+        var title = (day.date || "") + " " + h + ":00" + (cell && cell.cat ? " · " + cell.cat + " " + (cell.mins || 0) + "min" : "");
+        var bg = cell && cell.color ? cell.color : "";
+        cells += '<div class="hm-cell" style="background:' + bg + '" title="' + esc(title) + '"></div>';
+      }
+      dayHtml += '<div class="hm-day">' + cells + '</div>';
+      axisHtml += '<span>' + (day.date || "").slice(5) + '</span>';
+    });
+    return '<section class="segment"><h2><span class="icon">🔥</span>24h × N 天热力图</h2>' +
+           '<p class="seg-sub">每天 24 小时主导分类色带</p>' +
+           '<div class="heatmap-wrap"><div class="hm-axis">' + axisHtml + '</div><div class="heatmap">' + dayHtml + '</div></div></section>';
+  }
+
+  // week/month:健康分均值趋势(全粒度)
+  function segHealth(){
+    var series = gd.health_series || [];
+    var mean = gd.health_mean || 0;
+    var barHtml = "";
+    if (series.length) {
+      var maxV = 100;
+      series.forEach(function(h){
+        var cls = h.score < 50 ? " anomaly" : "";
+        barHtml += '<div class="hb-bar' + cls + '" style="height:' + Math.max(6, (h.score / maxV) * 100) + '%" title="' + esc(h.date) + ' · ' + h.score + ' 分"></div>';
+      });
+    } else {
+      barHtml = '<span style="color:var(--fg3);font-size:12px">无健康分数据</span>';
+    }
+    return '<section class="segment"><h2><span class="icon">💚</span>健康分均值(全粒度)</h2>' +
+           '<div class="health-block">' +
+           '<div class="hb-score"><div class="hb-num ' + healthVariant(mean) + '">' + mean + '</div><div class="hb-label">区间均值 / 100</div></div>' +
+           '<div class="hb-bars">' + barHtml + '</div>' +
+           '</div></section>';
+  }
+
+  // month:环比对比表
+  function segMonthCompare(){
+    var mc = gd.month_compare || [];
+    if (!mc.length) return "";
+    var rows = mc.slice(0, 15).map(function(m){
+      var cls = m.delta_pct > 10 ? "delta-up" : (m.delta_pct < -10 ? "delta-down" : "delta-flat");
+      var arrow = m.delta_pct > 0 ? "▲" : (m.delta_pct < 0 ? "▼" : "—");
+      return '<tr><td>' + esc(m.category) + '</td><td>' + fmtMin(m.current) + '</td><td>' + fmtMin(m.previous) + '</td>' +
+             '<td class="' + cls + '">' + arrow + ' ' + Math.abs(m.delta_pct) + '%</td></tr>';
+    }).join("");
+    return '<section class="segment"><h2><span class="icon">📊</span>环比对比(本月 vs 上月同期)</h2>' +
+           '<p class="seg-sub">各分类时长环比,Top 15</p>' +
+           '<table class="mc-table"><thead><tr><th>分类</th><th>本月</th><th>上月</th><th>环比</th></tr></thead><tbody>' + rows + '</tbody></table></section>';
+  }
+
+  // month:目标达成
+  function segGoals(){
+    var pa = d.plan_aggregate || {};
+    var rate = Math.round((pa.completion_rate || 0) * 100);
+    var mrc = gd.month_rate_compare || null;
+    var dimTotals = (d.record_aggregate && d.record_aggregate.dim_totals) || {};
+    var dimSum = 0, maintainSum = 0;
+    for (var k in dimTotals) { if (dimTotals.hasOwnProperty(k)) { dimSum += dimTotals[k] || 0; if (k === "维持") maintainSum += dimTotals[k] || 0; } }
+    var maintainPct = dimSum > 0 ? Math.round(maintainSum / dimSum * 100) : 0;
+    function goalCard(label, value, delta, variant, pct){
+      return '<div class="goal-card ' + variant + '"><div class="g-label">' + label + '</div>' +
+             '<div class="g-value">' + value + '</div><div class="g-delta">' + delta + '</div>' +
+             '<div class="goal-bar"><i style="width:' + Math.min(100, pct) + '%"></i></div></div>';
+    }
+    var rateDelta = mrc ? (mrc.delta_pct >= 0 ? "较上月 +" + mrc.delta_pct + " 个百分点" : "较上月 " + mrc.delta_pct + " 个百分点") : "无上月对比";
+    return '<section class="segment"><h2><span class="icon">🎯</span>目标达成</h2>' +
+           '<div class="goal-grid">' +
+           goalCard("计划完成率", rate + "%", rateDelta, rate >= 80 ? "good" : (rate >= 50 ? "warn" : "danger"), rate) +
+           goalCard("维持(睡眠)占比", maintainPct + "%", "维持/睡眠类在总时长中的占比(健康分代理)", maintainPct >= 35 ? "good" : (maintainPct >= 25 ? "warn" : "danger"), maintainPct) +
+           '</div></section>';
+  }
+
+  // day:缺计划补齐引导(不降级)
+  function renderPlanGuide(){
+    var guide = gd.plan_guide;
+    if (!guide) return;
+    var zone = document.getElementById("plan-guide-zone");
+    zone.innerHTML = '<div class="plan-guide">' +
+      '<div class="pg-icon">⚠️</div>' +
+      '<div class="pg-main"><div class="pg-title">今天还没有日程计划</div>' +
+      '<div class="pg-hint">' + esc(guide.hint) + ' 复制下方 prompt 让 AI 先补齐计划,再重新复盘。</div></div>' +
+      '<button class="pg-btn" id="pg-copy-btn" type="button">复制补齐计划 prompt</button>' +
+      '</div>';
+    var btn = document.getElementById("pg-copy-btn");
+    if (btn) {
+      btn.addEventListener("click", function(){
+        copyText(guide.prompt || "", function(){
+          btn.textContent = "✓ 已复制";
+          btn.classList.add("copied");
+          setTimeout(function(){ btn.textContent = "复制补齐计划 prompt"; btn.classList.remove("copied"); }, 2200);
+        });
+      });
+    }
+  }
+
+  // ==== 区块组装 ====
+  var blocksHtml = "";
+  var ra = d.record_aggregate || {};
+  var pa = d.plan_aggregate || {};
+  var cd = d.cross_domain || {};
+  var ai = d.ai_insights || {};
+
+  if (gran === "day") {
+    blocksHtml += segPlanActual(cd);
+    blocksHtml += segRecord(ra);
+    blocksHtml += segPlan(pa);
+    blocksHtml += segCross(cd);
+    blocksHtml += segHealth();
+    blocksHtml += segAi(ai);
+  } else if (gran === "week") {
+    blocksHtml += segTrend(ra);
+    blocksHtml += segHeatmap(ra);
+    blocksHtml += segHealth();
+    blocksHtml += segAi(ai);
+  } else if (gran === "month") {
+    blocksHtml += segRecord(ra);
+    blocksHtml += segMonthCompare();
+    blocksHtml += segGoals();
+    blocksHtml += segHealth();
+    blocksHtml += segAi(ai);
+  } else {
+    blocksHtml += segRecord(ra);
+    blocksHtml += segPlan(pa);
+    blocksHtml += segCross(cd);
+    blocksHtml += segAi(ai);
+  }
+  document.getElementById("blocks-container").innerHTML = blocksHtml;
+
+  // 复盘→计划衔接引导(跨场景约定 C · 全粒度显示)
+  document.getElementById("plan-link-zone").style.display = "flex";
+
+  // 缺计划补齐引导(day 粒度)
+  renderPlanGuide();
+
+  // Top-N 折叠按钮绑定
+  var expandBtns = document.querySelectorAll("[data-expand]");
+  for (var bi = 0; bi < expandBtns.length; bi++) {
+    expandBtns[bi].addEventListener("click", function(){
+      var seg = this.closest(".segment");
+      var hidden = seg.querySelectorAll(".cat-row.hidden");
       for (var i = 0; i < hidden.length; i++) hidden[i].classList.remove("hidden");
-      expandBtn.style.display = "none";
+      this.style.display = "none";
     });
   }
 
-  // === 6. 复制 prompt 按钮(总纲 §04 原则 10)===
+  // === 复制 prompt(总纲 §04 原则 10) ===
+  function copyText(text, done){
+    var fail = function(){};
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function(){
+        fallbackCopy(text); done();
+      });
+    } else { fallbackCopy(text); done(); }
+  }
+  function fallbackCopy(text){
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+  function showToast(){
+    var toast = document.getElementById("toast");
+    if (toast) {
+      toast.classList.add("show");
+      setTimeout(function(){ toast.classList.remove("show"); }, 4500);
+    }
+  }
+
   var previewEl = document.getElementById("copy-preview");
   var btnEl = document.getElementById("copy-prompt-btn");
   if (previewEl && d.copy_prompt) {
     var text = String(d.copy_prompt);
-    var cap = 200;
-    previewEl.textContent = text.length > cap ? text.substring(0, cap) + "…" : text;
+    previewEl.textContent = text.length > 200 ? text.substring(0, 200) + "…" : text;
   }
   if (btnEl) {
     btnEl.addEventListener("click", function(){
-      var text = d.copy_prompt || "";
-      var done = function(){
+      copyText(d.copy_prompt || "", function(){
         btnEl.textContent = "✓ 已复制";
         btnEl.classList.add("copied");
-        setTimeout(function(){
-          btnEl.textContent = "复制完整 prompt";
-          btnEl.classList.remove("copied");
-        }, 2200);
-        // Toast 提示
-        var toast = document.getElementById("toast");
-        if (toast) {
-          toast.classList.add("show");
-          setTimeout(function(){ toast.classList.remove("show"); }, 4500);
-        }
-      };
-      var fail = function(){
-        btnEl.textContent = "✗ 复制失败";
-        btnEl.classList.add("failed");
-        setTimeout(function(){
-          btnEl.textContent = "复制完整 prompt";
-          btnEl.classList.remove("failed");
-        }, 2200);
-      };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).then(done).catch(function(){
-          // fallback 到 execCommand
-          var ta = document.createElement("textarea");
-          ta.value = text; ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0";
-          document.body.appendChild(ta); ta.select();
-          try { document.execCommand("copy"); done(); } catch(e) { fail(); }
-          document.body.removeChild(ta);
-        });
-      } else {
-        var ta = document.createElement("textarea");
-        ta.value = text; ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0";
-        document.body.appendChild(ta); ta.select();
-        try { document.execCommand("copy"); done(); } catch(e) { fail(); }
-        document.body.removeChild(ta);
-      }
+        setTimeout(function(){ btnEl.textContent = "复制完整 prompt"; btnEl.classList.remove("copied"); }, 2200);
+        showToast();
+      });
     });
   }
 })();

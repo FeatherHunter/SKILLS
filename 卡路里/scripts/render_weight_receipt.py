@@ -20,7 +20,7 @@ import json
 from html_paths import html_path, html_scene_path
 import sys
 from pathlib import Path
-from datetime import date
+from datetime import date, timedelta
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
@@ -84,18 +84,25 @@ def render_html(data: dict, template_path: Path) -> str:
 
 # ============ ticket #4 · live 模式(写库 + 回执一体) ============
 
-def _latest_history(conn, limit=30):
-    """最新在前(与模板 weight_log_receipt.html JS 契约一致,newestW = HISTORY[0])
+def _latest_history(conn, limit=30, days=30):
+    """最新在前 + 近 N 天窗口(与模板 weight_log_receipt.html JS 契约一致,newestW = HISTORY[0])
 
     ticket #43 场景 1 人工终审修复(2026-08-03):此前 reversed(rows) 返回
     oldest→newest,导致趋势方向反/距目标错/最新点标在最旧点。回归测试:
     tests/test_weight_receipt_history.py。
+
+    issue #198 修复(2026-08-09):此前只取最新 30 条无日期窗口过滤,稀疏记录时
+    横跨远超 30 天(x 轴出现更早月份 → 与模板「近 30 天趋势」标题不符,用户实测
+    最新 30 条跨 44 天)。改为 date >= today-N 天,与 render_weight_history 等
+    视图的日期窗口语义一致。
     """
     cur = conn.cursor()
+    window_start = (date.today() - timedelta(days=days)).isoformat()
     cur.execute('''
         SELECT date, weight_kg FROM weight_log
+        WHERE date >= ?
         ORDER BY date DESC, time DESC LIMIT ?
-    ''', (limit,))
+    ''', (window_start, limit))
     rows = cur.fetchall()
     return [{'date': r[0], 'weight_kg': r[1]} for r in rows]
 

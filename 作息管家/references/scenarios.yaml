@@ -38,7 +38,7 @@
     category: 仅一级(如'创作')
   prompt: 请帮我记一条创作类作息
   status: ''
-  result: 写入成功但附加 warning:建议细化到二级
+  result: 写入成功但附加 warning:建议细化到二级,三件套结果 HTML 顶部显示警示条
 - wake_word: '#0 记作息'
   scenario_id: record_add_missing_field
   scenario_title: 必填字段缺失

@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>制定次日计划</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
+    --card:#fff;--line:#d2d2d7;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --code:#1d1d1f;--codefg:#f5f5f7;
+    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1280px;margin:0 auto;padding:48px 28px 80px}
+  .hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:40px 42px;margin-bottom:24px;box-shadow:var(--shadow)}
+  .eyebrow{font-size:13px;color:var(--blue);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+  .eyebrow .badge-type{background:var(--blue);color:#fff;padding:3px 10px;border-radius:6px;font-size:10.5px;letter-spacing:.04em}
+  h1{font-size:38px;line-height:1.15;letter-spacing:-.03em;margin-bottom:14px}
+  .lead{font-size:17px;color:var(--fg2);max-width:880px;line-height:1.6}
+  .meta{margin-top:20px;color:var(--fg3);font-size:13px;display:flex;flex-wrap:wrap;gap:18px}
+  .meta b{color:var(--fg)}
+
+  /* 状态徽章 */
+  .status-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;margin-top:14px;width:fit-content}
+  .status-badge.ok{background:#e6f7ec;color:#1f8c3d}
+  .status-badge.conflict{background:#fff5e0;color:#a25b00}
+  .status-badge.bad{background:#fff0ee;color:#a83228}
+  .status-badge.empty{background:#f0f0f3;color:#6e6e73}
+
+  /* 4 卡摘要 */
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:8px 0 28px}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:4px}
+  .stat .n{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+  .stat .l{font-size:11px;color:var(--fg3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+  .stat .d{font-size:12px;color:var(--fg2);margin-top:2px;line-height:1.5}
+  .stat.good .n{color:var(--good)}
+  .stat.warn .n{color:var(--warn)}
+  .stat.danger .n{color:var(--danger)}
+  .stat.blue .n{color:var(--blue)}
+
+  /* 核心:复制按钮(过程型第一铁律) */
+  .copy-zone{background:linear-gradient(180deg,#f0f4ff 0%,#fff 100%);border:2px solid var(--blue);border-radius:20px;padding:24px 28px;margin:8px 0 24px;display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center}
+  .copy-zone .copy-text{flex:1;min-width:0}
+  .copy-zone h3{font-size:18px;font-weight:700;color:var(--fg);margin-bottom:6px;letter-spacing:-.01em}
+  .copy-zone .copy-desc{font-size:13px;color:var(--fg2);line-height:1.65;margin-bottom:10px}
+  .copy-zone .copy-preview{background:#fff;border:1px dashed var(--line);border-radius:10px;padding:10px 14px;font-size:12.5px;color:var(--fg2);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.55;max-height:80px;overflow:auto;white-space:pre-wrap}
+  .copy-zone .copy-btn{background:var(--blue);color:#fff;border:none;padding:14px 24px;border-radius:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;white-space:nowrap}
+  .copy-zone .copy-btn:hover{background:var(--blue2);transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,122,255,.3)}
+  .copy-zone .copy-btn:active{transform:translateY(0)}
+  .copy-zone .copy-btn.copied{background:var(--good)}
+
+  /* 08 动作层(复制数据/复制日志硬标准) */
+  .action-bar{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 22px}
+  .action-btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit;border:1.5px solid var(--line);background:#fff;color:var(--fg)}
+  .action-btn:hover{border-color:var(--blue);color:var(--blue2);transform:translateY(-1px)}
+  .action-btn.copied{background:var(--good);border-color:var(--good);color:#fff}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:26px 30px;margin:18px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  section h2{font-size:22px;letter-spacing:-.02em;margin-bottom:6px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  section h2 .sec-num{font-size:13px;color:var(--blue);font-weight:700;letter-spacing:.04em;margin-right:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  section .sub{color:var(--fg2);font-size:13.5px;margin-bottom:16px;line-height:1.65}
+
+  /* 24h 时间轴(分类色带) */
+  .tl-wrap{position:relative}
+  .tl{display:grid;grid-template-columns:repeat(24,1fr);gap:1px;background:var(--line);border-radius:8px;overflow:hidden;margin:10px 0 4px}
+  .tl .seg{background:var(--soft);padding:6px 2px;font-size:9.5px;font-weight:600;color:var(--fg2);text-align:center;line-height:1.1;min-height:40px;display:flex;align-items:center;justify-content:center;cursor:default;position:relative;overflow:hidden}
+  .tl .seg .lbl{writing-mode:vertical-rl;text-orientation:mixed;letter-spacing:.04em;display:none}
+  .tl .seg:hover{filter:brightness(1.08);z-index:2;transform:scale(1.06)}
+  .tl .seg[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--fg);color:#fff;padding:6px 10px;border-radius:6px;font-size:11px;white-space:nowrap;z-index:10;line-height:1.4;max-width:240px;white-space:normal;width:max-content}
+  .tl .seg.filled{color:#fff;font-weight:700}
+  .tl .seg.locked{background:#FF9500;color:#fff;font-weight:700}
+  .tl .seg.gap{background:#fff5e0;color:#a25b00}
+  .tl-labels{display:grid;grid-template-columns:repeat(24,1fr);gap:1px;margin-top:4px}
+  .tl-labels span{font-size:9.5px;color:var(--fg3);text-align:center;font-variant-numeric:tabular-nums}
+
+  /* 历史作息带(24h 习惯热力) */
+  .habit-strip{display:grid;grid-template-columns:repeat(24,1fr);gap:1px;margin:8px 0 4px}
+  .habit-strip .h-seg{height:14px;border-radius:3px;background:#f0f0f3;position:relative}
+  .habit-strip .h-seg[data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--fg);color:#fff;padding:5px 8px;border-radius:6px;font-size:10.5px;white-space:nowrap;z-index:10;line-height:1.4}
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin:10px 0 4px;font-size:12px;color:var(--fg2)}
+  .legend .chip{display:inline-flex;align-items:center;gap:6px}
+  .legend .swatch{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+
+  /* 候选事件列表 */
+  .event-list{margin:14px 0}
+  .event-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:#fafbfc;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;transition:all .15s}
+  .event-item:hover{border-color:var(--blue);background:#fff}
+  .event-item .time{flex-shrink:0;min-width:90px;font-size:13px;font-weight:600;color:var(--blue2);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .event-item .info{flex:1;min-width:0}
+  .event-item .info .title{font-size:14px;font-weight:600;color:var(--fg);margin-bottom:3px}
+  .event-item .info .cat{display:inline-block;font-size:10.5px;padding:2px 7px;border-radius:999px;background:#eaf2ff;color:#0a63ce;margin-right:6px;font-weight:600}
+  .event-item .info .fit-tag{display:inline-block;font-size:10px;padding:1px 7px;border-radius:4px;margin-right:6px;font-weight:600}
+  .fit-tag.match{background:#e6f7ec;color:#1f8c3d}
+  .fit-tag.drift{background:#fff5e0;color:#a25b00}
+  .fit-tag.none{background:#f0f0f3;color:#6e6e73}
+  .event-item .info .hint{font-size:12px;color:var(--fg2);margin-top:4px;line-height:1.55}
+  .event-item .info .notes{font-size:12px;color:var(--fg3);margin-top:2px;line-height:1.5}
+  .event-item .info .locked-tag{display:inline-block;font-size:10px;background:#fff5e0;color:#a25b00;padding:1px 6px;border-radius:4px;margin-left:6px;font-weight:600}
+
+  /* 冲突区 */
+  .conflict-card{background:#fff5e0;border:1px solid #ffe89b;border-radius:12px;padding:16px 20px;margin:8px 0;display:flex;align-items:flex-start;gap:14px}
+  .conflict-card .icon{font-size:24px;line-height:1}
+  .conflict-card .ctxt h4{font-size:14px;font-weight:700;color:#a25b00;margin-bottom:4px}
+  .conflict-card .ctxt p{font-size:12.5px;color:var(--fg2);line-height:1.6}
+
+  /* 4 步操作指引 */
+  ol.steps{margin:14px 0;padding:0;list-style:none;counter-reset:step}
+  ol.steps > li{counter-increment:step;background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px 14px 56px;margin-bottom:10px;position:relative;font-size:13.5px;line-height:1.65}
+  ol.steps > li::before{content:counter(step);position:absolute;left:14px;top:14px;width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px}
+  ol.steps > li b{color:var(--fg);font-weight:600}
+
+  details.field{background:#fafbfc;border:1px solid var(--line);border-radius:12px;padding:14px 18px;margin:10px 0;font-size:13px}
+  details.field summary{cursor:pointer;font-weight:600;color:var(--blue2);outline:none;font-size:13.5px;user-select:none}
+  details.field summary::marker{color:var(--blue)}
+  details.field[open] summary{margin-bottom:10px}
+  details.field pre{background:var(--code);color:#f5f5f7;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.55;overflow:auto;white-space:pre-wrap;margin:6px 0 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+
+  .footer{margin-top:40px;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7}
+  .footer .note{font-size:11px;color:var(--fg2);margin-top:4px}
+
+  /* 空态 */
+  .empty-box{background:#fafbfc;border:1px dashed var(--line);border-radius:12px;padding:26px 20px;text-align:center;color:var(--fg2);font-size:13.5px;line-height:1.7}
+
+  @media(max-width:760px){
+    .wrap{padding:32px 14px 60px}
+    .hero{padding:28px 22px;border-radius:22px}
+    h1{font-size:28px}
+    .summary{grid-template-columns:repeat(2,1fr)}
+    section{padding:22px 18px}
+    section h2{font-size:18px}
+    .copy-zone{grid-template-columns:1fr}
+    .copy-zone .copy-btn{justify-self:stretch}
+    .tl .seg{font-size:8px;min-height:32px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">
+    制定次日计划
+    <span class="badge-type">多轮 · 商量计划强化</span>
+  </div>
+  <h1 id="page-title">制定次日计划</h1>
+  <p class="lead" id="page-subtitle">时间轴 + 分类色带 + 历史作息贴合提示。本 HTML 是计划结果呈现,只读,不写库。复制下方指令给 AI 触发写入。</p>
+  <div class="meta">
+    <span>📅 <b id="meta-date">—</b></span>
+    <span>🕐 生成于 <b id="meta-generated">—</b></span>
+    <span>📊 <b id="meta-counts">—</b></span>
+    <span>🧭 <b id="meta-history">—</b></span>
+  </div>
+  <div class="status-badge" id="status-badge">加载中…</div>
+</header>
+
+<div class="summary">
+  <div class="stat blue">
+    <div class="n" id="stat-candidate">—</div>
+    <div class="l">候选事件数</div>
+    <div class="d">AI 多轮对话产出</div>
+  </div>
+  <div class="stat good">
+    <div class="n" id="stat-fit">—</div>
+    <div class="l">历史贴合率</div>
+    <div class="d">match / (match+drift)</div>
+  </div>
+  <div class="stat warn">
+    <div class="n" id="stat-drift">—</div>
+    <div class="l">偏离 / 无参考</div>
+    <div class="d">与历史习惯不同</div>
+  </div>
+  <div class="stat danger">
+    <div class="n" id="stat-conflicts">—</div>
+    <div class="l">冲突数</div>
+    <div class="d">候选 vs 已锁定</div>
+  </div>
+</div>
+
+<!-- ⭐ 核心:复制 prompt 区(过程型第一铁律) -->
+<div class="copy-zone">
+  <div class="copy-text">
+    <h3>📤 复制 4 部分 prompt 给 AI</h3>
+    <p class="copy-desc">点击右侧按钮复制指令 → 粘贴给 AI → AI 调 <code>upsert-plan-events</code> 写库。多轮调整:改候选后再次生成本页面,直到满意再写库。</p>
+    <div class="copy-preview" id="copy-preview">加载中…</div>
+  </div>
+  <button class="copy-btn" id="copy-btn">复制 4 部分 prompt</button>
+</div>
+
+<!-- 08 动作层:复制数据 + 复制日志(硬标准) -->
+<div class="action-bar">
+  <button class="action-btn" id="copy-data-btn">📋 复制数据</button>
+  <button class="action-btn" id="copy-log-btn">🪵 复制日志</button>
+</div>
+
+<section>
+  <h2><span class="sec-num">§1</span>24h 时间轴 · 分类色带</h2>
+  <p class="sub">每段 1 小时色块,按事件<b>分类着色</b>:<b class="locked" style="color:#ff9500">橙</b> = 已锁定事件 · <b class="gap" style="color:#a25b00">黄</b> = 24h 缺口。hover 查看详情。</p>
+  <div class="tl" id="timeline"></div>
+  <div class="tl-labels" id="tl-labels"></div>
+  <p class="sub" style="margin-top:14px">下方色带 = 过去 <b id="habit-days">N</b> 天每小时的历史习惯(颜色同分类):<b class="gap" style="color:#a25b00">灰</b> = 无历史记录。</p>
+  <div class="habit-strip" id="habit-strip"></div>
+  <div class="legend" id="legend"></div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§2</span>历史贴合提示</h2>
+  <p class="sub" id="fit-summary">逐段对比过去 N 天同一时段的作息习惯:<b class="fit-tag match">✅ 贴合</b> = 与历史主要分类一致 · <b class="fit-tag drift">⚠️ 偏离</b> = 与历史不同 · <b class="fit-tag none">➖ 无参考</b> = 该时段无历史。</p>
+  <div class="event-list" id="event-list"></div>
+</section>
+
+<section id="conflict-section" style="display:none">
+  <h2><span class="sec-num">§3</span>冲突与警告</h2>
+  <p class="sub" id="conflict-summary"></p>
+  <div id="conflict-list"></div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§4</span>操作指引(多轮流程)</h2>
+  <ol class="steps">
+    <li><b>查看时间轴与历史贴合提示</b>:绿色贴合段 = 与近期作息一致,黄/橙偏离段 = 与历史习惯不同(可能是刻意安排或风险项)。</li>
+    <li><b>调整候选计划</b>:直接跟 AI 说「把 X 段改成 Y」→ AI 更新候选 → 再次生成本页面(同秒多版自动编号 _2/_3,互不覆盖)。</li>
+    <li><b>满意后复制 4 部分 prompt</b>(顶部按钮)粘贴给 AI → AI 调 <code>upsert-plan-events &lt;日期&gt; --json @plan.json</code> 写库。</li>
+    <li><b>AI 询问飞书同步</b>[Y/n]:同意 → 飞书日历出现;不同意 → 仅本地写入。写库后可再生成一版核对最终计划。</li>
+  </ol>
+</section>
+
+<section>
+  <h2><span class="sec-num">§5</span>候选 JSON 折叠区(供高级用户)</h2>
+  <details class="field">
+    <summary>点击查看完整候选 JSON</summary>
+    <pre id="json-display">加载中…</pre>
+  </details>
+  <details class="field">
+    <summary>点击查看 4 部分 prompt 完整内容</summary>
+    <pre id="prompt-full">加载中…</pre>
+  </details>
+</section>
+
+<div class="footer">
+  <p>本 HTML 由 <code>plan-result</code> 域命令(plan_scenarios.py · T1 通道自动发现)生成 · 模板: <code>plan_result.html</code></p>
+  <p class="note">设计原则: 08-HTML交互规范(通用骨架 + 复制数据/复制日志硬标准)+ 总纲 §04 原则 10(过程型 HTML 复制 prompt)</p>
+</div>
+
+</div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script>
+(function(){
+  "use strict";
+
+  function esc(s){
+    return String(s ?? "").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function copyText(text, onDone, onFail){
+    function fallback(){
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        if (onDone) onDone();
+      } catch(err){ if (onFail) onFail(err); }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(onDone).catch(fallback);
+    } else { fallback(); }
+  }
+  function flashBtn(btn, label, cls){
+    btn.textContent = label;
+    btn.classList.add(cls || "copied");
+    setTimeout(function(){
+      btn.textContent = btn.dataset.label || "";
+      btn.classList.remove(cls || "copied");
+    }, 2000);
+  }
+
+  var raw = document.getElementById("payload");
+  var payload, err = null;
+  try { payload = JSON.parse(raw.textContent || "{}"); }
+  catch(e){ err = e.message; }
+
+  if (err) {
+    document.body.insertAdjacentHTML("afterbegin",
+      '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据解析失败: ' + esc(err) + '</div>');
+    return;
+  }
+  if (payload.status !== "ok" || !payload.data) {
+    document.body.insertAdjacentHTML("afterbegin",
+      '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据加载失败: ' + esc(payload.message || "未知错误") + '</div>');
+    return;
+  }
+
+  var data = payload.data;
+  var meta = data.meta || {};
+  var planEvents = data.plan_events || [];
+  var lockedEvents = data.locked_events || [];
+  var conflicts = data.conflicts || [];
+  var fits = data.fits || [];
+  var history = data.history || {};
+  var fitRate = data.fit_rate;
+  var copyPrompt = data.copy_prompt || "";
+  var status = data.status || "ok";
+
+  // 分类色板(常用分类固定色 + 兜底 hash 色)
+  var PALETTE = [
+    "#007aff","#34c759","#ff9500","#ff3b30","#af52de","#ff2d55",
+    "#5ac8fa","#ffcc00","#00c7be","#8e8e93","#5856d6","#ff375f"
+  ];
+  var CAT_COLOR = {
+    "睡眠":"#5b6cff","工作":"#ff9500","学习":"#34c759","运动":"#ff2d55",
+    "通勤":"#00c7be","餐饮":"#ffcc00","娱乐":"#af52de","社交":"#ff375f",
+    "休闲":"#8e8e93","健康":"#30b0c7","洗漱":"#5ac8fa","兴趣爱好":"#ff6f91",
+    "家务":"#8a6d3b","写作":"#007aff","AI":"#5856d6"
+  };
+  function catColor(cat){
+    if (CAT_COLOR[cat]) return CAT_COLOR[cat];
+    var h = 0;
+    for (var i = 0; i < String(cat).length; i++) h = (h * 31 + String(cat).charCodeAt(i)) >>> 0;
+    return PALETTE[h % PALETTE.length];
+  }
+  function toMin(hhmm){
+    var p = String(hhmm || "0:0").split(":");
+    return parseInt(p[0],10) * 60 + parseInt(p[1] || "0", 10);
+  }
+
+  // 1. Hero
+  document.getElementById("page-title").textContent = "制定次日计划 · " + (meta.date || "");
+  document.title = "制定次日计划 · " + (meta.date || "");
+  document.getElementById("page-subtitle").textContent = meta.subtitle || "";
+  document.getElementById("meta-date").textContent = meta.date || "—";
+  document.getElementById("meta-generated").textContent = meta.generated_at || "—";
+  document.getElementById("meta-counts").textContent = planEvents.length + " 候选 + " + lockedEvents.length + " 已锁定";
+  document.getElementById("meta-history").textContent = "历史窗口 " + (history.days || "—") + " 天 · " + (history.record_count || 0) + " 条记录";
+
+  // 2. 状态徽章
+  var badge = document.getElementById("status-badge");
+  if (conflicts.length > 0) {
+    badge.className = "status-badge conflict";
+    badge.textContent = "⚠️ 有 " + conflicts.length + " 处冲突 · 需调整后再采纳";
+  } else if (planEvents.length === 0) {
+    badge.className = "status-badge empty";
+    badge.textContent = "➖ 候选为空 · 请先商量生成计划";
+  } else {
+    badge.className = "status-badge ok";
+    badge.textContent = "✅ 候选可写库 · 无冲突" + (fitRate !== null ? " · 贴合率 " + fitRate + "%" : " · 无历史参考");
+  }
+
+  // 3. 4 卡摘要
+  document.getElementById("stat-candidate").textContent = planEvents.length;
+  var fitEl = document.getElementById("stat-fit");
+  fitEl.textContent = fitRate !== null ? fitRate + "%" : "—";
+  var driftEl = document.getElementById("stat-drift");
+  driftEl.textContent = (data.drift_count || 0) + " / " + (data.none_count || 0);
+  document.getElementById("stat-conflicts").textContent = conflicts.length;
+  var fitCard = fitEl.parentElement;
+  if (fitRate === null) fitCard.className = "stat warn";
+  else if (fitRate >= 80) fitCard.className = "stat good";
+  else if (fitRate >= 50) fitCard.className = "stat warn";
+  else fitCard.className = "stat danger";
+  var driftCard = driftEl.parentElement;
+  driftCard.className = (data.drift_count || 0) > 0 ? "stat warn" : "stat good";
+
+  // 4. 复制 prompt
+  document.getElementById("copy-preview").textContent = copyPrompt;
+  var copyBtn = document.getElementById("copy-btn");
+  copyBtn.dataset.label = "复制 4 部分 prompt";
+  copyBtn.addEventListener("click", function(){
+    copyText(copyPrompt, function(){ flashBtn(copyBtn, "✅ 已复制 · 粘贴给 AI"); },
+             function(){ flashBtn(copyBtn, "✗ 复制失败"); });
+  });
+
+  // 5. 08 动作层:复制数据 / 复制日志
+  var copyDataBtn = document.getElementById("copy-data-btn");
+  copyDataBtn.dataset.label = "📋 复制数据";
+  copyDataBtn.addEventListener("click", function(){
+    copyText(JSON.stringify(data.copy_data || {}, null, 2),
+             function(){ flashBtn(copyDataBtn, "✅ 数据已复制"); },
+             function(){ flashBtn(copyDataBtn, "✗ 复制失败"); });
+  });
+  var copyLogBtn = document.getElementById("copy-log-btn");
+  copyLogBtn.dataset.label = "🪵 复制日志";
+  copyLogBtn.addEventListener("click", function(){
+    copyText(JSON.stringify(data.copy_log || {}, null, 2),
+             function(){ flashBtn(copyLogBtn, "✅ 日志已复制"); },
+             function(){ flashBtn(copyLogBtn, "✗ 复制失败"); });
+  });
+
+  // 6. 24h 时间轴
+  var tl = document.getElementById("timeline");
+  var tlLabels = document.getElementById("tl-labels");
+  var segsByHour = {};
+  for (var h = 0; h < 24; h++) segsByHour[h] = { type: "empty" };
+  planEvents.forEach(function(ev){
+    var s = toMin(ev.time_start), e = toMin(ev.time_end);
+    var sh = Math.floor(s / 60), eh = Math.ceil(e / 60);
+    for (var hh = sh; hh < eh; hh++) {
+      if (hh >= 0 && hh < 24) {
+        segsByHour[hh] = {
+          type: "filled",
+          color: catColor(ev.category || "未知"),
+          tip: ev.time_start + "–" + ev.time_end + " · " + (ev.title || "") + " · " + (ev.category || "")
+        };
+      }
+    }
+  });
+  lockedEvents.forEach(function(ev){
+    var s = toMin(ev.time_start), e = toMin(ev.time_end);
+    var sh = Math.floor(s / 60), eh = Math.ceil(e / 60);
+    for (var hh = sh; hh < eh; hh++) {
+      if (hh >= 0 && hh < 24 && segsByHour[hh].type === "empty") {
+        segsByHour[hh] = { type: "locked", tip: "🔒 " + ev.time_start + "–" + ev.time_end + " · " + (ev.title || "") };
+      }
+    }
+  });
+  for (var h = 0; h < 24; h++) {
+    var seg = segsByHour[h];
+    var cls = seg.type;
+    var style = "";
+    if (seg.type === "filled") style = 'style="background:' + seg.color + '"';
+    var tipText = h + ":00 · 空";
+    if (seg.type === "filled" || seg.type === "locked") tipText = h + ":00 · " + seg.tip;
+    tl.insertAdjacentHTML("beforeend",
+      '<div class="seg ' + cls + '" ' + style + ' data-tip="' + esc(tipText) + '"></div>');
+  }
+  for (var h2 = 0; h2 < 24; h2++) {
+    tlLabels.insertAdjacentHTML("beforeend",
+      h2 % 3 === 0 ? '<span>' + h2 + '</span>' : '<span></span>');
+  }
+
+  // 7. 历史作息带(每小时习惯热力)
+  var strip = document.getElementById("habit-strip");
+  var habits = history.habits || {};
+  var habitDays = history.days || 0;
+  document.getElementById("habit-days").textContent = habitDays;
+  var legendCats = {};
+  for (var hh2 = 0; hh2 < 24; hh2++) {
+    var top = (habits[hh2] || [])[0];
+    if (top) {
+      legendCats[top[0]] = true;
+      strip.insertAdjacentHTML("beforeend",
+        '<div class="h-seg" style="background:' + catColor(top[0]) + '" data-tip="' +
+        esc(hh2 + ":00 历史主要「" + top[0] + "」(" + top[1] + " 次)") + '"></div>');
+    } else {
+      strip.insertAdjacentHTML("beforeend", '<div class="h-seg" data-tip="' + esc(hh2 + ":00 无历史") + '"></div>');
+    }
+  }
+  // 分类图例(候选事件实际用到的分类)
+  var legend = document.getElementById("legend");
+  planEvents.forEach(function(ev){
+    var c = ev.category || "未知";
+    if (legendCats[c]) return;
+    legendCats[c] = true;
+  });
+  Object.keys(legendCats).forEach(function(c){
+    legend.insertAdjacentHTML("beforeend",
+      '<span class="chip"><span class="swatch" style="background:' + catColor(c) + '"></span>' + esc(c) + '</span>');
+  });
+
+  // 8. 事件列表 + 历史贴合提示
+  var eventList = document.getElementById("event-list");
+  var fitByIdx = {};
+  fits.forEach(function(f){ fitByIdx[f.index] = f; });
+  planEvents.forEach(function(ev, i){
+    var f = fitByIdx[i];
+    var fitHtml = "";
+    if (f) {
+      var mark = {"match":"✅ 贴合","drift":"⚠️ 偏离","none":"➖ 无参考"}[f.fit] || "";
+      fitHtml = '<span class="fit-tag ' + f.fit + '">' + mark + '</span>';
+    }
+    var inLocked = false;
+    lockedEvents.forEach(function(lk){
+      if (lk.time_start <= ev.time_start && ev.time_end <= lk.time_end) inLocked = true;
+    });
+    var html = '<div class="event-item">';
+    html += '<div class="time">' + esc(ev.time_start) + '–' + esc(ev.time_end) + '</div>';
+    html += '<div class="info">';
+    html += '<div class="title">' + esc(ev.title || "(无标题)") + fitHtml;
+    if (ev.category) html += '<span class="cat" style="background:' + catColor(ev.category) + '22;color:' + catColor(ev.category) + '">' + esc(ev.category) + '</span>';
+    if (inLocked) html += '<span class="locked-tag">🔒 与已锁定事件重叠</span>';
+    html += '</div>';
+    if (f && f.hint) html += '<div class="hint">' + esc(f.hint) + '</div>';
+    if (ev.notes) html += '<div class="notes">📝 ' + esc(ev.notes) + '</div>';
+    html += '</div></div>';
+    eventList.insertAdjacentHTML("beforeend", html);
+  });
+
+  // 9. 冲突与警告区
+  var conflictSection = document.getElementById("conflict-section");
+  if (conflicts.length > 0) {
+    conflictSection.style.display = "block";
+    document.getElementById("conflict-summary").textContent =
+      "检测到 " + conflicts.length + " 处候选与已有锁定事件时间冲突。采纳前需调整候选事件时段(或更新已有锁定事件)。";
+    var list = document.getElementById("conflict-list");
+    conflicts.forEach(function(cf){
+      list.insertAdjacentHTML("beforeend",
+        '<div class="conflict-card"><div class="icon">⚠</div><div class="ctxt">' +
+        '<h4>' + esc(cf.time_range || "") + '</h4>' +
+        '<p>候选: ' + esc(cf.candidate || "—") + '</p>' +
+        '<p>已锁定: ' + esc(cf.locked || "—") + '</p>' +
+        '</div></div>');
+    });
+  }
+
+  // 10. 折叠区
+  document.getElementById("json-display").textContent = JSON.stringify(planEvents, null, 2);
+  document.getElementById("prompt-full").textContent = copyPrompt;
+})();
+</script>
+</body>
+</html>

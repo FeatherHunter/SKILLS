@@ -1,0 +1,53 @@
+# 作息管家 · 场景资产片段 · 制定次日计划(实施 T5)
+# 字段契约(§07 §2.2): wake_word / scenario_id / scenario_title / dimensions / prompt / status / result
+# status 二态: '' (可用) / 【待开发】(不可执行但仍展示)
+# 由 scripts/update_scenarios.py 合并进 references/scenarios.yaml(T8 统一写回)
+
+- wake_word: '#17 商量计划'
+  scenario_id: plan_result_tomorrow
+  scenario_title: 制定次日计划(结果强化)
+  dimensions:
+    date: 明天
+    history_days: 7
+    candidates: 6-10 段
+  prompt: 帮我制定明天的计划,生成计划结果 HTML
+  status: ''
+  result: 多轮对话 → plan-result 渲染(时间轴+分类色带+历史贴合提示)→ 复制 prompt → upsert-plan-events → plan_receipt_write.html
+- wake_word: '#17 商量计划'
+  scenario_id: plan_result_adjust
+  scenario_title: 制定计划后调整再生成
+  dimensions:
+    date: 明天
+    round: 2-N
+  prompt: 把第 2 段改成 19:00 开始,再生成一次
+  status: ''
+  result: 调整候选 → 再调 plan-result(同秒多版 _2/_3 不覆盖)→ 循环直至满意 → 写库
+- wake_word: '#17 商量计划'
+  scenario_id: plan_result_history_none
+  scenario_title: 无历史作息参考
+  dimensions:
+    date: 明天
+    history_days: 7
+    no_history: true
+  prompt: 帮我制定明天的计划(新环境,没有历史记录)
+  status: ''
+  result: 历史窗口无记录 → 贴合率显示"—",逐段"无参考"提示,不降级仍可写库
+- wake_word: '#17 商量计划'
+  scenario_id: plan_result_conflict
+  scenario_title: 候选与已锁定事件冲突
+  dimensions:
+    date: 明天
+    locked_events: 2
+    conflict: true
+  prompt: 商量明天的计划(已有 2 条已锁定)
+  status: ''
+  result: 冲突段红色徽章 + §3 冲突清单,提示调整时段或更新已锁定后重新生成
+- wake_word: '#17 商量计划'
+  scenario_id: plan_result_drift
+  scenario_title: 与历史习惯偏离
+  dimensions:
+    date: 明天
+    drift: true
+  prompt: 明天把下午改成运动(历史下午都是工作)
+  status: ''
+  result: 偏离段显示「⚠️ 偏离」+ 历史主要分类提示,用户确认是刻意安排后仍可写库

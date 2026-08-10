@@ -131,8 +131,17 @@ ${evHtml}
 $('app').querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>copyText(b.getAttribute('data-p')));
 }
 function buildCopyData(){
-const items=arr(DATA.items).map(it=>({id:it.id,item_id:it.item_id,item_name:it.item_name,kind:it.kind,status:it.status,days_left:it.days_left,end_date:it.end_date,last_done_date:it.last_done_date,repair_count:it.repair_count,events:arr(it.events).map(e=>({occurred_at:e.occurred_at,event_type:e.event_type,cost:e.cost,note:e.note}))}));
-return JSON.stringify({scene_id:DATA.meta.scene_id,command_cn:DATA.meta.command_cn,occurred_at:DATA.occurred_at,target:'保修与保养',payload:{items}},null,2);
+const lines=[];
+lines.push('保修与保养 · '+DATA.occurred_at+' · '+DATA.meta.command_cn);
+lines.push('');
+const items=arr(DATA.items);
+lines.push('共 '+items.length+' 项权益:');
+items.forEach((it,i)=>{
+  const dlTxt=it.days_left<0?'已过 '+(-it.days_left)+' 天':(it.days_left===0?'今天到期':it.days_left+' 天后到期');
+  lines.push((i+1)+'. '+it.item_name+' (ID '+it.id+') | '+it.kind+' | '+it.status+' | 到期 '+it.end_date+' ('+dlTxt+')'+(it.repair_count?' | 维修 '+it.repair_count+' 次':''));
+  arr(it.events).forEach(e=>lines.push('   - '+e.occurred_at+' '+e.event_type+(e.cost?' ¥'+Number(e.cost).toFixed(2):'')+(e.note?' '+e.note:'')));
+});
+return lines.join('\n');
 }
 function buildCopyLog(){
 const lines=[];

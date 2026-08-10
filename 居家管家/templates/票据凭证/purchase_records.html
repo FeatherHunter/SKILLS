@@ -152,8 +152,23 @@ ${photo}
 }
 
 function buildCopyData(){
-const items=yearFilter(DATA).map(it=>({item_id:it.item_id,item_name:it.item_name,purchased_at:it.purchased_at,price:it.price,channel:it.channel,merchant_contact:it.merchant_contact,return_end:it.return_end,return_days_left:it.return_days_left,note:it.note}));
-return JSON.stringify({scene_id:DATA.meta.scene_id,command_cn:DATA.meta.command_cn,occurred_at:DATA.occurred_at,target:'购买记录',payload:{items,category_stats:DATA.category_stats}},null,2);
+const lines=[];
+lines.push('购买记录 · '+DATA.occurred_at+' · '+DATA.meta.command_cn);
+lines.push('');
+const items=yearFilter(DATA);
+lines.push('共 '+items.length+' 条:');
+items.forEach((it,i)=>{
+  const dl=it.return_days_left;
+  const retTxt=dl===null?'未设退货':(dl<0?'已过退货期 '+(-dl)+' 天':(dl===0?'今天最后可退':'可退剩 '+dl+' 天'));
+  lines.push((i+1)+'. '+it.item_name+' (ID '+it.item_id+') | 购买 '+it.purchased_at+(it.price!=null?' | ¥'+Number(it.price).toFixed(2):'')+(it.channel?' | 渠道 '+it.channel:'')+(it.merchant_contact?' | 客服 '+it.merchant_contact:'')+' | '+retTxt+(it.note?' | '+it.note:''));
+});
+const cs=arr(DATA.category_stats);
+if(cs.length){
+  lines.push('');
+  lines.push('消费统计(按分类):');
+  cs.forEach(c=>lines.push('- '+c.category+': '+c.count+' 笔 · ¥'+Number(c.total).toFixed(2)));
+}
+return lines.join('\n');
 }
 function buildCopyLog(){
 const lines=[];

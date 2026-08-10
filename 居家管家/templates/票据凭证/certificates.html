@@ -41,7 +41,6 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 .btn.primary{background:var(--blue);color:#fff}
 .btn.danger{background:var(--red);color:#fff}
 .btn.warn{background:var(--orange);color:#fff}
-.btn.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
 .fixed{position:sticky;bottom:16px;display:flex;flex-direction:column;gap:10px;margin-top:24px}
 .fixed .copy.add{width:100%;background:var(--blue);color:#fff;border-radius:999px;padding:12px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
 .copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -115,15 +114,23 @@ ${photo}
 </div>
 <div class="actions">
 <button class="${updateCls}" data-p="${esc('请更新证件(唤醒词:证件):\n\n  证件: ID '+it.id+' '+it.cert_type+'\n  到期日(选填,YYYY-MM-DD): ______\n  持有人(选填): ______\n  号  码(选填,将脱敏显示): ______\n  备  注(选填): ______\n\n  (只填要改的,其余留空)')}">更新</button>
-<button class="btn ghost" data-p="${esc('请补充证件照片(唤醒词:证件):\n\n  证件: ID '+it.id+' '+it.cert_type+'\n  【照片即将发送:】')}">补照片</button>
+<button class="btn" data-p="${esc('请补充证件照片(唤醒词:证件):\n\n  证件: ID '+it.id+' '+it.cert_type+'\n  【照片即将发送:】')}">补照片</button>
 </div>
 </div>`;
 }).join('');
 $('app').querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>copyText(b.getAttribute('data-p')));
 }
 function buildCopyData(){
-const items=arr(DATA.items).map(it=>({id:it.id,cert_type:it.cert_type,holder:it.holder,number_masked:it.number_masked,issued_at:it.issued_at,expires_at:it.expires_at,days_left:it.days_left,cert_status:it.cert_status,note:it.note}));
-return JSON.stringify({scene_id:DATA.meta.scene_id,command_cn:DATA.meta.command_cn,occurred_at:DATA.occurred_at,target:'证件管理',payload:{items}},null,2);
+const lines=[];
+lines.push('证件管理 · '+DATA.occurred_at+' · '+DATA.meta.command_cn);
+lines.push('');
+const items=arr(DATA.items);
+lines.push('共 '+items.length+' 本证件(按到期排序):');
+items.forEach((it,i)=>{
+  const dlTxt=it.days_left<0?'已过期 '+(-it.days_left)+' 天':(it.days_left===0?'今天到期':it.days_left+' 天后到期');
+  lines.push((i+1)+'. '+it.cert_type+(it.holder?' ('+it.holder+')':'')+' | 号码 '+it.number_masked+' | 到期 '+it.expires_at+' | '+it.cert_status+' ('+dlTxt+')'+(it.note?' | '+it.note:''));
+});
+return lines.join('\n');
 }
 function buildCopyLog(){
 const lines=[];

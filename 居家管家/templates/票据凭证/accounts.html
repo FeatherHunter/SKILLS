@@ -110,8 +110,19 @@ $('groups').querySelectorAll('button[data-copy]').forEach(b=>b.onclick=function(
 });
 }
 function buildCopyData(){
-const groups=arr(DATA.groups).map(g=>({type:g.type,accounts:arr(g.accounts).map(a=>({platform:a.platform,username:a.username,type:a.type,note:a.note}))}));
-return JSON.stringify({scene_id:DATA.meta.scene_id,command_cn:DATA.meta.command_cn,occurred_at:DATA.occurred_at,target:'账号密码',payload:{groups}},null,2);
+const lines=[];
+lines.push('账号密码 · '+DATA.occurred_at+' · '+DATA.meta.command_cn);
+lines.push('');
+const groups=arr(DATA.groups);
+const total=groups.reduce((s,g)=>s+arr(g.accounts).length,0);
+lines.push('共 '+total+' 个账号(密码脱敏,复制不含密码):');
+groups.forEach(g=>{
+  lines.push('【'+g.type+'】');
+  arr(g.accounts).forEach(a=>{
+    lines.push('- '+a.platform+' | 用户名 '+a.username+(a.note?' | '+a.note:''));
+  });
+});
+return lines.join('\n');
 }
 function buildCopyLog(){
 const lines=[];

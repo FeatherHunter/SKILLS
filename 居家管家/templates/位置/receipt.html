@@ -89,9 +89,9 @@ function render(){
   if(rcp.next){html+='<section><h2>👉 下一步</h2><div style="font-size:13px;color:var(--fg2)">'+esc(rcp.next)+'</div></section>';}
   app.innerHTML=html;
   const acts=document.getElementById('actions');
-  let btns='<button class="btn ghost" id="copyDataBtn">📋 复制数据</button><button class="btn ghost" id="copyLogBtn">📋 复制日志</button>';
   const sbtns=arr(scene.buttons);
-  sbtns.forEach((b,i)=>{btns+='<button class="btn '+(b.kind||'')+'" id="sbtn_'+i+'" data-t="'+esc(b.text).replace(/"/g,'&quot;')+'">'+esc(b.label)+'</button>';});
+  let btns=sbtns.map((b,i)=>'<button class="btn '+(b.kind||'')+'" id="sbtn_'+i+'" data-t="'+esc(b.text).replace(/"/g,'&quot;')+'">'+esc(b.label)+'</button>').join('');
+  btns+='<button class="btn ghost" id="copyDataBtn">📋 复制数据</button><button class="btn ghost" id="copyLogBtn">📋 复制日志</button>';
   acts.innerHTML=btns;
   document.getElementById('copyDataBtn').onclick=()=>doCopy(formatHuman(D.copy_data),document.getElementById('copyDataBtn'),'数据已复制');
   document.getElementById('copyLogBtn').onclick=()=>doCopy(formatHuman(D.copy_log),document.getElementById('copyLogBtn'),'日志已复制');

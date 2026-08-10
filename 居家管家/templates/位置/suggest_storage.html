@@ -139,7 +139,7 @@ function render(){
 }
 function renderActions(){
   const bb=document.getElementById('batchBtn');
-  if(bb&&D&&!D.batch){bb.style.display='';bb.onclick=()=>doCopy('请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n  物  品(钥匙): ______',bb,'批量建议 prompt 已复制');}
+  if(bb&&D&&!D.batch){bb.style.display='';bb.onclick=()=>doCopy('请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n  物  品(留空=批量找没有固定位的常用件): ______',bb,'批量建议 prompt 已复制');}
   const cd=D.copy_data||{},cl=D.copy_log||{};
   document.getElementById('copyDataBtn').onclick=()=>doCopy(formatHuman(cd),document.getElementById('copyDataBtn'),'数据已复制');
   document.getElementById('copyLogBtn').onclick=()=>doCopy(formatHuman(cl),document.getElementById('copyLogBtn'),'日志已复制');

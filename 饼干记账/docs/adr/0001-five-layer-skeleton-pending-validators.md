@@ -28,4 +28,4 @@ accepted — 2026-07-28
 
 - [x] `validators.py` 独立化（2026-07-28 落地，见 `scripts/validators.py` + `tests/test_validators.py`）
 - [ ] FAT (Fresh Agent 黑盒) 测试记录归档
-- [ ] HTML 镜像(`饼干记账.html`)改自动生成
+- [x] HTML 镜像(`饼干记账.html`)改自动生成（2026-08-10 勾销:render_help.py 生成后自动复制 + test_render.py v15 契约锁定）

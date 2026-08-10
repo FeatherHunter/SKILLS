@@ -41,7 +41,7 @@ _Avoid_: 分开存 `type: expense/income` 字段
 饼干记账/
 ├── CONTEXT.md            ← 本文件,领域术语
 ├── SKILL.md              ← Skill 主文档,含 §📌 输出位置
-├── 饼干记账.html         ← SKILL.md 镜像(手工同步)
+├── 饼干记账.html         ← render_help.py 生成的 HELP 镜像(命令生成后复制,非手工同步)
 ├── _meta.json            ← ownerId/slug/version 元数据
 ├── docs/
 │   ├── agents/           ← agent 配置(issue-tracker/triage-labels/domain)

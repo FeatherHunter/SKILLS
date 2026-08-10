@@ -111,7 +111,24 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
   td{padding:10px 4px;font-size:12px}
   td:first-child{min-width:120px}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
+  .kpi-card:nth-child(5){grid-column:span 2}
 }
+
+/* FOOTER + 复制按钮(2026-08-10 #42 全局双按钮规则) */
+.footer{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--lineS);border-radius:14px;padding:12px 16px;margin-top:14px}
+.footer .src{font-size:11px;color:var(--ink3);line-height:1.6}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--card);padding:7px 14px;border-radius:9px;cursor:pointer;font-size:12px;color:var(--ink);min-height:36px;font-family:inherit}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+@media(max-width:640px){
+  .footer{flex-direction:column;align-items:stretch;gap:10px}
+  .btn-group{width:100%}
+  .btn-group .btn{flex:1 1 45%;min-height:42px;white-space:nowrap}
+}
+
+/* 数值表右对齐(vs/movement) */
+.num-table td:nth-child(n+2){text-align:right;font-variant-numeric:tabular-nums}
+.num-table td:nth-child(1){text-align:left}
 </style>
 </head>
 <body>
@@ -131,6 +148,13 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
   <div id="movementContainer"></div>
   <div class="tabs" id="weekTabs"></div>
   <div id="weeksContainer"></div>
+  <div class="footer">
+    <div class="src" id="srcLine">📊 数据来源 --</div>
+    <div class="btn-group">
+      <button class="btn primary" id="copyBtn">📋 复制数据</button>
+      <button class="btn" id="copyLogBtn">📋 复制日志</button>
+    </div>
+  </div>
 </div>
 
 <!--INJECT-DATA-->
@@ -216,7 +240,7 @@ function renderToday(data) {
     html += `<div class="review-stat"><span class="stat-label">完成度</span>`;
     html += `<span class="stat-value">${fmtRate(comp.rate)}</span></div>`;
     html += `<p style="color:var(--ink2);font-size:13px">已完成 ${comp.done_sets || 0} 组 · 剩余 ${comp.remaining_sets || 0} 组</p>`;
-    const cls = comp.rate >= 100 ? '' : (comp.rate >= 50 ? 'low' : 'danger');
+    const cls = comp.rate >= 100 ? '' : (comp.rate >= 30 ? 'low' : 'danger');
     html += `<div class="progress"><div class="progress-fill ${cls}" style="width:${Math.min(comp.rate,100)}%"></div></div>`;
   }
   html += '</div>';
@@ -227,7 +251,7 @@ function renderToday(data) {
     html += '<div class="session"><div class="sess-head">';
     html += `<span class="sess-name">${escapeHTML(sess.session_label)}</span>`;
     if (ts && te) html += `<span class="sess-time">${escapeHTML(ts)}-${escapeHTML(te)}</span>`;
-    html += '</div><div class="table-wrap"><table><thead><tr><th>动作</th><th>部位</th><th>计划</th><th>已完成</th><th>进度</th></tr></thead><tbody>';
+    html += '</div><div class="table-wrap"><table><thead><tr><th>动作</th><th>部位</th><th>计划</th><th>已练 / 进度</th></tr></thead><tbody>';
     (sess.movements || []).forEach(m => {
       const color = PART_COLORS[m.part] || '#6e6e73';
       const done = m.sets_done || 0;
@@ -236,9 +260,8 @@ function renderToday(data) {
       html += '<tr>';
       html += `<td><strong>${escapeHTML(m.name)}</strong></td>`;
       html += `<td><span class="part-tag" style="background:${color}20;color:${color}">${escapeHTML(m.part || '')}</span></td>`;
-      html += `<td>${m.sets} 组${m.reps ? ' × ' + escapeHTML(m.reps) : ''}${m.weight ? ' · ' + escapeHTML(m.weight + (m.unit || 'kg')) : ''}</td>`;
-      html += `<td><strong>${done}</strong>/${total}</td>`;
-      html += `<td><span style="color:${done >= total ? 'var(--green)' : (done > 0 ? 'var(--amber)' : 'var(--ink3)')};font-weight:600">${rate}%</span></td>`;
+      html += `<td style="white-space:nowrap">${m.sets}×${m.reps ? escapeHTML(m.reps) : '?'}${m.weight ? '·' + escapeHTML(m.weight + (m.unit || 'kg')) : ''}</td>`;
+      html += `<td style="white-space:nowrap"><strong>${done}</strong>/${total} <span style="color:${done >= total ? 'var(--green)' : (done > 0 ? 'var(--amber)' : 'var(--ink3)')};font-weight:600">${rate}%</span></td>`;
       html += '</tr>';
     });
     html += '</tbody></table></div></div>';
@@ -267,7 +290,7 @@ function renderOverview(data) {
   if ((data.weekly_rates || []).length) {
     data.weekly_rates.forEach(w => {
       const rate = w.completion_rate;
-      const cls = rate >= 100 ? '' : (rate >= 50 ? 'low' : 'danger');
+      const cls = rate >= 100 ? '' : (rate >= 30 ? 'low' : 'danger');
       const pct = Math.min(rate ?? 0, 100);
       html += `<div class="week-row"><span class="week-name">第 ${w.week_number} 周</span>`;
       html += `<div class="week-bar"><div class="progress"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div></div>`;
@@ -286,7 +309,7 @@ function renderWeekHint(data) {
   if (data.mode !== 'week' || !data.completion) { container.innerHTML = ''; return; }
   const comp = data.completion;
   const rate = comp.completion_rate;
-  const cls = rate >= 100 ? '' : (rate >= 50 ? 'low' : 'danger');
+  const cls = rate >= 100 ? '' : (rate >= 30 ? 'low' : 'danger');
   let html = '<div class="review-section"><h2>📅 本周完成度</h2>';
   if (rate != null) {
     html += `<div class="review-stat"><span class="stat-label">完成率</span><span class="stat-value">${fmtRate(rate)}</span></div>`;
@@ -314,7 +337,7 @@ function renderVs(data) {
   html += '</div>';
   html += '<div class="review-section"><h2>📋 动作级对比</h2>';
   if ((data.movement_rows || []).length) {
-    html += '<div class="table-wrap"><table><thead><tr><th>动作</th><th>计划组数</th><th>实际组数</th><th>偏差</th></tr></thead><tbody>';
+    html += '<div class="table-wrap"><table class="num-table"><thead><tr><th>动作</th><th>计划组数</th><th>实际组数</th><th>偏差</th></tr></thead><tbody>';
     data.movement_rows.forEach(r => {
       const dCls = r.deviation_pct > 0 ? 'dev-pos' : (r.deviation_pct < 0 ? 'dev-neg' : 'dev-zero');
       const devTxt = r.deviation_pct === null ? '—' : `${r.deviation_pct > 0 ? '+' : ''}${r.deviation_pct}%`;
@@ -340,7 +363,7 @@ function renderCompletion(data) {
   if (weekly.length) {
     weekly.forEach(w => {
       const rate = w.completion_rate;
-      const cls = rate >= 100 ? '' : (rate >= 50 ? 'low' : 'danger');
+      const cls = rate >= 100 ? '' : (rate >= 30 ? 'low' : 'danger');
       const pct = Math.min(rate ?? 0, 100);
       html += `<div class="week-row"><span class="week-name">第 ${w.week_number} 周</span>`;
       html += `<div class="week-bar"><div class="progress"><div class="progress-fill ${cls}" style="width:${pct}%"></div></div></div>`;
@@ -384,7 +407,7 @@ function renderMovement(data) {
   const ranking = data.ranking || [];
   let html = `<div class="review-section"><h2>🏆 动作完成率 TOP · 最近 ${data.days || 28} 天</h2>`;
   if (ranking.length) {
-    html += '<div class="table-wrap"><table><thead><tr><th>#</th><th>动作</th><th>完成率</th><th>实做/计划</th></tr></thead><tbody>';
+    html += '<div class="table-wrap"><table class="num-table"><thead><tr><th>#</th><th>动作</th><th>完成率</th><th>实做/计划</th></tr></thead><tbody>';
     ranking.forEach((r, i) => {
       const cls = r.rate >= 100 ? 'dev-pos' : (r.rate >= 50 ? '' : 'dev-neg');
       html += '<tr>';
@@ -401,14 +424,14 @@ function renderMovement(data) {
   container.innerHTML = html;
 }
 
-function renderWeekTabs(weeks) {
+function renderWeekTabs(weeks, activeWk) {
   const tabs = document.getElementById('weekTabs');
   tabs.innerHTML = weeks.map((w, i) =>
-    `<button class="tab ${i === 0 ? 'active' : ''}" data-wk="${w.week_number}">第 ${w.week_number} 周</button>`
+    `<button class="tab ${w.week_number === activeWk ? 'active' : ''}" data-wk="${w.week_number}">第 ${w.week_number} 周</button>`
   ).join('');
 }
 
-function renderWeeks(weeks) {
+function renderWeeks(weeks, activeWk) {
   const container = document.getElementById('weeksContainer');
   container.innerHTML = weeks.map((w, wIdx) => {
     const dayMap = {};
@@ -417,7 +440,7 @@ function renderWeeks(weeks) {
       dayMap[d.day_of_week].push(d);
     });
 
-    let html = `<div class="week ${wIdx === 0 ? 'active' : ''}" data-wk="${w.week_number}">`;
+    let html = `<div class="week ${w.week_number === activeWk ? 'active' : ''}" data-wk="${w.week_number}">`;
 
     html += `<div class="day-tabs" id="dayTabs_w${w.week_number}">`;
     for (let dow = 1; dow <= 7; dow++) {
@@ -472,7 +495,7 @@ function renderWeeks(weeks) {
             html += `<td><span class="part-tag" style="background:${color}20;color:${color}">${escapeHTML(part)}</span></td>`;
             html += `<td><strong>${nsets}</strong> × ${escapeHTML(reps)}</td>`;
             html += `<td><strong>${escapeHTML(wt)}</strong></td>`;
-            html += `<td>${escapeHTML(rest)}</td>`;
+            html += `<td>${escapeHTML(rest) || '-'}</td>`;
             html += '</tr>';
           });
           html += '</tbody></table></div>';
@@ -546,10 +569,65 @@ function bindDayTabs() {
 
   const weeks = data.weeks || [];
   if (weeks.length) {
-    renderWeekTabs(weeks);
-    renderWeeks(weeks);
+    // 2026-08-10 #252:full 模式默认激活当前周(data.current_week), 其他模式用第 1 周
+    const activeWk = data.current_week || weeks[0].week_number;
+    renderWeekTabs(weeks, activeWk);
+    renderWeeks(weeks, activeWk);
   }
+
+  /* 底部复制按钮(2026-08-10 #42 全局双按钮规则) */
+  document.getElementById('srcLine').textContent =
+    '📊 数据来源:workout_plans · ' + (data.meta && data.meta.generated_at || '');
+  document.getElementById('copyBtn').onclick = function() {
+    const lines = [(data.config && data.config.title) || '健身计划', ''];
+    if (data.completion && data.completion.completion_rate != null) {
+      lines.push(`本周完成率: ${data.completion.completion_rate}% (计划 ${data.completion.plan_sets} 组 · 实做 ${data.completion.actual_sets} 组)`);
+    }
+    if (data.completion) {
+      lines.push(`已完成: ${data.completion.done_sets || 0} 组 · 剩余: ${data.completion.remaining_sets || 0} 组`);
+    }
+    if (data.kpi) {
+      lines.push(`总周数: ${data.kpi.total_weeks ?? '—'} · 整体完成率: ${data.kpi.overall_rate ?? '—'}% · 训练日: ${data.kpi.training_days ?? '—'} · 动作数: ${data.kpi.total_movements ?? '—'}`);
+    }
+    if (data.movement_rows) {
+      data.movement_rows.forEach(r => lines.push(`  ${r.movement}: 计划 ${r.plan_sets} · 实做 ${r.actual_sets} · 偏差 ${r.deviation_pct === null ? '—' : r.deviation_pct + '%'}`));
+    }
+    if (data.ranking) {
+      data.ranking.forEach((r, i) => lines.push(`  #${i + 1} ${r.movement}: ${r.rate}% (${r.done_sets}/${r.plan_sets})`));
+    }
+    if (data.missed) {
+      data.missed.forEach(m => lines.push(`  ${m.date}: 计划 ${m.plan_sets} 组 · 实做 ${m.done_sets} 组 · ${m.movements.join('/')}`));
+    }
+    if (data.weeks) {
+      lines.push('', `计划: ${data.weeks.length} 周 · ${data.config && data.config.total_weeks ? data.config.total_weeks + ' 周循环' : ''}`);
+    }
+    doCopy(lines.join('\n'), '数据已复制');
+  };
+  document.getElementById('copyLogBtn').onclick = function() {
+    const meta = data.meta || {};
+    const lines = ['[健身计划 · 排障日志]', '',
+      '唤醒词: ' + (meta.wake_word || '(未知)'),
+      '渲染命令: ' + (meta.render_cmd || '(未知)'),
+      '数据来源: ' + (meta.source || 'workout_plans'),
+      '生成时间: ' + (meta.generated_at || '(未知)'),
+      '', 'AI 思考链:', meta.chain || '(未注入)',
+      '', '原始数据: ' + JSON.stringify(data)];
+    doCopy(lines.join('\n'), '排障日志已复制');
+  };
 })();
+
+function doCopy(text, msg) {
+  const after = () => toast(msg);
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(after);
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); after(); } catch(e) {}
+    document.body.removeChild(ta);
+  }
+}
+function toast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
 </script>
 
 </body>

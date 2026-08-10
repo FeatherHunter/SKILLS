@@ -3,7 +3,7 @@ name: 卡路里
 description: >
   饮食热量、饮水、体重、运动、营养追踪与分析技能(11 分类 446 场景)。
   说「卡路里HELP」打开完整能力速查台(一键复制 prompt)。
-  触发词:看今日主页、看今日热量预算、记一餐、拍营养表记一餐、看今日饮食、记喝水、补记饮食、复制昨日饮食、改饮食记录、删饮食记录、看本周饮食、查食品、存食品、改食品、下架食品、批量导入食品、看营养结构、看今日营养、看饮食总览、看营养素深度、看高热量榜、看低热量榜、看频繁吃榜、看高碳水榜、看高蛋白榜、饮食复盘（本周）、看全部餐别分布（最近 7 天）、记体重、补录体重、看今日体重、看体重曲线、对比体重：最近 30 天 vs 之前 30 天、体重复盘（本周）、记运动、记力量训练、记有氧运动、补记运动、看今日运动、看运动趋势、运动复盘（本周）、看计划概览、定训练计划、落地训练、同步到训记、定营养目标、定体重目标、定饮水目标、看今日目标进度、记体脂（皮褶钳）、记围度、看体脂趋势、看围度趋势、记身材照、查身材照、生成身材照GIF、对比两张照片、设置档案、改档案、查档案、查健康报告、查热量趋势、查热量缺口、复盘、开启定时复盘、本周复盘、本月复盘
+  触发词:看今日主页、看今日热量预算、记一餐、拍营养表记一餐、看今日饮食、记喝水、补记饮食、复制昨日饮食、改饮食记录、删饮食记录、看本周饮食、查食品、存食品、改食品、下架食品、批量导入食品、看营养结构、看今日营养、看饮食总览、看营养素深度、看高热量榜、看低热量榜、看频繁吃榜、看高碳水榜、看高蛋白榜、饮食复盘（本周）、看全部餐别分布（最近 7 天）、记体重、补录体重、看今日体重、看体重曲线、对比体重：最近 30 天 vs 之前 30 天、体重复盘（本周）、记运动、记力量训练、记有氧运动、补记运动、看今日运动、看运动趋势、运动复盘（本周）、看计划概览、看完整计划、定训练计划、落地训练、同步到训记、定营养目标、定体重目标、定饮水目标、看今日目标进度、记体脂（皮褶钳）、记围度、看体脂趋势、看围度趋势、记身材照、查身材照、生成身材照GIF、对比两张照片、设置档案、改档案、查档案、查健康报告、查热量趋势、查热量缺口、复盘、开启定时复盘、本周复盘、本月复盘
   完整触发词见 SKILL.md §触发词速查表(权威:scripts/_triggers.py)。
 metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.19", "requires": { "python": ">=3.10" } } }
 ---
@@ -119,7 +119,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.19", "requires": { "p
 |---|---|---|---|
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
 | `templates/review_template.html` | 复盘（含今日/本周/本月/本年/日期范围） | `review_cli.py gen` enriched JSON | `scripts/render_review.py --range / --type` |
-| `templates/workout_plan_view.html` | 看本周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率(多模式) | DB 直接 query workout_plans + exercise_log | `python scripts/render_workout_plan.py --mode {...}` |
+| `templates/workout_plan_view.html` | 看完整计划 / 看本周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率(多模式) | DB 直接 query workout_plans + exercise_log | `python scripts/render_workout_plan.py --mode {...}` |
 | `templates/health_dashboard.html` | 查健康报告 | `analysis.dashboard(as_dict=True)` 4 维 | `python scripts/render_health_dashboard.py [--range / --days]` |
 | `templates/food_ranking.html` | 5 个食物排行（1 模板 5 榜单） | `analysis.diet_food_ranking(as_dict=True)` × 5 | `python scripts/render_food_ranking.py --category / --all` |
 | `templates/exercise_review.html` | 计划复盘（本周/本月/全部） | `exercise_review.py --format json` | `python scripts/render_exercise_review_html.py [--days]` |
@@ -598,7 +598,7 @@ DB 查找顺序(跨平台 · v2.4.19 修):
 ### 🏋️ 健身计划(29 场景 · 2026-08-02 ticket #6 落地)
 
 **定训练计划(5)**:定训练计划 / 复制训练计划 / 定休息日 / 加训练动作 / 定一周计划
-**看训练计划(7)**:看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际
+**看训练计划(8)**:看完整计划 / 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际
 **改训练计划(5)**:改训练计划 / 改某天训练 / 删某天训练 / 改动作 / 撤销训练计划
 **落地训练(5)**:落地训练 / 落地到本周末 / 落地到本月底 / 同步到训记 / 拉训记实绩
 **计划复盘(6)**:计划复盘（本周）/ 计划复盘（本月）/ 计划复盘（全部）/ 看计划完成率 / 看未完成训练 / 看动作完成率
@@ -611,6 +611,7 @@ DB 查找顺序(跨平台 · v2.4.19 修):
 | 定休息日 | 标记某天休息(或取消) | `python scripts/render_plan_receipt.py --live-plan-rest --week <W> --day <D> --rest <1|0> --chain "..."` |
 | 加训练动作 | 给某天/时段加动作(默认所有周) | `python scripts/render_plan_receipt.py --live-plan-add --week <W> --day <D> --name <动作> --sets <N> --chain "..."` |
 | 定一周计划 | 快速设置一周 7 天安排 | `python scripts/render_plan_receipt.py --live-plan-set-week --week <W> --days-json <JSON> --chain "..."` |
+| 看完整计划 | 全计划所有周 × 全部动作明细 | `python scripts/render_workout_plan.py --mode full` |
 | 看本周/下周/上周/指定周计划 | 单周 7 天表 + 完成度 | `python scripts/render_workout_plan.py --mode week --week <N>` |
 | 看今天练什么 | 今日动作 + 实时完成进度(接 exercise_log) | `python scripts/render_workout_plan.py --mode today` |
 | 看计划概览 | KPI(总周数/完成率/训练日/动作数)+ 每周完成率 | `python scripts/render_workout_plan.py --mode overview` |
@@ -1771,7 +1772,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
 ### 🏋️ 健身计划(29 场景 · 2026-08-02 ticket #6 落地)
 
-**看训练计划(7)**:看本周/下周/上周/指定周计划 = `python scripts/render_workout_plan.py --mode week --week <N>`(N 由当前周推算:本周=当前,下周=N+1,上周=N-1);看今天练什么 = `--mode today`(接 exercise_log 实时完成);看计划概览 = `--mode overview`;看计划 vs 实际 = `--mode vs --start <D1> --end <D2>`
+**看训练计划(8)**:看完整计划 / 看本周/下周/上周/指定周计划 = `python scripts/render_workout_plan.py --mode week --week <N>`(N 由当前周推算:本周=当前,下周=N+1,上周=N-1);看今天练什么 = `--mode today`(接 exercise_log 实时完成);看计划概览 = `--mode overview`;看计划 vs 实际 = `--mode vs --start <D1> --end <D2>`
 - **循环计划周次语义**:加/改动作默认作用于**所有周**(填空明确时才按指定周);看周计划时 `--week` 必须传用户想要的周次
 
 - **定训练计划**:AI 4 轮对话制(目标/经验/频率/部位)→ 产出 JSON → 预览(`render_plan_builder.py --mock <plan.json>`)→ 确认后写库(`render_plan_receipt.py --live-plan-set --plan-json <JSON> --chain "..."` → 回执)

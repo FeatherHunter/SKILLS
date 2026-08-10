@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env python3
 """健身计划 HTML 渲染器(2026-08-02 重构:多模式 · ticket #6)
 
-对应 SKILL.md 唤醒词:看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率
+对应 SKILL.md 唤醒词:看完整计划 / 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率
 
 模式(--mode):
   full      全计划视图(原行为;--week N 可聚焦单周)
@@ -136,7 +136,10 @@ def build_full_data(conn, focus_week=None):
     if focus_week is not None and focus_week in week_numbers:
         week_numbers = [focus_week]
     weeks = [_load_week(conn, wn) for wn in week_numbers]
-    return {'mode': 'full', 'config': config, 'weeks': weeks, 'review': {'today': None}}
+    # 2026-08-10 #252:full 模式返回当前周次(模板默认激活本周, 用户看全计划最关心当前)
+    current_week = _calc_week_number(date.today(), config)
+    return {'mode': 'full', 'config': config, 'weeks': weeks, 'current_week': current_week,
+            'review': {'today': None}}
 
 
 def build_week_data(conn, week_number):
@@ -277,11 +280,11 @@ def build_vs_data(conn, start_date=None, end_date=None):
     config = _load_config(conn)
     if not config:
         return None
-    end = end_date or date.today()
+    end = date.fromisoformat(end_date) if end_date else date.today()
     if start_date is None:
         start = end - timedelta(days=6)
     else:
-        start = start_date
+        start = date.fromisoformat(start_date)
     c = conn.cursor()
     plan_rows = {}
     actual_rows = {}
@@ -503,7 +506,7 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None,
         return output_path
 
     scene_names = {
-        'full': '健身计划', 'week': '看周计划', 'today': '看今天练什么',
+        'full': '看完整计划', 'week': '看周计划', 'today': '看今天练什么',
         'overview': '看计划概览', 'vs': '看计划vs实际', 'completion': '看计划完成率',
         'missed': '看未完成训练', 'movement': '看动作完成率',
     }

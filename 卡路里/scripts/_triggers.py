@@ -35,7 +35,7 @@ v2.4.10 起 · 给 templates/help_center.html 提供结构化数据。
 - ⏳ 其余分类仍为旧版运行时数据,待各自分类 ticket 同步。
 v1.0 重设计的**权威场景清单**在 `.scratch/scene-index-recovered.md`(每场景含描述 + 呈现数据 + 用户确认记录),
 开发期数据在 `.scratch/scene_data/NN-分类.json`(schema 13 字段,check_scene_data.py 校验)。
-已确认分类:主页 9(scene_data/01-主页.json) / 饮食 68 / 体重 58 / 运动 39 / 健身计划 29 / 基础信息 4 / 身体细节 13(2026-08-01)。
+已确认分类:主页 9(scene_data/01-主页.json) / 饮食 68 / 体重 58 / 运动 39 / 健身计划 30 / 基础信息 4 / 身体细节 13(2026-08-01)。
 **Phase 2 同步时按 scene-data 替换本文件对应分类**,当前勿据此文件判断"最终场景设计"。
 
 """
@@ -1977,6 +1977,16 @@ TRIGGERS = [
             'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --overview', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看计划概览」。\n\n我想看整个健身计划的概览。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
             'user_intent': '我想看训练计划的总体概览和每周完成情况', 'data_fields': ["total_weeks", "completion_rate", "training_days", "total_movements", "weekly_rates"],
             'depends_on_external': False, 'order': 5},
+    {
+            'category': '健身计划',     'wake_word': '看完整计划',     'desc': '全计划视图(所有周 × 全部动作明细)',
+            'main_prompt': {
+        'cli': 'python scripts/render_workout_plan.py', 'text': '请你加载技能 卡路里,执行唤醒词「看完整计划」。\n\n我想一次看完整的健身计划(所有周的全部训练安排)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_view_full', 'name': '看完整计划', 'subfunction': '看训练计划', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看完整计划」。\n\n我想一次看完整的健身计划(所有周的全部训练安排)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
+            'user_intent': '我想一次查看整个健身计划的所有周次与动作明细', 'data_fields': ["weeks", "days", "sessions", "movements", "config"],
+            'depends_on_external': False, 'order': 6},
     {
             'category': '健身计划',     'wake_word': '看计划 vs 实际',     'desc': '计划 vs 实际对比(完成度/偏差/动作级表)',
             'main_prompt': {

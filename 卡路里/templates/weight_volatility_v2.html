@@ -86,7 +86,7 @@
 
   <header>
     <h1>📊 体重稳不稳（增强版）</h1>
-    <p class="sub" id="metaSub">波动 dashboard · 日均波动 / 标准差 / 异常次数 + 主图 + 异常列表</p>
+    <p class="sub" id="metaSub"></p>
   </header>
 
   <!-- 3 张 KPI 卡(权威清单口径:日均波动 / 标准差 / 异常次数 · 2026-08-02) -->
@@ -148,7 +148,6 @@
   </div>
 
   <div class="footer">
-    <div>体重稳不稳（增强版）· 3 KPI + Canvas 主图 + 异常列表 · 权威清单口径 2026-08-02</div>
     <!-- 2026-08-10 #43:补复制数据/复制日志(全局双按钮规则) -->
     <div class="btn-row">
       <button class="btn" id="copyDataBtn">📋 复制数据</button>
@@ -287,7 +286,8 @@
       const ctx = canvas.getContext('2d');
       const W = canvas.width = canvas.offsetWidth;
       const H = canvas.height = 360;
-      const PAD = 40;
+      // 2026-08-10 #43 重构:左右留白不对称(左容纳Y轴刻度,右极小) · 图贴近容器边缘
+      const PAD_L = 28, PAD_R = 8, PAD_B = 24;
 
       const points = d.points;
       const weights = points.map(p => p.kg);
@@ -299,21 +299,39 @@
       const maxY = Math.ceil(maxW + range * 0.2);
       const yRange = maxY - minY || 1;
 
-      const xStep = (W - 2*PAD) / Math.max(1, points.length - 1);
-      const x = i => PAD + i * xStep;
-      const y = v => H - PAD - (v - minY) / yRange * (H - 2*PAD);
+      const xStep = (W - PAD_L - PAD_R) / Math.max(1, points.length - 1);
+      const x = i => PAD_L + i * xStep;
+      const y = v => H - PAD_B - (v - minY) / yRange * (H - PAD_B - 10);
 
       ctx.fillStyle = '#fff';
       ctx.fillRect(0, 0, W, H);
 
+      // Y 轴刻度网格 + 标签(2026-08-10 #43 补:左侧不再空白,有数值可读;须在清屏后绘制)
+      ctx.strokeStyle = 'rgba(60,60,67,0.12)';
+      ctx.lineWidth = 1;
+      ctx.fillStyle = '#8e8e93';
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.textAlign = 'right';
+      const yTicks = 4;
+      for (let t = 0; t <= yTicks; t++) {
+        const v = minY + (maxY - minY) * t / yTicks;
+        const yy = y(v);
+        ctx.beginPath();
+        ctx.moveTo(PAD_L - 5, yy);
+        ctx.lineTo(W - PAD_R, yy);
+        ctx.stroke();
+        ctx.fillText(String(Math.round(v * 10) / 10), PAD_L - 8, yy + 3);
+      }
+      ctx.textAlign = 'left';
+
       // ±σ band
       if (yellow > 0) {
         ctx.fillStyle = 'rgba(255,149,0,0.10)';
-        ctx.fillRect(PAD, y(baseline + yellow), W - 2*PAD, y(baseline - yellow) - y(baseline + yellow));
+        ctx.fillRect(PAD_L, y(baseline + yellow), W - PAD_L - PAD_R, y(baseline - yellow) - y(baseline + yellow));
       }
       if (red > 0 && red > yellow) {
         ctx.fillStyle = 'rgba(255,59,48,0.10)';
-        ctx.fillRect(PAD, y(baseline + red), W - 2*PAD, y(baseline - red) - y(baseline + red));
+        ctx.fillRect(PAD_L, y(baseline + red), W - PAD_L - PAD_R, y(baseline - red) - y(baseline + red));
       }
 
       // baseline 线
@@ -321,8 +339,8 @@
       ctx.lineWidth = 1;
       ctx.setLineDash([4, 3]);
       ctx.beginPath();
-      ctx.moveTo(PAD, y(baseline));
-      ctx.lineTo(W - PAD, y(baseline));
+      ctx.moveTo(PAD_L, y(baseline));
+      ctx.lineTo(W - PAD_R, y(baseline));
       ctx.stroke();
       ctx.setLineDash([]);
 
@@ -332,14 +350,14 @@
         ctx.lineWidth = 1.5;
         ctx.setLineDash([6, 4]);
         ctx.beginPath();
-        ctx.moveTo(PAD, y(goal));
-        ctx.lineTo(W - PAD, y(goal));
+        ctx.moveTo(PAD_L, y(goal));
+        ctx.lineTo(W - PAD_R, y(goal));
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.fillStyle = '#34c759';
         ctx.font = '11px -apple-system, sans-serif';
         ctx.textAlign = 'right';
-        ctx.fillText(`目标 ${goal}kg`, W - PAD - 4, y(goal) - 4);
+        ctx.fillText(`目标 ${goal}kg`, W - PAD_R - 4, y(goal) - 4);
         ctx.textAlign = 'left';
       }
 
@@ -379,7 +397,7 @@
         ctx.fillStyle = '#ff9500';
         ctx.font = '10px -apple-system, sans-serif';
         ctx.textAlign = 'left';
-        ctx.fillText('±1.5σ', PAD + 4, y(baseline + yellow) - 4);
+        ctx.fillText('±1.5σ', PAD_L + 4, y(baseline + yellow) - 4);
       }
     }
 

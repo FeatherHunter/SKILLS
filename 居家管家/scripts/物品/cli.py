@@ -1,4 +1,4 @@
-# cli.py - SM1 域 CLI 子命令注册与分发(T2 公共层奠基 · CLI 注册)
+﻿# cli.py - SM1 域 CLI 子命令注册与分发(T2 公共层奠基 · CLI 注册)
 # home_manager.py 只做 3 处加法接线: import / register / dispatch
 import json
 import sys
@@ -28,7 +28,7 @@ def register(subparsers):
     p.add_argument("--commit", action="store_true", help="确认写库(否则只出预览)")
     p.add_argument("--output", default=None)
 
-    p = subparsers.add_parser("sm1-search", help="查物品(2-1)")
+    p = subparsers.add_parser("sm1-search", help="查物品(2-1)/拍照找物品(2-5)")
     p.add_argument("--name", default=None)
     p.add_argument("--category-id", type=int, default=None)
     p.add_argument("--location", default=None)
@@ -39,6 +39,7 @@ def register(subparsers):
     p.add_argument("--include-discarded", action="store_true")
     p.add_argument("--sort", default="relevance")
     p.add_argument("--keywords", default=None, help="AI 解析的匹配关键词,逗号分隔")
+    p.add_argument("--scene", default="2-1", choices=["2-1", "2-5"], help="2-1=查物品 / 2-5=拍照找物品")
     p.add_argument("--output", default=None)
 
     p = subparsers.add_parser("sm1-detail", help="看物品详情(2-2)")
@@ -221,7 +222,7 @@ def run(args):
             "extra": payload.get("extra"),
             "steps": payload.get("results") or payload.get("steps"),
             "next": payload.get("next"),
-            "undo_prompt": payload.get("undo_prompt") or f"撤销操作(居家管家): 撤销刚才的{command_cn}",
+            "undo_prompt": payload.get("undo_prompt") or f"请加载「居家管家」技能,帮我撤销最近操作(唤醒词:撤销操作):\n\n  撤  销: 刚才的{command_cn}",
         }
         # 注意: 不再包内层 scene 键(信封 data.scene 即本数据;双重嵌套
         # scene.scene 会让 receipt.html 读不到 summary/diff,issue #127)
@@ -258,7 +259,7 @@ def run(args):
             return _receipt_scene(True, msg, {"item": payload["item"]}, "1-1" if not args.backfill_date else "1-4",
                                   "录物品" if not args.backfill_date else "补录",
                                   "录物品" if not args.backfill_date else "补录",
-                                  buttons=[{"label": "撤销", "text": f"撤销操作(居家管家): 撤销刚才的录入(物品 {item_id})"}],
+                                  buttons=[{"label": "撤销", "kind": "red", "text": f"请加载「居家管家」技能,帮我撤销最近操作(唤醒词:撤销操作):\n\n  撤  销: 刚才的录入(物品 {item_id})"}],
                                   reminders=_entry_reminders(payload["item"]), output_path=args.output)
         return emit_error("录物品", "录物品", msg, {"draft": draft}, output_path=args.output)
 
@@ -279,6 +280,15 @@ def run(args):
             tag=args.tag, status=args.status, price_min=args.price_min, price_max=args.price_max,
             include_discarded=args.include_discarded, sort=args.sort,
             match_keywords=[k.strip() for k in (args.keywords or "").split(",") if k.strip()])
+        if args.scene == "2-5":
+            data = ops.search_payload_v2(
+                name=args.name, category_id=args.category_id, location=args.location,
+                tag=args.tag, status=args.status, price_min=args.price_min, price_max=args.price_max,
+                include_discarded=args.include_discarded, sort=args.sort,
+                match_keywords=[k.strip() for k in (args.keywords or "").split(",") if k.strip()],
+                match_score=True)
+            return emit_sm1("search_list.html", data, "2-5", "拍照找物品", "拍照找物品",
+                            target=args.name or "照片识别", output_path=args.output)
         return emit_sm1("search_list.html", data, "2-1", "查物品", "查物品",
                         target=args.name or "", output_path=args.output)
 
@@ -318,6 +328,8 @@ def run(args):
             try:
                 cur = ops._find_item(conn, args.id)
                 loc = ops._loc_row(conn, args.id)
+                tags = [r[0] for r in conn.execute(
+                    "SELECT tag FROM item_tags WHERE item_id = ? ORDER BY rowid", (args.id,)).fetchall()]
             finally:
                 conn.close()
             if not cur:
@@ -325,7 +337,11 @@ def run(args):
             draft = {"name": cur["name"], "category_id": cur["category_id"],
                      "location": loc["location"] if loc else "",
                      "quantity": loc["quantity"] if loc else 1,
-                     "price": cur["purchase_price"], "remark": cur["remark"]}
+                     "price": cur["purchase_price"], "remark": cur["remark"],
+                     "purchase_date": loc["purchase_date"] if loc else None,
+                     "expiration_date": loc["expiration_date"] if loc else None,
+                     "location_status": loc["location_status"] if loc else "",
+                     "tags": tags}
             return _add_form_render(draft, mode="update", item_id=args.id, output=args.output)
         ok, msg, payload = ops.update_item_v2(args.id, fields, cli_cmd=" ".join(sys.argv[1:]))
         if ok:
@@ -405,7 +421,7 @@ def run(args):
         data = {"title": "合并重复物品预览", "lead": "保留主条 + 字段合并规则 + 数量相加 + 历史合并说明",
                 "impact": f"主条:ID {args.target};源 {len(entries)} 件将并入并标记「已废弃」(历史可查)",
                 "entries": entries,
-                "buttons": [{"label": "确认合并", "text": f"合并物品(居家管家): 合并 {args.sources} 到 {args.target}"}],
+                "buttons": [{"label": "确认合并", "text": f"请加载「居家管家」技能,帮我合并重复物品(唤醒词:合并物品):\n\n  保  留: {args.target}\n  并  入: {args.sources}"}],
                 "before": {"主条": target["name"], "源数量": sum(1 for s in src_list if s)}}
         return emit_sm1("confirm.html", data, "3-5", "合并物品", "合并物品",
                         target=target["name"], output_path=args.output)
@@ -415,7 +431,7 @@ def run(args):
         ok, msg, payload = ops.merge_items_v2(args.target, sources, cli_cmd=" ".join(sys.argv[1:]))
         if ok:
             return _receipt_scene(True, msg, {"results": payload["results"], "item": payload["target"],
-                                              "undo_prompt": f"撤销操作(居家管家): 撤销刚才的合并(目标 {args.target})"},
+                                              "undo_prompt": f"请加载「居家管家」技能,帮我撤销最近操作(唤醒词:撤销操作):\n\n  撤  销: 刚才的合并(目标 {args.target})"},
                                   "3-5", "合并物品", "合并物品", output_path=args.output)
         return emit_error("合并物品", "合并物品", msg, {"target": args.target, "sources": sources},
                           output_path=args.output)
@@ -638,10 +654,18 @@ def _add_form_render_batch(data, output=None):
 
 
 def _entry_reminders(item):
-    """录入回执顺路提醒(只带新事实): 位置冲突(同位置同名)/ 到期日"""
+    """录入回执顺路提醒: 到期日 + 联动建议(2026-08-10: 无条件,删偏好后)"""
     reminders = []
     if item.get("expiration_date"):
         reminders.append({"type": "warn", "text": f"到期日:{item['expiration_date']}"})
+    # SM9 联动顺路建议(食品→卡路里 / 有价→记账);remindersBlock 支持 type=link 渲染
+    try:
+        from 联动.ops import build_entry_reminders
+        for r in build_entry_reminders(item):
+            text = f"【联动】{r['label']}: {r['reason']} —— {r['prompt']}"
+            reminders.append({"type": "link", "text": text})
+    except Exception:
+        pass  # 联动域异常不阻断录入回执
     return reminders
 
 
@@ -651,3 +675,4 @@ STATUSES_FOR_FORM = ["在家", "备用", "快递中", "维修中", "找不到", 
 def validate_draft_for_render(draft, conn=None):
     from 物品.validators import validate_draft
     return validate_draft(draft, conn)
+

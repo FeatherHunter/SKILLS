@@ -233,10 +233,17 @@ def add_batch_payload(drafts):
         # 分类分布
         from collections import Counter
         dist = Counter(_cat_name(conn, d.get("category_id")) or "(未分类)" for d in drafts)
+        # 分类/位置供采集表单下拉(与单条 _add_form_render 同款 · 修复批量页分类空)
+        categories = [{"id": r["id"], "name": r["name"]} for r in conn.execute(
+            "SELECT id, name FROM categories WHERE is_active = 1 ORDER BY sort_order, id").fetchall()]
+        locations = [r["location"] for r in conn.execute(
+            "SELECT DISTINCT location FROM item_locations WHERE location IS NOT NULL ORDER BY location").fetchall()]
         return {
             "total": len(items),
             "items": items,
             "category_dist": [{"name": k, "count": v} for k, v in dist.items()],
+            "categories": categories,
+            "locations": locations,
         }
     finally:
         conn.close()
@@ -262,7 +269,7 @@ def add_batch_commit(drafts, cli_cmd=None):
 def search_payload_v2(name=None, category_id=None, location=None, tag=None,
                       status=None, price_min=None, price_max=None,
                       include_discarded=False, sort="relevance", limit=50,
-                      match_keywords=None):
+                      match_keywords=None, match_score=False):
     """语义搜索(2-1): 命中列表 + 匹配依据 + 相关性排序
 
     match_keywords: AI 解析出的关键词列表(前端展示匹配依据)
@@ -330,6 +337,23 @@ def search_payload_v2(name=None, category_id=None, location=None, tag=None,
             if tag and tag in c["tags"]:
                 reasons.append("标签")
             c["reasons"] = reasons or ["相关"]
+        # 匹配度(2-5 拍照找物品): 识别词 vs 名称/标签/分类 的最大相似度
+        if match_score and kw:
+            import difflib
+            for c in cards:
+                best = 0
+                cands = [c.get("name") or ""] + (c.get("tags") or []) + [c.get("category_name") or ""]
+                for k in kw:
+                    if not k:
+                        continue
+                    for cand in cands:
+                        if not cand:
+                            continue
+                        if k in cand or cand in k:
+                            best = max(best, 100)
+                        else:
+                            best = max(best, round(difflib.SequenceMatcher(None, k, cand).ratio() * 100))
+                c["match_score"] = best
         return {"summary": {"title": "查物品结果", "metrics": [{"label": "命中", "value": f"{len(cards)} 件"}]},
                 "items": cards, "include_discarded": include_discarded}
     finally:

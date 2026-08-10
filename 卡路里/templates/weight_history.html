@@ -101,6 +101,8 @@
     .table-wrap table th, .table-wrap table td { padding:6px 6px; white-space:nowrap; }
     /* V2.5.28: 隐藏 注 列(用户决定删除);旧 td.note 不会渲染,规则仅兜底 */
     .table-wrap table th.note, .table-wrap table td.note { display:none; }
+    /* 2026-08-10 #43:notes 模式(看「有备注」的体重记录)必须显示备注列 —— 场景呈现数据核心 */
+    .table-wrap table.notes-mode th.note, .table-wrap table.notes-mode td.note { display: table-cell; }
     /* V2.5.26: 覆盖 mobile 块内的 table 通用 font:11px,date 列需要更小 */
     .table-wrap table th.date, .table-wrap table td:first-child { font-size:10px !important; }
     .table-wrap table td.note { white-space:normal; overflow:hidden; text-overflow:ellipsis; }
@@ -338,6 +340,9 @@
   let tableHeader = summary.table_header;
   if (summary.show_note_col && !tableHeader.includes('备注')) {
     tableHeader = tableHeader.replace('</tr>', "<th class='note'>备注</th><th class='num'>vs 前后</th></tr>");
+    // 2026-08-10 #43:notes 模式启用备注列显示(全局 CSS 默认隐藏)
+    const tbl = document.querySelector('.table-wrap table');
+    if (tbl) tbl.classList.add('notes-mode');
   }
   document.getElementById('tableHead').innerHTML = tableHeader;
 

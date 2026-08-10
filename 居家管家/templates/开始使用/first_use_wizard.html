@@ -155,15 +155,15 @@ function updatePreview(fieldId, phId, buildFn){
 }
 function buildInitPrompt(pathVal){
   if(!pathVal)return '请填写数据保存路径(必填)';
-  return '请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用):确认数据保存路径:'+pathVal+'。请执行初始化:建库(含分类种子 60 节点)。';
+  return '请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用):\n\n  数据保存路径(默认即确认): '+pathVal;
 }
 function buildCfgPrompt(dirVal){
   if(!dirVal)return '请填写数据库目录(必填)';
-  return '请加载「居家管家」技能,帮我配置数据存储环境:设置 SKILLS_DB_PATH='+dirVal+'(当前未设置,数据库将落在默认路径)。完成后重新执行首次使用初始化。';
+  return '请加载「居家管家」技能,帮我配置数据存储环境(唤醒词:首次使用):\n\n  数据库目录(SKILLS_DB_PATH,未设置将走默认): '+dirVal;
 }
 function buildGuidePrompt(guideVal){
   if(!guideVal)return '请填写录入引导(必填)';
-  return '请加载「居家管家」技能,帮我录入第一批物品(唤醒词:拍物品):'+guideVal;
+  return '请加载「居家管家」技能,帮我录入第一批物品(唤醒词:拍物品):\n\n  录入引导(想录什么/从哪开始): '+guideVal;
 }
 window.updatePreview=updatePreview;window.buildInitPrompt=buildInitPrompt;
 window.buildCfgPrompt=buildCfgPrompt;window.buildGuidePrompt=buildGuidePrompt;

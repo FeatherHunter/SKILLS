@@ -88,36 +88,16 @@ Thumbs.db
 # 卡路里 calorie_html 进程输入 JSON(运行时交互中间产物,不入库)
 卡路里/calorie_html/
 
-# 卡路里 .scratch 工作区临时调试产物(一次性 debug/verify/reproduce 脚本 + 截图,不入库)
-# 注:.scratch/<feature>/agent-brief.md / .scratch/<feature>/issues/*.md / .scratch/<feature>/sample-h3.html
-#     等已成型的工件(spec/ticket/镜像)仍需入库,见下放行规则。
-
-# card-html-redesign archive 重复副本(与 _1.html 完全相同,无信息增量,不入库)
-卡路里/.scratch/card-html-redesign/archive/*_2.html
-
-卡路里/.scratch/**/debug_*.py
-卡路里/.scratch/**/fix_*.py
-卡路里/.scratch/**/verify_*.py
-卡路里/.scratch/**/measure_*.py
-卡路里/.scratch/**/reproduce_*.py
-卡路里/.scratch/**/reproduce.py
-卡路里/.scratch/**/regenerate.py
-卡路里/.scratch/**/grab_*.py
-卡路里/.scratch/**/check_*.py
-卡路里/.scratch/**/check-*.png
-卡路里/.scratch/**/repro-*.png
-卡路里/.scratch/**/scrolled-*.png
-卡路里/.scratch/**/sample-*.html
-卡路里/.scratch/**/sample-v2*.html
-卡路里/.scratch/**/sample-v25*.html
-卡路里/.scratch/**/体重_趋势_V*.html
-卡路里/.scratch/**/user_screenshots.py
-卡路里/.scratch/**/USER_*.png
-卡路里/.scratch/**/V2_*.png
-卡路里/.scratch/**/V3_*.png
-卡路里/.scratch/**/V4_*.png
-卡路里/.scratch/**/FINAL_*.png
-卡路里/.scratch/**/iphone_*.png
+# 卡路里 .scratch 工作区整体忽略(2026-08-09 简化:调试脚本/截图/镜像等一次性产物不入库)
+# 精确放行:验收记录 review/*.md + 交付报告 issue-status/*.html 仍入版本控制
+卡路里/.scratch/*
+!卡路里/.scratch/review/
+卡路里/.scratch/review/*
+!卡路里/.scratch/review/*.md
+!卡路里/.scratch/issue-status/
+卡路里/.scratch/issue-status/*
+!卡路里/.scratch/issue-status/*.html
+卡路里/.scratch/issue-status/_gallery_*.html
 
 # 仓库根 .scratch/ 调试目录(各 skill 共用的临时调试产物,与 skill 下的 .scratch/ 同性质)
 # 注:作息管家/.scratch/<feature>/spec.md 等已成型的 spec 工件走下方「选择性放行」规则
@@ -128,12 +108,3 @@ Thumbs.db
 
 # 居家管家个人想法目录(私人内容,不入版本控制)
 居家管家/.个人想法目录禁止看里面文件/
-
-# ===== 卡路里验收正式产物放行(2026-08-09 持久化审查 · 关 session 无损失) =====
-# 验收记录 *.md + 交付报告 *.html 入版本控制;调试脚本/截图仍忽略
-!卡路里/.scratch/
-!卡路里/.scratch/review/
-!卡路里/.scratch/review/*.md
-!卡路里/.scratch/issue-status/
-!卡路里/.scratch/issue-status/*.html
-卡路里/.scratch/issue-status/_gallery_*.html

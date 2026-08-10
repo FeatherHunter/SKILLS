@@ -455,6 +455,17 @@ def build_live_diet_add(food, calories, protein, carbs='0', fat='0', grams='100'
                       meal_override=meal)
     if r is None:
         raise ValueError('记一餐失败(数值校验不过)')
+    if r.get('duplicate'):
+        # #262 幂等防重:同 date+time+food_name+grams+calories 已存在 → 未写库,回执如实提示
+        # (duplicate 分支返回 dict 缺营养字段,不能走下方正常 new_record 构建;用输入参数回填)
+        new_record = {
+            'food_name': r['food_name'], 'grams': grams, 'calories': calories,
+            'protein': protein, 'carbs': carbs, 'fat': fat,
+            'note': note or '', 'meal': r['meal'], 'time': r['time'], 'date': r['date'],
+        }
+        summary = r.get('message') or f"{r['food_name']} 重复记录已跳过(未重复写入)"
+        return _diet_receipt('create', r.get('dup_id') or 0, {}, new_record, '记一餐',
+                             f"{r['date']} {r['time']}", summary)
     new_record = {
         'food_name': r['food_name'], 'grams': r['grams'], 'calories': r['calories'],
         'protein': r['protein'], 'carbs': r['carbs'], 'fat': r['fat'],
@@ -919,6 +930,8 @@ def main():
             active = flag_name
             break
     cmd_name, ot = _LIVE_NAMES.get(active, ('操作回执', None))
+    # issue #49 · 2026-08-11 拍板:记一餐回执文件名带食物名(仅 live_diet_add,其余保持原样)
+    file_suffix = None
 
     try:
         if args.mock:
@@ -953,6 +966,7 @@ def main():
                       file=sys.stderr)
                 return 1
             food, cal, pro = pos[0], pos[1], pos[2]
+            file_suffix = food  # issue #49:文件名带食物名,下载多时可直接识别
             data = build_live_diet_add(food, cal, pro,
                                        carbs=pos[3] if len(pos) > 3 else kw.get('carbs', '0'),
                                        fat=pos[4] if len(pos) > 4 else kw.get('fat', '0'),
@@ -1194,7 +1208,7 @@ def main():
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
     out_path = Path(args.output) if args.output else (
-        html_scene_path(SKILL_DIR, cmd_name, ot) if ot else html_path(SKILL_DIR, cmd_name))
+        html_scene_path(SKILL_DIR, cmd_name, ot, suffix=file_suffix) if ot else html_path(SKILL_DIR, cmd_name, suffix=file_suffix))
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     d = data['data']

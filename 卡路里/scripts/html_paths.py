@@ -49,20 +49,48 @@ def html_dir(skill_dir, *, mkdir=True):
     return html_d
 
 
-def html_name(command, html_dir=None):
+def _sanitize_filename_part(text):
+    """清洗「内容标识」为可安全嵌入文件名的字段(issue #49 定稿 · 2026-08-11)
+
+    规则:
+      - 替换 \\ / : * ? " < > | [ ] → _([ ] 是 glob 元字符,Windows 文件名合法但会破坏冲突检测)
+      - 去除前后空格
+      - 截断 32 字符(按字符数,中文 / emoji 安全)
+
+    Returns:
+        str: 清洗后字段;传入 None / 空 / 全非法字符 → ''
+    """
+    if text is None:
+        return ''
+    s = str(text).strip()
+    for ch in '\\/:*?"<>|[]':
+        s = s.replace(ch, '_')
+    return s[:32]
+
+
+def html_name(command, html_dir=None, suffix=None):
     """生成合规文件名(只返回文件名,不含目录)
 
     命名格式:<command>_<YYYYMMDD>_<HHMMSS>[_<N>].html
+    suffix(可选 · issue #49):追加在 command 与 TS 之间,
+      例 suffix='香蕉' → 记一餐_回执_香蕉_20260803_000422.html
+      用途:把「内容标识」(如食物名)带进文件名,下载多时可快速识别
     冲突保护:同秒内已有 N 个同名文件 → 追加 _(N+1)
+      不同内容同秒互不冲突(前缀不同,glob 匹配不到);同内容同秒 → _2/_3
 
     Args:
         command: CLI 子命令名(中文化后,例 "主页仪表盘" / "体重记录回执_mock")
         html_dir: 用于检测冲突的目录;默认 cwd
                   (建议显式传 html_dir(skill_dir) 以避免跨进程误判)
+        suffix: 内容标识(如食物名),自动 sanitize;不传 = 原行为
 
     Returns:
         Path: 仅文件名(不含目录),例如 Path("主页仪表盘_20260726_103045.html")
     """
+    if suffix:
+        safe = _sanitize_filename_part(suffix)
+        if safe:
+            command = f"{command}_{safe}"
     search_dir = Path(html_dir) if html_dir else Path.cwd()
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     base = f"{command}_{ts}.html"
@@ -74,7 +102,7 @@ def html_name(command, html_dir=None):
     return Path(f"{command}_{ts}_{n}.html")
 
 
-def html_path(skill_dir, command):
+def html_path(skill_dir, command, suffix=None):
     """一站式:返回 <HTML_DIR>/<command>_<TS>[_N].html 完整可写路径
 
     副作用:会自动创建 HTML_DIR(若不存在)
@@ -82,12 +110,13 @@ def html_path(skill_dir, command):
     Args:
         skill_dir: Skill 根目录
         command: CLI 子命令名(中文化,如 "主页仪表盘" / "热量趋势")
+        suffix: 内容标识(如食物名 · issue #49),透传 html_name;不传 = 原行为
 
     Returns:
         Path: 完整输出路径(目录保证存在),如 .../calorie_html/主页仪表盘_20260726_103045.html
     """
     hd = html_dir(skill_dir, mkdir=True)
-    nm = html_name(command, html_dir=hd)
+    nm = html_name(command, html_dir=hd, suffix=suffix)
     return hd / nm
 
 
@@ -99,25 +128,27 @@ OUTPUT_TYPE_LABELS = {
 }
 
 
-def html_scene_path(skill_dir, scene_name, output_type):
-    """场景 HTML 输出路径:<场景名>_<类型中文>_<TS>.html
+def html_scene_path(skill_dir, scene_name, output_type, suffix=None):
+    """场景 HTML 输出路径:<场景名>_<类型中文>[_<内容>]_<TS>.html
 
     规则(2026-08-02 用户拍板 · 新场景开发必读):
       - 类型中文:process→过程 / result→结果 / receipt→回执
       - 例:查档案_结果_20260802_131014.html / 设活动量_回执_20260802_131014.html
       - 一个场景多类型时靠后缀区分(wizard=过程 + 回执)
       - 所有场景 HTML 生成必须走本函数,禁止手拼 html_path()
+    suffix(可选 · issue #49):内容标识(如食物名)嵌在类型词与 TS 之间,
+      例:html_scene_path(dir, '记一餐', 'receipt', suffix='香蕉')
+         → 记一餐_回执_香蕉_20260803_000422.html
 
     Args:
         skill_dir: Skill 根目录
         scene_name: 场景名(如 "查档案" / "设活动量")
         output_type: 'process' / 'result' / 'receipt'
+        suffix: 内容标识(如食物名),透传 html_path;不传 = 原行为
 
     Returns:
         Path: .../calorie_html/查档案_结果_20260802_131014.html
     """
     label = OUTPUT_TYPE_LABELS.get(output_type, '')
     command = f"{scene_name}_{label}" if label else scene_name
-    return html_path(skill_dir, command)
-    nm = html_name(command, html_dir=hd)
-    return hd / nm
+    return html_path(skill_dir, command, suffix=suffix)

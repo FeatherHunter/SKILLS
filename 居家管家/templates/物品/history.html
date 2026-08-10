@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>居家管家 · 物品历史</title>
 <style>
+.actions .copy.wide{grid-column:1/-1;background:var(--blue);color:#fff;border:none}
+
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-touch-callout:none}button:focus{outline:none}button::-moz-focus-inner{border:0}
+
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
@@ -27,8 +31,8 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:4px 11px;font-size:12px;cursor:pointer}.chip.on{border-color:var(--blue);background:var(--soft);color:var(--blue);font-weight:700}
 .traj{background:#f2f8ff;border-radius:12px;padding:12px 14px;font-size:14px;margin:8px 0}
 .pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;font-size:12px}
-.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:8px 13px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:13px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
-.actions{margin-top:12px;text-align:right}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 12px;font-weight:700;cursor:pointer;margin:0;font-size:13.5px;min-height:44px;min-width:0;flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;box-sizing:border-box}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .empty{color:var(--fg3)}
 @media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}}
 </style>

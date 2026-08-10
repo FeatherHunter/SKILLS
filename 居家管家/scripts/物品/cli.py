@@ -234,7 +234,7 @@ def run(args):
         data.pop("next", None)
         return emit_sm1("receipt.html", data, scene_id, wake_word, command_cn,
                         target=payload.get("item", {}).get("name") if payload.get("item") else command_cn,
-                        copy_log={"call_chain": "python home_manager.py sm1-*", "data_structure": "写库+item_events"},
+                        copy_log={"call_chain": "居家管家技能内部指令(场景自动映射)", "data_structure": "写库 + 物品事件记录"},
                         reminders=reminders, output_path=args.output)
 
     cmd = args.command

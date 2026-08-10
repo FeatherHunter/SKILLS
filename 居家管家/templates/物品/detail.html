@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>居家管家 · 物品详情</title>
 <style>
+.actions .copy.wide{grid-column:1/-1;background:var(--blue);color:#fff;border:none}
+
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-touch-callout:none}button:focus{outline:none}button::-moz-focus-inner{border:0}
+
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
@@ -25,8 +29,8 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .mini{background:var(--card);border-radius:14px;padding:12px;border:1px solid #eee}
 .mini b{display:block;font-size:13px}.mini .loc{color:var(--fg2);font-size:12px}
 .empty{color:var(--fg3)}
-.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:8px 13px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:13px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
-.actions{margin-top:12px;text-align:right}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 12px;font-weight:700;cursor:pointer;margin:0;font-size:13.5px;min-height:44px;min-width:0;flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;box-sizing:border-box}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 @media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -63,18 +67,18 @@ if((s.relations||[]).length){html+=`<section><h2>关联物品</h2>${s.relations.
 if((s.neighbors||[]).length){html+=`<section><h2>同位置邻居</h2><div class="cards">${s.neighbors.map(n=>`<div class="mini"><b>${esc(n.name)}</b><div class="loc">${esc(n.location)} ×${esc(n.quantity??1)}</div></div>`).join('')}</div><p class="empty" style="margin-top:8px">「钥匙旁边就是门禁卡」——找相关物品看这里</p></section>`;}
 if((s.similar||[]).length){html+=`<section><h2>相似物品(同分类)</h2><div class="cards">${s.similar.map(n=>`<div class="mini"><b>${esc(n.name)}</b><div class="loc">${esc(n.location||'(未设置)')}</div></div>`).join('')}</div></section>`;}
 const qa=[
- {label:'改',text:'改物品(居家管家): 物品 '+it.id+'「'+it.name+'」,想改成: '},
- {label:'移',text:'移物品(居家管家): 把 '+it.id+'「'+it.name+'」移到: '},
- {label:'补',text:'补物品(居家管家): '+it.id+'「'+it.name+'」补充: '},
- {label:'减',text:'减物品(居家管家): '+it.id+'「'+it.name+'」减少: '},
- {label:'标',text:'标物品(居家管家): '+it.id+'「'+it.name+'」打标签: '},
- {label:'废',text:'废物品(居家管家): '+it.id+'「'+it.name+'」标记废弃'},
- {label:'标记使用',text:'标记使用(居家管家): '+it.id+'「'+it.name+'」我用过了'},
+ {label:'改',wide:0,text:'请加载「居家管家」技能,帮我修改物品信息(唤醒词:改物品):\n\n  物  品: '+it.name+'\n  修改项: ______'},
+ {label:'移',wide:0,text:'请加载「居家管家」技能,帮我移动物品位置(唤醒词:移物品):\n\n  物  品: '+it.name+'\n  新位置: ______'},
+ {label:'补',wide:0,text:'请加载「居家管家」技能,帮我修改物品信息(唤醒词:改物品):\n\n  物  品: '+it.name+'\n  修改项: ______(补充字段说明)'},
+ {label:'减',wide:0,text:'请加载「居家管家」技能,帮我变更物品数量(唤醒词:数量变更):\n\n  物  品: '+it.name+'\n  数  量: -______(减少量)'},
+ {label:'标',wide:0,text:'请加载「居家管家」技能,帮我修改物品标签(唤醒词:标物品):\n\n  物  品: '+it.name+'\n  标  签: ______'},
+ {label:'废',wide:0,text:'请加载「居家管家」技能,帮我变更物品状态(唤醒词:状态变更):\n\n  物  品: '+it.name+'\n  状  态: 已废弃'},
+ {label:'标记使用',wide:1,text:'请加载「居家管家」技能,帮我标记物品使用(唤醒词:标物品):\n\n  物  品: '+it.name+'\n  动  作: 标记已使用'},
 ];
-html+=`<section><h2>快捷操作</h2>${qa.map(q=>'<button class="copy ghost" onclick="copyText(this.dataset.t)" data-t="'+esc(q.text).replace(/"/g,'&quot;')+'">'+q.label+'</button>').join('')}</section>`;
+html+=`<section><h2>快捷操作</h2>${qa.map(q=>'<button class="copy ghost'+(q.wide?' wide':'')+'" onclick="copyText(this.dataset.t)" data-t="'+esc(q.text).replace(/"/g,'&quot;')+'">'+q.label+'</button>').join('')}</section>`;
 html+=`<section><h2>操作历史</h2><p class="empty">${(s.history||[]).length?('最近 '+Math.min(s.history.length,5)+' 条:'+s.history.slice(0,5).map(h=>esc(h.summary)).join(' → ')):'暂无记录(后续操作自动留痕)'}</p></section>`;
 html+=remindersBlock(payload);
-html+=`<section><h2>通用操作</h2>${actionBar(payload,[{label:'查看完整历史',text:'历史(居家管家): 看物品 '+it.id+' 的完整时间线',kind:'ghost'},{label:'查看照片',text:'查看照片(居家管家): 物品 '+it.id,kind:'ghost'}])}</section>`;
+html+=actionBar(payload,[{label:'查看完整历史',text:'请加载「居家管家」技能,帮我查看物品历史(唤醒词:历史):\n\n  物  品: '+it.name,kind:'ghost'},{label:'查看照片',text:'请加载「居家管家」技能,帮我查看物品照片(唤醒词:查看照片):\n\n  物  品: '+it.name,kind:'ghost'}]);
 app.innerHTML=html;
 }
 render();

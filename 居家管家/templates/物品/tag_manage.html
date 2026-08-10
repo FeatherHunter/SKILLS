@@ -1,10 +1,14 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>居家管家 · 标签管理</title>
 <style>
+.actions .copy.wide{grid-column:1/-1;background:var(--blue);color:#fff;border:none}
+
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-touch-callout:none}button:focus{outline:none}button::-moz-focus-inner{border:0}
+
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
@@ -22,8 +26,8 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .warnbox{border-left:3px solid var(--orange);background:#fff8e8;padding:10px 14px;border-radius:8px;margin:8px 0}
 .pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px}
 .empty{color:var(--fg3)}
-.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:8px 13px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:13px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.red{background:var(--red)}
-.actions{margin-top:12px;text-align:right}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 12px;font-weight:700;cursor:pointer;margin:0;font-size:13.5px;min-height:44px;min-width:0;flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;box-sizing:border-box}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.red{background:var(--red)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 @media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}}
 </style>
 </head>
@@ -46,17 +50,18 @@ if(mode==='suggest'){
   if(!s.pairs||!s.pairs.length){html+='<section><p class="ok">✅ 没发现相近标签,体系很干净。</p></section>';}
   else{(s.pairs||[]).forEach((p,i)=>html+=`<section><h2>相近 #${i+1} <span class="pill">相似度 ${Math.max(0,100-p.distance*40)}%</span></h2>
   <div class="pair"><div class="info">「<b>${esc(p.a)}</b>」(${p.items_a} 件) ↔ 「<b>${esc(p.b)}</b>」(${p.items_b} 件)<br><span class="cnt">合并会动到 ${p.impact} 件,「${esc(p.a)}」标签将消失</span></div>
-  <button class="copy ghost" onclick="copyText('合并标签(居家管家): 「${esc(p.a)}」合并到「${esc(p.b)}」')">合并</button>
+  <button class="copy ghost" onclick="copyText('请加载「居家管家」技能,帮我管理标签(唤醒词:管标签):\\n\\n  操  作: 合并\\n  源标签: ${esc(p.a)}\\n  目标标签: ${esc(p.b)}')">合并</button>
   <button class="copy ghost" onclick="copyText('忽略本条建议')">忽略</button></div></section>`);}
 }else{
   html+=`<section><h2>标签总览(${s.total||0} 个)</h2>${(s.tags||[]).map(t=>`<div class="row"><div class="tagname">${esc(t.tag)}</div><div class="cnt">${t.item_cnt} 件 · ${t.use_cnt} 次</div><div style="display:flex;gap:6px"><button class="copy ghost" onclick="copyText('重命名标签(居家管家): 「${esc(t.tag)}」改成: ')" style="font-size:12px">改名</button><button class="copy ghost" onclick="copyText('合并标签(居家管家): 「${esc(t.tag)}」合并到: ')" style="font-size:12px">合并</button></div></div>`).join('')||'<p class="empty">暂无标签</p>'}
-  ${(s.unused||[]).length?`<div class="warnbox">⚠ ${s.unused.length} 个标签没被使用:${s.unused.map(u=>esc(u.tag)).join('、')}<br><button class="copy red" onclick="copyText('清理未使用标签(居家管家): '+JSON.stringify(${JSON.stringify(s.unused.map(u=>u.tag))}))">一键清理</button></div>`:''}
+  ${(s.unused||[]).length?`<div class="warnbox">⚠ ${s.unused.length} 个标签没被使用:${s.unused.map(u=>esc(u.tag)).join('、')}<br><button class="copy red" onclick="copyText('请加载「居家管家」技能,帮我管理标签(唤醒词:管标签):\\n\\n  操  作: 清理未使用标签\\n  清  单: '+JSON.stringify(${JSON.stringify(s.unused.map(u=>u.tag))}))">一键清理</button></div>`:''}
   </section>`;
 }
-html+=`<section><h2>操作</h2>${actionBar(payload,[{label:'整理建议',text:'整理建议(居家管家): 检测相近标签和分类',kind:'ghost'},{label:'新建标签',text:'给物品打新标签(居家管家): ',kind:'ghost'}])}</section>`;
+html+=actionBar(payload,[{label:'整理建议',text:'请加载「居家管家」技能,帮我整理标签(唤醒词:整理建议):\n\n  检  测: 相近标签和分类',kind:'wide'},{label:'新建标签',text:'请加载「居家管家」技能,帮我管理标签(唤醒词:管标签):\n\n  操  作: 新建标签\n  标  签: ______',kind:'wide'}]);
 app.innerHTML=html;
 }
 render();
 </script>
 </body>
 </html>
+

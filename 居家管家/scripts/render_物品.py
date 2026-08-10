@@ -35,8 +35,8 @@ def build_envelope(data, scene_id, wake_word, command_cn, target=None,
     copy_log_full = {
         "scene": f"{command_cn} · 唤醒词「{wake_word}」 · 场景「{scene_id}」",
         "thinking": log.get("thinking", "意图理解 → 决策点 → 关键判断(摘要级)"),
-        "data_structure": log.get("data_structure", "payload JSON(输入/输出)+ DB 操作类型"),
-        "call_chain": log.get("call_chain", "渲染脚本 / CLI 命令(完整,可复制执行)"),
+        "data_structure": log.get("data_structure", "物品数据读取 + 数据库读写记录"),
+        "call_chain": log.get("call_chain", "居家管家技能内部指令(场景自动映射)"),
         "timestamp": f"{occurred} · {SKILL_VERSION}",
         "exception": log.get("exception", ""),
     }

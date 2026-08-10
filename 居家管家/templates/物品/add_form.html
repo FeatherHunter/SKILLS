@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>居家管家 · 采集确认</title>
 <style>
+.actions .copy.wide{grid-column:1/-1;background:var(--blue);color:#fff;border:none}
+
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-touch-callout:none}button:focus{outline:none}button::-moz-focus-inner{border:0}
+
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
@@ -29,8 +33,8 @@ label.f{display:block;font-size:12px;color:var(--fg2);margin:10px 0 4px;font-wei
 .missing{color:var(--orange);font-weight:600}
 .similar-box{background:#f2f8ff;border-radius:12px;padding:10px 14px;margin:10px 0;font-size:13px}
 .dist-bar{display:flex;border-radius:999px;overflow:hidden;height:14px;margin:10px 0}.dist-bar span{color:#fff;font-size:11px;text-align:center;line-height:14px}
-.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
-.actions{margin-top:12px;text-align:right}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 12px;font-weight:700;cursor:pointer;margin:0;font-size:13.5px;min-height:44px;flex:1 1 0;display:inline-flex;align-items:center;justify-content:center}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .photo{width:100%;min-height:160px;border-radius:14px;background:#f0f3f8;display:flex;align-items:center;justify-content:center;color:var(--fg3);overflow:hidden;margin-bottom:8px}.photo img{width:100%;height:100%;object-fit:cover}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.grid2{grid-template-columns:1fr}}
@@ -45,14 +49,68 @@ label.f{display:block;font-size:12px;color:var(--fg2);margin:10px 0 4px;font-wei
 <!--SHARED-HELPERS-->
 const app=document.getElementById('app');
 const STATUSES=['在家','备用','穿着中','旅游中','洗护中','借用中','维修中','已用完','快递中','待处理','已废弃','找不到'];
-function gather(seq){const f=document.getElementById('f_'+seq);const d={};['name','category_id','quantity','location','location_status','price','purchase_date','expiration_date','backfill_date','remark','tags'].forEach(k=>{const el=f.querySelector('[name="'+k+'"]');if(el)d[k]=el.value;});d.tags=(d.tags||'').split(',').map(s=>s.trim()).filter(Boolean);return d;}
-function cardPrompt(seq,scene,cmdLead){const d=gather(seq);return cmdLead+' '+JSON.stringify(d,null,0);}
-function gatherAll(s){return (s.items||[]).map(it=>gather(it.seq));}
+function gather(seq){const f=document.getElementById('f_'+seq);const d={};['name','category_id','quantity','location','location_status','price','purchase_date','expiration_date','backfill_date','remark','tags'].forEach(k=>{const el=f.querySelector('[name="'+k+'"]');if(el)d[k]=el.value;});const sel=f.querySelector('select[name="category_id"]');d.category_name=sel&&sel.selectedOptions.length?sel.selectedOptions[0].text:'';d.tags=(d.tags||'').split(',').map(s=>s.trim()).filter(Boolean);return d;}
+function itemPrompt(d,mode){
+  var L=[];
+  function head(w,sub){L.push('请加载「居家管家」技能,帮我'+sub+'(唤醒词:'+w+'):','');}
+  if(mode==='backfill'){
+    head('补录','补录一件历史物品');
+    L.push('  名  称: '+(d.name||''),'  分  类: '+(d.category_name||''),'  录入日期: '+(d.backfill_date||''),'  购买日期(选填): '+(d.purchase_date||''));
+    var extra=[];
+    if(d.quantity)extra.push('数量:'+d.quantity);
+    if(d.location)extra.push('位置:'+d.location);
+    if(d.expiration_date)extra.push('过期日期:'+d.expiration_date);
+    if(d.tags.length)extra.push('标签:'+d.tags.join('/'));
+    if(d.remark)extra.push('备注:'+d.remark);
+    L.push('  其余字段(同录物品,选填): '+extra.join(' · '));
+  }else if(mode==='update'){
+    head('改物品','修改物品信息');
+    L.push('  物  品: '+(d.name||''));
+    var mods=[];
+    if(d.category_name)mods.push('分类:'+d.category_name);
+    if(d.quantity)mods.push('数量:'+d.quantity);
+    if(d.location)mods.push('位置:'+d.location);
+    if(d.location_status)mods.push('状态:'+d.location_status);
+    if(d.price)mods.push('价格:'+d.price);
+    if(d.purchase_date)mods.push('购买日期:'+d.purchase_date);
+    if(d.expiration_date)mods.push('过期日期:'+d.expiration_date);
+    if(d.tags.length)mods.push('标签:'+d.tags.join('/'));
+    if(d.remark)mods.push('备注:'+d.remark);
+    L.push('  修改项(一行一条,未列出的字段保持不变): '+(mods.length?mods.join(' · '):'______'));
+  }else{
+    head(mode==='photo_scan'?'拍物品':'录物品',mode==='photo_scan'?'拍照录入一件物品':'录入一件新物品');
+    L.push('  名  称: '+(d.name||''),'  分  类: '+(d.category_name||''));
+    L.push('  数  量(默认 1): '+(d.quantity||''),'  位  置(选填,如:客厅/电视柜): '+(d.location||''),'  价  格(选填): '+(d.price||''),'  标  签(选填): '+(d.tags.join('/')||''));
+    var extra=[];
+    if(d.purchase_date)extra.push('购买日期:'+d.purchase_date);
+    if(d.expiration_date)extra.push('过期日期:'+d.expiration_date);
+    if(d.remark)extra.push('备注:'+d.remark);
+    if(extra.length)L.push('  其  他: '+extra.join(' · '));
+  }
+  return L.join('\n');
+}
+function batchPrompt(s){
+  var L=['请加载「居家管家」技能,帮我批量录入多件物品(唤醒词:批量录入):','','  清  单:'];
+  (s.items||[]).forEach(function(it){
+    var d=gather(it.seq);
+    var parts=[d.name||('第'+it.seq+'条')];
+    if(d.category_name)parts.push('分类:'+d.category_name);
+    if(d.quantity)parts.push('数量:'+d.quantity);
+    if(d.location)parts.push('位置:'+d.location);
+    if(d.tags.length)parts.push('标签:'+d.tags.join('/'));
+    if(d.remark)parts.push('备注:'+d.remark);
+    L.push(it.seq+'. '+parts.join(' · '));
+  });
+  return L.join('\n');
+}
+function cardPrompt(seq,scene,cmdLead){return itemPrompt(gather(seq),scene&&scene.mode||'add');}
+function gatherAll(){return (window.__scene&&window.__scene.items||[]).map(it=>gather(it.seq));}
 function render(){
 let payload;
 try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
 const d=payload.data||{};const s=d.scene||{};
 const mode=s.mode||'add';
+window.__scene=s;window.__cmdLead=mode==='update'?'确认修改物品(居家管家):':'确认录入物品(居家管家):';window.__hmPayload=payload;
 const titles={add:'录入一件新物品',batch:'批量录入多件物品',backfill:'补录历史物品(指定日期)',update:'修改物品信息(勾选变更)',photo_scan:'拍照识别录入物品'};
 const hero=metaHeader(payload,{title:titles[mode]||titles.add,lead:s.lead||'逐项核对,修改后点「确认」复制结果发给 AI 写入。',stage:mode==='update'?'确认变更':'填写 → 确认'});
 let html=hero;
@@ -84,17 +142,19 @@ const cats=arr(s.categories);const locs=arr(s.locations);
       <div><label class="f">过期日期</label><input name="expiration_date" type="date" value="${esc(dft.expiration_date||'')}"></div>
       ${mode==='backfill'?'<div><label class="f">录入日期(补录)</label><input name="backfill_date" type="date" value="'+esc(dft.backfill_date||'')+'"></div>':''}
     </div>
-    <label class="f">标签(逗号分隔)</label><input name="tags" value="${esc((dft.tags||[]).join(','))}" placeholder="进口,临期,旗舰款">
+    <label class="f">标签(逗号分隔)</label><input name="tags" value="${esc((Array.isArray(dft.tags)?dft.tags:String(dft.tags||'').split(',')).join(','))}" placeholder="进口,临期,旗舰款">
     <label class="f">备注</label><textarea name="remark" rows="2">${esc(dft.remark||'')}</textarea>
     ${dft.photo_base64?'<div class="photo" style="margin-top:10px"><img src="data:image/jpeg;base64,'+dft.photo_base64+'"></div>':''}
-    <div class="actions"><button class="copy" onclick="copyText(cardPrompt(${it.seq},${JSON.stringify(s).replace(/</g,'\\u003c')},'${mode==='update'?'确认修改物品(居家管家):':'确认录入物品(居家管家):'}'))">确认${mode==='update'?'变更':'写入'}本条</button></div>
   </div>`;
 });
-if(s.total>1){html+=`<section><h2>批量操作</h2><p>全部核对无误后,点下方按钮一次性确认全部 ${s.total} 条。</p><div class="actions"><button class="copy ghost" onclick="copyText('确认批量录入(居家管家): '+JSON.stringify(gatherAll(s)))">全部确认(${s.total} 条)</button></div></section>`;}
+var _confirmBtn=s.total>1
+  ?'<button class="copy wide" onclick="copyText(batchPrompt(window.__scene))">全部确认('+s.total+' 条)</button>'
+  :'<button class="copy wide" onclick="copyText(cardPrompt((window.__scene.items[0]||{}).seq||1, window.__scene, window.__cmdLead))">确认'+((mode==='update')?'变更':'写入')+'</button>';
+html+=`<div class="actions">${_confirmBtn}<button class="copy ghost" onclick="copyText(buildDataText(window.__hmPayload||payload))">复制数据</button><button class="copy ghost" onclick="copyText(buildLogText(window.__hmPayload||payload))">复制日志</button></div>`;
 html+=remindersBlock(payload);
 app.innerHTML=html;
 }
-function gatherAll(){return (window.__scene||{items:[]}).items.map((it,i)=>gather(it.seq));}
+function gatherAll(){return (window.__scene&&window.__scene.items||[]).map((it)=>gather(it.seq));}
 render();
 </script>
 </body>

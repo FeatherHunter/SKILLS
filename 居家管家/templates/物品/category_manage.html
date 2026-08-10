@@ -1,10 +1,14 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>居家管家 · 分类管理</title>
 <style>
+.actions .copy.wide{grid-column:1/-1;background:var(--blue);color:#fff;border:none}
+
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-touch-callout:none}button:focus{outline:none}button::-moz-focus-inner{border:0}
+
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
@@ -16,13 +20,32 @@ h1{font-size:32px;letter-spacing:-.035em;line-height:1.12;margin-bottom:10px}
 section{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:18px 0}
 h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .tree{margin-left:6px}
-.l1{padding:10px 0;border-bottom:1px solid #ececf1}
-.l1 b{font-size:16px}
-.cnt{color:var(--fg2);font-size:13px;margin-left:8px}
-.l2{padding:6px 0 6px 22px;color:var(--fg2);font-size:14px}
+.cat{border-bottom:1px solid #ececf1}
+.cat summary{list-style:none;display:flex;align-items:center;gap:8px;padding:12px 2px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cat summary::-webkit-details-marker{display:none}
+.cat summary .l1name{font-size:16px;font-weight:700}
+.cat summary .arrow{width:8px;height:8px;border-right:2px solid var(--fg3);border-bottom:2px solid var(--fg3);transform:rotate(-45deg);transition:transform .18s ease;flex-shrink:0}
+.cat summary .more-btn{margin-left:auto}
+.cat[open] summary .arrow{transform:rotate(45deg)}
+.cat-body{padding:2px 2px 12px}
+.cnt{color:var(--fg2);font-size:13px;margin-left:4px}
+.l2{padding:8px 0 8px 20px;color:var(--fg2);font-size:14px;display:flex;align-items:center;gap:6px}
+.l2.add-l2{color:var(--blue);font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent;border:none;background:transparent;margin-left:20px;padding:9px 0}
+.l2.add-l2 .plus{font-size:14px;font-weight:700;margin-right:2px}
+.l2.add-l2:active{color:var(--fg3)}
+.more-btn{width:44px;height:44px;border-radius:10px;border:none;background:transparent;color:var(--fg3);font-size:19px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-left:auto;flex-shrink:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.more-btn:active{background:#f2f2f7}
+.sheet-mask{position:fixed;inset:0;background:rgba(0,0,0,.32);z-index:98;opacity:0;pointer-events:none;transition:opacity .2s ease}
+.sheet-mask.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;background:#fff;border-radius:18px 18px 0 0;z-index:99;padding:8px 0 calc(14px + env(safe-area-inset-bottom,0));transform:translateY(105%);transition:transform .26s cubic-bezier(.32,.72,.34,1)}
+.sheet.show{transform:translateY(0)}
+.sheet .s-title{font-size:12px;color:var(--fg3);text-align:center;padding:6px 16px 10px;font-weight:600}
+.sheet .s-item{padding:15px;font-size:16px;font-weight:600;color:var(--blue);text-align:center;border-top:1px solid #f0f0f2;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.sheet .s-item:active{background:#f5f5f7}
+.sheet .s-cancel{margin-top:8px;border-top:1px solid #f0f0f2;background:#f5f5f7;padding:15px;font-size:15px;color:var(--fg2);text-align:center;cursor:pointer;font-weight:500;-webkit-tap-highlight-color:transparent}
 .btnrow{display:flex;gap:6px;margin-left:10px;flex-wrap:wrap}
-.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:6px 11px;font-weight:700;cursor:pointer;margin:4px 4px 0 0;font-size:12px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.red{background:var(--red)}
-.actions{margin-top:12px;text-align:right}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 12px;font-weight:700;cursor:pointer;margin:0;font-size:13.5px;min-height:44px;min-width:0;flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;box-sizing:border-box}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.red{background:var(--red)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
 .warnbox{border-left:3px solid var(--orange);background:#fff8e8;padding:10px 14px;border-radius:8px;margin:8px 0}
 @media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}}
 </style>
@@ -35,25 +58,50 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 <script>
 <!--SHARED-HELPERS-->
 const app=document.getElementById('app');
+function showSheet(items,title){
+  var m=document.createElement('div');m.className='sheet-mask';
+  var s=document.createElement('div');s.className='sheet';
+  s.innerHTML=(title?'<div class="s-title">'+esc(title)+'</div>':'')+items.map(function(it){return '<div class="s-item">'+esc(it.label)+'</div>';}).join('')+'<div class="s-cancel">取消</div>';
+  m.dataset.items=JSON.stringify(items.map(function(x){return {label:x.label,text:x.text};}));
+  document.body.appendChild(m);document.body.appendChild(s);
+  requestAnimationFrame(function(){m.classList.add('show');s.classList.add('show');});
+  m.addEventListener('click',closeSheet);
+}
+function sheetPick(el){
+  var m=document.querySelector('.sheet-mask');if(!m)return;
+  var items=JSON.parse(m.dataset.items);
+  var idx=Array.prototype.indexOf.call(document.querySelectorAll('.s-item'),el);
+  var it=items[idx];
+  if(it)copyText(it.text);
+  closeSheet();
+}
+function closeSheet(){
+  var m=document.querySelector('.sheet-mask'),s=document.querySelector('.sheet');
+  if(m)m.classList.remove('show');if(s)s.classList.remove('show');
+  setTimeout(function(){if(m)m.remove();if(s)s.remove();},250);
+}
+document.addEventListener('click',function(e){if(e.target&&e.target.classList&&e.target.classList.contains('s-item'))sheetPick(e.target);if(e.target&&e.target.classList&&e.target.classList.contains('s-cancel'))closeSheet();});
 function render(){
 let payload;
 try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
 const d=payload.data||{};const s=d.scene||{};
 const hero=metaHeader(payload,{title:'管分类',lead:'分类体系查看与维护:8 顶级 + 二级,命名规范:禁数字前缀/禁 emoji/同父唯一/1-30 字',stage:'查看'});
 let html=hero;
-html+=`<section><h2>分类树(${s.total||0} 个)</h2><div class="tree">${(s.tree||[]).map(c=>`<div class="l1"><b>${esc(c.name)}</b><span class="cnt">${c.item_count} 件</span>
-<div class="btnrow"><button class="copy ghost" onclick="copyText('新建二级分类(居家管家): 在「${esc(c.name)}」下新建: ')" style="font-size:12px">+二级</button>
-<button class="copy ghost" onclick="copyText('重命名分类(居家管家): 把「${esc(c.name)}」(${c.id})改成: ')" style="font-size:12px">改名</button>
-<button class="copy ghost" onclick="copyText('合并分类(居家管家): 把「${esc(c.name)}」(${c.id})合并到: ')" style="font-size:12px">合并</button></div>
-${(c.children||[]).map(ch=>`<div class="l2">└ ${esc(ch.name)} <span class="cnt">${ch.item_count} 件</span><span class="btnrow"><button class="copy ghost" onclick="copyText('重命名分类(居家管家): 把「${esc(ch.name)}」(${ch.id})改成: ')" style="font-size:12px">改名</button><button class="copy ghost" onclick="copyText('合并分类(居家管家): 把「${esc(ch.name)}」(${ch.id})合并到: ')" style="font-size:12px">合并</button></span></div>`).join('')}
-</div>`).join('')}</div>
-<div class="warnbox">删除拦截:有物品的分类不可删;种子 8 类 + 自定义一律可改不可删。</div>
-<div class="actions"><button class="copy" onclick="copyText('新建分类(居家管家): 新建顶级分类: ')">新建顶级分类</button></div></section>`;
+html+=`<section><h2>分类树(${s.total||0} 个)</h2><p class="empty" style="margin-bottom:10px">点击分类名展开/收起 · 右侧 ⋯ 管理操作</p><div class="tree">${(s.tree||[]).map(c=>`<details class="cat"><summary><span class="l1name">${esc(c.name)}</span><span class="cnt">${c.item_count} 件</span><button class="more-btn" onclick="event.stopPropagation();showSheet([{label:'改名',text:'请加载「居家管家」技能,帮我管理分类(唤醒词:管分类):\\n\\n  操  作: 重命名\\n  分  类: ${esc(c.name)}\\n  新名称: ______'},{label:'合并',text:'请加载「居家管家」技能,帮我管理分类(唤醒词:管分类):\\n\\n  操  作: 合并\\n  分  类: ${esc(c.name)}\\n  并  入: ______'}] ,'${esc(c.name)}')">⋯</button><span class="arrow"></span></summary>
+<div class="cat-body">
+${(c.children||[]).map(ch=>`<div class="l2">${esc(ch.name)} <span class="cnt">${ch.item_count} 件</span><button class="more-btn" onclick="event.stopPropagation();showSheet([{label:'改名',text:'请加载「居家管家」技能,帮我管理分类(唤醒词:管分类):\\n\\n  操  作: 重命名\\n  分  类: ${esc(ch.name)}\\n  新名称: ______'},{label:'合并',text:'请加载「居家管家」技能,帮我管理分类(唤醒词:管分类):\\n\\n  操  作: 合并\\n  分  类: ${esc(ch.name)}\\n  并  入: ______'}] ,'${esc(ch.name)}')">⋯</button></div>`).join('')}
+<div class="l2 add-l2" onclick="copyText('请加载「居家管家」技能,帮我管理分类(唤醒词:管分类):\\n\\n  操  作: 新建二级分类\\n  父分类: ${esc(c.name)}\\n  名  称: ______')"><span class="plus">＋</span>添加二级分类</div>
+</div>
+</details>`).join('')}</div>
+<div class="warnbox">删除拦截:有物品的分类不可删;种子 8 类 + 自定义一律可改不可删。</div></section>`;
 html+=remindersBlock(payload);
-html+=`<section><h2>通用操作</h2>${actionBar(payload)}</section>`;
+window.__hmPayload=payload;
+html+='<div class="actions"><button class="copy wide" onclick="copyText(\'请加载「居家管家」技能,帮我管理分类(唤醒词:管分类):\\n\\n  操  作: 新建顶级分类\\n  名  称: ______\')">新建顶级分类</button></div>';
+html+=actionBar(payload);
 app.innerHTML=html;
 }
 render();
 </script>
 </body>
 </html>
+

@@ -27,9 +27,9 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .dupe{background:#fff8e6;border:1.5px solid #ffe3a1;border-radius:14px;padding:12px 16px;margin:14px 0;font-size:14px}
 .empty{padding:26px 0;text-align:center;color:var(--fg3)}
 .ok{color:var(--green)}.warn{color:var(--orange)}.bad{color:var(--red)}
-.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.green{background:var(--green)}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#f2f2f7;color:#1d1d1f;border:1.5px solid var(--line)}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.green{background:var(--green)}.stage{display:inline-block;margin-left:8px;padding:2px 10px;border-radius:999px;background:#eef5ff;color:#0a63ce;font-size:12px;font-weight:700;vertical-align:middle}.copy.danger{background:#fff;color:var(--red);border:1.5px solid #ffb4ae}
 .actions{margin-top:14px;text-align:right}
-@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{flex-wrap:wrap}.row .name{flex:1 1 100%;order:-1}}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.eyebrow{font-size:11px;letter-spacing:.06em}.eyebrow .t{display:block;white-space:nowrap;margin-top:2px}.actions .copy.wide{grid-column:1/-1}.row{flex-wrap:wrap}.row .name{flex:1 1 100%;order:-1}.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;text-align:left}.actions .copy{width:100%;margin:0;white-space:nowrap;font-size:13.5px;text-align:center;line-height:1.4;padding:11px 12px}.actions .copy.primary{grid-column:1/-1;font-size:15px;padding:13px 16px}}
 </style>
 </head>
 <body>
@@ -41,45 +41,44 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 <!--SHARED-HELPERS-->
 const app=document.getElementById('app');
 function srcBadge(it){
-  if(it.routine)return '<span class="tag routine">例行·'+esc(it.routine)+'</span>';
-  if(it.source==='缺货检测')return '<span class="tag">缺货检测</span>';
-  return '<span class="tag manual">手动</span>';
+  if(it.routine)return '<span class="tag routine">'+(it.routine==='每周'?'每周自动提醒':'每月自动提醒')+'</span>';
+  if(it.source==='缺货检测')return '<span class="tag">缺货检测加的</span>';
+  return '<span class="tag manual">手动记的</span>';
 }
 function render(){
 let payload;
 try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
 const d=payload.data||{};const s=d.scene||{};
-let html=metaHeader(payload,{title:s.summary&&s.summary.title||'购物清单',lead:s.lead||'勾选销项;采购闭环:买完回家 → 新物品录入 / 已有物品补数量',stage:'查看'});
-if(s.dupes&&s.dupes.length){html+=`<div class="dupe">⚠️ 清单内查重:${esc(s.dupes.join('、'))} 在清单中重复出现,别买重 — 建议合并为一条。</div>`;}
+window.__hmPayload=payload;
+let html=metaHeader(payload,{title:s.summary&&s.summary.title||'购物清单',lead:s.lead||'勾选买到的条目，点「我买到了」划掉',stage:'浏览清单'});
+if(s.summary&&s.summary.metrics&&s.summary.metrics.length){html+=`<section style="display:flex;gap:10px;flex-wrap:wrap;padding:16px 22px;margin-top:0">${s.summary.metrics.map(m=>{const z=/^0/.test(m.value);return `<span class="pill" style="font-size:14px;padding:6px 14px">${esc(m.label)} <b style="color:${z?'var(--fg3)':'var(--blue)'}">${esc(m.value)}</b></span>`;}).join('')}</section>`;}
+if(s.dupes&&s.dupes.length){html+=`<div class="dupe">⚠️ 清单内查重：${esc(s.dupes.join('、'))} 在清单中重复出现，别买重 — 建议合并为一条。</div>`;}
 if(s.items.length){
-  html+=`<section><h2>待买 ${esc(s.items.length)} 条</h2><div class="list" id="list">${s.items.map(it=>`
+  html+=`<section><h2>待买条目</h2><div class="list" id="list">${s.items.map(it=>`
   <div class="row"><input type="checkbox" data-id="${it.id}" data-name="${esc(it.name)}" data-qty="${esc(it.quantity)}">
-  <div style="flex:1"><div class="name">${esc(it.name)} ${srcBadge(it)}</div><div class="note">×${esc(it.quantity)}${it.note?' · '+esc(it.note):''}</div></div>
-  <span class="pill">ID ${it.id}</span></div>`).join('')}</div></section>`;
-  html+=`<section><h2>采购闭环(买完回家)</h2>
-  <p class="lead" style="font-size:14px">勾选已买的条目后点「销项」;新买的物品走录入、已有物品补数量,AI 会引导完成闭环。</p>
-  <div class="actions">
-  <button class="copy green" onclick="checkoff()">销项(已买·勾选)</button>
-  <button class="copy" onclick="copyText('新物品录入(居家管家): 买回的新物品还没录入,帮我录入【新物品名称/数量/位置】')">新物品录入(1-1)</button>
-  <button class="copy ghost" onclick="copyText('补数量(居家管家): 给已有物品补数量【名称+补几个】')">已有物品补数量(3-3)</button>
+  <div style="flex:1"><div class="name">${esc(it.name)} ${srcBadge(it)}</div><div class="note">×${esc(it.quantity)}${it.note?' · '+esc(it.note):''}</div></div></div>`).join('')}</div></section>`;
+  html+=`<section><div class="actions">
+  <button class="copy" onclick="checkoff()">我买到了</button>
+  <button class="copy ghost" onclick="copyText('请加载「居家管家」技能,帮我录入新买的物品(唤醒词:录物品):\\n\\n  名  称: ___\\n  数  量(1): ___\\n  位  置: ___')">清单外新买的</button>
+  <button class="copy ghost" onclick="copyText('请加载「居家管家」技能,帮我给物品补数量(唤醒词:数量变更):\\n\\n  名  称: ___\\n  数  量(1): ___')">给已有物品补货</button>
+  <button class="copy ghost" onclick="copyText('请加载「居家管家」技能,帮我添加购物清单条目(唤醒词:购物清单):\\n\\n  物  品: ___\\n  数  量(1): ___\\n  周  期(每周/每月): ___')">记一笔要买的</button>
+  <button class="copy ghost" onclick="copyText('请加载「居家管家」技能,帮我检测缺货(唤醒词:缺货检测):\\n\\n  范  围(全屋): ___')">检测家里缺什么</button>
+  <button class="copy danger" onclick="copyText('请加载「居家管家」技能,帮我清理已买的购物清单条目(唤醒词:购物清单):')">清掉已买记录</button>
+  <button class="copy alt" onclick="copyText(buildDataText(window.__hmPayload))">复制数据</button>
+  <button class="copy alt" onclick="copyText(buildLogText(window.__hmPayload))">复制日志</button>
   </div></section>`;
 }else{
-  html+=`<section><div class="empty">清单是空的。<br><br>试试:<button class="copy" onclick="copyText('缺货检测(居家管家): 帮我检测家里缺什么')">缺货检测(自动填清单)</button> <button class="copy ghost" onclick="copyText('添加购物清单条目(居家管家): 【物品名+数量】')">手动添加</button></div></section>`;
+  html+=`<section><div class="empty">清单是空的。<br><br>试试:<button class="copy ghost" onclick="copyText('请加载「居家管家」技能,帮我检测缺货(唤醒词:缺货检测):\\n\\n  范  围(全屋): ___')">检测家里缺什么</button> <button class="copy ghost" onclick="copyText('请加载「居家管家」技能,帮我添加购物清单条目(唤醒词:购物清单):\\n\\n  物  品: ___\\n  数  量(1): ___\\n  周  期(每周/每月): ___')">记一笔要买的</button></div></section>`;
 }
 html+=remindersBlock(payload);
-html+=`<section><h2>操作</h2>${actionBar(payload,[
- {label:'添加条目',text:'添加购物清单条目(居家管家): 【物品名+数量】\n【例行周期(每周/每月,选填)】',kind:'ghost'},
- {label:'缺货检测',text:'缺货检测(居家管家): 帮我检测家里缺什么',kind:'ghost'},
- {label:'清空已完成',text:'清理购物清单(居家管家): 把已买的条目从清单移除',kind:'ghost'}
-])}</section>`;
 app.innerHTML=html;
 }
 function checkoff(){
 const sel=[...document.querySelectorAll('#list input:checked')];
-if(!sel.length){toast('请先勾选已买的条目');return;}
+if(!sel.length){toast('请先勾选买到的条目');return;}
 const ids=sel.map(c=>c.dataset.id).join(',');
-const names=sel.map(c=>c.dataset.name).join('、');
-copyText('销项已买(居家管家): 购物清单条目 ids='+ids+' 已买,标记为已买。条目:'+names);
+const items=sel.map(c=>c.dataset.name+'×'+c.dataset.qty).join('、');
+copyText('请加载「居家管家」技能,帮我标记购物清单条目已买到(唤醒词:购物清单):\n\n  条  目(已勾选): '+items+' [ids='+ids+']');
 }
 render();
 </script>

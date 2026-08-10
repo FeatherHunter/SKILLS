@@ -23,13 +23,13 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .suggest b{color:var(--blue)}
 .pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px;white-space:nowrap}
 .badge{display:inline-block;border-radius:999px;padding:2px 9px;margin:2px;font-size:12px;font-weight:700;white-space:nowrap}
-.badge.empty{background:#ffe8e6;color:var(--red)}.badge.low{background:#fff2df;color:var(--orange)}
-.legend{color:var(--fg3);font-size:13px;margin-bottom:10px}
+.badge.b-empty{background:#ffe8e6;color:var(--red)}.badge.low{background:#fff2df;color:var(--orange)}
+.legend{color:var(--fg3);font-size:12px;margin-bottom:10px;word-break:keep-all}
 .empty{padding:26px 0;text-align:center;color:var(--fg3)}
 .ok{color:var(--green)}.warn{color:var(--orange)}.bad{color:var(--red)}
-.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.green{background:var(--green)}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:9px 14px;font-weight:700;cursor:pointer;margin:6px 6px 0 0;font-size:14px}.copy.alt{background:#f2f2f7;color:#1d1d1f;border:1.5px solid var(--line)}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.green{background:var(--green)}.stage{display:inline-block;margin-left:8px;padding:2px 10px;border-radius:999px;background:#eef5ff;color:#0a63ce;font-size:12px;font-weight:700;vertical-align:middle}.copy.danger{background:#fff;color:var(--red);border:1.5px solid #ffb4ae}
 .actions{margin-top:14px;text-align:right}
-@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{flex-wrap:wrap}.row .name{flex:1 1 100%;order:-1}}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.eyebrow{font-size:11px;letter-spacing:.06em}.eyebrow .t{display:block;white-space:nowrap;margin-top:2px}.actions .copy.wide{grid-column:1/-1}.row{flex-wrap:wrap}.row .name{flex:1 1 100%;order:-1}.actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;text-align:left}.actions .copy{width:100%;margin:0;white-space:nowrap;font-size:13.5px;text-align:center;line-height:1.4;padding:11px 12px}.actions .copy.primary,.actions .copy:only-child{grid-column:1/-1;font-size:15px;padding:13px 16px}}
 </style>
 </head>
 <body>
@@ -44,34 +44,41 @@ function render(){
 let payload;
 try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
 const d=payload.data||{};const s=d.scene||{};
-let html=metaHeader(payload,{title:s.summary&&s.summary.title||'缺货检测',lead:s.lead||'检测范围:'+esc(s.scope||'全屋')+';勾选后一键进购物清单',stage:'查看'});
+window.__hmPayload=payload;
+let html=metaHeader(payload,{title:s.summary&&s.summary.title||'缺货检测',lead:s.lead||'勾选缺货物品加入购物清单;阈值来自囤货设置或默认估算',stage:'浏览结果'});
+if(s.summary&&s.summary.metrics&&s.summary.metrics.length){html+=`<section style="display:flex;gap:10px;flex-wrap:wrap;padding:16px 22px;margin-top:0">${s.summary.metrics.map(m=>{const z=/^0/.test(m.value);return `<span class="pill" style="font-size:14px;padding:6px 14px">${esc(m.label)} <b style="color:${z?'var(--fg3)':'var(--blue)'}">${esc(m.value)}</b></span>`;}).join('')}</section>`;}
 if(s.items.length){
-  html+=`<section><h2>缺货/不足 ${esc(s.items.length)} 件</h2><p class="legend">阈值来源:囤货设置 / 默认(未设置阈值时按默认 ${esc(s.threshold_default)} 估算并标注)</p><div class="list" id="list">${s.items.map(it=>`
+  html+=`<section><h2>缺货物品 ${esc(s.items.length)} 件</h2><p class="legend">阈值数字:蓝=已设置 · 灰=默认估算;建议买=买完保有 2 倍阈值缓冲</p><div class="list" id="list">${s.items.map(it=>`
   <div class="row"><input type="checkbox" data-id="${it.id}" data-name="${esc(it.name)}" data-suggest="${esc(it.suggest)}">
-  <div style="flex:1"><div class="name">${esc(it.name)} <span class="badge ${it.status==='空'?'empty':'low'}">${esc(it.status)}</span></div>
-  <div class="legend">${esc(it.category_name)} · 当前 ${esc(it.current)} · 阈值 ${esc(it.threshold)}(${esc(it.threshold_source)})</div></div>
-  <span class="suggest">建议买 <b>${esc(it.suggest)}</b></span>
-  <span class="pill">ID ${it.id}</span></div>`).join('')}</div>
+  <div style="flex:1"><div class="name">${esc(it.name)} <span class="badge ${it.status==='空'?'b-empty':'low'}">${esc(it.status)}</span></div>
+  <div class="legend">${esc(it.category_name)} · 当前 ${esc(it.current)} · 阈值 <b style="color:${it.threshold_source==='囤货设置'?'var(--blue)':'var(--fg3)'}" title="阈值来源:${esc(it.threshold_source)}">${esc(it.threshold)}</b></div></div>
+  <span class="suggest">建议买 <b>${esc(it.suggest)}</b></span></div>`).join('')}</div>
   <div class="actions">
-  <button class="copy green" onclick="toList()">一键进清单(勾选)</button>
-  <button class="copy ghost" onclick="copyText('忽略缺货(居家管家): 本次忽略缺货物品,不加入购物清单')">忽略本次</button>
+  <button class="copy primary" onclick="toList()">加入购物清单(勾选)</button>
+  <button class="copy ghost" onclick="copyText(P_SCOPE)">按范围检测</button>
+  <button class="copy ghost" onclick="copyText(P_THRESHOLD)">设置阈值</button>
+  <button class="copy alt" onclick="copyText(buildDataText(window.__hmPayload))">复制数据</button>
+  <button class="copy alt" onclick="copyText(buildLogText(window.__hmPayload))">复制日志</button>
   </div></section>`;
 }else{
   html+=`<section><div class="empty">🟢 库存充足,没有缺货物品。<br>范围:${esc(s.scope||'全屋')}</div></section>`;
+  html+=`<section><h2>更多功能</h2><div class="actions">
+  <button class="copy ghost" onclick="copyText(P_THRESHOLD)">设置阈值</button>
+  <button class="copy alt" onclick="copyText(buildDataText(window.__hmPayload))">复制数据</button>
+  <button class="copy alt" onclick="copyText(buildLogText(window.__hmPayload))">复制日志</button>
+  </div></section>`;
 }
 html+=remindersBlock(payload);
-html+=`<section><h2>操作</h2>${actionBar(payload,[
- {label:'换范围检测',text:'缺货检测(居家管家): 只检测某个分类【分类名】',kind:'ghost'},
- {label:'设置阈值',text:'囤货盘点(居家管家): 给我看看囤货,设置常用物品的阈值',kind:'ghost'}
-])}</section>`;
 app.innerHTML=html;
 }
+const P_SCOPE='请加载「居家管家」技能,帮我检测缺货(唤醒词:缺货检测):\n\n  范  围(全屋): ___';
+const P_THRESHOLD='请加载「居家管家」技能,帮我查看囤货并设置阈值(唤醒词:囤货盘点):\n\n  物  品: ___\n  阈  值(1): ___';
 function toList(){
 const sel=[...document.querySelectorAll('#list input:checked')];
 if(!sel.length){toast('请先勾选缺货物品');return;}
 const ids=sel.map(c=>c.dataset.id).join(',');
-const names=sel.map(c=>c.dataset.name).join('、');
-copyText('缺货进清单(居家管家): 把缺货物品加入购物清单,item ids='+ids+'。物品:'+names+' 按建议量加入');
+const items=sel.map(c=>c.dataset.name+'(建议买'+c.dataset.suggest+')').join('、');
+copyText('请加载「居家管家」技能,帮我将缺货物品加入购物清单(唤醒词:缺货检测):\n\n  条  目(按建议量): '+items+' [ids='+ids+']');
 }
 render();
 </script>

@@ -98,11 +98,12 @@ def main():
     try:
         if args.cmd == "list":
             data = ops.list_view(conn)
+            data["mode"] = "list"
             data["summary"] = {"title": "购物清单",
-                               "subtitle": "勾选销项;采购闭环:新物品走录入、已有物品补数量",
+                               "subtitle": "勾选已买条目即销项;例行条目到期会自动回到清单",
                                "metrics": [
                                    {"label": "待买", "value": f"{len(data['items'])} 条"},
-                                   {"label": "例行到期", "value": f"{len(data['routine_due'])} 条"},
+                                   {"label": "该补货的定期项", "value": f"{len(data['routine_due'])} 条"},
                                ]}
             reminders = [{"type": "warn", "text": f"例行采购已到期:{d['name']}({d['routine']}),已重新加入清单"}
                          for d in data["routine_due"]]

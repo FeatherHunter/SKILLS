@@ -64,6 +64,68 @@ class TestRecipeImport:
         assert tpl.exists(), f"模板不存在: {tpl}"
 
 
+class TestDbConfigImportSideEffect:
+    """测试 6 · #218 回归: import db_config 零副作用
+
+    任何只读命令 import db_config 时,不得创建 DB 文件或目录。
+    复现路径: db_config.py 模块级 mkdir + ensure_wal_mode() → sqlite3.connect 建空库。
+    """
+
+    def test_import_creates_nothing(self, tmp_path):
+        """import db_config 后,临时 DB 目录内无任何文件/目录"""
+        code = (
+            "import db_config; "
+            "print('EXISTS=' + str(db_config.DB_PATH.exists()))"
+        )
+        env = {"SKILLS_DB_PATH": str(tmp_path), "PATH": __import__('os').environ.get('PATH', '')}
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True, text=True, cwd=str(SCRIPT_DIR),
+            env=env
+        )
+        assert result.returncode == 0, f"import 失败: {result.stderr}"
+        assert "EXISTS=False" in result.stdout, f"import 即建库: {result.stdout}{result.stderr}"
+        leftovers = list(tmp_path.iterdir())
+        assert leftovers == [], f"import 创建了: {leftovers}"
+
+    def test_read_only_cli_check_creates_nothing(self, tmp_path):
+        """开始使用/cli.py check(只读)后,临时 DB 目录内无任何文件/目录"""
+        env = {
+            "SKILLS_DB_PATH": str(tmp_path),
+            "PATH": __import__('os').environ.get('PATH', ''),
+            "PYTHONIOENCODING": "utf-8",
+        }
+        result = subprocess.run(
+            [sys.executable, str(SCRIPT_DIR / "开始使用" / "cli.py"), "check"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            cwd=str(SCRIPT_DIR), env=env
+        )
+        assert result.returncode == 0, f"check 失败: {result.stderr}"
+        assert "db_exists\": false" in result.stdout or '"db_exists": false' in result.stdout, (
+            f"check 应报告 db_exists=false,实际: {result.stdout[:300]}"
+        )
+        leftovers = list(tmp_path.iterdir())
+        assert leftovers == [], f"check 创建了: {leftovers}"
+
+    def test_write_connection_still_creates_db(self, tmp_path):
+        """写连接 get_connection 仍正常建库(修复未破坏写链路)"""
+        code = (
+            "import db_config; "
+            "c = db_config.get_connection(); "
+            "print('JOURNAL=' + c.execute('PRAGMA journal_mode').fetchone()[0]); "
+            "print('EXISTS=' + str(db_config.DB_PATH.exists())); c.close()"
+        )
+        env = {"SKILLS_DB_PATH": str(tmp_path), "PATH": __import__('os').environ.get('PATH', '')}
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            capture_output=True, text=True, cwd=str(SCRIPT_DIR),
+            env=env
+        )
+        assert result.returncode == 0, f"写连接失败: {result.stderr}"
+        assert "JOURNAL=wal" in result.stdout, f"WAL 未启用: {result.stdout}"
+        assert "EXISTS=True" in result.stdout, f"get_connection 未建库: {result.stdout}"
+
+
 class TestRenderHelp:
     """测试 5 · render_help.py smoke test · 防注入回归"""
 

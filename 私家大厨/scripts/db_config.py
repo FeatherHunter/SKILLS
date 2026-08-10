@@ -39,19 +39,23 @@ def _fallback_db_dir():
     )
 
 def _find_db_path(skill_dir, db_filename):
-    """两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db"""
+    """两层查找DB路径：环境变量 SKILLS_DB_PATH > D:/.db
+
+    纯路径解析，不创建目录/文件（#218：import 零副作用）。
+    目录创建下沉到写连接函数（get_connection / ensure_wal_mode）。
+    """
     # 1. 环境变量（最高优先级 — 始终返回该路径，文件不存在时由调用方创建）
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:
-        p = Path(env_path) / db_filename
-        p.parent.mkdir(parents=True, exist_ok=True)
-        return p
+        return Path(env_path) / db_filename
     # 2. fallback: D:/.db（WSL 自动转 /mnt/d/.db/）
-    db_dir = _fallback_db_dir()
-    db_dir.mkdir(parents=True, exist_ok=True)
-    return db_dir / db_filename
+    return _fallback_db_dir() / db_filename
 
 DB_PATH = _find_db_path(SKILL_DIR, DB_FILENAME)
+
+def _ensure_db_dir():
+    """确保 DB 父目录存在（仅写操作前调用；只读命令不调用，保持零副作用）"""
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 
 def _configure_connection(conn):
     """配置数据库连接，启用并发支持"""
@@ -80,6 +84,7 @@ def get_db_path():
 
 def get_connection():
     """获取数据库连接（带并发支持）"""
+    _ensure_db_dir()
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
     _configure_connection(conn)
@@ -91,6 +96,7 @@ def get_connection_with_retry(max_retries=MAX_RETRY_ATTEMPTS, retry_delay=RETRY_
     当数据库被锁定时，自动重试指定次数。
     适用于高并发场景。
     """
+    _ensure_db_dir()
     for attempt in range(max_retries):
         try:
             conn = sqlite3.connect(str(DB_PATH), timeout=BUSY_TIMEOUT/1000)
@@ -169,9 +175,10 @@ def get_read_only_connection():
 def ensure_wal_mode():
     """确保数据库使用 WAL 模式
 
-    应在应用启动时调用一次。
+    应在应用启动时调用一次（显式初始化；不再在模块导入时自动执行，#218）。
     """
     try:
+        _ensure_db_dir()
         conn = sqlite3.connect(str(DB_PATH))
         conn.execute("PRAGMA journal_mode=WAL")
         result = conn.execute("PRAGMA journal_mode").fetchone()
@@ -198,5 +205,6 @@ def get_db_stats():
     except Exception as e:
         return {"error": str(e)}
 
-# 初始化：确保 WAL 模式
-ensure_wal_mode()
+# 注：不再在模块导入时自动执行 ensure_wal_mode()（#218 import 零副作用）。
+# WAL 模式由 _configure_connection() 在每次连接时设置；如需显式初始化，
+# 由 init_db.py / ops.init_payload() 显式调用 ensure_wal_mode()。

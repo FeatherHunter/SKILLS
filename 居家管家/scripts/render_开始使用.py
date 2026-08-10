@@ -14,6 +14,79 @@ def now_str():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def humanize(obj, depth=0):
+    """把 dict/list 转成人类可读文本(非 JSON): 每项一行, 嵌套缩进
+
+    08 规范 2026-08-10 修订: 复制数据禁默认 JSON, 改人类可读结构化文本。
+    dict → `键: 值`; 嵌套 dict/list 递归缩进; list 每元素一行。
+    """
+    pad = "  " * depth
+    lines = []
+    if isinstance(obj, dict):
+        for k, v in obj.items():
+            if v is None or v == "":
+                continue
+            if isinstance(v, dict):
+                if v:
+                    lines.append(f"{pad}{k}:")
+                    lines.append(humanize(v, depth + 1))
+            elif isinstance(v, list):
+                if v:
+                    lines.append(f"{pad}{k}:")
+                    for item in v:
+                        if isinstance(item, dict):
+                            lines.append(humanize(item, depth + 1))
+                        else:
+                            lines.append(f"{pad}  · {item}")
+            else:
+                lines.append(f"{pad}{k}: {v}")
+    elif isinstance(obj, list):
+        for item in obj:
+            if isinstance(item, dict):
+                lines.append(humanize(item, depth))
+            else:
+                lines.append(f"{pad}· {item}")
+    else:
+        lines.append(f"{pad}{obj}")
+    return "\n".join(lines)
+
+
+def build_human_copy(copy_data, copy_log, reminders):
+    """生成人类可读的复制数据 / 复制日志文本(08 规范修订 · 禁默认 JSON)
+
+    复制数据: 【场景名 · 数据快照】标题 + 场景/时间/对象 + payload 逐行
+    复制日志: 6 段逐行(①-⑥)
+    """
+    command_cn = copy_data.get("command_cn", "")
+    data_lines = [f"【{command_cn} · 数据快照】"]
+    if copy_data.get("scene_id"):
+        data_lines.append(f"场景: {copy_data['scene_id']}")
+    if copy_data.get("occurred_at"):
+        data_lines.append(f"时间: {copy_data['occurred_at']}")
+    if copy_data.get("target"):
+        data_lines.append(f"对象: {copy_data['target']}")
+    payload = copy_data.get("payload") or {}
+    body = humanize(payload)
+    if body:
+        data_lines.append("")
+        data_lines.append(body)
+    if reminders:
+        data_lines.append("")
+        data_lines.append("顺路提醒:")
+        for r in reminders:
+            data_lines.append(f"  · {r.get('text', '')}")
+
+    log_lines = [
+        f"① 场景: {copy_log.get('scene', '')}",
+        f"② 思考链: {copy_log.get('thinking', '')}",
+        f"③ 数据结构: {copy_log.get('data_structure', '')}",
+        f"④ 调用链: {copy_log.get('call_chain', '')}",
+        f"⑤ 时间戳: {copy_log.get('timestamp', '')}",
+        f"⑥ 异常: {copy_log.get('exception', '') or '无'}",
+    ]
+    return "\n".join(data_lines), "\n".join(log_lines)
+
+
 def build_envelope(data, scene_id, wake_word, command_cn, target=None,
                    copy_log=None, reminders=None):
     """组装标准 payload 信封(与 render_物品.build_envelope 同构)
@@ -40,6 +113,8 @@ def build_envelope(data, scene_id, wake_word, command_cn, target=None,
         "timestamp": f"{occurred} · {SKILL_VERSION}",
         "exception": log.get("exception", ""),
     }
+    copy_data_human, copy_log_human = build_human_copy(
+        copy_data, copy_log_full, reminders or [])
     return {
         "status": "ok",
         "data": {
@@ -54,6 +129,8 @@ def build_envelope(data, scene_id, wake_word, command_cn, target=None,
             "reminders": reminders or [],
             "copy_data": copy_data,
             "copy_log": copy_log_full,
+            "copy_data_human": copy_data_human,
+            "copy_log_human": copy_log_human,
         },
         "message": f"{command_cn}结果已生成",
     }
@@ -76,6 +153,13 @@ def emit_error(wake_word, command_cn, reason, key_data=None, suggest=None,
     render_page 只接受 status=ok 的信封;错误形态由 data.error 承载(正常流程形态)。
     """
     occurred = now_str()
+    copy_data = {"scene_id": "", "command_cn": command_cn, "occurred_at": occurred,
+                 "target": key_data or {}, "payload": {}}
+    copy_log_full = {"scene": f"{command_cn} · 唤醒词「{wake_word}」",
+                     "thinking": "", "data_structure": "", "call_chain": "",
+                     "timestamp": f"{occurred} · {SKILL_VERSION}",
+                     "exception": exception or reason}
+    copy_data_human, copy_log_human = build_human_copy(copy_data, copy_log_full, [])
     envelope = {
         "status": "ok",
         "data": {
@@ -83,17 +167,16 @@ def emit_error(wake_word, command_cn, reason, key_data=None, suggest=None,
                      "occurred_at": occurred, "skill_version": SKILL_VERSION},
             "error": {
                 "action": command_cn,
+                "wake_word": wake_word,
                 "reason": reason,
                 "key_data": key_data or {},
                 "suggest": suggest or "修正参数后重试",
             },
             "reminders": [],
-            "copy_data": {"scene_id": "", "command_cn": command_cn, "occurred_at": occurred,
-                          "target": key_data or {}, "payload": {}},
-            "copy_log": {"scene": f"{command_cn} · 唤醒词「{wake_word}」",
-                         "thinking": "", "data_structure": "", "call_chain": "",
-                         "timestamp": f"{occurred} · {SKILL_VERSION}",
-                         "exception": exception or reason},
+            "copy_data": copy_data,
+            "copy_log": copy_log_full,
+            "copy_data_human": copy_data_human,
+            "copy_log_human": copy_log_human,
         },
         "message": f"{command_cn}失败:{reason}",
     }

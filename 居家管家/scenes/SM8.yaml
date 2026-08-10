@@ -10,11 +10,7 @@
 #   → status 全部转 ""(可用)
 version: "2.0"
 
-domain:
-  key: setup
-  name: 开始使用
-  icon: "🚀"
-  sm: SM8
+domain: setup
 
 scenes:
   - id: "SM8-1"
@@ -63,8 +59,8 @@ scenes:
     prompt: |-
       请加载「居家管家」技能,帮我备份导出数据(唤醒词:备份导出):
 
-        操  作: _____________ (备份/导出)
-        格  式: _____________ (导出时:JSON/CSV,选填)
+        操  作(备份/导出): ______
+        格  式(导出时:JSON/CSV,选填): ______
     result: "备份(db+照片打包,保留 N 份)+ 导出(JSON/CSV),完成回执 + 备份历史 + 距上次备份天数。"
     html:
       template: 开始使用/backup_receipt.html

@@ -23,16 +23,31 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .ok{color:var(--green)}.warn{color:var(--orange)}.bad{color:var(--red)}.empty{color:var(--fg3)}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;font-weight:700;cursor:pointer;margin:10px 8px 0 0;font-size:14px}
 .copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
-.copy.copied{background:var(--green)}
-.actions{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
+.copy.danger{background:#fff;color:var(--red);border:1.5px solid var(--red)}
+/* ===== 参数表单(采集型 · 预填度 100% 可修改) ===== */
+.frm{display:flex;flex-direction:column;gap:8px;margin:14px 0 4px}
+.frm label{font-size:13px;font-weight:700;color:var(--fg2)}
+.frm input,.frm select{border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14.5px;font-family:inherit;background:#fff;color:var(--fg);width:100%;transition:border-color .15s,box-shadow .15s}
+.frm input:focus,.frm select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}
+.prompt-preview{background:#1d1d1f;color:#f5f5f7;border-radius:14px;padding:14px 16px;margin:12px 0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+/* ===== 按钮布局(08 规范 2026-08-10) ===== */
+.actions{margin-top:14px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.actions .btn-row{display:flex;gap:8px}
+.actions .btn-row .copy{flex:1;margin:0;text-align:center;white-space:normal}
 .steps{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px}
 .step{flex:1;min-width:110px;background:#f2f4f8;border-radius:12px;padding:10px 8px;text-align:center;font-size:12.5px;color:var(--fg2)}
 .step b{display:block;font-size:15px;margin-bottom:2px}
 .step.done{background:#e9f8ef;color:#1d7a3f}.step.done b{color:var(--green)}
 .step.cur{background:var(--soft);border:1.5px solid var(--blue);color:var(--blue)}
-.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(120px);background:#1d1d1f;color:#fff;border-radius:999px;padding:11px 22px;font-size:14px;font-weight:600;transition:.3s;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.25)}
-.toast.show{transform:translateX(-50%) translateY(0)}
-@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}.step{min-width:100%}}
+/* ===== Toast(「知道了」面板 · 与 help_center 同款) ===== */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+.toast-icon{font-size:20px;line-height:1;padding-top:1px;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}
+.toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}
+.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}.cards{grid-template-columns:1fr 1fr}.step{min-width:100%}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}.toast.show{transform:translateX(0) scale(1)}}
 </style>
 </head>
 <body>
@@ -45,14 +60,41 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 <div id="app"></div>
 </div>
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <div class="toast-icon" id="toastIcon">📋</div>
+  <div class="toast-body">
+    <div class="toast-title" id="toastTitle"></div>
+    <div class="toast-detail" id="toastDetail"></div>
+  </div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
+</div>
 <script>
 <!--SHARED-HELPERS-->
 var toastTimer=null;
-function toastText(t){var el=document.getElementById('toast');el.textContent=t;el.classList.add('show');if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show')},3000);}
+function toastShow(title,detail,icon){
+  var tEl=document.getElementById('toastTitle'),dEl=document.getElementById('toastDetail'),iEl=document.getElementById('toastIcon');
+  if(tEl)tEl.textContent=title;if(dEl)dEl.textContent=detail;if(iEl)iEl.textContent=icon||'📋';
+  var el=document.getElementById('toast');if(!el)return;el.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){el.classList.remove('show')},4500);
+}
 function fallbackCopy(text){try{var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(ta);ta.focus();ta.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){ok=false}document.body.removeChild(ta);return ok}catch(e){return false}}
 function safeWriteText(text){if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(text).then(function(){return true}).catch(function(){return fallbackCopy(text)})}return Promise.resolve(fallbackCopy(text))}
-function flashBtn(btn,msg,ms){var old=btn.textContent;btn.textContent=msg;btn.classList.add('copied');setTimeout(function(){btn.textContent=old;btn.classList.remove('copied')},ms||1800)}
+function copyThen(text,title,detail){
+  safeWriteText(text).then(function(ok){
+    if(ok){toastShow(title,detail,'📋');}
+    else{toastShow('复制失败','剪贴板不可用,请长按文本手动复制','⚠️');}
+  });
+}
+function copyFormPrompt(fieldId,buildFn,title,detail){
+  var el=document.getElementById(fieldId);
+  if(!el)return;
+  var v=el.value.trim();
+  if(!v){toastShow('请填写参数','该参数不能为空,填好后才能复制指令。','⚠️');el.focus();return;}
+  copyThen(buildFn(v),title,detail);
+}
+window.copyFormPrompt=copyFormPrompt;
+(function(){var c=document.getElementById('toastClose');if(c)c.addEventListener('click',function(){var el=document.getElementById('toast');if(el)el.classList.remove('show');if(toastTimer)clearTimeout(toastTimer)});})();
 var app=document.getElementById('app');
 function render(){
 var payload;try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
@@ -70,21 +112,22 @@ var stepsHtml=steps.length?('<div class="steps">'+steps.map(function(st,i){
   else if(st.status==='current')cls+=' cur';
   return '<div class="'+cls+'"><b>'+(i+1)+'</b>'+esc(st.title)+'</div>';
 }).join('')+'</div>'):'';
-var chooseBtn='<button class="copy" onclick="safeWriteText(\'我要导入恢复数据。【导入文件即将发送:】\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">选择文件(预告式)</button>';
+var chooseBtn='<div class="btn-row"><button class="copy" onclick="copyThen(\'请加载「居家管家」技能,帮我导入恢复数据(唤醒词:导入恢复):\\n\\n【导入文件即将发送:】\',\'文件指令已复制\',\'粘贴给 AI 即可进入等待态,随后发送文件。\')">选择文件(预告式)</button></div>';
 var chooseHtml='<section><h2>① 选择导入文件</h2><p>文件 = 旧机导出的 JSON(备份或导出均可)。点下方按钮复制预告式指令 → 发给 AI → AI 进入等待态 → 随后发送文件。</p><div class="actions">'+chooseBtn+'</div></section>';
 var previewHtml='';
 if(pv.valid!=null&&imp.imported==null){
   var conflict=arr(pv.conflicts);
   var compat=pv.valid;
+  var conflictSel='<div class="frm"><label for="frmMode">冲突处理(默认 跳过)</label><select id="frmMode"><option value="跳过">跳过同名</option><option value="覆盖">覆盖同名</option></select></div>';
   previewHtml='<section><h2>② 校验结果</h2>'
     +'<div class="row"><div class="k">文件版本</div><div class="v">'+esc(pv.schema_version||'')+' '+(compat?'<span class="ok">(兼容)</span>':'<span class="warn">(版本不一致,可尝试导入)</span>')+'</div></div>'
     +'<div class="row"><div class="k">物品总数</div><div class="v">'+esc(String(pv.items_total||0))+'</div></div>'
     +'<div class="row"><div class="k">同名冲突</div><div class="v">'+esc(String(pv.duplicate_count||0))+'</div></div>'
     +'<div class="row"><div class="k">新增</div><div class="v">'+esc(String(pv.new_count||0))+'</div></div></section>'
     +(conflict.length?'<section><h2>③ 冲突预览(同名物品)</h2>'+conflict.slice(0,10).map(function(c){return '<span class="pill">'+esc(c.name)+'</span>'}).join('')+(conflict.length>10?'<p class="empty">…等 '+conflict.length+' 件</p>':'')+'</section>':'')
-    +'<section><h2>④ 确认导入</h2><p>导入前会自动备份现有库(安全网);导入失败自动回滚,现有数据不变。</p><div class="actions">'
-    +'<button class="copy" onclick="safeWriteText(\'确认导入:'+esc(pv.items_total||0)+' 件,'+esc(pv.duplicate_count||0)+' 件同名跳过(冲突处理:跳过)。导入前自动备份。\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">确认导入(同名跳过)</button>'
-    +'<button class="copy ghost" onclick="safeWriteText(\'确认导入:'+esc(pv.items_total||0)+' 件,同名覆盖(冲突处理:覆盖)。导入前自动备份。\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">确认导入(同名覆盖)</button>'
+    +'<section><h2>④ 确认导入</h2><p>导入前会自动备份现有库(安全网);导入失败自动回滚,现有数据不变。</p>'+conflictSel
+    +'<div class="actions">'
+    +'<div class="btn-row"><button class="copy" onclick="copyFormPrompt(\'frmMode\',function(md){return \'请加载「居家管家」技能,帮我导入恢复数据(唤醒词:导入恢复):\\n\\n  冲突处理: \'+md+\'\\n  导入前备份: 是\'},\'导入指令已复制\',\'粘贴给 AI 即可确认导入。\')">确认导入(复制指令)</button></div>'
     +'</div></section>';
 }
 var doneHtml='';
@@ -95,12 +138,14 @@ if(imp.imported!=null){
     +'<div class="row"><div class="k">覆盖</div><div class="v">'+esc(String(imp.overwritten||0))+'</div></div>'
     +(imp.backup_file?'<div class="row"><div class="k">导入前备份</div><div class="v">'+esc(imp.backup_file)+'</div></div>':'')
     +'<div class="actions">'
-    +(imp.backup_file?'<button class="copy ghost" onclick="safeWriteText(\'请撤销刚才的导入,用导入前备份恢复:\'+this.dataset.f+\'。\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))" data-f="'+esc(imp.backup_file)+'">撤销导入(恢复导入前状态)</button>':'')
+    +(imp.backup_file?'<div class="btn-row"><button class="copy ghost" onclick="copyThen(\'请加载「居家管家」技能,帮我导入恢复数据(唤醒词:导入恢复):\\n\\n  操  作: 撤销导入\\n  恢复文件: \'+this.dataset.f, \'撤销指令已复制\',\'粘贴给 AI 即可用导入前备份恢复。\')" data-f="'+esc(imp.backup_file)+'">撤销导入(恢复导入前状态)</button></div>':'')
     +'</div></section>';
 }
 if(err.action){app.innerHTML='<section><h2 class="bad">'+esc(err.action)+'失败</h2><p class="bad" style="font-weight:600">'+esc(err.reason||'')+'</p><p>'+esc(err.suggest||'')+'</p></section>';return;}
-var copyDataBtn='<button class="copy alt" onclick="safeWriteText(\''+JSON.stringify(cd).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">复制数据</button>';
-var copyLogBtn='<button class="copy ghost" onclick="safeWriteText(\''+JSON.stringify(cl).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">复制日志</button>';
+var copyDataBtn='<div class="btn-row"><button class="copy alt" onclick="copyThen(copyDataText,\'数据已复制\',\'人类可读数据快照:场景/时间/对象/载荷逐行,可直接阅读或粘贴给 AI。\')">复制数据</button></div>';
+var copyLogBtn='<div class="btn-row"><button class="copy ghost" onclick="copyThen(copyLogText,\'日志已复制\',\'6 段日志:场景/思考链/数据结构/调用链/时间戳/异常,可发给开发者排障。\')">复制日志</button></div>';
+window.copyDataText=d.copy_data_human||JSON.stringify(cd);
+window.copyLogText=d.copy_log_human||JSON.stringify(cl);
 app.innerHTML=''+stepsHtml+chooseHtml+previewHtml+doneHtml+'<section><h2>动作</h2><div class="actions">'+copyDataBtn+copyLogBtn+'</div></section>';
 }
 render();

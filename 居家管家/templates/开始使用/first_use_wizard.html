@@ -188,8 +188,10 @@ if(stage==='done'||stage==='already'){
   frmHtml='<div class="frm"><label for="frmGuide">录入引导(可改)</label><input id="frmGuide" type="text" value="'+esc(guideInit)+'" oninput="updatePreview(\'frmGuide\',null,buildGuidePrompt)"></div>';
   nextBtn='<button class="copy" onclick="copyFormPrompt(\'frmGuide\',buildGuidePrompt,\'录入引导已复制\',\'粘贴给 AI 即可开始录入第一批物品。\')">开始录入第一批(复制)</button>';
 }
-var copyDataBtn='<button class="copy alt" onclick="copyThen(this.dataset.d,\'数据已复制\',\'结构化 JSON 5 段:场景/指令/时间/对象/载荷,可粘贴给 AI 或存档。\')" data-d="'+JSON.stringify(cd).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制数据</button>';
-var copyLogBtn='<button class="copy ghost" onclick="copyThen(this.dataset.d,\'日志已复制\',\'6 段日志:场景/思考链/数据结构/调用链/时间戳/异常,可发给开发者排障。\')" data-d="'+JSON.stringify(cl).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制日志</button>';
+var copyDataBtn='<button class="copy alt" onclick="copyThen(copyDataText,\'数据已复制\',\'人类可读数据快照:场景/时间/对象/载荷逐行,可直接阅读或粘贴给 AI。\')">复制数据</button>';
+var copyLogBtn='<button class="copy ghost" onclick="copyThen(copyLogText,\'日志已复制\',\'6 段日志:场景/思考链/数据结构/调用链/时间戳/异常,可发给开发者排障。\')">复制日志</button>';
+window.copyDataText=d.copy_data_human||JSON.stringify(cd);
+window.copyLogText=d.copy_log_human||JSON.stringify(cl);
 var promptPreview='';
 if(frmHtml){
   var pf=(stage==='pending'||stage==='need_path')&&!dbEnvSet?'frmDir':(stage==='done'||stage==='already')?'frmGuide':'frmPath';

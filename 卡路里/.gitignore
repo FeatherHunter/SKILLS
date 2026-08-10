@@ -42,3 +42,6 @@ calorie_html/*.html
 
 # 个人笔记(不允许参考/提交 · 2026-08-02)
 .个人笔记不允许参考/
+
+# 根目录一次性调试脚本(.scratch_*.py/.json,与 .scratch/ 同性质不入库)
+.scratch_*

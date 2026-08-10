@@ -46,9 +46,10 @@ def _summary_line(scenario, data):
         return data['sample_warning']
     if c.get('delta_kg') is None:
         return '对比完成'
-    delta = f"{c['delta_kg']:+.1f}" if isinstance(c['delta_kg'], float) else f"{c['delta_kg']}"
-    speed = f",{c['speed']}" if c.get('speed') and c['speed'] != '—' else ''
-    return f"两段对比:Δ{delta} kg,{c['direction']}{speed}"
+    # 2026-08-10 #43 审查:精度统一两位(与箭头一致) + 标点「·」分隔
+    delta = f"{c['delta_kg']:+.2f}" if isinstance(c['delta_kg'], float) else f"{c['delta_kg']}"
+    speed = f" · {c['speed']}" if c.get('speed') and c['speed'] != '—' else ''
+    return f"两段对比：Δ{delta} kg · {c['direction']}{speed}"
 
 
 def main():

@@ -1,12 +1,13 @@
 ﻿#!/usr/bin/env python3
 """健身计划 HTML 渲染器(2026-08-02 重构:多模式 · ticket #6)
 
-对应 SKILL.md 唤醒词:看完整计划 / 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率
+对应 SKILL.md 唤醒词:看完整计划 / 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看某天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率
 
 模式(--mode):
   full      全计划视图(原行为;--week N 可聚焦单周)
   week      单周视图(7 天表 + 完成度;--week N)
   today     看今天练什么(动作/组数/重量 + 实时完成进度,接 exercise_log)
+  day       看某天练什么(指定日期;--start <YYYY-MM-DD>,默认今天;复用 today 组装逻辑 · #255)
   overview  看计划概览(KPI + 每周完成率列表)
   vs        看计划 vs 实际(完成度/偏差/动作级对比表;--start/--end)
   completion 看计划完成率(每周完成率折线)
@@ -162,23 +163,35 @@ def build_week_data(conn, week_number):
 
 def build_today_data(conn):
     """今日视图:动作/组数/重量 + 实时完成进度"""
+    data = _build_day_data(conn, date.today())
+    if data:
+        data['mode'] = 'today'
+    return data
+
+
+def build_day_data(conn, target_date):
+    """#255: 指定日期视图(复用 today 组装逻辑; 无日期默认今天)"""
+    return _build_day_data(conn, target_date)
+
+
+def _build_day_data(conn, target_date):
+    """按日期组装训练日数据(2026-08-10 #255: today 与 day 共用)"""
     config = _load_config(conn)
     if not config:
         return None
-    today = date.today()
-    week_number = _calc_week_number(today, config)
+    week_number = _calc_week_number(target_date, config)
     c = conn.cursor()
     if week_number is None:
         return {
-            'mode': 'today',
+            'mode': 'day',
             'config': config,
-            'date': today.isoformat(),
+            'date': target_date.isoformat(),
             'unstarted': True,
             'start_date': config['start_date'],
             'sessions': [],
             'completion': None,
         }
-    dow = today.isoweekday()
+    dow = target_date.isoweekday()
     c.execute('''
         SELECT session_index, session_label, time_start, time_end, is_rest_day, total_sets, movements
         FROM workout_plans
@@ -198,7 +211,7 @@ def build_today_data(conn):
             done = 0
             if plan_sets:
                 c.execute("SELECT COUNT(*) FROM exercise_log WHERE date=? AND exercise_type=?",
-                          (today.isoformat(), m.get('name', '')))
+                          (target_date.isoformat(), m.get('name', '')))
                 done = c.fetchone()[0]
                 total_done += min(done, plan_sets)
             enriched.append({
@@ -228,9 +241,9 @@ def build_today_data(conn):
             total_done += m['sets_done']
     is_rest = all(s['is_rest_day'] for s in sessions) if sessions else False
     return {
-        'mode': 'today',
+        'mode': 'day',
         'config': config,
-        'date': today.isoformat(),
+        'date': target_date.isoformat(),
         'plan_week': week_number,
         'is_rest': is_rest,
         'unstarted': False,
@@ -478,6 +491,7 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None,
             'full': lambda: build_full_data(conn, focus_week=week),
             'week': lambda: build_week_data(conn, week),
             'today': lambda: build_today_data(conn),
+            'day': lambda: build_day_data(conn, date.fromisoformat(start_date) if start_date else date.today()),
             'overview': lambda: build_overview_data(conn),
             'vs': lambda: build_vs_data(conn, start_date, end_date),
             'completion': lambda: build_completion_data(conn),
@@ -493,6 +507,21 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None,
     if data is None:
         return "尚未制定健身计划。"
 
+    # 2026-08-10 #255:统一注入 meta(排障日志 + 底部数据源行依赖)
+    scene_names_inner = {
+        'full': '看完整计划', 'week': '看周计划', 'today': '看今天练什么', 'day': '看某天练什么',
+        'overview': '看计划概览', 'vs': '看计划vs实际', 'completion': '看计划完成率',
+        'missed': '看未完成训练', 'movement': '看动作完成率',
+    }
+    from render_crud_view import _quote_arg
+    data['meta'] = {
+        'generated_at': date.today().isoformat(),
+        'wake_word': scene_names_inner.get(mode, '健身计划'),
+        'source': 'workout_plans',
+        'chain': '(未注入)',
+        'render_cmd': 'python scripts/render_workout_plan.py ' + ' '.join(_quote_arg(a) for a in sys.argv[1:]),
+    }
+
     if include_review:
         conn2 = _get_db()
         try:
@@ -506,7 +535,7 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None,
         return output_path
 
     scene_names = {
-        'full': '看完整计划', 'week': '看周计划', 'today': '看今天练什么',
+        'full': '看完整计划', 'week': '看周计划', 'today': '看今天练什么', 'day': '看某天练什么',
         'overview': '看计划概览', 'vs': '看计划vs实际', 'completion': '看计划完成率',
         'missed': '看未完成训练', 'movement': '看动作完成率',
     }
@@ -520,10 +549,10 @@ def main():
         description='渲染健身计划 HTML(多模式 · 2026-08-02 ticket #6)'
     )
     p.add_argument('-m', '--mode', default='full',
-                   choices=['full', 'week', 'today', 'overview', 'vs', 'completion', 'missed', 'movement'],
-                   help='渲染模式(full=全计划 / week=单周 / today=今日 / overview=概览 / vs=对比 / completion=完成率 / missed=漏练 / movement=动作榜)')
+                   choices=['full', 'week', 'today', 'day', 'overview', 'vs', 'completion', 'missed', 'movement'],
+                   help='渲染模式(full=全计划 / week=单周 / today=今日 / day=指定日期 / overview=概览 / vs=对比 / completion=完成率 / missed=漏练 / movement=动作榜)')
     p.add_argument('-w', '--week', type=int, help='周次(week 模式必用;full 模式可聚焦)')
-    p.add_argument('--start', help='开始日期 YYYY-MM-DD(vs 模式)')
+    p.add_argument('--start', help='开始日期 YYYY-MM-DD(vs 模式) 或指定日期(day 模式)')
     p.add_argument('--end', help='结束日期 YYYY-MM-DD(vs 模式)')
     p.add_argument('--days', type=int, help='回溯天数(missed/movement 默认 28)')
     p.add_argument('--review', action='store_true', help='打开复盘 section(full 模式)')

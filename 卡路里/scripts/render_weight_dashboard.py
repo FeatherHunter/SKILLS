@@ -74,18 +74,23 @@ def build_overview():
     vol_cls = 'good' if std < 0.3 else ('warn' if std < 0.5 else 'bad')
     # 7 天趋势点
     trend_points = [{'date': r[0], 'kg': r[1]} for r in week]
-    summary = f"当前 {current}kg · 近 7 天 {delta_7d:+.1f}kg" if delta_7d is not None else f"当前 {current}kg"
+    # 2026-08-10 #43 审查:0 值显示 "0.0" 不带正负号(+0.0 视觉误导)
+    def _d(v):
+        return '0.0' if (v is not None and abs(v) < 0.05) else f'{v:+.1f}'
+    summary = f"当前 {current}kg · 近 7 天 {_d(delta_7d)}kg" if delta_7d is not None else f"当前 {current}kg"
     if diff_min is not None:
-        summary += f" · 距历史最低 {diff_min:+.1f}kg"
+        summary += f" · 距历史最低 {_d(diff_min)}kg"
     if diff_target is not None:
-        summary += f" · 距目标 {diff_target:+.1f}kg"
+        summary += f" · 距目标 {_d(diff_target)}kg"
     summary += f" · 波动{vol_level}"
     kpis = [
         {'label': '当前体重', 'value': f'{current} kg', 'extra': f'{rows[-1][0]}'},
-        {'label': '近 7 天变化', 'value': (f'{delta_7d:+.1f} kg' if delta_7d is not None else '—'),
-         'extra': 'Δ7 天', 'cls': 'good' if (delta_7d or 0) < 0 else 'bad'},
-        {'label': '距历史最低', 'value': f'{diff_min:+.1f} kg', 'extra': f'最低 {min_kg}kg({min_date[-5:]})'},
-        {'label': '距目标', 'value': (f'{diff_target:+.1f} kg' if diff_target is not None else '—'),
+        {'label': '近 7 天变化',
+         'value': ('—' if delta_7d is None else ('0.0 kg' if abs(delta_7d) < 0.05 else f'{delta_7d:+.1f} kg')),
+         'extra': 'Δ7 天',
+         'cls': '' if (delta_7d is None or abs(delta_7d) < 0.05) else ('good' if delta_7d < 0 else 'bad')},
+        {'label': '距历史最低', 'value': (_d(diff_min) + ' kg'), 'extra': f'最低 {min_kg} kg ({min_date[-5:]})'},
+        {'label': '距目标', 'value': ((_d(diff_target) + ' kg') if diff_target is not None else '—'),
          'extra': f'目标 {goal}kg' if goal else '未设目标'},
         {'label': '波动等级', 'value': vol_level, 'extra': f'σ {std}', 'cls': vol_cls},
     ]
@@ -121,8 +126,9 @@ def build_today():
         'subtitle': f'{today.isoformat()} · 今日记录',
         'kpis': [
             {'label': '今日体重', 'value': f'{current} kg', 'extra': today.isoformat()},
-            {'label': '较上次', 'value': (f'{delta_last:+.1f} kg' if delta_last is not None else '—'),
-             'cls': 'bad' if (delta_last or 0) > 0 else 'good'},
+            {'label': '较上次',
+             'value': ('—' if delta_last is None else ('0.0 kg' if abs(delta_last) < 0.05 else f'{delta_last:+.1f} kg')),
+             'cls': '' if (delta_last is None or abs(delta_last) < 0.05) else ('bad' if delta_last > 0 else 'good')},
         ],
         'today_kg': current,
         'today_date': today.isoformat(),

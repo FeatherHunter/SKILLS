@@ -54,15 +54,22 @@ def _rows(start, end):
 def _window(t):
     today = date.today()
     if t == 'week':
+        # 2026-08-10 #43 审查:周复盘显示完整自然周(周一起),不截断到今天
         monday = today - timedelta(days=today.weekday())
-        return monday.isoformat(), today.isoformat(), '本周', '上周'
+        return monday.isoformat(), (monday + timedelta(days=6)).isoformat(), '本周', '上周'
     if t == 'month':
-        return today.replace(day=1).isoformat(), today.isoformat(), '本月', '上月'
+        last = (today.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        return today.replace(day=1).isoformat(), last.isoformat(), '本月', '上月'
     if t == '90d':
         return (today - timedelta(days=89)).isoformat(), today.isoformat(), '最近 90 天', '上一段 90 天'
     if t == 'year':
-        return f'{today.year}-01-01', today.isoformat(), '今年', '去年'
+        return f'{today.year}-01-01', f'{today.year}-12-31', '今年', '去年'
     raise ValueError(f'未知窗口 {t}')
+
+
+def _d(v):
+    """2026-08-10 #43 审查:0 值显示 0.0 不带正负号(+0.0 视觉误导)"""
+    return '0.0' if (v is not None and abs(v) < 0.05) else f'{v:+.1f}'
 
 
 def _milestones(rows):
@@ -89,7 +96,7 @@ def build_review(review_type, start=None, end=None):
         ms = _milestones(rows)
         if not ms:
             return None, '尚未达成任何减重里程碑'
-        summary = f'共达成 {len(ms)} 个里程碑:' + '、'.join(f"{m['name']}({m['date']})" for m in ms[:3])
+        summary = f'共达成 {len(ms)} 个里程碑:' + '、'.join(f"{m['name']} ({m['date']})" for m in ms[:3])
         return {
             'type': 'milestones',
             'title': '看里程碑回溯',
@@ -138,20 +145,22 @@ def build_review(review_type, start=None, end=None):
     title = {'week': '体重复盘（本周）', 'month': '体重复盘（本月）', '90d': '体重复盘（最近 90 天）',
              'year': '体重复盘（今年）', 'range': '体重复盘（自定义时间）'}[review_type]
     kpis = [
-        {'label': '期间变化', 'value': f'{delta:+.1f} kg', 'extra': f'{rows[0][1]} → {rows[-1][1]}',
-         'cls': 'good' if delta < 0 else 'bad'},
+        {'label': '期间变化', 'value': _d(delta) + ' kg',
+         'extra': f'{rows[0][1]} → {rows[-1][1]}',
+         'cls': '' if (delta is None or abs(delta) < 0.05) else ('good' if delta < 0 else 'bad')},
         {'label': '期间均值', 'value': f'{avg} kg', 'extra': f'{len(rows)} 条'},
     ]
     if month:
         kpis.append({'label': '年度均值', 'value': f'{avg} kg', 'extra': f'{len(monthly)} 个月'})
         kpis.append({'label': '月份数', 'value': str(len(monthly)), 'extra': '有记录'})
     else:
-        kpis.append({'label': f'vs {prev_label}', 'value': (f'{vs_last:+.1f} kg' if vs_last is not None else '—'),
-                     'extra': '均值差'})
-        kpis.append({'label': '记录天数', 'value': str(len(rows)), 'extra': f'{cur_s} ~ {cur_e}'})
-    summary = f'{cur_label}变化 {delta:+.1f} kg(均值 {avg}kg)'
+        kpis.append({'label': f'vs {prev_label}', 'value': (_d(vs_last) + ' kg') if vs_last is not None else '—',
+                     'extra': '均值差',
+                     'cls': '' if (vs_last is None or abs(vs_last) < 0.05) else ('bad' if vs_last > 0 else 'good')})
+        kpis.append({'label': '记录天数', 'value': str(len(rows)), 'extra': f'覆盖 {days} 天'})
+    summary = f'{cur_label}变化 {_d(delta)} kg (均值 {avg}kg)'
     if vs_last is not None:
-        summary += f' · vs {prev_label} 均值 {vs_last:+.1f}kg'
+        summary += f' · vs {prev_label} 均值 {_d(vs_last)}kg'
     return {
         'type': review_type,
         'title': title,

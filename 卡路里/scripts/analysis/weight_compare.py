@@ -447,7 +447,7 @@ def scenario_e3(delta_kg):
         return None, f'未达成减重 {delta_kg}kg 里程碑(当前距历史最高已减 {diff}kg)'
     elapsed = max(1, (date.fromisoformat(rows[-1][0]) - date.fromisoformat(hit[0])).days)
     rate = round((current - hit[1]) / elapsed, 3)
-    # 2026-08-10 #43 审查:轨迹降采样(最多 10 点)+ 跨年带年份(YY-MM-DD),消除「07-10→08-11 只隔一天」歧义与硬截断切半
+    # 2026-08-10 #43 审查:轨迹改为结构化 spark 数据(模板渲染 SVG 迷你折线,取代文本长串)
     pts = [r for r in rows if r[0] >= hit[0]]
     cross_year = len(pts) > 1 and pts[0][0][:4] != pts[-1][0][:4]
     def _fmt(d):
@@ -455,10 +455,9 @@ def scenario_e3(delta_kg):
     if len(pts) > 10:
         step = (len(pts) - 1) / 9
         idxs = sorted({int(i * step) for i in range(10)} | {len(pts) - 1})
-        sel = [pts[i] for i in idxs]
-        trajectory = ' → '.join(f"{_fmt(r[0])}:{r[1]}" for r in sel) + ' …'
-    else:
-        trajectory = ' → '.join(f"{_fmt(r[0])}:{r[1]}" for r in pts)
+        pts = [pts[i] for i in idxs]
+    spark = [{'d': _fmt(r[0]), 'kg': r[1]} for r in pts]
+    trajectory = f"{hit[1]} → {current} kg · {elapsed} 天"
     return {
         'seg_a': {'label': f'减重 {delta_kg}kg 那天', 'range': hit[0], 'count': 1,
                   'avg': hit[1], 'start_kg': hit[1], 'end_kg': hit[1],
@@ -472,7 +471,7 @@ def scenario_e3(delta_kg):
         'extra_rows': [
             {'label': '用时', 'value': f'{elapsed} 天'},
             {'label': '期间速率', 'value': f'{rate:.3f} kg/天'},
-            {'label': '轨迹', 'value': trajectory},
+            {'label': '体重轨迹', 'value': trajectory, 'spark': spark},
         ],
     }, None
 

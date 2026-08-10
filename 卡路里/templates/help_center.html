@@ -34,6 +34,7 @@ body {
   padding-bottom: 48px;
 }
 .container { max-width: 860px; margin: 0 auto; padding: 28px 20px 40px; }
+.hero .container { padding: 0; } /* hero 卡内间距由 .hero padding 负责(避免继承页面底部 60px safe-area) */
 
 /* === HERO(对齐居家管家:大圆角渐变卡片 + 步骤引导) === */
 .hero {
@@ -46,12 +47,6 @@ body {
   line-height: 1.2;
   display: flex; align-items: center; gap: 6px;
   margin: 0 0 8px;
-}
-.hero .sub {
-  color: var(--fg2);
-  font-size: 15px; font-weight: 400;
-  margin: 0 0 4px;
-  line-height: 1.4;
 }
 .hero-steps { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .hero-steps .step {
@@ -81,8 +76,9 @@ body {
   padding: 8px 0 6px;
   margin-bottom: 6px;
 }
+.search-box { position: relative; }
 .search {
-  width: 100%; padding: 10px 38px 10px 16px;
+  width: 100%; padding: 10px 16px;
   border: 1px solid var(--line); border-radius: 999px;
   background: #fff;
   font: inherit; font-size: 14px; outline: none;
@@ -90,9 +86,12 @@ body {
   -webkit-appearance: none;
 }
 .search:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.15); }
-.search-meta {
-  font-size: 12.5px; color: var(--fg3); margin-top: 4px; padding: 0 4px;
-  display: flex; justify-content: space-between;
+/* 搜索命中反馈(仅搜索时有词时显示 · 不占常驻高度) */
+.hit-count {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 11.5px; color: var(--blue2); background: var(--soft);
+  padding: 2px 10px; border-radius: 999px;
+  display: none; pointer-events: none; white-space: nowrap;
 }
 
 /* === L1 分类(cat-block · 对齐居家管家 module:16px 白卡) === */
@@ -324,11 +323,10 @@ footer {
 /* === MOBILE (≤600px · 对齐居家管家 375px 验收) === */
 @media (max-width: 600px) {
   body { font-size: 13px; }
-  .container { padding: 18px 12px 60px; }
-  .hero { padding: 18px 18px; }
+  .container { padding: 12px 12px 60px; }
+  .hero { padding: 12px 16px; margin-bottom: 12px; }
   .hero h1 { font-size: 24px; }
-  .hero .sub { font-size: 13px; }
-  .hero .stats { gap: 8px; font-size: 11.5px; }
+  .hero .stats { display: none; }
   .hero-steps { gap: 5px; width: 100%; }
   .hero-steps .step { font-size: 11.5px; padding: 4px 7px; }
   .hero-steps .arrow { font-size: 12px; margin: 0 -3px; }
@@ -370,17 +368,15 @@ footer {
 
 <div class="hero"><div class="container">
   <h1>📚 卡路里 · 唤醒词速查台</h1>
-  <div class="sub">💡 点 ▸ 类别 → 子功能 → 场景 → 详情 → 复制 prompt</div>
   <div class="hero-steps"><span class="step">🔍 找场景</span><span class="arrow">→</span><span class="step">📋 复制 prompt</span><span class="arrow">→</span><span class="step">💬 发给 AI</span></div>
   <div class="stats" id="heroStats"></div>
 </div></div>
 
 <div class="container">
 <div class="search-wrap">
-  <input class="search" id="searchInput" placeholder="🔍 搜索场景名 / 唤醒词 / 分类" autocomplete="off" />
-  <div class="search-meta">
-    <span id="searchCount"></span>
-    <span id="dataSource"></span>
+  <div class="search-box">
+    <input class="search" id="searchInput" placeholder="🔍 搜索场景名 / 唤醒词 / 分类" autocomplete="off" />
+    <span class="hit-count" id="hitCount"></span>
   </div>
 </div>
 <main id="mainContent"><div class="empty">加载中…</div></main>
@@ -516,8 +512,7 @@ function render() {
     `<span><b>${summary.total_scenes}</b> 场景</span>` +
     `<span><b>${summary.total_prompts}</b> prompt</span>`;
 
-  // data source footer
-  document.getElementById('dataSource').textContent = META.source ? `源:${META.source}` : '';
+  // footer
   document.getElementById('footer').textContent = META.rendered_at
     ? `卡路里 · 唤醒词速查台 · 渲染时间:${META.rendered_at}`
     : '卡路里 · 唤醒词速查台';
@@ -597,6 +592,13 @@ function bindSearch() {
   if (!input) return;
   input.addEventListener('input', () => {
     const q = input.value.trim().toLowerCase();
+    if (!q) {
+      // 清空:恢复目录视图(全部显示 + 折叠恢复) + 隐藏命中计数
+      document.querySelectorAll('.scene-card,.sub-block,.cat-block').forEach(el => el.classList.remove('hidden'));
+      document.querySelectorAll('.cat-block,.sub-block').forEach(el => { el.open = false; });
+      updateSearchCount();
+      return;
+    }
     const cards = document.querySelectorAll('.scene-card');
     let matched = 0;
     cards.forEach(card => {
@@ -625,12 +627,13 @@ function bindSearch() {
 }
 
 function updateSearchCount(matched) {
-  const el = document.getElementById('searchCount');
+  const el = document.getElementById('hitCount');
   if (!el) return;
   const total = DATA && DATA.data ? DATA.data.scenes.length : 0;
   if (matched === undefined) {
-    el.textContent = `共 ${total} 场景`;
+    el.style.display = 'none';
   } else {
+    el.style.display = 'inline-flex';
     el.textContent = matched === 0 ? '无匹配' : `匹配 ${matched} / ${total}`;
   }
 }

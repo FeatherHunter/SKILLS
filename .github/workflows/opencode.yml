@@ -16,6 +16,10 @@ jobs:
       pull-requests: write
       issues: write
     steps:
+      - name: Add Git Bash to PATH (Windows self-hosted)
+        if: runner.os == 'Windows'
+        run: echo "C:\Program Files\Git\bin;C:\Program Files\Git\usr\bin" >> $env:GITHUB_PATH
+
       - name: Checkout repository
         uses: actions/checkout@v6
         with:

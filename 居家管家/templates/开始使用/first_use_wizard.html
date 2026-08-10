@@ -29,15 +29,28 @@ h3{font-size:15px;margin:14px 0 8px;color:var(--fg2)}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;font-weight:700;cursor:pointer;margin:10px 8px 0 0;font-size:14px}
 .copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
 .copy.copied{background:var(--green)}
+/* ===== 参数表单(采集型 · 预填度 100% 可修改) ===== */
+.frm{display:flex;flex-direction:column;gap:8px;margin:14px 0 4px}
+.frm label{font-size:13px;font-weight:700;color:var(--fg2)}
+.frm input,.frm select{border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;font-size:14.5px;font-family:inherit;background:#fff;color:var(--fg);width:100%;transition:border-color .15s,box-shadow .15s}
+.frm input:focus,.frm select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}
+.prompt-preview{background:#1d1d1f;color:#f5f5f7;border-radius:14px;padding:14px 16px;margin:12px 0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.7;white-space:pre-wrap;word-break:break-word}
+.prompt-preview .ph{color:#ffd60a;font-weight:600}
 .actions{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
 .env-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
 .env-card{background:#fafbfd;border-radius:14px;padding:14px}
 .env-card b{display:block;font-size:12.5px;color:var(--fg2);margin-bottom:6px}
 .env-card span{font-size:13.5px;font-weight:650;word-break:break-word}
 .empty{color:var(--fg3)}
-.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(120px);background:#1d1d1f;color:#fff;border-radius:999px;padding:11px 22px;font-size:14px;font-weight:600;transition:.3s;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.25)}
-.toast.show{transform:translateX(-50%) translateY(0)}
-@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}.env-grid{grid-template-columns:1fr}.step{min-width:100%}}
+/* ===== Toast(「知道了」面板 · 与 help_center 同款) ===== */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+.toast-icon{font-size:20px;line-height:1;padding-top:1px;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}
+.toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}
+.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}.env-grid{grid-template-columns:1fr}.step{min-width:100%}.actions{flex-direction:column;align-items:stretch;justify-content:flex-start}.actions .copy{width:100%;margin:6px 0 0;text-align:center;white-space:normal}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}.toast.show{transform:translateX(0) scale(1)}}
 </style>
 </head>
 <body>
@@ -50,14 +63,41 @@ h3{font-size:15px;margin:14px 0 8px;color:var(--fg2)}
 <div id="app"></div>
 </div>
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <div class="toast-icon" id="toastIcon">📋</div>
+  <div class="toast-body">
+    <div class="toast-title" id="toastTitle"></div>
+    <div class="toast-detail" id="toastDetail"></div>
+  </div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
+</div>
 <script>
 <!--SHARED-HELPERS-->
 var toastTimer=null;
-function toastText(t){var el=document.getElementById('toast');el.textContent=t;el.classList.add('show');if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show')},3000);}
 function fallbackCopy(text){try{var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(ta);ta.focus();ta.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){ok=false}document.body.removeChild(ta);return ok}catch(e){return false}}
 function safeWriteText(text){if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(text).then(function(){return true}).catch(function(){return fallbackCopy(text)})}return Promise.resolve(fallbackCopy(text))}
-function flashBtn(btn,msg,ms){var old=btn.textContent;btn.textContent=msg;btn.classList.add('copied');setTimeout(function(){btn.textContent=old;btn.classList.remove('copied')},ms||1800)}
+function toastShow(title,detail,icon){
+  var tEl=document.getElementById('toastTitle'),dEl=document.getElementById('toastDetail'),iEl=document.getElementById('toastIcon');
+  if(tEl)tEl.textContent=title;if(dEl)dEl.textContent=detail;if(iEl)iEl.textContent=icon||'📋';
+  var el=document.getElementById('toast');if(!el)return;el.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){el.classList.remove('show')},4500);
+}
+function copyThen(text,title,detail){
+  safeWriteText(text).then(function(ok){
+    if(ok){toastShow(title,detail,'📋');}
+    else{toastShow('复制失败','剪贴板不可用,请长按文本手动复制','⚠️');}
+  });
+}
+function copyFormPrompt(fieldId,buildFn,title,detail){
+  var el=document.getElementById(fieldId);
+  if(!el)return;
+  var v=el.value.trim();
+  if(!v){toastShow('请填写参数','该参数不能为空,填好后才能复制指令。','⚠️');el.focus();return;}
+  copyThen(buildFn(v),title,detail);
+}
+window.copyFormPrompt=copyFormPrompt;
+(function(){var c=document.getElementById('toastClose');if(c)c.addEventListener('click',function(){var el=document.getElementById('toast');if(el)el.classList.remove('show');if(toastTimer)clearTimeout(toastTimer)});})();
 function buildData(){var p=window.__PAYLOAD__||{};return p.data||{};}
 var app=document.getElementById('app');
 function render(){
@@ -89,6 +129,8 @@ var envHtml=env.os?('<section><h2>环境检测</h2><div class="env-grid">'
   +'<div class="env-card"><b>Python</b><span>'+esc(env.python)+'</span></div>'
   +'<div class="env-card"><b>数据库路径</b><span>'+esc(env.db_path)+'</span></div>'
   +(env.dirs_writable?'<div class="env-card"><b>目录可写</b><span>'+esc((env.dirs_writable.db_dir?'数据库目录 ✓':'数据库目录 ✗')+' · '+(env.dirs_writable.photos_dir?'照片目录 ✓':'照片目录 ✗'))+'</span></div>':'')
+  +(env.env?'<div class="env-card"><b>SKILLS_DB_PATH</b><span>'+esc(env.env.SKILLS_DB_PATH||'(未设置,走默认)')+'</span></div>'
+  +'<div class="env-card"><b>HOME_PHOTOS_DIR</b><span>'+esc(env.env.HOME_PHOTOS_DIR||'(未设置,走默认)')+'</span></div>':'')
   +'</div></section>'):'';
 var dbHtml=(init.db_path||env.db_path)?('<section><h2>建库结果</h2>'
   +'<div class="row"><div class="k">数据库</div><div class="v">'+esc(init.db_path||env.db_path||'')+'</div></div>'
@@ -98,22 +140,69 @@ var dbHtml=(init.db_path||env.db_path)?('<section><h2>建库结果</h2>'
   +(init.skipped?'<p class="warn">'+esc(init.skipped)+'</p>':'')
   +'</section>'):'';
 var nextBtn='';
+var cfgBtn='';
+var frmHtml='';
+var envCfg=env.env||{};
+var dbEnvSet=envCfg.SKILLS_DB_PATH && envCfg.SKILLS_DB_PATH.indexOf('未设置')<0;
+
+/* ===== 参数表单: 实时预览 + 复制拼接(采集型 · 用户可改) ===== */
+function updatePreview(fieldId, phId, buildFn){
+  var v=document.getElementById(fieldId).value.trim();
+  var el=document.getElementById('promptPreview');
+  if(!el)return;
+  var out=buildFn(v);
+  el.innerHTML=out.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\{(\w+)\}/g,'<span class="ph">$1</span>');
+}
+function buildInitPrompt(pathVal){
+  if(!pathVal)return '请填写数据保存路径(必填)';
+  return '请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用):确认数据保存路径:'+pathVal+'。请执行初始化:建库(含分类种子 60 节点)。';
+}
+function buildCfgPrompt(dirVal){
+  if(!dirVal)return '请填写数据库目录(必填)';
+  return '请加载「居家管家」技能,帮我配置数据存储环境:设置 SKILLS_DB_PATH='+dirVal+'(当前未设置,数据库将落在默认路径)。完成后重新执行首次使用初始化。';
+}
+function buildGuidePrompt(guideVal){
+  if(!guideVal)return '请填写录入引导(必填)';
+  return '请加载「居家管家」技能,帮我录入第一批物品(唤醒词:拍物品):'+guideVal;
+}
+window.updatePreview=updatePreview;window.buildInitPrompt=buildInitPrompt;
+window.buildCfgPrompt=buildCfgPrompt;window.buildGuidePrompt=buildGuidePrompt;
+
 if(stage==='pending'||stage==='need_path'){
-  var pathPrompt='确认数据保存路径:'+(env.db_path||'')+'。请执行初始化:建库(含分类种子 60 节点)。';
-  nextBtn='<button class="copy" onclick="safeWriteText(this.dataset.p).then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))" data-p="'+esc(pathPrompt)+'">开始初始化(复制指令给 AI)</button>';
+  var pathInit=(env.db_path||'');
+  frmHtml='<div class="frm"><label for="frmPath">数据保存路径(可改,默认即确认)</label><input id="frmPath" type="text" value="'+esc(pathInit)+'" oninput="updatePreview(\'frmPath\',null,buildInitPrompt)"></div>';
+  var initPrompt=buildInitPrompt(pathInit);
+  nextBtn='<button class="copy" onclick="copyFormPrompt(\'frmPath\',buildInitPrompt,\'初始化指令已复制\',\'粘贴给 AI 即可执行初始化流程。\')">开始初始化(复制指令给 AI)</button>';
 }
 if(stage==='error'){
-  var retry='初始化失败,请重试:'+esc(err.suggest||'')+'。';
-  nextBtn='<button class="copy" onclick="safeWriteText(this.dataset.p).then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))" data-p="'+esc(retry)+'">一键重试(复制指令给 AI)</button>';
+  var retry='请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用):初始化失败,请重试:'+esc(err.suggest||'')+'。';
+  nextBtn='<button class="copy" onclick="copyThen(this.dataset.p,\'重试指令已复制\',\'粘贴给 AI 即可重试初始化。\')" data-p="'+esc(retry)+'">一键重试(复制指令给 AI)</button>';
+}
+if((stage==='pending'||stage==='need_path') && !dbEnvSet){
+  var cfgDir=envCfg.SKILLS_DB_PATH && envCfg.SKILLS_DB_PATH.indexOf('未设置')<0 ? '' : '';
+  frmHtml='<div class="frm"><label for="frmDir">数据库目录(可改,建议值)</label><input id="frmDir" type="text" value="'+esc('D:\\2Study\\StudyNotes\\.db')+'" oninput="updatePreview(\'frmDir\',null,buildCfgPrompt)"></div>'+frmHtml;
+  cfgBtn='<button class="copy ghost" onclick="copyFormPrompt(\'frmDir\',buildCfgPrompt,\'配置指令已复制\',\'粘贴给 AI 即可引导配置环境变量。\')">先配置环境变量</button>';
 }
 if(stage==='done'||stage==='already'){
-  var guide='我想录第一批物品,建议从拍照开始(唤醒词:拍物品)。';
-  nextBtn='<button class="copy" onclick="safeWriteText(this.dataset.p).then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))" data-p="'+esc(guide)+'">开始录入第一批(复制)</button>';
+  var guideInit='从拍照开始,建议先录 1-3 件试用。';
+  frmHtml='<div class="frm"><label for="frmGuide">录入引导(可改)</label><input id="frmGuide" type="text" value="'+esc(guideInit)+'" oninput="updatePreview(\'frmGuide\',null,buildGuidePrompt)"></div>';
+  nextBtn='<button class="copy" onclick="copyFormPrompt(\'frmGuide\',buildGuidePrompt,\'录入引导已复制\',\'粘贴给 AI 即可开始录入第一批物品。\')">开始录入第一批(复制)</button>';
 }
-var copyDataBtn='<button class="copy alt" onclick="safeWriteText(\''+JSON.stringify(cd).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">复制数据</button>';
-var copyLogBtn='<button class="copy ghost" onclick="safeWriteText(\''+JSON.stringify(cl).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">复制日志</button>';
+var copyDataBtn='<button class="copy alt" onclick="copyThen(this.dataset.d,\'数据已复制\',\'结构化 JSON 5 段:场景/指令/时间/对象/载荷,可粘贴给 AI 或存档。\')" data-d="'+JSON.stringify(cd).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制数据</button>';
+var copyLogBtn='<button class="copy ghost" onclick="copyThen(this.dataset.d,\'日志已复制\',\'6 段日志:场景/思考链/数据结构/调用链/时间戳/异常,可发给开发者排障。\')" data-d="'+JSON.stringify(cl).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制日志</button>';
+var promptPreview='';
+if(frmHtml){
+  var pf=(stage==='pending'||stage==='need_path')&&!dbEnvSet?'frmDir':(stage==='done'||stage==='already')?'frmGuide':'frmPath';
+  var pbuild=(stage==='pending'||stage==='need_path')&&!dbEnvSet?buildCfgPrompt:(stage==='done'||stage==='already')?buildGuidePrompt:buildInitPrompt;
+  promptPreview='<div class="prompt-preview" id="promptPreview"></div>';
+}
 app.innerHTML=''+stepsHtml+hint+envHtml+dbHtml
-+'<section><h2>下一步</h2><div class="actions">'+nextBtn+copyDataBtn+copyLogBtn+'</div></section>';
++'<section><h2>下一步</h2>'+frmHtml+promptPreview+'<div class="actions">'+cfgBtn+nextBtn+copyDataBtn+copyLogBtn+'</div></section>';
+if(frmHtml){
+  var pf2=(stage==='pending'||stage==='need_path')&&!dbEnvSet?'frmDir':(stage==='done'||stage==='already')?'frmGuide':'frmPath';
+  var pbuild2=(stage==='pending'||stage==='need_path')&&!dbEnvSet?buildCfgPrompt:(stage==='done'||stage==='already')?buildGuidePrompt:buildInitPrompt;
+  updatePreview(pf2,null,pbuild2);
+}
 }
 render();
 </script>

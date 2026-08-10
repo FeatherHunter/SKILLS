@@ -27,6 +27,9 @@ section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
 .trow .ct{color:var(--fg3);font-size:11px;flex:none}
 .trow .ops{flex:none;display:flex;gap:4px;margin-left:auto}
 .opb{border:none;border-radius:99px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;background:#f2f4f8;color:var(--fg2);min-height:36px;line-height:1.2}
+.foldbtn{border:none;background:none;cursor:pointer;font-size:11px;color:var(--fg3);padding:4px 7px;border-radius:8px;flex:none;min-width:26px;min-height:28px;line-height:1}
+.foldbtn:hover{background:#eef4ff;color:var(--blue)}
+.foldpad{width:26px;flex:none}
 .opb:hover{background:#eef4ff;color:var(--blue)}
 .opb.danger:hover{background:#ffeaea;color:var(--red)}
 .sim{border:1px solid #ffd9b3;background:#fff8f0;border-radius:14px;padding:14px 16px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:12px}
@@ -110,6 +113,28 @@ function doCopy(text,btn,msg){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
   else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 }
+function buildFold(nodes){
+  /* 可折叠树: 每个节点覆盖的子节点区间(按 depth 连续递增) */
+  const spans=[];
+  for(let i=0;i<nodes.length;i++){
+    const d=nodes[i].depth;let j=i+1;
+    while(j<nodes.length&&nodes[j].depth>d)j++;
+    spans[i]={end:j-1,hasChild:j>i+1};
+  }
+  return spans;
+}
+function bindFold(tree){
+  tree.addEventListener('click',e=>{
+    const fb=e.target.closest('.foldbtn');
+    if(!fb)return;
+    const i=+fb.dataset.i,end=+fb.dataset.end;
+    const rows=tree.querySelectorAll('.trow');
+    for(let k=i+1;k<=end;k++){
+      if(rows[k])rows[k].style.display=rows[k].style.display==='none'?'':'none';
+    }
+    fb.textContent=fb.textContent==='▾'?'▸':'▾';
+  });
+}
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
   const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
@@ -130,7 +155,10 @@ function render(){
     sims.forEach((s,i)=>{const mb=document.getElementById('mg_'+i);
       if(mb){const srcs=s.paths.filter(x=>x!==s.target).join('、');mb.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 合并\n  源  位  置: 「'+srcs+'」\n  目标位置: 「'+s.target+'」',mb,'合并 prompt 已复制');};});}
   const tree=document.getElementById('tree');
-  if(tree){tree.innerHTML=nodes.map((n,i)=>'<div class="trow"><span class="pad" style="width:'+((n.depth-1)*22)+'px"></span><span class="dot">└</span><span class="nm'+(n.empty?' empty':'')+'">'+esc(n.name)+'</span><span class="ct">'+(n.empty?'空位置':n.count+' 件')+'</span><span class="ops"><button class="opb" id="rn_'+i+'">改名</button><button class="opb" id="dl_'+i+'">删除</button></span></div>').join('');
+  if(tree){
+    const spans=buildFold(nodes);
+    tree.innerHTML=nodes.map((n,i)=>{const sp=spans[i];const fold=sp.hasChild?'<button class="foldbtn" data-i="'+i+'" data-end="'+sp.end+'">▾</button>':'<span class="foldpad"></span>';return '<div class="trow" data-i="'+i+'"><span class="pad" style="width:'+((n.depth-1)*22)+'px"></span>'+fold+'<span class="nm'+(n.empty?' empty':'')+'">'+esc(n.name)+'</span><span class="ct">'+(n.empty?'空位置':n.count+' 件')+'</span><span class="ops"><button class="opb" id="rn_'+i+'">改名</button><button class="opb" id="dl_'+i+'">删除</button></span></div>';}).join('');
+    bindFold(tree);
     nodes.forEach((n,i)=>{const rn=document.getElementById('rn_'+i);const dl=document.getElementById('dl_'+i);
       if(rn)rn.onclick=()=>openForm('rename',n.path);
       if(dl)dl.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 删除\n  位  置: 「'+esc(n.path)+'」',dl,'删除 prompt 已复制');});}

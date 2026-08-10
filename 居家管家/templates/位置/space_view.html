@@ -52,6 +52,18 @@ section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
 .toast.show{opacity:1}
 @media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:24px}.actions{position:static}.items{grid-template-columns:1fr}.grid{grid-template-columns:repeat(2,1fr)}}
+
+/* ── 手机按钮布局(用户拍板 2026-08-10): 主按钮整行 + 次级 2 列;全页 ≤3 色(蓝主/红危险/中性) ── */
+.btn.warn{background:var(--blue)}
+.qb.mv{background:#eef1f5;color:var(--fg2)}
+@media(max-width:720px){
+  .actions{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:10px!important;justify-content:normal!important;position:static!important}
+  .actions .btn{width:100%;min-width:0;margin:0}
+  .actions .btn:not(.ghost){grid-column:1/-1}
+  .qa{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+  .qa .mv{grid-column:1/-1}
+  .qa .qb{width:100%}
+}
 </style>
 </head>
 <body>
@@ -76,13 +88,14 @@ section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
 let D=null,META={};
 let _toastTimer=null;
 function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function formatHuman(o,d){d=d||0;const pad='  '.repeat(d);const out=[];for(const k in o){const v=o[k];if(v&&typeof v==='object'){if(Array.isArray(v)){out.push(pad+k+': ['+v.map(x=>typeof x==='object'?JSON.stringify(x):x).join(', ')+']');}else{out.push(pad+k+':');out.push(formatHuman(v,d+1));}}else{out.push(pad+k+': '+(v===undefined||v===null?'':v));}}return out.join('\n');}
 function doCopy(text,btn,msg){
   const done=()=>{showToast(msg);};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
   else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 }
 function drillPrompt(path){return '请加载「居家管家」技能,浏览空间视图(唤醒词:空间视图):\n  位  置: '+(path||'(顶层)');}
-function quickPrompt(kind,item){const labels={mv:'移物品',add:'补物品',sub:'减物品'};const texts={mv:'请加载「居家管家」技能,帮我移动物品位置(唤醒词:移物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  新  位  置(移往哪里, 如: 客厅/电视柜): ______\n  数  量(移动几件): ______,add:'请加载「居家管家」技能,帮我补物品(唤醒词:补物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量(补几件): ______',sub:'请加载「居家管家」技能,帮我减物品(唤醒词:减物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量(减几件): ______'};return {label:labels[kind],text:texts[kind]};}
+function quickPrompt(kind,item){const labels={mv:'移物品',add:'补物品',sub:'减物品'};const texts={mv:'请加载「居家管家」技能,帮我移动物品位置(唤醒词:移物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  新  位  置(客厅/电视柜): ______\n  数  量(1): ______,add:'请加载「居家管家」技能,帮我补物品(唤醒词:补物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量(1): ______',sub:'请加载「居家管家」技能,帮我减物品(唤醒词:减物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量(1): ______'};return {label:labels[kind],text:texts[kind]};}
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
   const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
@@ -95,7 +108,7 @@ function render(){
   if((!D.children||!D.children.length)&&(!D.items||!D.items.length)){
     app.innerHTML='<div class="empty"><h2>这里还没有东西 🏠</h2>'+(D.current_name==='(全屋)'?'还没有任何位置记录。录入物品时填位置,或先建位置体系。':'这个位置还没有物品,可先收纳建议或移入物品。')+'<div class="actions" style="position:static"><button class="btn" id="emptyBtn">复制「'+((D.current_name==='(全屋)')?'建位置':'收纳建议')+'」</button></div></div>';
     const b=document.getElementById('emptyBtn');
-    b.onclick=()=>{const t=D.current_name==='(全屋)'?'请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 新建\n  位  置(完整路径, 如: 客厅/电视柜): ______':'请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n  位  置: '+esc(D.current_path);doCopy(t,b,'prompt 已复制,发给 AI');};
+    b.onclick=()=>{const t=D.current_name==='(全屋)'?'请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 新建\n  位  置(客厅/电视柜): ______':'请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n  位  置: '+esc(D.current_path);doCopy(t,b,'prompt 已复制,发给 AI');};
     renderActions();return;
   }
   const kids=arr(D.children);
@@ -119,8 +132,8 @@ function render(){
 }
 function renderActions(){
   const cd=D.copy_data||{},cl=D.copy_log||{};
-  document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(cd,null,2),document.getElementById('copyDataBtn'),'数据已复制');
-  document.getElementById('copyLogBtn').onclick=()=>doCopy(JSON.stringify(cl,null,2),document.getElementById('copyLogBtn'),'日志已复制');
+  document.getElementById('copyDataBtn').onclick=()=>doCopy(formatHuman(cd),document.getElementById('copyDataBtn'),'数据已复制');
+  document.getElementById('copyLogBtn').onclick=()=>doCopy(formatHuman(cl),document.getElementById('copyLogBtn'),'日志已复制');
 }
 render();
 </script>

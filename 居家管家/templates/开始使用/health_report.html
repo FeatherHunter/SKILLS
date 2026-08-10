@@ -30,11 +30,16 @@ h3{font-size:15px;margin:14px 0 8px;color:var(--fg2)}
 .cmd{background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:16px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;line-height:1.6;white-space:pre-wrap}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;font-weight:700;cursor:pointer;margin:10px 8px 0 0;font-size:14px}
 .copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
-.copy.copied{background:var(--green)}
+/* ===== Toast(「知道了」面板 · 与 help_center 同款) ===== */
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}
+.toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}
+.toast-icon{font-size:20px;line-height:1;padding-top:1px;flex-shrink:0}
+.toast-body{flex:1;min-width:0}
+.toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}
+.toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}
+.toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}
 .actions{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
-.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(120px);background:#1d1d1f;color:#fff;border-radius:999px;padding:11px 22px;font-size:14px;font-weight:600;transition:.3s;z-index:99;box-shadow:0 8px 30px rgba(0,0,0,.25)}
-.toast.show{transform:translateX(-50%) translateY(0)}
-@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.actions{flex-direction:column;align-items:stretch;justify-content:flex-start}.actions .copy{width:100%;margin:6px 0 0;text-align:center;white-space:normal}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}.toast.show{transform:translateX(0) scale(1)}}
 </style>
 </head>
 <body>
@@ -47,14 +52,33 @@ h3{font-size:15px;margin:14px 0 8px;color:var(--fg2)}
 <div id="app"></div>
 </div>
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite">
+  <div class="toast-icon" id="toastIcon">📋</div>
+  <div class="toast-body">
+    <div class="toast-title" id="toastTitle"></div>
+    <div class="toast-detail" id="toastDetail"></div>
+  </div>
+  <button class="toast-close" id="toastClose">✓ 知道了</button>
+</div>
 <script>
 <!--SHARED-HELPERS-->
 var toastTimer=null;
-function toastText(t){var el=document.getElementById('toast');el.textContent=t;el.classList.add('show');if(toastTimer)clearTimeout(toastTimer);toastTimer=setTimeout(function(){el.classList.remove('show')},3000);}
+function toastShow(title,detail,icon){
+  var tEl=document.getElementById('toastTitle'),dEl=document.getElementById('toastDetail'),iEl=document.getElementById('toastIcon');
+  if(tEl)tEl.textContent=title;if(dEl)dEl.textContent=detail;if(iEl)iEl.textContent=icon||'📋';
+  var el=document.getElementById('toast');if(!el)return;el.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(function(){el.classList.remove('show')},4500);
+}
 function fallbackCopy(text){try{var ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;left:-9999px;top:0';document.body.appendChild(ta);ta.focus();ta.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){ok=false}document.body.removeChild(ta);return ok}catch(e){return false}}
 function safeWriteText(text){if(navigator.clipboard&&navigator.clipboard.writeText){return navigator.clipboard.writeText(text).then(function(){return true}).catch(function(){return fallbackCopy(text)})}return Promise.resolve(fallbackCopy(text))}
-function flashBtn(btn,msg,ms){var old=btn.textContent;btn.textContent=msg;btn.classList.add('copied');setTimeout(function(){btn.textContent=old;btn.classList.remove('copied')},ms||1800)}
+function copyThen(text,title,detail){
+  safeWriteText(text).then(function(ok){
+    if(ok){toastShow(title,detail,'📋');}
+    else{toastShow('复制失败','剪贴板不可用,请长按文本手动复制','⚠️');}
+  });
+}
+(function(){var c=document.getElementById('toastClose');if(c)c.addEventListener('click',function(){var el=document.getElementById('toast');if(el)el.classList.remove('show');if(toastTimer)clearTimeout(toastTimer)});})();
 var app=document.getElementById('app');
 function render(){
 var payload;try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
@@ -84,8 +108,8 @@ var copySelected='';
 if(checks.length){
   copySelected='<button class="copy" id="copyFix" onclick="copySelectedFixes(this)">复制选中修复引导</button>';
 }
-var copyDataBtn='<button class="copy alt" onclick="safeWriteText(\''+JSON.stringify(cd).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">复制数据</button>';
-var copyLogBtn='<button class="copy ghost" onclick="safeWriteText(\''+JSON.stringify(cl).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'\').then(function(ok){flashBtn(this,ok?\'✓ 已复制\':\'✗ 复制失败\',2000)}.bind(this))">复制日志</button>';
+var copyDataBtn='<button class="copy alt" onclick="copyThen(this.dataset.d,\'数据已复制\',\'结构化 JSON 5 段:场景/指令/时间/对象/载荷,可粘贴给 AI 或存档。\')" data-d="'+JSON.stringify(cd).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制数据</button>';
+var copyLogBtn='<button class="copy ghost" onclick="copyThen(this.dataset.d,\'日志已复制\',\'6 段日志:场景/思考链/数据结构/调用链/时间戳/异常,可发给开发者排障。\')" data-d="'+JSON.stringify(cl).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制日志</button>';
 app.innerHTML=envHtml+'<div class="cards">'
   +'<div class="card"><b>问题总数</b><span class="'+(issuesTotal?'bad':'ok')+'">'+issuesTotal+'</span></div>'
   +'<div class="card"><b>检查项</b><span>'+checks.length+'</span></div>'
@@ -100,12 +124,11 @@ function copySelectedFixes(btn){
   var lines=[];
   checks.forEach(function(c,i){
     var el=document.getElementById('ck'+i);
-    if(el&&el.checked&&c.fix_prompt){lines.push(c.fix_prompt);}
+    if(el&&el.checked&&c.fix_prompt){lines.push('  修复项(已勾选): '+c.fix_prompt);}
   });
-  if(!lines.length){toastText('请先勾选至少 1 个问题');return;}
-  var text=lines.join('\n');
-  toastText('已复制 '+lines.length+' 条修复引导');
-  safeWriteText(text).then(function(ok){flashBtn(btn,ok?'✓ 已复制':'✗ 复制失败',2000)});
+  if(!lines.length){toastShow('请先勾选','请先勾选至少 1 个问题,再复制修复引导。','⚠️');return;}
+  var text='请加载「居家管家」技能,帮我做数据健康检查(唤醒词:查异常):\n\n'+lines.join('\n');
+  copyThen(text,'修复引导已复制','粘贴给 AI 即可按勾选项执行修复(只建议不自动改)。');
 }
 render();
 </script>

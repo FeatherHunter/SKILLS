@@ -140,6 +140,15 @@ def main() -> int:
 
     data = _augment_kpis(result["data"])
 
+    # 2026-08-10 #43:VS 目标切换需要目标体重(模板 goal_weight 消费,缺则两条基线相同→切换无感)
+    if not data.get('goal_weight'):
+        from db import find_db_path
+        import sqlite3
+        _conn = sqlite3.connect(str(find_db_path(SKILL_DIR)))
+        _row = _conn.execute('SELECT weight_goal FROM daily_goal WHERE id = 1').fetchone()
+        _conn.close()
+        data['goal_weight'] = _row[0] if _row and _row[0] else None
+
     # 看波动异常点:只保留异常视图数据(模板由 view 字段控制)
     data['view'] = args.view
     if args.view == 'anomalies-only':

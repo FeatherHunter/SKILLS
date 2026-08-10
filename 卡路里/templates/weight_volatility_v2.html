@@ -286,16 +286,25 @@
     // === Canvas 绘图 ===
     const canvas = document.getElementById('chart');
     if (canvas && d.points && d.points.length > 0) {
+      // 2026-08-10 #43 修复:高 DPI 适配(Retina 屏 canvas 缓冲须按 devicePixelRatio 放大,否则文字模糊)
+      const dpr = window.devicePixelRatio || 1;
+      const W_css = canvas.offsetWidth;
+      const H_css = canvas.offsetHeight || 360;
+      canvas.width = Math.round(W_css * dpr);
+      canvas.height = Math.round(H_css * dpr);
+      canvas.style.width = W_css + 'px';
+      canvas.style.height = H_css + 'px';
       const ctx = canvas.getContext('2d');
-      const W = canvas.width = canvas.offsetWidth;
-      // 2026-08-10 #43 修复:高度用 CSS 实际值(移动端 280 而非硬编码 360,否则整图纵向压缩、文字压扁)
-      const H = canvas.height = canvas.offsetHeight || 360;
+      ctx.scale(dpr, dpr);
+      const W = W_css, H = H_css;
       // 2026-08-10 #43 重构:左右留白不对称(左容纳Y轴刻度,右极小) · 图贴近容器边缘
       const PAD_L = 28, PAD_R = 8, PAD_B = 24;
 
       const points = d.points;
       const weights = points.map(p => p.kg);
-      const yValues = goal ? [baseline, goal, ...weights] : [baseline, ...weights];
+      // 2026-08-10 #43 修复:Y 轴范围固定(不含随 mode 变的 baseline),切换 VS 时折线不跳动,
+      // 仅基线带上下移动(语义:不同参照系下的波动区间)
+      const yValues = [...weights, d.baseline_value, goal].filter(v => v != null);
       const minW = Math.min(...yValues);
       const maxW = Math.max(...yValues);
       const range = (maxW - minW) || 1;

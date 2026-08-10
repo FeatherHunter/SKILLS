@@ -70,7 +70,7 @@ let D=null,META={};
 let _toastTimer=null;
 function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function doCopy(text,btn,msg){
-  const done=()=>{if(btn){btn.classList.add('copied');const old=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.classList.remove('copied');btn.textContent=old;},1600);}showToast(msg);};
+  const done=()=>{showToast(msg);};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
   else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 }
@@ -125,7 +125,7 @@ function render(){
 }
 function renderActions(){
   const bb=document.getElementById('batchBtn');
-  if(bb&&D&&!D.batch){bb.style.display='';bb.onclick=()=>doCopy('请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n  物  品: (不填)找没有固定位的常用件',bb,'批量建议 prompt 已复制');}
+  if(bb&&D&&!D.batch){bb.style.display='';bb.onclick=()=>doCopy('请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n  物  品(不填=找没有固定位的常用件): ______',bb,'批量建议 prompt 已复制');}
   const cd=D.copy_data||{},cl=D.copy_log||{};
   document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(cd,null,2),document.getElementById('copyDataBtn'),'数据已复制');
   document.getElementById('copyLogBtn').onclick=()=>doCopy(JSON.stringify(cl,null,2),document.getElementById('copyLogBtn'),'日志已复制');

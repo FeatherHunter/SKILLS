@@ -69,7 +69,7 @@ let D=null,META={};
 let _toastTimer=null;
 function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function doCopy(text,btn,msg){
-  const done=()=>{if(btn){btn.classList.add('copied');const old=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.classList.remove('copied');btn.textContent=old;},1600);}showToast(msg);};
+  const done=()=>{showToast(msg);};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
   else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 }
@@ -91,18 +91,18 @@ function render(){
   const sims=arr(D.similar_groups);
   if(sims.length){app.innerHTML+='<section><h2>🔍 相似位置检测 <span class="hint">同位置两种写法,建议合并</span></h2>'+sims.map((s,i)=>'<div class="sim"><div class="paths">'+s.paths.map(esc).join(' ⇄ ')+'</div><div class="mig">涉及 '+esc(s.items_affected)+' 件物品 · 建议保留「'+esc(s.target)+'」</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="mg_'+i+'">确认合并</button><button class="btn ghost" id="ig_'+i+'">忽略</button></div></div>').join('')+'</section>';
     sims.forEach((s,i)=>{const mb=document.getElementById('mg_'+i);const ib=document.getElementById('ig_'+i);
-      if(mb){const srcs=s.paths.filter(x=>x!==s.target).join('、');mb.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 合并\n  详  情: 把「'+srcs+'」合并到「'+s.target+'」',mb,'合并 prompt 已复制');}
+      if(mb){const srcs=s.paths.filter(x=>x!==s.target).join('、');mb.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 合并\n  源  位  置(将被合并): 「'+srcs+'」\n  目标位置(保留): 「'+s.target+'」',mb,'合并 prompt 已复制');}
       if(ib)ib.onclick=()=>{ib.closest('.sim').style.display='none';showToast('已忽略本组');};});}
   const tree=document.getElementById('tree');
   if(tree){tree.innerHTML=nodes.map((n,i)=>'<div class="trow"><span class="pad" style="width:'+((n.depth-1)*22)+'px"></span><span class="dot">└</span><span class="nm'+(n.empty?' empty':'')+'">'+esc(n.name)+'</span><span class="ct">'+(n.empty?'空位置':n.count+' 件')+'</span><span class="ops"><button class="opb" id="rn_'+i+'">改名</button><button class="opb" id="dl_'+i+'">删除</button></span></div>').join('');
     nodes.forEach((n,i)=>{const rn=document.getElementById('rn_'+i);const dl=document.getElementById('dl_'+i);
-      if(rn)rn.onclick=()=>{const newP=prompt('新路径(如:'+esc(n.path)+' → )',n.path);if(newP&&newP!==n.path)doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 改名\n  详  情: 「'+esc(n.path)+'」改名为「'+esc(newP)+'」',rn,'改名 prompt 已复制');else if(newP===n.path)showToast('路径未变化');};
-      if(dl)dl.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 删除\n  详  情: 删除「'+esc(n.path)+'」',dl,'删除 prompt 已复制');});}
+      if(rn)rn.onclick=()=>{const newP=prompt('新路径(如:'+esc(n.path)+' → )',n.path);if(newP&&newP!==n.path)doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 改名\n  源  位  置: 「'+esc(n.path)+'」\n  新  名  称(新路径): 「'+esc(newP)+'」',rn,'改名 prompt 已复制');else if(newP===n.path)showToast('路径未变化');};
+      if(dl)dl.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 删除\n  位  置(将被删除): 「'+esc(n.path)+'」',dl,'删除 prompt 已复制');});}
   renderActions();
 }
 function renderActions(){
   const nb=document.getElementById('newBtn');
-  if(nb)nb.onclick=()=>{const path=prompt('新位置完整路径(如:客厅/电视柜,支持多级)','');if(path)doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 新建\n  详  情: '+esc(path),nb,'新建 prompt 已复制');};
+  if(nb)nb.onclick=()=>{const path=prompt('新位置完整路径(如:客厅/电视柜,支持多级)','');if(path)doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 新建\n  位  置(完整路径, 如: 客厅/电视柜): 「'+esc(path)+'」',nb,'新建 prompt 已复制');};
   const cd=D.copy_data||{},cl=D.copy_log||{};
   document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(cd,null,2),document.getElementById('copyDataBtn'),'数据已复制');
   document.getElementById('copyLogBtn').onclick=()=>doCopy(JSON.stringify(cl,null,2),document.getElementById('copyLogBtn'),'日志已复制');

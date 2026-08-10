@@ -75,7 +75,7 @@ function render(){
   const rb=document.getElementById('retryBtn');
   if(err.suggest&&err.suggest.includes('修正')){
     rb.style.display='';
-    rb.onclick=()=>{const kd2=err.key_data||{};const params=Object.keys(kd2).map(k=>'  '+k+': _____________').join('\n');doCopy('请加载「居家管家」技能,重试「'+(META.command_cn||'')+'」:\n'+params+'\n  说  明: 上一步失败原因「'+esc(err.reason||'')+'」','retryBtn','修正 prompt 已复制');};
+    rb.onclick=()=>{const kd2=err.key_data||{};const params=Object.keys(kd2).map(k=>'  '+k+'(修正后重发): ______').join('\n');doCopy('请加载「居家管家」技能,重试「'+(META.command_cn||'')+'」:\n'+params+'\n  说  明: 上一步失败原因「'+esc(err.reason||'')+'」','retryBtn','修正 prompt 已复制');};
   }
   const cd=D.copy_data||{},cl=D.copy_log||{};
   document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(cd,null,2),'copyDataBtn','数据已复制');

@@ -52,15 +52,15 @@ let D=null,META={};
 let _toastTimer=null;
 function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function doCopy(text,btn,msg){
-  const done=()=>{if(btn){btn.classList.add('copied');const old=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.classList.remove('copied');btn.textContent=old;},1600);}showToast(msg);};
+  const done=()=>{showToast(msg);};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
   else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 }
 function modeInfo(){
   const m=D.mode;
-  if(m==='rename')return {title:'位置改名确认',action:'改名',exec:'请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 改名\n  详  情: 「'+esc(D.old)+'」改名为「'+esc(D.new)+'」',desc:'「'+esc(D.old)+'」→「'+esc(D.new)+'」,改名影响所有该位置及下级物品'};
-  if(m==='merge')return {title:'位置合并确认',action:'合并',exec:'请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 合并\n  详  情: 把「'+esc(D.src||D.old)+'」合并到「'+esc(D.tgt||D.new)+'」',desc:'「'+esc(D.src||D.old)+'」→「'+esc(D.tgt||D.new)+'」,物品随路径迁移'};
-  return {title:'删除位置确认',action:'删除',exec:'请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 删除\n  详  情: 删除「'+esc(D.path)+'」',desc:'删除「'+esc(D.path)+'」'};
+  if(m==='rename')return {title:'位置改名确认',action:'改名',exec:'请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 改名\n  源  位  置: 「'+esc(D.old)+'」\n  新  名  称(新路径): 「'+esc(D.new)+'」',desc:'「'+esc(D.old)+'」→「'+esc(D.new)+'」,改名影响所有该位置及下级物品'};
+  if(m==='merge')return {title:'位置合并确认',action:'合并',exec:'请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 合并\n  源  位  置(将被合并): 「'+esc(D.src||D.old)+'」\n  目标位置(保留): 「'+esc(D.tgt||D.new)+'」',desc:'「'+esc(D.src||D.old)+'」→「'+esc(D.tgt||D.new)+'」,物品随路径迁移'};
+  return {title:'删除位置确认',action:'删除',exec:'请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 删除\n  位  置(将被删除): 「'+esc(D.path)+'」',desc:'删除「'+esc(D.path)+'」'};
 }
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<section>数据解析失败:'+esc(e.message)+'</section>';return;}
@@ -84,7 +84,7 @@ function render(){
   let btns='<button class="btn" id="execBtn">✅ 确认'+esc(mi.action)+'</button><button class="btn ghost" id="fixBtn">✏️ 修正参数</button><button class="btn ghost" id="copyDataBtn">📋 复制数据</button><button class="btn ghost" id="copyLogBtn">📋 复制日志</button>';
   acts.innerHTML=btns;
   document.getElementById('execBtn').onclick=()=>doCopy(mi.exec,document.getElementById('execBtn'),'确认 prompt 已复制,发给 AI');
-  document.getElementById('fixBtn').onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: '+(D.mode==='rename'?'改名':D.mode==='merge'?'合并':'删除')+'\n  详  情: _____________(修正后重发)','fixBtn','修正 prompt 已复制');
+  document.getElementById('fixBtn').onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: '+(D.mode==='rename'?'改名':D.mode==='merge'?'合并':'删除')+'\n  操  作(改名/合并/删除): ______\n  详  情(修正后重发): ______','fixBtn','修正 prompt 已复制');
   const cd=D.copy_data||{},cl=D.copy_log||{};
   document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(cd,null,2),document.getElementById('copyDataBtn'),'数据已复制');
   document.getElementById('copyLogBtn').onclick=()=>doCopy(JSON.stringify(cl,null,2),document.getElementById('copyLogBtn'),'日志已复制');

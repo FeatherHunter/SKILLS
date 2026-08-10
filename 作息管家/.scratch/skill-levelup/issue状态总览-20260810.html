@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>作息管家全部 ISSUE 状态 · 2026-08-10</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #fff; --line: #e5e5ea;
+    --text: #1d1d1f; --text2: #515154; --muted: #86868b;
+    --accent: #0071e3; --accent-soft: rgba(0,113,227,.08);
+    --ok: #34c759; --ok-soft: rgba(52,199,89,.12);
+    --warn: #ff9f0a; --warn-soft: rgba(255,159,10,.12);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 48px 20px 80px; }
+  header { margin-bottom: 26px; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--accent); background: var(--accent-soft); padding: 5px 14px; border-radius: 999px; }
+  h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.01em; margin: 14px 0 6px; }
+  .sub { color: var(--text2); font-size: 14px; max-width: 700px; }
+  .sub b { color: var(--text); font-weight: 600; }
+
+  .alert { display: flex; align-items: center; gap: 12px; background: var(--card); border: 1.5px solid var(--warn); border-radius: 16px; padding: 14px 18px; margin: 18px 0 26px; }
+  .alert .ico { flex: none; width: 34px; height: 34px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 16px; }
+  .alert p { font-size: 13.5px; color: var(--text2); }
+  .alert p b { color: var(--warn); }
+
+  .sec-title { font-size: 16px; font-weight: 700; margin: 26px 0 12px; display: flex; align-items: center; gap: 8px; }
+  .sec-title .cnt { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+  .ticket { background: var(--card); border-radius: 14px; padding: 12px 16px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 0 rgba(0,0,0,.03); }
+  .ticket .no { flex: none; width: 44px; font-weight: 700; color: var(--accent); font-size: 12.5px; }
+  .ticket .info { flex: 1; }
+  .ticket .info b { font-size: 13.5px; display: block; }
+  .ticket .info span { font-size: 11.5px; color: var(--muted); }
+  .ticket .st { flex: none; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 999px; }
+  .st.closed { background: var(--ok-soft); color: var(--ok); }
+  .st.open { background: var(--line); color: var(--text2); }
+  .st.map { background: var(--accent-soft); color: var(--accent); }
+
+  .note { margin-top: 26px; background: var(--card); border: 1px dashed var(--line); border-radius: 16px; padding: 18px 20px; }
+  .note h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .note .item { display: flex; gap: 10px; padding: 6px 0; font-size: 13px; color: var(--text2); border-bottom: 1px dashed var(--line); }
+  .note .item:last-child { border-bottom: none; }
+  .note .item .dot { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; margin-top: 2px; }
+
+  footer { margin-top: 30px; text-align: center; color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 640px) { h1 { font-size: 24px; } .wrap { padding: 32px 14px 56px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="kicker">作息管家 · 全部 ISSUE 状态</span>
+    <h1>15 个 issue · 状态总览</h1>
+    <p class="sub">实时查询 GitHub（2026-08-10 14:15）。<b>意外发现：9 张实施票（#225-#233）已全部关闭</b>——它们在别的 session 被实施并闭环了。</p>
+  </header>
+
+  <div class="alert">
+    <div class="ico">!</div>
+    <p><b>关键状态</b>：实施阶段 9 票 T0-T8 全部 <b>CLOSED</b>（非本 session 关闭）。本 session 只建了票（当时全 open）。这意味着实施工作已在并行 session 完成——<b>下一步该是实施 map 收尾（交付审查/考题/复盘），或核对已完成质量。</b></p>
+  </div>
+
+  <div class="sec-title">实施阶段（map #224）<span class="cnt">9/9 完成</span></div>
+  <div class="ticket"><div class="no">#224</div><div class="info"><b>L级重构 · 实施 map</b><span>wayfinder:map · 实施阶段总索引</span></div><div class="st map">OPEN · map</div></div>
+  <div class="ticket"><div class="no">#225</div><div class="info"><b>T0 开源清仓+路径统一</b><span>schedule_db 统一链 / LICENSE / 删脚本 / 文档</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#226</div><div class="info"><b>T1 注册通道+合并器</b><span>渐进式动态加载 / update_scenarios.py</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#227</div><div class="info"><b>T2 记录链路升级</b><span>三件套结果 HTML / 合并 #0 记作息</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#228</div><div class="info"><b>T3 复盘链路升级</b><span>周/月/区间一体模板</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#229</div><div class="info"><b>T4 批量导入 batch-add</b><span>batch-add 命令模块</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#230</div><div class="info"><b>T5 制定次日计划</b><span>时间轴+色带+贴合提示</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#231</div><div class="info"><b>T6 周视图</b><span>7×24 全分类总览</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#232</div><div class="info"><b>T7 首次使用+onboarding</b><span>复制即装 / 6 步初始化 / 飞书强引导</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#233</div><div class="info"><b>T8 场景资产+文档+镜像</b><span>81 场景落 yaml / README / help 镜像</span></div><div class="st closed">CLOSED</div></div>
+
+  <div class="sec-title">规格阶段（map #190）<span class="cnt">4/4 完成</span></div>
+  <div class="ticket"><div class="no">#190</div><div class="info"><b>L级重构 · wayfinder 规格 map</b><span>规格阶段总索引（决策已全部定案，作为存档保持 OPEN）</span></div><div class="st map">OPEN · map</div></div>
+  <div class="ticket"><div class="no">#191</div><div class="info"><b>R2 开源准备处置</b><span>16 项清单 · 人类采纳</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#192</div><div class="info"><b>R3 onboarding 三段式设计</b><span>README / 首次使用 6 步 / 飞书强引导</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#193</div><div class="info"><b>G1 领域第一功能定标</b><span>6 深度 + 5 基础 · Q1-Q12 全采纳</span></div><div class="st closed">CLOSED</div></div>
+  <div class="ticket"><div class="no">#194</div><div class="info"><b>G2 场景枚举定标</b><span>81 场景 · 复盘区间更名</span></div><div class="st closed">CLOSED</div></div>
+
+  <div class="note">
+    <h3>汇总</h3>
+    <div class="item"><span class="dot">✓</span><b>规格 4 票 + 实施 9 票 = 13 张工作票全部 CLOSED</b></div>
+    <div class="item"><span class="dot">✓</span>2 个 map（#190 规格 / #224 实施）保持 OPEN 作为索引</div>
+    <div class="item"><span class="dot">→</span>实施 9 票非本 session 关闭——若要核对完成质量/交付，我可以逐个拉关闭评论与决议</div>
+    <div class="item"><span class="dot">→</span>09 交付顺序：过程复盘（T-E）→ 考题对齐（T-F）→ 交付清单（T-I）——实施票全关后应走这三步收尾</div>
+  </div>
+
+  <footer>状态查询 · 2026-08-10 14:15 · GitHub 实时数据</footer>
+</div>
+</body>
+</html>

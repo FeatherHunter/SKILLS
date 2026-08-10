@@ -226,6 +226,36 @@ class TestHelpCenterErgonomics:
         # 至少 h1 含 220% 或 36px 或类似放大值
         assert ('220%' in tpl or '36px' in tpl or 'calc(28px' in tpl), 'h1 字号未上调'
 
+    def test_help_center_issue245_regressions(self):
+        """#245 六轮 UI 修复的防回归(用户逐项拍板 · 2026-08-10)
+
+        1. hero 卡纯白(去灰底渐变)
+        2. 三级目录无 hover 淡蓝点击特效(真凶:summary:hover var(--soft))
+        3. 二级目录默认折叠(sub-block 无 open 硬编码)
+        4. 搜索反馈仅搜索时显示(hitCount 元素存在 + searchCount/dataSource 已退役)
+        """
+        tpl = (SKILL_DIR / 'templates' / 'help_center.html').read_text(encoding='utf-8')
+
+        # 1. hero 白底(用户:去掉灰色背景)
+        hero_rule = re.search(r'\.hero\s*\{[^}]*\}', tpl)
+        assert hero_rule and '#fff' in hero_rule.group(0), \
+            'hero 背景非纯白(#245 修复被移除?)'
+        assert 'linear-gradient' not in hero_rule.group(0), \
+            'hero 灰白渐变回归(#245 修复被移除?)'
+
+        # 2. 三级 summary 无 hover 淡蓝(用户:点击不要淡蓝特效)
+        assert 'summary:hover' not in tpl, \
+            '三级目录 hover 淡蓝回归(#245 修复被移除?)'
+
+        # 3. 二级目录默认折叠(用户:全 HTML 默认全折叠)
+        assert 'class="sub-block" data-sub="${escapeHTML(subName)}" open>' not in tpl, \
+            'sub-block 默认展开回归(#245 修复被移除?)'
+
+        # 4. 搜索反馈仅搜索时显示 + 内部源信息已退役(ADR-0008)
+        assert 'id="hitCount"' in tpl, '搜索反馈胶囊元素缺失(hitCount)'
+        assert 'searchCount' not in tpl, '旧 searchCount 元素回归'
+        assert 'dataSource' not in tpl, '内部 dataSource 信息回归(违 ADR-0008)'
+
     def test_triggers_have_fill_hints_field(self):
         """每个 TRIGGER 都有 fill_hints 字段(默认空 list)
 

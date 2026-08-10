@@ -162,8 +162,10 @@ h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
     document.getElementById('vsDkg').textContent = (c.delta_kg > 0 ? '+' : '') + c.delta_kg + ' kg';
     document.getElementById('vsSpeed').textContent = c.rate_diff_g !== undefined && c.rate_diff_g !== null ? c.rate_diff_g + ' g/天' : '';
     if (c.speed) {
+      // 2026-08-10 #43:速率差 null(单点对比/样本不足)显示 — 而非 "null"
+      const rateTxt = (c.rate_diff_g !== undefined && c.rate_diff_g !== null) ? c.rate_diff_g + ' g/天' : '—';
       document.getElementById('judgeText').textContent =
-        `变化${c.direction || ''} ${c.delta_kg > 0 ? '+' : ''}${c.delta_kg} kg · 速率差 ${c.rate_diff_g} g/天 · ${c.speed}`;
+        `变化${c.direction || ''} ${c.delta_kg > 0 ? '+' : ''}${c.delta_kg} kg · 速率差 ${rateTxt} · ${c.speed}`;
       document.getElementById('judgeLine').style.display = 'block';
     }
   }

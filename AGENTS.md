@@ -56,6 +56,7 @@ Tested-By: exempt(无 fresh agent · 详见 备忘录/docs/adr/0005-d-exemptions
 
 ❌ 禁用英文类型前缀（`fix:` `docs:` `feat:` `chore:`）与英文括号类型（`fix(...)` 等）。
 ✅ 每个 commit 必须含 `Tested-By` 行末。
+⚠️ **commit 前先查暂存区**（`git status --short` 第一列 = 已暂存）：并行 agent 可能把半成品改动留在暂存区，pre-commit 钩子会跑「暂存区涉及的所有技能」pytest——混入他人未完成改动会连带测试失败导致 commit 被拒（2026-08-11 实测：卡路里半成品挡居家管家 commit）。只提交自己的文件用 `git commit --only <path>`，或先 `git restore --staged <他人路径>`（文件内容不动，仅取消暂存）。
 
 ## Agent skills
 

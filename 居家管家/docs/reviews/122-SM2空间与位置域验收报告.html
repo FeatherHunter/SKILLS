@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#122 交付完成 · SM2 四场景</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f0f7ff);border-radius:24px;padding:30px 32px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.12em;margin-bottom:8px}
+h1{font-size:28px;letter-spacing:-.035em;line-height:1.2;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{background:#eef4ff;color:var(--blue);border-radius:99px;padding:4px 12px;font-size:11px;font-weight:700}
+.chip.green{background:#e8f9ee;color:#1d7a3f}
+.chip.orange{background:#fff4e0;color:#b3541e}
+section{background:var(--card);border-radius:18px;padding:22px 26px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px}
+section h2{font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--fg3);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px}
+td{padding:9px 10px;border-bottom:1px solid #f0f0f3;vertical-align:top}
+tr:last-child td{border-bottom:none}
+.ok{color:#1d7a3f;font-weight:700}
+ul{margin:6px 0 0 18px}
+li{margin-bottom:6px;font-size:13.5px}
+.verdict{background:linear-gradient(180deg,#f2fbf5,#fff);border:1px solid #c8ecd5;border-radius:16px;padding:18px 20px;margin-top:6px}
+.verdict h3{font-size:15px;color:#1d7a3f;margin-bottom:6px}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:23px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+<div class="eyebrow">居家管家 · G6 审查 · #122</div>
+<h1>#122 交付完成 · SM2 空间与位置域 4 场景</h1>
+<p class="lead">4/4 场景人工验收通过 · 13 项修复入库 · 全量测试 391 绿 · ISSUE 已闭环</p>
+<div class="chips">
+<span class="chip green">#122 已关闭</span>
+<span class="chip green">地图 #104 已登记</span>
+<span class="chip">衍生 ISSUE #253</span>
+<span class="chip">pytest 391 绿</span>
+</div>
+</header>
+
+<section>
+<h2>✅ 场景验收</h2>
+<table>
+<tr><th>场景</th><th>唤醒词</th><th>状态</th></tr>
+<tr><td>SM2-1 管理位置体系</td><td>管位置</td><td class="ok">✅ 通过</td></tr>
+<tr><td>SM2-2 设置固定位</td><td>固定位</td><td class="ok">✅ 通过</td></tr>
+<tr><td>SM2-3 收纳位置建议</td><td>收纳建议</td><td class="ok">✅ 通过</td></tr>
+<tr><td>SM2-4 空间视图浏览</td><td>空间视图</td><td class="ok">✅ 通过</td></tr>
+</table>
+</section>
+
+<section>
+<h2>🔧 审查中修复的真 Bug(13 项)</h2>
+<ul>
+<li>位置合并撞 UNIQUE 崩溃(→条目迁移+删源节点)</li>
+<li>改名/合并失败 payload=None 崩溃(→08 失败回执+修正重试)</li>
+<li>空间视图下钻失效(innerHTML+= 重写容器冲掉 onclick)</li>
+<li>撤销合并路径级回退会误伤 tgt 原有物品(→精确到迁移物品清单)</li>
+<li>复制数据/日志含英文 key 与 JSON(→CN_MAP 全中文+递归展开)</li>
+<li>空位置行高异常(.empty 类名冲突) + 树默认全折叠 + 同级对齐</li>
+<li>按钮触控区 36px / 手机 2 列布局 / 全页 ≤3 色</li>
+<li>新建/改名/设固定位系统弹窗→页内表单(实时预览+空值拦截)</li>
+<li>批量建议按钮推荐值「钥匙」→留空(不造替代值)</li>
+</ul>
+</section>
+
+<section>
+<h2>📦 交付审计</h2>
+<ul>
+<li><b>代码</b>: 全部 commit 入库(工作区零残留),Tested-By 行末规范</li>
+<li><b>测试</b>: pytest 全量 391 绿(fixture 隔离,未动生产库)</li>
+<li><b>客观验证</b>: Playwright 375px 无溢出/零 JS 报错/剪贴板实测/按钮色计数/下钻点击</li>
+<li><b>ISSUE 闭环</b>: #122 回执评论 + close;地图 #104 T3 行登记;衍生 #253(scene_id 硬编码)</li>
+</ul>
+</section>
+
+<section>
+<h2>📌 遗留观察项(非阻塞,待你拍板)</h2>
+<ul>
+<li>空间视图「看详情」按钮未实现(仅移/补/减)</li>
+<li>备选位置最多 6 个,spec 写 2-3 个</li>
+<li>树计数(件数) vs 删除影响(记录数)口径</li>
+<li>批量 50 条一页较长,可分组</li>
+</ul>
+</section>
+
+<div class="verdict">
+<h3>SM2 空间与位置域 · 审查完成 ✅</h3>
+</div>
+
+</div>
+</body>
+</html>

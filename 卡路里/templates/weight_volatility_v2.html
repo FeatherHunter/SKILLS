@@ -183,9 +183,12 @@
       localStorage.setItem('weight_baseline_mode', mode);
     } catch (e) { /* ignore */ }
     // 同时 sync URL,不刷页
-    const url = new URL(window.location.href);
-    url.searchParams.set('baseline', mode);
-    window.history.replaceState({}, '', url);
+    // 2026-08-10 #43 修复:file:// 或受限 webview 下 replaceState 抛 SecurityError 会中断点击处理器
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('baseline', mode);
+      window.history.replaceState({}, '', url);
+    } catch (e) { /* ignore */ }
   }
 
   // 当前 mode 状态(供 render 使用)
@@ -285,7 +288,8 @@
     if (canvas && d.points && d.points.length > 0) {
       const ctx = canvas.getContext('2d');
       const W = canvas.width = canvas.offsetWidth;
-      const H = canvas.height = 360;
+      // 2026-08-10 #43 修复:高度用 CSS 实际值(移动端 280 而非硬编码 360,否则整图纵向压缩、文字压扁)
+      const H = canvas.height = canvas.offsetHeight || 360;
       // 2026-08-10 #43 重构:左右留白不对称(左容纳Y轴刻度,右极小) · 图贴近容器边缘
       const PAD_L = 28, PAD_R = 8, PAD_B = 24;
 

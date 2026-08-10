@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>轨迹视觉设计 v2 · 体重对比</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#ffffff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --red:#ff3b30; --line:rgba(0,0,0,.06);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 40px;max-width:640px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(0,113,227,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:22px;font-weight:700;line-height:1.3;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.6}
+  h2{font-size:16px;font-weight:700;margin:18px 0 10px}
+  h2:first-child{margin-top:0}
+  p{font-size:14px;line-height:1.7;color:var(--ink)}
+  .warn{background:#fff7e6;border:1px solid rgba(255,159,10,.25);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;color:#8a6100;margin:10px 0}
+  .ok{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;color:#1c7c3a;margin:10px 0}
+  .old,.new{border-radius:14px;padding:14px;margin:10px 0;font-size:12.5px;line-height:1.8;overflow-x:auto;white-space:normal;word-break:break-all}
+  .old{background:#fafafa;border:1px dashed rgba(0,0,0,.12);color:var(--ink2)}
+  .new{background:rgba(0,113,227,.05);border:1px solid rgba(0,113,227,.18);color:var(--ink)}
+  .snippet{background:#f5f5f7;border-radius:10px;padding:10px 12px;font-size:11.5px;font-family:"SF Mono",ui-monospace,Menlo,monospace;color:var(--ink2);line-height:1.7;word-break:break-all}
+  .prompt{background:#f5f5f7;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.8;white-space:pre-wrap}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+  .chip{font-size:11px;font-weight:600;color:var(--ink2);background:var(--bg);border-radius:20px;padding:4px 10px}
+  .arrow{color:var(--red);font-weight:600}
+  .check{color:var(--green);font-weight:600}
+  img{width:100%;border-radius:12px;border:1px solid var(--line);margin-top:10px}
+  @media (max-width:420px){body{padding:14px 10px 32px} h1{font-size:19px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">#43 体重验收 · 轨迹设计 v2</span>
+  <h1>轨迹 = 趋势感，不该是文本长串</h1>
+  <p class="sub">减重 10kg 那天 vs 今天 · 场景 46/47 的「体重轨迹」展示重构</p>
+</div>
+
+<div class="card">
+  <h2>旧方案的问题</h2>
+  <p>轨迹原本是一段文本长串，像这样：</p>
+  <div class="old">25-06-10:75.0 → 25-09-18:69.8 → 25-10-28:69.7 → 25-12-09:69.5 → 26-01-18:69.3 → 26-02-28:69.1 → 26-04-10:68.9 → 26-05-21:68.8 → 26-06-30:68.6 → 26-08-10:68.4 …</div>
+  <p>在 375px 手机屏上，这段长串会被容器挤成一行三个字、疯狂换行，坨在一起，还带省略号——<b>完全看不出趋势</b>。趋势感是轨迹的核心价值，文本形式承载不了它。</p>
+</div>
+
+<div class="card">
+  <h2>新方案：SVG 迷你折线</h2>
+  <p>轨迹改画成极简折线（Sparkline），三个层次：</p>
+  <p style="margin-top:8px">① <b>折线本身</b>：无坐标轴，只保留趋势形状 —— 一眼看出「一路下降」</p>
+  <p>② <b>首尾端点</b>：起点蓝点 / 终点绿点（呼应「下降=积极」的语义色）</p>
+  <p>③ <b>双行标签</b>：日期小字灰色（辅助）在上，体重大字彩色（核心）在下 —— 颜色与端点一一对应，层级一眼可读</p>
+  <div class="new">25-07-10&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;26-08-10<br><b style="color:#0071e3;font-size:16px">70.0 kg</b>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b style="color:#34c759;font-size:16px">68.4 kg</b></div>
+  <div class="ok">✓ 实测（375px 截图）：无换行怪异、无截断、无拥挤；折线与标签间距舒适，日期/体重层级清晰，颜色与端点呼应，Apple 风一致</div>
+  <p style="margin-top:8px;font-size:12.5px;color:var(--ink2)">长轨迹（如 396 天）自动降采样到最多 10 点，跨年日期用 YY-MM-DD，无省略号拼接。</p>
+</div>
+
+<div class="card">
+  <h2>验收 prompt（复制用）</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「对比体重：减重 10kg 那天 vs 今天」。
+
+请反查我减重 10kg 达成的那一天,和今天对比。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#43 验收闭环 · 完成确认</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:640px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(52,199,89,.14);color:#1c7c3a;font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  h2{font-size:15px;font-weight:700;margin:14px 0 8px}
+  p{font-size:13.5px;line-height:1.75}
+  .ok{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;color:#1c7c3a;margin:8px 0}
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;background:#f5f5f7;border-radius:6px;padding:2px 6px}
+  ol{padding-left:20px;font-size:13.5px;line-height:2}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">#43 已关闭</span>
+  <h1>体重 58 场景验收 · 闭环完成</h1>
+  <div class="ok">✓ 结论表已贴 issue 评论（含 58 场景验收结论 + 修复清单）<br>
+  ✓ issue #43 已关闭<br>
+  ✓ 代码已提交 commit <span class="mono">0fb14ae</span>（7 文件 · 249+/50-）<br>
+  ✓ pytest 342 passed + 20 xfailed，无回归<br>
+  ✓ 验收记录已入库 <span class="mono">.scratch/review/03-体重-review.md</span></div>
+</div>
+
+<div class="card">
+  <h2>接下来：剩余验收 issue</h2>
+  <ol>
+    <li><b>#42</b> 健身计划 29 场景（含 plan_builder_wizard 历史 JS bug 修复）</li>
+    <li><b>#40</b> 运动 39 场景</li>
+    <li><b>#39</b> 身体细节 13 场景</li>
+    <li><b>#38</b> 身材照片 10 场景</li>
+    <li><b>#41</b> 分析 154 场景（大头）</li>
+    <li>开发类 #49（记一餐文件名）/ #50（HELP UI）</li>
+  </ol>
+  <p class="sub">本地 commit 已就绪，是否现在 push 同步远端？还是继续推进 #42？</p>
+</div>
+
+</body>
+</html>

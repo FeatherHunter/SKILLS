@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>场景 52/53 验收包 · 体重</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:640px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(0,113,227,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:21px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  h2{font-size:15px;font-weight:700;margin:16px 0 8px}
+  p{font-size:13.5px;line-height:1.75;color:var(--ink)}
+  .prompt{background:#f5f5f7;border-radius:12px;padding:14px;font-size:13px;line-height:1.8;white-space:pre-wrap;border:1px solid var(--line);margin:8px 0}
+  .fix{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;color:#1c7c3a;margin:8px 0}
+  .note{font-size:12.5px;color:var(--ink2);line-height:1.7;margin-top:6px}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">#43 体重验收 · 场景 52/53</span>
+  <h1>看体重总览 + 体重复盘（本周）</h1>
+  <p class="sub">同类批量交付 · 场景 HTML + 验收 prompt 一起看</p>
+</div>
+
+<div class="card">
+  <h2>场景 52 · 看体重总览</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看体重总览」。
+
+我想看体重综合总览。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <p>本轮修复：</p>
+  <div class="fix">✓ 7 天趋势折线全同值（68.4 持平）时居中显示 + Y 轴刻度/网格——不再贴底像坏图<br>✓ 0 值显示「0.0 kg」不带正负号（原 +0.0 视觉误导）</div>
+</div>
+
+<div class="card">
+  <h2>场景 53 · 体重复盘（本周）</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「体重复盘（本周）」。
+
+我想看本周的体重复盘。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <p>本轮修复：</p>
+  <div class="fix">✓ 周窗口改为完整自然周（08-10 ~ 08-16），不再截断到今天<br>✓ 记录天数卡显示「覆盖 7 天」（原重复日期 4 次）<br>✓ vs 上周 0 值「0.0 kg」+ 变化方向着色（升红降绿）</div>
+</div>
+
+</body>
+</html>

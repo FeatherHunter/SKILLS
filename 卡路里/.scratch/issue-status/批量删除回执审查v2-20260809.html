@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>批量删体重回执 · 5维审查v2 · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#f0f4ff);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(0,113,227,.12)}
+.hero .eyebrow{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:22px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:11.5px;color:var(--ink3);margin-top:2px}
+.kpi.ok .num{color:var(--green)}
+.kpi.warn .num{color:var(--orange)}
+.item{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.item .head{padding:16px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.item .head .no{min-width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.item .head h2{font-size:16px;font-weight:700}
+.item .head .verdict{margin-left:auto;font-size:12px;font-weight:800;padding:3px 12px;border-radius:999px}
+.item .head .verdict.pass{background:var(--green-soft);color:var(--green)}
+.item .head .verdict.fix{background:var(--orange-soft);color:var(--orange)}
+.item .body{padding:14px 20px;font-size:13px;color:var(--ink2)}
+.item .body .row{line-height:1.8}
+.item .body .row b{color:var(--ink)}
+.item .body .evi{background:#f7f7f9;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--ink);margin:8px 0;white-space:pre-wrap;font-family:"SF Mono",Consolas,monospace}
+.item .body .bad{color:var(--red);font-weight:700}
+.item .body .good{color:var(--green);font-weight:700}
+.suggest{background:var(--card);border-radius:16px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.suggest h3{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px}
+.suggest .row{font-size:13px;color:var(--ink2);line-height:1.8}
+.suggest .row b{color:var(--ink)}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:20px}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里 · 5 维对抗式审查(已设为固定验收标准)</div>
+    <h1>批量删体重回执 · 审查 v2</h1>
+    <div class="sub">2026-08-09 · 实测版本:批量删体重_回执_20260809_214353.html(含按钮/KPI/时间范围三轮修复)</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi ok"><div class="num">✅</div><div class="lbl">① 复制按钮</div></div>
+    <div class="kpi ok"><div class="num">✅</div><div class="lbl">② 呈现数据</div></div>
+    <div class="kpi ok"><div class="num">✅</div><div class="lbl">③ 手机适配</div></div>
+    <div class="kpi ok"><div class="num">✅</div><div class="lbl">④ 设计师风格</div></div>
+    <div class="kpi warn"><div class="num">3</div><div class="lbl">⑤ 增强建议</div></div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">1</div><h2>复制数据 / 复制日志按钮</h2><span class="verdict pass">✅ 通过</span></div>
+    <div class="body">
+      <div class="row"><span class="good">✅ 文字不变</span>实测点击后按钮文字保持「📋 复制数据/复制日志」</div>
+      <div class="row"><span class="good">✅ 面板 Toast</span>居家管家「📋 已复制 + 说明 + ✓ 知道了」确认面板(4.5s 自动关)</div>
+      <div class="row"><span class="good">✅ 复制内容有数据价值</span>实测:</div>
+      <div class="evi">🗑 批量删除体重
+时间范围: 2026-07-15 ~ 2026-07-19
+删除条数: 5
+2026-07-15 08:00 69.8kg (晨起空腹)
+…(5 条明细,日期/时间/体重/备注齐全)</div>
+      <div class="row"><span class="bad">⚠ 撤销按钮文案待拍板</span>「↩ 撤销删除」点击实际<b>复制撤销命令</b>(calorie_tracker.py weight 69.8 --date …)——回执无法直接写库,撤销需交 AI 执行。文案有轻微误导,建议改「↩ 复制撤销指令」或按你拍板保留(与 crud_receipt「↩ 撤销」先例一致)</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">2</div><h2>呈现数据 vs 设计契约</h2><span class="verdict pass">✅ 全覆盖</span></div>
+    <div class="body">
+      <div class="row">设计(#43 场景 10):<b>时间范围 / 删除条数 / 确认回执</b></div>
+      <div class="row">实测:KPI(删除条数 5 · 时间范围 · 涉及天数 5)+ 一句话 + 全量明细表(日期/时间/体重/BMI/备注)+ 撤销 + 双复制按钮 —— <span class="good">三要素全覆盖,外加涉及天数与全量明细(符合「操作了哪些数据必须可见」)</span></div>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">3</div><h2>手机版适配</h2><span class="verdict pass">✅ 通过(三轮修复后)</span></div>
+    <div class="body">
+      <div class="evi">实测 375/390/414px:
+· scrollW 无横向溢出
+· 按钮 2+1 布局(375px 下 42px 高,无换行)
+· KPI:删除条数/涉及天数 左列上下 + 时间范围右侧(起止日期两行 + 小~分隔)
+· 明细表 5 列 343px 内无溢出
+· 无 JS 错误</div>
+      <div class="row">图表类适配:本场景无图表,体重曲线类场景(#43 场景 18+)专项验证</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">4</div><h2>前端样式 · 顶级设计师风格</h2><span class="verdict pass">✅ 达标</span></div>
+    <div class="body">
+      <div class="row"><b>✅</b>Apple 风(浅色/白卡/16px 圆角/细阴影)全技能一致 · 破坏性操作红色语义(hero 浅红渐变/删除条数红字/撤销红主按钮) · KPI 呼吸感 · 表头加深</div>
+      <div class="row"><b>可打磨(非缺陷)</b>:明细表无斑马纹(10+ 条易串行)、KPI 无图标</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">5</div><h2>体验 / 数据价值增强建议</h2><span class="verdict fix">3 条待拍板</span></div>
+    <div class="body">
+      <div class="row">① <b>删除后最新体重提示</b>:回执底部加「删除后最新体重 68.4kg」——破坏性操作后用户最关心「现在数据什么样」(数据价值最高)</div>
+      <div class="row">② <b>区间体重变化摘要</b>:明细下方「区间变化 70.0 → 69.8 (-0.2kg)」</div>
+      <div class="row">③ <b>撤销按钮文案</b>:「↩ 撤销删除」→「↩ 复制撤销指令」(消除误导)</div>
+    </div>
+  </div>
+
+  <div class="suggest">
+    <h3>我的推荐</h3>
+    <div class="row">① 值得做(回执从「操作确认」升级为「数据状态认知」)· ② 值得做 · ③ 顺手改 —— <b>①②③ 你点头我一次做完</b></div>
+  </div>
+
+  <div class="footer">
+    本规则已存入记忆:<b>以后每个 HTML 交付前自动做 5 维对抗式审查</b><br>
+    <b>等待你对 ①②③ 拍板</b>
+  </div>
+
+</div>
+</body>
+</html>

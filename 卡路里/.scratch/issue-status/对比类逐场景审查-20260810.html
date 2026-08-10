@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对比类 18 场景 · 逐场景 5维审查 · 2026-08-10</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#f0f4ff);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(0,113,227,.12)}
+.hero .eyebrow{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:12px;color:var(--ink3);margin-top:2px}
+.kpi.ok .num{color:var(--green)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--card);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:14px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;color:var(--ink3);font-weight:700;background:#fafafa}
+td .ok{color:var(--green);font-weight:700}
+.note{background:var(--card);border-radius:16px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.note h3{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px}
+.note .row{font-size:13px;color:var(--ink2);line-height:1.8}
+.note .row b{color:var(--ink)}
+.note .row .warn{color:var(--orange);font-weight:700}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:20px}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里 · 逐场景对抗式审查</div>
+    <h1>对比类 18 场景 · 5 维审查</h1>
+    <div class="sub">2026-08-10 · 375px 实测 · 18/18 通过基础检查</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi ok"><div class="num">18/18</div><div class="lbl">复制双按钮+面板Toast</div></div>
+    <div class="kpi ok"><div class="num">18/18</div><div class="lbl">呈现数据齐全·无null</div></div>
+    <div class="kpi ok"><div class="num">18/18</div><div class="lbl">375px 无溢出·无JS错</div></div>
+    <div class="kpi ok"><div class="num">✅</div><div class="lbl">Apple 风达标</div></div>
+  </div>
+
+  <table>
+    <tr><th>#</th><th>场景</th><th>①复制按钮</th><th>②呈现数据</th><th>③手机适配</th><th>④样式</th><th>数据摘要</th></tr>
+    <tr><td>34</td><td>最近30天vs之前30天</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-0.13 · 速率差-3g/天 · 持平</td></tr>
+    <tr><td>35</td><td>自定义两段时间</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-0.12 · 持平</td></tr>
+    <tr><td>36</td><td>本周vs上周</td><td class="ok">✅</td><td class="ok">✅(样本不足提示)</td><td class="ok">✅</td><td class="ok">✅</td><td>⚠ 样本不足(每段需≥3条)</td></tr>
+    <tr><td>37</td><td>本月vs上月</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-0.11 · 速率差-7g/天 · 慢了</td></tr>
+    <tr><td>38</td><td>近N天vs上一个N天</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-0.13 · 持平</td></tr>
+    <tr><td>39</td><td>今天vs一年前今天</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-1.6 · 速率差—</td></tr>
+    <tr><td>40</td><td>今天vs半年前今天</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-0.8</td></tr>
+    <tr><td>41</td><td>今天vs三月前今天</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-0.4</td></tr>
+    <tr><td>42</td><td>当前vs目标体重</td><td class="ok">✅</td><td class="ok">✅(措辞观察)</td><td class="ok">✅</td><td class="ok">✅</td><td>还差0.4kg(措辞重复见下)</td></tr>
+    <tr><td>43</td><td>当前vs平台期首日</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-0.01</td></tr>
+    <tr><td>44</td><td>当前vs历史最低</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>持平 0</td></tr>
+    <tr><td>45</td><td>当前vs历史最高</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-11.6(80→68.4)</td></tr>
+    <tr><td>46</td><td>减重5kg那天vs今天</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-6.6(75→68.4)· 426天</td></tr>
+    <tr><td>47</td><td>减重10kg那天vs今天</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-1.6(70→68.4)</td></tr>
+    <tr><td>48</td><td>当前vs入夏最低</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>持平 0</td></tr>
+    <tr><td>49</td><td>当前vs入冬最低</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>Δ-0.7</td></tr>
+    <tr><td>50</td><td>运动多vs运动少的两月</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>+1.05 · 速率差3g/天</td></tr>
+    <tr><td>51</td><td>工作日vs周末</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td class="ok">✅</td><td>持平 0</td></tr>
+  </table>
+
+  <div class="note">
+    <h3>第 5 维 · 体验/数据价值观察(待你拍板)</h3>
+    <div class="row"><span class="warn">① #42 当前vs目标</span>判断句「变化还差 0.4 kg +0.4 kg」——「还差」与「+0.4」重复表述同一数值,建议改为「距目标还差 0.4 kg」单一口径</div>
+    <div class="row"><span class="warn">② 单点对比场景</span>(39-49 等)速率差显示 —,建议补充对照区加一行说明「单点对比无法计算速率差」,消除用户疑惑</div>
+    <div class="row"><span class="warn">③ #36 样本不足</span>提示页正确(每段需≥3条),但可加「建议改用更长区间对比」引导(如本周vs上周数据少时提示用近30天vs之前30天)</div>
+    <div class="row">④ 其余无问题:无数据提示页(里程碑未达成)、速率差 null→—、R5 文件名、双复制按钮全部达标</div>
+  </div>
+
+  <div class="footer">
+    18 场景全部通过基础 5 维;<b>①②③ 你拍板后我一次性优化</b>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>场景 54-58 验收包 · 体重</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --orange:#ff9500; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:640px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(0,113,227,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  h2{font-size:15px;font-weight:700;margin:16px 0 8px}
+  p{font-size:13.5px;line-height:1.75}
+  .prompt{background:#f5f5f7;border-radius:12px;padding:13px 14px;font-size:12.5px;line-height:1.8;white-space:pre-wrap;border:1px solid var(--line);margin:6px 0}
+  .fix{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;color:#1c7c3a;margin:8px 0}
+  .note{background:#fff8e6;border:1px solid rgba(255,159,10,.3);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;color:#8a6100;margin:8px 0}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">#43 体重验收 · 场景 54-58 批量</span>
+  <h1>体重复盘（本月/90天/今年/自定义）+ 里程碑回溯</h1>
+  <p class="sub">同类批量交付 · 每个场景 HTML + 验收 prompt 一起看</p>
+</div>
+
+<div class="card">
+  <h2>场景 54 · 体重复盘（本月）</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「体重复盘（本月）」。
+
+我想看本月的体重复盘。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <h2>场景 55 · 体重复盘（最近 90 天）</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「体重复盘（最近 90 天）」。
+
+我想看最近 90 天的体重复盘。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <h2>场景 56 · 体重复盘（今年）</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「体重复盘（今年）」。
+
+我想看今年的体重复盘。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <h2>场景 57 · 体重复盘（自定义时间）</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「体重复盘（自定义时间）」。
+
+我想看某段时间的体重复盘(自定义起止日期)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。
+
+起止日期(YYYY-MM-DD):____ ~ ____</div>
+  <h2>场景 58 · 看里程碑回溯</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看里程碑回溯」。
+
+我想看所有达成过的体重里程碑。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+</div>
+
+<div class="card">
+  <h2>本轮修复汇总</h2>
+  <div class="fix">✓ 折线 Catmull-Rom 平滑（Apple Health 曲线风，消除密集点锯齿）<br>
+  ✓ X 轴标签抽样 + 间距避让，末尾「今天」强制保留、上一位让位<br>
+  ✓ Y 轴刻度步长向上取整（刻度不重复、折线与网格线精确对齐）<br>
+  ✓ 复盘窗口完整自然周/自然月/自然年（不再截断到今天）<br>
+  ✓ 记录天数显示「覆盖 N 天」去重复日期 · 0 值去正负号 · vs 对比着色 · 括号空格</div>
+  <div class="note">ℹ 测试 seed 数据为每 23 天一个档位（阶梯形状），所以今年/90 天趋势图呈阶梯下降——真实逐日记录数据下曲线自然平滑连续，渲染逻辑一致。</div>
+  <p class="sub" style="margin-top:6px">可拍板项：X 轴日期标签字号/对比度可再加强（当前 11px 浅灰）；56 今年「期间均值 vs 年度均值」信息重复，可换成最高/最低体重。等你决定。</p>
+</div>
+
+</body>
+</html>

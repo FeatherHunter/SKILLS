@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SVG 圆点被压扁？用 HTML 层修复</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --red:#ff3b30; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:680px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:22px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(0,113,227,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:22px;font-weight:700;line-height:1.35;margin-bottom:8px}
+  h2{font-size:16px;font-weight:700;margin:20px 0 10px}
+  h2:first-of-type{margin-top:0}
+  p{font-size:14px;line-height:1.75;margin-bottom:8px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  .bad{background:#fff2f0;border:1px solid rgba(255,59,48,.2);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;color:#b3261e;margin:10px 0}
+  .good{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;color:#1c7c3a;margin:10px 0}
+  code,pre{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+  pre{background:#f5f5f7;border:1px solid var(--line);border-radius:12px;padding:14px;font-size:12px;line-height:1.7;overflow-x:auto;color:#333;margin:10px 0}
+  pre .c{color:#8e8e93} pre .k{color:#d70015} pre .s{color:#2e6e46} pre .n{color:#0071e3}
+  .demo{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin:12px 0}
+  .demo-title{font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:10px}
+  .row{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}
+  .chip{font-size:11px;font-weight:600;color:var(--ink2);background:var(--bg);border-radius:20px;padding:5px 12px}
+  .arrow{color:var(--red);font-weight:700}
+  .check{color:var(--green);font-weight:700}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{font-size:12px;color:var(--ink2);font-weight:600;background:#fafafa}
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:19px} pre{font-size:11px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">前端技巧 · SVG 图表</span>
+  <h1>SVG 圆点被压扁？<br>用 HTML 层覆盖修复</h1>
+  <p class="sub">体重趋势迷你折线（Sparkline）首尾圆点的修复实录 —— 可复制的通用解法</p>
+</div>
+
+<div class="card">
+  <h2>现象</h2>
+  <p>SVG 折线首尾的 <span class="mono">&lt;circle&gt;</span> 圆点，在手机上看成了<b>被横向拉宽的扁椭圆</b>，白描边左右厚、上下薄。</p>
+  <div class="bad">❌ 圆点被压扁：高度方向压缩，宽高比 ≠ 1:1</div>
+</div>
+
+<div class="card">
+  <h2>根因：preserveAspectRatio="none"</h2>
+  <p>为了让折线铺满卡片宽度，SVG 常用 <span class="mono">width:100%</span> + <span class="mono">preserveAspectRatio="none"</span>——意思是<b>不保持纵横比，自由拉伸</b>去适配容器。问题是它会把 <b>SVG 里的所有图形</b>一起拉伸，包括圆形：</p>
+  <div class="row">
+    <span class="chip">viewBox 300 × 56</span>
+    <span class="chip">实际容器 327 × 56</span>
+    <span class="chip">横向放大 1.09 ×</span>
+    <span class="chip">circle 跟着变椭圆</span>
+  </div>
+  <p class="sub">圆点不是「自己」变形的，而是被整个 SVG 坐标系非等比缩放拖累的。<b>折线无所谓</b>（线拉伸看不出来），<b>圆形受不了</b>（形状可感知）。</p>
+</div>
+
+<div class="card">
+  <h2>解法：圆点 HTML 化</h2>
+  <p>把圆点从 SVG 里拿出来，改成 <b>HTML 层</b>：一个绝对定位的 <span class="mono">div</span>，盖在折线两端。div 是页面级元素，<b>不受 SVG 坐标系缩放影响</b>，永远正圆：</p>
+  <pre><span class="c">// 1. SVG 只画折线（去掉 circle），容器 position:relative</span>
+<span class="k">&lt;div</span> <span class="n">style</span>=<span class="s">"position:relative"</span><span class="k">&gt;</span>
+  <span class="k">&lt;svg</span> <span class="n">viewBox</span>=<span class="s">"0 0 300 56"</span>
+       <span class="n">preserveAspectRatio</span>=<span class="s">"none"</span>
+       <span class="n">style</span>=<span class="s">"width:100%;height:56px;display:block"</span><span class="k">&gt;</span>
+    <span class="k">&lt;polyline</span> <span class="n">points</span>=<span class="s">"..."</span> <span class="n">stroke</span>=<span class="s">"#0071e3"</span> <span class="n">stroke-width</span>=<span class="s">"2"</span><span class="k">/&gt;</span>
+  <span class="k">&lt;/svg&gt;</span>
+
+<span class="c">// 2. 圆点用 HTML div：宽高相等 + 圆角 50% = 任何屏幕都精确正圆</span>
+<span class="k">&lt;div</span> <span class="n">style</span>=<span class="s">"position:absolute;
+  left:2%;  top:12.5%;          <span class="c">← SVG 坐标换算成百分比</span>
+  width:9px; height:9px;
+  border-radius:50%;
+  background:#0071e3;
+  border:2px solid #fff;         <span class="c">← 白描边（Apple 数据点风）</span>
+  transform:translate(-50%,-50%); <span class="c">← 以圆心锚定</span>
+  box-shadow:0 1px 2px rgba(0,0,0,.15)"</span><span class="k">&gt;</span><span class="k">&lt;/div&gt;</span>
+<span class="k">&lt;/div&gt;</span></pre>
+  <p class="sub">关键就 3 步：① 圆点移出 SVG；② 位置用百分比对齐折线端点；③ <span class="mono">translate(-50%,-50%)</span> 让圆心中点锚定。白描边 + 轻阴影是顺手加的视觉增强。</p>
+</div>
+
+<div class="card">
+  <h2>位置换算：SVG 坐标 → 百分比</h2>
+  <p>SVG 内部是 viewBox 坐标系（0~300 × 0~56），HTML 层是容器百分比。换算公式（两端留了 6px 内边距）：</p>
+  <pre><span class="c">// x: viewBox 宽 300 → left 百分比</span>
+left%  = x / 300 * 100        <span class="c">// 端点 x=6 → 2%；x=294 → 98%</span>
+
+<span class="c">// y: viewBox 高 56 == CSS 固定高度 56px → top 百分比</span>
+top%   = y / 56  * 100        <span class="c">// 高不变，直接比例</span>
+
+<span class="c">// 圆点宽 9px + translate(-50%,-50%) → 圆心精确落在折线端点上</span></pre>
+  <p class="sub">CSS 高度固定（56px）时 y 换算零误差；若高度也自适应，需用 <span class="mono">aspect-ratio</span> 或 ResizeObserver 再算一次。</p>
+</div>
+
+<div class="card">
+  <h2>验证（我实际做的双重检查）</h2>
+  <table>
+    <tr><th>方法</th><th>结果</th></tr>
+    <tr><td>DOM 测量 <span class="mono">getBoundingClientRect()</span></td><td>w = 9.00px, h = 9.00px, <b>ratio = 1.000</b> <span class="check">✓</span></td></tr>
+    <tr><td>像素级分析（PIL 量圆点像素边界）</td><td>3× DPI 截图上蓝/绿点均 14×14px，<b>ratio = 1.000</b> <span class="check">✓</span></td></tr>
+    <tr><td>视觉模型复核（375px 手机截图）</td><td>白描边均匀、无裁剪、颜色与折线端点一一对应 <span class="check">✓</span></td></tr>
+  </table>
+  <p class="sub">顺带一提：视觉模型两次把正圆误判成「扁椭圆」——所以小图形设计<b>别只信 AI 看图，用 DOM/像素测量做 ground truth</b>。</p>
+</div>
+
+<div class="card">
+  <h2>完整最小 Demo（可复制自测）</h2>
+  <pre>&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body style="background:#f5f5f7;font-family:system-ui;padding:40px"&gt;
+  &lt;div style="background:#fff;border-radius:16px;padding:20px;max-width:360px"&gt;
+    &lt;div style="position:relative"&gt;
+      &lt;svg viewBox="0 0 300 56" preserveAspectRatio="none"
+           style="width:100%;height:56px;display:block"&gt;
+        &lt;polyline points="6,8 100,20 200,35 294,48"
+                  fill="none" stroke="#0071e3" stroke-width="2"
+                  stroke-linecap="round"/&gt;
+      &lt;/svg&gt;
+      &lt;div style="position:absolute;left:2%;top:14.3%;width:9px;height:9px;
+                  border-radius:50%;background:#0071e3;border:2px solid #fff;
+                  transform:translate(-50%,-50%)"&gt;&lt;/div&gt;
+      &lt;div style="position:absolute;left:98%;top:85.7%;width:9px;height:9px;
+                  border-radius:50%;background:#34c759;border:2px solid #fff;
+                  transform:translate(-50%,-50%)"&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;div style="display:flex;justify-content:space-between;
+                font-size:12px;color:#6e6e73;margin-top:8px"&gt;
+      &lt;span&gt;起点&lt;/span&gt;&lt;span&gt;终点&lt;/span&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+&lt;/body&gt;
+&lt;/html&gt;</pre>
+  <p class="sub">把上面代码存成 <span class="mono">demo.html</span> 双击打开，拖窄浏览器窗口，圆点始终是正圆。</p>
+</div>
+
+<div class="card">
+  <h2>为什么不用其他方案</h2>
+  <table>
+    <tr><th>方案</th><th>为什么否决</th></tr>
+    <tr><td>改 viewBox 比例 = 容器比例</td><td>容器宽度随设备变（375/390/414/768…），写死即失效</td></tr>
+    <tr><td>SVG 内画椭圆反向补偿</td><td>每次渲染都要按实际宽高比算 rx/ry，脆弱难维护</td></tr>
+    <tr><td>去掉 preserveAspectRatio="none"</td><td>折线会按比例缩放留白，铺不满卡片宽度</td></tr>
+    <tr><td class="mono"><b>HTML 层圆点（采用）</b></td><td><b>零缩放耦合</b>：折线随便拉伸，圆点永远正圆；还能用 CSS 加白边/阴影/动画</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>一句话总结</h2>
+  <div class="good">✓ SVG 的 <span class="mono">preserveAspectRatio="none"</span> 会把所有图形非等比拉伸 —— <b>圆点别画在 SVG 里，用 HTML 层盖上去</b>，形状就脱离坐标系缩放了。</div>
+</div>
+
+</body>
+</html>

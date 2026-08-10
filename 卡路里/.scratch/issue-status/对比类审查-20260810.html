@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对比类 34-51 · 5维审查 · 2026-08-10</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#f0f4ff);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(0,113,227,.12)}
+.hero .eyebrow{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.item{background:var(--card);border-radius:20px;box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden}
+.item .head{padding:16px 20px 12px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line)}
+.item .head .no{min-width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.item .head h2{font-size:16px;font-weight:700}
+.item .head .verdict{margin-left:auto;font-size:12px;font-weight:800;padding:3px 12px;border-radius:999px}
+.item .head .verdict.pass{background:var(--green-soft);color:var(--green)}
+.item .head .verdict.fix{background:var(--orange-soft);color:var(--orange)}
+.item .body{padding:14px 20px;font-size:13px;color:var(--ink2)}
+.item .body .row{line-height:1.8}
+.item .body .row b{color:var(--ink)}
+.item .body .good{color:var(--green);font-weight:700}
+.item .body .bad{color:var(--red);font-weight:700}
+.item .body .evi{background:#f7f7f9;border:1px solid var(--line);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--ink);margin:8px 0;white-space:pre-wrap;font-family:"SF Mono",Consolas,monospace}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:20px}
+.footer b{color:var(--ink2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里 · 对抗式审查</div>
+    <h1>对比类 34-51 · 5 维审查</h1>
+    <div class="sub">2026-08-10 · 18 场景 · commits: 37f41c7(速率差null) / 67ffd10(复制日志)</div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">1</div><h2>复制数据 / 复制日志按钮</h2><span class="verdict fix">已修</span></div>
+    <div class="body">
+      <div class="row"><span class="bad">发现</span>对比页面只有「复制数据」缺「复制日志」(违反全局双按钮规则)</div>
+      <div class="row"><span class="good">已修</span>补「复制日志」(排障日志:唤醒词/渲染命令/数据来源/思考链/原始数据),面板 Toast 实测通过(67ffd10)</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">2</div><h2>呈现数据 vs 设计契约</h2><span class="verdict pass">✅ 通过</span></div>
+    <div class="body">
+      <div class="row">契约:两段均值/起止/变化/波动 + Δkg/方向/速率差/速度判断 → <b>全部呈现</b></div>
+      <div class="row"><span class="good">✅ 里程碑场景(46/47)</span>修正测试数据时间线后:减重 5kg 那天 = 2025-06-10(75kg) vs 今天 -6.6kg · 用时 426 天 · 期间速率 -0.015 kg/天</div>
+      <div class="row"><span class="good">✅ 无数据提示</span>未达成里程碑 → 「无法完成对比 · ⚠ 未达成减重 Xkg 里程碑(当前距历史最高已减 Xkg)+ 下一步提示」(符合无数据契约)</div>
+      <div class="row"><span class="bad">已修</span>速率差 null(单点对比/样本不足)→ 显示 —(37f41c7)</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">3</div><h2>手机版适配</h2><span class="verdict pass">✅ 通过</span></div>
+    <div class="body">
+      <div class="row">18 场景 375px 实测:scrollW 无横向溢出 · 无 JS 错误 · 两段对比卡片/补充对照布局正常</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">4</div><h2>前端样式 · 顶级设计师风格</h2><span class="verdict pass">✅ 达标</span></div>
+    <div class="body">
+      <div class="row">Apple 风(浅色/白卡/圆角/阴影)全技能一致 · 两段对比用 ↑↓ 箭头 + 绿色(下降/减重)/红(上升)语义色 · 速度判断徽标(持平/加速/减速)清晰</div>
+    </div>
+  </div>
+
+  <div class="item">
+    <div class="head"><div class="no">5</div><h2>体验 / 数据价值增强建议</h2><span class="verdict fix">2 条观察</span></div>
+    <div class="body">
+      <div class="row">① 无数据提示页已含「当前距历史最高已减 Xkg」——已传达差距,可再补「还差 Xkg 达成里程碑」(有增量价值,待拍板)</div>
+      <div class="row">② 速率差 null 场景(单点对比:今天 vs 一年前)可在补充对照说明「单点对比无法算速率」——现显示 —,语义靠上下文,可加说明(待拍板)</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    本轮修复:速率差 null(37f41c7) · 复制日志(67ffd10) · 里程碑测试数据(46/47 演示正确)<br>
+    <b>18 场景最新版交付,你核对后通过即进入 52-58</b>
+  </div>
+
+</div>
+</body>
+</html>

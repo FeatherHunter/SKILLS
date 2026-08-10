@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toast 全模板统一 · 2026-08-09</title>
+<style>
+:root{--bg:#f5f5f7;--card:#fff;--ink:#1d1d1f;--ink2:#3c3c43;--ink3:#8e8e93;--line:rgba(60,60,67,.12);--accent:#0071e3;--green:#34c759;--green-soft:rgba(52,199,89,.12);--orange:#ff9500;--orange-soft:rgba(255,149,0,.14);--red:#ff3b30;--red-soft:rgba(255,59,48,.10);--shadow:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.04)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:28px 16px 64px}
+.hero{padding:28px 24px 22px;margin-bottom:14px;background:linear-gradient(135deg,#fff,#f0f4ff);border-radius:20px;box-shadow:var(--shadow);border:1px solid rgba(0,113,227,.12)}
+.hero .eyebrow{font-size:12px;color:var(--accent);font-weight:700;letter-spacing:.4px;margin-bottom:8px}
+.hero h1{font-size:25px;font-weight:800;letter-spacing:-.3px}
+.hero .sub{font-size:14px;color:var(--ink3);margin-top:8px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow)}
+.kpi .num{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi .lbl{font-size:12px;color:var(--ink3);margin-top:2px}
+.kpi.ok .num{color:var(--green)}
+.kpi.warn .num{color:var(--orange)}
+.rule{background:var(--card);border-radius:16px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.rule h3{font-size:14px;font-weight:700;color:var(--accent);margin-bottom:8px}
+.rule .row{font-size:13px;color:var(--ink2);line-height:1.8}
+.rule .row b{color:var(--ink)}
+table{width:100%;border-collapse:collapse;font-size:12.5px;background:var(--card);border-radius:16px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:14px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line)}
+th{font-size:11px;color:var(--ink3);font-weight:700;background:#fafafa}
+.alert{background:var(--orange-soft);border-radius:16px;padding:14px 18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.alert h3{font-size:14px;font-weight:700;color:var(--orange);margin-bottom:6px}
+.alert .row{font-size:13px;color:var(--ink2);line-height:1.7}
+.footer{text-align:center;font-size:12px;color:var(--ink3);margin-top:20px}
+.footer b{color:var(--ink2)}
+@media(max-width:600px){.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">SKILL · 卡路里 · 全局 UI 统一</div>
+    <h1>复制按钮 Toast · 全模板统一为居家管家确认面板</h1>
+    <div class="sub">2026-08-09 · commit 966574e · 45 files · 336 测试全绿</div>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi ok"><div class="num">44</div><div class="lbl">模板本轮统一</div></div>
+    <div class="kpi ok"><div class="num">68</div><div class="lbl">累计统一(24+44)</div></div>
+    <div class="kpi ok"><div class="num">0</div><div class="lbl">残留按钮变文字</div></div>
+    <div class="kpi ok"><div class="num">336</div><div class="lbl">pytest 全绿</div></div>
+  </div>
+
+  <div class="rule">
+    <h3>统一行为契约(全场景生效 · 参考居家管家)</h3>
+    <div class="row">点击「复制 / 复制数据 / 复制日志 / 复制 prompt / 复制摘要」→ 内容写入剪贴板 → 弹出<b>确认面板</b>(📋 已复制 + 说明 + <b>✓ 知道了</b>按钮,4.5s 自动关 / 点击关)→ <b>按钮文字保持原样不动</b></div>
+    <div class="row">本次补漏:上一轮 24 个之外仍有 <b>44 个模板</b>是旧样式(无 Toast 或 iOS 胶囊),且 14 个还有按钮变文字(✅ 已复制)的历史遗留——全部一并统一</div>
+  </div>
+
+  <table>
+    <tr><th>类别</th><th>模板数</th><th>处理</th></tr>
+    <tr><td>已有旧 toast 函数(radius 10px 旧胶囊 / #toast 预置 / 简化版)</td><td>30</td><td>函数替换为居家管家确认面板版</td></tr>
+    <tr><td>无 toast 函数 + 按钮变文字(✅ 已复制) + 无反馈</td><td>14</td><td>注入面板 toast + 复制回调改调 toast(去按钮变文字)</td></tr>
+    <tr><td>本轮共处理</td><td>44</td><td>含 crud_receipt / weight_log_receipt / today_* / goal_* / food_* / 分析类等全部</td></tr>
+  </table>
+
+  <div class="alert">
+    <h3>⚠ 顺手发现的历史遗留 bug(未动 · 需独立处理)</h3>
+    <div class="row"><b>plan_builder_wizard.html(定训练计划向导)</b>:JS 存在语法错误(if 块结尾孤儿 `: ''}` + map 回调缺闭合)——<b>HEAD 版本就有</b>,非本次引入,但导致整个 script 块不执行(模板功能实际失效)。已恢复该文件未动,建议 #42 健身计划验收时一并修复或单独开 issue。</div>
+  </div>
+
+  <div class="footer">
+    验证:68 模板 Playwright 语法检查全过(plan_builder 已知问题除外)+ health_dashboard 真实点击测试(文字不变 + 面板 toast)+ 336 passed · 20 xfailed<br>
+    <b>规则已固化:以后任何新模板的复制按钮,一律用这套确认面板 toast</b>
+  </div>
+
+</div>
+</body>
+</html>

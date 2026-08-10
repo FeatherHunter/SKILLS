@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#43 体重验收进展</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --orange:#ff9500; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:640px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(0,113,227,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:21px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  .bar{display:flex;align-items:center;gap:10px;margin:14px 0 6px}
+  .track{flex:1;height:10px;background:#e8e8ed;border-radius:6px;overflow:hidden}
+  .fill{height:100%;background:linear-gradient(90deg,#34c759,#30d158);border-radius:6px}
+  .pct{font-size:15px;font-weight:700;color:var(--ink)}
+  .row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);gap:10px}
+  .row:last-child{border-bottom:none}
+  .name{font-size:13.5px;font-weight:600}
+  .meta{font-size:11.5px;color:var(--ink2);margin-top:2px}
+  .st{flex-shrink:0;font-size:11px;font-weight:600;border-radius:20px;padding:4px 10px;white-space:nowrap}
+  .done{background:rgba(52,199,89,.12);color:#1c7c3a}
+  .wait{background:rgba(255,149,0,.14);color:#b25e00}
+  .todo{background:#f0f0f2;color:var(--ink3)}
+  .fix{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;color:#1c7c3a;margin:8px 0}
+  .fix b{font-weight:700}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">#43 体重验收 · 进展快照</span>
+  <h1>58 场景验收 · 51 通过 / 3 待核对 / 5 未开始</h1>
+  <div class="bar">
+    <div class="track"><div class="fill" style="width:88%"></div></div>
+    <div class="pct">88%</div>
+  </div>
+  <p class="sub">逐场景验收 + 5 维对抗式审查 · 2026-08-10 17:20 快照</p>
+</div>
+
+<div class="card">
+  <div class="row">
+    <div><div class="name">1-45 全部场景（记录/明细/曲线/波动/备注/对比）</div>
+    <div class="meta">记录类 1-6 · 写库 7-10 · 明细 11-17 · 曲线 18-27 · 波动 28-32 · 备注 33 · 对比 34-45</div></div>
+    <span class="st done">✅ 通过</span>
+  </div>
+  <div class="row">
+    <div><div class="name">46-51 对比类（含减重 5/10kg 轨迹）</div>
+    <div class="meta">轨迹 SVG 迷你折线 + 双行标签 + 圆点正圆修复 · 18 场景全部重渲染为 SVG 版</div></div>
+    <span class="st done">✅ 通过</span>
+  </div>
+  <div class="row">
+    <div><div class="name">52 看体重总览</div>
+    <div class="meta">折线全同值居中 + Y 轴刻度网格 · 0 值去正负号 · 154428 版已交付</div></div>
+    <span class="st wait">⏳ 待核对</span>
+  </div>
+  <div class="row">
+    <div><div class="name">53 体重复盘（本周）</div>
+    <div class="meta">完整自然周窗口 · 记录天数去重复日期 · vs 上周着色 · 154840 版已交付</div></div>
+    <span class="st wait">⏳ 待核对</span>
+  </div>
+  <div class="row">
+    <div><div class="name">54-57 体重复盘（本月/90天/今年/自定义）</div>
+    <div class="meta">同一 review 渲染器 · 53 通过后批量渲染交付</div></div>
+    <span class="st todo">未开始</span>
+  </div>
+  <div class="row">
+    <div><div class="name">58 看里程碑回溯</div>
+    <div class="meta">review 渲染器 milestones 类型 · 含里程碑表格</div></div>
+    <span class="st todo">未开始</span>
+  </div>
+</div>
+
+<div class="card">
+  <h1 style="font-size:16px">本轮已完成的关键修复</h1>
+  <div class="fix">✓ <b>轨迹文本长串 → SVG 迷你折线</b>：趋势感视觉化，双行分层标签（日期小字灰 + 体重大字彩色呼应端点）<br>
+  ✓ <b>圆点正圆修复</b>：SVG preserveAspectRatio=none 压扁 circle → HTML 层正圆（DOM 9×9 + 像素 14×14 双重验证）<br>
+  ✓ <b>总览折线贴底</b>：全同值居中 + Y 轴刻度/网格（原贴底像坏图）<br>
+  ✓ <b>0 值显示</b>：「+0.0 kg」→「0.0 kg」，去除误导性红色<br>
+  ✓ <b>周复盘自然周窗口</b>：08-10 ~ 08-16，不再同天截断；记录天数「覆盖 7 天」去冗余</div>
+  <p class="sub">下一步：52/53 核对通过 → 54-58 批量渲染交付 → 结论表贴 issue 关闭 #43</p>
+</div>
+
+</body>
+</html>

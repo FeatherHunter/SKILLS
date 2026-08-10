@@ -1,4 +1,4 @@
-# scenes/write.yaml — 写入域场景注册(域唯一事实源 · 合并器 = 公共层脚本)
+﻿# scenes/write.yaml — 写入域场景注册(域唯一事实源 · 合并器 = 公共层脚本)
 # 场景 = 用户「想做的每一件事」(直达式 · 2026-08-07 人类裁定):
 #   用户找场景 → 复制 prompt → 填参数 → 发 AI;实现细节全部下沉 SKILL.md / result
 # prompt 规则(定稿 · #144 补充决议 4):
@@ -40,7 +40,7 @@ subs:
             scenario_title: 记一笔收入
             type: 采集
             status: ""
-            html: {template: "写入/income_form.html", command_cn: "记收入", data_source: "输入参数"}
+            html: {template: "写入/expense_form.html", command_cn: "记收入", data_source: "输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我记一笔收入(唤醒词:记收入):
 
@@ -59,7 +59,7 @@ subs:
             scenario_title: 拍账单记账(图片识别)
             type: 采集
             status: ""
-            html: {template: "写入/confirm.html", command_cn: "拍账单", data_source: "图片识别"}
+            html: {template: "写入/expense_form.html", command_cn: "拍账单", data_source: "图片识别"}
             prompt: |
               请加载「饼干记账」技能,帮我拍账单记账(唤醒词:拍账单):
             result: "识别金额(优先实付/合计)→ 过程型 HTML 确认(金额+分类选择器+预填)→ 回执;模糊/非账单/多金额 → 5 状态契约(AI 描述所见 + 询问)"
@@ -88,7 +88,7 @@ subs:
             scenario_title: 记一笔退款(冲销原支出)
             type: 采集
             status: ""
-            html: {template: "写入/refund_confirm.html", command_cn: "记退款", data_source: "输入参数"}
+            html: {template: "写入/flow_confirm.html", command_cn: "记退款", data_source: "输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我记一笔退款(唤醒词:记退款):
 
@@ -104,7 +104,7 @@ subs:
             scenario_title: 记一笔报销支出(#待报销)
             type: 采集
             status: ""
-            html: {template: "写入/confirm.html", command_cn: "记报销", data_source: "输入参数"}
+            html: {template: "写入/expense_form.html", command_cn: "记报销", data_source: "输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我记一笔报销支出(唤醒词:记报销):
 
@@ -121,7 +121,7 @@ subs:
             scenario_title: 报销到账(记收入 + 流转标签)
             type: 采集
             status: ""
-            html: {template: "写入/confirm.html", command_cn: "报销到账", data_source: "输入参数"}
+            html: {template: "写入/flow_confirm.html", command_cn: "报销到账", data_source: "输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我记录报销到账(唤醒词:报销到账):
 
@@ -136,7 +136,7 @@ subs:
             scenario_title: 借给别人钱
             type: 采集
             status: ""
-            html: {template: "写入/confirm.html", command_cn: "记借出", data_source: "输入参数"}
+            html: {template: "写入/flow_confirm.html", command_cn: "记借出", data_source: "输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我记一笔借出(唤醒词:记借出):
 
@@ -152,7 +152,7 @@ subs:
             scenario_title: 向别人借钱
             type: 采集
             status: ""
-            html: {template: "写入/confirm.html", command_cn: "记借入", data_source: "输入参数"}
+            html: {template: "写入/flow_confirm.html", command_cn: "记借入", data_source: "输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我记一笔借入(唤醒词:记借入):
 
@@ -168,7 +168,7 @@ subs:
             scenario_title: 收回借出的钱
             type: 采集
             status: ""
-            html: {template: "写入/confirm.html", command_cn: "记收回", data_source: "输入参数"}
+            html: {template: "写入/flow_confirm.html", command_cn: "记收回", data_source: "输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我记一笔收回(唤醒词:记收回):
 
@@ -182,7 +182,7 @@ subs:
             scenario_title: 偿还借入的钱
             type: 采集
             status: ""
-            html: {template: "写入/confirm.html", command_cn: "记偿还", data_source: "输入参数"}
+            html: {template: "写入/flow_confirm.html", command_cn: "记偿还", data_source: "输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我记一笔偿还(唤醒词:记偿还):
 
@@ -232,7 +232,7 @@ subs:
             scenario_title: 撤销一条记录(软删)
             type: 选择
             status: ""
-            html: {template: "写入/confirm.html", command_cn: "撤销", data_source: "bills + 输入参数"}
+            html: {template: "文字回执", command_cn: "撤销", data_source: "bills + 输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我撤销一条记录(唤醒词:撤销):
 
@@ -246,7 +246,7 @@ subs:
             scenario_title: 恢复已撤销记录
             type: 选择
             status: ""
-            html: {template: "写入/confirm.html", command_cn: "恢复", data_source: "bills + 输入参数"}
+            html: {template: "文字回执", command_cn: "恢复", data_source: "bills + 输入参数"}
             prompt: |
               请加载「饼干记账」技能,帮我恢复一条已撤销的记录(唤醒词:恢复):
 

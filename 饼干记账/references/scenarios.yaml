@@ -64,7 +64,7 @@ scenes:
         type: 采集
         status: ''
         html:
-          template: 写入/income_form.html
+          template: 写入/expense_form.html
           command_cn: 记收入
           data_source: 输入参数
         prompt: |
@@ -85,7 +85,7 @@ scenes:
         type: 采集
         status: ''
         html:
-          template: 写入/confirm.html
+          template: 写入/expense_form.html
           command_cn: 拍账单
           data_source: 图片识别
         prompt: |
@@ -118,7 +118,7 @@ scenes:
         type: 采集
         status: ''
         html:
-          template: 写入/refund_confirm.html
+          template: 写入/flow_confirm.html
           command_cn: 记退款
           data_source: 输入参数
         prompt: |
@@ -137,7 +137,7 @@ scenes:
         type: 采集
         status: ''
         html:
-          template: 写入/confirm.html
+          template: 写入/expense_form.html
           command_cn: 记报销
           data_source: 输入参数
         prompt: |
@@ -156,7 +156,7 @@ scenes:
         type: 采集
         status: ''
         html:
-          template: 写入/confirm.html
+          template: 写入/flow_confirm.html
           command_cn: 报销到账
           data_source: 输入参数
         prompt: |
@@ -173,7 +173,7 @@ scenes:
         type: 采集
         status: ''
         html:
-          template: 写入/confirm.html
+          template: 写入/flow_confirm.html
           command_cn: 记借出
           data_source: 输入参数
         prompt: |
@@ -191,7 +191,7 @@ scenes:
         type: 采集
         status: ''
         html:
-          template: 写入/confirm.html
+          template: 写入/flow_confirm.html
           command_cn: 记借入
           data_source: 输入参数
         prompt: |
@@ -209,7 +209,7 @@ scenes:
         type: 采集
         status: ''
         html:
-          template: 写入/confirm.html
+          template: 写入/flow_confirm.html
           command_cn: 记收回
           data_source: 输入参数
         prompt: |
@@ -225,7 +225,7 @@ scenes:
         type: 采集
         status: ''
         html:
-          template: 写入/confirm.html
+          template: 写入/flow_confirm.html
           command_cn: 记偿还
           data_source: 输入参数
         prompt: |
@@ -281,7 +281,7 @@ scenes:
         type: 选择
         status: ''
         html:
-          template: 写入/confirm.html
+          template: 文字回执
           command_cn: 撤销
           data_source: bills + 输入参数
         prompt: |
@@ -297,7 +297,7 @@ scenes:
         type: 选择
         status: ''
         html:
-          template: 写入/confirm.html
+          template: 文字回执
           command_cn: 恢复
           data_source: bills + 输入参数
         prompt: |

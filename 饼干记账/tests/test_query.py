@@ -64,8 +64,9 @@ class TestTimeFamily:
 
     def test_summary_today(self, tmp_db_dir):
         """查今天:4 KPI + 今日明细 + 分类聚合(seeded_db 含今天数据 → 非空)"""
-        _insert(tmp_db_dir, "餐饮/外卖/午餐", -35.0, "2026-08-09 12:00:00", "午饭", "支付宝")
-        _insert(tmp_db_dir, "工资/基本工资", 8000.0, "2026-08-09 09:00:00", "工资")
+        today = date.today()
+        _insert(tmp_db_dir, "餐饮/外卖/午餐", -35.0, f"{today:%Y-%m-%d} 12:00:00", "午饭", "支付宝")
+        _insert(tmp_db_dir, "工资/基本工资", 8000.0, f"{today:%Y-%m-%d} 09:00:00", "工资")
         data = _run_query_cli(tmp_db_dir, "summary")
         assert data["status"] == "ok"
         d = data["data"]

@@ -53,6 +53,21 @@ def test_help_html_static():
     assert "<!--SHARED-HELPERS-->" in h, "必须使用 SHARED-HELPERS 占位符"
 
 
+def test_help_html_no_default_tap_highlight():
+    """#244 回归保护: 目录按钮点击不得闪蓝
+
+    修复 = 两行 CSS:
+      1. *{-webkit-tap-highlight-color:transparent} —— 禁用浏览器默认点击高亮
+         (Chromium/WebKit 触屏点击叠加闪层的唯一来源,实测默认 rgba(0,0,0,.18))
+      2. 三级 summary 自定义 :active{background:var(--soft)} —— 保留浅色点击反馈
+    """
+    h = HELP_HTML.read_text(encoding="utf-8")
+    assert "-webkit-tap-highlight-color:transparent" in h, \
+        "缺少全局点击高亮禁用(#244 修复被移除?)"
+    assert (".module>summary:active,.sub-module>summary:active,.scene>summary:active"
+            "{background:var(--soft)}") in h, "缺少三级目录 :active 浅色反馈(#244 修复被移除?)"
+
+
 def test_help_html_fold_mechanism():
     """折叠机制:原生 details/summary + 场景头部复制按钮 preventDefault 守护
 

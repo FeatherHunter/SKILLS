@@ -131,9 +131,9 @@ function rebuildReceipt(){
   let used=0,dispose=0,skip=0;
   D.items.forEach(it=>{
     const st=STATE[it.id];if(!st||!st.action)return;
-    if(st.action==='used'){used++;lines.push(`  物品 ID ${it.id}「${it.name}」: 已用完`);lines.push(`    执行: python scripts/home_manager.py sm1-qty --id ${it.id} --set 0(数量归零,自动标记已用完+补货建议)`);}
-    else if(st.action==='dispose'){dispose++;lines.push(`  物品 ID ${it.id}「${it.name}」: 废弃`);lines.push(`    执行: python scripts/home_manager.py sm1-status --id ${it.id} --status 已废弃(软删除可恢复)`);}
-    else if(st.action==='skip'){skip++;lines.push(`  物品 ID ${it.id}「${it.name}」: 忽略(不执行任何操作)`);}
+    if(st.action==='used'){used++;lines.push(`  ${it.name}(ID ${it.id}): 已用完`);}
+    else if(st.action==='dispose'){dispose++;lines.push(`  ${it.name}(ID ${it.id}): 废弃`);}
+    else if(st.action==='skip'){skip++;lines.push(`  ${it.name}(ID ${it.id}): 忽略`);}
   });
   confirmBtn.textContent=`确认处理（${used} 用完 / ${dispose} 废弃 / ${skip} 忽略）`;
   if(!used&&!dispose&&!skip)return 'expiring_results:';

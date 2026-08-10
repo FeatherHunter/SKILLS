@@ -125,9 +125,9 @@ function rebuildReceipt(){
   let dispose=0,gift=0,skip=0;
   D.items.forEach(it=>{
     const st=STATE[it.id];if(!st||!st.action)return;
-    if(st.action==='dispose'){dispose++;lines.push(`  物品 ID ${it.id}「${it.name}」: 标记废弃`);lines.push(`    执行: python scripts/home_manager.py sm1-status --id ${it.id} --status 已废弃(软删除可恢复)`);}
-    else if(st.action==='gift'){gift++;lines.push(`  物品 ID ${it.id}「${it.name}」: 送人`);lines.push(`    执行: python scripts/home_manager.py sm1-status --id ${it.id} --status 已废弃`);lines.push(`          python scripts/home_manager.py sm1-update --id ${it.id} --remark 送人`);}
-    else if(st.action==='skip'){skip++;lines.push(`  物品 ID ${it.id}「${it.name}」: 先不处理(不执行任何操作)`);}
+    if(st.action==='dispose'){dispose++;lines.push(`  ${it.name}(ID ${it.id}): 标记废弃`);}
+    else if(st.action==='gift'){gift++;lines.push(`  ${it.name}(ID ${it.id}): 送人`);}
+    else if(st.action==='skip'){skip++;lines.push(`  ${it.name}(ID ${it.id}): 先不处理`);}
   });
   confirmBtn.textContent=`确认处理（${dispose} 废弃 / ${gift} 送人 / ${skip} 忽略）`;
   if(!dispose&&!gift&&!skip)return 'idle_results:';

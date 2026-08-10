@@ -537,11 +537,16 @@ def build_live_diet_batch_meal(input_path):
 
     r = diet.add_meals_batch(entries)
     added = r['added']
-    if added == 0:
+    # 幂等防重(2026-08-11 #262): added=0 但 skipped>0(全重复)时,回查已存在本餐生成回执而非报错
+    # 语义: 同餐重复调用(如反复补录同一餐) → 展示已有记录 + 明确「已存在,未重复写入」
+    if added == 0 and not (r.get('skipped') or r.get('failed')):
         raise ValueError('同餐批量写入 0 条,请检查输入格式')
+    # 全重复 = 本次 0 条新增 + 有跳过(重复或非法)且无真实写入;去重展示已有本餐
+    all_duplicate = added == 0 and (r.get('skipped', 0) > 0)
 
     # 写库成功后回查本餐明细(按 date+time,只取最近 added 条 → 列表 + 合计)
-    items, totals = _fetch_meal_items(d, t, added)
+    # 全重复时回查该餐去重后食物(dedupe=True),避免历史重复行撑爆 items
+    items, totals = _fetch_meal_items(d, t, added if added > 0 else 1, dedupe=all_duplicate)
     cal, pro, carb, fat = totals
 
     # 餐别从 time 推断(food_log 无 meal 列 · add_meals_batch 不写 meal)
@@ -557,7 +562,10 @@ def build_live_diet_batch_meal(input_path):
     if r['skipped'] or r['failed']:
         summary += f" · 跳过 {r['skipped']} 条,失败 {r['failed']} 条"
     # V3 调用透明:AI 内部写库 N 条,统一 1 个回执
-    summary += f" · 本次写库 {added} 条 → 合并 1 个回执"
+    if all_duplicate:
+        summary += " · 本餐记录已存在,未重复写入"
+    else:
+        summary += f" · 本次写库 {added} 条 → 合并 1 个回执"
     kpis = [
         {'label': '食物数', 'value': f'{len(items)} 种', 'extra': '本餐'},
         {'label': '总热量', 'value': f'{cal} 卡', 'extra': '合计'},
@@ -570,20 +578,31 @@ def build_live_diet_batch_meal(input_path):
                          kpis=kpis, items=items)
 
 
-def _fetch_meal_items(date_str, time_str, n_expected):
+def _fetch_meal_items(date_str, time_str, n_expected, dedupe=False):
     """回查同餐写入的记录明细(按 date+time),返回 (items, (cal, pro, carb, fat))
 
     items 与模板 crud_receipt.html 明细卡字段对齐:time/food_name/grams/calories + label
+    dedupe=True: 按 food_name 去重(幂等全重复场景,展示已有食物而非历史重复行)
     """
     import diet as _diet
     conn = _diet._get_db()
     cur = conn.cursor()
-    cur.execute('''
-        SELECT time, food_name, grams, calories, protein, carbs, fat
-        FROM food_log
-        WHERE date = ? AND time = ?
-        ORDER BY id DESC LIMIT ?
-    ''', (date_str, time_str, n_expected))
+    if dedupe:
+        # 全重复:按 food_name 去重取最新一条(展示本餐已有食物清单)
+        cur.execute('''
+            SELECT time, food_name, grams, calories, protein, carbs, fat
+            FROM food_log
+            WHERE date = ? AND time = ?
+              AND id IN (SELECT MAX(id) FROM food_log WHERE date = ? AND time = ? GROUP BY food_name)
+            ORDER BY id
+        ''', (date_str, time_str, date_str, time_str))
+    else:
+        cur.execute('''
+            SELECT time, food_name, grams, calories, protein, carbs, fat
+            FROM food_log
+            WHERE date = ? AND time = ?
+            ORDER BY id DESC LIMIT ?
+        ''', (date_str, time_str, n_expected))
     rows = cur.fetchall()
     conn.close()
     items = []

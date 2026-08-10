@@ -89,6 +89,25 @@ def add_meal(food_name, calories, protein, carbs=0, fat=0, grams=100, note='',
     today = target_date or date.today().isoformat()
     now = target_time or datetime.now().strftime("%H:%M:%S")
 
+    # 幂等防重(2026-08-11 #262 数据治理): 同 date+time+food_name+grams+calories 已存在则跳过
+    # 背景: 08-09~10 反复补录同餐导致 430+ 重复行; add_meal 无幂等可无限重复
+    # 键含 grams/calories: 同时间同食物不同量(如两次米饭不同克数)不误拦
+    c.execute(
+        "SELECT id FROM food_log WHERE date=? AND time=? AND food_name=? AND grams=? AND calories=? LIMIT 1",
+        (today, now, food_name, grams, calories),
+    )
+    dup = c.fetchone()
+    if dup:
+        conn.close()
+        return {
+            'id': None, 'duplicate': True, 'dup_id': dup[0],
+            'date': today, 'time': now, 'food_name': food_name,
+            'meal': meal_override if meal_override else infer_meal_type(now),
+            'date_label': today if target_date else '今日',
+            'rows_affected': 0,
+            'message': f'重复记录已跳过(同日期/时间/食物名/克数/热量已存在: {today} {now} {food_name} {grams}g {calories}kcal)',
+        }
+
     c.execute('''
         INSERT INTO food_log (date, time, food_name, grams, calories, protein, carbs, fat, note)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -320,14 +339,23 @@ def add_meals_batch(entries):
                 skipped += 1
                 failures.append((i, '食物名必填,营养值不能为负'))
                 continue
+            # 幂等防重(2026-08-11 #262 数据治理): 同 date+time+food_name+grams+calories 已存在则跳过
+            d = str(e.get('date', date.today().isoformat()))
+            t = str(e.get('time', datetime.now().strftime('%H:%M:%S')))
+            g = float(e.get('grams', 100) or 100)
+            c.execute(
+                "SELECT id FROM food_log WHERE date=? AND time=? AND food_name=? AND grams=? AND calories=? LIMIT 1",
+                (d, t, food, g, cal),
+            )
+            if c.fetchone():
+                skipped += 1
+                failures.append((i, f'重复记录已跳过(同日期/时间/食物名/克数/热量已存在: {d} {t} {food} {g}g {cal}kcal)'))
+                continue
             c.execute('''
                 INSERT INTO food_log (date, time, food_name, grams, calories, protein, carbs, fat, note)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
-                str(e.get('date', date.today().isoformat())),
-                str(e.get('time', datetime.now().strftime('%H:%M:%S'))),
-                food,
-                float(e.get('grams', 100) or 100),
+                d, t, food, g,
                 cal, pro,
                 float(e.get('carbs', 0) or 0),
                 float(e.get('fat', 0) or 0),

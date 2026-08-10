@@ -18,8 +18,10 @@ jobs:
     steps:
       - name: Add Git Bash to PATH (Windows self-hosted)
         if: runner.os == 'Windows'
-        shell: "C:\\Program Files\\Git\\bin\\bash.exe --noprofile --norc -e -o pipefail {0}"
-        run: echo "C:\Program Files\Git\bin;C:\Program Files\Git\usr\bin" >> $GITHUB_PATH
+        shell: cmd
+        run: |
+          echo C:\Program Files\Git\bin>> %GITHUB_PATH%
+          echo C:\Program Files\Git\usr\bin>> %GITHUB_PATH%
 
       - name: Checkout repository
         uses: actions/checkout@v6

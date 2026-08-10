@@ -114,7 +114,7 @@ $('app').innerHTML=items.map(it=>{
 ${photo}
 </div>
 <div class="actions">
-<button class="${updateCls}" data-p="${esc('【更新证件 '+it.id+' '+it.cert_type+'，可改: 到期日/持有人/号码/备注(只说要改的,其余不动)】')}">更新</button>
+<button class="${updateCls}" data-p="${esc('请更新证件(唤醒词:证件):\n\n  证件: ID '+it.id+' '+it.cert_type+'\n  到期日: _____________ (选填, YYYY-MM-DD)\n  持有人: _____________ (选填)\n  号  码: _____________ (选填, 将脱敏显示)\n  备  注: _____________ (选填)\n\n  (只填要改的, 其余留空)')}">更新</button>
 <button class="btn ghost" data-p="${esc('【补充证件照片: 证件ID '+it.id+' '+it.cert_type+'，照片即将发送:】')}">补照片</button>
 </div>
 </div>`;

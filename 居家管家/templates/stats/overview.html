@@ -77,31 +77,41 @@ const cardsEl=document.getElementById('cards');
 let D=null,META={};
 let _toastTimer=null;
 function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
-function doCopy(text,btnId,msg){
-  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');b.textContent=btnId==='copyDataBtn'?'✓ 数据已复制':'✓ 日志已复制';setTimeout(()=>{b.classList.remove('copied');b.textContent=btnId==='copyDataBtn'?'📋 复制数据':'📋 复制日志';},1600);}showToast(msg);};
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));}
-  else{fallbackCopy(text,done);}
+function doCopy(text,msg){
+  function ok(){toast(msg);}
+  function fail(){toast('复制失败','请长按选择文本手动复制,或检查浏览器剪贴板权限。');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){try{var pr=navigator.clipboard.writeText(text);if(pr&&pr.then){pr.then(function(){ok();}).catch(function(){_fbCopy(text)?ok():fail();});}else{ok();}}catch(e){_fbCopy(text)?ok():fail();}}else{_fbCopy(text)?ok():fail();}
 }
 function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 function payloadData(){
   return {flags:D.flags||null,statuses:D.statuses||null,categories:D.categories||null,locations:D.locations||null,owners:D.owners||null,top_value:(D.top_value||[]).map(x=>({id:x.id,name:x.name,price:x.price,category_name:x.category_name})),frequent_top:D.frequent_top||null,trend:D.trend||null};
 }
 function buildDataText(){
-  const d5={scene_id:META.scene_id||'stats_summary',command_cn:(META.wake_word||'统物品')+' 结果',occurred_at:META.fetched_at||'',target:'items + item_locations 聚合(只读)',payload:payloadData()};
-  return JSON.stringify(d5,null,2);
+  const L=['【居家管家 · 物品总览】'];
+  L.push('场景: 物品总览 ('+(META.scene_id||'stats_summary')+') · 唤醒词「'+(META.wake_word||'统物品')+'」');
+  L.push('时间: '+(META.fetched_at||''));
+  const metrics=arr(D.summary.metrics);
+  metrics.forEach(m=>{L.push((m.label||'')+': '+(m.value||'')+(m.sub?' ('+m.sub+')':''));});
+  const sts=arr(D.statuses); if(sts.length){L.push('状态分布: '+sts.map(s=>s.name+' '+s.count).join(' / '));}
+  const cats=arr(D.categories); if(cats.length){L.push('分类分布: '+cats.map(c=>c.name+' '+c.count+' 件').join(' / '));}
+  const locs=arr(D.locations); if(locs.length){L.push('位置分布: '+locs.map(l=>l.name+' '+l.count+' 件').join(' / '));}
+  const tv=arr(D.top_value); if(tv.length){L.push('价值TOP: '+tv.map(x=>x.name+' ¥'+Number(x.price).toFixed(2)).join(' / '));}
+  const ft=arr(D.frequent_top); if(ft.length){L.push('高频TOP: '+ft.map(x=>x.name+' 访问'+x.access_count).join(' / '));}
+  const tr=D.trend; if(tr&&arr(tr.buckets).length){L.push('近'+tr.days+'天变动: '+tr.buckets.map(b=>b.label+' 录入'+b.added+' 废弃'+b.discarded).join(' / '));}
+  return L.join('\n');
 }
 function buildLogText(){
-  const lines=[];
-  lines.push('① 场景标识');lines.push(`  command_cn: ${META.wake_word||'(未知)'} 结果`);lines.push(`  唤醒词: ${META.wake_word||'(未知)'}`);lines.push(`  场景名: 物品总览(scene_id=${META.scene_id||'stats_summary'})`);lines.push('');
-  lines.push('② AI 思考链');lines.push('  '+(META.chain||'(未注入)'));lines.push('');
-  lines.push('③ 底层数据结构');lines.push('  payload: '+JSON.stringify(payloadData()));lines.push('  DB 操作: SELECT items/item_locations/categories(只读聚合)');lines.push('');
-  lines.push('④ 调用链');lines.push('  渲染脚本: '+(META.render_cmd||'(未知)'));lines.push('  数据来源: '+(META.source||'(未知)'));lines.push('');
-  lines.push('⑤ 时间戳 + 版本');lines.push('  本地时间: '+(META.fetched_at||'(未知)'));lines.push('  skill 版本: '+(META.version||'(未知)'));lines.push('');
-  lines.push('⑥ 异常信息');lines.push('  无');
-  return lines.join('\n');
+  const L=[];
+  L.push('① 场景标识');L.push('  command_cn: '+(META.wake_word||'(未知)')+' 结果');L.push('  唤醒词: '+(META.wake_word||'(未知)'));L.push('  场景名: 物品总览(scene_id='+(META.scene_id||'stats_summary')+')');L.push('');
+  L.push('② AI 思考链');L.push('  '+(META.chain||'(未注入)'));L.push('');
+  L.push('③ 底层数据结构');L.push('  payload: '+JSON.stringify(payloadData()));L.push('  DB 操作: SELECT items/item_locations/categories(只读聚合)');L.push('');
+  L.push('④ 调用链');L.push('  渲染脚本: '+(META.render_cmd||'(未知)'));L.push('  数据来源: '+(META.source||'(未知)'));L.push('');
+  L.push('⑤ 时间戳 + 版本');L.push('  本地时间: '+(META.fetched_at||'(未知)'));L.push('  skill 版本: '+(META.version||'(未知)'));L.push('');
+  L.push('⑥ 异常信息');L.push('  无');
+  return L.join('\n');
 }
-document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'copyDataBtn','总览数据已复制');
-document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'copyLogBtn','日志已复制');
+document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'总览数据已复制');
+document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'日志已复制');
 
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
@@ -119,13 +129,13 @@ function render(){
   if(flags.low_coverage){flagsHtml+='<div class="tip">📌 价格覆盖率低:'+esc(metrics[2]?.sub||'')+'。建议为未录价的物品补上价格,总价值才可信。<button class="btn ghost" id="priceTipBtn">复制补价提示</button></div>';}
   flagsEl.innerHTML=flagsHtml;
   const pBtn=document.getElementById('priceTipBtn');
-  if(pBtn){pBtn.onclick=()=>{const missing=arr(D.categories);const txt='请加载「居家管家」技能,帮我给未录价的物品补上价格:\n  操作(逐件补价,名称+价格,价格未知的标注「未知」): ______';doCopy(txt,'priceTipBtn','补价提示已复制');};}
+  if(pBtn){pBtn.onclick=()=>{const missing=arr(D.categories);const txt='请加载「居家管家」技能,帮我给未录价的物品补上价格:\n  操作(逐件补价,名称+价格,价格未知的标注「未知」): ______';doCopy(txt,'补价提示已复制');};}
   app.innerHTML='';
   const catSec=document.createElement('section');
   catSec.innerHTML='<h2>分类分布 <span class="hint">点柱子 = 复制筛选浏览 prompt</span></h2><div id="catChart"></div>'+(arr(D.categories).length?'':'<p style="color:var(--fg3);font-size:13px">暂无分类数据</p>');
   app.appendChild(catSec);
   const catData=arr(D.categories).map(c=>({label:c.name,value:c.count,sub:c.total_value}));
-  if(catData.length){charts.bar(document.getElementById('catChart'),catData,{onclick:i=>{const c=arr(D.categories)[i];if(!c)return;const txt='请加载「居家管家」技能,帮我按条件浏览物品(唤醒词:筛选浏览):\n  分类: '+c.name+'\n  附加条件(如:只看无照片/按价格排序,选填): ______';doCopy(txt,'catChart','筛选 prompt 已复制');}});}
+  if(catData.length){charts.bar(document.getElementById('catChart'),catData,{onclick:i=>{const c=arr(D.categories)[i];if(!c)return;const txt='请加载「居家管家」技能,帮我按条件浏览物品(唤醒词:筛选浏览):\n  分类: '+c.name+'\n  附加条件(如:只看无照片/按价格排序,选填): ______';doCopy(txt,'筛选 prompt 已复制');}});}
   const locSec=document.createElement('section');
   locSec.innerHTML='<h2>位置分布 <span class="hint">哪里最挤 · 收纳线索</span></h2><div id="locChart"></div>';
   app.appendChild(locSec);
@@ -153,7 +163,7 @@ function render(){
 }
 function bindInit(){
   const b=document.getElementById('initBtn');
-  if(b)b.onclick=()=>{const txt='请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用)';doCopy(txt,'initBtn','初始化 prompt 已复制');};
+  if(b)b.onclick=()=>{const txt='请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用)';doCopy(txt,'初始化 prompt 已复制');};
 }
 function renderActions(){}
 render();

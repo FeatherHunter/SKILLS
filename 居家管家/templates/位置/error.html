@@ -67,7 +67,7 @@ let _toastTimer=null;
 function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function formatHuman(o,d){d=d||0;const pad='  '.repeat(d);const out=[];for(const k in o){const v=o[k];if(v&&typeof v==='object'){if(Array.isArray(v)){out.push(pad+k+': ['+v.map(x=>typeof x==='object'?JSON.stringify(x):x).join(', ')+']');}else{out.push(pad+k+':');out.push(formatHuman(v,d+1));}}else{out.push(pad+k+': '+(v===undefined||v===null?'':v));}}return out.join('\n');}
 function doCopy(text,btnId,msg){
-  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');b.textContent='✓ 已复制';setTimeout(()=>{b.classList.remove('copied');b.textContent='📋 复制'+(btnId==='copyDataBtn'?'数据':'日志');},1600);}showToast(msg);};
+  const done=()=>{showToast(msg);};
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();});}
   else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 }

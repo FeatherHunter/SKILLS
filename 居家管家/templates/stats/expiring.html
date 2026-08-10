@@ -89,26 +89,41 @@ let D=null,META={},STATE={},CAT='';
 let _toastTimer=null;
 function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
-function doCopy(text,btnId,msg){
-  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');b.textContent='✓ 已复制';setTimeout(()=>{b.classList.remove('copied');b.textContent=btnId==='confirmBtn'?'确认处理':btnId==='copyDataBtn'?'📋 复制数据':'📋 复制日志';},1600);}showToast(msg);};
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));}else{fallbackCopy(text,done);}
+function doCopy(text,msg){
+  function ok(){toast(msg);}
+  function fail(){toast('复制失败','请长按选择文本手动复制,或检查浏览器剪贴板权限。');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){try{var pr=navigator.clipboard.writeText(text);if(pr&&pr.then){pr.then(function(){ok();}).catch(function(){_fbCopy(text)?ok():fail();});}else{ok();}}catch(e){_fbCopy(text)?ok():fail();}}else{_fbCopy(text)?ok():fail();}
 }
+function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 function payloadData(){
   return {days:D.days||null,allowed:D.allowed||null,items:(D.items||[]).map(it=>({id:it.id,name:it.name,category_name:it.category_name,location:it.location,quantity:it.quantity,expiration_date:it.expiration_date,days_left:it.days_left,severity:it.severity,top_category_id:it.top_category_id}))};
 }
 function buildDataText(){
-  const d5={scene_id:META.scene_id||'stats_expiring',command_cn:(META.wake_word||'查过期')+' 结果',occurred_at:META.fetched_at||'',target:'item_locations.expiration_date(只读)',payload:payloadData()};
-  return JSON.stringify(d5,null,2);
+  const L=['【居家管家 · 过期检查与预告】'];
+  L.push('场景: 过期检查与预告 ('+(META.scene_id||'stats_expiring')+') · 唤醒词「'+(META.wake_word||'查过期')+'」');
+  L.push('时间: '+(META.fetched_at||''));
+  const metrics=arr(D.summary.metrics);
+  metrics.forEach(m=>{L.push((m.label||'')+': '+(m.value||''));});
+  L.push('预告天数: '+(D.days||'')+' 天(可调 '+(D.allowed||[]).join('/')+')');
+  const items=arr(D.items);
+  items.forEach(it=>{
+    let st='';
+    if(it.days_left<0)st='已过期 '+(-it.days_left)+' 天';
+    else if(it.days_left===0)st='今天到期';
+    else st=it.days_left+' 天后到期';
+    L.push('· '+it.name+' | '+st+' | '+it.location+' | 到期 '+it.expiration_date);
+  });
+  return L.join('\n');
 }
 function buildLogText(){
-  const lines=[];
-  lines.push('① 场景标识');lines.push(`  command_cn: ${META.wake_word||'(未知)'} 结果`);lines.push(`  唤醒词: ${META.wake_word||'(未知)'}`);lines.push(`  场景名: 过期检查与预告(scene_id=${META.scene_id||'stats_expiring'})`);lines.push('');
-  lines.push('② AI 思考链');lines.push('  '+(META.chain||'(未注入)'));lines.push('');
-  lines.push('③ 底层数据结构');lines.push('  payload: '+JSON.stringify(payloadData()));lines.push('  DB 操作: SELECT item_locations.expiration_date(只读聚合)');lines.push('');
-  lines.push('④ 调用链');lines.push('  渲染脚本: '+(META.render_cmd||'(未知)'));lines.push('  数据来源: '+(META.source||'(未知)'));lines.push('');
-  lines.push('⑤ 时间戳 + 版本');lines.push('  本地时间: '+(META.fetched_at||'(未知)'));lines.push('  skill 版本: '+(META.version||'(未知)'));lines.push('');
-  lines.push('⑥ 异常信息');lines.push('  无');
-  return lines.join('\n');
+  const L=[];
+  L.push('① 场景标识');L.push('  command_cn: '+(META.wake_word||'(未知)')+' 结果');L.push('  唤醒词: '+(META.wake_word||'(未知)'));L.push('  场景名: 过期检查与预告(scene_id='+(META.scene_id||'stats_expiring')+')');L.push('');
+  L.push('② AI 思考链');L.push('  '+(META.chain||'(未注入)'));L.push('');
+  L.push('③ 底层数据结构');L.push('  payload: '+JSON.stringify(payloadData()));L.push('  DB 操作: SELECT item_locations.expiration_date(只读聚合)');L.push('');
+  L.push('④ 调用链');L.push('  渲染脚本: '+(META.render_cmd||'(未知)'));L.push('  数据来源: '+(META.source||'(未知)'));L.push('');
+  L.push('⑤ 时间戳 + 版本');L.push('  本地时间: '+(META.fetched_at||'(未知)'));L.push('  skill 版本: '+(META.version||'(未知)'));L.push('');
+  L.push('⑥ 异常信息');L.push('  无');
+  return L.join('\n');
 }
 function rebuildReceipt(){
   const lines=['expiring_results:'];
@@ -122,12 +137,12 @@ function rebuildReceipt(){
   confirmBtn.textContent=`确认处理（${used} 用完 / ${dispose} 废弃 / ${skip} 忽略）`;
   return lines.join('\n');
 }
-document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'copyDataBtn','过期数据已复制');
-document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'copyLogBtn','日志已复制');
+document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'过期数据已复制');
+document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'日志已复制');
 confirmBtn.onclick=function(){
   const txt=rebuildReceipt();
   if(txt==='expiring_results:'){showToast('还没有勾选任何处理');return;}
-  doCopy(txt,'confirmBtn','处理回执已复制,发给 AI 执行');
+  doCopy(txt,'处理回执已复制,发给 AI 执行');
 };
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}

@@ -68,30 +68,39 @@ let D=null,META={};
 let _toastTimer=null;
 function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
 function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
-function doCopy(text,btnId,msg){
-  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');b.textContent='✓ 已复制';setTimeout(()=>{b.classList.remove('copied');b.textContent=btnId==='reviewBtn'?(D&&D.review_action?D.review_action.label:'复查盘点'):btnId==='copyDataBtn'?'📋 复制数据':'📋 复制日志';},1600);}showToast(msg);};
-  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));}else{fallbackCopy(text,done);}
+function doCopy(text,msg){
+  function ok(){toast(msg);}
+  function fail(){toast('复制失败','请长按选择文本手动复制,或检查浏览器剪贴板权限。');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){try{var pr=navigator.clipboard.writeText(text);if(pr&&pr.then){pr.then(function(){ok();}).catch(function(){_fbCopy(text)?ok():fail();});}else{ok();}}catch(e){_fbCopy(text)?ok():fail();}}else{_fbCopy(text)?ok():fail();}
 }
+function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 function payloadData(){
   return {has_data:D.has_data||false,records:(D.records||[]).map(r=>({id:r.id,scope:r.scope,occurred_at:r.occurred_at,status:r.status})),history:D.history||null,total_missing:D.total_missing||0,suggestion:D.suggestion||null};
 }
 function buildDataText(){
-  const d5={scene_id:META.scene_id||'stats_inventory',command_cn:(META.wake_word||'盘点统计')+' 结果',occurred_at:META.fetched_at||'',target:'inventory_records(D1 表 · 只读)',payload:payloadData()};
-  return JSON.stringify(d5,null,2);
+  const L=['【居家管家 · 盘点统计】'];
+  L.push('场景: 盘点统计 ('+(META.scene_id||'stats_inventory')+') · 唤醒词「'+(META.wake_word||'盘点统计')+'」');
+  L.push('时间: '+(META.fetched_at||''));
+  const metrics=arr(D.summary.metrics);
+  metrics.forEach(m=>{L.push((m.label||'')+': '+(m.value||''));});
+  if(D.suggestion)L.push('AI 建议: '+D.suggestion);
+  const hist=arr(D.history);
+  if(hist.length){L.push('差异趋势:');hist.forEach(h=>{L.push('· '+(h.occurred_at||'').slice(0,10)+' | '+h.scope+' | 缺'+h.missing+' 多'+h.extra+' 异'+h.diff+(h.status?' | '+h.status:''));});}
+  return L.join('\n');
 }
 function buildLogText(){
-  const lines=[];
-  lines.push('① 场景标识');lines.push(`  command_cn: ${META.wake_word||'(未知)'} 结果`);lines.push(`  唤醒词: ${META.wake_word||'(未知)'}`);lines.push(`  场景名: 盘点统计(scene_id=${META.scene_id||'stats_inventory'})`);lines.push('');
-  lines.push('② AI 思考链');lines.push('  '+(META.chain||'(未注入)'));lines.push('');
-  lines.push('③ 底层数据结构');lines.push('  payload: '+JSON.stringify(payloadData()));lines.push('  DB 操作: SELECT inventory_records(只读;D1 建表前返回空态)');lines.push('');
-  lines.push('④ 调用链');lines.push('  渲染脚本: '+(META.render_cmd||'(未知)'));lines.push('  数据来源: '+(META.source||'(未知)'));lines.push('');
-  lines.push('⑤ 时间戳 + 版本');lines.push('  本地时间: '+(META.fetched_at||'(未知)'));lines.push('  skill 版本: '+(META.version||'(未知)'));lines.push('');
-  lines.push('⑥ 异常信息');lines.push('  无');
-  return lines.join('\n');
+  const L=[];
+  L.push('① 场景标识');L.push('  command_cn: '+(META.wake_word||'(未知)')+' 结果');L.push('  唤醒词: '+(META.wake_word||'(未知)'));L.push('  场景名: 盘点统计(scene_id='+(META.scene_id||'stats_inventory')+')');L.push('');
+  L.push('② AI 思考链');L.push('  '+(META.chain||'(未注入)'));L.push('');
+  L.push('③ 底层数据结构');L.push('  payload: '+JSON.stringify(payloadData()));L.push('  DB 操作: SELECT inventory_records(只读;D1 建表前返回空态)');L.push('');
+  L.push('④ 调用链');L.push('  渲染脚本: '+(META.render_cmd||'(未知)'));L.push('  数据来源: '+(META.source||'(未知)'));L.push('');
+  L.push('⑤ 时间戳 + 版本');L.push('  本地时间: '+(META.fetched_at||'(未知)'));L.push('  skill 版本: '+(META.version||'(未知)'));L.push('');
+  L.push('⑥ 异常信息');L.push('  无');
+  return L.join('\n');
 }
-document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'copyDataBtn','盘点数据已复制');
-document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'copyLogBtn','日志已复制');
-reviewBtn.onclick=()=>{const txt=(D&&D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围(全屋/某个位置/某个分类,选填): ______';doCopy(txt,'reviewBtn','复查 prompt 已复制');};
+document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'盘点数据已复制');
+document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'日志已复制');
+reviewBtn.onclick=()=>{const txt=(D&&D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围(全屋/某个位置/某个分类,选填): ______';doCopy(txt,'复查 prompt 已复制');};
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
   const v=validate(p);if(!v.ok){app.innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
@@ -106,7 +115,7 @@ function render(){
   if(!D.has_data){app.innerHTML='<div class="empty"><h2>还没有盘点记录 📋</h2>完成首次盘点后,这里会显示完成率/差异趋势/建议优先盘哪。<div class="actions" style="position:static"><button class="btn" id="firstBtn">复制「首次盘点」</button></div></div>';
     reviewBtn.style.display='none';
     const fb=document.getElementById('firstBtn');
-    if(fb)fb.onclick=()=>{const txt=(D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围(全屋/某个位置/某个分类,选填): ______';doCopy(txt,'firstBtn','盘点 prompt 已复制');};
+    if(fb)fb.onclick=()=>{const txt=(D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围(全屋/某个位置/某个分类,选填): ______';doCopy(txt,'盘点 prompt 已复制');};
     return;}
   reviewBtn.style.display='';
   const hist=arr(D.history);

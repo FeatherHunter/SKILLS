@@ -35,7 +35,7 @@ v2.4.10 起 · 给 templates/help_center.html 提供结构化数据。
 - ⏳ 其余分类仍为旧版运行时数据,待各自分类 ticket 同步。
 v1.0 重设计的**权威场景清单**在 `.scratch/scene-index-recovered.md`(每场景含描述 + 呈现数据 + 用户确认记录),
 开发期数据在 `.scratch/scene_data/NN-分类.json`(schema 13 字段,check_scene_data.py 校验)。
-已确认分类:主页 9(scene_data/01-主页.json) / 饮食 68 / 体重 58 / 运动 39 / 健身计划 31 / 基础信息 4 / 身体细节 13(2026-08-01)。
+已确认分类:主页 9(scene_data/01-主页.json) / 饮食 68 / 体重 58 / 运动 39 / 健身计划 32 / 基础信息 4 / 身体细节 13(2026-08-01)。
 **Phase 2 同步时按 scene-data 替换本文件对应分类**,当前勿据此文件判断"最终场景设计"。
 
 """
@@ -1967,6 +1967,16 @@ TRIGGERS = [
             'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --today', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看今天练什么」。\n\n我想看今天要练的动作。如果今天休息或计划还没开始,请明确告诉我。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
             'user_intent': '我想看今天练什么以及练到哪了', 'data_fields': ["sessions", "movements", "sets_done", "sets_remaining", "completion_rate"],
             'depends_on_external': False, 'order': 4},
+    {
+            'category': '健身计划',     'wake_word': '看某动作安排',     'desc': '按动作反查计划(位置/频率/下次练习日 · #256)',
+            'main_prompt': {
+        'cli': 'python scripts/render_workout_plan.py --mode action --name <动作>', 'text': '请你加载技能 卡路里,执行唤醒词「看某动作安排」。\n\n我想查一个动作在训练计划里的安排(哪天练/几组/重量/下次练习日)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n动作名:____'},
+        'fill_hints': [],
+            'variants': [],
+            'key': 'plan_view_movement', 'name': '看某动作安排', 'subfunction': '看训练计划', 'output_type': 'result',
+            'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --mode action --name <动作>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看某动作安排」。\n\n我想查一个动作在训练计划里的安排(哪天练/几组/重量/下次练习日)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n动作名:____',
+            'user_intent': '我想查某个动作在计划里的安排', 'data_fields': ["query", "positions", "summary", "next_date"],
+            'depends_on_external': False, 'order': 6},
     {
             'category': '健身计划',     'wake_word': '看某天练什么',     'desc': '指定日期训练内容(复用今日组装 · #255)',
             'main_prompt': {

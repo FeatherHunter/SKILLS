@@ -129,6 +129,16 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
 /* 数值表右对齐(vs/movement) */
 .num-table td:nth-child(n+2){text-align:right;font-variant-numeric:tabular-nums}
 .num-table td:nth-child(1){text-align:left}
+
+/* #256 ACTION 模式 */
+.action-hero{background:var(--card);border:1px solid var(--lineS);border-radius:16px;padding:18px 22px;margin-bottom:14px}
+.action-hero .q{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.action-hero .tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.action-chip{font-size:11.5px;font-weight:600;background:var(--bg);border:1px solid var(--lineS);border-radius:20px;padding:4px 12px;color:var(--ink2)}
+.action-chip.hl{background:rgba(0,113,227,.1);color:var(--accent);border-color:rgba(0,113,227,.25)}
+.action-next{background:rgba(52,199,89,.1);border:1px solid rgba(52,199,89,.3);border-radius:12px;padding:10px 14px;font-size:13px;font-weight:600;color:#1c7c3a;margin-top:10px}
+.action-none{background:var(--bg);border:1.5px dashed var(--line);border-radius:14px;padding:22px;text-align:center;color:var(--ink2);font-size:13.5px}
+.action-cand{display:inline-block;margin:4px;font-size:12px;background:var(--card);border:1px solid var(--lineS);border-radius:8px;padding:3px 10px;color:var(--ink2)}
 </style>
 </head>
 <body>
@@ -146,6 +156,7 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
   <div id="completionContainer"></div>
   <div id="missedContainer"></div>
   <div id="movementContainer"></div>
+  <div id="actionContainer"></div>
   <div class="tabs" id="weekTabs"></div>
   <div id="weeksContainer"></div>
   <div class="footer">
@@ -427,6 +438,84 @@ function renderMovement(data) {
   container.innerHTML = html;
 }
 
+/* ====== MODE: action (#256 按动作反查计划) ====== */
+function renderAction(data) {
+  const container = document.getElementById('actionContainer');
+  if (data.mode !== 'action') { container.innerHTML = ''; return; }
+  const q = escapeHTML(data.query || '');
+  let html = '';
+
+  // 无匹配 → 提示 + 模糊候选
+  if (data.error) {
+    html += `<div class="action-none">计划中无「${q}」`;
+    if ((data.candidates || []).length) {
+      html += `<div style="margin-top:12px;font-size:12px;color:var(--ink3)">相近动作：</div>`;
+      data.candidates.forEach(c => { html += `<span class="action-cand">${escapeHTML(c)}</span>`; });
+    }
+    html += `</div>`;
+    container.innerHTML = html;
+    return;
+  }
+
+  // hero: 查询 + 频率汇总
+  const s = data.summary || {};
+  const weightTxt = (s.weight_min != null)
+    ? `${s.weight_min}${s.weight_max && s.weight_max !== s.weight_min ? '-' + s.weight_max : ''}kg`
+    : '';
+  html += '<div class="action-hero">';
+  html += `<div class="q">${q}</div>`;
+  html += '<div class="tags">';
+  html += `<span class="action-chip hl">${s.times_per_week || 0} 次/周</span>`;
+  html += `<span class="action-chip">覆盖 ${s.weeks_with || 0} 周</span>`;
+  if (s.total_sets) html += `<span class="action-chip">总 ${s.total_sets} 组</span>`;
+  (s.parts || []).forEach(p => {
+    const color = PART_COLORS[p] || '#6e6e73';
+    html += `<span class="part-tag" style="background:${color}20;color:${color}">${escapeHTML(p)}</span>`;
+  });
+  if (weightTxt) html += `<span class="action-chip">重量 ${weightTxt}</span>`;
+  html += '</div>';
+  if (data.next_date) {
+    html += `<div class="action-next">📅 下次练习日：${escapeHTML(data.next_date)}${data.next_week ? `（第 ${data.next_week} 周）` : ''}</div>`;
+  }
+  html += '</div>';
+
+  // 位置列表: 循环计划每周相同 → 折叠为「每周固定」单组(2026-08-11 #256 审查: 8 周重复冗余)
+  const pos = data.positions || [];
+  const sameEveryWeek = pos.length > 0 && pos.every(p =>
+    p.name === pos[0].name && p.dow_label === pos[0].dow_label &&
+    p.sets === pos[0].sets && p.reps === pos[0].reps && p.weight === pos[0].weight);
+  html += '<div class="review-section"><h2>📍 计划中出现的位置</h2>';
+  if (pos.length) {
+    if (sameEveryWeek) {
+      // 折叠: 显示代表周 + 覆盖范围
+      const weeks = [...new Set(pos.map(p => p.week))].sort((a, b) => a - b);
+      const rangeTxt = weeks.length > 1 ? `每周相同（覆盖第 ${weeks[0]}-${weeks[weeks.length - 1]} 周）` : `第 ${weeks[0]} 周`;
+      html += `<p style="font-size:12px;color:var(--ink2);margin-bottom:8px">🔁 ${escapeHTML(rangeTxt)}</p>`;
+      html += '<div class="table-wrap"><table class="num-table"><thead><tr><th>星期</th><th>时段</th><th>组数×次数</th><th>重量</th></tr></thead><tbody>';
+      html += '<tr>';
+      html += `<td>${pos[0].dow_label}</td>`;
+      html += `<td>${escapeHTML(pos[0].session_label || '')}${pos[0].time && pos[0].time !== '-' ? `<div style="font-size:10px;color:var(--ink3)">${escapeHTML(pos[0].time)}</div>` : ''}</td>`;
+      html += `<td>${pos[0].sets}×${pos[0].reps != null ? escapeHTML(pos[0].reps) : '?'}</td>`;
+      html += `<td style="white-space:nowrap">${escapeHTML(pos[0].weight != null && pos[0].weight !== 0 ? pos[0].weight + ' ' + pos[0].unit : (pos[0].unit !== 'kg' && pos[0].unit !== '自重' ? '—' : '自重'))}</td></tr>`;
+      html += '</tbody></table></div>';
+    } else {
+      html += '<div class="table-wrap"><table class="num-table"><thead><tr><th>周次</th><th>星期</th><th>时段</th><th>组数×次数</th><th>重量</th></tr></thead><tbody>';
+      pos.forEach(p => {
+        const wt = (!p.weight || p.weight === 0) ? (p.unit !== 'kg' && p.unit !== '自重' ? '—' : '自重') : `${p.weight} ${p.unit}`;
+        html += '<tr>';
+        html += `<td>第 ${p.week} 周</td>`;
+        html += `<td>${p.dow_label}</td>`;
+        html += `<td>${escapeHTML(p.session_label || '')}${p.time && p.time !== '-' ? `<div style="font-size:10px;color:var(--ink3)">${escapeHTML(p.time)}</div>` : ''}</td>`;
+        html += `<td>${p.sets}×${p.reps != null ? escapeHTML(p.reps) : '?'}</td>`;
+        html += `<td style="white-space:nowrap">${escapeHTML(wt)}</td></tr>`;
+      });
+      html += '</tbody></table></div>';
+    }
+  }
+  html += '</div>';
+  container.innerHTML = html;
+}
+
 function renderWeekTabs(weeks, activeWk) {
   const tabs = document.getElementById('weekTabs');
   tabs.innerHTML = weeks.map((w, i) =>
@@ -568,6 +657,7 @@ function bindDayTabs() {
   renderCompletion(data);
   renderMissed(data);
   renderMovement(data);
+  renderAction(data);
   renderWeekHint(data);
 
   const weeks = data.weeks || [];
@@ -597,6 +687,17 @@ function bindDayTabs() {
     }
     if (data.ranking) {
       data.ranking.forEach((r, i) => lines.push(`  #${i + 1} ${r.movement}: ${r.rate}% (${r.done_sets}/${r.plan_sets})`));
+    }
+    if (data.mode === 'action') {
+      lines.push(`动作: ${data.query}${data.error ? ' · ' + data.error : ''}`);
+      if (!data.error) {
+        const s = data.summary || {};
+        lines.push(`频率: ${s.times_per_week || 0} 次/周 · 覆盖 ${s.weeks_with || 0} 周 · 总 ${s.total_sets || 0} 组`);
+        if (data.next_date) lines.push(`下次练习日: ${data.next_date}${data.next_week ? ' (第 ' + data.next_week + ' 周)' : ''}`);
+        (data.positions || []).forEach(p => lines.push(`  第 ${p.week} 周 ${p.dow_label}: ${p.name} ${p.sets}×${p.reps != null ? p.reps : '?'}${p.weight ? ' ' + p.weight + p.unit : ''}`));
+      } else {
+        (data.candidates || []).forEach(c => lines.push(`  相近: ${c}`));
+      }
     }
     if (data.missed) {
       data.missed.forEach(m => lines.push(`  ${m.date}: 计划 ${m.plan_sets} 组 · 实做 ${m.done_sets} 组 · ${m.movements.join('/')}`));

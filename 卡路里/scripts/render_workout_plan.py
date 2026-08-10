@@ -1,7 +1,7 @@
 ﻿#!/usr/bin/env python3
 """健身计划 HTML 渲染器(2026-08-02 重构:多模式 · ticket #6)
 
-对应 SKILL.md 唤醒词:看完整计划 / 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看某天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率
+对应 SKILL.md 唤醒词:看完整计划 / 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看某天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率 / 看某动作安排
 
 模式(--mode):
   full      全计划视图(原行为;--week N 可聚焦单周)
@@ -13,6 +13,7 @@
   completion 看计划完成率(每周完成率折线)
   missed    看未完成训练(漏练日期 + 应练动作;--days N)
   movement  看动作完成率(动作 TOP 榜;--days N)
+  action    看某动作安排(按动作反查计划;--name <动作>,子串匹配 + 下次练习日 · #256)
 
 设计:
 - 渲染器只做:读数据 → 序列化 → 注入 → 输出
@@ -463,6 +464,78 @@ def _build_review_data(conn):
         return {'today': None}
 
 
+def build_action_data(conn, name=None):
+    """#256: 按动作反查计划(动作名 → 全部出现位置/频率/下次练习日)
+
+    匹配策略: 先精确后子串(用户说「卧推」匹配计划「杠铃卧推」);无匹配 → 模糊候选(含任一关键字)
+    下次练习日: 循环计划语义,从今天起按 (week, dow) 循环找最近一次"""
+    config = _load_config(conn)
+    if not config:
+        return None
+    if not name or not str(name).strip():
+        return {'mode': 'action', 'config': config, 'query': '', 'error': '缺少动作名'}
+    q = str(name).strip()
+    c = conn.cursor()
+    c.execute('''SELECT week_number, day_of_week, session_index, session_label, time_start, time_end, movements
+                 FROM workout_plans WHERE is_rest_day=0 ORDER BY week_number, day_of_week, session_index''')
+    positions = []
+    all_names = set()
+    for r in c.fetchall():
+        for m in (json.loads(r[6]) if r[6] else []):
+            mname = m.get('name', '')
+            all_names.add(mname)
+            sets = m.get('sets') or []
+            nsets = len(sets)
+            reps = sets[0].get('reps') if sets else None
+            weight = sets[0].get('weight') if sets else None
+            unit = sets[0].get('unit', 'kg') if sets else 'kg'
+            part = m.get('part', '')
+            hit = (mname == q) or (q in mname) or (mname in q)
+            if hit:
+                positions.append({
+                    'week': r[0], 'day_of_week': r[1],
+                    'dow_label': ['', '周一', '周二', '周三', '周四', '周五', '周六', '周日'][r[1]],
+                    'session_label': r[3] or '', 'time': f"{r[4] or ''}-{r[5] or ''}",
+                    'name': mname, 'part': part,
+                    'sets': nsets, 'reps': reps, 'weight': weight, 'unit': unit,
+                })
+    if not positions:
+        # 无匹配 → 模糊候选(含任一关键字)
+        candidates = sorted(n for n in all_names if any(ch in n for ch in q))
+        return {'mode': 'action', 'config': config, 'query': q,
+                'positions': [], 'candidates': candidates[:6], 'error': f'计划中无「{q}」'}
+    # 频率汇总: 按 (week, dow) 去重算每周出现次数(循环计划每周相同 → 每周 1 次)
+    weekly_days = {(p['week'], p['day_of_week']) for p in positions}
+    weeks_with = sorted({w for w, _ in weekly_days})
+    # 下次练习日(从今天起,循环语义)
+    today = date.today()
+    next_date = None
+    next_week = None
+    for offset in range(0, 90):  # 最多看 90 天
+        d = today + timedelta(days=offset)
+        wn = _calc_week_number(d, config)
+        if wn and (wn, d.isoweekday()) in weekly_days:
+            next_date = d.isoformat()
+            next_week = wn
+            break
+    total_sets = sum(p['sets'] for p in positions)
+    parts = sorted({p['part'] for p in positions if p['part']})
+    weights = [p['weight'] for p in positions if p['weight'] is not None]
+    return {
+        'mode': 'action', 'config': config, 'query': q,
+        'positions': positions,
+        'summary': {
+            'weeks_with': len(weeks_with),
+            'times_per_week': len(weekly_days) // len(weeks_with) if weeks_with else 0,
+            'total_sets': total_sets,
+            'parts': parts,
+            'weight_min': min(weights) if weights else None,
+            'weight_max': max(weights) if weights else None,
+        },
+        'next_date': next_date, 'next_week': next_week,
+    }
+
+
 def _render_html(data: dict) -> str:
     """读模板 + 注入数据"""
     template = TEMPLATE_PATH.read_text(encoding='utf-8')
@@ -482,7 +555,7 @@ def _render_html(data: dict) -> str:
     return template.replace(placeholder, inject, 1)
 
 
-def render(mode='full', week=None, start_date=None, end_date=None, days=None, day_date=None,
+def render(mode='full', week=None, start_date=None, end_date=None, days=None, day_date=None, action_name=None,
            include_review=False, output_path=None):
     """主渲染函数"""
     conn = _get_db()
@@ -508,6 +581,7 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None, da
             'completion': lambda: build_completion_data(conn),
             'missed': lambda: build_missed_data(conn, days or 28),
             'movement': lambda: build_movement_data(conn, days or 28),
+            'action': lambda: build_action_data(conn, action_name),
         }
         if mode not in builders:
             raise ValueError(f'未知 mode: {mode}')
@@ -525,7 +599,7 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None, da
     scene_names_inner = {
         'full': '看完整计划', 'week': '看周计划', 'today': '看今天练什么', 'day': '看某天练什么',
         'overview': '看计划概览', 'vs': '看计划vs实际', 'completion': '看计划完成率',
-        'missed': '看未完成训练', 'movement': '看动作完成率',
+        'missed': '看未完成训练', 'movement': '看动作完成率', 'action': '看某动作安排',
     }
     from render_crud_view import _quote_arg
     data['meta'] = {
@@ -551,7 +625,7 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None, da
     scene_names = {
         'full': '看完整计划', 'week': '看周计划', 'today': '看今天练什么', 'day': '看某天练什么',
         'overview': '看计划概览', 'vs': '看计划vs实际', 'completion': '看计划完成率',
-        'missed': '看未完成训练', 'movement': '看动作完成率',
+        'missed': '看未完成训练', 'movement': '看动作完成率', 'action': '看某动作安排',
     }
     default_path = html_path(SKILL_DIR, scene_names.get(mode, '健身计划'))
     default_path.write_text(html, encoding='utf-8')
@@ -563,10 +637,11 @@ def main():
         description='渲染健身计划 HTML(多模式 · 2026-08-02 ticket #6)'
     )
     p.add_argument('-m', '--mode', default='full',
-                   choices=['full', 'week', 'today', 'day', 'overview', 'vs', 'completion', 'missed', 'movement'],
+                   choices=['full', 'week', 'today', 'day', 'overview', 'vs', 'completion', 'missed', 'movement', 'action'],
                    help='渲染模式(full=全计划 / week=单周 / today=今日 / day=指定日期 / overview=概览 / vs=对比 / completion=完成率 / missed=漏练 / movement=动作榜)')
     p.add_argument('-w', '--week', type=int, help='周次(week 模式必用;full 模式可聚焦)')
     p.add_argument('--date', help='目标日期 YYYY-MM-DD(day 模式;默认今天)')
+    p.add_argument('--name', help='动作名(action 模式,支持子串匹配)')
     p.add_argument('--start', help='开始日期 YYYY-MM-DD(vs 模式)')
     p.add_argument('--end', help='结束日期 YYYY-MM-DD(vs 模式)')
     p.add_argument('--days', type=int, help='回溯天数(missed/movement 默认 28)')
@@ -574,7 +649,7 @@ def main():
     p.add_argument('-o', '--output', help='输出文件路径')
     args = p.parse_args()
 
-    result = render(args.mode, args.week, args.start, args.end, args.days, day_date=args.date,
+    result = render(args.mode, args.week, args.start, args.end, args.days, day_date=args.date, action_name=args.name,
                     include_review=args.review, output_path=args.output)
     if isinstance(result, str) and not args.output:
         print(result)

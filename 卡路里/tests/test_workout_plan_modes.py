@@ -66,7 +66,7 @@ def _extract_data(html: str) -> dict:
 
 
 @pytest.mark.parametrize("mode", [
-    "full", "week", "today", "day", "overview", "vs", "completion", "missed", "movement",
+    "full", "week", "today", "day", "overview", "vs", "completion", "missed", "movement", "action",
 ])
 def test_mode_renders(seed_plan, mode):
     html = rwp.render(mode=mode, output_path=str(Path(__file__).parent / f"_plan_{mode}.html"))
@@ -207,3 +207,46 @@ def test_today_mode_unchanged(seed_plan):
     d = _extract_data(Path(html).read_text(encoding="utf-8"))["data"]
     assert d["mode"] == "today"
     assert "completion" in d
+
+
+def test_action_mode_specific(seed_plan):
+    """#256: action 模式 4 态(精确匹配/子串/无匹配+候选/空名)"""
+    from db import get_db
+
+    db = get_db(seed_plan)
+    c = db.cursor()
+    # seed 计划有 深蹲/卧推(week1 day1 晨训); 补一周末周验证覆盖范围
+    c.execute(
+        "INSERT INTO workout_plans (week_number, day_of_week, session_index, session_label, time_start, time_end, is_rest_day, total_sets, movements) "
+        "VALUES (?,?,?,?,?,?,?,?,?)",
+        (2, 1, 1, "晨训", "07:00", "08:00", 0, 2,
+         json.dumps([{"name": "深蹲", "part": "腿", "sets": [{"reps": 10, "weight": 50}]}], ensure_ascii=False)),
+    )
+    db.commit()
+    db.close()
+
+    # 精确匹配
+    html = rwp.render(mode="action", action_name="深蹲", output_path=str(Path(__file__).parent / "_plan_act1.html"))
+    d = _extract_data(Path(html).read_text(encoding="utf-8"))["data"]
+    assert d["mode"] == "action"
+    assert d["query"] == "深蹲"
+    assert len(d["positions"]) >= 2  # 2 周都有
+    assert d["summary"]["total_sets"] >= 2  # 每周 1 组 × 2 周
+    assert d["next_date"]  # 循环语义下必有下次练习日
+
+    # 子串匹配(卧推 → 杠铃卧推)
+    html2 = rwp.render(mode="action", action_name="卧推", output_path=str(Path(__file__).parent / "_plan_act2.html"))
+    d2 = _extract_data(Path(html2).read_text(encoding="utf-8"))["data"]
+    assert len(d2["positions"]) >= 1
+    assert d2["positions"][0]["name"].endswith("卧推")
+
+    # 无匹配 → error + candidates
+    html3 = rwp.render(mode="action", action_name="高翻", output_path=str(Path(__file__).parent / "_plan_act3.html"))
+    d3 = _extract_data(Path(html3).read_text(encoding="utf-8"))["data"]
+    assert "error" in d3 and "无" in d3["error"]
+    assert "candidates" in d3
+
+    # 空名 → 缺动作名错误
+    html4 = rwp.render(mode="action", action_name="", output_path=str(Path(__file__).parent / "_plan_act4.html"))
+    d4 = _extract_data(Path(html4).read_text(encoding="utf-8"))["data"]
+    assert d4["error"] == "缺少动作名"

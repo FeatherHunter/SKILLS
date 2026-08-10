@@ -4,7 +4,7 @@
 
 ### Issue tracker
 
-Issues 以本地 markdown 文件形式存放在 `饼干记账/.scratch/<feature>/` 目录下。详见 `docs/agents/issue-tracker.md`。
+GitHub Issues（`FeatherHunter/SKILLS`），标题前缀 `[饼干记账]` + `skill:饼干记账` label 分区。详见仓库根 `docs/agents/issue-tracker.md`。
 
 ### Triage labels
 

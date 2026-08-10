@@ -12,9 +12,9 @@ _Avoid_: 中文名"饼干记账"(用于 SKILL.md frontmatter / HELP 命名前缀
 12.A 类 HTML 输出文件名的中文前缀,继承自 SKILL.md §唤醒词总表字面。映射表见 `scripts/html_paths.py`。
 _Avoid_: CLI 子命令名(英文 add/list/summary 等)、scenario_id
 
-**scenario / scenarios.json**:
-本 Skill 的"场景资产",存在 `references/scenarios.json`,是唤醒词×使用例的二维映射,被 `scripts/render_help.py` 与 `templates/help.html` 引用,是 HELP HTML 的唯一事实源。
-_Avoid_: 不再手工维护 HELP HTML 副本(应从 scenarios.json 渲染)
+**scenario / 场景资产**:
+本 Skill 的"场景资产"按域存于 `scenes/{域}.yaml`(7 域 · 各域唯一事实源),由 `scripts/merge_scenarios.py` 合并为汇总 `references/scenarios.yaml`,被 `scripts/render_help.py` / `templates/help.html` / 路由表引用,是 HELP HTML 与唤醒词路由的统一数据源。旧 `references/scenarios.json|md` 已归档(G3 决议),不再维护。
+_Avoid_: 手工维护 HELP HTML 副本(应从 references/scenarios.yaml 渲染)
 
 **_HELP_ 保留字**:
 12.B 类 HELP HTML 文件名的固定中段。形态 `<skill 中文名>_HELP_<YYYYMMDD>_<HHMMSS>[_N].html`。grep 一抓就出来。
@@ -46,12 +46,13 @@ _Avoid_: 分开存 `type: expense/income` 字段
 ├── docs/
 │   ├── agents/           ← agent 配置(issue-tracker/triage-labels/domain)
 │   └── adr/              ← 架构决策记录
-├── references/           ← categories.md / scenarios.json / scenarios.md
+├── scenes/               ← 7 域场景注册 yaml(域唯一事实源,合并器汇总到 references/)
+├── references/           ← categories.md / scenarios.yaml(合并汇总)/ scenarios.json|md(已归档 G3)
 ├── templates/            ← query_view.html / help.html
 ├── scripts/              ← db.py / analyze.py / record_bill.py / bill_inject.py / render_help.py / html_paths.py / 3 个迁移脚本
 ├── backups/              ← CSV 迁移备份 (gitignored)
 ├── config-cookie-accounting.ts ← SkillBoard 数据层视图(独立维护)
-└── .scratch/             ← 本地 markdown issue 跟踪(可选)
+└── .scratch/             ← 只读归档(历史本地 issue / 规格 / 讨论板,不再维护)
 ```
 
 HTML 输出根在 Skill 目录外,由 env 链解析:`$SKILLS_DB_PATH` > `$SKILLS_DATA_DIR` > Skill fallback(Windows `D:\.db\`,WSL `/mnt/d/.db/`)。本 Skill 当前 fallback 解析到 `D:\.db\`,所以 HTML 输出实际在 `D:\.db\biscuit_accountant_html\`。

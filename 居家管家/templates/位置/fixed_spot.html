@@ -54,6 +54,17 @@ select:focus,.inp:focus{outline:none;border-color:var(--blue)}
   .qa .mv{grid-column:1/-1}
   .qa .qb{width:100%}
 }
+/* ── 页内参数表单(设置固定位 · 可编辑字段 + 实时预览 + 空值拦截) ── */
+.panel{background:var(--card);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:14px;border:1px solid var(--line)}
+.panel h3{font-size:15px;margin-bottom:12px}
+.fp-row{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.fp-row label{font-size:12px;color:var(--fg2);font-weight:600}
+.fp-row input{border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:14px;background:#fff;color:var(--fg)}
+.fp-row input:focus{outline:none;border-color:var(--blue)}
+.fp-preview pre{background:#f6f8fa;border:1px solid #e8eaed;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;word-break:break-all;color:var(--fg)}
+.fp-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.fp-actions .btn{width:100%;min-width:0}
+@media(max-width:720px){.fp-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}}
 </style>
 </head>
 <body>
@@ -65,6 +76,16 @@ select:focus,.inp:focus{outline:none;border-color:var(--blue)}
 <div class="chips" id="metaBar"></div>
 </header>
 <div id="app"></div>
+<div class="panel" id="formPanel" hidden>
+  <h3>设置固定位</h3>
+  <div class="fp-row"><label for="fpItem">物品(常用件名称或 ID)</label><input id="fpItem" placeholder="如: 钥匙"></div>
+  <div class="fp-row"><label for="fpLoc">固定位</label><input id="fpLoc" placeholder="如: 玄关抽屉"></div>
+  <div class="fp-preview"><pre id="fpPreview"></pre></div>
+  <div class="fp-actions">
+    <button class="btn" id="fpCopy">复制 prompt</button>
+    <button class="btn ghost" id="fpClose">关闭</button>
+  </div>
+</div>
 <div class="actions">
 <button class="btn" id="setBtn">＋ 设置固定位</button>
 <button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
@@ -107,9 +128,25 @@ function render(){
   items.forEach(it=>{const b=document.getElementById('clr_'+it.id);if(b)b.onclick=()=>doCopy('请加载「居家管家」技能,帮我设置固定位(唤醒词:固定位):\n  操  作: 解除\n  物  品: '+esc(it.name)+(it.id?' (ID '+it.id+')':'')+'',b,'解除 prompt 已复制');});
   renderActions();
 }
+function updateFpPreview(){
+  const item=document.getElementById('fpItem').value.trim();
+  const loc=document.getElementById('fpLoc').value.trim();
+  const text='请加载「居家管家」技能,帮我设置固定位(唤醒词:固定位):\n  操  作: 设置\n  物  品'+(item?': 「'+esc(item)+'」':'(钥匙): ___')+'\n  固定位'+(loc?': 「'+esc(loc)+'」':'(玄关抽屉): ___');
+  document.getElementById('fpPreview').textContent=text;
+  const cp=document.getElementById('fpCopy');
+  const canCopy=!!item&&!!loc;
+  cp.disabled=!canCopy;
+  cp.style.opacity=canCopy?'1':'.4';
+  if(canCopy)cp.dataset.text=text;
+}
 function renderActions(){
   const sb=document.getElementById('setBtn');
-  if(sb)sb.onclick=()=>{const itemName=prompt('物品名(常用件,如:钥匙)');if(!itemName)return;const loc=prompt('固定位(如:玄关抽屉)');if(!loc)return;doCopy('请加载「居家管家」技能,帮我设置固定位(唤醒词:固定位):\n  操  作: 设置\n  物  品: '+esc(itemName)+'\n  固定位: '+esc(loc),sb,'设置 prompt 已复制');};
+  if(sb)sb.onclick=()=>{document.getElementById('formPanel').hidden=false;document.getElementById('fpItem').focus();updateFpPreview();};
+  document.getElementById('fpClose').onclick=()=>{document.getElementById('formPanel').hidden=true;};
+  document.getElementById('fpItem').addEventListener('input',updateFpPreview);
+  document.getElementById('fpLoc').addEventListener('input',updateFpPreview);
+  const cp=document.getElementById('fpCopy');
+  cp.onclick=()=>{if(cp.disabled)return;doCopy(cp.dataset.text||'',cp,'prompt 已复制,发给 AI');};
   const cd=D.copy_data||{},cl=D.copy_log||{};
   document.getElementById('copyDataBtn').onclick=()=>doCopy(formatHuman(cd),document.getElementById('copyDataBtn'),'数据已复制');
   document.getElementById('copyLogBtn').onclick=()=>doCopy(formatHuman(cl),document.getElementById('copyLogBtn'),'日志已复制');

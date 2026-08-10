@@ -29,8 +29,8 @@ section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
 .loc .nm{font-weight:700;font-size:14px;margin-bottom:4px;padding-right:20px}
 .loc .ct{color:var(--fg3);font-size:11px}
 .loc .go{position:absolute;right:12px;top:12px;color:var(--fg3);font-size:13px}
-.loc.empty{border-style:dashed;opacity:.75;background:#fbfbfd}
-.loc.empty .nm{color:var(--fg3);font-weight:600}
+.loc.isempty{border-style:dashed;opacity:.75;background:#fbfbfd}
+.loc.isempty .nm{color:var(--fg3);font-weight:600}
 .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
 .item{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid #eef0f3;border-radius:14px;padding:10px 12px}
 .item .ph{width:42px;height:42px;border-radius:10px;background:#eef1f5;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--fg3);font-size:9px;flex:none}
@@ -95,7 +95,7 @@ function doCopy(text,btn,msg){
   else{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
 }
 function drillPrompt(path){return '请加载「居家管家」技能,浏览空间视图(唤醒词:空间视图):\n  位  置: '+(path||'(顶层)');}
-function quickPrompt(kind,item){const labels={mv:'移物品',add:'补物品',sub:'减物品'};const texts={mv:'请加载「居家管家」技能,帮我移动物品位置(唤醒词:移物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  新  位  置(客厅/电视柜): ______\n  数  量(1): ______,add:'请加载「居家管家」技能,帮我补物品(唤醒词:补物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量(1): ______',sub:'请加载「居家管家」技能,帮我减物品(唤醒词:减物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量(1): ______'};return {label:labels[kind],text:texts[kind]};}
+function quickPrompt(kind,item){const labels={mv:'移物品',add:'补物品',sub:'减物品'};const texts={mv:'请加载「居家管家」技能,帮我移动物品位置(唤醒词:移物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  新  位  置(客厅/电视柜): ______\n  数  量(1): ______',add:'请加载「居家管家」技能,帮我补物品(唤醒词:补物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量(1): ______',sub:'请加载「居家管家」技能,帮我减物品(唤醒词:减物品):\n  物  品: '+item.name+(item.id?' (ID '+item.id+')':'')+'\n  数  量(1): ______'};return {label:labels[kind],text:texts[kind]};}
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){document.getElementById('app').innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
   const v=validate(p);if(!v.ok){document.getElementById('app').innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
@@ -112,7 +112,7 @@ function render(){
     renderActions();return;
   }
   const kids=arr(D.children);
-  if(kids.length){app.innerHTML+='<section><h2>📂 下一层 <span class="hint">点卡片 = 下钻</span></h2><div class="grid">'+kids.map((c,i)=>'<div class="loc '+(c.empty?'empty':'')+'" id="loc_'+i+'"><div class="nm">'+esc(c.name)+'</div><div class="ct">'+(c.empty?'空位置':c.count+' 件')+(c.has_children?' · 有下级':'')+'</div><div class="go">›</div></div>').join('')+'</div></section>';}
+  if(kids.length){app.innerHTML+='<section><h2>📂 下一层 <span class="hint">点卡片 = 下钻</span></h2><div class="grid">'+kids.map((c,i)=>'<div class="loc '+(c.empty?'isempty':'')+'" id="loc_'+i+'"><div class="nm">'+esc(c.name)+'</div><div class="ct">'+(c.empty?'空位置':c.count+' 件')+(c.has_children?' · 有下级':'')+'</div><div class="go">›</div></div>').join('')+'</div></section>';}
   kids.forEach((c,i)=>{const el=document.getElementById('loc_'+i);if(el){el.onclick=()=>{const t=drillPrompt(c.path);doCopy(t,el,'下钻 prompt 已复制,发给 AI');};}});
   const its=arr(D.items);
   if(its.length){app.innerHTML+='<section><h2>📦 本层物品 <span class="hint">快捷操作:移/补/减</span></h2><div class="items">'+its.map((it,j)=>'<div class="item"><div class="ph">'+(it.photo?'<img alt="'+esc(it.name)+'" src="data:image/jpeg;base64,'+it.photo+'">':'无图')+'</div><div class="inf"><div class="n">'+esc(it.name)+'</div><div class="s">×'+esc(it.quantity||1)+' · '+esc(it.location_status||'在家')+'</div></div><div class="qa"><button class="qb mv" id="mv_'+j+'">移</button><button class="qb" id="add_'+j+'">补</button><button class="qb" id="sub_'+j+'">减</button></div></div>').join('')+'</div></section>';

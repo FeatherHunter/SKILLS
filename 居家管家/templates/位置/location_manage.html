@@ -23,7 +23,7 @@ section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
 .trow .pad{flex:none;width:22px;height:1px}
 .trow .dot{flex:none;color:var(--fg3);font-size:10px}
 .trow .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.trow .nm.empty{color:var(--fg3);font-weight:500}
+.trow .nm.isempty{color:var(--fg3);font-weight:500}
 .trow .ct{color:var(--fg3);font-size:11px;flex:none}
 .trow .ops{flex:none;display:flex;gap:4px;margin-left:auto}
 .opb{border:none;border-radius:99px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;background:#f2f4f8;color:var(--fg2);min-height:36px;line-height:1.2}
@@ -157,8 +157,9 @@ function render(){
   const tree=document.getElementById('tree');
   if(tree){
     const spans=buildFold(nodes);
-    tree.innerHTML=nodes.map((n,i)=>{const sp=spans[i];const fold=sp.hasChild?'<button class="foldbtn" data-i="'+i+'" data-end="'+sp.end+'">▾</button>':'<span class="foldpad"></span>';return '<div class="trow" data-i="'+i+'"><span class="pad" style="width:'+((n.depth-1)*22)+'px"></span>'+fold+'<span class="nm'+(n.empty?' empty':'')+'">'+esc(n.name)+'</span><span class="ct">'+(n.empty?'空位置':n.count+' 件')+'</span><span class="ops"><button class="opb" id="rn_'+i+'">改名</button><button class="opb" id="dl_'+i+'">删除</button></span></div>';}).join('');
+    tree.innerHTML=nodes.map((n,i)=>{const sp=spans[i];const fold=sp.hasChild?'<button class="foldbtn" data-i="'+i+'" data-end="'+sp.end+'">▾</button>':'<span class="foldpad"></span>';return '<div class="trow" data-i="'+i+'"><span class="pad" style="width:'+((n.depth-1)*22)+'px"></span>'+fold+'<span class="nm'+(n.empty?' isempty':'')+'">'+esc(n.name)+'</span><span class="ct">'+(n.empty?'空位置':n.count+' 件')+'</span><span class="ops"><button class="opb" id="rn_'+i+'">改名</button><button class="opb" id="dl_'+i+'">删除</button></span></div>';}).join('');
     bindFold(tree);
+    tree.querySelectorAll(".foldbtn").forEach(fb=>fb.click());  // 默认全折叠
     nodes.forEach((n,i)=>{const rn=document.getElementById('rn_'+i);const dl=document.getElementById('dl_'+i);
       if(rn)rn.onclick=()=>openForm('rename',n.path);
       if(dl)dl.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 删除\n  位  置: 「'+esc(n.path)+'」',dl,'删除 prompt 已复制');});}

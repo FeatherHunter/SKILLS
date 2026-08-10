@@ -174,6 +174,7 @@ def test_monthly_summary():
     assert 'expense' in result
     assert 'income' in result
     assert 'net' in result
+    assert result['count'] >= sum(c['count'] for c in result['categories'])
 
 
 def test_compare_periods_week():

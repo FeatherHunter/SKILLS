@@ -102,6 +102,7 @@ def monthly_summary(month: str) -> dict:
         return {
             "month": month,
             "categories": [dict(row) for row in rows],
+            "count": totals["count"],
             "expense": totals["expense"],
             "income": totals["income"],
             "net": totals["net"]

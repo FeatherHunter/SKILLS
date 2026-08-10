@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>首次使用流程 · 对抗式审查 + 修正版</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:44px 18px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:30px 28px;box-shadow:var(--shadow);margin-bottom:20px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:25px;letter-spacing:-.03em;line-height:1.25;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:14px}
+section{background:var(--card);border-radius:20px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:16px 0}
+h2{font-size:18px;letter-spacing:-.02em;margin-bottom:10px}
+h2 .no{color:var(--fg3);font-weight:700;margin-right:8px}
+.fail{background:#fff5f5;border-left:4px solid var(--red);border-radius:12px;padding:14px 16px;margin:12px 0}
+.fail .t{font-weight:800;color:#c22e2e;font-size:14px;margin-bottom:4px}
+.fail p{font-size:13.5px;color:var(--fg2)}
+.fail code,.okbox code{background:#f2f4f8;border-radius:6px;padding:1px 6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.okbox{background:#e9f8ef;border-left:4px solid var(--green);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:13.5px}
+.flow{position:relative;padding-left:36px;margin-top:8px}
+.flow::before{content:'';position:absolute;left:14px;top:6px;bottom:6px;width:2px;background:linear-gradient(180deg,var(--blue),var(--line),var(--green))}
+.step{position:relative;margin-bottom:14px}
+.step .dot{position:absolute;left:-36px;top:16px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;background:var(--blue);z-index:1}
+.step .dot.g{background:var(--green)}
+.step .dot.o{background:var(--orange)}
+.card{background:#fafbfd;border:1px solid #ececf1;border-radius:16px;padding:14px 16px}
+.card h3{font-size:14.5px;margin-bottom:6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:800}
+.chip.user{background:var(--soft);color:var(--blue)}
+.chip.ai{background:#f2f4f8;color:var(--fg2)}
+.chip.html{background:#fff0f0;color:#c22e2e}
+.chip.dec{background:#fff7e6;color:#8a5a00}
+.card p{font-size:13px;color:var(--fg2);margin:3px 0}
+.card .k{font-size:12.5px;font-weight:700;color:var(--fg);margin-top:8px}
+.card .btn{display:inline-block;background:var(--blue);color:#fff;border-radius:8px;padding:3px 10px;font-size:12px;font-weight:700;margin:2px 2px 2px 0}
+.card .btn.g{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.card .fld{display:inline-block;background:#fff;border:1.5px solid var(--line);border-radius:8px;padding:3px 10px;font-size:12px;color:var(--fg);margin:2px 2px 2px 0}
+.cmd{background:#1d1d1f;color:#f5f5f7;border-radius:10px;padding:8px 12px;font-size:11.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;margin-top:6px;word-break:break-all}
+.cmd .c{color:#ffd60a}
+.branch{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}
+.branch .b{flex:1;min-width:220px;background:#fff;border:1.5px dashed var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px}
+.branch .b b{display:block;font-size:13px;margin-bottom:3px}
+.branch .b.y b{color:var(--green)}
+.branch .b.n b{color:var(--orange)}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+th,td{border:1px solid #ececf1;padding:8px 10px;text-align:left;vertical-align:top}
+th{background:#fafbfd;font-size:12px;color:var(--fg2)}
+.warnbox{background:#fffbea;border-left:4px solid var(--orange);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:13.5px}
+.foot{color:var(--fg3);font-size:11.5px;text-align:center;margin-top:20px}
+@media(max-width:640px){h1{font-size:21px}.wrap{padding:28px 12px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+<div class="eyebrow">对抗式审查 · 代码事实证伪</div>
+<h1>首次使用流程 · 原版 vs 代码事实</h1>
+<p class="lead">原流程图有 4 处与 first_use_wizard.html 实际代码不符,并揪出 1 个模板 bug。以下是审查结论 + 修正版(HTML 交互级)。</p>
+</div>
+
+<section>
+<h2><span class="no">1</span>对抗式审查发现(原流程图错误)</h2>
+
+<div class="fail"><div class="t">❌ 错误 1:env 未配置时「只点一个按钮」</div>
+<p>原流程图说未配置时点「先配置环境变量」按钮。但代码 (<code>first_use_wizard.html:171-185</code>) 显示:<b>env 未配置时页面同时渲染 2 个表单 + 2 个按钮</b>——「数据库目录」输入框(配置用)+「数据保存路径」输入框(初始化用),以及「先配置环境变量」+「开始初始化」两个按钮。用户有两条并行路:<b>先配置</b> 或 <b>直接用默认路径初始化</b>。原流程图只画了一条。</p></div>
+
+<div class="fail"><div class="t">❌ 错误 2:HTML 其实被打开 2 次(两个不同的文件)</div>
+<p>原流程图没区分:第一次是 AI 生成 <b>pending 版</b> first_use_wizard.html(路径确认用);建库完成后 AI <b>重新生成 done 版</b>(新文件,12.A 命名带新时间戳)再发给用户。不是同一文件刷新,是<b>两个文件</b>。</p></div>
+
+<div class="fail"><div class="t">❌ 错误 3:「复制 → 回聊天粘贴」的往返没画</div>
+<p>HTML 里的按钮只负责<b>复制 prompt 到剪贴板</b>(Toast 确认),真正的执行发生在<b>聊天窗口</b>——用户把复制的文本粘贴回对话发给 AI,AI 才跑命令。原流程图把「点按钮」当成「执行」,遗漏了中间这个关键人工步骤。</p></div>
+
+<div class="fail"><div class="t">❌ 错误 4:一键安装的配置展示 vs HTML env 卡片混为一谈</div>
+<p>步骤 4 画的配置回显是<b>安装对话</b>里的展示;而 env 状态卡片是 <b>first_use_wizard.html</b> 里的渲染 (line 132-133)。两条路径,原流程图合并了。</p></div>
+
+<div class="warnbox"><b>🔴 顺带揪出模板 bug(first_use_wizard.html:183):</b>「数据库目录」建议值被<b>硬编码</b>为 <code>D:\2Study\StudyNotes\.db</code> —— 违反 ADR-0002 决策 4「db_path 禁止写死,环境变量实时推导」。换机器/换路径就错。需改为由 AI 渲染时注入建议值(env 检测推导),或留空让用户填。已在 ISSUE #123 追加。</div>
+</section>
+
+<section>
+<h2><span class="no">2</span>修正版 · HTML 交互级全流程</h2>
+<div class="flow">
+
+<div class="step"><div class="dot">1</div>
+<div class="card"><h3><span class="chip user">用户</span>说:「帮我安装居家管家技能」</h3>
+<p>复制 SKILL.md 一键安装 prompt 发给 AI。<b>无 HTML 打开</b>,纯对话。</p>
+</div></div>
+
+<div class="step"><div class="dot">2</div>
+<div class="card"><h3><span class="chip ai">AI</span>检查 Python 环境 → 引导配置环境变量</h3>
+<p>对话式完成,不渲染 HTML。用户回答目录或确认默认。</p>
+<div class="cmd">python --version → setx SKILLS_DB_PATH "..."</div>
+</div></div>
+
+<div class="step"><div class="dot">3</div>
+<div class="card"><h3><span class="chip user">用户</span>说:「首次使用」(唤醒词)</h3>
+<p>触发初始化工作流。AI 开始跑环境检测。</p>
+</div></div>
+
+<div class="step"><div class="dot">4</div>
+<div class="card"><h3><span class="chip ai">AI</span>跑 check → <b>生成并发送 first_use_wizard.html(pending 版)</b></h3>
+<p><span class="chip html">HTML #1 打开</span> 6 步步骤条 + 环境检测卡片(OS/Python/路径/可写 + env 状态)。</p>
+<div class="cmd">python scripts/开始使用/cli.py <span class="c">check</span> → 首次使用初始化_YYYYMMDD_HHMMSS_待初始化.html</div>
+</div></div>
+
+<div class="dec">
+<div class="card"><h3><span class="chip dec">判断</span>页面 env 卡片显示什么?</h3>
+<p>SKILLS_DB_PATH 显示真实路径 → 已配置;显示「(未设置,走默认)」→ 未配置。</p>
+<div class="branch">
+<div class="b y"><b>✅ 已配置</b>直接走第 6 步(开始初始化)</div>
+<div class="b n"><b>⚠️ 未配置</b>页面同时给出两条路 ↓</div>
+</div></div>
+</div>
+
+<div class="step"><div class="dot o">5a</div>
+<div class="card"><h3><span class="chip html">HTML #1 内</span>【仅未配置】填「数据库目录」→ 点「先配置环境变量」</h3>
+<p><span class="fld">数据库目录(可改,建议值)</span> 预填建议目录;<span class="btn g">先配置环境变量</span> 复制自包含配置 prompt → Toast「配置指令已复制」。</p>
+<p><span class="k">然后</span>把复制内容<b>粘贴回聊天窗口</b>发给 AI → AI 执行 setx → 重跑 check → 重新发送 pending 版 HTML(env 卡片变真实值)→ 回到判断。</p>
+<div class="cmd">复制内容:请加载「居家管家」技能,帮我配置数据存储环境:设置 SKILLS_DB_PATH=...</div>
+</div></div>
+
+<div class="step"><div class="dot o">5b</div>
+<div class="card"><h3><span class="chip html">HTML #1 内</span>【或】直接填「数据保存路径」→ 点「开始初始化」</h3>
+<p><span class="fld">数据保存路径(可改,默认即确认)</span> 预填真实 db_path;下方实时预览完整 prompt;<span class="btn">开始初始化(复制指令给 AI)</span> → Toast。</p>
+<p><span class="k">然后</span>复制内容<b>粘贴回聊天窗口</b>发给 AI。</p>
+<div class="cmd">复制内容:请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用):确认数据保存路径:...。请执行初始化:建库(含分类种子 60 节点)。</div>
+</div></div>
+
+<div class="step"><div class="dot">6</div>
+<div class="card"><h3><span class="chip ai">AI</span>执行 init(建库 + 分类种子)→ init-status</h3>
+<p>聊天窗口侧执行,无新 HTML。幂等:已有库/分类 → 跳过。</p>
+<div class="cmd">python scripts/开始使用/cli.py <span class="c">init</span> → <span class="c">init-status</span></div>
+</div></div>
+
+<div class="step"><div class="dot g">7</div>
+<div class="card"><h3><span class="chip ai">AI</span>生成并发送 first_use_wizard.html(done 版)</h3>
+<p><span class="chip html">HTML #2 打开</span>(新文件,新时间戳)步骤条全绿 + 建库结果(路径/8 顶级/60 节点)+ 「录入引导」输入框。</p>
+<div class="cmd">render_开始使用.emit_sm8(first_use_wizard.html, stage=done) → 首次使用初始化_YYYYMMDD_HHMMSS_已完成.html</div>
+</div></div>
+
+<div class="step"><div class="dot g">8</div>
+<div class="card"><h3><span class="chip html">HTML #2 内</span>填「录入引导」→ 点「开始录入第一批」</h3>
+<p><span class="fld">录入引导(可改)</span> 预填「从拍照开始,建议先录 1-3 件试用」;<span class="btn">开始录入第一批(复制)</span> → Toast → 复制 → <b>粘贴回聊天</b>发给 AI → AI 引导录物品。</p>
+<div class="cmd">复制内容:请加载「居家管家」技能,帮我录入第一批物品(唤醒词:拍物品):从拍照开始...</div>
+</div></div>
+
+<div class="okbox"><b>🎉 落地完成。</b>数据库建好 · 60 分类就绪 · 环境变量生效。之后进入 56 场景日常使用(录物品/查物品/备份导出…)。</div>
+</div>
+</section>
+
+<section>
+<h2><span class="no">3</span>核心机制一句话</h2>
+<table>
+<tr><th>层</th><th>角色</th></tr>
+<tr><td><b>聊天窗口</b></td><td>唯一执行层:AI 读指令、跑 CLI、生成 HTML</td></tr>
+<tr><td><b>HTML 页面</b></td><td>决策层:展示状态、提供可编辑参数表单、<b>复制 prompt 回聊天</b>(按钮只复制不执行)</td></tr>
+<tr><td><b>往返循环</b></td><td>HTML 复制 prompt → 聊天粘贴 → AI 执行 → 新 HTML —— 每一步操作都是一次往返</td></tr>
+</table>
+</section>
+
+<div class="foot">对抗式审查基于 first_use_wizard.html 完整代码(commit 0a539ac) · 2026-08-10</div>
+</div>
+</body>
+</html>

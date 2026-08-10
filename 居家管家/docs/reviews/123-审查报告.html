@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#123 对抗式审查报告 · T9 SM8 开始使用域</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:44px 20px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:30px 32px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:28px;letter-spacing:-.03em;line-height:1.2;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:14.5px}
+.badge{display:inline-block;border-radius:999px;padding:4px 14px;font-size:13px;font-weight:800;margin-right:6px}
+.badge.fail{background:#ffecec;color:#c22e2e}
+.badge.pass{background:#e9f8ef;color:#1d7a3f}
+section{background:var(--card);border-radius:20px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:16px 0}
+h2{font-size:18px;letter-spacing:-.02em;margin-bottom:10px}
+h2 .no{color:var(--fg3);font-weight:700;margin-right:8px}
+.q{color:var(--fg2);font-size:14px;margin-bottom:12px}
+.verdict{font-weight:800;font-size:14.5px;margin-bottom:10px}
+.v-fail{color:#c22e2e}.v-pass{color:#1d7a3f}
+ul{padding-left:20px}
+li{font-size:14px;margin:5px 0}
+li b{font-weight:700}
+.danger{background:#fff5f5;border-left:4px solid var(--red);border-radius:12px;padding:14px 16px;margin:12px 0}
+.danger .t{font-weight:800;color:#c22e2e;font-size:14px;margin-bottom:6px}
+code{background:#f2f4f8;border-radius:6px;padding:2px 7px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:12px 0}
+.card{background:#fafbfd;border-radius:14px;padding:14px 16px}
+.card b{font-size:13px;color:var(--fg2);display:block;margin-bottom:6px}
+.card span{font-size:15px;font-weight:700}
+.quote{background:#fffbea;border-left:4px solid var(--orange);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:14px}
+.foot{color:var(--fg3);font-size:12.5px;margin-top:18px;text-align:center}
+.pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:2px 10px;margin:2px;font-size:12.5px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}h1{font-size:23px}.wrap{padding:28px 14px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+<div class="eyebrow">G6 对抗式审查 · 发布前置</div>
+<h1>#123 审查报告 · T9 SM8 开始使用域(4 场景 · 双浏览器)</h1>
+<p class="lead">审查对象:首次使用 / 数据检查 / 备份导出 / 导入恢复 · 5 模板 7 状态 · 桌面 1280×900 + 手机 390×844</p>
+<div style="margin-top:12px"><span class="badge fail">第 1 问 FAIL</span><span class="badge pass">第 2 问 PASS</span><span class="badge pass">第 3 问 PASS</span><span class="badge pass">第 4 问 PASS</span><span class="badge pass">第 5 问 有建议</span></div>
+</div>
+
+<section>
+<h2><span class="no">1</span>复制数据 / 复制日志按钮是否符合要求</h2>
+<div class="verdict v-fail">❌ FAIL — 复制按钮点击后替换自身文字为「✓ 已复制」,违反用户裁定</div>
+<div class="danger">
+<div class="t">用户裁定(2026-08-09):复制类型按钮点击后不允许改变文字内容、不允许出现「已复制」</div>
+<p style="font-size:14px">现状:所有复制按钮 onclick 均为 <code>flashBtn(this, ok?'✓ 已复制':'✗ 复制失败', 2000)</code> —— 点击瞬间把功能标签(<code>复制数据</code>/<code>复制日志</code>)替换成「✓ 已复制」,2 秒后才还原。</p>
+</div>
+<p style="font-size:14px;margin:10px 0"><b>第一性原理分析:</b>按钮文字 = 功能标签(永久身份);点击反馈 = 瞬时状态。两者混用导致:① 标签被破坏,用户不知当前是"点击前"还是"已复制";② 连续点击时文字在两种状态间跳动;③ 移动端按钮宽度抖动。反馈应走独立视觉通道(如全局 toast),而非改写按钮自身。</p>
+<p style="font-size:14px;margin:10px 0"><b>⚠️ 全技能共性问题</b>(不只 SM8):</p>
+<div class="grid">
+<div class="card"><b>居家管家</b><span>306 个模板</span></div>
+<div class="card"><b>卡路里</b><span>293 个模板</span></div>
+<div class="card"><b>饼干记账</b><span>51 个模板</span></div>
+<div class="card"><b>私家大厨</b><span>17 个模板</span></div>
+<div class="card"><b>作息管家</b><span>16 个模板</span></div>
+<div class="card"><b>备忘录</b><span>6 个模板</span></div>
+<div class="card"><b>08 规范骨架</b><span>template_skeleton.html 自身同款</span></div>
+<div class="card"><b>智剪工坊</b><span>1 个模板</span></div>
+</div>
+<p style="font-size:14px">08-HTML交互规范 §4 与骨架模板 <code>_assets/template_skeleton.html</code> 均写入「按钮文字改为 ✅ 已复制」——<b>规范本身就是反模式源头</b>,需同步修订。</p>
+<p style="font-size:14px;margin-top:8px"><b>修复方向(待确认):</b>按钮文字恒定;反馈改 <code>toast</code>(全局浮层,不占按钮位);失败态同理。SM8 5 模板立即修,全技能批量改造单独立项。</p>
+</section>
+
+<section>
+<h2><span class="no">2</span>呈现数据是否符合场景权威清单</h2>
+<div class="verdict v-pass">✅ PASS — 4 场景与 scenes/SM8.yaml 逐条对应</div>
+<ul>
+<li><b>SM8-1 首次使用:</b>6 步步骤条(当前步高亮/完成步绿标)+ 环境检测(OS/Python/DB 路径/目录可写)+ 建库结果 + 幂等提示 + 一键重试(错误态)+ 下一步按钮 ✓</li>
+<li><b>SM8-2 数据检查:</b>环境信息头部 + 8 检查项(标签/位置/状态/照片/价格/日期/相似位置)+ 严重度徽章 + 示例物品 pill + 勾选复制修复引导(只建议不自动改)✓</li>
+<li><b>SM8-3 备份导出:</b>备份选项 + 备份历史(保留 N 份)+ 距上次备份天数 + 顺路提醒横幅 + 导出 JSON/CSV ✓</li>
+<li><b>SM8-4 导入恢复:</b>预告式文件选择(<code>【导入文件即将发送:】</code>)+ 校验 + 冲突预览(跳过/覆盖)+ 确认导入(自动备份)+ 撤销导入 ✓</li>
+</ul>
+<p style="font-size:14px;color:var(--fg2);margin-top:8px">7 个审查状态(pending/done/健康报告/备份回执/choose/preview/错误回执)渲染数据均与场景 <code>result</code> 字段一致,无缺失、无脑补。</p>
+</section>
+
+<section>
+<h2><span class="no">3</span>手机适配(双视口客观测量)</h2>
+<div class="verdict v-pass">✅ PASS — 14/14 无横向溢出 · 0 JS 报错</div>
+<div class="grid">
+<div class="card"><b>桌面 1280×900</b><span>7/7 无溢出</span></div>
+<div class="card"><b>手机 390×844</b><span>7/7 无溢出</span></div>
+<div class="card"><b>JS / console 错误</b><span>0</span></div>
+<div class="card"><b>复制按钮客观计数</b><span>14/14 ✓</span></div>
+</div>
+<ul>
+<li>手机端 <code>@media(max-width:820px)</code>:步骤条单列、env-grid 单列、row 单列 ✓</li>
+<li>7 对双浏览器人工审查报告全部 PASS(桌面 + 手机触屏 UA)✓</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="no">4</span>顶级设计师风格(Apple 风)</h2>
+<div class="verdict v-pass">✅ PASS — 与 help_center/物品域令牌一致</div>
+<ul>
+<li>色板 <code>#007aff / #34c759 / #ff3b30 / #ff9500</code> + <code>#f5f5f7</code> 底 + 白卡 + 圆角 12-28px + 克制留白,与 help_center 同令牌体系 ✓</li>
+<li>字体栈 <code>-apple-system + PingFang SC</code>,系统级 antialiasing ✓</li>
+<li>阴影 <code>0 1px 2px + 0 12px 36px</code> 双层柔和投影,与既有模板一致 ✓</li>
+<li>SM8 特有:hero 渐变 <code>#fff→#f8fbff</code>、步骤条胶囊、env 卡片 —— 均符合 Apple HIG 层级</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="no">5</span>体验改进建议</h2>
+<div class="verdict v-pass">✅ 已有亮点 + 新建议</div>
+<p style="font-size:14px;margin-bottom:8px"><b>已实现亮点:</b>步骤条当前步高亮 + 完成步绿标 · 严重度徽章(严重/中等/轻微)· 示例物品 pill · 备份顺路提醒横幅 · 预告式文件选择 · 导入前自动备份 + 失败回滚。</p>
+<p style="font-size:14px;margin-bottom:8px"><b>新增建议(可选,列入后续批次):</b></p>
+<ul>
+<li><b>健康报告排序:</b>严重度优先(严重 → 中等 → 轻微),而非按检查项固定顺序,让用户先看到最该处理的</li>
+<li><b>数据检查一键动作:</b>勾选后若只有 1 条,按钮文案可从「复制选中修复引导」动态变「复制该修复引导」</li>
+<li><b>备份完成态:</b>显示「下次建议备份:下周日」的顺路预告,把"距上次 N 天"从警告转成行动</li>
+<li><b>导入预览表格:</b>冲突列表若 >10 条,加"全部跳过 / 全部覆盖"两个快捷动作,减少逐条点击</li>
+<li><b>首次使用完成态:</b>hero 区加一个"开始录入第一批"的视觉锚点(当前在动作区,可上移)</li>
+</ul>
+</section>
+
+<div class="foot">生成于 2026-08-09 · G6 对抗式审查 · 客观测量 Playwright 现场执行(不引用实施会话声明)</div>
+</div>
+</body>
+</html>

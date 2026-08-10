@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>复制 prompt 参数化 · 意图分析</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:44px 20px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:30px 32px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:27px;letter-spacing:-.03em;line-height:1.2;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:14.5px}
+section{background:var(--card);border-radius:20px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:16px 0}
+h2{font-size:18px;letter-spacing:-.02em;margin-bottom:10px}
+h2 .no{color:var(--fg3);font-weight:700;margin-right:8px}
+ul{padding-left:20px}
+li{font-size:14px;margin:5px 0}
+li b{font-weight:700}
+.fact{background:#fffbea;border-left:4px solid var(--orange);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:14px}
+.okbox{background:#e9f8ef;border-left:4px solid var(--green);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:14px}
+code{background:#f2f4f8;border-radius:6px;padding:2px 7px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+th,td{border:1px solid #ececf1;padding:9px 12px;text-align:left;vertical-align:top}
+th{background:#fafbfd;font-size:12.5px;color:var(--fg2)}
+.pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:2px 10px;margin:2px;font-size:12px;color:var(--fg2)}
+.demo{background:#fafbfd;border:1px solid #ececf1;border-radius:14px;padding:14px 16px;margin:10px 0;font-size:13.5px}
+.demo .lbl{font-size:12px;color:var(--fg3);font-weight:700;margin-bottom:6px}
+.demo input,.demo select{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:9px 12px;font-size:14px;font-family:inherit;margin:4px 0 10px;background:#fff;color:var(--fg)}
+.demo input:focus,.demo select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}
+.demo .btn{display:inline-block;background:var(--blue);color:#fff;border-radius:999px;padding:9px 18px;font-size:13.5px;font-weight:700}
+.demo .out{background:#1d1d1f;color:#f5f5f7;border-radius:12px;padding:12px 14px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;line-height:1.7;margin-top:10px;white-space:pre-wrap}
+.foot{color:var(--fg3);font-size:12px;margin-top:18px;text-align:center}
+@media(max-width:640px){h1{font-size:22px}.wrap{padding:28px 14px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+<div class="eyebrow">复制 prompt 参数化 · 第一性原理</div>
+<h1>你要的是「决策型 prompt」——复制前可定制,复制后即执行</h1>
+<p class="lead">从「固定文本快照」升级为「字段表单」:参数可编辑,复制出去的是用户定稿版指令</p>
+</div>
+
+<section>
+<h2><span class="no">1</span>你的意图是什么</h2>
+<p style="font-size:14px">当前这几个 HTML 的复制按钮,复制的是一段<b>固定文本</b>——参数(路径/份数/格式等)由 AI 在渲染时写死,用户只能「整段复制」,无法表达「我想改这里」。</p>
+<p style="font-size:14px;margin-top:8px">你要的本质上是一个<b>决策点</b>:用户在复制前,有权利对关键参数做最后定制。这正是 08-HTML 交互规范「采集型」的定义——</p>
+<div class="okbox"><b>采集型 = 字段表单(预填度 0→100% 连续;全预填 = 样式只读但可修改)</b> —— 录入/记一笔/记一餐的形态。预填 = AI 智能默认;可改 = 用户主权。</div>
+<p style="font-size:14px">一句话:复制按钮从「复制一段话」变成「复制一份<b>用户签过字的表单</b>」。</p>
+</section>
+
+<section>
+<h2><span class="no">2</span>规则:什么样的参数进表单</h2>
+<ul>
+<li><b>有默认值的可变参数</b> → 表单字段(如路径/保留份数/导出格式)</li>
+<li><b>场景固定的语义</b> → 留在模板里(如「唤醒词:首次使用」「建库含分类种子 60 节点」)</li>
+<li><b>选择型</b> → <code>select</code>/radio(如 备份 vs 导出、JSON vs CSV)</li>
+<li><b>自由输入</b> → <code>input</code>(如自定义路径、备注)</li>
+<li><b>预填度 100%</b>:字段默认显示当前真实值,用户不改直接复制 = 现在的行为;改了 = 定制版</li>
+<li><b>空值处理</b>:必填参数为空时,复制按钮提示「请填写 XX」,不复制残缺指令</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="no">3</span>场景落地设计(表单形态预览)</h2>
+
+<div class="demo">
+<div class="lbl">场景 1 · 首次使用(待初始化)—「开始初始化」按钮升级为:</div>
+<label style="font-size:12.5px;color:var(--fg2)">数据保存路径(预填 = 环境检测真实值)</label>
+<input type="text" value="D:\2Study\StudyNotes\.db" disabled style="opacity:.6">
+<div class="btn">开始初始化(复制指令给 AI)</div>
+<div class="out">请加载「居家管家」技能,帮我完成首次使用初始化(唤醒词:首次使用):
+确认数据保存路径:<b style="color:#ffd60a">D:\2Study\StudyNotes\.db\home.db</b>。请执行初始化:建库(含分类种子 60 节点)。</div>
+</div>
+
+<div class="demo">
+<div class="lbl">场景 1b · env 未配置—「先配置环境变量」按钮升级为:</div>
+<label style="font-size:12.5px;color:var(--fg2)">数据库目录(可改;默认建议值)</label>
+<input type="text" value="D:\2Study\StudyNotes\.db">
+<div class="btn">先配置环境变量</div>
+<div class="out">请加载「居家管家」技能,帮我配置数据存储环境:
+设置 SKILLS_DB_PATH=<b style="color:#ffd60a">D:\2Study\StudyNotes\.db</b>(当前未设置,数据库将落在默认路径)。完成后重新执行首次使用初始化。</div>
+</div>
+
+<div class="demo">
+<div class="lbl">场景 2 · 数据检查(health_report)—「复制选中修复引导」已含勾选(选择型 ✓);「复制数据」为固定 5 段 JSON,无需表单</div>
+</div>
+
+<div class="demo">
+<div class="lbl">场景 3 · 备份导出(backup_receipt)—「确认备份」按钮升级为:</div>
+<label style="font-size:12.5px;color:var(--fg2)">保留份数(默认 5)</label>
+<select><option>3</option><option selected>5</option><option>10</option></select>
+<div class="btn">确认备份(复制指令)</div>
+<div class="out">请加载「居家管家」技能,帮我备份导出数据(唤醒词:备份导出):
+全量备份(数据库+照片),保留 <b style="color:#ffd60a">5</b> 份。</div>
+</div>
+
+<div class="demo">
+<div class="lbl">场景 4 · 导入恢复(import_restore)—「确认导入」按钮升级为:</div>
+<label style="font-size:12.5px;color:var(--fg2)">冲突处理(默认 跳过)</label>
+<select><option selected>跳过同名</option><option>覆盖同名</option></select>
+<div class="btn">确认导入(复制指令)</div>
+<div class="out">请加载「居家管家」技能,帮我导入恢复数据(唤醒词:导入恢复):
+确认导入 34 件,冲突处理:<b style="color:#ffd60a">跳过同名</b>。导入前自动备份。</div>
+</div>
+
+</section>
+
+<section>
+<h2><span class="no">4</span>实现方式</h2>
+<ul>
+<li>模板 JS:参数区域从「字符串拼接」改为「<code>&lt;input&gt;/&lt;select&gt;</code> 绑定 <code>oninput</code> → 实时重算 prompt 预览」</li>
+<li>按钮点击 → 读取当前表单值 → 拼接自包含 prompt(技能路由 + 唤醒词 + 参数)→ 复制 → 面板 Toast 确认</li>
+<li>「实时预览」:表单下方显示拼接后的完整 prompt(深色代码块),用户改一个字符立刻看到结果,复制前零意外</li>
+<li>手机适配:表单单列、按钮全宽(沿用已修样式)</li>
+<li>改动范围:<code>templates/开始使用/*.html</code> 5 个模板(按钮 + 表单 JS),<b>不碰 ops.py / render 数据层</b></li>
+</ul>
+<div class="fact"><b>边界确认:</b>「复制数据/复制日志」保持纯数据(5 段 JSON / 6 段日志),不进表单——它们是存档/排障用途,不是执行指令。</div>
+</section>
+
+<div class="foot">生成于 2026-08-10 · 意图分析待确认后实施</div>
+</div>
+</body>
+</html>

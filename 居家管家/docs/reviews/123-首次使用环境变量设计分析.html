@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>首次使用 · 环境变量设计分析</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:860px;margin:0 auto;padding:44px 20px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:30px 32px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:27px;letter-spacing:-.03em;line-height:1.2;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:14.5px}
+section{background:var(--card);border-radius:20px;padding:22px 24px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:16px 0}
+h2{font-size:18px;letter-spacing:-.02em;margin-bottom:10px}
+h2 .no{color:var(--fg3);font-weight:700;margin-right:8px}
+ul{padding-left:20px}
+li{font-size:14px;margin:5px 0}
+li b{font-weight:700}
+.fact{background:#fffbea;border-left:4px solid var(--orange);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:14px}
+.okbox{background:#e9f8ef;border-left:4px solid var(--green);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:14px}
+code{background:#f2f4f8;border-radius:6px;padding:2px 7px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.flow{background:#fafbfd;border-radius:16px;padding:18px 20px;margin:12px 0;border:1px solid #ececf1}
+.flow .step{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed #e5e5ea}
+.flow .step:last-child{border-bottom:none}
+.flow .n{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
+.flow .n.warn{background:var(--orange)}
+.flow .n.gap{background:var(--red)}
+.flow .t{font-size:14px}
+.flow .d{color:var(--fg2);font-size:12.5px;margin-top:2px}
+.gapbox{background:#ffecec;border-left:4px solid var(--red);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:14px}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+th,td{border:1px solid #ececf1;padding:9px 12px;text-align:left}
+th{background:#fafbfd;font-size:12.5px;color:var(--fg2)}
+.foot{color:var(--fg3);font-size:12px;margin-top:18px;text-align:center}
+@media(max-width:640px){h1{font-size:22px}.wrap{padding:28px 14px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+<div class="eyebrow">SM8 首次使用 · 第一性原理分析</div>
+<h1>环境变量引导缺失 · 完整流程梳理</h1>
+<p class="lead">三个问题的代码级回答 + 现状流程 + 改造建议(待拍板)</p>
+</div>
+
+<section>
+<h2><span class="no">1</span>首次使用有没有引导用户配置环境变量?</h2>
+<div class="fact"><b>结论:没有。</b>环境检测 <code>ops.py env_check_payload()</code> 确实读取了 <code>SKILLS_DB_PATH</code> 并返回其状态(第 50/61 行),但 <code>first_use_wizard.html</code> 模板的「环境检测」卡片<b>只渲染了 OS / Python / 数据库路径 / 目录可写</b>,<b>没有渲染 env 状态字段</b>——用户根本看不到「SKILLS_DB_PATH 未设置,将使用默认 D:\.db」这类信息,更谈不上引导配置。</div>
+<p style="font-size:14px">换句话说:检测逻辑在,展示断了,引导环节完全缺失。用户会看到数据库路径直接是 <code>D:/.db/...</code>(fallback),但不知道为什么、也不知道可以改。</p>
+</section>
+
+<section>
+<h2><span class="no">2</span>引导配置后,HTML 复制 prompt 用真实路径?</h2>
+<div class="okbox"><b>合理,而且就该这么做。</b>你的直觉完全正确:<br>
+① 首次使用流程前段引导用户配置环境变量(一次配置,全局生效)<br>
+② 后续渲染 HTML 时 <code>db_path</code> 来自 <code>DB_PATH</code> 运行时解析(env 优先)——prompt 自然显示用户真实配置的路径<br>
+③ 复制出去的 prompt 带真实路径 → 空白 session 的 AI 拿到后路径也是对的,链路闭环</div>
+<p style="font-size:14px">这也顺带解决了上一个问题:prompt 里不该出现写死的 fallback 假路径。</p>
+</section>
+
+<section>
+<h2><span class="no">3</span>当前完整流程是什么?</h2>
+<div class="flow">
+<div class="step"><div class="n">1</div><div class="t"><b>安装(一次性 · SKILL.md §安装与配置)</b><div class="d">用户复制「一键安装」prompt → AI 检查 Python → 引导配置环境变量 → 显示配置 → 告知改目录方法。<b>但这是 SKILL.md 文档流程,HTML 里没有对应环节</b></div></div></div>
+<div class="step"><div class="n gap">2</div><div class="t"><b>⚠️ 断点:环境变量配置</b><div class="d">文档说「引导我配置环境变量」,但首次使用 HTML 没有渲染 env 状态、没有配置引导按钮——用户可能带着 fallback 路径直接建库</div></div></div>
+<div class="step"><div class="n">3</div><div class="t"><b>环境检测 <code>cli.py check</code></b><div class="d">OS / Python / 目录可写 / DB 状态(env 状态已检测但未展示)</div></div></div>
+<div class="step"><div class="n">4</div><div class="t"><b>路径确认</b><div class="d">展示 db_path(默认即确认)→ 用户确认 → 不静默</div></div></div>
+<div class="step"><div class="n">5</div><div class="t"><b>建库 + 建分类 <code>cli.py init</code></b><div class="d">幂等:已有库/已有分类 → 跳过;种子 60 节点(8 顶级 + 52 二级)</div></div></div>
+<div class="step"><div class="n">6</div><div class="t"><b>状态确认 <code>cli.py init-status</code></b><div class="d">未初始化 / 库已建 / 已初始化</div></div></div>
+<div class="step"><div class="n">7</div><div class="t"><b>渲染向导 HTML <code>first_use_wizard.html</code></b><div class="d">6 步步骤条 + 环境信息 + 建库结果 + 下一步按钮(复制 prompt → AI)</div></div></div>
+<div class="step"><div class="n">8</div><div class="t"><b>完成 / 错误回执</b><div class="d">完成 → 提示录第一批(拍物品);失败 → 错误回执 + 一键重试</div></div></div>
+</div>
+<div class="gapbox"><b>核心断点:</b>环境变量配置是「文档承诺但 HTML 断链」——SKILL.md 安装章节要求引导配置,但首次使用 HTML 既没显示 env 状态,也没给配置入口。</div>
+</section>
+
+<section>
+<h2><span class="no">+</span>改造建议(待拍板)</h2>
+<table>
+<tr><th>环节</th><th>现状</th><th>建议</th></tr>
+<tr><td>环境检测卡片</td><td>OS/Python/路径/可写(无 env 状态)</td><td>增加「环境变量」卡片:显示 <code>SKILLS_DB_PATH</code> / <code>HOME_PHOTOS_DIR</code> 当前值或「未设置(走默认)」</td></tr>
+<tr><td>配置引导</td><td>无</td><td>env 未设置时,「开始初始化」旁加「先配置环境变量」按钮 → 复制配置 prompt(如 <code>setx SKILLS_DB_PATH "D:\2Study\StudyNotes\.db"</code>)→ AI 引导配置</td></tr>
+<tr><td>路径来源</td><td>prompt 带运行时路径(已修)</td><td>保持运行时解析;若用户改了 env,重新 check 后路径自动更新</td></tr>
+<tr><td>幂等提示</td><td>已初始化 → 跳过</td><td>保持;已初始化态可加「查看当前配置」入口(展示 env + 路径)</td></tr>
+</table>
+<p style="font-size:14px;color:var(--fg2)">改这 3 处后,「首次使用」从文档到 HTML 全链路闭环:检测 → 展示 env 状态 → (可选)引导配置 → 确认路径 → 建库 → 回执。</p>
+</section>
+
+<div class="foot">生成于 2026-08-10 · 基于 ops.py / db.py / SKILL.md 代码事实</div>
+</div>
+</body>
+</html>

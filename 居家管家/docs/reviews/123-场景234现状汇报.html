@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>场景 2/3/4 · 现状与修复计划</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding:40px 18px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:28px 30px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:25px;letter-spacing:-.03em;line-height:1.25;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:14px}
+section{background:var(--card);border-radius:20px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:14px 0}
+h2{font-size:17px;letter-spacing:-.02em;margin-bottom:10px}
+h2 .no{color:var(--fg3);font-weight:700;margin-right:8px}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+th,td{border:1px solid #ececf1;padding:8px 10px;text-align:left;vertical-align:top}
+th{background:#fafbfd;font-size:12px;color:var(--fg2)}
+.tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:800;margin-right:4px}
+.tag.fail{background:#ffecec;color:#c22e2e}
+.tag.ok{background:#e9f8ef;color:#1d7a3f}
+.tag.wait{background:#fff7e6;color:#8a5a00}
+code{background:#f2f4f8;border-radius:6px;padding:1px 6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.okbox{background:#e9f8ef;border-left:4px solid var(--green);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:13.5px}
+.warnbox{background:#fffbea;border-left:4px solid var(--orange);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:13.5px}
+ul{padding-left:20px}li{font-size:13.5px;margin:4px 0}
+.foot{color:var(--fg3);font-size:11.5px;text-align:center;margin-top:18px}
+@media(max-width:640px){h1{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+<div class="eyebrow">ISSUE #123 · T9 SM8 开始使用域</div>
+<h1>场景 2/3/4 现状汇报 + 修复计划</h1>
+<p class="lead">回答:是的——#123 覆盖 4 场景,场景 1(首次使用)已修完,场景 2/3/4 仍带 23 处反模式。</p>
+</div>
+
+<section>
+<h2><span class="no">1</span>你问的是不是这个意思</h2>
+<p style="font-size:14px">是。#123「审查 T9 SM8 开始使用域(4 场景 · 双浏览器)」覆盖 4 个场景:</p>
+<table>
+<tr><th>场景</th><th>模板</th><th>状态</th></tr>
+<tr><td>SM8-1 首次使用</td><td><code>first_use_wizard.html</code></td><td><span class="tag ok">已修复已提交</span> 3 commit(0a539ac / 45b24b9 / de94581)</td></tr>
+<tr><td>SM8-2 数据检查</td><td><code>health_report.html</code></td><td><span class="tag fail">未修</span> 3 处按钮反模式</td></tr>
+<tr><td>SM8-3 备份导出</td><td><code>backup_receipt.html</code></td><td><span class="tag fail">未修</span> 6 处按钮反模式</td></tr>
+<tr><td>SM8-4 导入恢复</td><td><code>import_restore.html</code> + <code>error_receipt.html</code></td><td><span class="tag fail">未修</span> 8+2 处按钮反模式</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="no">2</span>每个场景具体要修什么(按 ADR-0002 契约)</h2>
+
+<h3 style="font-size:15px;margin:12px 0 6px">🔧 场景 2 · 数据检查 health_report.html(3 处)</h3>
+<table>
+<tr><th>按钮</th><th>现状</th><th>修复为</th></tr>
+<tr><td>复制选中修复引导</td><td>flashBtn 改文字 + 用户口吻「已复制 N 条」toastText</td><td>copyThen 面板 Toast + prompt 自包含(技能路由/唤醒词/勾选项)</td></tr>
+<tr><td>复制数据</td><td>flashBtn</td><td>copyThen + 面板 Toast</td></tr>
+<tr><td>复制日志</td><td>flashBtn</td><td>copyThen + 面板 Toast</td></tr>
+</table>
+<div class="warnbox"><b>本场景特殊:</b>勾选检查项 → 复制选中修复引导已是「选择型」,保留勾选交互,只改复制反馈与 prompt 形态。</div>
+
+<h3 style="font-size:15px;margin:12px 0 6px">🔧 场景 3 · 备份导出 backup_receipt.html(6 处)</h3>
+<table>
+<tr><th>按钮</th><th>现状</th><th>修复为</th></tr>
+<tr><td>确认备份(复制指令)</td><td>flashBtn + 裸 prompt「请帮我备份一次…保留 N 份」</td><td>参数化:保留份数 select(3/5/10 预填 5)+ 实时预览 + 自包含 prompt</td></tr>
+<tr><td>导出 JSON</td><td>flashBtn + 裸 prompt</td><td>copyThen + 自包含 prompt(格式参数)</td></tr>
+<tr><td>导出 CSV</td><td>flashBtn + 裸 prompt</td><td>copyThen + 自包含 prompt(格式参数)</td></tr>
+<tr><td>删除最旧备份</td><td>flashBtn + 裸 prompt</td><td>copyThen + 自包含 prompt(文件名参数)</td></tr>
+<tr><td>复制数据 / 复制日志</td><td>flashBtn</td><td>copyThen + 面板 Toast(纯数据不进表单)</td></tr>
+</table>
+
+<h3 style="font-size:15px;margin:12px 0 6px">🔧 场景 4 · 导入恢复 import_restore.html + error_receipt.html(10 处)</h3>
+<table>
+<tr><th>按钮</th><th>现状</th><th>修复为</th></tr>
+<tr><td>选择文件(预告式)</td><td>flashBtn + 用户口吻「我要导入恢复数据」</td><td>copyThen + 自包含预告式 prompt(【导入文件即将发送:】保留)</td></tr>
+<tr><td>确认导入(同名跳过)</td><td>flashBtn + 裸 prompt</td><td>参数化:冲突处理 select(跳过/覆盖)+ 实时预览</td></tr>
+<tr><td>确认导入(同名覆盖)</td><td>flashBtn + 裸 prompt</td><td>合并进冲突处理选择器(单一确认按钮)</td></tr>
+<tr><td>撤销导入</td><td>flashBtn + 裸 prompt</td><td>copyThen + 自包含 prompt(备份文件名参数)</td></tr>
+<tr><td>复制数据 / 复制日志(×2 模板)</td><td>flashBtn</td><td>copyThen + 面板 Toast</td></tr>
+<tr><td>修正重试(error_receipt)</td><td>flashBtn + 裸 prompt</td><td>copyThen + 自包含 prompt(错误信息参数)</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="no">3</span>修复原则(ADR-0002 四决策,与场景 1 同基准)</h2>
+<ol style="padding-left:20px;font-size:13.5px">
+<li><b>复制按钮文字恒定</b>——点击不变、无「已复制」,反馈走「知道了」面板 Toast</li>
+<li><b>复制 prompt 自包含</b>——<code>请加载「居家管家」技能,帮我<动作>(唤醒词:<词>):<参数></code>,禁用户口吻</li>
+<li><b>参数化表单</b>——保留份数/冲突处理等用 select/input,实时预览 + 空值拦截;复制数据/日志保持纯数据</li>
+<li><b>数据不写死</b>——所有参数来自运行时数据,不硬编码路径/数量</li>
+</ol>
+</section>
+
+<section>
+<h2><span class="no">4</span>完成标准 + 剩余工作</h2>
+<div class="okbox"><b>本轮完成后 #123 即可判定</b>:4 场景全部按契约修复 → 5 维复审 → 判定 PASS → 更新地图 #104 Decisions-so-far → close #123。</div>
+<ul>
+<li>✅ 场景 1:已完成(首次使用)</li>
+<li>⏳ 场景 2/3/4:本次执行(按上表)</li>
+<li>📋 后续独立立项(不在 #123):全技能批量改造(居家管家 306 + 卡路里 293 + 饼干记账 51 …)+ 08 规范骨架 template_skeleton.html 反模式修订</li>
+</ul>
+</section>
+
+<div class="foot">生成于 2026-08-10 · 基于 4 模板代码事实核查</div>
+</div>
+</body>
+</html>

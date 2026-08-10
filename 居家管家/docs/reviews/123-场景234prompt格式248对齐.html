@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>场景 2/3/4 · prompt 格式对齐 #248</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--soft:#f5f8ff;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
+.wrap{max-width:820px;margin:0 auto;padding:40px 18px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:28px;padding:28px 30px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+h1{font-size:25px;letter-spacing:-.03em;line-height:1.25;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:14px}
+section{background:var(--card);border-radius:20px;padding:20px 22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:14px 0}
+h2{font-size:17px;letter-spacing:-.02em;margin-bottom:10px}
+h2 .no{color:var(--fg3);font-weight:700;margin-right:8px}
+code{background:#f2f4f8;border-radius:6px;padding:1px 6px;font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.prompt{background:#1d1d1f;color:#f5f5f7;border-radius:14px;padding:16px 18px;margin:10px 0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.9;white-space:pre-wrap}
+.prompt .ph{color:#ffd60a;font-weight:700}
+.prompt .dim{color:#8e8e93}
+.okbox{background:#e9f8ef;border-left:4px solid var(--green);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:13.5px}
+.warnbox{background:#fffbea;border-left:4px solid var(--orange);border-radius:12px;padding:12px 16px;margin:10px 0;font-size:13.5px}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}
+th,td{border:1px solid #ececf1;padding:8px 10px;text-align:left;vertical-align:top}
+th{background:#fafbfd;font-size:12px;color:var(--fg2)}
+ul{padding-left:20px}li{font-size:13.5px;margin:4px 0}
+.foot{color:var(--fg3);font-size:11.5px;text-align:center;margin-top:18px}
+@media(max-width:640px){h1{font-size:21px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hero">
+<div class="eyebrow">#248 prompt 填写格式 · 全技能生效</div>
+<h1>场景 2/3/4 修复 · prompt 格式对齐规范</h1>
+<p class="lead">所有复制 prompt 按钮的格式 = <code>字段名(提示): ______</code>,与 SM7 已验收实现同基准。</p>
+</div>
+
+<section>
+<h2><span class="no">1</span>#248 规范核心(用户 2026-08-10 拍板)</h2>
+<div class="okbox"><b>格式 = 每个需要用户填写的参数行 <code>字段名(允许值/提示): ______</code></b></div>
+<ul>
+<li>提示/允许值/示例:<b>并入字段名</b>,括号紧贴字段名,写在冒号<b>前</b></li>
+<li>填空位:下划线 <code>______</code>(6 个),每行最后一个字符,后面不跟任何尾巴</li>
+<li>无提示字段:直接 <code>字段名: ______</code></li>
+<li>对齐:字段名(含括号提示)用全角空格对齐,保证各行下划线在同一列</li>
+<li>适用:HELP 复制 prompt / 场景 HTML 按钮复制 prompt / 涉及用户填写的任何 prompt</li>
+<li>例外:「复制数据/复制日志」纯数据不进表单;发给人类的文本(如催还)保持自然语言</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="no">2</span>参考实现 SM7(已验收)</h2>
+<p style="font-size:13.5px">SM7 family_borrow.html 已按此格式重写(表单字段填了出值、没填出 <code>______</code>):</p>
+<div class="prompt">【登记借用】请帮我在居家管家登记一笔借用。
+方向: 借出
+物品: 库内物品 ID 3
+借用对象: <span class="ph">______</span>
+借出日期: 2026-08-10
+约定归还日: <span class="ph">______</span></div>
+<p style="font-size:13px;color:var(--fg2)">落地方式:表单 input 预填 → 复制时拼接 <code>字段名: 值或______</code>。场景 2/3/4 同款。</p>
+</section>
+
+<section>
+<h2><span class="no">3</span>场景 2/3/4 的 #248 格式 prompt 设计</h2>
+
+<h3 style="font-size:15px;margin:12px 0 6px">🔧 场景 2 · 数据检查 health_report.html</h3>
+<div class="prompt">请加载「居家管家」技能,帮我做数据健康检查(唤醒词:查异常):
+  检查范围(标签/位置/状态/照片/价格/日期/相似位置,多选逗号分隔): <span class="ph">______</span>
+  状态时效阈值(快递中=7,例:{"快递中":7}): <span class="ph">______</span></div>
+<p style="font-size:13px;color:var(--fg2)">勾选检查项 → 复制选中修复引导(prompt 列出勾选项值);未勾选 → <code>______</code>。</p>
+
+<h3 style="font-size:15px;margin:12px 0 6px">🔧 场景 3 · 备份导出 backup_receipt.html</h3>
+<div class="prompt">请加载「居家管家」技能,帮我备份导出数据(唤醒词:备份导出):
+  操  作(备份/导出): <span class="ph">备份</span>
+  格  式(导出时:JSON/CSV,选填): <span class="ph">______</span>
+  保留份数(默认5): <span class="ph">5</span></div>
+<div class="warnbox"><b>注意:</b>SM8-3 旧格式 <code>操  作: _____________ (备份/导出)</code> 命中 #248 迁移清单,需同步改为新格式(提示并入字段名 + 6 下划线)。涉及 <code>scenes/SM8.yaml:66-67</code> 与 <code>references/scenarios.yaml:989-990</code>。</div>
+
+<h3 style="font-size:15px;margin:12px 0 6px">🔧 场景 4 · 导入恢复 import_restore.html + error_receipt.html</h3>
+<div class="prompt">请加载「居家管家」技能,帮我导入恢复数据(唤醒词:导入恢复):
+
+【导入文件即将发送:】
+
+  冲突处理(跳过/覆盖): <span class="ph">跳过</span>
+  导入前备份(是/否): <span class="ph">是</span></div>
+<p style="font-size:13px;color:var(--fg2)">预告式文件选择保留【导入文件即将发送:】;错误回执的「修正重试」prompt 含错误信息参数,同样 <code>字段名: ______</code> 形态。</p>
+</section>
+
+<section>
+<h2><span class="no">4</span>一个需要你拍板的问题</h2>
+<div class="warnbox"><b>场景 1(首次使用)已提交的 prompt 是「一句话拼接」格式</b>(如 <code>确认数据保存路径:D:\...。请执行初始化:...</code>),<b>不是</b> #248 的字段行格式。按 #248「全技能生效」原则,是否也要回改场景 1 为 <code>数据保存路径(默认即确认): ______</code> 形态?</div>
+<table>
+<tr><th>选项</th><th>影响</th></tr>
+<tr><td>A. 回改场景 1 对齐 #248</td><td>全技能格式统一;场景 1 需重渲染重验证重提交</td></tr>
+<tr><td>B. 场景 1 保持现状</td><td>首次使用是「确认路径」单一参数,一句话拼接也可读;但格式不统一</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="no">5</span>开工计划(确认后执行)</h2>
+<ol style="padding-left:20px;font-size:13.5px">
+<li>场景 2 health_report:改复制选中修复引导/复制数据/复制日志 → #248 格式 + 面板 Toast</li>
+<li>场景 3 backup_receipt:参数化(操作/格式/保留份数)+ #248 格式;同步迁移 SM8.yaml + scenarios.yaml 的 SM8-3 prompt</li>
+<li>场景 4 import_restore + error_receipt:冲突处理参数化 + #248 格式 + 面板 Toast</li>
+<li>每场景:改模板 → fixture 隔离渲染 → Playwright 验证(无 JS 错/无溢出/格式对)→ media 发你验收</li>
+<li>场景 3 yaml 迁移后跑 help_center.py 重渲染 HELP 确认</li>
+<li>全部验收后:判定 PASS → 更新地图 #104 → close #123</li>
+</ol>
+</section>
+
+<div class="foot">生成于 2026-08-10 · 基于 #248 规范 + SM7 参考实现 + SM8.yaml/scenarios.yaml 事实</div>
+</div>
+</body>
+</html>

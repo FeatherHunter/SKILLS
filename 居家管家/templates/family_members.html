@@ -8,7 +8,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
-.wrap{max-width:900px;margin:0 auto;padding:48px 22px 80px}
+.wrap{max-width:900px;margin:0 auto;padding:48px 22px 96px}
 .hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
 .eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
 h1{font-size:32px;letter-spacing:-.035em;line-height:1.15;margin-bottom:8px}
@@ -30,7 +30,10 @@ h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
 .btn{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--fg);border-radius:99px;padding:6px 14px;cursor:pointer}
 .btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
 .btn.danger{color:#d70015}
-.copy{font:inherit;font-size:12px;font-weight:600;background:#f5f5f7;border:1px solid var(--line);border-radius:99px;padding:5px 12px;cursor:pointer}
+.copy{border:none;background:#6e6e73;color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow);transition:filter .15s,transform .08s}
+.copy:hover{filter:brightness(1.08)}
+.copy:active{filter:brightness(.92);transform:scale(.97)}
+.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
 .form-grid label{display:block;font-size:12px;font-weight:700;color:var(--fg2);margin-bottom:4px}
 .form-grid input,.form-grid select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;width:100%;background:#fff}
@@ -38,10 +41,9 @@ h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
 .checklist label{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;font-size:14px;cursor:pointer}
 .checklist label:hover{background:#f5f8ff}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
-.btns.bottom{margin-top:8px}
 .footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
 .muted{color:var(--fg3);font-size:12px}
-@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:26px}}
+@media(max-width:720px){.wrap{padding:30px 14px 90px}.hero{padding:22px}h1{font-size:26px}.copypair{grid-template-columns:1fr 1fr;gap:10px}.copypair .copy{width:100%;margin:0;white-space:normal;line-height:1.4;min-height:48px;font-size:14px}}
 </style>
 </head>
 <body>
@@ -104,9 +106,9 @@ assignSection(data)+
 <label>关系<input id="mRelation" placeholder="如：家人/邻居"></label>
 <label>备注<input id="mNote" placeholder="可选"></label>
 </div><button class="btn primary" id="btnAddMember">确认添加</button></section>`+
-`<div class="btns bottom">
-<button class="btn" data-t="${esc(dataText)}" onclick="copyText(this.dataset.t)">复制数据</button>
-<button class="btn" data-t="${esc(logText)}" onclick="copyText(this.dataset.t)">复制日志</button>
+`<div class="copypair">
+<button class="copy" data-t="${esc(dataText)}" onclick="copyText(this.dataset.t)">复制数据</button>
+<button class="copy" data-t="${esc(logText)}" onclick="copyText(this.dataset.t)">复制日志</button>
 </div>`;
 document.getElementById('btnAddMember').onclick=function(){
 const name=document.getElementById('mName').value.trim();

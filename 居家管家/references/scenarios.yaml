@@ -924,8 +924,8 @@ scenarios:
   dimensions: {}
   type: 查看+选择+回执
   status: ''
-  prompt: "请加载「居家管家」技能,帮我管理借用(唤醒词:借用):\n\n  操  作: _____________ (借出/借入/归还/催还)\n  物\
-    \  品: _____________\n  对  象: _____________ (家人或外部联系人,借出/借入时填)"
+  prompt: "请加载「居家管家」技能,帮我管理借用(唤醒词:借用):\n\n  操  作(借出/借入/归还/催还): _____________\n  物\
+    \  品: _____________\n  对  象(家人或外部联系人,借出/借入时填): _____________"
   result: 借出/借入分区 + 超期标记 + 催还文案复制,归还确认回执。
   html:
     template: family_borrow.html
@@ -940,7 +940,7 @@ scenarios:
   dimensions: {}
   type: 查看+选择+回执
   status: ''
-  prompt: "请加载「居家管家」技能,帮我管理家人档案(唤醒词:家人档案):\n\n  操  作: _____________ (查看/添加成员/移除成员/标记归属)\n\
+  prompt: "请加载「居家管家」技能,帮我管理家人档案(唤醒词:家人档案):\n\n  操  作(查看/添加成员/移除成员/标记归属): _____________\n\
     \  详  情: _____________"
   result: 成员列表 + 增删 + 物品归属批量标记,确认后回执。
   html:
@@ -1016,16 +1016,16 @@ scenarios:
   sub: 联动总览
   wake_word: 联动总览
   scenario_id: link_overview
-  scenario_title: 联动功能总览(能力索引/偏好设置)
+  scenario_title: 联动功能总览(能力索引)
   dimensions: {}
   type: 查看+选择
   status: ''
   prompt: '请加载「居家管家」技能,帮我看看能联动什么(唤醒词:联动总览):'
-  result: 联动条目列表(触发词/依赖技能/数据流/示例 prompt)+ 偏好频控设置。
+  result: 联动条目列表(触发词/依赖技能/数据流/示例 prompt)+ 复制触发 prompt。
   html:
     template: 联动/link_overview.html
     command_cn: 联动总览
-    data_source: LINK_CATALOG + link_prefs.json
+    data_source: LINK_CATALOG
 - id: SM9-2
   domain: link
   sub: 食品联动

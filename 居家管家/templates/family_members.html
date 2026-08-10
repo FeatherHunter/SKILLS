@@ -38,6 +38,7 @@ h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
 .checklist label{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:8px;font-size:14px;cursor:pointer}
 .checklist label:hover{background:#f5f8ff}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.btns.bottom{margin-top:8px;justify-content:flex-start}
 .footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
 .muted{color:var(--fg3);font-size:12px}
 @media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:26px}}
@@ -60,13 +61,12 @@ h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
 <!--SHARED-HELPERS-->
 const app=document.getElementById('app');
 const cardsEl=document.getElementById('cards');
-function copy(text){navigator.clipboard&&navigator.clipboard.writeText(text);}
 function memberCard(m){
-const removePrompt='【移除成员】「'+m.name+'」（'+m.relation+'），其归属 '+m.item_count+' 件物品将回到「使用者」。\n请执行: python home_manager.py family --action member-remove --name "'+m.name+'"';
+const removePrompt='【移除成员】请帮我在居家管家移除一位家人。\n成员称呼: '+m.name+'\n关系: '+(m.relation||'______')+'\n（其归属 '+m.item_count+' 件物品将回到「使用者」）';
 return '<div class="member"><div class="avatar">'+esc((m.name||'?').slice(0,1))+'</div>'+
 '<div class="who"><div class="name">'+esc(m.name)+'</div><div class="meta">'+(m.relation?esc(m.relation):'<span class="muted">未填关系</span>')+(m.note?' · '+esc(m.note):'')+'</div></div>'+
 '<span class="count">归属 <b>'+m.item_count+'</b> 件</span>'+
-'<button class="btn danger" onclick="copy('+JSON.stringify(removePrompt)+')">移除成员</button></div>';
+'<button class="btn danger" data-t="'+esc(removePrompt)+'" onclick="copyText(this.dataset.t)">移除成员</button></div>';
 }
 function assignSection(p){
 const members=arr(p.members);
@@ -91,8 +91,11 @@ document.getElementById('subtitle').textContent=summary.subtitle||'';
 const metrics=arr(summary.metrics);
 cardsEl.innerHTML=metrics.map(m=>'<div class="card"><b>'+esc(m.label)+'</b><span>'+esc(m.value)+'</span></div>').join('');
 const logText='① 场景：家人档案（唤醒词：家人档案）\n② 思考链：成员列表 → 增删 → 归属标记\n③ 数据结构：family_members(称呼/关系/备注) + items.owner\n④ 调用链: python home_manager.py family --action member-list\n⑤ 时间戳: '+new Date().toLocaleString()+' · 版本 v2.0\n⑥ 异常: 无';
-const dataText=JSON.stringify({scene_id:data.scene_id||'SM7-2',command_cn:data.command_cn||'家人档案',occurred_at:new Date().toLocaleString(),target:'家人档案',payload:{members:members,total_items:data.total_items||0}},null,2);
-const addPrompt='【添加成员】\n称呼: ____\n关系: ____(妈妈/老婆/宝宝…)\n备注: ____(可选)\n请执行: python home_manager.py family --action member-add --name "称呼" --relation "关系" --note "备注"';
+const dataText='【家人档案 · 数据快照】\n'
++'场景: 家人档案 (SM7-2)\n'
++'时间: '+new Date().toLocaleString()+'\n'
++'成员数: '+members.length+' 人 · 已标记归属物品: '+(data.total_items||0)+' 件\n\n'
++'【成员列表】\n'+(members.length?members.map(m=>'· '+m.name+(m.relation?'（'+m.relation+'）':'')+(m.note?' | '+m.note:'')+' | 归属 '+m.item_count+' 件').join('\n'):'（无）');
 app.innerHTML=(members.length?'':'<div class="banner">还没有家人档案，先添加第一位成员吧</div>')+
 '<section><h2>成员列表</h2>'+(members.length?members.map(memberCard).join(''):'<p class="muted">空 — 添加成员后这里会显示</p>')+'</section>'+
 assignSection(data)+
@@ -101,25 +104,22 @@ assignSection(data)+
 <label>关系<input id="mRelation" placeholder="如：家人/邻居"></label>
 <label>备注<input id="mNote" placeholder="可选"></label>
 </div><button class="btn primary" id="btnAddMember">确认添加</button></section>`+
-`<section><h2>动作</h2><div class="btns">
-<button class="btn" onclick="copy(${JSON.stringify(dataText)})">复制数据</button>
-<button class="btn" onclick="copy(${JSON.stringify(logText)})">复制日志</button>
-</div></section>`;
+`<div class="btns bottom">
+<button class="btn" data-t="${esc(dataText)}" onclick="copyText(this.dataset.t)">复制数据</button>
+<button class="btn" data-t="${esc(logText)}" onclick="copyText(this.dataset.t)">复制日志</button>
+</div>`;
 document.getElementById('btnAddMember').onclick=function(){
 const name=document.getElementById('mName').value.trim();
-if(!name){alert('请填写成员称呼');return;}
 const relation=document.getElementById('mRelation').value.trim();
 const note=document.getElementById('mNote').value.trim();
-let prompt='【添加成员】「'+name+'」'+(relation?'（'+relation+'）':'')+'\n请执行: python home_manager.py family --action member-add --name "'+name+'"';
-if(relation)prompt+=' --relation "'+relation+'"';
-if(note)prompt+=' --note "'+note+'"';
-copy(prompt);
+const lines=['【添加成员】请帮我在居家管家添加一位家人。','称呼: '+(name||'______'),'关系: '+(relation||'______'),'备注: '+(note||'______')];
+copyText(lines.join('\n'));
 };
 document.getElementById('btnAssign').onclick=function(){
 const member=document.getElementById('aMember').value;
 const ids=Array.from(document.querySelectorAll('#aItems input:checked')).map(c=>c.value);
-if(!ids.length){alert('请先勾选物品');return;}
-copy('【标记归属】将 '+ids.length+' 件物品归属「'+member+'」\n请执行: python home_manager.py family --action member-assign --name "'+member+'" --item-ids "'+ids.join(',')+'"');
+const lines=['【标记归属】请帮我在居家管家标记物品归属。','归属成员: '+(member||'______'),'物品ID列表: '+(ids.length?ids.join(', '):'______')];
+copyText(lines.join('\n'));
 };
 }
 render();

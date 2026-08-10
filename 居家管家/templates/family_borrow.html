@@ -41,6 +41,7 @@ h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
 .form-grid label{display:block;font-size:12px;font-weight:700;color:var(--fg2);margin-bottom:4px}
 .form-grid input,.form-grid select{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font:inherit;width:100%;background:#fff}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
+.btns.bottom{margin-top:8px;justify-content:flex-start}
 .footer{color:var(--fg3);font-size:12px;text-align:center;margin-top:30px}
 .muted{color:var(--fg3);font-size:12px}
 @media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:26px}}
@@ -65,7 +66,6 @@ h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
 const app=document.getElementById('app');
 const bannerEl=document.getElementById('banner');
 const cardsEl=document.getElementById('cards');
-function copy(text){navigator.clipboard&&navigator.clipboard.writeText(text);}
 function badge(status){
 if(status.startsWith('已超期'))return '<span class="badge danger">'+esc(status)+'</span>';
 if(status==='今日到期')return '<span class="badge warn">'+esc(status)+'</span>';
@@ -74,7 +74,7 @@ return '<span class="badge">'+esc(status)+'</span>';
 }
 function recordCard(r){
 const returned=r.status==='已归还';
-const returnPrompt='【确认归还】借用记录 ID '+r.id+'(物品「'+r.item_name+'」借给「'+r.object_name+'」)\n请执行: python home_manager.py family --action borrow-return --borrow-id '+r.id;
+const returnPrompt='【确认归还】请帮我在居家管家确认归还一笔借用。\n借用记录ID: '+r.id+'\n物品: '+r.item_name+'\n借用对象: '+r.object_name;
 const meta=[
 '对象: '+esc(r.object_name),
 '借出: '+esc(r.borrowed_at||'-'),
@@ -83,7 +83,7 @@ const meta=[
 ].join(' · ');
 const thumb=r.photo_base64?'<img class="thumb" src="data:image/jpeg;base64,'+esc(r.photo_base64)+'" alt="">':'<span class="thumb ph">'+esc((r.item_name||'?').slice(0,1))+'</span>';
 const buttons=returned?'<span class="muted">已还清</span>':
-'<div class="btns"><button class="btn primary" onclick="copy('+JSON.stringify(returnPrompt)+')">确认归还</button><button class="btn" onclick="copy('+JSON.stringify(r.remind)+')">复制催还文案</button></div>';
+'<div class="btns"><button class="btn primary" data-t="'+esc(returnPrompt)+'" onclick="copyText(this.dataset.t)">确认归还</button><button class="btn" data-t="'+esc(r.remind)+'" onclick="copyText(this.dataset.t)">复制催还文案</button></div>';
 return '<div class="record'+(returned?' returned':'')+'"><div class="top">'+thumb+'<span class="name">'+esc(r.item_name)+'</span>'+badge(r.status)+'</div>'+
 '<div class="meta">'+meta+(r.remark?' · '+esc(r.remark):'')+'</div>'+buttons+'</div>';
 }
@@ -123,29 +123,31 @@ document.getElementById('subtitle').textContent=summary.subtitle||'';
 const metrics=arr(summary.metrics);
 cardsEl.innerHTML=metrics.map(m=>'<div class="card"><b>'+esc(m.label)+'</b><span>'+esc(m.value)+'</span></div>').join('');
 bannerEl.innerHTML=(data.overdue_count>0?'<div class="banner">⏰ 还有 '+data.overdue_count+' 件超期未还，记得催一下</div>':'')+(out.length+inn.length?'':'<div class="banner green">暂无借用记录</div>');
-const logText='① 场景：借用（唤醒词：借用）\n② 思考链：借用清单 → 双向区隔 → 超期标记 → 催还/归还\n③ 数据结构：borrow_records(方向/物品/对象/日期/状态) ⑤ 调用链: python home_manager.py family --action borrow-list\n⑤ 时间戳: '+esc(summary.occurred_at||new Date().toLocaleString())+' · 版本 v2.0\n⑥ 异常: 无';
-const dataText=JSON.stringify({scene_id:data.scene_id||'SM7-1',command_cn:data.command_cn||'借用',occurred_at:new Date().toLocaleString(),target:'借用管理',payload:{borrowed_out:out,borrowed_in:inn,overdue_count:data.overdue_count}},null,2);
+const logText='① 场景：借用（唤醒词：借用）\n② 思考链：借用清单 → 双向区隔 → 超期标记 → 催还/归还\n③ 数据结构：borrow_records(方向/物品/对象/日期/状态)\n④ 调用链: python home_manager.py family --action borrow-list\n⑤ 时间戳: '+esc(summary.occurred_at||new Date().toLocaleString())+' · 版本 v2.0\n⑥ 异常: 无';
+function recLine(r){return '· '+r.item_name+' | 借给/借自: '+r.object_name+' | 借出: '+(r.borrowed_at||'-')+' | 约定归还: '+(r.due_date||'未约定')+' | 状态: '+r.status+(r.days_borrowed?' | 已借 '+r.days_borrowed+' 天':'')+(r.remark?' | 备注: '+r.remark:'');}
+const dataText='【借用管理 · 数据快照】\n'
++'场景: 借用 (SM7-1)\n'
++'时间: '+new Date().toLocaleString()+'\n'
++'借出中: '+out.length+' 件 · 借入中: '+inn.length+' 件 · 超期未还: '+(data.overdue_count||0)+' 件\n\n'
++'【借出区（我借出去的）】\n'+(out.length?out.map(recLine).join('\n'):'（无）')+'\n\n'
++'【借入区（我借进来的）】\n'+(inn.length?inn.map(recLine).join('\n'):'（无）');
 app.innerHTML=section('借出区（我借出去的）',out)+section('借入区（我借进来的）',inn)+registerSection(data)+
-`<section><h2>动作</h2><div class="btns">
-<button class="btn" onclick="copy(${JSON.stringify(dataText)})">复制数据</button>
-<button class="btn" onclick="copy(${JSON.stringify(logText)})">复制日志</button>
-</div></section>`;
+`<div class="btns bottom">
+<button class="btn" data-t="${esc(dataText)}" onclick="copyText(this.dataset.t)">复制数据</button>
+<button class="btn" data-t="${esc(logText)}" onclick="copyText(this.dataset.t)">复制日志</button>
+</div>`;
 document.getElementById('btnReg').onclick=function(){
 const dir=document.getElementById('fDir').value;
 const itemId=document.getElementById('fItem').value;
 const itemName=document.getElementById('fItemName').value.trim();
 const obj=document.getElementById('fObj').value;
 const objName=document.getElementById('fObjName').value.trim();
-const bdate=document.getElementById('fBorrowed').value||new Date().toISOString().slice(0,10);
+const bdate=document.getElementById('fBorrowed').value;
 const due=document.getElementById('fDue').value;
-if(dir==='借出'&&!itemId&&!itemName){alert('借出请选库内物品');return;}
-if(!obj&&!objName){alert('请填写借用对象');return;}
-const parts=['python home_manager.py family --action borrow-add','--direction '+dir];
-if(itemId)parts.push('--item-id '+itemId);
-if(itemName)parts.push('--item-name "'+itemName+'"');
-parts.push('--object "'+(obj||objName)+'"','--borrowed-at '+bdate);
-if(due)parts.push('--due-date '+due);
-copy('【登记借用】\n请执行: '+parts.join(' '));
+const itemVal=itemId?('库内物品 ID '+itemId):(itemName||'______');
+const objVal=obj||objName||'______';
+const lines=['【登记借用】请帮我在居家管家登记一笔借用。','方向: '+dir,'物品: '+itemVal,'借用对象: '+objVal,'借出日期: '+(bdate||'______'),'约定归还日: '+(due||'______')];
+copyText(lines.join('\n'));
 };
 }
 render();

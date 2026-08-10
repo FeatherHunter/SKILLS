@@ -246,8 +246,8 @@ def test_express_view_lists_delivery_items(ex_db):
 
 
 def test_express_view_waits_days(ex_db):
-    # UTC 日期对齐 SQL 的 julianday('now') 口径(本地凌晨会 ±1 漂移)
-    created = (datetime.now(timezone.utc).date() - timedelta(days=10)).isoformat()
+    # 本地日期对齐 SQL julianday('now','localtime') 口径(2026-08-10 修正 · 生产是本地时区)
+    created = (datetime.now().date() - timedelta(days=10)).isoformat()
     _seed_item(ex_db, "旧快递", qty=1, status="快递中", created_at=created)
     result = ops.express_view(ex_db, timeout_days=7)
     assert result["items"][0]["days"] >= 10

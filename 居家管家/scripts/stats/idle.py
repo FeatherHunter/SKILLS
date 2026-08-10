@@ -20,9 +20,9 @@ DEFAULT_THRESHOLD = 90
 
 
 def _today():
-    # 对齐 SQL date('now') 口径(UTC): 本地凌晨 0-8 点 date.today() 与 UTC 差一天,
-    # 导致 days_idle 凌晨漂移 ±1(test seed 已是 UTC 口径, 2026-08-10 修复)
-    return datetime.now(timezone.utc).date()
+    # 本地日期(与 SQL date('now','localtime') 口径一致 · ADR-0001 本地时间约定)
+    # 2026-08-10 修正: 原 UTC 对齐是治标(生产数据是本地时区,凌晨 0-8 点仍漂移 ±1)
+    return datetime.now().date()
 
 
 def _parse_dt(s):

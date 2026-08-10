@@ -194,7 +194,7 @@ def _stats_expiring_query(conn, days=30, expired_only=False, category_id=None, l
     conditions = [
         "il.expiration_date IS NOT NULL",
         "il.expiration_date != ''",
-        "julianday(il.expiration_date) - julianday('now') <= ?"
+        "julianday(il.expiration_date) - julianday('now','localtime') <= ?"
     ]
     params = [days]
 
@@ -209,13 +209,13 @@ def _stats_expiring_query(conn, days=30, expired_only=False, category_id=None, l
             params.extend(ids)
 
     if expired_only:
-        conditions.append("date(il.expiration_date) < date('now')")
+        conditions.append("date(il.expiration_date) < date('now','localtime')")
 
     where_clause = " AND ".join(conditions)
     query = f"""
         SELECT i.id, i.name, c.name as category, il.location, il.quantity,
                il.location_status, il.expiration_date,
-               CAST(julianday(date(il.expiration_date)) - julianday(date('now')) AS INTEGER) as days_left
+               CAST(julianday(date(il.expiration_date)) - julianday(date('now','localtime')) AS INTEGER) as days_left
         FROM item_locations il
         JOIN items i ON i.id = il.item_id
         LEFT JOIN categories c ON i.category_id = c.id
@@ -259,17 +259,17 @@ def _stats_expiring(conn, limit, days=30, expired_only=False, category_id=None):
 
     # 概要统计（不受 limit 影响）
     case_clauses = [
-        "COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) < 0 THEN 1 ELSE 0 END), 0) as expired_cnt"
+        "COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now','localtime') AS INTEGER) < 0 THEN 1 ELSE 0 END), 0) as expired_cnt"
     ]
     prev = 0
     for t in thresholds:
         if t == 3:
             case_clauses.append(
-                f"COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN 0 AND 3 THEN 1 ELSE 0 END), 0) as days_3"
+                f"COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now','localtime') AS INTEGER) BETWEEN 0 AND 3 THEN 1 ELSE 0 END), 0) as days_3"
             )
         else:
             case_clauses.append(
-                f"COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now') AS INTEGER) BETWEEN {prev+1} AND {t} THEN 1 ELSE 0 END), 0) as days_{t}"
+                f"COALESCE(SUM(CASE WHEN CAST(julianday(il.expiration_date) - julianday('now','localtime') AS INTEGER) BETWEEN {prev+1} AND {t} THEN 1 ELSE 0 END), 0) as days_{t}"
             )
         prev = t
 

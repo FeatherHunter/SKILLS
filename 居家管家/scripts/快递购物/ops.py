@@ -292,7 +292,7 @@ def express_view(conn, timeout_days=schema.DEFAULT_TIMEOUT_DAYS):
         days = 0
         if r["created_at"]:
             cursor.execute(
-                "SELECT CAST(julianday('now') - julianday(?) AS INTEGER) AS d",
+                "SELECT CAST(julianday('now','localtime') - julianday(?) AS INTEGER) AS d",
                 (r["created_at"],))
             days = max(cursor.fetchone()["d"], 0)
         items.append({

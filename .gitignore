@@ -106,5 +106,8 @@ Thumbs.db
 # Local git worktrees
 .worktrees/
 
+# 根目录一次性临时产物(wayfinder maps 等调试 JSON,不入库)
+/.scratch_*.json
+
 # 居家管家个人想法目录(私人内容,不入版本控制)
 居家管家/.个人想法目录禁止看里面文件/

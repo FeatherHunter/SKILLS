@@ -108,6 +108,7 @@ h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
 <div class="footer">
   <div class="src" id="srcLine">📊 数据来源 --</div>
   <button class="btn" id="copyBtn">📋 复制数据</button>
+  <button class="btn" id="copyLogBtn">📋 复制日志</button>
 </div>
 </div>
 <!--INJECT-DATA-->
@@ -194,6 +195,24 @@ h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
     } else {
       const ta = document.createElement('textarea');
       ta.value = r; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); after(); } catch(e) {}
+      document.body.removeChild(ta);
+    }
+  };
+  // 复制日志(R3 排障 · 2026-08-10 #43 补:全局双按钮规则)
+  document.getElementById('copyLogBtn').onclick = function() {
+    const lines = ['[对比体重 · 排障日志]', '',
+      '唤醒词: ' + (d.scenario_label || '对比体重'),
+      '渲染命令: ' + (d.meta && d.meta.render_cmd || '(未知)'),
+      '数据来源: weight_log · ' + (d.meta && d.meta.generated_at || ''),
+      '思考链: ' + (d.meta && d.meta.chain || '(未注入)'),
+      '', '原始数据: ' + JSON.stringify(d)];
+    const after = () => toast('已复制');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(lines.join('\n')).then(after);
+    } else {
+      const ta = document.createElement('textarea');
+      ta.value = lines.join('\n'); document.body.appendChild(ta); ta.select();
       try { document.execCommand('copy'); after(); } catch(e) {}
       document.body.removeChild(ta);
     }

@@ -32,13 +32,6 @@ def register(subparsers):
                    help="记账方向: expense=记支出, income=记收入(退货退款)")
     p.add_argument("--output", default=None, help="HTML 输出路径")
 
-    p = subparsers.add_parser("sm9-prefs", help="联动偏好设置(频控)")
-    p.add_argument("--key", required=True, choices=["food", "price"],
-                   help="偏好项: food=食品联动, price=价格联动")
-    p.add_argument("--value", required=True, choices=["ask", "remember", "off"],
-                   help="频控: ask=每次询问, remember=记住上次选择, off=关闭")
-    p.add_argument("--output", default=None, help="HTML 输出路径(可选,默认仅文字回执)")
-
 
 def run(args):
     """SM9 命令分发(返回进程退出码)"""
@@ -51,7 +44,7 @@ def run(args):
         data = ops.overview_data()
         return emit_link("link_overview.html", data, "SM9-1", "联动总览", "联动总览",
                          target="联动条目", copy_log={"call_chain": "python home_manager.py sm9-overview",
-                                                      "data_structure": "LINK_CATALOG + link_prefs.json"},
+                                                      "data_structure": "LINK_CATALOG"},
                          output_path=args.output)
 
     if cmd == "sm9-food":
@@ -87,22 +80,6 @@ def run(args):
                                                   f"--item-id {args.item_id} --direction {args.direction}",
                                    "data_structure": "items.purchase_price × quantity → 总价"},
                          output_path=args.output, message=msg)
-
-    if cmd == "sm9-prefs":
-        ok, msg, _ = ops.save_prefs({args.key: args.value})
-        if not ok:
-            return emit_error("联动总览", "联动偏好", msg, {args.key: args.value},
-                              output_path=args.output)
-        print(msg)
-        if args.output:
-            data = ops.overview_data()
-            return emit_link("link_overview.html", data, "SM9-1", "联动总览", "联动总览",
-                             target="联动条目",
-                             copy_log={"call_chain": "python home_manager.py sm9-prefs "
-                                                      f"--key {args.key} --value {args.value}",
-                                       "data_structure": "link_prefs.json"},
-                             output_path=args.output)
-        return 0
 
     return 1
 

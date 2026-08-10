@@ -28,6 +28,7 @@ h2{font-size:19px;letter-spacing:-.02em;margin-bottom:14px}
 .c-actions{display:flex;gap:8px;flex-wrap:wrap}
 .btn{border:none;border-radius:12px;padding:9px 16px;font-size:14px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff;transition:filter .15s}
 .btn:hover{filter:brightness(.92)}
+.btn-hint{display:block;font-size:11px;font-weight:600;opacity:.75;margin-top:1px}
 .btn.ghost{background:#f2f2f7;color:var(--fg)}
 .prefs{display:flex;flex-direction:column;gap:14px}
 .pref-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #ececf1;padding-bottom:12px;flex-wrap:wrap}
@@ -38,14 +39,17 @@ h2{font-size:19px;letter-spacing:-.02em;margin-bottom:14px}
 .radio{background:#f2f2f7;border-radius:99px;padding:6px 14px;font-size:13px;font-weight:600;cursor:pointer;border:1.5px solid transparent;transition:all .15s}
 .radio.sel{background:#eef5ff;color:#0a63ce;border-color:var(--blue)}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
-@media(max-width:720px){.wrap{padding:30px 14px 70px}section,article{padding:18px 14px}.pref-row{flex-direction:column;align-items:flex-start}}
+.section-note{color:var(--fg3);font-size:13px;margin:-6px 0 12px;line-height:1.6}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;font-weight:700;cursor:pointer;margin:10px 8px 0 0;font-size:14px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.copied{background:var(--green)}
+.actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;margin-top:14px}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}section,article{padding:18px 14px}.pref-row{flex-direction:column;align-items:flex-start}.actions{grid-template-columns:repeat(2,minmax(0,1fr))}.actions .copy{width:100%;margin:6px 0 0;white-space:normal}}
 </style>
 </head>
 <body>
 <div class="wrap">
 <div id="heroBox"></div>
 <div id="app"></div>
-<p class="footer" style="color:var(--fg3);font-size:12px;text-align:center;margin-top:30px">联动执行 = 复制 prompt 到对应技能(单工闭环)</p>
+<p class="footer" style="color:var(--fg3);font-size:12px;text-align:center;margin-top:30px">想走完整流程？直接对 AI 说触发词（如「把牛奶记到卡路里」）→ 物品确认 → 复制 prompt 到对应技能（单工闭环）</p>
 </div>
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
 <script>
@@ -61,49 +65,26 @@ const d=p.data;
 const scene=d.scene||{};
 window.__sceneData=scene;
 const entries=arr(scene.entries);
-const prefs=scene.prefs||{};
 const entriesHtml=entries.map(e=>`
 <article class="card">
 <div class="c-top"><span class="c-name">${esc(e.name)}</span><span class="badge">${esc(e.trigger)}</span><span class="badge skill">${esc(e.skill)}</span></div>
 <div class="c-flow"><b>数据流</b>：${esc(e.data_flow)}</div>
-<div class="c-flow"><b>场景</b>：${esc(e.scene)}</div>
-<div class="c-example">示例：${esc(e.example_prompt)}</div>
+<div class="c-example" title="可直接照说或改一改">示例：${esc(e.example_prompt)}</div>
 <div class="c-actions">
-<button class="btn ghost" onclick="copyEntryPrompt('${esc(e.id)}')">复制触发 prompt</button>
-<button class="btn" onclick="copyEntryPrompt('${esc(e.id)}',true)">前往业务场景</button>
+<button class="btn" onclick="copyEntryPrompt('${esc(e.id)}')" title="复制可填空的触发指令,粘贴给 ${esc(e.skill)} 技能执行">复制触发 prompt<span class="btn-hint">→ 粘贴给 ${esc(e.skill)}</span></button>
 </div>
 </article>`).join('');
-const prefsHtml=Object.keys(prefs).map(k=>{
-  const desc=k==='food'?'食品联动(录入顺路建议)':'价格联动(录入/购买记录顺路建议)';
-  const opts=arr(scene.pref_options||[]).map(o=>`<span class="radio ${prefs[k]===o?'sel':''}" data-k="${esc(k)}" data-v="${esc(o)}" onclick="pick(this)">${o==='ask'?'每次询问':o==='remember'?'记住上次选择':'关闭'}</span>`).join('');
-  return `<div class="pref-row"><div><div class="pref-name">${k==='food'?'食品联动频控':'价格联动频控'}</div><div class="pref-desc">${desc}</div></div><div class="radios">${opts}</div></div>`;
-}).join('');
 app.innerHTML=`
-<section><h2>联动条目</h2>${entriesHtml||'<div class="empty">无联动配置</div>'}</section>
-<section><h2>联动偏好设置</h2><div class="prefs">${prefsHtml}</div>
-<div class="c-actions" style="margin-top:16px"><button class="btn" onclick="applyPrefs()">应用偏好(复制 prompt)</button></div></section>
+<section><h2>联动条目</h2><p class="section-note">复制触发 prompt 粘贴给对应技能直接执行；想走居家管家完整流程（物品确认→动作选择），直接对我说触发词即可。</p>${entriesHtml||'<div class="empty">无联动配置</div>'}</section>
 `+actionBar(p);
 }
 window.__sceneData={};
-function copyEntryPrompt(id,goScene){
+function copyEntryPrompt(id){
 const e=arr(window.__sceneData.entries).find(x=>x.id===id);if(!e)return;
-let prompt;
-if(goScene&&e.fitness_prompt){prompt=e.fitness_prompt;}
-else{prompt='请加载「居家管家」技能,帮我做联动(唤醒词:'+e.trigger+'):\n  联动: '+e.name+'\n  依赖技能: '+e.skill+'\n  ('+e.data_flow+')';}
-copyText(prompt);
-}
-window.__selPrefs={};
-function pick(el){
-const k=el.dataset.k,v=el.dataset.v;
-window.__selPrefs[k]=v;
-el.parentNode.querySelectorAll('.radio').forEach(r=>r.classList.toggle('sel',r.dataset.v===v));
-}
-function applyPrefs(){
-const sel=window.__selPrefs;const keys=Object.keys(sel);
-if(!keys.length){toast('请先选择偏好');return;}
-const parts=keys.map(k=>k+'='+(sel[k]==='ask'?'每次询问':sel[k]==='remember'?'记住上次选择':'关闭'));
-const prompt='请把联动偏好设置为:'+parts.join(';')+'(调用 sm9-prefs 落地)';
-copyText(prompt);
+const prompt=e.entry_prompt||'';
+if(prompt){copyText(prompt);return;}
+const fallback='请加载「居家管家」技能,帮我做联动(唤醒词:'+e.trigger+'):\n  联动: '+e.name+'\n  依赖技能: '+e.skill+'\n  ('+e.data_flow+')';
+copyText(fallback);
 }
 render();
 </script>

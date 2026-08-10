@@ -73,16 +73,18 @@ def test_overview_ok(link_db):
     html = out.read_text(encoding="utf-8")
     assert "联动功能总览" in html
     assert "食品联动" in html and "价格联动" in html and "健身计划联动" in html
-    assert "记住上次选择" in html  # 默认偏好
+    assert "复制触发 prompt" in html  # 唯一按钮(2026-08-10: 前往业务场景已删)
+    assert "记住上次选择" not in html  # 联动偏好已删(2026-08-10)
     assert "--INJECT-DATA--" not in html  # 数据已注入
 
 
-def test_overview_default_prefs(link_db):
+def test_overview_no_prefs_section(link_db):
     env, tmp = link_db
     r = _run(env, ["sm9-overview", "--output", str(tmp / "o2.html")])
     assert r.returncode == 0
     html = (tmp / "o2.html").read_text(encoding="utf-8")
-    assert "记住上次选择" in html  # 偏好 JSON 尚未创建 = 默认值渲染
+    assert "联动偏好" not in html  # 偏好区已删
+    assert "每次询问" not in html and "关闭" not in html.split("复制触发 prompt")[0]
 
 
 # ── SM9-2 食品联动 ────────────────────────────────────────────────────────────
@@ -154,59 +156,15 @@ def test_price_no_price_error(link_db):
     assert "没有价格信息" in html
 
 
-# ── 联动偏好(JSON 文件存储 · 不碰 DB)─────────────────────────────────────────
-
-
-def test_prefs_set_and_read(link_db):
-    env, tmp = link_db
-    r = _run(env, ["sm9-prefs", "--key", "food", "--value", "off"])
-    assert r.returncode == 0, f"stderr={r.stderr}"
-    prefs_file = tmp / "link_prefs.json"
-    assert prefs_file.exists()
-    data = json.loads(prefs_file.read_text(encoding="utf-8"))
-    assert data["food"] == "off"
-    assert data["price"] == "remember"  # 未动项保持默认
-
-    # 总览页反映新偏好
-    out = tmp / "o3.html"
-    r2 = _run(env, ["sm9-overview", "--output", str(out)])
-    assert r2.returncode == 0
-    html = out.read_text(encoding="utf-8")
-    assert "关闭" in html
-
-
-def test_prefs_invalid_value_ignored(link_db):
-    env, tmp = link_db
-    r = _run(env, ["sm9-prefs", "--key", "food", "--value", "bogus"])
-    assert r.returncode != 0  # argparse 拒绝非法 value
-
+# ── 联动偏好已删(2026-08-10)──────────────────────────────────────────────────
+# sm9-prefs 命令 / link_prefs.json / PREF 三态 已整体移除;
+# 顺路建议改无条件生成,由 test_entry_reminders_* 覆盖。
 
 # ── 双入口顺路建议(1-1/1-2 回执后 · 规格硬要求)────────────────────────────────
 
 
 def test_entry_reminders_food_and_price(link_db):
-    """食品+有价格物品: 默认偏好(remember)下给出卡路里 + 记账两条建议"""
-    import sys as _sys
-    sys.path.insert(0, str(SCRIPTS_DIR))
-    os.environ["SKILLS_DB_PATH"] = str(link_db[1])
-    from 联动.ops import build_entry_reminders, load_prefs
-    item = {
-        "id": 1, "name": "牛奶", "category": "食物与饮品",
-        "purchase_price": 5.9,
-        "locations": [{"quantity": 2, "location_status": "在家"}],
-        "photo_base64": None,
-    }
-    rems = build_entry_reminders(item, load_prefs())
-    keys = [r["key"] for r in rems]
-    assert "food" in keys and "price" in keys
-    food_r = next(r for r in rems if r["key"] == "food")
-    assert "记一餐" in food_r["prompt"] and "牛奶" in food_r["prompt"]
-    price_r = next(r for r in rems if r["key"] == "price")
-    assert "饼干记账" in price_r["prompt"] and "¥11.8" in price_r["prompt"]
-
-
-def test_entry_reminders_pref_off(link_db):
-    """偏好 off → 顺路建议为空(防打扰底线)"""
+    """食品+有价格物品: 无条件给出卡路里 + 记账两条建议(2026-08-10 删偏好后)"""
     import sys as _sys
     sys.path.insert(0, str(SCRIPTS_DIR))
     os.environ["SKILLS_DB_PATH"] = str(link_db[1])
@@ -217,8 +175,28 @@ def test_entry_reminders_pref_off(link_db):
         "locations": [{"quantity": 2, "location_status": "在家"}],
         "photo_base64": None,
     }
-    prefs = {"food": "off", "price": "off"}
-    assert build_entry_reminders(item, prefs) == []
+    rems = build_entry_reminders(item)
+    keys = [r["key"] for r in rems]
+    assert "food" in keys and "price" in keys
+    food_r = next(r for r in rems if r["key"] == "food")
+    assert "记一餐" in food_r["prompt"] and "牛奶" in food_r["prompt"]
+    price_r = next(r for r in rems if r["key"] == "price")
+    assert "饼干记账" in price_r["prompt"] and "¥11.8" in price_r["prompt"]
+
+
+def test_entry_reminders_food_only(link_db):
+    """食品但无价格: 只给卡路里建议,不给记账"""
+    import sys as _sys
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    os.environ["SKILLS_DB_PATH"] = str(link_db[1])
+    from 联动.ops import build_entry_reminders
+    item = {"id": 3, "name": "苹果", "category": "食物与饮品",
+            "purchase_price": None,
+            "locations": [{"quantity": 5, "location_status": "在家"}],
+            "photo_base64": None}
+    rems = build_entry_reminders(item)
+    keys = [r["key"] for r in rems]
+    assert "food" in keys and "price" not in keys
 
 
 def test_entry_reminders_non_food_no_price(link_db):
@@ -231,8 +209,7 @@ def test_entry_reminders_non_food_no_price(link_db):
             "purchase_price": None,
             "locations": [{"quantity": 1, "location_status": "在家"}],
             "photo_base64": None}
-    prefs = {"food": "ask", "price": "ask"}
-    assert build_entry_reminders(item, prefs) == []
+    assert build_entry_reminders(item) == []
 
 
 # ── 跨技能契约对齐(票面 #114: 与对应技能实施协商 + SM3 契约统一)───────────────

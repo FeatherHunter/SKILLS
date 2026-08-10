@@ -31,10 +31,11 @@ h2{font-size:19px;letter-spacing:-.02em;margin-bottom:14px}
 .prompt{background:#f2f2f7;border-radius:14px;padding:14px 16px;font-size:13px;white-space:pre-wrap;word-break:break-word;margin:12px 0;color:#3a3a3c}
 .actions-bar{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
 .actions-bar button{border:none;border-radius:12px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer}
-.copy{background:var(--blue);color:#fff}
-.copy.alt{background:#f2f2f7;color:var(--fg)}
+.copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;font-weight:700;cursor:pointer;margin:10px 8px 0 0;font-size:14px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}.copy.copied{background:var(--green)}
+.actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;margin-top:14px}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3)}
-@media(max-width:720px){.wrap{padding:30px 14px 70px}section,article{padding:18px 14px}.photo{width:72px;height:72px}}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}section,article{padding:18px 14px}.photo{width:72px;height:72px}.act{min-width:0}.actions{grid-template-columns:repeat(2,minmax(0,1fr))}.actions .copy{width:100%;margin:6px 0 0;white-space:normal}}
 </style>
 </head>
 <body>

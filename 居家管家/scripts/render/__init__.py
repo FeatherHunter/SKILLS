@@ -56,6 +56,12 @@ TEMPLATE_TO_COMMAND_CN = {
     # ── SM7 家庭协作域(T8)──
     "family_borrow.html": "借用",
     "family_members.html": "家人档案",
+    # ── SM5 快递购物域(T6)──
+    "快递购物/list.html": "购物清单",
+    "快递购物/missing.html": "缺货检测",
+    "快递购物/express.html": "查快递",
+    "快递购物/stock.html": "囤货盘点",
+    "快递购物/error.html": "快递购物失败",
     # ── SM2 空间与位置域(T3)──
     "位置/space_view.html": "空间视图",
     "位置/location_manage.html": "管位置",
@@ -85,6 +91,11 @@ TEMPLATE_TO_COMMAND_CN = {
     "物品/inventory_records.html": "盘点记录",
     "物品/move_checklist.html": "搬家盘点",
     "物品/history.html": "历史",
+    # ── SM9 联动功能域(T10)──
+    "联动/link_overview.html": "联动总览",
+    "联动/link_food.html": "记到卡路里",
+    "联动/link_price.html": "记到记账",
+    "联动/error.html": "联动失败",
 }
 
 

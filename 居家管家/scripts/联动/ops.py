@@ -1,14 +1,12 @@
-# ops.py - SM9 联动功能域 · 3 场景业务操作(prompt 生成 + 偏好 JSON + 场景数据)
+# ops.py - SM9 联动功能域 · 3 场景业务操作(prompt 生成 + 场景数据)
 #
 # 口径: scenes/SM9-联动功能.md(2026-08-04 定稿)· 08-HTML 交互规范 v1 · 跨技能契约
 # 本质: 跨技能协作 —— 居家管家持物品数据,卡路里/饼干记账持各自领域数据;
 #       联动执行 = 复制 prompt 到对应技能(单工闭环),本域只做能力展示与触发引导。
 # 依赖: scripts/home_manager/* 公共层只读调用,不修改。
 #
-# 数据层裁决(本批): 联动偏好用 JSON 文件($SKILLS_DB_PATH/link_prefs.json)存储,
-#       不增删 DB 表/字段(D1 硬规则: 增删表 = 最后处理 + 单开 ISSUE;D1 总账 #103
-#       已注册「联动偏好表」,若 D1 批决定落表再迁移)。
-import json
+# 2026-08-10 用户裁定: 删除联动偏好(三态频控/link_prefs.json/sm9-prefs)——
+#   顺路建议无条件生成(录食品/有价物品即提醒),用户看到可自由使用或无视。
 import os
 from pathlib import Path
 
@@ -17,6 +15,9 @@ from home_manager.db import DB_PATH
 
 # ── 联动契约表(能力索引 · 3 条)────────────────────────────────────────────────
 # 每条: 联动名 / 触发词 / 依赖技能 / 数据流 / 示例 prompt / 对应场景
+# 双按钮语义(G6 审查 2026-08-10 裁定):
+#   entry_prompt = 「复制触发 prompt」→ 粘贴给 **目标技能**(卡路里/饼干记账),直接执行
+#   scene_prompt = 「前往业务场景」→ 粘贴给 **居家管家**,走物品确认流程(与 HELP prompt 同款)
 LINK_CATALOG = [
     {
         "id": "food",
@@ -26,6 +27,8 @@ LINK_CATALOG = [
         "data_flow": "居家管家物品(名称/数量/单位) → 卡路里「记一餐 / 查食品」",
         "example_prompt": "把牛奶记到卡路里",
         "scene": "SM9-2",
+        "entry_prompt": "请加载「卡路里」技能,帮我记一餐(唤醒词:记一餐):\n  食物(如牛奶): ___\n  数量(如 2 件/个): ___",
+        "scene_prompt": "请加载「居家管家」技能,帮我把食品记到卡路里(唤醒词:记到卡路里):\n\n  物  品(如牛奶): ___\n  操  作(记到今日饮食/查热量): ___",
     },
     {
         "id": "price",
@@ -35,29 +38,21 @@ LINK_CATALOG = [
         "data_flow": "居家管家物品(名称/价格/分类) → 饼干记账「记支出」",
         "example_prompt": "把牛奶的价格记到记账",
         "scene": "SM9-3",
+        "entry_prompt": "请加载「饼干记账」技能,帮我记一笔支出(唤醒词:记支出):\n  物品(如牛奶): ___\n  金额(如 ¥11.8): ___\n  分类(餐饮/家居/数码/工具/医疗/娱乐/服饰/其他): ___",
+        "scene_prompt": "请加载「居家管家」技能,帮我把价格记到记账(唤醒词:记到记账):\n\n  物  品(如牛奶): ___\n  方  向(支出/收入): ___",
     },
     {
         "id": "fitness",
         "name": "健身计划联动",
         "trigger": "去健身",
-        "skill": "卡路里 → 居家管家 · 穿搭出行(SM3)",
+        "skill": "卡路里 → 穿搭出行",
         "data_flow": "卡路里健身计划(唤醒词:看今天练什么/看本周计划) → 出行清单「健身」类型(基础物品 + 护具知识表)",
         "example_prompt": "带物品(联动健身计划)",
         "scene": "SM3-4",
+        "entry_prompt": "请加载「卡路里」技能,帮我看健身计划(唤醒词:看今天练什么/看本周计划):\n  天  数(今天/本周): ___",
+        "scene_prompt": "请加载「居家管家」技能,帮我做出行带物清单(唤醒词:带物品):\n  行程类型: 健身\n  天  数: 1\n  操  作: 带出\n  (健身联动两层推荐: 力量/有氧/休息日 → 基础物品;动作 → 护具知识表)",
     },
 ]
-
-# 偏好频控三态(SM9-1 偏好设置区)
-PREF_ASK = "ask"            # 每次询问
-PREF_REMEMBER = "remember"  # 记住上次选择
-PREF_OFF = "off"            # 关闭
-
-PREF_DEFAULTS = {
-    "food": PREF_REMEMBER,   # 食品联动: 默认记住上次选择(录入顺路建议)
-    "price": PREF_REMEMBER,  # 价格联动: 默认记住上次选择
-}
-PREF_KEYS = set(PREF_DEFAULTS.keys())
-PREF_VALUES = {PREF_ASK, PREF_REMEMBER, PREF_OFF}
 
 # 食品判定关键词(seed_key 为 D1 字段,本批按分类名 + 名称启发,诚实标注)
 FOOD_CATEGORY_KEYWORDS = (
@@ -76,42 +71,6 @@ CATEGORY_TO_LEDGER = {
     "健康与医药": "医疗", "文体与娱乐": "娱乐",
     "衣物与穿戴": "服饰", "资产与凭证": "其他",
 }
-
-
-# ── 偏好存储(JSON 文件 · 不碰 DB)──────────────────────────────────────────────
-
-
-def _prefs_path() -> Path:
-    return Path(str(DB_PATH)).parent / "link_prefs.json"
-
-
-def load_prefs() -> dict:
-    """读偏好 JSON;文件缺失/损坏 → 默认值(防打扰底线 = remember)"""
-    try:
-        data = json.loads(_prefs_path().read_text(encoding="utf-8"))
-        if not isinstance(data, dict):
-            data = {}
-        return {k: data.get(k) if data.get(k) in PREF_VALUES else v
-                for k, v in PREF_DEFAULTS.items()}
-    except Exception:
-        return dict(PREF_DEFAULTS)
-
-
-def save_prefs(prefs: dict) -> tuple[bool, str, dict]:
-    """写偏好 JSON;非法 key/value 静默忽略。返回 (ok, msg, prefs)"""
-    clean = {k: v for k, v in prefs.items()
-             if k in PREF_KEYS and v in PREF_VALUES}
-    data = load_prefs()
-    data.update(clean)
-    try:
-        p = _prefs_path()
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
-    except Exception as e:
-        return False, f"偏好保存失败: {e}", data
-    desc = {k: {"ask": "每次询问", "remember": "记住上次选择", "off": "关闭"}.get(v, v)
-            for k, v in data.items()}
-    return True, "偏好已保存: " + "; ".join(f"{k}={desc[k]}" for k in desc), data
 
 
 # ── 物品查询(公共层只读调用)────────────────────────────────────────────────────
@@ -251,19 +210,18 @@ def _qty_str(item: dict) -> str:
     return f"{total} 件/个(单位未录入,请按实际修正)"
 
 
-def build_entry_reminders(item: dict, prefs: dict | None = None) -> list[dict]:
-    """双入口顺路建议(SM9 规格): 录物品/拍物品(1-1/1-2)回执后调用。
+def build_entry_reminders(item: dict) -> list[dict]:
+    """录入顺路建议(SM9 规格): 录物品/拍物品(1-1/1-2)回执后调用。
 
-    按联动偏好(ask=每次询问 / remember=记住上次 / off=关闭)生成顺路提醒:
+    无条件生成(2026-08-10 用户裁定: 删联动偏好,顺路建议无需防打扰):
       - 食品/饮品物品 → 建议「记到卡路里」(含复制 prompt)
       - 有价格物品 → 建议「记到记账」(含复制 prompt)
-    off 状态或物品不适用 → 返回空列表(防打扰底线)。
-    返回 [{type: "link", key, label, prompt}],AI 附到回执 HTML 顺路提醒区。
+    用户看到建议可自由使用或无视。
+    返回 [{type: "link", key, label, prompt}],附到回执 HTML 顺路提醒区。
     """
-    prefs = prefs or load_prefs()
     reminders = []
     is_food, reason = is_food_item(item)
-    if is_food and prefs.get("food") != PREF_OFF:
+    if is_food:
         reminders.append({
             "type": "link",
             "key": "food",
@@ -272,7 +230,7 @@ def build_entry_reminders(item: dict, prefs: dict | None = None) -> list[dict]:
             "reason": reason,
         })
     info = item_price_info(item)
-    if info["has_price"] and prefs.get("price") != PREF_OFF:
+    if info["has_price"]:
         reminders.append({
             "type": "link",
             "key": "price",
@@ -287,15 +245,15 @@ def build_entry_reminders(item: dict, prefs: dict | None = None) -> list[dict]:
 
 
 def overview_data() -> dict:
-    """SM9-1 联动总览: 契约条目列表 + 偏好设置区"""
+    """SM9-1 联动总览: 契约条目列表(2026-08-10: 偏好区已删)"""
     entries = [{
         "id": c["id"], "name": c["name"], "trigger": c["trigger"],
         "skill": c["skill"], "data_flow": c["data_flow"],
         "example_prompt": c["example_prompt"], "scene": c["scene"],
-        "fitness_prompt": build_fitness_prompt() if c["id"] == "fitness" else "",
+        "entry_prompt": c.get("entry_prompt", ""),
+        "scene_prompt": c.get("scene_prompt", ""),
     } for c in LINK_CATALOG]
-    return {"entries": entries, "prefs": load_prefs(),
-            "pref_options": [PREF_ASK, PREF_REMEMBER, PREF_OFF]}
+    return {"entries": entries}
 
 
 def food_data(item: dict, action: str = "log") -> tuple[bool, str, dict]:

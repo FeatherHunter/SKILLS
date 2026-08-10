@@ -580,7 +580,7 @@ function bindDayTabs() {
 
   /* 底部复制按钮(2026-08-10 #42 全局双按钮规则) */
   document.getElementById('srcLine').textContent =
-    '📊 数据来源:weight_log · ' + (data.meta && data.meta.wake_word || '') + ' · ' + (data.meta && data.meta.generated_at || '');
+    '📊 数据来源:' + (data.meta && data.meta.source || 'workout_plans') + ' · ' + (data.meta && data.meta.wake_word || '') + ' · ' + (data.meta && data.meta.generated_at || '');
   document.getElementById('copyBtn').onclick = function() {
     const lines = [(data.config && data.config.title) || '健身计划', ''];
     if (data.completion && data.completion.completion_rate != null) {

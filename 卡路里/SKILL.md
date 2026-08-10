@@ -119,7 +119,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.19", "requires": { "p
 |---|---|---|---|
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
 | `templates/review_template.html` | 复盘（含今日/本周/本月/本年/日期范围） | `review_cli.py gen` enriched JSON | `scripts/render_review.py --range / --type` |
-| `templates/workout_plan_view.html` | 看完整计划 / 看本周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率(多模式) | DB 直接 query workout_plans + exercise_log | `python scripts/render_workout_plan.py --mode {...}` |
+| `templates/workout_plan_view.html` | 看完整计划 / 看本周计划 / 看今天练什么 / 看某天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率(多模式) | DB 直接 query workout_plans + exercise_log | `python scripts/render_workout_plan.py --mode {...}` |
 | `templates/health_dashboard.html` | 查健康报告 | `analysis.dashboard(as_dict=True)` 4 维 | `python scripts/render_health_dashboard.py [--range / --days]` |
 | `templates/food_ranking.html` | 5 个食物排行（1 模板 5 榜单） | `analysis.diet_food_ranking(as_dict=True)` × 5 | `python scripts/render_food_ranking.py --category / --all` |
 | `templates/exercise_review.html` | 计划复盘（本周/本月/全部） | `exercise_review.py --format json` | `python scripts/render_exercise_review_html.py [--days]` |
@@ -173,7 +173,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.19", "requires": { "p
 | `templates/exercise_recap.html` | 运动复盘（本周）/ 运动复盘（本月）/ 运动复盘（最近 90 天）/ 运动复盘（今年）/ 运动复盘（自定义时间） | `exercise_log` | `scripts/render_exercise_recap.py --period` |
 | `templates/exercise_distribution.html` | 查运动分布 / 查运动贡献 | `analysis.exercise_*` | `scripts/render_exercise_distribution.py` |
 | `templates/exercise_review.html` | 计划复盘（本周） / 计划复盘（本月） / 计划复盘（全部） | `exercise_review.py --format json` | `scripts/render_exercise_review_html.py` |
-| `templates/workout_plan_view.html` | 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率(多模式 · 2026-08-02 ticket #6) | DB 直接 query workout_plans + exercise_log | `python scripts/render_workout_plan.py --mode {full,week,today,overview,vs,completion,missed,movement}` |
+| `templates/workout_plan_view.html` | 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看某天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率(多模式 · 2026-08-02 ticket #6) | DB 直接 query workout_plans + exercise_log | `python scripts/render_workout_plan.py --mode {full,week,today,overview,vs,completion,missed,movement}` |
 | `templates/plan_builder_wizard.html` | 定训练计划 | DB query + 计划生成 | `scripts/render_plan_builder.py` |
 | `templates/health_dashboard.html` | 查健康报告 | `analysis.dashboard(as_dict=True)` 4 维 | `scripts/render_health_dashboard.py [--range / --days]` |
 | `templates/lint_health.html` | 查卡路里数据 | `lint_health()` | `scripts/render_lint_health.py` |
@@ -1773,7 +1773,7 @@ exercise_tracker.py add --date 2026-06-29 --type 哑铃弯举 \
 
 ### 🏋️ 健身计划(29 场景 · 2026-08-02 ticket #6 落地)
 
-**看训练计划(9)**:看完整计划 / 看本周/下周/上周/指定周计划 / 看某天练什么 = `python scripts/render_workout_plan.py --mode week --week <N>`(N 由当前周推算:本周=当前,下周=N+1,上周=N-1);看今天练什么 = `--mode today`(接 exercise_log 实时完成);看计划概览 = `--mode overview`;看计划 vs 实际 = `--mode vs --start <D1> --end <D2>`
+**看训练计划(9)**:看完整计划 = `--mode full`;看本周/下周/上周/指定周计划 = `python scripts/render_workout_plan.py --mode week --week <N>`(N 由当前周推算:本周=当前,下周=N+1,上周=N-1);看某天练什么 = `--mode day --start <D>`(指定日期,支持休息日/未开始提示);看今天练什么 = `--mode today`(接 exercise_log 实时完成);看计划概览 = `--mode overview`;看计划 vs 实际 = `--mode vs --start <D1> --end <D2>`
 - **循环计划周次语义**:加/改动作默认作用于**所有周**(填空明确时才按指定周);看周计划时 `--week` 必须传用户想要的周次
 
 - **定训练计划**:AI 4 轮对话制(目标/经验/频率/部位)→ 产出 JSON → 预览(`render_plan_builder.py --mock <plan.json>`)→ 确认后写库(`render_plan_receipt.py --live-plan-set --plan-json <JSON> --chain "..."` → 回执)

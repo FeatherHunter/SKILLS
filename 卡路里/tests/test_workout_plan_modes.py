@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """test_workout_plan_modes.py — render_workout_plan 多模式渲染测试 (ticket #6)
 
-覆盖 8 个 mode:
-  full / week / today / overview / vs / completion / missed / movement
+覆盖 9 个 mode:
+  full / week / today / day / overview / vs / completion / missed / movement
 
 验证:
 - 每个 mode 生成合法 HTML,占位符恰好替换 1 次
@@ -66,7 +66,7 @@ def _extract_data(html: str) -> dict:
 
 
 @pytest.mark.parametrize("mode", [
-    "full", "week", "today", "overview", "vs", "completion", "missed", "movement",
+    "full", "week", "today", "day", "overview", "vs", "completion", "missed", "movement",
 ])
 def test_mode_renders(seed_plan, mode):
     html = rwp.render(mode=mode, output_path=str(Path(__file__).parent / f"_plan_{mode}.html"))
@@ -156,3 +156,54 @@ def test_plan_generator_delete_day(seed_plan):
     result = delete_day(1, 1)
     assert result["deleted_sessions"] >= 1
     assert result["snapshot"][0]["session_label"] == "晨训"
+
+
+def test_day_mode_specific(seed_plan):
+    """#255: day 模式 4 态验证(训练日/休息日/未开始/非法日期)"""
+    from datetime import date
+    from db import get_db
+
+    db = get_db(seed_plan)
+    c = db.cursor()
+    # 周三休息日(训练日已有 week1/day1)
+    c.execute(
+        "INSERT INTO workout_plans (week_number, day_of_week, session_index, session_label, is_rest_day, total_sets, movements) "
+        "VALUES (?,?,?,?,?,?,?)",
+        (1, 3, 1, "休息", 1, 0, "[]"),
+    )
+    db.commit()
+    db.close()
+
+    # 训练日(2026-07-27 周一 = 计划第 1 周)
+    html = rwp.render(mode="day", day_date=date(2026, 7, 27),
+                      output_path=str(Path(__file__).parent / "_plan_day1.html"))
+    d = _extract_data(Path(html).read_text(encoding="utf-8"))["data"]
+    assert d["mode"] == "day"
+    assert d["unstarted"] is False
+    assert len(d["sessions"]) >= 1
+    assert d["sessions"][0]["session_label"] == "晨训"
+    assert d["plan_week"] == 1
+
+    # 休息日(2026-07-29 周三)
+    html2 = rwp.render(mode="day", day_date=date(2026, 7, 29),
+                       output_path=str(Path(__file__).parent / "_plan_day2.html"))
+    d2 = _extract_data(Path(html2).read_text(encoding="utf-8"))["data"]
+    assert d2["is_rest"] is True
+
+    # 未开始(2026-07-01 < start 07-27)
+    html3 = rwp.render(mode="day", day_date=date(2026, 7, 1),
+                       output_path=str(Path(__file__).parent / "_plan_day3.html"))
+    d3 = _extract_data(Path(html3).read_text(encoding="utf-8"))["data"]
+    assert d3["unstarted"] is True
+
+    # 非法日期 → 友好错误(非 traceback)
+    err = rwp.render(mode="day", day_date="abc")
+    assert isinstance(err, str) and "无效" in err
+
+
+def test_today_mode_unchanged(seed_plan):
+    """#255 重构: today 模式 mode 字段与完成度契约不变"""
+    html = rwp.render(mode="today", output_path=str(Path(__file__).parent / "_plan_today2.html"))
+    d = _extract_data(Path(html).read_text(encoding="utf-8"))["data"]
+    assert d["mode"] == "today"
+    assert "completion" in d

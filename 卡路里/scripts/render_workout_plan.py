@@ -289,15 +289,15 @@ def build_overview_data(conn):
 
 
 def build_vs_data(conn, start_date=None, end_date=None):
-    """计划 vs 实际:完成度 + 偏差 + 动作级对比表"""
+    """计划 vs 实际:完成度 + 偏差 + 动作级对比表(2026-08-10 #255: 入参已为 date 对象)"""
     config = _load_config(conn)
     if not config:
         return None
-    end = date.fromisoformat(end_date) if end_date else date.today()
+    end = end_date or date.today()
     if start_date is None:
         start = end - timedelta(days=6)
     else:
-        start = date.fromisoformat(start_date)
+        start = start_date
     c = conn.cursor()
     plan_rows = {}
     actual_rows = {}
@@ -482,18 +482,29 @@ def _render_html(data: dict) -> str:
     return template.replace(placeholder, inject, 1)
 
 
-def render(mode='full', week=None, start_date=None, end_date=None, days=None,
+def render(mode='full', week=None, start_date=None, end_date=None, days=None, day_date=None,
            include_review=False, output_path=None):
     """主渲染函数"""
     conn = _get_db()
+    # 2026-08-10 #255 审查: 日期参数统一预解析(day 用 --date;vs 用 --start/--end),非法值返回友好错误
+    def _parse_d(v):
+        if not v:
+            return None
+        try:
+            return date.fromisoformat(str(v))
+        except ValueError:
+            raise ValueError(f'日期格式无效: {v!r}(应为 YYYY-MM-DD)')
     try:
+        day_d = _parse_d(day_date)
+        vs_start = _parse_d(start_date)
+        vs_end = _parse_d(end_date)
         builders = {
             'full': lambda: build_full_data(conn, focus_week=week),
             'week': lambda: build_week_data(conn, week),
             'today': lambda: build_today_data(conn),
-            'day': lambda: build_day_data(conn, date.fromisoformat(start_date) if start_date else date.today()),
+            'day': lambda: build_day_data(conn, day_d or date.today()),
             'overview': lambda: build_overview_data(conn),
-            'vs': lambda: build_vs_data(conn, start_date, end_date),
+            'vs': lambda: build_vs_data(conn, vs_start, vs_end),
             'completion': lambda: build_completion_data(conn),
             'missed': lambda: build_missed_data(conn, days or 28),
             'movement': lambda: build_movement_data(conn, days or 28),
@@ -501,6 +512,9 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None,
         if mode not in builders:
             raise ValueError(f'未知 mode: {mode}')
         data = builders[mode]()
+    except ValueError as e:
+        # 2026-08-10 #255 审查: 非法参数 → 友好错误(不再裸 traceback)
+        return f'⚠️ {e}'
     finally:
         conn.close()
 
@@ -552,14 +566,15 @@ def main():
                    choices=['full', 'week', 'today', 'day', 'overview', 'vs', 'completion', 'missed', 'movement'],
                    help='渲染模式(full=全计划 / week=单周 / today=今日 / day=指定日期 / overview=概览 / vs=对比 / completion=完成率 / missed=漏练 / movement=动作榜)')
     p.add_argument('-w', '--week', type=int, help='周次(week 模式必用;full 模式可聚焦)')
-    p.add_argument('--start', help='开始日期 YYYY-MM-DD(vs 模式) 或指定日期(day 模式)')
+    p.add_argument('--date', help='目标日期 YYYY-MM-DD(day 模式;默认今天)')
+    p.add_argument('--start', help='开始日期 YYYY-MM-DD(vs 模式)')
     p.add_argument('--end', help='结束日期 YYYY-MM-DD(vs 模式)')
     p.add_argument('--days', type=int, help='回溯天数(missed/movement 默认 28)')
     p.add_argument('--review', action='store_true', help='打开复盘 section(full 模式)')
     p.add_argument('-o', '--output', help='输出文件路径')
     args = p.parse_args()
 
-    result = render(args.mode, args.week, args.start, args.end, args.days,
+    result = render(args.mode, args.week, args.start, args.end, args.days, day_date=args.date,
                     include_review=args.review, output_path=args.output)
     if isinstance(result, str) and not args.output:
         print(result)

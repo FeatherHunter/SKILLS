@@ -1975,7 +1975,7 @@ TRIGGERS = [
             'variants': [],
             'key': 'plan_view_day', 'name': '看某天练什么', 'subfunction': '看训练计划', 'output_type': 'result',
             'html_template': 'templates/workout_plan_view.html', 'data_source': 'python scripts/render_workout_plan.py --mode day --start <D>', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「看某天练什么」。\n\n我想看指定日期的训练内容(动作/组数/重量)。如果那天休息或计划还没开始,请明确告诉我。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。\n\n日期(YYYY-MM-DD,默认今天):____',
-            'user_intent': '我想看某一天练什么', 'data_fields': ["date", "sessions", "movements", "is_rest_day", "completion_rate"],
+            'user_intent': '我想看某一天练什么', 'data_fields': ["date", "sessions", "movements", "is_rest", "completion", "plan_week"],
             'depends_on_external': False, 'order': 5},
     {
             'category': '健身计划',     'wake_word': '看计划概览',     'desc': '计划总览 KPI + 每周完成率列表',

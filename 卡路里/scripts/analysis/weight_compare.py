@@ -447,7 +447,18 @@ def scenario_e3(delta_kg):
         return None, f'未达成减重 {delta_kg}kg 里程碑(当前距历史最高已减 {diff}kg)'
     elapsed = max(1, (date.fromisoformat(rows[-1][0]) - date.fromisoformat(hit[0])).days)
     rate = round((current - hit[1]) / elapsed, 3)
-    trajectory = ' → '.join(f"{r[0][-5:]}:{r[1]}" for r in rows if r[0] >= hit[0])[:80]
+    # 2026-08-10 #43 审查:轨迹降采样(最多 10 点)+ 跨年带年份(YY-MM-DD),消除「07-10→08-11 只隔一天」歧义与硬截断切半
+    pts = [r for r in rows if r[0] >= hit[0]]
+    cross_year = len(pts) > 1 and pts[0][0][:4] != pts[-1][0][:4]
+    def _fmt(d):
+        return d[-5:] if not cross_year else d[2:]  # MM-DD 或跨年 YY-MM-DD
+    if len(pts) > 10:
+        step = (len(pts) - 1) / 9
+        idxs = sorted({int(i * step) for i in range(10)} | {len(pts) - 1})
+        sel = [pts[i] for i in idxs]
+        trajectory = ' → '.join(f"{_fmt(r[0])}:{r[1]}" for r in sel) + ' …'
+    else:
+        trajectory = ' → '.join(f"{_fmt(r[0])}:{r[1]}" for r in pts)
     return {
         'seg_a': {'label': f'减重 {delta_kg}kg 那天', 'range': hit[0], 'count': 1,
                   'avg': hit[1], 'start_kg': hit[1], 'end_kg': hit[1],

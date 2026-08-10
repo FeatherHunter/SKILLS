@@ -38,8 +38,10 @@ h3{font-size:15px;margin:14px 0 8px;color:var(--fg2)}
 .toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}
 .toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}
 .toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}
-.actions{margin-top:14px;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end}
-@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.actions{flex-direction:column;align-items:stretch;justify-content:flex-start}.actions .copy{width:100%;margin:6px 0 0;text-align:center;white-space:normal}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}.toast.show{transform:translateX(0) scale(1)}}
+.actions{margin-top:14px;display:flex;flex-direction:column;gap:8px;align-items:stretch}
+.actions .btn-row{display:flex;gap:8px}
+.actions .btn-row .copy{flex:1;margin:0;text-align:center;white-space:normal}
+@media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}.row{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}.toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}.toast.show{transform:translateX(0) scale(1)}}
 </style>
 </head>
 <body>
@@ -99,17 +101,17 @@ var sevCls={high:'high',mid:'mid',low:'low'};
 var checksHtml=checks.length?('<section><h2>检查项('+checks.length+')</h2>'+checks.map(function(c,i){
   var samples=arr(c.samples);
   return '<div class="check"><input type="checkbox" id="ck'+i+'" data-idx="'+i+'">'
-    +'<div style="flex:1"><div style="font-weight:650">'+esc(c.title)+'<span class="sev '+sevCls[c.severity]||'low'+'">'+esc({high:'严重',mid:'中等',low:'轻微'}[c.severity]||c.severity)+'</span></div>'
+    +'<div style="flex:1"><div style="font-weight:650">'+esc(c.title)+'<span class="sev '+(sevCls[c.severity]||'low')+'">'+esc({high:'严重',mid:'中等',low:'轻微'}[c.severity]||c.severity)+'</span></div>'
     +'<div style="font-size:13px;color:var(--fg2);margin:3px 0">涉及 '+c.count+' 件'+(samples.length?' · 示例:'+samples.map(function(x){return '<span class="pill">'+esc(x)+'</span>'}).join(''):'')+'</div>'
     +'<div style="font-size:13px" class="ok">修复:只建议不自动改</div></div></div>';
 }).join('')+'</section>'):'';
 var emptyHtml=(!checks.length)?'<section><h2 class="ok">✅ 数据健康良好</h2><p>未发现数据问题。</p></section>':'';
 var copySelected='';
 if(checks.length){
-  copySelected='<button class="copy" id="copyFix" onclick="copySelectedFixes(this)">复制选中修复引导</button>';
+  copySelected='<div class="btn-row"><button class="copy" id="copyFix" onclick="copySelectedFixes(this)">复制选中修复引导</button></div>';
 }
-var copyDataBtn='<button class="copy alt" onclick="copyThen(this.dataset.d,\'数据已复制\',\'结构化 JSON 5 段:场景/指令/时间/对象/载荷,可粘贴给 AI 或存档。\')" data-d="'+JSON.stringify(cd).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制数据</button>';
-var copyLogBtn='<button class="copy ghost" onclick="copyThen(this.dataset.d,\'日志已复制\',\'6 段日志:场景/思考链/数据结构/调用链/时间戳/异常,可发给开发者排障。\')" data-d="'+JSON.stringify(cl).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制日志</button>';
+var copyDataBtn='<div class="btn-row"><button class="copy alt" onclick="copyThen(this.dataset.d,\'数据已复制\',\'结构化 JSON 5 段:场景/指令/时间/对象/载荷,可粘贴给 AI 或存档。\')" data-d="'+JSON.stringify(cd).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制数据</button></div>';
+var copyLogBtn='<div class="btn-row"><button class="copy ghost" onclick="copyThen(this.dataset.d,\'日志已复制\',\'6 段日志:场景/思考链/数据结构/调用链/时间戳/异常,可发给开发者排障。\')" data-d="'+JSON.stringify(cl).replace(/'/g,"&#39;").replace(/"/g,'&quot;')+'">复制日志</button></div>';
 app.innerHTML=envHtml+'<div class="cards">'
   +'<div class="card"><b>问题总数</b><span class="'+(issuesTotal?'bad':'ok')+'">'+issuesTotal+'</span></div>'
   +'<div class="card"><b>检查项</b><span>'+checks.length+'</span></div>'

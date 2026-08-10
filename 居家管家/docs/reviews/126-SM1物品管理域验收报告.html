@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#126 交付完成 · SM1 物品管理域 29 场景</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 22px 90px}
+.hero{background:linear-gradient(180deg,#fff,#f0f7ff);border-radius:24px;padding:30px 32px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.12em;margin-bottom:8px}
+h1{font-size:28px;letter-spacing:-.035em;line-height:1.2;margin-bottom:10px}
+.lead{color:var(--fg2);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{background:#eef4ff;color:var(--blue);border-radius:99px;padding:4px 12px;font-size:11px;font-weight:700}
+.chip.green{background:#e8f9ee;color:#1d7a3f}
+.chip.orange{background:#fff4e0;color:#b3541e}
+section{background:var(--card);border-radius:18px;padding:22px 26px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:14px}
+section h2{font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--fg3);font-weight:600;padding:8px 10px;border-bottom:1px solid var(--line);font-size:12px}
+td{padding:9px 10px;border-bottom:1px solid #f0f0f3;vertical-align:top}
+tr:last-child td{border-bottom:none}
+.ok{color:#1d7a3f;font-weight:700}
+ul{margin:6px 0 0 18px}
+li{margin-bottom:6px;font-size:13.5px}
+.verdict{background:linear-gradient(180deg,#f2fbf5,#fff);border:1px solid #c8ecd5;border-radius:16px;padding:18px 20px;margin-top:6px}
+.verdict h3{font-size:15px;color:#1d7a3f;margin-bottom:6px}
+code{background:#f2f2f5;border-radius:6px;padding:2px 7px;font-size:12.5px;color:#48484a}
+@media(max-width:720px){.wrap{padding:24px 14px 80px}.hero{padding:20px}h1{font-size:23px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+<div class="eyebrow">居家管家 · G6 审查 · #126</div>
+<h1>#126 交付完成 · SM1 物品管理域 29 场景</h1>
+<p class="lead">29/29 场景双浏览器验收通过 · FAIL 三项全修复 + 搬家盘点 v2 追加 · 全量测试 391 绿 · ISSUE 已闭环</p>
+<div class="chips">
+<span class="chip green">#126 已关闭</span>
+<span class="chip green">地图 #104 已登记</span>
+<span class="chip">pytest 391 绿</span>
+<span class="chip">双浏览器 74 端复测</span>
+</div>
+</header>
+
+<section>
+<h2>✅ 场景验收（29/29 全 PASS）</h2>
+<table>
+<tr><th>域</th><th>场景</th><th>状态</th></tr>
+<tr><td>录入（4）</td><td>录物品 · 批量录入 · 补录 · 拍照录入</td><td class="ok">✅ 通过</td></tr>
+<tr><td>查找（6）</td><td>查物品 · 看物品 · 紧急定位 · 筛选浏览 · 拍照找物品 · 查重复</td><td class="ok">✅ 通过</td></tr>
+<tr><td>更新（8）</td><td>改物品 · 移物品 · 数量变更 · 状态变更 · 合并物品 · 撤销操作 · 物品关联 · 标物品</td><td class="ok">✅ 通过</td></tr>
+<tr><td>标签分类（3）</td><td>管标签 · 管分类 · 整理建议</td><td class="ok">✅ 通过</td></tr>
+<tr><td>照片（3）</td><td>查看照片 · 管照片 · 照片墙</td><td class="ok">✅ 通过</td></tr>
+<tr><td>盘点（4）</td><td>盘点 · 差异处理 · 盘点记录 · 搬家盘点</td><td class="ok">✅ 通过</td></tr>
+<tr><td>历史（1）</td><td>物品历史轨迹</td><td class="ok">✅ 通过</td></tr>
+</table>
+</section>
+
+<section>
+<h2>🔧 FAIL 修复对照（2026-08-09 FAIL → 2026-08-11 复查 PASS）</h2>
+<table>
+<tr><th>原问题</th><th>修复</th><th>验证</th></tr>
+<tr><td>P1 差异处理「按实际更新」落地失效（collectResolve 输出契约不符，数量/状态/位置三类确认全失效）</td><td>collectResolve 重构为人类命令式输出（`{id, field, after}` 契约对齐 resolve_diff_v2）</td><td class="ok">✅ 实测提交 → item_locations.quantity 生效</td></tr>
+<tr><td>P2 照片页 PNG 破图 + console ERR_INVALID_URL（硬编码 jpeg 前缀 + 不判空）</td><td>photos.html 按实际格式输出（base64 实测为 PNG）+ 判空兜底</td><td class="ok">✅ 双端 0 破图 0 报错</td></tr>
+<tr><td>P3-1 confirm 双「确认合并」按钮（actionBar 双重渲染）</td><td>actionBar 加 noSb 参数，场景按钮单次渲染</td><td class="ok">✅ 单按钮</td></tr>
+<tr><td>P3-2 盘点页物品名单字竖排 + placeholder 截断</td><td>卡片 top 行换行保护 + 输入框宽度适配</td><td class="ok">✅ 手机 375px 实测</td></tr>
+<tr><td>P3-3 browse 状态尾部多余「·」</td><td>文案拼接修复</td><td class="ok">✅</td></tr>
+<tr><td>P3-4 事件类型英文标签（related/merged/…）</td><td>ops.py type_label 中文映射 + _humanize_payload 递归中文拍平</td><td class="ok">✅ 复制日志全中文</td></tr>
+<tr><td>P3-5 similar_tags 阈值过宽 + 标签折行</td><td>编辑距离阈值收紧 + 副文本防折行</td><td class="ok">✅ 数码↔药品 不再误报</td></tr>
+</table>
+</section>
+
+<section>
+<h2>🆕 追加：搬家盘点 v2（2026-08-11 用户验收驱动）</h2>
+<ul>
+<li><b>位置名全宽显示</b>：批量按钮从标题行移入展开后组内工具栏，标题行只留位置名+数量+箭头，手机 390/360/320 三档 0 省略</li>
+<li><b>本组已选 x/y 计数</b>：展开组内显示进度，与全局计数联动</li>
+<li><b>颜色语义统一</b>：全带走激活=绿（与物品行「带走」同色）、全不带走激活=红（与「不带走」同色）、常态两钮同款；≤3 色</li>
+<li><b>隐藏 bug 修复</b>：长位置名（如「书房/收纳盒」）曾把按钮挤到换行 → 组名超长省略号 + 按钮禁压缩</li>
+</ul>
+</section>
+
+<section>
+<h2>🧪 验证证据</h2>
+<ul>
+<li>居家管家 pytest 全量 <b>391 绿</b>（pre-commit 钩子强制）</li>
+<li>双浏览器 74 端客观测量：0 横向溢出、0 JS 报错、0 破图（桌面 1280×900 + 手机 390×844）</li>
+<li>搬家盘点 v2：390/360/320 三档手机视口实测（Playwright DOM 测量：位置名 0 省略、按钮 0 换行、按钮 computed 色与物品行逐像素一致）</li>
+<li>复制数据/复制日志人类可读全中文（无 JSON、无英文内部字段），按钮复制 Toast 实测通过</li>
+<li>隔离契约：全程临时库（.scratch/t2-review/db），生产库零接触</li>
+</ul>
+</section>
+
+<section>
+<div class="verdict">
+<h3>✅ 结论：PASS · #126 关闭</h3>
+<p style="font-size:14px;color:var(--fg2)">29/29 场景验收通过，FAIL 三项（P1 差异处理 / P2 照片破图 / P3 UI 细节）全部修复并复测，搬家盘点 v2 经用户人工验收认可。交付物：docs/reviews/126-SM1物品管理域验收报告.html · commit f069691。</p>
+</div>
+</section>
+
+</div>
+</body>
+</html>

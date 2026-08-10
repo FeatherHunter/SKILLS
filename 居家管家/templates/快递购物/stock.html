@@ -21,7 +21,7 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .name{font-weight:700;flex:1;min-width:0;word-break:break-word}
 .qty{font-size:14px;color:var(--fg2);white-space:nowrap}
 .badge{display:inline-block;border-radius:999px;padding:2px 9px;margin:2px;font-size:12px;font-weight:700;white-space:nowrap}
-.badge.full{background:#e8f7ee;color:#0a7a3d}.badge.low{background:#fff2df;color:var(--orange)}.badge.empty{background:#ffe8e6;color:var(--red)}
+.badge.b-full{background:#e8f7ee;color:#0a7a3d}.badge.low{background:#fff2df;color:var(--orange)}.badge.b-empty{background:#ffe8e6;color:var(--red)}
 .pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px;white-space:nowrap}
 .hint{color:var(--fg3);font-size:13px}
 .empty{padding:26px 0;text-align:center;color:var(--fg3)}
@@ -43,47 +43,53 @@ function render(){
 let payload;
 try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
 const d=payload.data||{};const s=d.scene||{};
-let html=metaHeader(payload,{title:s.summary&&s.summary.title||'囤货盘点',lead:s.lead||'库存状态:充足/低/空;阈值是缺货检测的数据源',stage:'查看'});
+window.__hmPayload=payload;
+let html=metaHeader(payload,{title:s.summary&&s.summary.title||'囤货盘点',lead:s.lead||'阈值是缺货检测的提醒线;盘点时发现数量不对,勾选后修正',stage:'浏览结果'});
+if(s.summary&&s.summary.metrics&&s.summary.metrics.length){html+=`<section style="display:flex;gap:10px;flex-wrap:wrap;padding:16px 22px;margin-top:0">${s.summary.metrics.map(m=>{const z=/^0/.test(m.value);return `<span class="pill" style="font-size:14px;padding:6px 14px">${esc(m.label)} <b style="color:${z?'var(--fg3)':'var(--blue)'}">${esc(m.value)}</b></span>`;}).join('')}</section>`;}
 if(s.items.length){
   html+=`<section><h2>囤货物品 ${esc(s.items.length)} 件</h2><div class="list" id="list">${s.items.map(it=>`
   <div class="row"><input type="checkbox" data-id="${it.id}" data-name="${esc(it.name)}" data-current="${esc(it.current)}">
-  <div style="flex:1"><div class="name">${esc(it.name)} <span class="badge ${it.status==='充足'?'full':it.status==='低'?'low':'empty'}">${esc(it.status)}</span></div>
-  <div class="hint">${esc(it.category_name)} · 阈值 ${esc(it.threshold)}(缺货检测数据源)</div></div>
-  <span class="qty">当前 <b>${esc(it.current)}</b> / 阈值 ${esc(it.threshold)}</span>
-  <span class="pill">ID ${it.id}</span></div>`).join('')}</div>
+  <div style="flex:1"><div class="name">${esc(it.name)} <span class="badge ${it.status==='充足'?'b-full':it.status==='低'?'low':'b-empty'}">${esc(it.status)}</span></div>
+  <div class="hint">${esc(it.category_name)} · 阈值 ${esc(it.threshold)}</div></div>
+  <span class="qty">当前 <b>${esc(it.current)}</b></span></div>`).join('')}</div>
   <div class="actions">
-  <button class="copy green" onclick="fixQty()">修正数量(勾选→3-3)</button>
+  <button class="copy primary" onclick="fixQty()">修正实际数量(勾选)</button>
   <button class="copy ghost" onclick="setThr()">设置阈值(勾选)</button>
+  <button class="copy ghost" onclick="copyText(P_MISSING)">检测缺货</button>
+  <button class="copy alt" onclick="copyText(buildDataText(window.__hmPayload))">复制数据</button>
+  <button class="copy alt" onclick="copyText(buildLogText(window.__hmPayload))">复制日志</button>
   </div></section>`;
 }else{
   html+=`<section><div class="empty">还没有设置囤货阈值的物品。</div></section>`;
+  html+=`<section><h2>更多功能</h2><div class="actions">
+  <button class="copy ghost" onclick="copyText(P_MISSING)">检测缺货</button>
+  <button class="copy alt" onclick="copyText(buildDataText(window.__hmPayload))">复制数据</button>
+  <button class="copy alt" onclick="copyText(buildLogText(window.__hmPayload))">复制日志</button>
+  </div></section>`;
 }
 if(s.hints&&s.hints.length){
-  html+=`<section><h2>常被使用、可设阈值(缺货检测的候选)</h2><p class="hint">为常用消耗品设置阈值后,「缺货检测」会自动提示补充。</p><div class="list">${s.hints.map(h=>`
+  html+=`<section><h2>常用品还没设阈值</h2><p class="hint">给常用消耗品设个阈值,缺货检测就能自动提醒补充。</p><div class="list">${s.hints.map(h=>`
   <div class="row"><div class="name">${esc(h.name)}</div><div class="hint">${esc(h.category_name)}</div>
-  <span class="pill">ID ${h.id}</span>
-  <button class="copy ghost" onclick="copyText('设置囤货阈值(居家管家): 「${esc(h.name)}」阈值设为 ____')">设阈值</button></div>`).join('')}</div></section>`;
+  <button class="copy ghost" data-name="${esc(h.name)}" data-id="${h.id}" onclick="copyText(setOneThr(this.dataset))">设阈值</button></div>`).join('')}</div></section>`;
 }
 html+=remindersBlock(payload);
-html+=`<section><h2>操作</h2>${actionBar(payload,[
- {label:'批量设阈值',text:'批量设置囤货阈值(居家管家): 常用物品阈值清单【物品:阈值】',kind:'ghost'},
- {label:'去缺货检测',text:'缺货检测(居家管家): 按这些阈值检测家里缺什么',kind:'ghost'}
-])}</section>`;
 app.innerHTML=html;
 }
+const P_MISSING='请加载「居家管家」技能,帮我检测缺货(唤醒词:缺货检测):\n\n  范  围(全屋): ___';
 function fixQty(){
 const sel=[...document.querySelectorAll('#list input:checked')];
 if(!sel.length){toast('请先勾选要修正的物品');return;}
 const ids=sel.map(c=>c.dataset.id).join(',');
 const names=sel.map(c=>c.dataset.name).join('、');
-copyText('囤货修正(居家管家): 修正以下物品的实际数量(联动 3-3),item ids='+ids+'。物品:'+names+' 【实际数量:____】');
+copyText('请加载「居家管家」技能,帮我修正物品实际数量(唤醒词:囤货盘点):\n\n  物  品(勾选): '+names+' [ids='+ids+']\n  各修正后数量(如 牙膏:2, 纸巾:0): ___');
 }
 function setThr(){
 const sel=[...document.querySelectorAll('#list input:checked')];
 if(!sel.length){toast('请先勾选要设置阈值的物品');return;}
 const names=sel.map(c=>c.dataset.name).join('、');
-copyText('设置囤货阈值(居家管家): 物品:'+names+' 【各阈值:____】');
+copyText('请加载「居家管家」技能,帮我设置囤货阈值(唤醒词:囤货盘点):\n\n  物  品(勾选): '+names+'\n  各阈值(如 牙膏:2, 纸巾:1): ___');
 }
+function setOneThr(ds){return '请加载「居家管家」技能,帮我设置囤货阈值(唤醒词:囤货盘点):\n\n  物  品: '+ds.name+' [id='+ds.id+']\n  阈  值(1): ___';}
 render();
 </script>
 </body>

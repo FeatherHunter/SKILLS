@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T5 审查 #118 · SM4 统计总览域验收报告</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--bg:#f5f5f7;--card:#fff;--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--line:#d2d2d7;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased;padding:32px 16px}
+.wrap{max-width:860px;margin:0 auto}
+.hero{background:linear-gradient(180deg,#fff,#f0f7ff);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:27px;letter-spacing:-.03em;margin-bottom:6px}
+.lead{color:var(--fg2);font-size:14px}
+.meta-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.badge{display:inline-block;border-radius:99px;padding:4px 14px;font-size:13px;font-weight:800}
+.badge.pass{background:#e6f8ee;color:#1d8a4e}
+.badge.ts{background:#eef1f5;color:var(--fg2);font-weight:600;font-size:12px}
+.card{background:var(--card);border-radius:20px;padding:22px 24px;box-shadow:var(--shadow);margin-bottom:16px}
+h2{font-size:17px;margin-bottom:12px;letter-spacing:-.01em}
+h2 .num{color:var(--blue);margin-right:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:10px}
+.stat{background:#f8f9fb;border-radius:14px;padding:12px 14px}
+.stat b{display:block;color:var(--fg2);font-size:12px;margin-bottom:3px}
+.stat span{font-size:18px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--fg2);font-weight:600;border-bottom:1px solid var(--line);padding:8px 6px}
+td{padding:8px 6px;border-bottom:1px solid #f0f0f2;vertical-align:top}
+td .ok{color:#1d8a4e;font-weight:700}
+td .fix{color:var(--blue);font-weight:600}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+.shots{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.shot{background:#f8f9fb;border-radius:14px;padding:10px}
+.shot p{font-size:12px;color:var(--fg2);margin-bottom:8px;font-weight:600}
+.shot a{display:block}
+.shot img{width:100%;border-radius:10px;border:1px solid var(--line)}
+.issue{background:#fff8f6;border:1px solid #ffd9d0;border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.issue .t{font-weight:700;color:#c0392b;font-size:14px;margin-bottom:4px}
+.issue p{font-size:13px;color:var(--fg2)}
+.issue .fixl{color:var(--green);font-weight:700}
+.actions{display:flex;gap:10px;justify-content:center;margin-top:4px;flex-wrap:wrap}
+.btn{border:none;border-radius:999px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:13px;background:var(--blue);color:#fff;font-family:inherit}
+.btn.ghost{background:#fff;color:var(--fg);border:1px solid var(--line)}
+.btn.copied{background:var(--green);color:#fff}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;background:#1d1d1f;color:#fff;padding:10px 20px;border-radius:99px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:99}
+.toast.show{opacity:1}
+@media(max-width:720px){.shots{grid-template-columns:1fr}.wrap{padding:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hero">
+    <div class="eyebrow">Home Manager · T5 审查配对 · G6</div>
+    <h1>SM4 统计总览域 · 双浏览器验收报告</h1>
+    <p class="lead">审查对象: 物品总览 / 闲置检测 / 过期检查 / 盘点统计 · 临时库 9 物品种子 · 当前代码重新生成</p>
+    <div class="meta-line">
+      <span class="badge pass">✓ PASS · 修复后复验通过</span>
+      <span class="badge ts">🕒 生成于 2026-08-09 22:05</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">01</span>双浏览器客观测量(修复后复验)</h2>
+    <div class="grid">
+      <div class="stat"><b>测量组合</b><span>8 / 8 PASS</span></div>
+      <div class="stat"><b>横向溢出</b><span>0 处</span></div>
+      <div class="stat"><b>JS / console 错误</b><span>0 条</span></div>
+      <div class="stat"><b>视口</b><span>1280×900 + 390×844</span></div>
+    </div>
+    <table>
+      <tr><th>HTML</th><th>桌面</th><th>手机</th><th>关键检查</th></tr>
+      <tr><td>overview.html</td><td class="ok">PASS</td><td class="ok">PASS</td><td>4 指标卡 / 分类+位置柱状 / 状态进度 / 价值 TOP / 高频 / 趋势折线</td></tr>
+      <tr><td>idle.html</td><td class="ok">PASS</td><td class="ok">PASS</td><td>闲置清单 + 估算标注 / AI 断舍离建议 / 分类筛选 / 三态处理按钮</td></tr>
+      <tr><td>expiring.html</td><td class="ok">PASS</td><td class="ok">PASS</td><td>已过期+预告统计卡 / 严重度边线 / 勾选闭环</td></tr>
+      <tr><td>inventory_stat.html</td><td class="ok">PASS</td><td class="ok">PASS</td><td>空态引导(无盘点记录) / AI 建议 / 首次盘点 CTA</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">02</span>AI 审查 5 阶段清单</h2>
+    <table>
+      <tr><th>阶段</th><th>结论</th><th>要点</th></tr>
+      <tr><td>复制数据/复制日志硬标准</td><td class="ok">PASS</td><td>META 8 字段齐,无 .db/Users 路径泄漏,无外链脚本</td></tr>
+      <tr><td>场景逐条对应</td><td class="ok">PASS</td><td>4 场景呈现数据与 SM4 权威清单对齐</td></tr>
+      <tr><td>交互与移动端适配</td><td class="ok">PASS</td><td>390px 单列卡片,按钮触控区充足,图表可读</td></tr>
+      <tr><td>双通道输出</td><td class="ok">PASS</td><td>hero + 复制数据/日志/处理回执,对齐 08 规范</td></tr>
+      <tr><td>场景闭环验证</td><td class="ok">PASS</td><td>分类分布正确归并子分类;空态分支优雅</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">03</span>审查发现并修复(3 项 · <a href="https://github.com/FeatherHunter/SKILLS/commit/3394fd0">commit 3394fd0</a>)</h2>
+    <div class="issue">
+      <div class="t">① 分类分布子类不归并(数据正确性)</div>
+      <p>原 SQL 只统计直接挂顶级分类的物品 → 数码与电器整柱消失、食物显示 1 件实为 3 件。<span class="fixl">修复:</span> cat_path 携带 top_id 归并 + COUNT(DISTINCT),测试断言同步修正(衣物 1→2)。</p>
+    </div>
+    <div class="issue">
+      <div class="t">② 桌面端操作栏遮挡列表(视觉)</div>
+      <p>4 模板操作栏 position:sticky 吸底,实测 idle 压住列表卡片 26px。<span class="fixl">修复:</span> 与移动端统一为文档流内 static。</p>
+    </div>
+    <div class="issue">
+      <div class="t">③ expiring 颜色语义冲突(视觉)</div>
+      <p>边线按 ≤7 天 warn、badge 按 ≤3 天 warn → 5 天牛奶「橙边线+蓝标签」。<span class="fixl">修复:</span> badge 阈值统一 ≤7 天,边线与标签同语义。</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">04</span>修复前后对照(点击图片看原图)</h2>
+    <div class="shots">
+      <div class="shot"><p>修复前 · 分类分布只有 2 柱(1/1),数码消失</p><a href="capture_overview_desktop.png" target="_blank"><img src="capture_overview_desktop.png" alt="修复前总览"></a></div>
+      <div class="shot"><p>修复后 · 分类分布 3 柱(3/3/2)子类归并</p><a href="fix_overview_desktop.png" target="_blank"><img src="fix_overview_desktop.png" alt="修复后总览"></a></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="num">05</span>证据与追踪</h2>
+    <table>
+      <tr><td>测试</td><td>test_sm4.py 22 用例 + 全量 <b>388 passed</b></td></tr>
+      <tr><td>提交</td><td>3394fd0 · 6 文件(2 脚本 + 4 模板)</td></tr>
+      <tr><td>Issue</td><td><a href="https://github.com/FeatherHunter/SKILLS/issues/118">#118</a> 已关闭 · 决议评论含完整证据链</td></tr>
+      <tr><td>Map</td><td><a href="https://github.com/FeatherHunter/SKILLS/issues/104">#104</a> Decisions so far 已追加</td></tr>
+      <tr><td>产物</td><td>居家管家/.scratch/t5-review-118/(截图 + review_report.json + html/)</td></tr>
+    </table>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="copyDataBtn">📋 复制数据</button>
+    <button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const REPORT_DATA = {
+  scene_id: "t5_review_118",
+  command_cn: "T5 审查 #118 · SM4 统计总览域 4 场景双浏览器验收 结果",
+  occurred_at: "2026-08-09 22:05:00",
+  target: "SM4 统计总览域 4 HTML(overview/idle/expiring/inventory_stat) 双浏览器验收",
+  payload: {
+    verdict: "PASS(修复后复验)",
+    measurements: { combos: "8/8 PASS", overflow: 0, js_errors: 0, viewports: ["1280x900", "390x844"] },
+    review_stages: [
+      { stage: "复制数据/复制日志硬标准", result: "PASS" },
+      { stage: "场景逐条对应", result: "PASS" },
+      { stage: "交互与移动端适配", result: "PASS" },
+      { stage: "双通道输出", result: "PASS" },
+      { stage: "场景闭环验证", result: "PASS" }
+    ],
+    fixes: [
+      { id: 1, title: "分类分布子类不归并", type: "数据正确性", commit: "3394fd0" },
+      { id: 2, title: "桌面端操作栏遮挡列表", type: "视觉", commit: "3394fd0" },
+      { id: 3, title: "expiring 颜色语义冲突", type: "视觉", commit: "3394fd0" }
+    ],
+    tests: { test_sm4: "22 passed", full: "388 passed" },
+    issue: "https://github.com/FeatherHunter/SKILLS/issues/118"
+  }
+};
+const LOG_LINES = [
+  "① 场景标识",
+  "  command_cn: T5 审查 #118 · SM4 统计总览域 4 场景双浏览器验收 结果",
+  "  唤醒词: /wayfinder #118",
+  "  场景名: T5 审查配对(G6) · scene_id=t5_review_118",
+  "",
+  "② AI 思考链",
+  "  意图: 审查 SM4 统计总览域实施(#109 闭环) → 双浏览器客观测量 + 5 阶段清单 + 视觉审查",
+  "  决策点: 发现 3 项 FAIL → 修复(T5 域隔离文件集) → 复验 8/8 PASS → 决议 PASS",
+  "",
+  "③ 底层数据结构",
+  "  payload: " + JSON.stringify(REPORT_DATA.payload),
+  "  DB 操作: 临时库 9 物品种子(SKILLS_DB_PATH 隔离,不碰生产库)",
+  "",
+  "④ 调用链",
+  "  渲染脚本: python 居家管家/scripts/home_manager.py stats --type {overview|idle|expiring|inventory-stat} --output",
+  "  数据来源: 临时种子库 .scratch/t5-review-118/db",
+  "",
+  "⑤ 时间戳 + 版本",
+  "  本地时间: 2026-08-09 22:05:00",
+  "  skill 版本: 居家管家 v2.0 (SM4 T5)",
+  "",
+  "⑥ 异常信息",
+  "  审查发现 3 项(分类归并/操作栏遮挡/颜色语义),均已在 commit 3394fd0 修复"
+];
+let _toastTimer = null;
+function showToast(msg){const t=document.getElementById('toast');t.innerHTML='<span style="color:#30d158;margin-right:6px">✓</span>'+msg;t.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>t.classList.remove('show'),2200);}
+function fallbackCopy(text,done){const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();done();}
+function doCopy(text,btnId,msg){
+  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');b.textContent='✓ 已复制';setTimeout(()=>{b.classList.remove('copied');b.textContent=btnId==='copyDataBtn'?'📋 复制数据':'📋 复制日志';},1600);}showToast(msg);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));}else{fallbackCopy(text,done);}
+}
+document.getElementById('copyDataBtn').onclick=()=>doCopy(JSON.stringify(REPORT_DATA,null,2),'copyDataBtn','报告数据已复制');
+document.getElementById('copyLogBtn').onclick=()=>doCopy(LOG_LINES.join('\n'),'copyLogBtn','日志已复制');
+</script>
+</body>
+</html>

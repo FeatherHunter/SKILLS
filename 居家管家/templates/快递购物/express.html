@@ -52,9 +52,7 @@ if(s.items.length){
   <div class="photo ${it.photo_base64?'':'empty'}">${it.photo_base64?'<img src="data:image/jpeg;base64,'+it.photo_base64+'">':'无照片'}</div>
   <h3>${esc(it.name)} <span class="badge ${it.overdue?'overdue':'days'}">已等 ${esc(it.days)} 天${it.overdue?' · 超时':''}</span></h3>
   <div class="reason">${esc(it.category_name)} · ${esc(it.location)} ×${esc(it.quantity)}</div>
-  <div class="actions">
-  <button class="copy ghost" data-name="${esc(it.name)}" data-qty="${it.quantity}" data-id="${it.id}" onclick="copyText(receiveOne(this.dataset))">标记收到</button>
-  </div></div>`).join('')}</div>
+  </div>`).join('')}</div>
   <div class="actions">
   <button class="copy primary" onclick="receive()">我收到了(勾选)</button>
   <button class="copy ghost" onclick="copyText(P_RECEIVE_BACKUP)">收到的放备用</button>
@@ -75,7 +73,6 @@ app.innerHTML=html;
 }
 const P_RECEIVE_BACKUP='请加载「居家管家」技能,帮我确认收货(唤醒词:查快递):\n\n  物  品(勾选): ___\n  状态(在家/备用): 备用';
 const P_NEW_ITEM='请加载「居家管家」技能,帮我录入新到的物品(唤醒词:录物品):\n\n  名  称: ___\n  数  量(1): ___\n  位  置: ___';
-function receiveOne(ds){return '请加载「居家管家」技能,帮我确认收货(唤醒词:查快递):\n\n  物  品: '+ds.name+'×'+ds.qty+' [id='+ds.id+']';}
 function receive(){
 const sel=[...document.querySelectorAll('#cards input:checked')];
 if(!sel.length){toast('请先勾选收到的物品');return;}

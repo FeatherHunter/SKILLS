@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>T6 审查 #121 · SM5 快递购物域验收报告</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--bg:#f5f5f7;--card:#fff;--blue:#007aff;--green:#34c759;--red:#ff3b30;--orange:#ff9500;--line:#d2d2d7;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.6;-webkit-font-smoothing:antialiased;padding:32px 16px}
+.wrap{max-width:860px;margin:0 auto}
+.hero{background:linear-gradient(180deg,#fff,#f0fbf4);border-radius:24px;padding:26px 28px;box-shadow:var(--shadow);margin-bottom:16px}
+.eyebrow{color:#1d8a4e;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:27px;letter-spacing:-.03em;margin-bottom:6px}
+.lead{color:var(--fg2);font-size:14px}
+.meta-line{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.badge{display:inline-block;border-radius:99px;padding:4px 14px;font-size:13px;font-weight:800}
+.badge.pass{background:#e6f8ee;color:#1d8a4e}
+.badge.ts{background:#eef1f5;color:var(--fg2);font-weight:600;font-size:12px}
+.card{background:var(--card);border-radius:20px;padding:22px 24px;box-shadow:var(--shadow);margin-bottom:16px}
+h2{font-size:17px;margin-bottom:12px;letter-spacing:-.01em}
+h2 .num{color:#1d8a4e;margin-right:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--fg2);font-weight:600;border-bottom:1px solid var(--line);padding:8px 6px}
+td{padding:8px 6px;border-bottom:1px solid #f0f0f2;vertical-align:top}
+td .ok{color:#1d8a4e;font-weight:700}
+td .fix{color:var(--blue);font-weight:600}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+.issue{background:#fff8f6;border:1px solid #ffd9d0;border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.issue .t{font-weight:700;color:#c0392b;font-size:14px;margin-bottom:4px}
+.sug{background:#f0f7ff;border:1px solid #d0e3f8;border-radius:14px;padding:14px 16px;margin-bottom:10px}
+.verdict{background:#e6f8ee;border:1px solid #bfe8cc;border-radius:16px;padding:16px 20px;font-size:16px;font-weight:800;color:#1d8a4e;text-align:center}
+.foot{color:var(--fg2);font-size:12px;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">验收报告 · 人工验收通过</div>
+<h1>T6 审查 · SM5 快递购物域 4 场景验收</h1>
+<p class="lead">审查 ISSUE #121 · 实施 ISSUE #110(commit e6ef7b2 起)· 2026-08-10 人工逐场景验收通过</p>
+<div class="meta-line">
+<span class="badge pass">PASS · 4/4 场景</span>
+<span class="badge ts">审查者 Mavis</span>
+<span class="badge ts">临时库隔离 · 未触碰生产</span>
+</div>
+</header>
+
+<div class="card">
+<div class="verdict">✅ 4 场景全部人工验收通过(用户逐场景确认)</div>
+</div>
+
+<div class="card">
+<h2><span class="num">1</span>场景验收结果</h2>
+<table>
+<tr><th>场景</th><th>唤醒词</th><th>MMX 视觉评分</th><th>验收要点</th><th>状态</th></tr>
+<tr><td>购物清单 SM5-1</td><td>购物清单</td><td>10/10</td><td>8 按钮 4×2 布局 · 3 色体系 · prompt 迁移 #248 格式 · 复制数据/日志人类可读</td><td class="ok">✅ 通过</td></tr>
+<tr><td>缺货检测 SM5-2</td><td>缺货检测</td><td>9.5/10</td><td>阈值数字蓝/灰区分来源 · 「空/低」徽章类名冲突修复 · 建议量公式</td><td class="ok">✅ 通过</td></tr>
+<tr><td>快递跟踪 SM5-3</td><td>查快递</td><td>10/10</td><td>超时红色徽章 · 去单卡按钮(统一批量勾选) · 顺路提醒呼应</td><td class="ok">✅ 通过</td></tr>
+<tr><td>囤货盘点 SM5-4</td><td>囤货盘点</td><td>10/10</td><td>充足/低/空三态徽章 · 阈值设置/数量修正 prompt 参数化 · 常用品设阈值区块</td><td class="ok">✅ 通过</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2><span class="num">2</span>统一达标项(4 场景共用)</h2>
+<table>
+<tr><th>维度</th><th>达标情况</th></tr>
+<tr><td>手机 375px 适配</td><td class="ok">✅</td><td>2 列按钮网格 · 无省略号 · 无文字换行 · 无横向溢出(三档 375/390/430 实测)</td></tr>
+<tr><td>按钮颜色 ≤3</td><td class="ok">✅</td><td>蓝(操作)/灰(工具)/红(危险)按功能区分 · 实测 computed 去重计数</td></tr>
+<tr><td>复制 prompt 格式</td><td class="ok">✅</td><td>issue #248: 参数名(推荐值): ___ 每行一个 · 唤醒词真实支持 · 命令式+动作导向</td></tr>
+<tr><td>复制数据/日志可读</td><td class="ok">✅</td><td>【场景名 · 数据快照】人类可读 / ①-⑥ 分段日志 · 非 JSON</td></tr>
+<tr><td>真实点击验证</td><td class="ok">✅</td><td>Playwright 逐按钮 click → 读剪贴板 → 内容校验(8/6/6/6 按钮全通 · 无 JS 报错)</td></tr>
+<tr><td>底层能力真实</td><td class="ok">✅</td><td>不脑补: 缺货检测/阈值/收货等唤醒词均有 SKILL.md 路由 + CLI 实测通过</td></tr>
+</table>
+</div>
+
+<div class="card">
+<h2><span class="num">3</span>验收中发现并修复的问题</h2>
+<div class="issue"><div class="t">① 复制数据拿不到数据(真 bug)</div>按钮 onclick 引用 render() 局部变量 payload,点击时已销毁 → 改挂 window.__hmPayload 全局。</div>
+<div class="issue"><div class="t">② 4 个 prompt 按钮点击无效</div>模板字符串 \n 被解释成真实换行写进 onclick 属性 → 语法错误 → 改为 \\n 转义。</div>
+<div class="issue"><div class="t">③ 按钮文字换行/省略号</div>375px 下按钮文字换行或 text-overflow 省略 → 文案缩短 + nowrap + 2 列网格。</div>
+<div class="issue"><div class="t">④ 徽章类名冲突</div>.badge.empty 撞 .empty 空态类 → 改 b-empty/b-full 独立类名。</div>
+<div class="issue"><div class="t">⑤ 功能重叠/冗余</div>「批量设阈值」与「设置阈值」重叠(去重)· 快递单卡「标记收到」与批量重复(删除)· 换范围检测→按范围检测(新手可读)。</div>
+</div>
+
+<div class="card">
+<h2><span class="num">4</span>遗留观察项(转公共层 ISSUE 候选)</h2>
+<div class="sug">① error.html 复制日志 ④ 调用链为空(错误信封 call_chain="")——08 §6.1 要求错误回执带完整日志,与 render_物品 等域同构,建议公共层统一补齐。</div>
+<div class="sug">② missing_to_list 进清单瞬间缺货列表已无该物品时 note 显示「当前 -」——合理降级,非 bug。</div>
+<div class="sug">③ 商品来源标签(手动记的/缺货检测加的/每周自动提醒)的上下 padding 可加 1-2px,呼吸感更好(精益求精级)。</div>
+</div>
+
+<div class="card">
+<h2><span class="num">5</span>交付物与提交</h2>
+<table>
+<tr><th>资产</th><th>位置</th></tr>
+<tr><td>4 场景模板 + CLI</td><td>居家管家/templates/快递购物/*.html + scripts/快递购物/cli.py</td></tr>
+<tr><td>提交</td><td>235a9e9(4 场景验收修复) · 4ebef71(囤货/快递收尾) · 均 pytest 390 全绿</td></tr>
+<tr><td>HELP 镜像</td><td>居家管家/居家管家.html(已同步)</td></tr>
+<tr><td>审查 ISSUE</td><td>#121 已评论 + 关闭 · map #104 Decisions 已更新</td></tr>
+</table>
+</div>
+
+<div class="foot">临时库 .scratch/t6-review/ · 全程未触碰生产数据库 · 2026-08-10</div>
+</div>
+</body>
+</html>

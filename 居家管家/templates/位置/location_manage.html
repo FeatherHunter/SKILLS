@@ -159,7 +159,12 @@ function render(){
     const spans=buildFold(nodes);
     tree.innerHTML=nodes.map((n,i)=>{const sp=spans[i];const fold=sp.hasChild?'<button class="foldbtn" data-i="'+i+'" data-end="'+sp.end+'">▾</button>':'<span class="foldpad"></span>';return '<div class="trow" data-i="'+i+'"><span class="pad" style="width:'+((n.depth-1)*22)+'px"></span>'+fold+'<span class="nm'+(n.empty?' isempty':'')+'">'+esc(n.name)+'</span><span class="ct">'+(n.empty?'空位置':n.count+' 件')+'</span><span class="ops"><button class="opb" id="rn_'+i+'">改名</button><button class="opb" id="dl_'+i+'">删除</button></span></div>';}).join('');
     bindFold(tree);
-    tree.querySelectorAll(".foldbtn").forEach(fb=>fb.click());  // 默认全折叠
+    // 默认全折叠: 直接隐藏各父节点的子区间(不走 click toggle,避免连环翻转)
+    tree.querySelectorAll(".foldbtn").forEach(fb=>{
+      fb.textContent='▸';
+      const i=+fb.dataset.i,end=+fb.dataset.end;
+      for(let k=i+1;k<=end;k++){const row=tree.querySelectorAll('.trow')[k];if(row)row.style.display='none';}
+    });
     nodes.forEach((n,i)=>{const rn=document.getElementById('rn_'+i);const dl=document.getElementById('dl_'+i);
       if(rn)rn.onclick=()=>openForm('rename',n.path);
       if(dl)dl.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 删除\n  位  置: 「'+esc(n.path)+'」',dl,'删除 prompt 已复制');});}

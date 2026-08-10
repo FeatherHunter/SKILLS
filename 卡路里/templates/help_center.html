@@ -15,76 +15,91 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>📚 卡路里 · 唤醒词速查台</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 :root {
-  --bg:#f5f6f7; --card:#fff; --text:#1c1c1e; --sub:#6b6b6f;
-  --accent:#0071e3; --green:#34c759; --border:#e5e5e7;
-  --code-bg:#f0f0f2; --shadow:0 1px 2px rgba(0,0,0,.04);
-  --orange:#ff9500;
+  /* 对齐居家管家 HELP 视觉基准(跨技能一致 · issue #245) */
+  --bg:#f5f5f7; --card:#fff; --line:#d2d2d7;
+  --fg:#1d1d1f; --fg2:#6e6e73; --fg3:#86868b;
+  --blue:#007aff; --blue2:#0a63ce; --soft:#f5f8ff; --ok:#34c759;
+  --shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  /* 兼容别名(既有引用) */
+  --text:var(--fg); --sub:var(--fg2); --accent:var(--blue);
+  --green:var(--ok); --border:var(--line); --code-bg:var(--soft); --orange:#ff9500;
 }
 html { scroll-behavior: smooth; }
 body {
-  background: var(--bg); color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif;
-  font-size: 13px; line-height: 1.4; -webkit-font-smoothing: antialiased;
+  background: var(--bg); color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-size: 14px; line-height: 1.65; -webkit-font-smoothing: antialiased;
+  padding-bottom: 48px;
 }
-.container { max-width: 960px; margin: 0 auto; padding: 0 12px 40px; }
+.container { max-width: 860px; margin: 0 auto; padding: 28px 20px 40px; }
 
-/* === HERO(沿用 v2.4.10 终版) === */
+/* === HERO(对齐居家管家:大圆角渐变卡片 + 步骤引导) === */
 .hero {
-  background: linear-gradient(135deg, #fafbfc, #f0f4f8);
-  padding: 10px 0 2px;
-  border-bottom: 0;
+  background: linear-gradient(180deg,#fff 0%,#f8fbff 100%);
+  border-radius: 24px; padding: 28px 30px;
+  margin-bottom: 20px; box-shadow: var(--shadow);
 }
 .hero h1 {
-  font-size: 220%; font-weight: 700; letter-spacing: -.3px;
-  line-height: 1.15;
+  font-size: 220%; font-weight: 700; letter-spacing: -.02em;
+  line-height: 1.2;
   display: flex; align-items: center; gap: 6px;
-  margin: 0 0 1px;
+  margin: 0 0 8px;
 }
 .hero .sub {
-  color: var(--accent);
-  font-size: 105%; font-weight: 500;
+  color: var(--fg2);
+  font-size: 15px; font-weight: 400;
   margin: 0 0 4px;
   line-height: 1.4;
 }
-.hero .stats {
-  margin: 2px 0 0;
-  display: flex; gap: 10px; flex-wrap: wrap;
-  font-size: 115%; color: var(--sub);
-  line-height: 1.3;
+.hero-steps { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.hero-steps .step {
+  background: var(--soft); border: 1px solid #d7e6ff; color: var(--blue2);
+  font-weight: 700; font-size: 13px; padding: 6px 14px; border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0,122,255,.10); white-space: nowrap;
 }
-.hero .stats b { color: var(--text); font-weight: 600; }
+.hero-steps .arrow { color: var(--blue); font-weight: 800; font-size: 15px; }
+.hero .stats {
+  margin: 14px 0 0;
+  display: flex; gap: 8px; flex-wrap: wrap;
+  font-size: 12px; color: var(--fg2); line-height: 1.3;
+}
+.hero .stats span {
+  background: #fff; border: 1px solid var(--line); color: var(--fg2);
+  font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 999px;
+  white-space: nowrap;
+}
+.hero .stats b { color: var(--fg); font-weight: 700; }
 
-/* === SEARCH(新增 · 顶部 sticky) === */
+/* === SEARCH(顶部 sticky · 对齐居家管家:blur 毛玻璃) === */
 .search-wrap {
   position: sticky; top: 0; z-index: 50;
-  background: var(--bg);
+  background: rgba(245,245,247,.92);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+  backdrop-filter: saturate(180%) blur(14px);
   padding: 8px 0 6px;
   margin-bottom: 6px;
-  border-bottom: 1px solid var(--border);
 }
 .search {
-  width: 100%; padding: 7px 12px 7px 32px;
-  border: 1px solid var(--border); border-radius: 999px;
+  width: 100%; padding: 10px 38px 10px 16px;
+  border: 1px solid var(--line); border-radius: 999px;
   background: #fff;
-  font: inherit; outline: none;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236b6b6f' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='7'/><line x1='21' y1='21' x2='16.5' y2='16.5'/></svg>");
-  background-repeat: no-repeat;
-  background-position: 10px center;
-  background-size: 14px;
+  font: inherit; font-size: 14px; outline: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,.05);
   -webkit-appearance: none;
 }
-.search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,113,227,.15); }
+.search:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.15); }
 .search-meta {
-  font-size: 10px; color: var(--sub); margin-top: 4px; padding: 0 4px;
+  font-size: 12.5px; color: var(--fg3); margin-top: 4px; padding: 0 4px;
   display: flex; justify-content: space-between;
 }
 
-/* === L1 分类(cat-block · 沿用旧版) === */
+/* === L1 分类(cat-block · 对齐居家管家 module:16px 白卡) === */
 .cat-block {
-  background: var(--card); border-radius: 8px;
-  margin: 3px 0; box-shadow: var(--shadow); overflow: hidden;
+  background: var(--card); border-radius: 16px;
+  margin: 0 0 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  overflow: hidden;
 }
 .cat-block:first-of-type { margin-top: 0; }
 .cat-block:last-of-type { margin-bottom: 0; }
@@ -113,9 +128,10 @@ body {
 .scene-card > summary > .copy-btn { pointer-events: auto; }  /* 复制按钮可点击 */
 
 .cat-block > summary {
-  padding: 7px 12px; font-size: 13px; font-weight: 600;
-  background: #fafbfc;
+  padding: 9px 14px; font-size: 14.5px; font-weight: 700;
+  color: var(--fg);
   min-height: 36px;
+  transition: background .15s;
 }
 /* issue #47(2026-08-09):icon 固定占位宽度,保证各分类「文字起点」垂直对齐
    (🛠 ZWJ 组合 emoji 宽度与其他单字符不一致曾导致「基础信息」左偏) */
@@ -126,116 +142,127 @@ body {
   flex-shrink: 0;
 }
 .cat-block > summary::before {
-  content: '▸'; font-size: 10px; color: var(--sub);
-  transition: transform .12s;
+  content: '▶'; font-size: 9px; color: var(--fg3);
+  transition: transform .15s;
+  flex-shrink: 0;
 }
-.cat-block[open] > summary::before { transform: rotate(90deg); }
+.cat-block[open] > summary::before { transform: rotate(90deg); color: var(--blue); }
+.cat-block > summary:hover { background: var(--soft); }
 .cat-block > summary .count-pill {
-  margin-left: auto; font-size: 10px; font-weight: 500;
-  color: var(--sub); background: #e5e5e7;
-  padding: 1px 6px; border-radius: 999px;
+  margin-left: auto; font-size: 11.5px; font-weight: 500;
+  color: var(--fg3);
+  padding: 2px 8px; border-radius: 999px;
+  background: var(--soft);
 }
-.cat-content { padding: 4px 12px 10px; }
+.cat-content { padding: 4px 12px 8px; }
 
-/* === L2 子功能(sub-block · 新增) === */
+/* === L2 子功能(sub-block · 对齐居家管家 sub-module:12px 卡) === */
 .sub-block {
-  background: #fff; border: 1px solid var(--border);
-  border-radius: 6px; margin: 4px 0;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: 12px; margin: 6px 0;
+  overflow: hidden;
 }
 .sub-block > summary {
-  padding: 5px 10px; cursor: pointer; list-style: none;
+  padding: 10px 14px; cursor: pointer; list-style: none;
   display: flex; align-items: center; gap: 6px;
-  font-size: 12.5px; font-weight: 500;
-  color: var(--text);
+  font-size: 13px; font-weight: 600;
+  color: var(--fg2);
+  transition: background .15s;
 }
 .sub-block > summary::before {
-  content: '▸'; font-size: 9px; color: var(--sub);
-  transition: transform .12s;
+  content: '▸'; font-size: 10px; color: var(--fg3);
+  transition: transform .15s;
+  flex-shrink: 0;
 }
-.sub-block[open] > summary::before { transform: rotate(90deg); }
+.sub-block[open] > summary::before { transform: rotate(90deg); color: var(--blue); }
+.sub-block > summary:hover { background: var(--soft); }
 .sub-block > summary .sub-count {
-  margin-left: auto; font-size: 10px; color: var(--sub); font-weight: 400;
+  margin-left: auto; font-size: 11px; color: var(--fg3); font-weight: 400;
 }
 .sub-content { padding: 4px 10px 8px; }
 
-/* === L3 场景(scene-card · 替代旧 word-card) === */
+/* === L3 场景(scene-card · 对齐居家管家 scene:14px 卡 + 胶囊 chip) === */
 .scene-card {
-  background: #fff; border: 1px solid var(--border);
-  border-radius: 5px; margin: 3px 0;
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: 14px; margin: 0 0 10px;
+  overflow: hidden;
 }
 .scene-card > summary {
-  padding: 6px 10px; cursor: pointer; list-style: none;
-  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
-  font-size: 12.5px;
+  padding: 14px 16px; cursor: pointer; list-style: none;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  font-size: 13px;
+  transition: background .15s;
 }
 .scene-card > summary::before {
-  content: '▸'; font-size: 9px; color: var(--sub);
-  transition: transform .12s;
+  content: '▸'; font-size: 11px; color: var(--fg3);
+  transition: transform .15s;
+  flex-shrink: 0;
 }
-.scene-card[open] > summary::before { transform: rotate(90deg); }
-.scene-name { font-weight: 600; font-size: 13px; color: var(--text); }
+.scene-card[open] > summary::before { transform: rotate(90deg); color: var(--blue); }
+.scene-card > summary:hover { background: var(--soft); }
+.scene-name { font-weight: 600; font-size: 15px; color: var(--fg); flex: 1; min-width: 180px; }
 .scene-wake {
-  font-size: 10.5px; padding: 1px 5px; border-radius: 3px;
-  background: #f0f0f2; color: var(--sub);
-  font-family: "SF Mono", Consolas, monospace;
+  font-size: 11.5px; padding: 2px 9px; border-radius: 999px;
+  background: var(--soft); color: var(--blue2);
+  font-weight: 700;
+  font-family: ui-monospace, Menlo, monospace;
 }
 .scene-output {
-  font-size: 9.5px; padding: 1px 5px; border-radius: 3px;
-  font-weight: 500; text-transform: uppercase;
+  font-size: 11px; padding: 2px 9px; border-radius: 999px;
+  font-weight: 700;
 }
-.scene-output.process { background: #fff3e0; color: var(--orange); }
-.scene-output.result  { background: #e3f2fd; color: var(--accent); }
-.scene-output.receipt { background: #e8f5e9; color: var(--green); }
+.scene-output.process { background: #fff1e2; color: #c2540a; }
+.scene-output.result  { background: #e8f2ff; color: var(--blue2); }
+.scene-output.receipt { background: #e7f8ee; color: #1a7a3a; }
 .scene-ext {
-  font-size: 9.5px; color: var(--orange); font-weight: 500;
+  font-size: 11px; color: var(--orange); font-weight: 500;
 }
 .scene-empty { margin-left: auto; }
-.scene-content { padding: 0 10px 8px; }
+.scene-content { padding: 0 16px 14px; }
 
-/* === L4 详情(scene-detail · 替代 word-content) === */
+/* === L4 详情(scene-detail · 对齐居家管家:prompt 深色块) === */
 .scene-detail {
-  background: #fafbfc; border-left: 2px solid var(--accent);
-  padding: 8px 10px; border-radius: 0 4px 4px 0;
-  margin: 4px 0 6px;
-  font-size: 11.5px; color: var(--text);
+  margin: 0;
+  font-size: 12.5px; color: var(--fg);
 }
 .scene-detail .intent {
-  color: var(--sub); margin-bottom: 5px; line-height: 1.5;
+  color: var(--fg2); margin: 10px 0 8px; line-height: 1.5;
 }
 .scene-detail .prompt-pre {
-  background: #fff; border: 1px solid var(--border);
-  padding: 7px 9px; border-radius: 4px;
-  font-family: "SF Mono", Consolas, monospace; font-size: 11px;
-  white-space: pre-wrap; word-break: break-word; line-height: 1.45;
+  background: #1d1d1d; color: #f5f5f7;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px;
+  white-space: pre-wrap; word-break: break-word; line-height: 1.7;
 }
 .scene-detail .meta {
-  margin-top: 6px; font-size: 10px; color: var(--sub);
+  margin-top: 8px; font-size: 11px; color: var(--fg3);
   display: flex; flex-direction: column; gap: 2px;
 }
-.scene-detail .meta span { background: #fff; padding: 1px 6px; border-radius: 3px; word-break: break-all; }
+.scene-detail .meta span { background: #fff; padding: 2px 8px; border-radius: 8px; word-break: break-all; border: 1px solid var(--line); }
 
-/* === COPY BUTTON(复制按钮在 L3 行右侧) === */
+/* === COPY BUTTON(对齐居家管家:蓝底白字胶囊 · 保留 44px 触控目标) === */
 .copy-btn {
-  font: inherit; font-size: 11px; padding: 4px 8px;
-  border-radius: 5px; border: 1px solid var(--accent);
-  background: #fff; color: var(--accent);
+  font: inherit; font-size: 12.5px; padding: 7px 13px;
+  border-radius: 999px; border: 0;
+  background: var(--blue); color: #fff;
   cursor: pointer; margin: 3px 0;
-  transition: background .12s, color .12s, transform .15s, box-shadow .25s;
+  transition: background .15s;
   white-space: nowrap;
   -webkit-tap-highlight-color: transparent;
   margin-left: auto;
   flex-shrink: 0;
-  /* R8 移动端优先(2026-08-02 · ticket #5 对抗审查:375px 下仅 25.6px < 44px 触控目标) */
-  min-height: 44px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  /* R8 移动端优先(2026-08-02 · ticket #5 对抗审查:375px 下仅 25.6px < 44px 触控目标) */
+  min-height: 44px;
 }
 .copy-btn.copy-main { /* ticket 07 兼容:summary 行复制按钮 */ }
-.copy-btn:hover { background: var(--accent); color: #fff; }
-.copy-btn:active { transform: scale(0.94); background: var(--accent); color: #fff; }
+.copy-btn:hover { background: var(--blue2); }
+.copy-btn:active { transform: scale(0.94); background: var(--blue2); }
 .copy-btn.copied {
-  background: var(--green); border-color: var(--green); color: #fff;
+  background: var(--green);
   transform: scale(1.05);
   animation: copySuccess 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -284,11 +311,11 @@ body {
 .toast-close:active { transform: scale(0.96); }
 
 /* === EMPTY / FOOTER === */
-.empty { text-align: center; padding: 24px; color: var(--sub); font-size: 13px; }
+.empty { text-align: center; padding: 24px; color: var(--fg3); font-size: 13px; }
 .empty.results { padding: 16px; font-size: 12px; }
 footer {
-  text-align: center; color: var(--sub); font-size: 10px;
-  padding: 12px 0 0; margin-top: 16px;
+  text-align: center; color: var(--fg3); font-size: 11px;
+  padding: 20px 0 0; margin-top: 8px;
 }
 
 /* === HIDDEN(hit by search) === */
@@ -296,25 +323,30 @@ footer {
 .sub-block.hidden,
 .cat-block.hidden { display: none; }
 
-/* === MOBILE (≤600px · 沿用旧版) === */
+/* === MOBILE (≤600px · 对齐居家管家 375px 验收) === */
 @media (max-width: 600px) {
-  body { font-size: 12.5px; }
-  .container { padding: 0 8px 60px; }
-  .hero { padding: 8px 0 5px; }
-  .hero h1 { font-size: 18px; }
-  .hero .sub { font-size: 11px; }
-  .hero .stats { gap: 8px; font-size: 11px; }
+  body { font-size: 13px; }
+  .container { padding: 18px 12px 60px; }
+  .hero { padding: 18px 18px; }
+  .hero h1 { font-size: 24px; }
+  .hero .sub { font-size: 13px; }
+  .hero .stats { gap: 8px; font-size: 11.5px; }
+  .hero-steps { gap: 5px; width: 100%; }
+  .hero-steps .step { font-size: 11.5px; padding: 4px 7px; }
+  .hero-steps .arrow { font-size: 12px; margin: 0 -3px; }
   .search-wrap { padding: 6px 0; }
-  .search { padding: 7px 10px 7px 30px; background-size: 13px; background-position: 9px center; }
-  .cat-block > summary { padding: 8px 10px; font-size: 12.5px; }
+  .search { padding: 10px 14px 10px 38px; font-size: 13.5px; }
+  .cat-block > summary { padding: 8px 10px; font-size: 13.5px; }
   .cat-content { padding: 4px 10px 8px; }
-  .sub-block > summary { padding: 6px 9px; font-size: 12px; }
+  .sub-block > summary { padding: 8px 10px; font-size: 12.5px; }
   .sub-content { padding: 4px 9px 7px; }
-  .scene-card > summary { padding: 6px 9px; }
-  .scene-content { padding: 0 9px 7px; }
-  .scene-name { font-size: 12.5px; }
-  .scene-detail { padding: 7px 8px; }
-  .copy-btn { padding: 5px 9px; font-size: 11.5px; }
+  .scene-card > summary { flex-wrap: nowrap; gap: 4px; padding: 9px 10px; }
+  .scene-card > summary::before { display: none; }
+  .scene-name { font-size: 13.5px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .scene-wake { font-size: 10.5px; padding: 1px 7px; }
+  .scene-output { font-size: 10px; padding: 1px 7px; }
+  .scene-content { padding: 0 10px 10px; }
+  .copy-btn { padding: 0 10px; font-size: 11px; min-width: 56px; }
   .toast {
     left: 12px; right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom, 0));
@@ -342,6 +374,7 @@ footer {
 <div class="hero"><div class="container">
   <h1>📚 卡路里 · 唤醒词速查台</h1>
   <div class="sub">💡 点 ▸ 类别 → 子功能 → 场景 → 详情 → 复制 prompt</div>
+  <div class="hero-steps"><span class="step">🔍 找场景</span><span class="arrow">→</span><span class="step">📋 复制 prompt</span><span class="arrow">→</span><span class="step">💬 发给 AI</span></div>
   <div class="stats" id="heroStats"></div>
 </div></div>
 

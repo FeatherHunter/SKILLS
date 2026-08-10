@@ -34,17 +34,22 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 .remind{background:#fff8ec;border:1px solid #f5d9a8;border-radius:16px;padding:14px 18px;margin:14px 0;font-size:13px;color:#8a5b00}
 .remind b{color:#6b4700}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
-.actions{margin-top:14px}
+.actions{margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .btn{border:none;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2);transition:filter .15s,transform .08s}
-.btn:hover{background:#e5e9ef}
+.btn:hover{filter:brightness(.96)}
 .btn:active{filter:brightness(.92);transform:scale(.97)}
 .btn.primary{background:var(--blue);color:#fff}
-.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.btn.danger{background:var(--red);color:#fff}
+.btn.warn{background:var(--orange);color:#fff}
+.btn.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+.fixed{position:sticky;bottom:16px;display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.fixed .copy.add{width:100%;background:var(--blue);color:#fff;border-radius:999px;padding:12px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow);transition:filter .15s,transform .08s}
 .copy:active{filter:brightness(.92);transform:scale(.97)}
 .copy.log{background:#6e6e73}
 .copy.sens{background:var(--red)}
-@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.fixed{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed .copy{width:100%;margin:0;white-space:normal;line-height:1.4}.btn{min-height:44px;padding:10px 16px;font-size:13px}.actions .btn{width:100%}}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.fixed{position:static;display:flex;flex-direction:column}.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed .copy.add{min-height:48px}.copypair .copy{width:100%;margin:0;white-space:normal;line-height:1.4;min-height:48px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions .btn{width:100%;min-height:44px;padding:10px 16px;font-size:13px}}
 </style>
 </head>
 <body>
@@ -59,12 +64,12 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 <div id="reminders"></div>
 <div class="section" id="secTitle">证件清单</div>
 <div id="app"></div>
-<div class="actions">
-<button class="btn primary" id="addBtn">登记证件</button>
-</div>
 <div class="fixed">
+<button class="copy add" id="addBtn">新增证件</button>
+<div class="copypair">
 <button class="copy" id="copyData">复制数据</button>
 <button class="copy log" id="copyLog">复制日志</button>
+</div>
 </div>
 </div>
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
@@ -100,6 +105,7 @@ $('app').innerHTML=items.map(it=>{
   const dl=it.days_left;
   const dlTxt=dl<0?'已过期 '+(-dl)+' 天':(dl===0?'今天到期':dl+' 天后到期');
   const photo=it.photo_base64?'<div class="photo"><img alt="证件照片" src="data:image/jpeg;base64,'+it.photo_base64+'"></div>':'';
+  const updateCls=it.cert_status==='已过期'?'btn danger':(it.cert_status==='即将到期'?'btn warn':'btn');
   return `<div class="item ${esc(it.cert_status==='已过期'?'danger':(it.cert_status==='即将到期'?'warn':'info'))}">
 <div>
 <div class="name">${esc(it.cert_type)} ${esc(it.holder?('· '+it.holder):'')} <span class="badge off">ID ${it.id}</span></div>
@@ -108,7 +114,8 @@ $('app').innerHTML=items.map(it=>{
 ${photo}
 </div>
 <div class="actions">
-<button class="btn" data-p="${esc('【更新证件 '+it.id+' '+it.cert_type+'，到期日改为: _____ 或补充照片: 【照片即将发送:】】')}">补录 / 更新</button>
+<button class="${updateCls}" data-p="${esc('【更新证件 '+it.id+' '+it.cert_type+'，可改: 到期日/持有人/号码/备注(只说要改的,其余不动)】')}">更新</button>
+<button class="btn ghost" data-p="${esc('【补充证件照片: 证件ID '+it.id+' '+it.cert_type+'，照片即将发送:】')}">补照片</button>
 </div>
 </div>`;
 }).join('');
@@ -130,7 +137,7 @@ return lines.join('\n');
 }
 $('copyData').onclick=()=>copyText(buildCopyData());
 $('copyLog').onclick=()=>copyText(buildCopyLog());
-$('addBtn').onclick=()=>copyText('请登记证件(唤醒词:证件):\n\n  类  型: _____________ (护照/身份证/驾照/签证/保险单/其他)\n  持有人: _____________ (选填)\n  号  码: _____________ (选填, 将脱敏显示)\n  签发日: _____________ (选填, YYYY-MM-DD)\n  到期日: _____________ (YYYY-MM-DD)\n  归档照片: 【照片即将发送:】');
+$('addBtn').onclick=()=>copyText('请新增证件(唤醒词:证件):\n\n  类  型: _____________ (护照/身份证/驾照/签证/保险单/其他)\n  持有人: _____________ (选填)\n  号  码: _____________ (选填, 将脱敏显示)\n  签发日: _____________ (选填, YYYY-MM-DD)\n  到期日: _____________ (YYYY-MM-DD)\n  归档照片: 【照片即将发送:】');
 render();
 </script>
 </body>

@@ -48,11 +48,13 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 .remind b{color:#6b4700}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
 .actions{margin-top:14px}
-.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.fixed{position:sticky;bottom:16px;display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.fixed .copy.add{width:100%;background:var(--blue);color:#fff;border-radius:999px;padding:12px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow);transition:filter .15s,transform .08s}
 .copy:active{filter:brightness(.92);transform:scale(.97)}
 .copy.log{background:#6e6e73}
-@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.fixed{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed .copy{width:100%;margin:0;white-space:normal;line-height:1.4}.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px}.chip{width:100%;min-height:40px;padding:8px 12px;font-size:13px}.btn{min-height:44px;padding:10px 16px;font-size:13px}.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btnrow .btn{width:100%}}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.fixed{position:static;display:flex;flex-direction:column}.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed .copy.add{min-height:48px}.copypair .copy{width:100%;margin:0;white-space:normal;line-height:1.4;min-height:48px}.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px}.chip{width:100%;min-height:40px;padding:8px 12px;font-size:13px}.btn{min-height:44px;padding:10px 16px;font-size:13px}.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btnrow .btn{width:100%}}
 </style>
 </head>
 <body>
@@ -68,12 +70,12 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 <div id="reminders"></div>
 <div class="section" id="secTitle">权益清单</div>
 <div id="app"></div>
-<div class="actions">
-<button class="btn primary" id="addBtn">登记保修 / 保养</button>
-</div>
 <div class="fixed">
+<button class="copy add" id="addBtn">新增保修 / 保养</button>
+<div class="copypair">
 <button class="copy" id="copyData">复制数据</button>
 <button class="copy log" id="copyLog">复制日志</button>
+</div>
 </div>
 </div>
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
@@ -144,7 +146,7 @@ return lines.join('\n');
 }
 $('copyData').onclick=()=>copyText(buildCopyData());
 $('copyLog').onclick=()=>copyText(buildCopyLog());
-$('addBtn').onclick=()=>copyText('请登记保修/保养(唤醒词:保修):\n\n  物品 ID: _____________ (见页面上物品卡片的 #ID)\n  类  型: _____________ (保修 / 保养)\n  起始日: _____________ (YYYY-MM-DD; 保修=购买日, 保养=上次保养日)\n  时  长: _____________ 天 (保修期/保养周期)\n  备  注: _____________ (选填)\n  【保修卡照片即将发送:】');
+$('addBtn').onclick=()=>copyText('请新增保修/保养(唤醒词:保修):\n\n  物品 ID: _____________ (见页面上物品卡片的 #ID)\n  类  型: _____________ (保修 / 保养)\n  起始日: _____________ (YYYY-MM-DD; 保修=购买日, 保养=上次保养日)\n  时  长: _____________ 天 (保修期/保养周期)\n  备  注: _____________ (选填)\n  【保修卡照片即将发送:】');
 render();
 </script>
 </body>

@@ -31,15 +31,17 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
 .actions{margin-top:14px}
 .btn{border:none;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2);transition:filter .15s,transform .08s}
-.btn:hover{background:#e5e9ef}
+.btn:hover{filter:brightness(.96)}
 .btn:active{filter:brightness(.92);transform:scale(.97)}
 .btn.primary{background:var(--blue);color:#fff}
 .btn.sensitive{background:var(--red);color:#fff}
-.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.fixed{position:sticky;bottom:16px;display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.fixed .copy.add{width:100%;background:var(--blue);color:#fff;border-radius:999px;padding:12px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow);transition:filter .15s,transform .08s}
 .copy:active{filter:brightness(.92);transform:scale(.97)}
 .copy.log{background:#6e6e73}
-@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.fixed{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed .copy{width:100%;margin:0;white-space:normal;line-height:1.4}.btn{min-height:44px;padding:10px 16px;font-size:13px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions .btn{width:100%}}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.item{grid-template-columns:1fr}.fixed{position:static;display:flex;flex-direction:column}.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed .copy.add{min-height:48px}.copypair .copy{width:100%;margin:0;white-space:normal;line-height:1.4;min-height:48px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions .btn{width:100%;min-height:44px;padding:10px 16px;font-size:13px}}
 </style>
 </head>
 <body>
@@ -54,12 +56,12 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 <div class="notice" id="notice"></div>
 <div id="groups"></div>
 <div id="app"></div>
-<div class="actions">
-<button class="btn primary" id="addBtn">存账号</button>
-</div>
 <div class="fixed">
+<button class="copy add" id="addBtn">新增账号</button>
+<div class="copypair">
 <button class="copy" id="copyData">复制数据</button>
 <button class="copy log" id="copyLog">复制日志</button>
+</div>
 </div>
 </div>
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
@@ -123,7 +125,7 @@ return lines.join('\n');
 }
 $('copyData').onclick=()=>copyText(buildCopyData());
 $('copyLog').onclick=()=>copyText(buildCopyLog());
-$('addBtn').onclick=()=>copyText('请存账号(唤醒词:账号):\n\n  平  台: _____________ (如:淘宝/微信)\n  用户名: _____________\n  密  码: _____________ (将加密存储)\n  类  型: _____________ (购物/银行/社交/其他)\n  主密钥: _____________ (验证用)');
+$('addBtn').onclick=()=>copyText('请新增账号(唤醒词:账号):\n\n  平  台: _____________ (如:淘宝/微信)\n  用户名: _____________\n  密  码: _____________ (将加密存储)\n  类  型: _____________ (购物/银行/社交/其他)\n  主密钥: _____________ (验证用)');
 render();
 </script>
 </body>

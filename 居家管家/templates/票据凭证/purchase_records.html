@@ -42,17 +42,18 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 .remind b{color:#6b4700}
 .empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
 .actions{display:flex;flex-direction:column;gap:8px}
-.btn-hint{font-size:11px;color:var(--fg3);text-align:center;margin-top:2px}
 .btn{border:none;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2);transition:filter .15s,transform .08s}
 .btn:hover{background:#e5e9ef}
 .btn:active{filter:brightness(.92);transform:scale(.97)}
 .btn.primary{background:var(--blue);color:#fff}
 .btn.sensitive{background:var(--red);color:#fff}
-.fixed{position:sticky;bottom:16px;display:flex;gap:10px;justify-content:center;margin-top:24px;flex-wrap:wrap}
+.fixed{position:sticky;bottom:16px;display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.fixed .copy.add{width:100%;background:var(--blue);color:#fff;border-radius:999px;padding:12px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow);transition:filter .15s,transform .08s}
 .copy:active{filter:brightness(.92);transform:scale(.97)}
 .copy.log{background:#6e6e73}
-@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.grid{grid-template-columns:1fr}.price{text-align:left}.fixed{position:static;display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed .copy{width:100%;margin:0;white-space:normal;line-height:1.4}.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px}.chip{width:100%;min-height:40px;padding:8px 12px;font-size:13px}.btn{min-height:44px;padding:10px 16px;font-size:13px}.actions .btn:only-child{width:100%}}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.grid{grid-template-columns:1fr}.price{text-align:left}.fixed{position:static;display:flex;flex-direction:column}.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed .copy.add{min-height:48px}.copypair .copy{width:100%;margin:0;white-space:normal;line-height:1.4;min-height:48px}.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px}.chip{width:100%;min-height:40px;padding:8px 12px;font-size:13px}.btn{min-height:44px;padding:10px 16px;font-size:13px}.actions .btn:only-child{width:100%}}
 </style>
 </head>
 <body>
@@ -72,8 +73,11 @@ h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
 <div class="section">购买记录</div>
 <div id="app"></div>
 <div class="fixed">
+<button class="copy add" id="addBtn">新增购买记录</button>
+<div class="copypair">
 <button class="copy" id="copyData">复制数据</button>
 <button class="copy log" id="copyLog">复制日志</button>
+</div>
 </div>
 </div>
 <script id="payload" type="application/json"><!--INJECT-DATA--></script>
@@ -163,6 +167,7 @@ return lines.join('\n');
 }
 $('copyData').onclick=()=>copyText(buildCopyData());
 $('copyLog').onclick=()=>copyText(buildCopyLog());
+$('addBtn').onclick=()=>copyText('请新增购买记录(唤醒词:购买记录):\n\n  物品 ID: _____________ (见页面上物品卡片的 #ID)\n  购买日期: _____________ (YYYY-MM-DD)\n  价  格: _____________ (选填)\n  渠  道: _____________ (选填,如:京东/山姆)\n  商家/客服: _____________ (选填)\n  退货窗口: _____________ 天 (默认 7)\n  【票据照片即将发送:】');
 render();
 </script>
 </body>

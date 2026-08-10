@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Add Git Bash to PATH (Windows self-hosted)
         if: runner.os == 'Windows'
-        shell: bash
+        shell: "C:\\Program Files\\Git\\bin\\bash.exe --noprofile --norc -e -o pipefail {0}"
         run: echo "C:\Program Files\Git\bin;C:\Program Files\Git\usr\bin" >> $GITHUB_PATH
 
       - name: Checkout repository

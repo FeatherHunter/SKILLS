@@ -117,8 +117,8 @@ $('app').innerHTML=items.map(it=>{
   const events=arr(it.events);
   const evHtml=events.length?`<details class="events"><summary>${esc(it.kind==='保养'?'执行/维修记录':'维修记录')} · ${events.length} 条</summary>${events.map(e=>`<div class="ev">📅 ${esc(e.occurred_at)} · ${esc(e.event_type)}${e.cost?' · ¥'+Number(e.cost).toFixed(2):''} ${esc(e.note||'')}</div>`).join('')}</details>`:'<div class="events" style="border:none;padding:0"><span class="kind">暂无记录</span></div>';
   const photo=it.photo_base64?'<span class="photo"><img alt="保修卡" src="data:image/jpeg;base64,'+it.photo_base64+'"></span>':'';
-  const repairBtn=it.kind==='保修'?`<button class="btn" data-p="${esc('【记录维修：保修ID '+it.id+' · 物品 '+it.item_name+'，维修日期: _____ 花费: _____ 备注: _____】')}">记录维修</button>`:'';
-  const maintainBtn=it.kind==='保养'?`<button class="btn primary" data-p="${esc('【执行保养：保养ID '+it.id+' · 物品 '+it.item_name+'，执行日期: _____】')}">✓ 执行保养</button>`:'';
+  const repairBtn=it.kind==='保修'?`<button class="btn" data-p="${esc('请记录维修(唤醒词:保修):\n\n  保修 ID: '+it.id+'\n  物  品: '+it.item_name+'\n  维修日期(YYYY-MM-DD): ______\n  花  费(选填,¥): ______\n  备  注(选填): ______')}">记录维修</button>`:'';
+  const maintainBtn=it.kind==='保养'?`<button class="btn primary" data-p="${esc('请执行保养(唤醒词:保修):\n\n  保养 ID: '+it.id+'\n  物  品: '+it.item_name+'\n  执行日期(YYYY-MM-DD): ______\n  备  注(选填): ______')}">✓ 执行保养</button>`:'';
   return `<div class="item ${esc(it.severity||'info')}">
 <div class="name">${esc(it.item_name||('#'+it.item_id))} <span class="kind">${esc(it.kind)} · ID ${it.id}</span></div>
 <div class="meta">${badgeOf(it.status)} 到期 ${esc(it.end_date||'-')} · ${esc(dlTxt)}</div>
@@ -146,7 +146,7 @@ return lines.join('\n');
 }
 $('copyData').onclick=()=>copyText(buildCopyData());
 $('copyLog').onclick=()=>copyText(buildCopyLog());
-$('addBtn').onclick=()=>copyText('请新增保修/保养(唤醒词:保修):\n\n  物品 ID: _____________ (见页面上物品卡片的 #ID)\n  类  型: _____________ (保修 / 保养)\n  起始日: _____________ (YYYY-MM-DD; 保修=购买日, 保养=上次保养日)\n  时  长: _____________ 天 (保修期/保养周期)\n  备  注: _____________ (选填)\n  【保修卡照片即将发送:】');
+$('addBtn').onclick=()=>copyText('请新增保修/保养(唤醒词:保修):\n\n  物品 ID(见页面 #ID): ______\n  类  型(保修/保养): ______\n  起始日(YYYY-MM-DD,保修=购买日): ______\n  时  长(天,保修期/保养周期): ______\n  备  注(选填): ______\n  【保修卡照片即将发送:】');
 render();
 </script>
 </body>

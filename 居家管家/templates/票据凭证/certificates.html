@@ -114,8 +114,8 @@ $('app').innerHTML=items.map(it=>{
 ${photo}
 </div>
 <div class="actions">
-<button class="${updateCls}" data-p="${esc('请更新证件(唤醒词:证件):\n\n  证件: ID '+it.id+' '+it.cert_type+'\n  到期日: _____________ (选填, YYYY-MM-DD)\n  持有人: _____________ (选填)\n  号  码: _____________ (选填, 将脱敏显示)\n  备  注: _____________ (选填)\n\n  (只填要改的, 其余留空)')}">更新</button>
-<button class="btn ghost" data-p="${esc('【补充证件照片: 证件ID '+it.id+' '+it.cert_type+'，照片即将发送:】')}">补照片</button>
+<button class="${updateCls}" data-p="${esc('请更新证件(唤醒词:证件):\n\n  证件: ID '+it.id+' '+it.cert_type+'\n  到期日(选填,YYYY-MM-DD): ______\n  持有人(选填): ______\n  号  码(选填,将脱敏显示): ______\n  备  注(选填): ______\n\n  (只填要改的,其余留空)')}">更新</button>
+<button class="btn ghost" data-p="${esc('请补充证件照片(唤醒词:证件):\n\n  证件: ID '+it.id+' '+it.cert_type+'\n  【照片即将发送:】')}">补照片</button>
 </div>
 </div>`;
 }).join('');
@@ -137,7 +137,7 @@ return lines.join('\n');
 }
 $('copyData').onclick=()=>copyText(buildCopyData());
 $('copyLog').onclick=()=>copyText(buildCopyLog());
-$('addBtn').onclick=()=>copyText('请新增证件(唤醒词:证件):\n\n  类  型: _____________ (护照/身份证/驾照/签证/保险单/其他)\n  持有人: _____________ (选填)\n  号  码: _____________ (选填, 将脱敏显示)\n  签发日: _____________ (选填, YYYY-MM-DD)\n  到期日: _____________ (YYYY-MM-DD)\n  归档照片: 【照片即将发送:】');
+$('addBtn').onclick=()=>copyText('请新增证件(唤醒词:证件):\n\n  类  型(护照/身份证/驾照/签证/保险单/其他): ______\n  持有人(选填): ______\n  号  码(选填,将脱敏显示): ______\n  签发日(选填,YYYY-MM-DD): ______\n  到期日(YYYY-MM-DD): ______\n  【归档照片即将发送:】');
 render();
 </script>
 </body>

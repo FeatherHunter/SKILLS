@@ -9,7 +9,7 @@ Skill 在跨 Skill 共享目录里用的唯一英文标识。本 Skill 取 `bisc
 _Avoid_: 中文名"饼干记账"(用于 SKILL.md frontmatter / HELP 命名前缀,不作子目录名)
 
 **command_cn**:
-12.A 类 HTML 输出文件名的中文前缀,继承自 SKILL.md §唤醒词总表字面。映射表见 `scripts/html_paths.py`。
+12.A 类 HTML 输出文件名的中文前缀,由 `scripts/html_paths.py` 映射(query_type → 中文名)。注意:命令族与唤醒词为 1:N(如 `list --date` 覆盖 查昨天/查某天 两个唤醒词,command_cn 取命令语义名「查日期」;`list --from --to` 覆盖 查周/查月/查区间,command_cn 取「查范围」),故不逐字继承 §唤醒词总表。
 _Avoid_: CLI 子命令名(英文 add/list/summary 等)、scenario_id
 
 **scenario / 场景资产**:

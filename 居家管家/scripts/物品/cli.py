@@ -211,7 +211,7 @@ def run(args):
     from render import emit
 
     def _receipt_scene(ok, msg, payload, scene_id, wake_word, command_cn,
-                       buttons=None, reminders=None, output_path=None):
+                       buttons=None, reminders=None, output_path=None, no_undo=False):
         if not ok:
             return emit_error(wake_word, command_cn, msg, payload or {},
                               suggest="修正参数后重试", output_path=args.output)
@@ -222,7 +222,7 @@ def run(args):
             "extra": payload.get("extra"),
             "steps": payload.get("results") or payload.get("steps"),
             "next": payload.get("next"),
-            "undo_prompt": payload.get("undo_prompt") or f"请加载「居家管家」技能,帮我撤销最近操作(唤醒词:撤销操作):\n\n  撤  销: 刚才的{command_cn}",
+            "undo_prompt": "" if no_undo else (payload.get("undo_prompt") or f"请加载「居家管家」技能,帮我撤销最近操作(唤醒词:撤销操作):\n\n  撤  销: 刚才的{command_cn}"),
         }
         # 注意: 不再包内层 scene 键(信封 data.scene 即本数据;双重嵌套
         # scene.scene 会让 receipt.html 读不到 summary/diff,issue #127)
@@ -563,9 +563,15 @@ def run(args):
         scope = f"{args.scope}:{args.value}" if hasattr(args, "scope") else "all"
         ok, msg, payload = ops.inventory_commit_v2(scope, results, cli_cmd=" ".join(sys.argv[1:]))
         if ok:
+            def _ids(lst):
+                return "、".join(str(x) for x in (lst or [])) or "无"
+            def _diffs(lst):
+                return "；".join(f"#{d.get('id')} {d.get('field','')} {d.get('before','')}→{d.get('after','')}" for d in (lst or [])) or "无"
             return _receipt_scene(True, msg, {"extra": {"盘点记录": f"#{payload['record_id']}",
-                                                        "缺": payload["missing"], "多": payload["extra"],
-                                                        "异": payload["diff"], "待确认": payload["pending"]},
+                                                        "缺": _ids(payload.get("missing")),
+                                                        "多": _ids(payload.get("extra")),
+                                                        "异": _diffs(payload.get("diff")),
+                                                        "待确认": _ids(payload.get("pending"))},
                                               "next": "差异可继续「差异处理」逐一落地"},
                                   "6-1", "盘点", "盘点", output_path=args.output)
         return emit_error("盘点", "盘点", msg, {}, output_path=args.output)
@@ -603,9 +609,9 @@ def run(args):
         leave_ids = plan.get("leave") or []
         return _receipt_scene(True,
                               f"搬家清单已生成:带走 {len(take_ids)} / 不带走 {len(leave_ids)}",
-                              {"extra": {"带走": take_ids, "不带走": leave_ids},
+                              {"extra": {"带走": f"{len(take_ids)} 件", "不带走": f"{len(leave_ids)} 件"},
                                "next": "搬家后用「移物品」(批量)把带走清单落地到新位置;不带走走废弃/送人"},
-                              "6-4", "搬家盘点", "搬家盘点", output_path=args.output)
+                              "6-4", "搬家盘点", "搬家盘点", output_path=args.output, no_undo=True)
 
     if cmd == "sm1-history":
         data = ops.history_payload(args.id)

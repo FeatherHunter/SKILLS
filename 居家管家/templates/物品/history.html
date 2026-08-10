@@ -56,12 +56,13 @@ let html=hero;
 if(s.trajectory&&s.trajectory.length){html+=`<section><h2>位置轨迹</h2><div class="traj">${s.trajectory.map(l=>'<span class="pill">'+esc(l)+'</span>').join('<span style="color:var(--fg3)"> → </span>')}</div></section>`;}
 html+=`<section><h2>时间线(${s.events?s.events.length:0} 条)</h2>
 <div class="chips"><button class="chip on" data-t="all">全部</button>${(s.filter_types||[]).map(f=>'<button class="chip" data-t="'+f.key+'">'+f.label+'</button>').join('')}</div>
-<div class="tl">${(s.events||[]).map(e=>`<div class="ev" data-t="${esc(e.event_type)}"><div class="time">${esc(e.occurred_at)} <span class="type">${esc(e.event_type)}</span></div>
+<div class="tl">${(s.events||[]).map(e=>`<div class="ev" data-t="${esc(e.event_type)}"><div class="time">${esc(e.occurred_at)} <span class="type">${esc(e.type_label||e.event_type)}</span></div>
 <div class="sum">${esc(e.summary)}</div>
-<div class="diff" id="d_${e.id}">${esc(JSON.stringify(e.payload||{},null,2))}</div>
-<div><span class="undoable" onclick="document.getElementById('d_${e.id}').style.display=document.getElementById('d_${e.id}').style.display==='block'?'none':'block'">展开 diff</span>${e.undo_of?'<span class="pill">已撤销</span>':'<span class="undoable" style="margin-left:12px" onclick="copyText(\'撤销操作(居家管家): 撤销事件 ${e.id}\')">撤销此操作</span>'}</div></div>`).join('')||'<p class="empty">暂无事件</p>'}</div></section>`;
+<div class="diff" id="d_${e.id}">${esc((e.human_detail||[]).join(' · ')||'无')}</div>
+<div><span class="undoable" onclick="document.getElementById('d_${e.id}').style.display=document.getElementById('d_${e.id}').style.display==='block'?'none':'block'">展开详情</span>${e.undo_of?'<span class="pill">已撤销</span>':'<span class="undoable" style="margin-left:12px" data-eid="'+e.id+'" onclick="copyText(\'请加载「居家管家」技能,帮我撤销最近操作(唤醒词:撤销操作):\\\\n\\\\n  撤  销: 事件 \'+this.dataset.eid)">撤销此操作</span>'}</div></div>`).join('')||'<p class="empty">暂无事件</p>'}</div></section>`;
 html+=remindersBlock(payload);
-html+=`<section><h2>通用操作</h2>${actionBar(payload,[{label:'复制事件 JSON',text:JSON.stringify((s.events||[]).map(e=>({id:e.id,type:e.event_type,time:e.occurred_at,summary:e.summary}))),kind:'ghost'}])}</section>`;
+window.__hmPayload=payload;
+html+=actionBar(payload);
 app.innerHTML=html;
 document.querySelectorAll('.chip[data-t]').forEach(c=>c.addEventListener('click',()=>{curType=c.dataset.t;document.querySelectorAll('.chip[data-t]').forEach(o=>o.classList.toggle('on',o===c));document.querySelectorAll('.ev').forEach(x=>{x.style.display=(curType==='all'||x.dataset.t===curType)?'':'none';});}));
 }

@@ -1245,6 +1245,8 @@ def inventory_records_payload():
                 r["detail"] = json.loads(r["detail_json"] or "[]")
             except ValueError:
                 r["detail"] = []
+            sc = (r.get("scope") or "").split(":")[0]
+            r["scope"] = {"all": "全屋", "location": "按位置", "category": "按分类"}.get(sc, sc or "全屋")
         return {"records": records}
     finally:
         conn.close()
@@ -1371,7 +1373,7 @@ def resolve_diff_v2(record_id, actions, cli_cmd=None):
                             "ok": True, "message": "已标记复查(下次盘点置顶)" if p.get("mark_review") else "跳过"})
 
         conn.execute("UPDATE inventory_records SET status = ? WHERE id = ?",
-                     ("已处理" if not extra_drafts else "进行中", record_id))
+                     ("已完成" if not extra_drafts else "进行中", record_id))
         conn.commit()
         summary = "差异处理完成:" + "".join(
             f"{r['action']}{'✓' if r['ok'] else '✗'} " for r in results)
@@ -1402,6 +1404,73 @@ def move_checklist_payload():
 # ── 子功能 7 · 物品历史 ─────────────────────────────────────────────────────
 
 
+_HIST_FIELD_CN = {
+    "name": "名称", "category_id": "分类", "location": "位置", "quantity": "数量",
+    "location_status": "状态", "price": "价格", "purchase_price": "价格",
+    "purchase_date": "购买日期", "expiration_date": "过期日期", "remark": "备注",
+    "owner": "归属", "tags": "标签", "photo": "照片", "photos": "照片", "backfill_date": "录入日期",
+    "source_name": "来源物品", "source_id": "来源编号", "target_name": "目标物品",
+    "target_id": "目标编号", "relation_type": "关系", "event_type": "事件类型",
+    "summary": "说明", "id": "编号", "undone_event_id": "被撤销事件",
+    "source_quantity": "来源数量", "source_status": "来源状态",
+    "target_quantity": "目标数量", "target_status": "目标状态",
+    "inventory_record_id": "盘点记录编号", "related_item_id": "关联物品编号",
+}
+# 纯内部字段(对用户无意义,详情里跳过)
+_HIST_SKIP = {"created_at", "updated_at", "item_id", "cli_cmd", "scene_id"}
+
+
+def _humanize_payload(payload, conn):
+    """事件 payload → 人类可读描述数组(中文键 + 变更前→变更后)"""
+    if not payload:
+        return []
+    before = payload.get("before")
+    after = payload.get("after")
+    if isinstance(before, dict) or isinstance(after, dict):
+        lines = []
+        keys = set(list((before or {}).keys()) + list((after or {}).keys()))
+        for k in sorted(keys):
+            if k in _HIST_SKIP:
+                continue
+            bv = (before or {}).get(k)
+            av = (after or {}).get(k)
+            if k != "name" and bv == av:
+                continue
+            cn = _HIST_FIELD_CN.get(k, k)
+            if k == "category_id":
+                bv = _cat_name(conn, bv) or bv
+                av = _cat_name(conn, av) or av
+            if isinstance(bv, list):
+                bv = "、".join(str(x) for x in bv)
+            if isinstance(av, list):
+                av = "、".join(str(x) for x in av)
+            if bv is None and av is not None:
+                lines.append(f"{cn}: {av}")
+            elif av is None:
+                lines.append(f"{cn}: {bv} → (移除)")
+            elif bv != av:
+                lines.append(f"{cn}: {bv} → {av}")
+        return lines
+    # 非 before/after 结构:通用拍平(中文键)
+    lines = []
+    for k, v in payload.items():
+        if v is None or v == "" or v == [] or v == {} or k in _HIST_SKIP:
+            continue
+        if isinstance(v, dict):
+            for k2, v2 in v.items():
+                if v2 is None or v2 == "":
+                    continue
+                cn = _HIST_FIELD_CN.get(k2, k2)
+                if k2 == "category_id":
+                    v2 = _cat_name(conn, v2) or v2
+                lines.append(f"{cn}: {v2 if not isinstance(v2, (dict, list)) else str(v2)}")
+        elif isinstance(v, list):
+            lines.append(f"{_HIST_FIELD_CN.get(k, k)}: " + "、".join(str(x) for x in v))
+        else:
+            lines.append(f"{_HIST_FIELD_CN.get(k, k)}: {v}")
+    return lines
+
+
 def history_payload(item_id):
     """查看物品历史(7-1): 时间线(倒序)+ 类型筛选 + 位置轨迹(可选)"""
     conn = _conn()
@@ -1410,11 +1479,21 @@ def history_payload(item_id):
         if not cur:
             return None
         events = ev.query_item_events(conn, item_id, limit=200)
+        _type_labels = {
+            ev.EVENT_CREATED: "录入", ev.EVENT_BACKFILLED: "补录", ev.EVENT_BATCH_CREATED: "批量录入",
+            ev.EVENT_UPDATED: "更新", ev.EVENT_LOCATION_MOVED: "移动", ev.EVENT_QUANTITY_CHANGED: "数量变更",
+            ev.EVENT_STATUS_CHANGED: "状态变更", ev.EVENT_INVENTORY: "盘点", ev.EVENT_INVENTORY_RESOLVED: "差异处理",
+            ev.EVENT_MERGED: "合并", ev.EVENT_RELATED: "关联", ev.EVENT_UNLINKED: "解除关联",
+            ev.EVENT_TAGGED: "标签", ev.EVENT_PHOTOS_CHANGED: "管照片", ev.EVENT_MOVED_BATCH: "批量移动",
+            ev.EVENT_FOUND_USED: "标记使用", ev.EVENT_UNDONE: "撤销", ev.EVENT_RESTORED: "恢复",
+        }
         for e in events:
             try:
                 e["payload"] = json.loads(e["payload_json"] or "{}")
             except ValueError:
                 e["payload"] = {}
+            e["type_label"] = _type_labels.get(e["event_type"], e["event_type"])
+            e["human_detail"] = _humanize_payload(e["payload"], conn)
         # 位置轨迹: location_moved 事件串成 客厅→卧室→车里(含起点)
         trajectory = []
         first = True

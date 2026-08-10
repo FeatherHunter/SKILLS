@@ -42,6 +42,7 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 <!--SHARED-HELPERS-->
 const app=document.getElementById('app');
 let selIdx=0;
+function dataImg(b64){return b64?('data:image/png;base64,'+b64):'';}
 function render(){
 let payload;
 try{payload=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<section><h2 class="bad">数据解析失败</h2></section>';return}
@@ -51,16 +52,17 @@ const hero=metaHeader(payload,{title:it.name?('「'+it.name+'」的照片'):'物
 let html=hero;
 if(!photos.length){html+='<section><p class="empty">暂无照片。点下方「补拍」给这件物品留影。</p></section>';}
 else{
-html+=`<section><div class="main" id="mainView">${photos[0]&&photos[0].photo_base64?'<img src="data:image/jpeg;base64,'+photos[0].photo_base64+'">':'无照片'}</div>
-<div class="thumbs">${photos.map((p,i)=>`<div class="thumb ${i===0?'on':''}" data-i="${i}"><img src="data:image/jpeg;base64,'+p.photo_base64+'" onclick="showMain(${i})">${i===0?'<span class="main-tag">主</span>':''}<span class="ty">${esc(p.photo_type)}</span></div>`).join('')}</div>
-<div class="typechips">${['普通','说明书-使用','说明书-安装','说明书-保养'].map(t=>'<button class="copy ghost" onclick="copyText(\'标记照片类型(居家管家): 物品 '+it.id+' 第 '+(selIdx+1)+' 张标记为「'+t+'」\')">'+t+'</button>').join('')}</div>
+html+=`<section><div class="main" id="mainView">${photos[0]&&photos[0].photo_base64?'<img src="'+dataImg(photos[0].photo_base64)+'">':'无照片'}</div>
+<div class="thumbs">${photos.map((p,i)=>`<div class="thumb ${i===0?'on':''}" data-i="${i}">${p.photo_base64?'<img src="'+dataImg(p.photo_base64)+'" onclick="showMain(${i})">':'<span class="thumb-empty">无图</span>'}${i===0?'<span class="main-tag">主</span>':''}<span class="ty">${esc(p.photo_type)}</span></div>`).join('')}</div>
+<div class="typechips">${['普通','说明书-使用','说明书-安装','说明书-保养'].map(t=>'<button class="copy ghost" data-nm="${esc(it.name)}" onclick="copyText(\'请加载「居家管家」技能,帮我管照片(唤醒词:管照片):\\n\\n  物  品: \'+this.dataset.nm+\'\\n  动  作: 标记类型\\n  第 \'+(selIdx+1)+\' 张 → \'+esc(\''+t+'\'))">'+t+'</button>').join('')}</div>
 <div class="actions">
-<button class="copy ghost" onclick="copyText('管照片(居家管家): 换主图,新顺序: '+JSON.stringify(${JSON.stringify(photos.map((p,i)=>i+1))})+',主图变更为第 1 张')">确认顺序变更</button>
-<button class="copy ghost" onclick="copyText('【为「'+esc(it.name)+'」补拍照片,照片即将发送:】')">加图·补拍</button>
-<button class="copy red" onclick="copyText('管照片(居家管家): 删除 '+it.id+' 第 '+(selIdx+1)+' 张照片')">删除选中</button>
+<button class="copy ghost" data-nm="${esc(it.name)}" onclick="copyText('请加载「居家管家」技能,帮我管照片(唤醒词:管照片):\\n\\n  物  品: '+this.dataset.nm+'\\n  动  作: 换主图,新顺序: '+(selIdx+1)+' 为主')">确认顺序变更</button>
+<button class="copy ghost" data-nm="${esc(it.name)}" onclick="copyText('请加载「居家管家」技能,帮我管照片(唤醒词:管照片):\\n\\n  物  品: '+this.dataset.nm+'\\n  动  作: 补拍\\n\\n【照片即将发送:】')">加图·补拍</button>
+<button class="copy red" data-nm="${esc(it.name)}" onclick="copyText('请加载「居家管家」技能,帮我管照片(唤醒词:管照片):\\n\\n  物  品: '+this.dataset.nm+'\\n  动  作: 删除第 '+(selIdx+1)+' 张')">删除选中</button>
 </div></section>`;
 }
-html+=`<section><h2>通用操作</h2>${actionBar(payload,[{label:'下载照片',text:'下载(居家管家): '+it.id+' 的照片文件',kind:'ghost'}])}</section>`;
+window.__hmPayload=payload;
+html+=actionBar(payload,[{label:'下载照片',text:'请加载「居家管家」技能,帮我查看照片(唤醒词:查看照片):\n\n  物  品: '+esc(it.name),kind:'ghost'}]);
 app.innerHTML=html;
 }
 function showMain(i){selIdx=i;document.querySelectorAll('.thumb').forEach((t,x)=>t.classList.toggle('on',x===i));const p=document.querySelectorAll('.thumb img')[i];document.getElementById('mainView').innerHTML=p?('<img src="'+p.src+'">'):'无照片';}

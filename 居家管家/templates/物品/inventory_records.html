@@ -27,6 +27,7 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .empty{color:var(--fg3)}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 12px;font-weight:700;cursor:pointer;margin:0;font-size:13.5px;min-height:44px;min-width:0;flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;box-sizing:border-box}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.rec-acts{grid-template-columns:repeat(3,1fr);margin-top:10px}
 @media(max-width:820px){.wrap{padding:30px 14px 70px}.hero{padding:26px 20px}h1{font-size:26px}}
 </style>
 </head>
@@ -46,11 +47,12 @@ const hero=metaHeader(payload,{title:'盘点记录',lead:'留痕与复查闭环:
 let html=hero;
 html+=`<section><h2>历史盘点(${s.records? s.records.length:0})</h2>${(s.records||[]).map(r=>`<div class="rec">
 <div class="top"><span class="nm">#${r.id} · ${esc(r.scope||'')}</span><span class="pill">${esc(r.occurred_at)}</span><span class="pill">缺${r.missing_cnt} 多${r.extra_cnt} 异${r.diff_cnt} 待确认${r.pending_cnt}</span><span class="pill">${esc(r.status)}</span></div>
-<div class="detail" style="display:none" data-d="${r.id}">${(r.detail||[]).map(x=>esc(JSON.stringify(x))).join('<br>')}</div>
-<div class="actions"><button class="copy ghost" onclick="copyText('差异处理(居家管家): 记录 ${r.id}')">处理差异</button><button class="copy ghost" onclick="copyText('复查(居家管家): 上次缺的 ${r.missing_cnt} 件,重新盘点')">复查</button><button class="copy ghost" onclick="this.parentNode.previousElementSibling.style.display=this.parentNode.previousElementSibling.style.display==='none'?'block':'none'">展开详情</button></div>
+<div class="detail" style="display:none" data-d="${r.id}">${(r.detail||[]).map(x=>{const k=Object.keys(x||{})[0];const v=x[k];return k==='missing'?'缺: '+(v||''):k==='diff'?('异: '+(v&&v.id||'')+' '+(v&&v.field||'')+' '+(v&&v.before||'')+'→'+(v&&v.after||'')):k==='extra'?'多: '+(v||''):JSON.stringify(x);}).join('<br>')}</div>
+<div class="actions rec-acts">${((r.missing_cnt||0)+(r.extra_cnt||0)+(r.diff_cnt||0)+(r.pending_cnt||0))>0?'<button class="copy ghost" data-r="'+r.id+'" onclick="copyText(\'请加载「居家管家」技能,帮我处理盘点差异(唤醒词:差异处理):\\\\n\\\\n  记  录: #\'+this.dataset.r+\' (先查看该记录缺/多/异清单,再逐项处理)\')">处理差异</button>':''}${(r.missing_cnt||0)>0?'<button class="copy ghost" data-r="'+r.id+'" data-m="'+r.missing_cnt+'" onclick="copyText(\'请加载「居家管家」技能,帮我盘点(唤醒词:盘点):\\\\n\\\\n  范  围(位置/分类/全屋): 全屋\\\\n  重点: 上次盘点(#\'+this.dataset.r+\')缺的 \'+this.dataset.m+\' 件,请重点核对是否找到\')">复查</button>':''}<button class="copy ghost" onclick="this.parentNode.previousElementSibling.style.display=this.parentNode.previousElementSibling.style.display==='none'?'block':'none'">展开详情</button></div>
 </div>`).join('')||'<p class="empty">还没有盘点记录</p>'}</section>`;
 html+=remindersBlock(payload);
-html+=`<section><h2>通用操作</h2>${actionBar(payload,[{label:'开始盘点',text:'盘点(居家管家): 按位置/分类/全屋 开始一轮盘点',kind:'ghost'}])}</section>`;
+window.__hmPayload=payload;
+html+=actionBar(payload,[{label:'开始盘点',text:'请加载「居家管家」技能,帮我盘点(唤醒词:盘点):\n\n  范  围(位置/分类/全屋): ______',kind:'wide'}]);
 app.innerHTML=html;
 }
 render();

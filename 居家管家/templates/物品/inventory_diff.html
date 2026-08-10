@@ -25,7 +25,9 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .grp .badge.b-miss{background:var(--red)}.grp .badge.b-extra{background:var(--green)}.grp .badge.b-diff{background:var(--orange)}.grp .badge.b-pending{background:#8e8e93}
 .actrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .act{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:5px 13px;font-size:12px;cursor:pointer}.act.on{background:var(--blue);color:#fff;border-color:var(--blue)}
-.act-input{margin-left:8px;display:none}
+.act-input{margin-left:8px;display:none;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:13.5px;font-family:inherit;background:#fff;color:var(--fg);min-width:170px;box-sizing:border-box;-webkit-appearance:none}
+.act-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}
+.act-input::placeholder{color:var(--fg3)}
 .comp{font-size:13px;color:var(--fg2);margin:4px 0}
 .copy{border:none;background:var(--blue);color:#fff;border-radius:999px;padding:10px 12px;font-weight:700;cursor:pointer;margin:0;font-size:13.5px;min-height:44px;min-width:0;flex:1 1 0;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;box-sizing:border-box}.copy.alt{background:#1d1d1f}.copy.ghost{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
@@ -62,16 +64,35 @@ app.innerHTML=html;
 }
 function pickAct(btn,type){const row=btn.closest('.diff-row');row.querySelectorAll('.act').forEach(x=>x.classList.remove('on'));btn.classList.add('on');const input=row.querySelector('.act-input');if(input)input.style.display=(type==='missing'&&btn.dataset.a==='标记挪走')||(type==='extra'&&btn.dataset.a==='录入为新物品')?'inline-block':'none';}
 function collectResolve(){
-const out={missing:[],extra:[],diff:[],pending:[]};
+const L=['请加载「居家管家」技能,帮我处理盘点差异(唤醒词:差异处理):','','  记  录: #'+(window.__recId||'')];
+let n=0;
 document.querySelectorAll('.diff-row').forEach(row=>{
-  const t=row.dataset.type;const act=row.querySelector('.act.on');const id=+row.dataset.id||null;
-  const input=row.querySelector('.act-input');
-  if(t==='missing'){if(act)out.missing.push({id,action:act.dataset.a,new_location:input&&input.value.trim()||undefined});}
-  else if(t==='extra'){if(act){if(act.dataset.a==='录入为新物品'&&input&&input.value.trim()){const parts=input.value.split(',');out.extra.push({description:parts[0].trim(),draft:{name:parts[0].trim(),category_id:parts[1]&&parts[1].trim()||undefined,quantity:parts[2]&&parts[2].trim()||1}});}else{out.extra.push({draft:null});}}}
-  else if(t==='diff'){if(act&&act.dataset.a==='按实际更新')out.diff.push({id,apply:true});}
-  else if(t==='pending'){if(act)out.pending.push({id,mark_review:act.dataset.a==='标记复查'});}
+  const t=row.dataset.type;const act=row.querySelector('.act.on');const input=row.querySelector('.act-input');
+  if(!act)return;
+  const nmEl=row.querySelector('b');
+  const name=nmEl?nmEl.textContent:'物品';
+  const a=act.dataset.a;
+  n++;
+  if(t==='missing'){
+    if(a==='标记挪走')L.push('  '+n+'. 「'+name+'」: 标记挪走,新位置: '+(input&&input.value.trim()||'______'));
+    else if(a==='先不处理')L.push('  '+n+'. 「'+name+'」: 先不处理');
+    else L.push('  '+n+'. 「'+name+'」: '+a);
+  }
+  else if(t==='extra'){
+    if(a==='录入为新物品'&&input&&input.value.trim())L.push('  '+n+'. 录入新物品: '+(input.value.trim().replace(/,/g,' / ')));
+    else L.push('  '+n+'. 清单外物品: 忽略');
+  }
+  else if(t==='diff'){
+    if(a==='按实际更新')L.push('  '+n+'. 「'+name+'」: 按实际数量更新');
+    else L.push('  '+n+'. 「'+name+'」: 忽略差异');
+  }
+  else if(t==='pending'){
+    if(a==='标记复查')L.push('  '+n+'. 「'+name+'」: 标记复查');
+    else L.push('  '+n+'. 「'+name+'」: 先不处理');
+  }
 });
-return '差异处理(居家管家): 记录 '+(window.__recId||'')+' '+JSON.stringify(out);
+if(n===0)L.push('  未选择任何处理');
+return L.join('\n');
 }
 render();
 </script>

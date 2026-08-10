@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -65,7 +65,7 @@ if(r.tags_before!==undefined){body+=`<section><h2>标签变更</h2><div>${(r.tag
 if(r.extra){body+=`<section>${typeof r.extra==='string'?`<p>${esc(r.extra)}</p>`:Object.entries(r.extra).map(([k,v])=>`<div class="row"><div class="k">${esc(k)}</div><div class="v">${esc(String(v??''))}</div></div>`).join('')}</section>`;}
 if(r.steps){body+=`<section><h2>处理明细</h2><ul class="list" style="margin-left:18px">${r.steps.map(x=>`<li>${x.ok?'<span class="ok">✓</span>':'<span class="bad">✗</span>'} ${esc(x.message||String(x.action||''))}</li>`).join('')}</ul></section>`;}
 var _undoBtn=(r.undo_prompt&&!(s.buttons||[]).some(function(b){return b.label==='撤销';}))?[{label:'撤销',text:r.undo_prompt,kind:'red'}]:[];
-var _detail='请加载「居家管家」技能,帮我查看物品详情(唤醒词:看物品):\n\n  物  品: '+(s.item?(s.item.name||''):'');
+var _detailBtns=s.item?[{label:'查看详情',text:'请加载「居家管家」技能,帮我查看物品详情(唤醒词:看物品):\n\n  物  品: '+(s.item?(s.item.name||''):''),kind:'ghost'}]:[];
 function hmActionBar(p,extra){
   window.__hmPayload=p;
   var btns=arr(extra||[]).concat(arr(p.data&&p.data.scene&&p.data.scene.buttons||[]));
@@ -75,9 +75,10 @@ function hmActionBar(p,extra){
   html+='<button class="copy" onclick="copyText(buildLogText(window.__hmPayload))">复制日志</button>';
   return html+'</div>';
 }
-app.innerHTML=hero+body+remindersBlock(payload)+(r.next?'<div style="margin:14px 0 0;font-size:13.5px;color:var(--fg2)">'+esc(r.next)+'</div>':'')+hmActionBar(payload,_undoBtn.concat([{label:'查看详情',text:_detail,kind:'ghost'}]));
+app.innerHTML=hero+body+remindersBlock(payload)+(r.next?'<div style="margin:14px 0 0;font-size:13.5px;color:var(--fg2)">'+esc(r.next)+'</div>':'')+hmActionBar(payload,_undoBtn.concat(_detailBtns));
 }
 render();
 </script>
 </body>
 </html>
+

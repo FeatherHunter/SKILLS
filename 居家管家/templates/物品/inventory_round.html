@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -29,8 +29,12 @@ h2{font-size:20px;letter-spacing:-.02em;margin-bottom:12px}
 .ts[data-v="在"].on{background:var(--green);color:#fff;border-color:var(--green)}
 .ts[data-v="不在"].on{background:var(--red);color:#fff;border-color:var(--red)}
 .ts[data-v="不确定"].on{background:var(--orange);color:#fff;border-color:var(--orange)}
-.qty-row{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--fg2)}
-.qty-row input{width:70px;padding:5px 8px;border:1.5px solid var(--line);border-radius:10px;font-size:13px}
+.qty-row{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--fg2);flex-wrap:wrap}
+.qty-row .qty{width:64px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-family:inherit;background:#fff;color:var(--fg);box-sizing:border-box;-webkit-appearance:none}
+.qty-row .newloc{flex:1 1 130px;min-width:130px;padding:8px 12px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-family:inherit;background:#fff;color:var(--fg);box-sizing:border-box;-webkit-appearance:none}
+.qty-row .newloc::placeholder{color:var(--fg3)}
+.qty-row .newstatus{max-width:140px;padding:8px 10px;border:1.5px solid var(--line);border-radius:10px;font-size:13px;font-family:inherit;background:#fff;color:var(--fg);box-sizing:border-box;-webkit-appearance:none;cursor:pointer}
+.qty-row input:focus,.qty-row select:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}
 .notpresent{background:#f7f8fa;border-radius:10px;padding:8px 12px;margin-top:10px;font-size:13px;color:var(--fg2)}
 .review{background:#f2f8ff;border-radius:12px;padding:10px 14px;margin:8px 0;font-size:14px}
 .pill{display:inline-block;border:1px solid var(--line);background:#fbfbfd;border-radius:999px;padding:3px 9px;margin:2px;font-size:12px}
@@ -60,42 +64,51 @@ if((s.review_items||[]).length){html+=`<section><h2>上次待复查(置顶)</h2>
 html+=`<section><h2>核对清单</h2><div class="prog"><span class="ok" id="progTxt">0/${s.total||0}</span><div class="bar"><span id="progBar" style="width:0%"></span></div></div>
 ${(s.items||[]).map(it=>`
 <div class="item" data-id="${it.id}" data-name="${esc(it.name)}">
-<div class="top"><div class="photo ${it.photo_base64?'':'empty'}">${it.photo_base64?'<img src="data:image/jpeg;base64,'+it.photo_base64+'">':'无图'}</div><div class="nm">${esc(it.name)} <span class="pill">ID ${it.id}</span></div><div><span class="pill">📍 ${esc(it.location||'(未设置)')}</span><span class="pill">×${esc(it.quantity??1)}</span><span class="pill">${esc(it.status)}</span></div></div>
+<div class="top"><div class="photo ${it.photo_base64?'':'empty'}">${it.photo_base64?'<img src="data:image/png;base64,'+it.photo_base64+'">':'无图'}</div><div class="nm">${esc(it.name)} <span class="pill">ID ${it.id}</span></div><div><span class="pill">📍 ${esc(it.location||'(未设置)')}</span><span class="pill">×${esc(it.quantity??1)}</span><span class="pill">${esc(it.status)}</span></div></div>
 <div class="tristate">${['在','不在','不确定'].map(v=>'<button class="ts" data-v="'+v+'" onclick="setState(this)">'+v+'</button>').join('')}</div>
 <div class="qty-row">实际数量:<input type="number" min="0" class="qty" value="${esc(it.quantity??1)}"> (与系统不同 = 异)</div>
-<div class="qty-row">位置/状态修正:<input class="newloc" placeholder="新位置(选填)"><select class="newstatus"><option value="">状态不变</option>${['在家','备用','借用中','维修中','找不到','已废弃'].map(st=>'<option>'+st+'</option>').join('')}</select></div>
+<div class="qty-row">位置修正:<input class="newloc" placeholder="新位置(选填)"></div>
+<div class="qty-row">状态修正:<select class="newstatus"><option value="">状态不变</option>${['在家','备用','借用中','维修中','找不到','已废弃'].map(st=>'<option>'+st+'</option>').join('')}</select></div>
 <label class="notpresent"><input type="checkbox" class="np"> 不在场(借出中/旅游中等,默认不计入缺)</label>
 </div>`).join('')||'<p class="empty">范围内没有物品</p>'}
-<div class="actions"><button class="copy ghost" onclick="copyText('盘点(居家管家): 发现清单外物品: ')" >发现清单外物品</button>
-<button class="copy green" onclick="copyText(collectDiff())">确认完成(复制差异集)</button>
-<button class="copy ghost" onclick="copyText(saveProgress())">复制当前进度(中断续盘)</button></div></section>`;
-html+=`<section><h2>通用操作</h2>${actionBar(payload)}</section>`;
+<div class="actions"><button class="copy ghost" onclick="copyText('请加载「居家管家」技能,帮我盘点(唤醒词:盘点):\\n\\n  清单外物品: ______')">发现清单外物品</button>
+<button class="copy ghost" onclick="copyText(saveProgress())">保存进度</button>
+<button class="copy green wide" onclick="copyText(collectDiff())">确认提交(含差异)</button>
+<button class="copy ghost" onclick="copyText(buildDataText(window.__hmPayload))">复制数据</button>
+<button class="copy ghost" onclick="copyText(buildLogText(window.__hmPayload))">复制日志</button></div></section>`;
+window.__hmPayload=payload;
 app.innerHTML=html;
 updateProg();
 }
 function setState(btn){const box=btn.closest('.item');box.querySelectorAll('.ts').forEach(x=>x.classList.remove('on'));btn.classList.add('on');updateProg();}
 function updateProg(){const items=document.querySelectorAll('.item');let done=0;items.forEach(it=>{if(it.querySelector('.ts.on'))done++;});document.getElementById('progTxt').textContent=done+'/'+items.length;document.getElementById('progBar').style.width=(items.length?done*100/items.length:0)+'%';}
 function collectDiff(){
+const L=['请加载「居家管家」技能,帮我完成盘点(唤醒词:盘点):',''];
 const present=[],missing=[],pending=[],notPresent=[],diff=[];
 document.querySelectorAll('.item').forEach(it=>{
-  const id=+it.dataset.id;const v=it.querySelector('.ts.on');
+  const id=+it.dataset.id;const nm=it.dataset.name||('#'+id);const v=it.querySelector('.ts.on');
   const np=it.querySelector('.np').checked;
-  if(!v){pending.push(id);return;}
+  if(!v){pending.push(nm);return;}
   const qty=+it.querySelector('.qty').value;const sys=+(it.querySelectorAll('.pill')[2]?it.querySelectorAll('.pill')[2].textContent.replace('×',''):1);
   const newloc=it.querySelector('.newloc').value.trim();const newst=it.querySelector('.newstatus').value;
-  if(v.dataset.v==='在'){present.push(id);}
-  else if(v.dataset.v==='不在'){if(np){notPresent.push(id);}else{missing.push(id);}}
-  else{pending.push(id);}
-  if(qty!==sys)diff.push({id,field:'quantity',before:sys,after:qty});
-  if(newloc)diff.push({id,field:'location',before:it.dataset.location||'',after:newloc});
-  if(newst)diff.push({id,field:'location_status',before:it.dataset.status||'',after:newst});
+  if(v.dataset.v==='在'){present.push(nm);}
+  else if(v.dataset.v==='不在'){if(np){notPresent.push(nm);}else{missing.push(nm);}}
+  else{pending.push(nm);}
+  if(qty!==sys)diff.push('「'+nm+'」数量 '+sys+' → '+qty);
+  if(newloc)diff.push('「'+nm+'」位置 → '+newloc);
+  if(newst)diff.push('「'+nm+'」状态 → '+newst);
 });
-const review=[...document.querySelectorAll('.rv:checked')].map(x=>+x.value);
-const out={present,missing,extra:[],diff,pending,not_present:notPresent,review};
-return '盘点完成(居家管家): '+JSON.stringify(out);
+if(present.length)L.push('  在: '+present.join('、'));
+if(missing.length)L.push('  不在(缺): '+missing.join('、'));
+if(notPresent.length)L.push('  不在场(不计缺): '+notPresent.join('、'));
+if(pending.length)L.push('  不确定: '+pending.join('、'));
+if(diff.length)L.push('  修正: '+diff.join('; '));
+if(!present.length&&!missing.length&&!notPresent.length&&!pending.length)L.push('  未选择任何核对');
+return L.join('\n');
 }
-function saveProgress(){const items=[...document.querySelectorAll('.item')].map(it=>({id:+it.dataset.id,state:it.querySelector('.ts.on')?it.querySelector('.ts.on').dataset.v:'未勾选'}));return '复制当前进度(居家管家): '+JSON.stringify(items);}
+function saveProgress(){const L=['请加载「居家管家」技能,帮我继续盘点(唤醒词:盘点):','','  当前进度:'];document.querySelectorAll('.item').forEach(it=>{const st=it.querySelector('.ts.on');L.push('   「'+(it.dataset.name||('#'+it.dataset.id))+'」: '+(st?st.dataset.v:'未勾选'));});return L.join('\n');}
 render();
 </script>
 </body>
 </html>
+

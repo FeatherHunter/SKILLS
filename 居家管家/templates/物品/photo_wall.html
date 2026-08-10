@@ -50,10 +50,11 @@ const hero=metaHeader(payload,{title:'照片墙',lead:'回忆式浏览 · 按 '+
 let html=hero;
 html+=`<section><div class="chips"><button class="chip on" data-t="all">全部</button>${['普通','说明书-使用','说明书-安装','说明书-保养'].map(t=>'<button class="chip" data-t="'+t+'">'+t+'</button>').join('')}</div>
 <span class="count">共 ${s.total||0} 张</span></section>`;
-html+=(s.groups||[]).map(g=>`<section class="grp" data-g="${esc(g.name)}"><h2>${esc(g.name)} <span class="count">${g.items.length}</span></h2><div class="wall">${g.items.map(it=>`<div class="photo" onclick="copyText('看物品(居家管家): '+${'it.id'})"><img src="data:image/jpeg;base64,${it.photo_base64}" alt=""><span class="nm">${esc(it.name)}</span><span class="ty">${esc((it.photos&&it.photos[0]&&it.photos[0].photo_type)||'普通')}</span></div>`).join('')}</div></section>`).join('')||'<section><p class="empty">没有带照片的物品</p></section>';
-if(s.no_photo_count){html+=`<div class="warnbox">还有 ${s.no_photo_count} 件物品没有照片:<button class="copy ghost" onclick="copyText('照片墙(居家管家): 给没照片的物品补拍')">去补拍</button></div>`;}
+html+=(s.groups||[]).map(g=>`<section class="grp" data-g="${esc(g.name)}"><h2>${esc(g.name)} <span class="count">${g.items.length}</span></h2><div class="wall">${g.items.map(it=>`<div class="photo" data-nm="${esc(it.name)}" onclick="copyText('请加载「居家管家」技能,帮我查看物品详情(唤醒词:看物品):\\n\\n  物  品: '+this.dataset.nm)"><img src="data:image/png;base64,${it.photo_base64}" alt=""><span class="nm">${esc(it.name)}</span><span class="ty">${esc((it.photos&&it.photos[0]&&it.photos[0].photo_type)||'普通')}</span></div>`).join('')}</div></section>`).join('')||'<section><p class="empty">没有带照片的物品</p></section>';
+if(s.no_photo_count){html+=`<div class="warnbox">还有 ${s.no_photo_count} 件物品没有照片:<button class="copy ghost" onclick="copyText('请加载「居家管家」技能,帮我管照片(唤醒词:管照片):\\n\\n  动  作: 给没照片的物品补拍\\n\\n【照片即将发送:】')">去补拍</button></div>`;}
 html+=remindersBlock(payload);
-html+=`<section><h2>通用操作</h2>${actionBar(payload,[{label:'按位置浏览',text:'照片墙(居家管家): 按位置分组浏览',kind:'ghost'}])}</section>`;
+window.__hmPayload=payload;
+html+=actionBar(payload,[{label:'按位置浏览',text:'请加载「居家管家」技能,帮我浏览照片墙(唤醒词:照片墙):\n\n  分  组: 按位置',kind:'ghost'}]);
 app.innerHTML=html;
 document.querySelectorAll('.chip[data-t]').forEach(c=>c.addEventListener('click',()=>{
   type=c.dataset.t;document.querySelectorAll('.chip[data-t]').forEach(o=>o.classList.toggle('on',o===c));

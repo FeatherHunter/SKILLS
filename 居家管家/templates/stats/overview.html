@@ -119,13 +119,13 @@ function render(){
   if(flags.low_coverage){flagsHtml+='<div class="tip">📌 价格覆盖率低:'+esc(metrics[2]?.sub||'')+'。建议为未录价的物品补上价格,总价值才可信。<button class="btn ghost" id="priceTipBtn">复制补价提示</button></div>';}
   flagsEl.innerHTML=flagsHtml;
   const pBtn=document.getElementById('priceTipBtn');
-  if(pBtn){pBtn.onclick=()=>{const missing=arr(D.categories);const txt='请加载「居家管家」技能,帮我给未录价的物品补上价格:\n  操作: 逐件补价(名称+价格),价格未知的标注「未知」';doCopy(txt,'priceTipBtn','补价提示已复制');};}
+  if(pBtn){pBtn.onclick=()=>{const missing=arr(D.categories);const txt='请加载「居家管家」技能,帮我给未录价的物品补上价格:\n  操作(逐件补价,名称+价格,价格未知的标注「未知」): ______';doCopy(txt,'priceTipBtn','补价提示已复制');};}
   app.innerHTML='';
   const catSec=document.createElement('section');
   catSec.innerHTML='<h2>分类分布 <span class="hint">点柱子 = 复制筛选浏览 prompt</span></h2><div id="catChart"></div>'+(arr(D.categories).length?'':'<p style="color:var(--fg3);font-size:13px">暂无分类数据</p>');
   app.appendChild(catSec);
   const catData=arr(D.categories).map(c=>({label:c.name,value:c.count,sub:c.total_value}));
-  if(catData.length){charts.bar(document.getElementById('catChart'),catData,{onclick:i=>{const c=arr(D.categories)[i];if(!c)return;const txt='请加载「居家管家」技能,帮我按条件浏览物品(唤醒词:筛选浏览):\n  分  类: '+c.name;doCopy(txt,'catChart','筛选 prompt 已复制');}});}
+  if(catData.length){charts.bar(document.getElementById('catChart'),catData,{onclick:i=>{const c=arr(D.categories)[i];if(!c)return;const txt='请加载「居家管家」技能,帮我按条件浏览物品(唤醒词:筛选浏览):\n  分类: '+c.name+'\n  附加条件(如:只看无照片/按价格排序,选填): ______';doCopy(txt,'catChart','筛选 prompt 已复制');}});}
   const locSec=document.createElement('section');
   locSec.innerHTML='<h2>位置分布 <span class="hint">哪里最挤 · 收纳线索</span></h2><div id="locChart"></div>';
   app.appendChild(locSec);

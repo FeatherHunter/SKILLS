@@ -62,7 +62,7 @@ h2{font-size:17px;letter-spacing:-.01em;margin-bottom:14px}
 const app=document.getElementById('app');
 const cardsEl=document.getElementById('cards');
 function memberCard(m){
-const removePrompt='【移除成员】请帮我在居家管家移除一位家人。\n成员称呼: '+m.name+'\n关系: '+(m.relation||'______')+'\n（其归属 '+m.item_count+' 件物品将回到「使用者」）';
+const removePrompt='【移除成员】请帮我在居家管家移除一位家人。\n成员称呼: '+m.name+'\n关系: '+(m.relation||'___')+'\n（其归属 '+m.item_count+' 件物品将回到「使用者」）';
 return '<div class="member"><div class="avatar">'+esc((m.name||'?').slice(0,1))+'</div>'+
 '<div class="who"><div class="name">'+esc(m.name)+'</div><div class="meta">'+(m.relation?esc(m.relation):'<span class="muted">未填关系</span>')+(m.note?' · '+esc(m.note):'')+'</div></div>'+
 '<span class="count">归属 <b>'+m.item_count+'</b> 件</span>'+
@@ -112,13 +112,13 @@ document.getElementById('btnAddMember').onclick=function(){
 const name=document.getElementById('mName').value.trim();
 const relation=document.getElementById('mRelation').value.trim();
 const note=document.getElementById('mNote').value.trim();
-const lines=['【添加成员】请帮我在居家管家添加一位家人。','称呼: '+(name||'______'),'关系: '+(relation||'______'),'备注: '+(note||'______')];
+const lines=['【添加成员】请帮我在居家管家添加一位家人。','称呼: '+(name||'___'),'关系: '+(relation||'___'),'备注: '+(note||'___')];
 copyText(lines.join('\n'));
 };
 document.getElementById('btnAssign').onclick=function(){
 const member=document.getElementById('aMember').value;
 const ids=Array.from(document.querySelectorAll('#aItems input:checked')).map(c=>c.value);
-const lines=['【标记归属】请帮我在居家管家标记物品归属。','归属成员: '+(member||'______'),'物品ID列表: '+(ids.length?ids.join(', '):'______')];
+const lines=['【标记归属】请帮我在居家管家标记物品归属。','归属成员: '+(member||'___'),'物品ID列表: '+(ids.length?ids.join(', '):'___')];
 copyText(lines.join('\n'));
 };
 }

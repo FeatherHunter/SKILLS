@@ -144,9 +144,9 @@ const obj=document.getElementById('fObj').value;
 const objName=document.getElementById('fObjName').value.trim();
 const bdate=document.getElementById('fBorrowed').value;
 const due=document.getElementById('fDue').value;
-const itemVal=itemId?('库内物品 ID '+itemId):(itemName||'______');
-const objVal=obj||objName||'______';
-const lines=['【登记借用】请帮我在居家管家登记一笔借用。','方向: '+dir,'物品: '+itemVal,'借用对象: '+objVal,'借出日期: '+(bdate||'______'),'约定归还日: '+(due||'______')];
+const itemVal=itemId?('库内物品 ID '+itemId):(itemName||'___');
+const objVal=obj||objName||'___';
+const lines=['【登记借用】请帮我在居家管家登记一笔借用。','方向: '+dir,'物品: '+itemVal,'借用对象: '+objVal,'借出日期: '+(bdate||'___'),'约定归还日: '+(due||'___')];
 copyText(lines.join('\n'));
 };
 }

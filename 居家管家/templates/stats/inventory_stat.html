@@ -91,7 +91,7 @@ function buildLogText(){
 }
 document.getElementById('copyDataBtn').onclick=()=>doCopy(buildDataText(),'copyDataBtn','盘点数据已复制');
 document.getElementById('copyLogBtn').onclick=()=>doCopy(buildLogText(),'copyLogBtn','日志已复制');
-reviewBtn.onclick=()=>{const txt=(D&&D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围: 全屋 / 某个位置 / 某个分类 (选填)';doCopy(txt,'reviewBtn','复查 prompt 已复制');};
+reviewBtn.onclick=()=>{const txt=(D&&D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围(全屋/某个位置/某个分类,选填): ______';doCopy(txt,'reviewBtn','复查 prompt 已复制');};
 function render(){
   let p;try{p=JSON.parse(document.getElementById('payload').textContent)}catch(e){app.innerHTML='<div class="empty">数据解析失败:'+esc(e.message)+'</div>';return;}
   const v=validate(p);if(!v.ok){app.innerHTML='<div class="empty">数据校验失败:'+esc(v.msg)+'</div>';return;}
@@ -106,7 +106,7 @@ function render(){
   if(!D.has_data){app.innerHTML='<div class="empty"><h2>还没有盘点记录 📋</h2>完成首次盘点后,这里会显示完成率/差异趋势/建议优先盘哪。<div class="actions" style="position:static"><button class="btn" id="firstBtn">复制「首次盘点」</button></div></div>';
     reviewBtn.style.display='none';
     const fb=document.getElementById('firstBtn');
-    if(fb)fb.onclick=()=>{const txt=(D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围: 全屋 / 某个位置 / 某个分类 (选填)';doCopy(txt,'firstBtn','盘点 prompt 已复制');};
+    if(fb)fb.onclick=()=>{const txt=(D.review_action&&D.review_action.prompt)||'请加载「居家管家」技能,帮我盘点核对(唤醒词:盘点):\n  范围(全屋/某个位置/某个分类,选填): ______';doCopy(txt,'firstBtn','盘点 prompt 已复制');};
     return;}
   reviewBtn.style.display='';
   const hist=arr(D.history);

@@ -437,3 +437,25 @@ def test_cli_merge_missing_src_error_receipt(tmp_db, tmp_path):
     assert out["data"].get("template") == "位置/error.html"
     html = (tmp_path / "merge_err.html").read_text(encoding="utf-8")
     assert "不存在" in html
+
+
+def test_merge_undo_button_item_precise(tmp_db, tmp_path):
+    """撤销合并按钮精确到迁移物品(非路径级): 含物品清单, 不含「把整个位置改回」"""
+    from 位置 import ops
+    ops.create_node(tmp_db, "客厅/冰箱/上层")
+    ops.create_node(tmp_db, "客厅/冰箱上层")
+    _seed_item(tmp_db, 9, "TEST_牛奶", 3, "客厅/冰箱/上层", qty=1)
+    _seed_item(tmp_db, 10, "TEST_鸡蛋", 3, "客厅/冰箱/上层", qty=2)
+    _seed_item(tmp_db, 11, "TEST_酱油", 3, "客厅/冰箱上层", qty=1)  # tgt 原有物品
+    r = _run_cli("sm2-manage", "--action", "merge", "--old", "客厅/冰箱/上层",
+                 "--new", "客厅/冰箱上层", "--output", str(tmp_path / "merge.html"))
+    out, code = _load_output(r)
+    assert code == 0 and out["status"] == "ok"
+    html = (tmp_path / "merge.html").read_text(encoding="utf-8")
+    # 撤销按钮 = 物品级(仅本次迁移的 2 件), 不含 tgt 原有酱油
+    assert "本次合并迁移的 2 件" in html
+    assert "TEST_牛奶 (ID 9)" in html
+    assert "TEST_鸡蛋 (ID 10)" in html
+    assert "TEST_酱油 (ID 11)" not in html
+    # merged_items 进 scene(复制数据可追溯)
+    assert '"merged_items"' in html

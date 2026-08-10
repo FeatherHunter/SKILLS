@@ -268,6 +268,7 @@ def _merge_cascade(conn, src, tgt, scene_id="SM2-1", cli_cmd=""):
         "SELECT id, item_id, location FROM item_locations "
         "WHERE location = ? OR location LIKE ?",
         (src, src + "/%")).fetchall()
+    migrated_ids = []
     for row in rows:
         new_loc = tgt + row["location"][len(src):]
         dup = cursor.execute(
@@ -278,6 +279,8 @@ def _merge_cascade(conn, src, tgt, scene_id="SM2-1", cli_cmd=""):
         else:
             cursor.execute("UPDATE item_locations SET location = ?, updated_at = ? WHERE id = ?",
                            (new_loc, _now(), row["id"]))
+        if row["item_id"] not in migrated_ids:
+            migrated_ids.append(row["item_id"])
     # 3. 固定位级联(src 前缀改写;fixed_location 无唯一约束,直接 UPDATE)
     cursor.execute(
         f"UPDATE items SET fixed_location = ? || substr(fixed_location, ?), updated_at = ? "
@@ -323,8 +326,15 @@ def _merge_cascade(conn, src, tgt, scene_id="SM2-1", cli_cmd=""):
                       scene_id=scene_id, cli_cmd=cli_cmd)
         events += 1
     conn.commit()
+    # 8. 被迁移物品明细(撤销合并用:精确到物品,避免路径级误伤 tgt 原有物品)
+    merged_items = []
+    if migrated_ids:
+        ph = ",".join("?" * len(migrated_ids))
+        for r in cursor.execute(
+                f"SELECT id, name FROM items WHERE id IN ({ph})", migrated_ids).fetchall():
+            merged_items.append({"id": r["id"], "name": r["name"]})
     return {"renamed_items": len(item_ids), "events": events,
-            "renamed": (src, tgt)}
+            "renamed": (src, tgt), "merged_items": merged_items}
 
 
 def merge_node(conn, src_raw, tgt_raw, cli_cmd=""):

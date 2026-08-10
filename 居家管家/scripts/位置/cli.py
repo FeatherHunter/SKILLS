@@ -157,8 +157,22 @@ def run(args):
                                      output_path=args.output)
                 payload["target"] = f"{old} → {new}"
                 payload["diff"] = [{"field": "位置路径", "before": old, "after": new}]
+                merged = payload.get("merged_items") or []
+                payload["extra"] = {"本次合并迁移物品数": len(merged)}
+                # 撤销合并: 精确到本次迁移的物品清单(避免路径级回退误伤 tgt 原有物品)
+                if merged:
+                    items_lines = "\n".join(f"    {i+1}. {it['name']} (ID {it['id']})" for i, it in enumerate(merged))
+                    undo_text = (
+                        "请加载「居家管家」技能,帮我撤销位置合并(唤醒词:管位置):\n"
+                        f"  操  作: 撤销合并\n"
+                        f"  从  位  置: 「{new}」\n"
+                        f"  移  回  位  置: 「{old}」\n"
+                        f"  物  品(本次合并迁移的 {len(merged)} 件,逐项移回):\n{items_lines}"
+                    )
+                else:
+                    undo_text = f"管位置(居家管家): 合并回退,把「{new}」改回「{old}」"
                 return _receipt_scene(ok, msg, payload, "SM2-1", "管位置", "位置合并",
-                                      buttons=[{"label": "撤销合并", "text": f"管位置(居家管家): 合并回退,把「{new}」改回「{old}」"}],
+                                      buttons=[{"label": "撤销合并", "text": undo_text}],
                                       output_path=args.output)
 
             if args.action in ("delete-preview", "delete"):

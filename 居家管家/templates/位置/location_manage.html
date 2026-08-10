@@ -56,6 +56,18 @@ section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
   .qa .mv{grid-column:1/-1}
   .qa .qb{width:100%}
 }
+/* ── 页内参数表单(新建/改名 · 可编辑字段 + 实时预览 + 空值拦截) ── */
+.panel{background:var(--card);border-radius:18px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:14px;border:1px solid var(--line)}
+.panel h3{font-size:15px;margin-bottom:12px}
+.fp-row{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.fp-row label{font-size:12px;color:var(--fg2);font-weight:600}
+.fp-row input{border:1px solid var(--line);border-radius:12px;padding:11px 12px;font-size:14px;background:#fff;color:var(--fg)}
+.fp-row input:focus{outline:none;border-color:var(--blue)}
+.fp-row input[readonly]{background:#f2f2f5;color:var(--fg3)}
+.fp-preview pre{background:#f6f8fa;border:1px solid #e8eaed;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;word-break:break-all;color:var(--fg)}
+.fp-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+.fp-actions .btn:first-child{grid-column:1/-1}
+@media(max-width:720px){.fp-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.fp-actions .btn:first-child{grid-column:1/-1}}
 </style>
 </head>
 <body>
@@ -67,6 +79,16 @@ section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
 <div class="chips" id="metaBar"></div>
 </header>
 <div id="app"></div>
+<div class="panel" id="formPanel" hidden>
+  <h3 id="fpTitle">新建位置</h3>
+  <div class="fp-row" id="fpSrcRow" hidden><label>源位置</label><input id="fpSrc" readonly></div>
+  <div class="fp-row"><label id="fpMainLabel" for="fpMain">新位置路径</label><input id="fpMain" placeholder="如: 客厅/电视柜, 支持多级"></div>
+  <div class="fp-preview"><pre id="fpPreview"></pre></div>
+  <div class="fp-actions">
+    <button class="btn" id="fpCopy">复制 prompt</button>
+    <button class="btn ghost" id="fpClose">关闭</button>
+  </div>
+</div>
 <div class="actions">
 <button class="btn warn" id="newBtn">＋ 新建位置</button>
 <button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
@@ -102,20 +124,53 @@ function render(){
   }
   if(nodes.length){app.innerHTML+='<section><h2>🌳 位置树 <span class="hint">'+esc(nodes.length)+' 个位置 · 点按钮操作</span></h2><div id="tree"></div></section>';}
   const sims=arr(D.similar_groups);
-  if(sims.length){app.innerHTML+='<section><h2>🔍 相似位置检测 <span class="hint">同位置两种写法,建议合并</span></h2>'+sims.map((s,i)=>'<div class="sim"><div class="paths">'+s.paths.map(esc).join(' ⇄ ')+'</div><div class="mig">涉及 '+esc(s.items_affected)+' 件物品 · 建议保留「'+esc(s.target)+'」</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn" id="mg_'+i+'">确认合并</button><button class="btn ghost" id="ig_'+i+'">忽略</button></div></div>').join('')+'</section>';
-    sims.forEach((s,i)=>{const mb=document.getElementById('mg_'+i);const ib=document.getElementById('ig_'+i);
-      if(mb){const srcs=s.paths.filter(x=>x!==s.target).join('、');mb.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 合并\n  源  位  置: 「'+srcs+'」\n  目标位置: 「'+s.target+'」',mb,'合并 prompt 已复制');}
-      if(ib)ib.onclick=()=>{ib.closest('.sim').style.display='none';showToast('已忽略本组');};});}
+  if(sims.length){app.innerHTML+='<section><h2>🔍 相似位置检测 <span class="hint">同位置两种写法,建议合并</span></h2>'+sims.map((s,i)=>'<div class="sim"><div class="paths">'+s.paths.map(esc).join(' ⇄ ')+'</div><div class="mig">涉及 '+esc(s.items_affected)+' 件物品 · 建议保留「'+esc(s.target)+'」</div><div style="margin-top:8px;display:flex;justify-content:flex-end"><button class="btn" id="mg_'+i+'">确认合并</button></div></div>').join('')+'</section>';
+    sims.forEach((s,i)=>{const mb=document.getElementById('mg_'+i);
+      if(mb){const srcs=s.paths.filter(x=>x!==s.target).join('、');mb.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 合并\n  源  位  置: 「'+srcs+'」\n  目标位置: 「'+s.target+'」',mb,'合并 prompt 已复制');};});}
   const tree=document.getElementById('tree');
   if(tree){tree.innerHTML=nodes.map((n,i)=>'<div class="trow"><span class="pad" style="width:'+((n.depth-1)*22)+'px"></span><span class="dot">└</span><span class="nm'+(n.empty?' empty':'')+'">'+esc(n.name)+'</span><span class="ct">'+(n.empty?'空位置':n.count+' 件')+'</span><span class="ops"><button class="opb" id="rn_'+i+'">改名</button><button class="opb" id="dl_'+i+'">删除</button></span></div>').join('');
     nodes.forEach((n,i)=>{const rn=document.getElementById('rn_'+i);const dl=document.getElementById('dl_'+i);
-      if(rn)rn.onclick=()=>{const newP=prompt('新路径(如:'+esc(n.path)+' → )',n.path);if(newP&&newP!==n.path)doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 改名\n  源  位  置: 「'+esc(n.path)+'」\n  新  名  称: 「'+esc(newP)+'」',rn,'改名 prompt 已复制');else if(newP===n.path)showToast('路径未变化');};
+      if(rn)rn.onclick=()=>openForm('rename',n.path);
       if(dl)dl.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 删除\n  位  置: 「'+esc(n.path)+'」',dl,'删除 prompt 已复制');});}
   renderActions();
 }
+let fpMode='create',fpSrcPath='';
+function openForm(mode,path){
+  fpMode=mode;fpSrcPath=path||'';
+  const panel=document.getElementById('formPanel');
+  document.getElementById('fpTitle').textContent=mode==='rename'?'改名位置':'新建位置';
+  document.getElementById('fpMainLabel').textContent=mode==='rename'?'新名称(新路径)':'新位置路径';
+  document.getElementById('fpMain').placeholder=mode==='rename'?'如: 客厅/电视柜2':'如: 客厅/电视柜, 支持多级';
+  document.getElementById('fpSrcRow').hidden=mode!=='rename';
+  document.getElementById('fpSrc').value=path||'';
+  document.getElementById('fpMain').value=mode==='rename'?(path||''):'';
+  panel.hidden=false;
+  document.getElementById('fpMain').focus();
+  updateFpPreview();
+}
+function updateFpPreview(){
+  const v=document.getElementById('fpMain').value.trim();
+  let text;
+  if(fpMode==='rename'){
+    const src=esc(fpSrcPath);
+    text='请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 改名\n  源  位  置: 「'+src+'」\n  新  名  称'+(v?': 「'+esc(v)+'」':'(新路径): ___');
+  }else{
+    text='请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 新建\n  位  置'+(v?': 「'+esc(v)+'」':'(客厅/电视柜): ___');
+  }
+  document.getElementById('fpPreview').textContent=text;
+  const copyBtn=document.getElementById('fpCopy');
+  const canCopy=fpMode==='create'?!!v:(!!v&&v!==fpSrcPath);
+  copyBtn.disabled=!canCopy;
+  copyBtn.style.opacity=canCopy?'1':'.4';
+  if(canCopy)copyBtn.dataset.text=text;
+}
 function renderActions(){
   const nb=document.getElementById('newBtn');
-  if(nb)nb.onclick=()=>{const path=prompt('新位置完整路径(如:客厅/电视柜,支持多级)','');if(path)doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 新建\n  位  置: 「'+esc(path)+'」',nb,'新建 prompt 已复制');};
+  if(nb)nb.onclick=()=>openForm('create');
+  document.getElementById('fpClose').onclick=()=>{document.getElementById('formPanel').hidden=true;};
+  document.getElementById('fpMain').addEventListener('input',updateFpPreview);
+  const cp=document.getElementById('fpCopy');
+  cp.onclick=()=>{if(cp.disabled)return;doCopy(cp.dataset.text||'',cp,'prompt 已复制,发给 AI');};
   const cd=D.copy_data||{},cl=D.copy_log||{};
   document.getElementById('copyDataBtn').onclick=()=>doCopy(formatHuman(cd),document.getElementById('copyDataBtn'),'数据已复制');
   document.getElementById('copyLogBtn').onclick=()=>doCopy(formatHuman(cl),document.getElementById('copyLogBtn'),'日志已复制');

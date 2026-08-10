@@ -53,6 +53,17 @@
   .btn-main:hover { background:var(--bg); }
 
   /* B1 toast */
+  
+  .sheet-mask { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 90; display: none; align-items: flex-end; justify-content: center; }
+  .sheet-mask.show { display: flex; }
+  .sheet { background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 10px 14px calc(14px + env(safe-area-inset-bottom,0)); box-shadow: 0 -8px 32px rgba(0,0,0,.12); }
+  .sheet-title { font-size: 15px; font-weight: 700; text-align: center; padding: 10px 0 4px; }
+  .sheet-sub { font-size: 12px; color: var(--fg3); text-align: center; padding-bottom: 10px; }
+  .sheet-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--bg); border: 0; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
+  .sheet-item .f { font-weight: 700; font-size: 14px; min-width: 56px; }
+  .sheet-item .d { font-size: 11.5px; color: var(--fg3); }
+  .sheet-cancel { width: 100%; background: var(--bg); border: 0; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 600; color: var(--fg2); cursor: pointer; }
+
   .toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) scale(.9); opacity:0; background:rgba(28,28,30,.94); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); color:#f0f0f0; border-radius:14px; padding:13px 14px 13px 16px; display:flex; align-items:flex-start; gap:12px; max-width:480px; min-width:300px; box-shadow:0 10px 32px rgba(0,0,0,.32); pointer-events:none; transition:opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index:99; }
   .toast.show { opacity:1; transform:translateX(-50%) scale(1); pointer-events:auto; }
   .toast-title { font-weight:600; font-size:12.5px; color:#fff; margin-bottom:2px; }
@@ -113,7 +124,19 @@
 
   <script id="payload" type="application/json"><!--INJECT-DATA--></script>
 
-  <div class="toast" id="toast">
+  
+<!-- 复制数据弹层三选一(08 §4 · 2026-08-10 修订:默认人类可读快照,JSON/CSV 兜底) -->
+<div class="sheet-mask" id="sheetMask">
+  <div class="sheet">
+    <div class="sheet-title">复制数据</div>
+    <div class="sheet-sub">选格式,点哪个复制哪个</div>
+    <button class="sheet-item" data-f="text"><span class="f">纯文本</span><span class="d">粘贴到聊天/笔记</span></button>
+    <button class="sheet-item" data-f="json"><span class="f">JSON</span><span class="d">粘贴给 AI 记账</span></button>
+    <button class="sheet-item" data-f="csv"><span class="f">CSV</span><span class="d">粘贴到 Excel 存档</span></button>
+    <button class="sheet-cancel" id="sheetCancel">取消</button>
+  </div>
+</div>
+<div class="toast" id="toast">
     <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
     <div class="toast-detail" id="toastDetail"></div>
     <button class="toast-close" id="toastClose">✓ 知道了</button>
@@ -292,7 +315,42 @@
     } } };
   }
   document.getElementById('copyPromptBtn').onclick = function () { doCopy(buildPrompt(), 'prompt', this); };
-  document.getElementById('copyDataBtn').onclick = function () { doCopy(JSON.stringify(payloadData(), null, 2), 'data'); };
+  
+  // 08 修订:复制数据 = 人类可读快照(默认 text,JSON/CSV 兜底)
+  window.buildDataText = function (fmt) {
+    var f = payloadData().form.fields;
+    var d = payload ? (payload.data || {}).form || {} : {};
+    if (fmt === 'json') return JSON.stringify(payloadData(), null, 2);
+    if (fmt === 'csv') {
+      return [['amount', 'category', 'account', 'ledger', 'time', 'note', 'currency'].join(','),
+              [f.amount, curCat || elCat.value, f.account, f.ledger, f.time, f.note, f.currency].map(function (v) { return '"' + String(v || '').replace(/"/g, '""') + '"'; }).join(',')].join('\n');
+    }
+    var lines = [];
+    lines.push('【' + ACTION + ' · 数据快照】');
+    lines.push(' 金 额: ' + (f.amount || '(未填)'));
+    lines.push(' 分类/名目: ' + (curCat || elCat.value || '(未填)'));
+    lines.push(' 备 注: ' + (f.note || '(无)'));
+    lines.push(' 时 间: ' + (f.time || '(未填,默认现在)'));
+    lines.push(' 账 户: ' + (f.account || '(默认)'));
+    lines.push(' 账 本: ' + (f.ledger || '(默认)'));
+    lines.push(' 币 种: ' + (f.currency || '(默认)'));
+    if (d.prefill_source) lines.push(' ⚡ ' + d.prefill_source);
+    if (d.duplicate_hint) lines.push(' ⚠ ' + d.duplicate_hint);
+    return lines.join('\n');
+  }
+
+  // 复制数据弹层三选一绑定(08 §4 · 2026-08-10 修订)
+  document.getElementById('copyDataBtn').onclick = function () { document.getElementById('sheetMask').classList.add('show'); };
+  document.getElementById('sheetCancel').onclick = function () { document.getElementById('sheetMask').classList.remove('show'); };
+  document.getElementById('sheetMask').addEventListener('click', function (e) { if (e.target === this) this.classList.remove('show'); });
+  document.querySelectorAll('#sheetMask .sheet-item').forEach(function (b) {
+    b.onclick = function () {
+      var f = b.getAttribute('data-f');
+      document.getElementById('sheetMask').classList.remove('show');
+      doCopy(buildDataText(f), f);
+    };
+  });
+
   document.getElementById('copyLogBtn').onclick = function () {
     var lines = [];
     lines.push('① 场景标识');

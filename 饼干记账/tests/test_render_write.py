@@ -119,6 +119,8 @@ class TestPayload:
         assert "category_suggestions" in text          # 分类推荐
         assert "AI 推荐的已有分类" in text             # 已有标记
         assert "copyDataBtn" in text and "copyLogBtn" in text  # 复制数据/日志
+        assert "sheetMask" in text and "buildDataText" in text  # 三选一浮层(08 §4 修订)
+        assert "数据快照" in text                       # 人类可读快照(08 修订:禁默认 JSON)
         assert "toastClose" in text                    # B1 toast
 
 
@@ -188,6 +190,8 @@ class TestBatch:
         assert "missingBanner" in text          # 缺金额警示条
         assert "id=\"totalAmt\"" in text        # 总计
         assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
+        assert "sheetMask" in text and "buildDataText" in text  # 三选一浮层
+        assert "数据快照" in text
 
 
 class TestReimburse:
@@ -269,6 +273,8 @@ class TestFlow:
         assert "id=\"cands\"" in text        # 候选 radio
         assert "id=\"warnBox\"" in text      # 超支警示
         assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
+        assert "sheetMask" in text and "buildDataText" in text  # 三选一浮层
+        assert "数据快照" in text
         assert "toastClose" in text
 
 
@@ -377,6 +383,8 @@ class TestInstallment:
         assert "id=\"params\"" in text      # 参数回显
         assert "id=\"rows\"" in text        # 分摊预览
         assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
+        assert "sheetMask" in text and "buildDataText" in text  # 三选一浮层
+        assert "数据快照" in text
 
 
 class TestUpdate:

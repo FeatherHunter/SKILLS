@@ -57,6 +57,14 @@ def _insert(tmp_db_dir, category, amount, time_str, note="", account="", ledger=
         conn.close()
 
 
+def _month_first(offset: int) -> str:
+    """今天所在月偏移 offset 个月的 1 号('YYYY-MM-01',动态防日期轮转)"""
+    today = date.today()
+    m = today.month - 1 + offset  # 0 基
+    y = today.year + m // 12
+    return f"{y:04d}-{m % 12 + 1:02d}-01"
+
+
 # ── 时间族 7 ────────────────────────────────────────────────────────────────
 
 class TestTimeFamily:
@@ -232,10 +240,10 @@ class TestStatusFamily:
         # 待报销
         _insert(tmp_db_dir, "餐饮/外卖/午餐", -88.0, "2026-07-10 12:00:00", "客户午餐 #待报销")
         _insert(tmp_db_dir, "出行/网约车", -45.0, "2026-07-11 12:00:00", "出差打车 #待报销")
-        # 分期(手机 3 期:7/8/9 月,首期 3400 + 每期 3300)
-        _insert(tmp_db_dir, "分期/手机", -3400.0, "2026-07-01 00:00:00", "#分期 手机 第1期/3")
-        _insert(tmp_db_dir, "分期/手机", -3300.0, "2026-08-01 00:00:00", "#分期 手机 第2期/3")
-        _insert(tmp_db_dir, "分期/手机", -3300.0, "2026-09-01 00:00:00", "#分期 手机 第3期/3")
+        # 分期(手机 3 期:上月/本月/下月,首期 3400 + 每期 3300 · 动态月份防日期轮转)
+        _insert(tmp_db_dir, "分期/手机", -3400.0, _month_first(-1) + " 00:00:00", "#分期 手机 第1期/3")
+        _insert(tmp_db_dir, "分期/手机", -3300.0, _month_first(0) + " 00:00:00", "#分期 手机 第2期/3")
+        _insert(tmp_db_dir, "分期/手机", -3300.0, _month_first(1) + " 00:00:00", "#分期 手机 第3期/3")
 
     def test_debt_aggregation(self, tmp_db_dir):
         """查欠款:借出未还总额 + 借入未还总额 + 对象解析;已还排除"""
@@ -291,10 +299,10 @@ class TestStatusFamily:
         # 首期补差 3400,常规期 3300(众数判定)
         assert g["first"] == 3400.0
         assert g["each"] == 3300.0
-        # 已还期数按日期 ≤ 今天(2026-07/08 期已到)
-        assert g["paid"] >= 1
+        # 已还期数按日期 ≤ 今天(上月/本月期已到,恒 2)
+        assert g["paid"] == 2
         assert g["remaining"] == g["periods"] - g["paid"]
-        # 剩余金额 = 未来期实际金额(2026-09 期 3300)
+        # 剩余金额 = 未来期实际金额(下月期 3300)
         assert g["remaining_amount"] == 3300.0
 
     def test_installment_name_filter(self, tmp_db_dir):

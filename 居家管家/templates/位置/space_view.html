@@ -113,16 +113,17 @@ function render(){
     renderActions();return;
   }
   const kids=arr(D.children);
-  if(kids.length){app.innerHTML+='<section><h2>📂 下一层 <span class="hint">点卡片 = 下钻</span></h2><div class="grid">'+kids.map((c,i)=>'<div class="loc '+(c.empty?'isempty':'')+'" id="loc_'+i+'"><div class="nm">'+esc(c.name)+'</div><div class="ct">'+(c.empty?'空位置':c.count+' 件')+(c.has_children?' · 有下级':'')+'</div><div class="go">›</div></div>').join('')+'</div></section>';}
-  kids.forEach((c,i)=>{const el=document.getElementById('loc_'+i);if(el){el.onclick=()=>{const t=drillPrompt(c.path);doCopy(t,el,'下钻 prompt 已复制,发给 AI');};}});
   const its=arr(D.items);
-  if(its.length){app.innerHTML+='<section><h2>📦 本层物品 <span class="hint">快捷操作:移/补/减</span></h2><div class="items">'+its.map((it,j)=>'<div class="item"><div class="ph">'+(it.photo?'<img alt="'+esc(it.name)+'" src="data:image/jpeg;base64,'+it.photo+'">':'无图')+'</div><div class="inf"><div class="n">'+esc(it.name)+'</div><div class="s">×'+esc(it.quantity||1)+' · '+esc(it.location_status||'在家')+'</div></div><div class="qa"><button class="qb mv" id="mv_'+j+'">移</button><button class="qb" id="add_'+j+'">补</button><button class="qb" id="sub_'+j+'">减</button></div></div>').join('')+'</div></section>';
-    its.forEach((it,j)=>{[['mv','mv_'],['add','add_'],['sub','sub_']].forEach(([k,pid])=>{const el=document.getElementById(pid+j);if(el){const q=quickPrompt(k,it);el.title=q.text;el.onclick=()=>doCopy(q.text,el,'prompt 已复制,发给 AI');}});});
-  }
   const eh=arr(D.empty_hints);
-  if(eh.length){app.innerHTML+='<div class="tip">🏷️ 空位置节点:'+eh.map(h=>esc(h.path)).join('、')+' —— 可移入物品,或先收纳建议。<button class="btn ghost" id="tipBtn">复制收纳建议</button></div>';
-    const tb=document.getElementById('tipBtn');
-    if(tb)tb.onclick=()=>{const t='请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\n  位  置: '+esc(D.current_path||'');doCopy(t,tb,'prompt 已复制');};}
+  let html='';
+  if(kids.length){html+='<section><h2>📂 下一层 <span class="hint">点卡片 = 下钻</span></h2><div class="grid">'+kids.map((c,i)=>'<div class="loc '+(c.empty?'isempty':'')+'" id="loc_'+i+'"><div class="nm">'+esc(c.name)+'</div><div class="ct">'+(c.empty?'空位置':c.count+' 件')+(c.has_children?' · 有下级':'')+'</div><div class="go">›</div></div>').join('')+'</div></section>';}
+  if(its.length){html+='<section><h2>📦 本层物品 <span class="hint">快捷操作:移/补/减</span></h2><div class="items">'+its.map((it,j)=>'<div class="item"><div class="ph">'+(it.photo?'<img alt="'+esc(it.name)+'" src="data:image/jpeg;base64,'+it.photo+'">':'无图')+'</div><div class="inf"><div class="n">'+esc(it.name)+'</div><div class="s">×'+esc(it.quantity||1)+' · '+esc(it.location_status||'在家')+'</div></div><div class="qa"><button class="qb mv" id="mv_'+j+'">移</button><button class="qb" id="add_'+j+'">补</button><button class="qb" id="sub_'+j+'">减</button></div></div>').join('')+'</div></section>';}
+  if(eh.length){html+='<div class="tip">🏷️ 空位置节点:'+eh.map(h=>esc(h.path)).join('、')+' —— 可移入物品,或先收纳建议。<button class="btn ghost" id="tipBtn">复制收纳建议</button></div>';}
+  app.innerHTML=html;
+  kids.forEach((c,i)=>{const el=document.getElementById('loc_'+i);if(el){el.onclick=()=>{const t=drillPrompt(c.path);doCopy(t,el,'下钻 prompt 已复制,发给 AI');};}});
+  its.forEach((it,j)=>{[['mv','mv_'],['add','add_'],['sub','sub_']].forEach(([k,pid])=>{const el=document.getElementById(pid+j);if(el){const q=quickPrompt(k,it);el.title=q.text;el.onclick=()=>doCopy(q.text,el,'prompt 已复制,发给 AI');}});});
+  const tb=document.getElementById('tipBtn');
+  if(tb)tb.onclick=()=>{const t='请加载「居家管家」技能,帮我推荐收纳位置(唤醒词:收纳建议):\\n  位  置: '+esc(D.current_path||'');doCopy(t,tb,'prompt 已复制');};
   const bd=document.getElementById('bread');
   let bdHtml='<span class="crumb home" id="bc_home">🏠 全屋</span>';
   arr(D.breadcrumbs).forEach((c,i)=>{bdHtml+='<span class="arrow">›</span><span class="crumb" id="bc_'+i+'">'+esc(c.name)+'</span>';});

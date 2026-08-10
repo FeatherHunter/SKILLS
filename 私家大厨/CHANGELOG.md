@@ -5,6 +5,30 @@
 
 ---
 
+## 2026-08-11 · #218 db_config 导入零副作用（公共层）
+
+### 背景
+
+T4 对抗式审查 F6（#205 评论）发现：任何脚本 import `db_config` 时，模块级 `_find_db_path` 的 `mkdir` + 模块底部 `ensure_wal_mode()` 立即执行 → 在从未确认路径的情况下创建空 DB 文件与目录。只读命令 `cli.py check` 跑一次即静默建库，且 `db_exists` 恒为 True 误导环境检测。
+
+### 变更
+
+- `db_config.py`：`_find_db_path` 纯路径解析（删 mkdir）；目录创建下沉到 `_ensure_db_dir()`，由写连接（`get_connection` / `get_connection_with_retry` / `ensure_wal_mode`）调用；删模块级 `ensure_wal_mode()` 调用
+- WAL 模式不受影响：`_configure_connection()` 已在每次连接设置 `PRAGMA journal_mode=WAL`
+- `init_db.py` 显式 `ensure_wal_mode()` 保留（初始化流程正确用法）
+
+### 验证
+
+- `import db_config` → DB 目录 0 条目；`cli.py check` → 0 条目 + `db_exists: false`
+- `get_connection` → WAL 启用 + 建库；`init_db.py` → 17 表齐全
+- 新增 3 条回归测试（test_imports.py），全量 252 passed（临时 DB 隔离）
+
+### Commit
+
+- `049867e`（已推送远端，含 tests）
+
+---
+
 ## 2026-07-28 · v3.5 修复 ADD 阶段
 
 ### 背景

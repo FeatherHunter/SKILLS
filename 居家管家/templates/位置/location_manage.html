@@ -29,9 +29,11 @@ section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
 .opb{border:none;border-radius:99px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;background:#f2f4f8;color:var(--fg2);min-height:36px;line-height:1.2}
 .opb:hover{background:#eef4ff;color:var(--blue)}
 .opb.danger:hover{background:#ffeaea;color:var(--red)}
-.sim{border:1px solid #ffd9b3;background:#fff8f0;border-radius:14px;padding:14px 16px;margin-bottom:10px;font-size:13px}
-.sim .paths{color:#8a5a1a;font-weight:600}
-.sim .mig{color:var(--fg3);font-size:12px;margin-top:4px}
+.sim{border:1px solid #ffd9b3;background:#fff8f0;border-radius:14px;padding:14px 16px;margin-bottom:10px;font-size:13px;display:flex;align-items:center;gap:12px}
+.sim-main{flex:1;min-width:0}
+.sim .btn{flex:none}
+.sim .paths{color:#8a5a1a;font-weight:600;word-break:break-all}
+.sim .mig{color:var(--fg3);font-size:12px;margin-top:4px;word-break:break-all}
 .tip{background:#fff8e6;border:1px solid #f5d98f;color:#8a6d1a;border-radius:14px;padding:12px 16px;font-size:13px;margin-bottom:14px}
 .tip button{margin-left:8px}
 .empty{background:var(--card);border-radius:18px;padding:36px 20px;text-align:center;color:var(--fg3)}
@@ -66,8 +68,8 @@ section h2 .hint{font-size:11px;color:var(--fg3);font-weight:400}
 .fp-row input[readonly]{background:#f2f2f5;color:var(--fg3)}
 .fp-preview pre{background:#f6f8fa;border:1px solid #e8eaed;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;white-space:pre-wrap;word-break:break-all;color:var(--fg)}
 .fp-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
-.fp-actions .btn:first-child{grid-column:1/-1}
-@media(max-width:720px){.fp-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.fp-actions .btn:first-child{grid-column:1/-1}}
+.fp-actions .btn{width:100%;min-width:0}
+@media(max-width:720px){.fp-actions{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}}
 </style>
 </head>
 <body>
@@ -124,7 +126,7 @@ function render(){
   }
   if(nodes.length){app.innerHTML+='<section><h2>🌳 位置树 <span class="hint">'+esc(nodes.length)+' 个位置 · 点按钮操作</span></h2><div id="tree"></div></section>';}
   const sims=arr(D.similar_groups);
-  if(sims.length){app.innerHTML+='<section><h2>🔍 相似位置检测 <span class="hint">同位置两种写法,建议合并</span></h2>'+sims.map((s,i)=>'<div class="sim"><div class="paths">'+s.paths.map(esc).join(' ⇄ ')+'</div><div class="mig">涉及 '+esc(s.items_affected)+' 件物品 · 建议保留「'+esc(s.target)+'」</div><div style="margin-top:8px;display:flex;justify-content:flex-end"><button class="btn" id="mg_'+i+'">确认合并</button></div></div>').join('')+'</section>';
+  if(sims.length){app.innerHTML+='<section><h2>🔍 相似位置检测 <span class="hint">同位置两种写法,建议合并</span></h2>'+sims.map((s,i)=>'<div class="sim"><div class="sim-main"><div class="paths">'+s.paths.map(esc).join(' ⇄ ')+'</div><div class="mig">涉及 '+esc(s.items_affected)+' 件物品 · 建议保留「'+esc(s.target)+'」</div></div><button class="btn" id="mg_'+i+'">确认合并</button></div>').join('')+'</section>';
     sims.forEach((s,i)=>{const mb=document.getElementById('mg_'+i);
       if(mb){const srcs=s.paths.filter(x=>x!==s.target).join('、');mb.onclick=()=>doCopy('请加载「居家管家」技能,帮我管理位置体系(唤醒词:管位置):\n  操  作: 合并\n  源  位  置: 「'+srcs+'」\n  目标位置: 「'+s.target+'」',mb,'合并 prompt 已复制');};});}
   const tree=document.getElementById('tree');

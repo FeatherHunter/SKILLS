@@ -488,7 +488,7 @@ function renderWeeks(weeks, activeWk) {
             const weight = sets[0] ? sets[0].weight : '?';
             const unit = sets[0] ? sets[0].unit : 'kg';
             const color = PART_COLORS[part] || '#6e6e73';
-            const wt = unit !== '自重' ? `${weight} ${unit}` : '自重';
+            const wt = (!weight || weight === 0) ? (unit !== 'kg' && unit !== '自重' ? '—' : '自重') : `${weight} ${unit}`;
             const typeOrNote = mtype ? ` · ${escapeHTML(mtype)}` : '';
             html += '<tr>';
             html += `<td><strong>${escapeHTML(name)}</strong><span class="sub">${escapeHTML(note)}${typeOrNote}</span></td>`;

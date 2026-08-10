@@ -179,8 +179,8 @@ if(stage==='error'){
   nextBtn='<button class="copy" onclick="copyThen(this.dataset.p,\'重试指令已复制\',\'粘贴给 AI 即可重试初始化。\')" data-p="'+esc(retry)+'">一键重试(复制指令给 AI)</button>';
 }
 if((stage==='pending'||stage==='need_path') && !dbEnvSet){
-  var cfgDir=envCfg.SKILLS_DB_PATH && envCfg.SKILLS_DB_PATH.indexOf('未设置')<0 ? '' : '';
-  frmHtml='<div class="frm"><label for="frmDir">数据库目录(可改,建议值)</label><input id="frmDir" type="text" value="'+esc('D:\\2Study\\StudyNotes\\.db')+'" oninput="updatePreview(\'frmDir\',null,buildCfgPrompt)"></div>'+frmHtml;
+  var cfgDirSuggest=envCfg.SKILLS_DB_PATH_SUGGEST||'';
+  frmHtml='<div class="frm"><label for="frmDir">数据库目录(可改,建议值来自环境推导)</label><input id="frmDir" type="text" value="'+esc(cfgDirSuggest)+'" placeholder="如 D:\\MyData" oninput="updatePreview(\'frmDir\',null,buildCfgPrompt)"></div>'+frmHtml;
   cfgBtn='<button class="copy ghost" onclick="copyFormPrompt(\'frmDir\',buildCfgPrompt,\'配置指令已复制\',\'粘贴给 AI 即可引导配置环境变量。\')">先配置环境变量</button>';
 }
 if(stage==='done'||stage==='already'){

@@ -59,6 +59,7 @@ def env_check_payload(force_refresh=False):
         "dirs_writable": {"db_dir": db_writable, "photos_dir": photos_writable},
         "env": {
             "SKILLS_DB_PATH": env_db or "(未设置,走默认)",
+            "SKILLS_DB_PATH_SUGGEST": env_db or str(db_dir),
             "HOME_PHOTOS_DIR": env_photos or "(未设置,走默认)",
         },
         "status": "ok",

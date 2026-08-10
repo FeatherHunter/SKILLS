@@ -20,6 +20,13 @@ HTML 子目录命名:卡路里 = "calorie" → "/.../calorie_html/"
   - 例:查档案_结果_20260802_131014.html / 设活动量_回执_20260802_131014.html
   - 一个场景可能多类型(wizard=过程 + 回执),靠类型后缀区分同一场景不同产物
   - 统一用 html_scene_path(skill_dir, 场景名, output_type) 生成,禁止手拼
+
+⭐ 内容标识段 suffix(v1.1 · 2026-08-11 issue #49 用户拍板):
+  文件名 = <场景名>_<类型中文>_<内容>_<TS>.html(可选段,嵌在类型词与 TS 之间)
+  - 例:记一餐_回执_香蕉_20260803_000422.html(食物名带进文件名,下载多时可快速识别)
+  - 生成:html_scene_path(skill_dir, 场景名, output_type, suffix=内容) / html_path(skill_dir, command, suffix=内容)
+  - 自动 sanitize(替换 \\/:*?"<>|[] → _、去空格、截断 32 字符),冲突保护机制不变
+  - 仅在有「内容标识」的写库回执场景使用,静态/聚合视图不要乱加
 """
 
 import glob

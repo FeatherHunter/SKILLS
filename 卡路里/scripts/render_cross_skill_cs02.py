@@ -43,7 +43,9 @@ def build_payload(result: dict) -> dict:
     if result.get("ok"):
         summary.append(f"对齐 {result['days']} 天（睡眠 {result['sleep_days']} 天 · 体重 {result['weight_days']} 天）")
         if corr.get("same_day") is not None:
-            summary.append(f"同日相关 r={corr['same_day']:+.2f} · 前夜相关 r={corr.get('lag_1day') or '—'}")
+            lag = corr.get("lag_1day")
+            lag_s = f"{lag:+.2f}" if lag is not None else "—"
+            summary.append(f"同日相关 r={corr['same_day']:+.2f} · 前夜相关 r={lag_s}")
     summary.append(result.get("insight", ""))
 
     group_rows = []

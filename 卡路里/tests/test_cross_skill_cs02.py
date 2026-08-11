@@ -190,6 +190,21 @@ def test_read_skill_unknown_domain(temp_db):
     assert "sleep" in env.get("domains", [])
 
 
+def test_bucket_boundaries():
+    """对抗审查盲区修复: 分位边界（360/420/480/540 整点归属）"""
+    from cross_skill import _bucket_of
+
+    assert _bucket_of(359) == "<6h"
+    assert _bucket_of(360) == "6-7h"
+    assert _bucket_of(419) == "6-7h"
+    assert _bucket_of(420) == "7-8h"
+    assert _bucket_of(479) == "7-8h"
+    assert _bucket_of(480) == "8-9h"
+    assert _bucket_of(539) == "8-9h"
+    assert _bucket_of(540) == ">9h"
+    assert _bucket_of(720) == ">9h"
+
+
 def test_render_cs02_html(temp_db):
     """端到端: render → 注入管线成功 → 产物含注入数据 + 复制按钮区"""
     days = _make_days(6)

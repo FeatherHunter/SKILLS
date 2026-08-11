@@ -83,6 +83,59 @@ def test_fetch_sleep_empty_range(conn):
     assert fetch_sleep("2026-09-01", "2026-09-10") == []
 
 
+def test_fetch_sleep_fallback_records_when_summary_missing(conn):
+    """对抗审查盲区修复: daily_summary 缺失的日期 → 从 schedule_records 聚合兜底"""
+    import schedule_db as db
+
+    conn = db.get_connection()
+    # 08-01/08-02 有摘要；08-03 摘要缺失（用户没跑摘要）但有原始记录
+    _seed_summary(conn, [
+        ("2026-08-01", "维持.睡眠", 480),
+        ("2026-08-02", "睡眠", 420),
+    ])
+    conn.execute(
+        "INSERT INTO schedule_records (date, time_start, time_end, duration_minutes, activity, category, "
+        "source_contents, source_timestamps, analysis_reasoning) "
+        "VALUES ('2026-08-03', '23:30', '07:00', 450, '夜间睡眠', '维持.睡眠', '睡了', '2026-08-04T07:00:00', 'x')"
+    )
+    conn.execute(
+        "INSERT INTO schedule_records (date, time_start, time_end, duration_minutes, activity, category, "
+        "source_contents, source_timestamps, analysis_reasoning) "
+        "VALUES ('2026-08-03', '13:00', '13:40', 40, '午休', '调整.午睡', '午睡', '2026-08-04T07:00:00', 'x')"
+    )
+    conn.commit()
+    conn.close()
+
+    from PUBLIC_DOMAINS import fetch_sleep
+
+    out = fetch_sleep("2026-08-01", "2026-08-05")
+    assert out == [
+        {"date": "2026-08-01", "sleep_min": 480},
+        {"date": "2026-08-02", "sleep_min": 420},
+        {"date": "2026-08-03", "sleep_min": 450},  # records 兜底 · 午睡不计
+    ]
+
+
+def test_fetch_sleep_summary_wins_over_records(conn):
+    """摘要存在时以摘要为准（records 聚合不覆盖权威值）"""
+    import schedule_db as db
+
+    conn = db.get_connection()
+    _seed_summary(conn, [("2026-08-04", "维持.睡眠", 500)])
+    conn.execute(
+        "INSERT INTO schedule_records (date, time_start, time_end, duration_minutes, activity, category, "
+        "source_contents, source_timestamps, analysis_reasoning) "
+        "VALUES ('2026-08-04', '23:00', '07:00', 480, '夜间睡眠', '维持.睡眠', '睡了', '2026-08-05T07:00:00', 'x')"
+    )
+    conn.commit()
+    conn.close()
+
+    from PUBLIC_DOMAINS import fetch_sleep
+
+    out = fetch_sleep("2026-08-04", "2026-08-04")
+    assert out == [{"date": "2026-08-04", "sleep_min": 500}]
+
+
 def test_skilllink_e2e_sleep(conn):
     """端到端：skilllink-read 真身 → 作息管家注册表 → 统一信封"""
     import json

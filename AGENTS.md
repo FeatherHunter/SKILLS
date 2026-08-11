@@ -71,3 +71,7 @@ GitHub Issues（`FeatherHunter/SKILLS`），按技能前缀分区：`[备忘录]
 ### Domain docs
 
 单仓库多上下文布局，根 `CONTEXT.md` + 根 `CONTEXT-MAP.md` 索引到各技能子目录的 `CONTEXT.md`。详见 `docs/agents/domain.md`。
+
+### Delivery fidelity（交付保真规范）
+
+解决「AI 交付只有 60%」的六个保真手段（交付前三问自检 / grilling 问边界 / 先交决策清单 / 验收标准进 ticket / verifier 独立审查 / 小步交付+里程碑确认）。任何 agent 交付任何工作前默认遵守：小事至少用手段 1，跨技能/跨会话大任务手段 1-6 全用。详见 `docs/agents/delivery-fidelity.md`。

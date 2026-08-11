@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#103 收尾完成</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --green: #34c759; --blue: #0071e3; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--green);
+    background: rgba(52,199,89,0.10); border: 1px solid rgba(52,199,89,0.25);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  .commit { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 12.5px; font-family: ui-monospace, "SF Mono", Consolas, monospace; margin-top: 8px; word-break: break-all; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">完成</span>
+  <h1>#103 数据层变更总账 · 全部收尾</h1>
+  <p>2026-08-11 · 对账 → 收编 → 对抗审查 → 拍板 → 归档，闭环</p>
+</div>
+
+<div class="card">
+  <h2>✅ 已完成</h2>
+  <ul class="plain">
+    <li>
+      <div class="t">18 项变更全部落地 / 废弃 / 对平</div>
+      <div class="d">15 项实施期已落地、1 项（联动偏好表）SM9 拍板废弃、收编 + #220 补账补齐。</div>
+    </li>
+    <li>
+      <div class="t">DDL 收编 + 隐藏 bug 修复</div>
+      <div class="d">12 张域表收编进 db.py init_db；inventory_stat 列名不一致、票据凭证缺 import sys 两个 bug 已修。</div>
+    </li>
+    <li>
+      <div class="t">三个对抗决策已拍板（G1-G3 全 A）</div>
+      <div class="d">收编方式 / 列名方向 / #220 修复，用户确认维持现状。</div>
+    </li>
+    <li>
+      <div class="t">Issue 状态闭环</div>
+      <div class="d">#103 总账 · #115 T11 实施票 · #220 补账 — 全部 close，附收尾评论。</div>
+    </li>
+    <li>
+      <div class="t">交付物入库</div>
+      <div class="d">4 份 wayfinder 交付 HTML 归档 <span style="font-family:ui-monospace">docs/reviews/103-D1*.html</span>（session 关闭零损失）。</div>
+    </li>
+    <li>
+      <div class="t">经验沉淀</div>
+      <div class="d">「wayfinder 必须保留 grill 阶段」已写入记忆，下次复杂任务不再省略对抗式收敛。</div>
+    </li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>⏳ 待你执行：push 2 个 commit</h2>
+  <div class="commit">
+    8eeaf36  [居家管家] D1 收编(#103) · 域表 DDL 收编进 db.py init_db + #220 补账 + inventory_stat 列名对齐 + 票据凭证 import sys 修复 · 全量 396 通过<br><br>
+    b7e8915  [居家管家] #103 D1 收编 wayfinder 交付归档 · 4 份 HTML 入 docs/reviews<br><br>
+    → git push origin main
+  </div>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:10px;">本地已全部提交（含 pre-commit 钩子重跑 396 通过），远端待你 push。</p>
+</div>
+
+<div class="footer">Mavis · wayfinder #103 · 闭环完成（2026-08-11）</div>
+
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Triage · #243 + #253</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --blue: #0071e3; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--blue);
+    background: rgba(0,113,227,0.08); border: 1px solid rgba(0,113,227,0.2);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--blue); color: #fff; font-size: 12px; padding: 0 6px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-bug { background: rgba(255,59,48,0.10); color: #c22f26; }
+  .b-enh { background: rgba(0,113,227,0.10); color: #0071e3; }
+  .b-ok { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-warn { background: rgba(255,149,0,0.14); color: #c77100; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  .loc { font-size: 11px; color: var(--sub); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: 0.3px; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .opt .why { display: block; color: var(--sub); font-size: 12.5px; margin-top: 2px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">TRIAGE · 核查 + 推荐</span>
+  <h1>#243 bug + #253 enhancement</h1>
+  <p>2026-08-11 · 声明均已代码级核实，等待你拍板状态</p>
+</div>
+
+<!-- #243 -->
+<div class="card">
+  <h2><span class="no">1</span>#243 HELP 折叠箭头 bug</h2>
+  <p style="font-size:13px;margin-bottom:10px;">
+    <span class="badge b-bug">bug</span>
+    <span class="badge b-warn">needs-triage</span>
+    居家管家 HELP 三级目录折叠态箭头宽度显示不全（固定宽 + 负 margin）
+  </p>
+  <table>
+    <thead><tr><th>核查项</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>CSS 声明核实</td><td><span class="badge b-ok">✅ 属实</span> L57 场景 8px/-8px · L83 域 12px/-2px · L94 子功能 8px/-8px，与 issue 描述逐字一致</td></tr>
+      <tr><td>根因分析</td><td><span class="badge b-ok">✅ 合理</span> 固定盒宽 < 字符自然宽（▸ 10-11px 字号 ≈7-9px 宽），折叠朝右最宽被裁；负 margin 进一步压缩</td></tr>
+      <tr><td>修复方案</td><td>issue 已给：首选去固定宽回归自然宽度；更稳用 border chevron / SVG</td></tr>
+      <tr><td>影响面</td><td><span class="loc">templates/help_center.html</span> 局部 CSS，无 JS 逻辑改动</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--sub);margin-top:10px;">
+    <b>推荐状态：ready-for-agent</b> —— bug 属实、根因明确、方案已给、改动局部。修复后需浏览器实测 + 人眼终审（375px 手机适配 + 标题不截断 + 搜索直达态）。
+  </p>
+</div>
+
+<!-- #253 -->
+<div class="card">
+  <h2><span class="no">2</span>#253 scene_id 硬编码改单一事实源</h2>
+  <p style="font-size:13px;margin-bottom:10px;">
+    <span class="badge b-enh">enhancement</span>
+    <span class="badge b-warn">needs-triage</span>
+    渲染/事件代码硬编码 scene_id，未从场景清单读取
+  </p>
+  <table>
+    <thead><tr><th>核查项</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>硬编码声明</td><td><span class="badge b-ok">✅ 属实</span> <span class="loc">位置/cli.py</span> SM2-1~SM2-4 多处 + <span class="loc">位置/ops.py</span> scene_id 2 处；全技能各域同模式（联动 SM9-x、快递 SM5-x…）</td></tr>
+      <tr><td>事实源存在</td><td><span class="badge b-ok">✅</span> <span class="loc">references/scenarios.yaml</span>（HELP 唯一事实源，help_center.py 读取）+ <span class="loc">scenes/SM{n}.yaml</span></td></tr>
+      <tr><td>⚠️ 盲区</td><td><span class="badge b-warn">scenes/ 目录不完整</span> 只有 SM1/2/3/5/6/8 六个 yaml（缺 SM4/SM7），而 scenarios.yaml 是完整 9 域 59 场景。<b>若按 issue 方案「从 scenes/SM{n}.yaml 读取」，缺域的映射会拿不到 → 应以 references/scenarios.yaml 为唯一事实源，或先补齐 scenes/</b></td></tr>
+      <tr><td>规模</td><td>8 个域逐域迁移（物品/穿搭/统计/快递/家庭/票据/开始使用/联动），issue 已规划「位置域先行 + 逐域提交」</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--sub);margin-top:10px;">
+    <b>推荐状态：ready-for-agent</b> —— 方案明确、验收标准清晰（scene_id 与清单零差异 + 硬编码残留 0 + pytest 绿）。但需在 brief 里修正「事实源选择」：以 scenarios.yaml 为准，避免 scenes/ 缺域坑。
+  </p>
+</div>
+
+<!-- 拍板 -->
+<div class="card">
+  <h2><span class="no">3</span>请拍板</h2>
+  <div class="opt"><span class="letter">A</span><div><span class="rec">两个都转 ready-for-agent（推荐）</span>：我给 #243 写修复 brief（含方案 1 优先、375px 验证项）、#253 写重构 brief（含事实源修正 + 位置域先行）。<span class="why">两个 issue 都已规格化，agent 可直接执行。</span></div></div>
+  <div class="opt"><span class="letter">B</span><div>只转 #243（bug 明确、改动小），#253 留 needs-triage 待细化场景清单策略。</div></div>
+  <div class="opt"><span class="letter">C</span><div>都先不动，仅加 triage 核查评论存档。</div></div>
+</div>
+
+<div class="footer">Mavis · triage · #243 声明核实 ✅ / #253 声明核实 ✅（2026-08-11）</div>
+
+</body>
+</html>

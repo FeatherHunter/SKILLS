@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#250+#253 收尾完成</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --green: #34c759; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--green);
+    background: rgba(52,199,89,0.10); border: 1px solid rgba(52,199,89,0.25);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  .commit { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 12px; font-family: ui-monospace, "SF Mono", Consolas, monospace; margin-top: 8px; word-break: break-all; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">完成</span>
+  <h1>#250 + #253 · 全部闭环</h1>
+  <p>2026-08-11 · 人眼终审通过 · issue close · 交付物入库</p>
+</div>
+
+<div class="card">
+  <h2>✅ 闭环清单</h2>
+  <ul class="plain">
+    <li>
+      <div class="t">#250 SM6 拆场景 4→18</div>
+      <div class="d">18 场景测试数据全量跑通（17 HTML 终审通过），已 close。</div>
+    </li>
+    <li>
+      <div class="t">#253 位置域 scene_id 单一事实源</div>
+      <div class="d">位置域硬编码清零 + 守卫测试，保持 open 作跨域总票（快递/穿搭/联动 3 域待逐域迁移）。</div>
+    </li>
+    <li>
+      <div class="t">交付物归档</div>
+      <div class="d">4 份 HTML 入 docs/reviews（起点盲区/18场景方案/票据凭证域盘点/交付完成）。</div>
+    </li>
+    <li>
+      <div class="t">测试</div>
+      <div class="d">全量 pytest 398 通过（含 #250 场景契约 + #253 守卫测试）。</div>
+    </li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>⏳ 待 push（居家管家 3 个 commit）</h2>
+  <div class="commit">
+    e855159  [居家管家] #250 SM6 票据凭证域拆场景 4→18 · scene_id 单一事实源 + CLI --scene + 合并器 scenario_id + HELP DOM id 唯一化 + SKILL.md 18 行<br>
+    fcae96b  [居家管家] #253 位置域 scene_id 单一事实源 · scenes.py + cli 15 处 + ops 4 处 + 守卫测试<br>
+    b452ad5  [居家管家] #250/#253 交付归档 · 4 份 HTML 入 docs/reviews<br><br>
+    → git push origin main
+  </div>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:8px;">注：待 push 列表里还有并行 agent 的 commit（饼干记账/卡路里等），一起 push 即可。</p>
+</div>
+
+<div class="footer">Mavis · wayfinder · #250+#253 闭环（2026-08-11）</div>
+
+</body>
+</html>

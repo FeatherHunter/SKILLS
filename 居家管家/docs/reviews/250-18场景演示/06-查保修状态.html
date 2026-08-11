@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家管家 · 保修与保养</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--green:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:920px;margin:0 auto;padding:48px 22px 80px}
+.hero{background:linear-gradient(180deg,#fff,#f8fbff);border-radius:24px;padding:28px;box-shadow:var(--shadow);margin-bottom:18px}
+.eyebrow{color:var(--blue);font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px}
+h1{font-size:30px;letter-spacing:-.03em;line-height:1.15;margin-bottom:8px}
+.lead{color:var(--fg2);font-size:15px}
+.stamp{color:var(--fg3);font-size:12px;margin-top:4px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:18px 0}
+.card{background:var(--card);border-radius:16px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.card.warn{border-left-color:var(--orange)}.card.danger{border-left-color:var(--red)}.card.info{border-left-color:var(--blue)}
+.card b{display:block;color:var(--fg2);font-size:12px;margin-bottom:4px}
+.card span{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.chip{border:none;border-radius:999px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;background:#eef1f5;color:var(--fg2);transition:filter .15s,transform .08s}
+.chip:hover{filter:brightness(.96)}
+.chip:active{filter:brightness(.9);transform:scale(.97)}
+.chip.on{background:var(--blue);color:#fff}
+.item{background:var(--card);border-radius:18px;padding:16px 18px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid var(--blue)}
+.item.danger{border-left-color:var(--red);background:#fff8f8}
+.item.warn{border-left-color:var(--orange)}
+.item.info{border-left-color:var(--blue)}
+.name{font-weight:700;font-size:15px;margin-bottom:3px}
+.meta{color:var(--fg2);font-size:12px;margin-bottom:4px}
+.badge{display:inline-block;border-radius:99px;padding:3px 10px;font-size:11px;font-weight:700;margin:2px 6px 2px 0}
+.badge.ok{background:#e5f7ea;color:var(--green)}.badge.warn{background:#fff0d9;color:var(--orange)}
+.badge.danger{background:#ffe5e5;color:var(--red)}.badge.off{background:#eef1f5;color:var(--fg2)}
+.kind{font-size:11px;font-weight:800;color:var(--fg3);letter-spacing:.05em}
+.photo{display:inline-flex;margin-top:8px;max-width:120px;border-radius:10px;overflow:hidden}
+.photo img{width:100%;display:block}
+.events{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px;font-size:12px;color:var(--fg2)}
+.events summary{cursor:pointer;font-weight:700;color:var(--fg)}
+.ev{display:flex;gap:10px;padding:3px 0}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.btn{border:none;border-radius:999px;padding:7px 13px;font-weight:700;cursor:pointer;font-size:12px;background:#f0f3f8;color:var(--fg2);transition:filter .15s,transform .08s}
+.btn:hover{background:#e5e9ef}
+.btn:active{filter:brightness(.92);transform:scale(.97)}
+.btn.primary{background:var(--blue);color:#fff}
+.remind{background:#fff8ec;border:1px solid #f5d9a8;border-radius:16px;padding:14px 18px;margin:14px 0;font-size:13px;color:#8a5b00}
+.remind b{color:#6b4700}
+.empty{background:var(--card);border-radius:18px;padding:40px;text-align:center;color:var(--fg3);margin-top:16px}
+.actions{margin-top:14px}
+.fixed{position:sticky;bottom:16px;display:flex;flex-direction:column;gap:10px;margin-top:24px}
+.fixed .copy.add{width:100%;background:var(--blue);color:#fff;border-radius:999px;padding:12px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow)}
+.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.copy{border:none;background:#6e6e73;color:#fff;border-radius:999px;padding:11px 22px;font-weight:700;cursor:pointer;font-size:14px;box-shadow:var(--shadow);transition:filter .15s,transform .08s}
+.copy:active{filter:brightness(.92);transform:scale(.97)}
+.copy.log{background:#6e6e73}
+@media(max-width:720px){.wrap{padding:30px 14px 70px}.hero{padding:22px}h1{font-size:24px}.fixed{position:static;display:flex;flex-direction:column}.copypair{display:grid;grid-template-columns:1fr 1fr;gap:10px}.fixed .copy.add{min-height:48px}.copypair .copy{width:100%;margin:0;white-space:normal;line-height:1.4;min-height:48px}.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(72px,1fr));gap:8px}.chip{width:100%;min-height:40px;padding:8px 12px;font-size:13px}.btn{min-height:44px;padding:10px 16px;font-size:13px}.btnrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}.btnrow .btn{width:100%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+<div class="eyebrow">Home Manager · SM6 票据凭证</div>
+<h1 id="title">保修与保养</h1>
+<p class="lead" id="subtitle">在保 / 即将到期 / 维修记录 / 保养周期</p>
+<p class="stamp" id="stamp"></p>
+</header>
+<div class="cards" id="cards"></div>
+<div class="chips" id="chips"></div>
+<div id="reminders"></div>
+<div class="section" id="secTitle">权益清单</div>
+<div id="app"></div>
+<div class="fixed">
+<button class="copy add" id="addBtn">新增保修 / 保养</button>
+<div class="copypair">
+<button class="copy" id="copyData">复制数据</button>
+<button class="copy log" id="copyLog">复制日志</button>
+</div>
+</div>
+</div>
+<script id="payload" type="application/json">{"status": "ok", "data": {"meta": {"scene_id": "SM6-6", "command_cn": "查保修状态", "wake_word": "查保修状态", "title": "查保修状态(在保/将到期/已过)", "subtitle": "保修清单(在保/即将到期/已过状态徽章)。", "scenario_title": "查保修状态(在保/将到期/已过)"}, "occurred_at": "2026-08-11 15:53:00", "version": "2.0-SM6", "cli_chain": "python scripts/票据凭证/cli.py warranty list", "summary": {"title": "保修与保养", "subtitle": "权益状态 · 维修记录 · 保养周期", "metrics": [{"label": "在保", "value": "1 项", "severity": "info"}, {"label": "即将到期", "value": "0 项", "severity": "warn"}, {"label": "已过/待保养", "value": "0 项", "severity": "danger"}]}, "items": [{"id": 1, "item_id": 4, "kind": "保修", "start_date": "2026-05-20", "duration_days": 730, "last_done_date": null, "photo": "", "note": "", "created_at": "2026-08-11 15:53:00", "updated_at": "2026-08-11 15:53:00", "item_name": "测试挂烫机", "status": "在保", "days_left": 647, "end_date": "2028-05-19", "events": [{"id": 1, "warranty_id": 1, "occurred_at": "2026-08-11", "event_type": "维修", "cost": 80.0, "note": "", "created_at": "2026-08-11 15:53:00"}], "repair_count": 1, "photo_base64": ""}], "reminders": [], "empty_hint": "没有保修/保养登记。登记后这里会显示权益状态与到期提醒。"}, "message": "保修与保养已生成"}</script>
+<script>
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function val(v){return v===null||v===undefined||v===''?'<span style="color:var(--fg3)">未填写</span>':esc(v);}
+function yes(v){return v?'<span class="ok">通过</span>':'<span class="bad">未通过</span>';}
+function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};return{ok:true};}
+function _fbCopy(s){var ok=false;try{var t=document.createElement('textarea');t.value=s;t.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';document.body.appendChild(t);t.focus();t.select();ok=document.execCommand('copy');document.body.removeChild(t);}catch(e){ok=false;}return ok;}
+function copyText(s){if(!s)return;function ok(){toast('已复制','粘贴给 AI');}function fail(){toast('复制失败','长按选择文本手动复制');}if(navigator.clipboard&&navigator.clipboard.writeText){try{var pr=navigator.clipboard.writeText(s);if(pr&&pr.then){pr.then(function(){ok();}).catch(function(){_fbCopy(s)?ok():fail();});}else{ok();}}catch(e){_fbCopy(s)?ok():fail();}}else{_fbCopy(s)?ok():fail();}}
+function toast(msg,detail){if(!document.getElementById('hm-toast-style')){var st=document.createElement('style');st.id='hm-toast-style';st.textContent='.hm-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}.hm-toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}.hm-toast-icon{font-size:20px;line-height:1;padding-top:1px;flex-shrink:0}.hm-toast-body{flex:1;min-width:0}.hm-toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}.hm-toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}.hm-toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}.hm-toast-close:active{background:rgba(255,255,255,.2)}@media(max-width:820px){.hm-toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}.hm-toast.show{transform:translateX(0) scale(1)}}';document.head.appendChild(st);}var t=document.createElement('div');t.className='hm-toast';t.innerHTML='<div class="hm-toast-icon">📋</div><div class="hm-toast-body"><div class="hm-toast-title">'+esc(msg)+'</div>'+(detail?'<div class="hm-toast-detail">'+esc(detail)+'</div>':'')+'</div><button class="hm-toast-close">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.classList.add('show');});var timer=setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.remove();},260);},4500);t.querySelector('.hm-toast-close').onclick=function(){t.classList.remove('show');clearTimeout(timer);setTimeout(function(){t.remove();},260);};}
+function metaHeader(p,m){var me=p.data.meta||{};var stage=m&&m.stage?('<span class="stage">'+esc(m.stage)+'</span>'):'';return '<header class="hero"><div class="eyebrow" style="color:#8e8e93;font-size:11px;font-weight:600">'+esc(me.command_cn||'')+' · '+esc(me.occurred_at||'')+'</div><h1>'+esc(m&&m.title||me.command_cn||'')+'</h1>'+(m&&m.lead?'<p class="lead">'+esc(m.lead)+'</p>':'')+stage+'</header>';}
+function remindersBlock(p){var rs=arr(p.data.reminders);if(!rs.length)return '';return '<section class="remind"><h2>顺路提醒</h2>'+rs.map(r=>'<div class="remind-item '+(r.type==='warn'?'warn':r.type==='danger'?'bad':'')+'">'+esc(r.text)+'</div>').join('')+'</section>';}
+function buildDataText(p){var d=p.data||{},me=d.meta||{},s=d.scene||{};var L=['【居家管家 · '+(me.command_cn||'')+'】'];L.push('场景: '+(me.command_cn||'')+'('+(s.scene_id||me.scene_id||'')+') · 唤醒词「'+(me.wake_word||'')+'」');L.push('时间: '+(me.occurred_at||''));var it=s.item;if(it){L.push('物品: '+(it.name||'')+(it.category_name?' · 分类:'+it.category_name:'')+(it.location?' · 位置:'+it.location:'')+(it.quantity!=null?' · 数量:'+it.quantity:'')+(it.status?' · 状态:'+it.status:'')+((it.tags||[]).length?' · 标签:'+it.tags.join('/'):''));}var r=s.receipt;if(r){if(r.summary)L.push('结果: '+r.summary);if(r.diff&&r.diff.length)L.push('变更: '+r.diff.map(function(x){return (x.field||'')+' '+(x.before??'')+' → '+(x.after??'');}).join('; '));if(r.next)L.push('下一步: '+r.next);}if(s.items&&s.items.length&&!s.item){var isForm=s.mode||s.items[0].draft;L.push((isForm?'清单 '+s.items.length+' 条:':'命中 '+s.items.length+' 件:'));s.items.slice(0,12).forEach(function(x){var d0=x.draft||{};var nm=d0.name||x.name||'';var q=d0.quantity!=null?d0.quantity:(x.quantity!=null?x.quantity:'');L.push(' · '+(nm||'#')+((d0.category_name||x.category_name)?' · 分类:'+(d0.category_name||x.category_name):'')+(q!==''?' · 数量:'+q:'')+((d0.location||x.location)?' @'+(d0.location||x.location):'')+((x.status||d0.location_status)?' ['+(x.status||d0.location_status)+']':''));});}if(s.groups&&!it&&!r&&!s.items){L.push('分组 '+s.groups.length+' 组:');s.groups.slice(0,10).forEach(function(g){L.push(' · '+(g.name||'')+' ×'+(g.count||g.items&&g.items.length||0));});}if(s.tree&&!it&&!r&&!s.items&&!s.groups&&!s.events){L.push('分类体系('+(s.total||0)+' 个,顶级 '+(s.tree.length||0)+' 类):');s.tree.slice(0,20).forEach(function(cat){L.push(' · '+(cat.name||'')+((cat.children||[]).length?'('+cat.children.length+' 个二级)':''));});}if(s.events&&!it&&!r&&!s.items&&!s.groups){L.push('可撤销操作 '+s.events.length+' 条:');s.events.slice(0,12).forEach(function(e){L.push(' · '+(e.summary||('操作#'+e.id)));});}if(s.record&&!it&&!r&&!s.items&&!s.groups&&!s.events){L.push('盘点记录 #'+(s.record.id||'')+' ('+(s.record.occurred_at||'')+'):');L.push(' 缺 '+(s.record.missing_cnt||0)+' · 多 '+(s.record.extra_cnt||0)+' · 异 '+(s.record.diff_cnt||0)+' · 待确认 '+(s.record.pending_cnt||0)+' · 状态:'+(s.record.status||''));}if(s.tags&&!it&&!r&&!s.items&&!s.groups&&!s.pairs){L.push('标签 '+s.tags.length+' 个:');s.tags.slice(0,20).forEach(function(t){L.push(' · '+(t.tag||'')+(t.item_count!=null?' ('+t.item_count+' 件)':''));});if(s.unused&&s.unused.length)L.push('未使用标签: '+s.unused.map(function(u){return u.tag;}).join('、'));}if(s.pairs&&!it&&!r&&!s.items&&!s.groups){L.push('相近标签 '+s.pairs.length+' 组:');s.pairs.slice(0,12).forEach(function(pr){L.push(' · '+(pr.a||'')+' ↔ '+(pr.b||'')+(pr.impact!=null?' (涉及 '+(pr.impact||0)+' 件)':''));});}if(!it&&!r&&!s.items&&!s.groups&&!s.events&&!s.tags&&!s.pairs&&!s.record&&!s.tree){var cp=d.copy_data||{};if(cp.target)L.push('目标: '+cp.target);var pp=cp.payload||{};try{var _lines=[];function _flatten(o,pre){if(o&&typeof o==='object'&&!Array.isArray(o)){Object.keys(o).forEach(function(k){var v=o[k];if(v&&typeof v==='object'){_flatten(v,pre+k+'.');}else{_lines.push((pre||'')+k+': '+(v===null||v===undefined?'':v));}});}else if(Array.isArray(o)){_lines.push(pre.slice(0,-1)+': '+o.length+' 条');}}_flatten(pp,'');L.push('数据: ');L.push.apply(L,_lines.slice(0,30));}catch(e){L.push('数据: '+String(pp));}}return L.join('\n');}
+function buildLogText(p){var d=p.data||{},me=d.meta||{},s=d.scene||{},cl=d.copy_log||{};var L=['① 场景标识'];L.push('  命  令: '+(me.command_cn||''));L.push('  唤醒词: '+(me.wake_word||'(未知)'));L.push('  场景名: '+(me.command_cn||'')+'('+(s.scene_id||me.scene_id||'')+')');L.push('');L.push('② AI 思考链');L.push('  '+(cl.thinking||'(本地渲染 · 无 AI 链)'));L.push('');L.push('③ 底层数据结构');L.push('  '+(cl.data_structure||'(只读查询)'));L.push('');L.push('④ 调用链');L.push('  '+(cl.call_chain||'(未知)'));L.push('');L.push('⑤ 时间戳 + 版本');L.push('  本地时间: '+(cl.timestamp||me.occurred_at||'(未知)'));L.push('  版  本: '+(me.skill_version||'v2.0-SM1'));L.push('');L.push('⑥ 异常信息');L.push('  '+(cl.exception||'无'));return L.join('\n');}
+function actionBar(p,extra,noSb){window.__hmPayload=p;var btns=arr(extra||[]);var sb=noSb?[]:arr(p.data&&p.data.scene&&p.data.scene.buttons||[]);var html='<div class="actions">';btns.concat(sb).forEach(b=>{html+='<button class="copy '+(b.kind||'')+'" onclick="copyText(this.dataset.t)" data-t="'+esc(b.text).replace(/"/g,'&quot;')+'">'+esc(b.label)+'</button>';});html+='<button class="copy ghost" onclick="copyText(buildDataText(window.__hmPayload))">复制数据</button><button class="copy ghost" onclick="copyText(buildLogText(window.__hmPayload))">复制日志</button></div>';return html;}
+const $=id=>document.getElementById(id);
+let DATA={items:[],summary:{},meta:{}};
+let FILTER='全部';
+const STATUSES=['全部','在保','即将到期','已过','到期未做'];
+function badgeOf(st){
+  if(st==='在保'||st==='已做')return '<span class="badge ok">'+esc(st)+'</span>';
+  if(st==='即将到期')return '<span class="badge warn">'+esc(st)+'</span>';
+  return '<span class="badge danger">'+esc(st)+'</span>';
+}
+function render(){
+let payload;
+try{payload=JSON.parse($('payload').textContent)}catch(e){$('app').innerHTML='<div class="empty">数据解析失败：'+esc(e.message)+'</div>';return}
+const v=validate(payload);
+if(!v.ok){$('app').innerHTML='<div class="empty">数据校验失败：'+esc(v.msg)+'</div>';return}
+const data=payload.data;
+DATA=data;
+$('title').textContent=data.summary.title||'保修与保养';
+$('subtitle').textContent=(data.meta.subtitle||'')+' · 唤醒词「'+data.meta.wake_word+'」';
+$('stamp').textContent='生成于 '+data.occurred_at+' · v'+data.version;
+$('cards').innerHTML=arr(data.summary.metrics).map(m=>{
+  const sev=m.severity||'info';
+  return `<div class="card ${esc(sev)}"><b>${esc(m.label)}</b><span>${esc(m.value)}</span></div>`;
+}).join('');
+$('chips').innerHTML=STATUSES.map(s=>`<button class="chip${FILTER===s?' on':''}" data-k="${esc(s)}">${esc(s)}</button>`).join('');
+$('chips').querySelectorAll('.chip').forEach(b=>b.onclick=()=>{FILTER=b.getAttribute('data-k');render();});
+const rem=arr(data.reminders);
+$('reminders').innerHTML=rem.length?('<div class="remind">⏰ <b>顺路提醒：</b>'+rem.map(r=>esc(r.cert_type+' · '+r.holder+' '+r.status+(r.days_left<0?' '+(-r.days_left)+' 天':' '+r.days_left+' 天后'))).join('；')+'</div>'):'';
+const items=arr(data.items).filter(it=>FILTER==='全部'||it.status===FILTER);
+$('secTitle').textContent='权益清单 · '+items.length+' 项';
+if(!items.length){$('app').innerHTML='<div class="empty">'+esc(data.empty_hint||'暂无登记')+'</div>';return}
+$('app').innerHTML=items.map(it=>{
+  const dl=it.days_left;
+  const dlTxt=dl<0?'已过 '+(-dl)+' 天':(dl===0?'今天到期':dl+' 天后到期');
+  const events=arr(it.events);
+  const evHtml=events.length?`<details class="events"><summary>${esc(it.kind==='保养'?'执行/维修记录':'维修记录')} · ${events.length} 条</summary>${events.map(e=>`<div class="ev">📅 ${esc(e.occurred_at)} · ${esc(e.event_type)}${e.cost?' · ¥'+Number(e.cost).toFixed(2):''} ${esc(e.note||'')}</div>`).join('')}</details>`:'<div class="events" style="border:none;padding:0"><span class="kind">暂无记录</span></div>';
+  const photo=it.photo_base64?'<span class="photo"><img alt="保修卡" src="data:image/jpeg;base64,'+it.photo_base64+'"></span>':'';
+  const repairBtn=it.kind==='保修'?`<button class="btn" data-p="${esc('请记录维修(唤醒词:保修):\n\n  保修 ID: '+it.id+'\n  物  品: '+it.item_name+'\n  维修日期(YYYY-MM-DD): ______\n  花  费(选填,¥): ______\n  备  注(选填): ______')}">记录维修</button>`:'';
+  const maintainBtn=it.kind==='保养'?`<button class="btn primary" data-p="${esc('请执行保养(唤醒词:保修):\n\n  保养 ID: '+it.id+'\n  物  品: '+it.item_name+'\n  执行日期(YYYY-MM-DD): ______\n  备  注(选填): ______')}">✓ 执行保养</button>`:'';
+  return `<div class="item ${esc(it.severity||'info')}">
+<div class="name">${esc(it.item_name||('#'+it.item_id))} <span class="kind">${esc(it.kind)} · ID ${it.id}</span></div>
+<div class="meta">${badgeOf(it.status)} 到期 ${esc(it.end_date||'-')} · ${esc(dlTxt)}</div>
+<div class="meta">${esc(it.note||'')}</div>
+${photo}
+${evHtml}
+<div class="btnrow">${repairBtn}${maintainBtn}</div>
+</div>`;
+}).join('');
+$('app').querySelectorAll('button[data-p]').forEach(b=>b.onclick=()=>copyText(b.getAttribute('data-p')));
+}
+function buildCopyData(){
+const lines=[];
+lines.push('保修与保养 · '+DATA.occurred_at+' · '+DATA.meta.command_cn);
+lines.push('');
+const items=arr(DATA.items);
+lines.push('共 '+items.length+' 项权益:');
+items.forEach((it,i)=>{
+  const dlTxt=it.days_left<0?'已过 '+(-it.days_left)+' 天':(it.days_left===0?'今天到期':it.days_left+' 天后到期');
+  lines.push((i+1)+'. '+it.item_name+' (ID '+it.id+') | '+it.kind+' | '+it.status+' | 到期 '+it.end_date+' ('+dlTxt+')'+(it.repair_count?' | 维修 '+it.repair_count+' 次':''));
+  arr(it.events).forEach(e=>lines.push('   - '+e.occurred_at+' '+e.event_type+(e.cost?' ¥'+Number(e.cost).toFixed(2):'')+(e.note?' '+e.note:'')));
+});
+return lines.join('\n');
+}
+function buildCopyLog(){
+const lines=[];
+lines.push('① 场景标识: '+DATA.meta.command_cn+' · 唤醒词「'+DATA.meta.wake_word+'」 · '+DATA.meta.title);
+lines.push('② AI 思考链: 意图理解(查保修状态/维修/保养) → 决策点(状态筛选/保修卡定位) → 关键判断(保修到期=起始日+时长; 保养下次=上次执行+周期)');
+lines.push('③ 底层数据结构: warranties + service_events(维修/保养执行) · DB 读(warranties LEFT JOIN items)');
+lines.push('④ 调用链: '+DATA.cli_chain+' ; 写: warranty register/repair/maintain');
+lines.push('⑤ 时间戳+版本: '+DATA.occurred_at+' · v'+DATA.version);
+lines.push('⑥ 异常信息: (无)');
+return lines.join('\n');
+}
+$('copyData').onclick=()=>copyText(buildCopyData());
+$('copyLog').onclick=()=>copyText(buildCopyLog());
+$('addBtn').onclick=()=>copyText('请新增保修/保养(唤醒词:保修):\n\n  物品 ID(见页面 #ID): ______\n  类  型(保修/保养): ______\n  起始日(YYYY-MM-DD,保修=购买日): ______\n  时  长(天,保修期/保养周期): ______\n  备  注(选填): ______\n  【保修卡照片即将发送:】');
+render();
+</script>
+</body>
+</html>

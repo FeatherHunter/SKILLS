@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>交付完整性审计 · 零损失确认</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --green: #34c759; --blue: #0071e3; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 760px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--green);
+    background: rgba(52,199,89,0.10); border: 1px solid rgba(52,199,89,0.25);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--green); color: #fff; font-size: 12px; padding: 0 6px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-ok { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-warn { background: rgba(255,149,0,0.14); color: #c77100; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; }
+  .commit { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 12px; font-family: ui-monospace, "SF Mono", Consolas, monospace; margin-top: 8px; word-break: break-all; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">交付完整性审计 · 第一性原理</span>
+  <h1>永久关闭 session 零损失 · 确认</h1>
+  <p>2026-08-11 · 五维度对抗式核查，缺一即补</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">1</span>代码线（commit + push）</h2>
+  <table>
+    <thead><tr><th>维度</th><th>状态</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>工作区</td><td><span class="badge b-ok">✅ 干净</span></td><td>居家管家改动全部已 commit；剩余未提交均为并行 agent 的（卡路里/饼干记账/思维导师）</td></tr>
+      <tr><td>远端已推</td><td><span class="badge b-ok">✅ 确认</span></td><td>e855159(#250) / fcae96b(#253) / b452ad5(归档) 已在 origin/main（你已 push）</td></tr>
+      <tr><td>待 push</td><td><span class="badge b-warn">1 个</span></td><td>a8b8302（本次审计补漏归档，待你 push）</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2><span class="no">2</span>交付物入库</h2>
+  <table>
+    <thead><tr><th>批次</th><th>状态</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>#103 D1 收编（4 份）</td><td><span class="badge b-ok">✅ 已入库</span></td><td>对账/执行交付/补对抗审查/拍板确认 + 收尾</td></tr>
+      <tr><td>#243 HELP 箭头（5 份）</td><td><span class="badge b-ok">✅ 已入库</span></td><td>起点盲区/执行偏离/修复交付/收尾</td></tr>
+      <tr><td>#244 点击高亮（1 份）</td><td><span class="badge b-ok">✅ 已入库</span></td><td>implement 结论（修复已存在）</td></tr>
+      <tr><td>#250/#253（6 份 + 17 演示）</td><td><span class="badge b-ok">✅ 已入库</span></td><td>起点盲区/18场景方案/现状盘点/交付/收尾 + <b>18 场景演示 HTML 17 份（人眼终审证据）</b></td></tr>
+      <tr><td>triage（2 份）</td><td><span class="badge b-ok">✅ 已入库</span></td><td>triage 推荐/完成</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:8px;">审计中发现并补齐 5 份遗漏归档（收尾页 2 + triage 2 + 演示 17 为一批 commit a8b8302）——这就是「审计」的价值：不审计就会丢。</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">3</span>思想共识沉淀（记忆）</h2>
+  <table>
+    <thead><tr><th>共识</th><th>状态</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>wayfinder 必须保留 grill 阶段</td><td><span class="badge b-ok">✅ 已沉淀</span></td><td>「继续」≠ 授权跳 grill；执行后补对抗式审查（#103 纠偏）</td></tr>
+      <tr><td>场景拆分模式 + scene_id 单一事实源</td><td><span class="badge b-ok">✅ 本次沉淀</span></td><td>时间预填独立场景 / 一场景一动作 / scene_id 从清单读 / scenario_id 唯一 / 合并器含 scenario_id（#250/#253 落地模式）</td></tr>
+      <tr><td>push 由用户负责</td><td><span class="badge b-ok">✅ 已有</span></td><td>AI 本地 commit + 测试 + 清单，不主动 push</td></tr>
+      <tr><td>交付完整性审计要求</td><td><span class="badge b-ok">✅ 已有</span></td><td>session 关闭零损失五条线</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2><span class="no">4</span>issue 状态闭环</h2>
+  <table>
+    <thead><tr><th>issue</th><th>状态</th><th>说明</th></tr></thead>
+    <tbody>
+      <tr><td>#103 D1 总账</td><td><span class="badge b-ok">✅ CLOSED</span></td><td>对账 + 收编完成</td></tr>
+      <tr><td>#115 T11 实施票</td><td><span class="badge b-ok">✅ CLOSED</span></td><td>D1 实施完成</td></tr>
+      <tr><td>#220 补账</td><td><span class="badge b-ok">✅ CLOSED</span></td><td>category_id 保留修复</td></tr>
+      <tr><td>#243 HELP 箭头</td><td><span class="badge b-ok">✅ CLOSED</span></td><td>人眼终审通过</td></tr>
+      <tr><td>#244 点击高亮</td><td><span class="badge b-ok">✅ CLOSED</span></td><td>修复已存在，机制层确认</td></tr>
+      <tr><td>#250 拆场景</td><td><span class="badge b-ok">✅ CLOSED</span></td><td>18 场景人眼终审通过</td></tr>
+      <tr><td>#253 scene_id 总票</td><td><span class="badge b-warn">⏸ OPEN（有意）</span></td><td>位置域完成；剩余快递/穿搭/联动 3 域迁移，待办已留痕在 issue 评论，新 agent 读 #253 即知下一步</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2><span class="no">5</span>最终结论 + 待你 push</h2>
+  <p style="font-size:14px;margin-bottom:10px;">
+    <b>✅ 审计通过：永久关闭 session 无损失。</b>代码已 commit+push（除 1 个归档补漏）、交付物全部入库、思想共识已沉淀、issue 状态闭环、剩余待办（#253 逐域迁移）已留痕。
+  </p>
+  <div class="commit">a8b8302  [居家管家] 交付完整性审计补漏 · 收尾页 2 + triage 2 + 18 场景演示 17 份入 docs/reviews<br><br>→ git push origin main</div>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:8px;">仅此 1 个 commit 待 push（本次审计补漏），推完即全部闭环。</p>
+</div>
+
+<div class="footer">Mavis · 交付完整性审计 · 2026-08-11</div>
+
+</body>
+</html>

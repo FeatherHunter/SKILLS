@@ -34,7 +34,7 @@ python3 scripts/render_<feature>.py [--range X:Y | --days N] [--output <path>]
 | 文件名 | **`<中文command>_<YYYYMMDD>_<HHMMSS>[_<N>].html`**<br>同秒冲突自动追加 `_2` / `_3` |
 | command 字段 | v2.4.8 起**全量中文化**(静态部分 + 动态拼接部分) |
 | 动态映射 | `scripts/_cmd_maps.py` · WEIGHT/EXERCISE/FOOD/CONTRAINDICATION 4 张映射表 |
-| 工具模块 | `scripts/html_paths.py`:`html_dir()` / `html_name()` / `html_path()` |
+| 工具模块 | `scripts/html_paths.py`:`html_dir()` / `html_name()` / `html_path()` / `html_scene_path()`<br>场景回执可选 `suffix` 内容标识段(#49):`记一餐_回执_香蕉_<TS>.html`,自动 sanitize + 冲突保护 |
 | `--output` | 可显式覆盖到任意路径(共享磁盘 / 飞书云盘等) |
 
 ### 不再使用的旧规则

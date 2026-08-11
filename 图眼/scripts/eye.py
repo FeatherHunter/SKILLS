@@ -2,15 +2,17 @@
 # -*- coding: utf-8 -*-
 """图眼 (Eye) — 给无视觉模型装眼睛的细节保真管线 CLI。
 
-用 mmx vision (MiniMax VLM) 当「眼睛」，把图片转成高保真文本描述；
-可选接 deepseek-v4-flash / MiniMax-M3 当「大脑」做推理。
+用 mmx vision (MiniMax VLM) 当「眼睛」，把图片转成高保真文本描述。
+图眼是纯眼睛:输出文本,不内置推理大脑。调用者(如 deepseek-v4-flash agent)
+自己就是大脑——通过 slash command /图眼 调用本 CLI,拿到细节文本后自行推理。
 
 子命令:
   look   — 粗看:单次整体描述 (1 次 vision)
   scan   — 精扫:3x3 切片 + 放大 + 逐片审计 + 合并细节文档 (10 次 vision)
   ocr    — 读图:专项提取图中所有文字
-  ask    — 问图:看图 + 问题 → 大脑推理 (默认走 scan 模式喂细节文档)
-  audit  — 审图:审问循环,大脑生成追问 → 眼睛定向回答 → 收敛
+  ask    — 问图:看图 + 问题 → 内置兜底大脑 MiniMax-M3 推理
+           (仅当调用环境没有大脑时用;LLM agent 调用者应直接用 look/scan/ocr)
+  audit  — 审图:兜底大脑审问循环 (同上,仅供无大脑环境)
 
 输出契约:默认 text;--output json 时 stdout 输出 {"status","data","message"}。
 进度/错误走 stderr;stdout 永远是干净数据。
@@ -32,9 +34,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 MMX_BIN = r"C:\Users\辰辰洋洋\AppData\Roaming\npm\mmx.cmd"
 MMX_FALLBACKS = ["mmx.cmd", "mmx"]
-DEEPSEEK_BASE = "https://api.deepseek.com"
-DEEPSEEK_MODEL = "deepseek-v4-flash"
-MMX_BRAIN_MODEL = "MiniMax-M3"
+MMX_BRAIN_MODEL = "MiniMax-M3"   # 内置兜底大脑(仅 ask/audit 无大脑环境时用)
 
 DEFAULT_GRID = 3          # 切片网格 N x N
 DEFAULT_TARGET = 1024     # 切片放大到的边长 (px)
@@ -207,36 +207,13 @@ def _region_label(tile: dict, grid: int) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 大脑层: deepseek / MiniMax-M3
+# 兜底大脑层: MiniMax-M3 (仅 ask/audit 在无大脑环境使用)
+# 注意: 图眼是纯眼睛。LLM agent 调用者(如 deepseek-v4-flash)自身即大脑,
+# 直接用 look/scan/ocr 拿文本推理,不需要也不应该走这里的兜底大脑。
 # ---------------------------------------------------------------------------
-def brain_ask(text: str, brain: str = "mmx",
-              max_tokens: int = 4096, timeout: int = 600) -> str:
-    """把文本发给无视觉大脑推理。brain: 'mmx'(MiniMax-M3) 或 'deepseek'。"""
-    if brain == "deepseek":
-        key = os.environ.get("DEEPSEEK_API_KEY", "").strip()
-        if not key:
-            _err("大脑=deepseek 需要环境变量 DEEPSEEK_API_KEY。"
-                 "可设置后重试,或改用 --brain mmx(MiniMax-M3,零配置)")
-        payload = {
-            "model": DEEPSEEK_MODEL,
-            "messages": [{"role": "user", "content": text}],
-            "max_tokens": max_tokens,
-            "temperature": 0.3,
-        }
-        req = urllib.request.Request(
-            f"{DEEPSEEK_BASE}/chat/completions",
-            data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json",
-                     "Authorization": f"Bearer {key}"},
-            method="POST")
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
-                body = json.loads(resp.read().decode("utf-8"))
-            return str(body["choices"][0]["message"]["content"])
-        except Exception as e:
-            _err(f"deepseek 调用失败: {e}")
-    # 默认: mmx text chat (MiniMax-M3)
-    # 注意:长文本不能塞命令行参数(Windows ~32KB 限制),走 --messages-file
+def brain_ask(text: str, max_tokens: int = 4096, timeout: int = 600) -> str:
+    """把文本发给内置兜底大脑 MiniMax-M3 推理。"""
+    # 长文本不能塞命令行参数(Windows ~32KB 限制),走 --messages-file
     fd, msg_path = tempfile.mkstemp(suffix=".json", prefix="eye_msg_")
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
@@ -338,15 +315,15 @@ def _resolve_region(region: str, tiles: list[dict], grid: int) -> dict:
 
 
 def audit_round(doc: str, img_path: str, tiles: list[dict], grid: int,
-                brain: str, round_no: int, timeout: int) -> tuple[str, int]:
-    """单轮审问:大脑生成追问 → 眼睛定向回答 → 增量合并。"""
+                round_no: int, timeout: int) -> tuple[str, int]:
+    """单轮审问:兜底大脑生成追问 → 眼睛定向回答 → 增量合并。"""
     prompt = (
         f"这是一张图片的多区域细节描述文档:\n\n{doc[:6000]}\n\n"
         f"你现在扮演审问者,找出信息最不足的区域。请输出 {DEFAULT_ASK_TARGETS} 条追问,"
         f"每条格式: 区域名(用 全景 / 上左区 / 上中区 / 上右区 / 中左区 / 中中区 / 中右区 / "
         f"下左区 / 下中区 / 下右区)|具体问题。不要问文档里已有答案的问题。"
     )
-    q_text = brain_ask(prompt, brain=brain, max_tokens=1200, timeout=timeout)
+    q_text = brain_ask(prompt, max_tokens=1200, timeout=timeout)
     questions = _extract_questions(q_text, DEFAULT_ASK_TARGETS)
 
     addons = []
@@ -428,9 +405,8 @@ def cmd_ask(args) -> None:
     prompt = (f"以下是一张图片的描述:\n\n{doc[:15000]}\n\n"
               f"用户的问题:{args.question}\n\n请基于描述给出准确回答。"
               f"若描述信息不足,明确说明缺什么,不要编造。")
-    _log(f"大脑:brain={args.brain} 推理...")
-    answer = brain_ask(prompt, brain=args.brain, max_tokens=args.max_tokens,
-                       timeout=args.timeout)
+    _log("兜底大脑:MiniMax-M3 推理...")
+    answer = brain_ask(prompt, max_tokens=args.max_tokens, timeout=args.timeout)
     if args.out:
         report = f"## 问题\n{args.question}\n\n## 图片描述\n{doc}\n\n## 回答\n{answer}\n"
         Path(args.out).write_text(report, encoding="utf-8")
@@ -448,9 +424,9 @@ def cmd_audit(args) -> None:
     doc = res["doc"]
     total = res["calls"]
     for round_no in range(1, args.rounds + 1):
-        _log(f"L4 审问:第 {round_no}/{args.rounds} 轮...")
+        _log(f"L4 审问:第 {round_no}/{args.rounds} 轮(兜底大脑 MiniMax-M3)...")
         doc, n = audit_round(doc, img, res["tiles"], args.grid,
-                             args.brain, round_no, args.timeout)
+                             round_no, args.timeout)
         total += n
     if args.out:
         Path(args.out).write_text(doc, encoding="utf-8")
@@ -458,7 +434,7 @@ def cmd_audit(args) -> None:
         saved = args.out
     else:
         saved = None
-    _log(f"共 {total} 次 vision 调用 + {args.rounds} 轮大脑审问")
+    _log(f"共 {total} 次 vision 调用 + {args.rounds} 轮兜底大脑审问")
     _out({"doc": doc, "calls": total, "rounds": args.rounds, "saved": saved},
          args.output, "audit-ok")
 
@@ -504,7 +480,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--out", default=None, help="保存文字到文件")
     sp.set_defaults(func=cmd_ocr)
 
-    sp = sub.add_parser("ask", help="问图:看图 + 问题 → 大脑推理")
+    sp = sub.add_parser("ask", help="问图:看图 + 问题 → 兜底大脑推理(仅无大脑环境)")
     img_arg(sp)
     sp.add_argument("--question", required=True, help="要问的问题")
     sp.add_argument("--mode", choices=["look", "scan"], default="scan",
@@ -512,21 +488,17 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--grid", type=int, default=DEFAULT_GRID)
     sp.add_argument("--target", type=int, default=DEFAULT_TARGET)
     sp.add_argument("--overlap", type=float, default=DEFAULT_OVERLAP)
-    sp.add_argument("--brain", choices=["mmx", "deepseek"], default="mmx",
-                    help="大脑: mmx=MiniMax-M3(默认,零配置) / deepseek=deepseek-v4-flash(需 DEEPSEEK_API_KEY)")
     sp.add_argument("--max-tokens", type=int, default=4096)
     sp.add_argument("--out", default=None, help="保存问答报告到文件")
     sp.set_defaults(func=cmd_ask)
 
-    sp = sub.add_parser("audit", help="审图:审问循环收敛细节")
+    sp = sub.add_parser("audit", help="审图:兜底大脑审问循环收敛细节(仅无大脑环境)")
     img_arg(sp)
     sp.add_argument("--rounds", type=int, default=DEFAULT_ROUNDS,
                     help=f"审问轮数 (默认 {DEFAULT_ROUNDS})")
     sp.add_argument("--grid", type=int, default=DEFAULT_GRID)
     sp.add_argument("--target", type=int, default=DEFAULT_TARGET)
     sp.add_argument("--overlap", type=float, default=DEFAULT_OVERLAP)
-    sp.add_argument("--brain", choices=["mmx", "deepseek"], default="mmx",
-                    help="审问大脑 (默认 mmx)")
     sp.add_argument("--out", default=None, help="保存收敛文档到文件")
     sp.set_defaults(func=cmd_audit)
     return p

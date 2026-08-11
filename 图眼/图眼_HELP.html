@@ -63,7 +63,7 @@
   <div class="hero">
     <span class="tag">图眼 · HELP</span>
     <h1>👁️ 图眼 — 给无视觉模型装眼睛</h1>
-    <p>把图片变成高保真文本，让 deepseek 这类纯文本模型「看得见」。粗看 / 精扫 / 读图 / 问图 / 审图，五档能力一页掌握。</p>
+    <p>把图片变成高保真文本，让 deepseek 这类纯文本模型「看得见」。粗看 / 精扫 / 读图 / 问图 / 审图，五档能力一页掌握。图眼是纯眼睛——调用者（deepseek 等 agent）自己就是大脑，不存在 API key。</p>
     <div class="meta">v1.0 · 2026-08-11 · 触发词: 看图 / 精扫 / 读图 / 问图 / 审图</div>
   </div>
 
@@ -81,7 +81,7 @@
       <tr><td>看图</td><td>粗看·单次描述</td><td>1</td><td>快速问答、这是什么</td></tr>
       <tr><td>精扫</td><td>切片+审计+细节文档</td><td>10</td><td>截图审计、OCR、手写、细节</td></tr>
       <tr><td>读图</td><td>OCR 提取全部文字</td><td>1</td><td>发票、便签、截图文字</td></tr>
-      <tr><td>问图</td><td>看图+问题→大脑推理</td><td>10+1</td><td>带具体问题的看图</td></tr>
+      <tr><td>问图</td><td>看图+提问→兜底大脑</td><td>10+1</td><td>无大脑的 CLI 环境</td></tr>
       <tr><td>审图</td><td>审问循环收敛细节</td><td>12-15</td><td>医学影像、图纸、证据核对</td></tr>
     </table>
   </div>
@@ -114,11 +114,10 @@
     </div>
 
     <div class="scene">
-      <div class="head"><span class="badge ask">问图</span><span class="name">看图 + 提问 · 大脑回答</span></div>
-      <div class="desc">精扫细节文档喂给大脑（默认 MiniMax-M3，零配置；可切 deepseek-v4-flash），按图作答。信息不足会如实说，不编造。</div>
+      <div class="head"><span class="badge ask">问图</span><span class="name">看图 + 提问 · 兜底大脑回答</span></div>
+      <div class="desc">精扫细节文档喂给内置兜底大脑 MiniMax-M3 作答（仅无大脑的 CLI 环境）。若你是 deepseek 等 agent 调用者，直接用「精扫/读图」拿文本自己推理即可，无需本场景。信息不足会如实说，不编造。</div>
       <div class="btn-row">
         <button class="btn green" data-copy='请加载「图眼」技能，帮我问图（唤醒词：问图）：图片 C:\path\photo.png，问题：桌上贴了哪些便签、各写了什么？'>复制 · 问图 prompt</button>
-        <button class="btn ghost" data-copy='请加载「图眼」技能，帮我问图（唤醒词：问图，用 deepseek 大脑）：图片 C:\path\photo.png，问题：<问题>，大脑用 deepseek（需已设置 DEEPSEEK_API_KEY）'>复制 · 问图 + deepseek 大脑</button>
       </div>
     </div>
 
@@ -140,7 +139,7 @@ python scripts/eye.py ocr   --image &lt;图片&gt;                        # 读�
 python scripts/eye.py ask   --image &lt;图片&gt; --question "问题"      # 问图
 python scripts/eye.py audit --image &lt;图片&gt; --rounds 2 --out a.md  # 审图
 python scripts/eye.py --output json ask --image &lt;图片&gt; --question "?"  # JSON 契约</pre>
-    <p class="note">输入支持:本地路径 / http(s) URL / mmx file-id。大脑默认 MiniMax-M3；deepseek 需 <code>$env:DEEPSEEK_API_KEY="sk-..."</code>。</p>
+    <p class="note">输入支持:本地路径 / http(s) URL / mmx file-id。图眼是纯眼睛:deepseek 等 agent 调用者自己就是大脑,直接消费文本推理;ask/audit 的兜底大脑 MiniMax-M3 仅服务无大脑 CLI 环境。</p>
   </div>
 
   <p class="note" style="text-align:center">图眼 v1.0 · Mavis · MiniMax Code · 2026-08-11</p>

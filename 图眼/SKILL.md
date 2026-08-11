@@ -2,12 +2,12 @@
 name: 图眼
 description: >
   给无视觉模型(deepseek-v4-flash 等纯文本模型)装「眼睛」的视觉理解技能。
-  用 mmx vision (MiniMax VLM) 把图片转成高保真文本描述,可选接大脑(deepseek /
-  MiniMax-M3)做推理。核心是「细节保真管线」:单次看图有损,精扫=切片+放大+
-  逐片审计+审问循环,信息量约 10 倍。支持:看图(单次描述)、精扫(细节文档)、
-  读图(OCR 提取文字)、问图(看图+提问→大脑回答)、审图(审问循环收敛细节)。
-  输入支持本地文件 / URL / file-id。依赖:mmx-cli(已装)+ Pillow;大脑默认
-  MiniMax-M3(零配置),deepseek-v4-flash 需 DEEPSEEK_API_KEY。
+  用 mmx vision (MiniMax VLM) 把图片转成高保真文本描述。核心是「细节保真
+  管线」:单次看图有损,精扫=切片+放大+逐片审计+审问循环,信息量约 10 倍。
+  支持:看图(单次描述)、精扫(细节文档)、读图(OCR 提取文字)、问图(看图+
+  提问→兜底大脑)、审图(审问循环)。图眼是纯眼睛:输出文本,调用者
+  (deepseek 等 agent)自己就是大脑,通过 /图眼 调用本技能拿文本自行推理。
+  输入支持本地文件 / URL / file-id。依赖:mmx-cli(已装)+ Pillow。
 triggers:
   - 看图
   - 精扫
@@ -32,8 +32,17 @@ metadata:
 
 # 图眼 👁️
 
-**管什么**:给无视觉模型当眼睛——图片 → 高保真文本 → (可选)大脑推理。
-**不管什么**:不生成图片、不裁剪/美化图片(那是别的 skill);只负责「看懂图片并把细节完整说出来」。
+**管什么**:给无视觉模型当眼睛——图片 → 高保真文本。
+**不管什么**:不生成图片、不裁剪/美化图片(那是别的 skill);不内置推理大脑——
+图眼只负责「看懂图片并把细节完整说出来」,推理由调用者(deepseek 等 agent)完成。
+
+## 使用方式(核心)
+
+**deepseek-v4-flash 等 agent 作为调用者时**:在对话里用 `/图眼` 调用本技能,
+图眼返回图片的细节文本,调用者(自己就是大脑)基于文本继续推理。
+**不存在 API key 的说法**:调用者就是大脑,图眼不会也不需要在内部再去调用
+任何推理模型 API;只有 ask/audit 子命令内置的「兜底大脑」MiniMax-M3
+(仅用于无大脑的纯 CLI 环境)会走 mmx text chat,而 mmx 凭据已配置好。
 
 ## 快速调用
 
@@ -49,11 +58,10 @@ python scripts/eye.py scan --image <图片> --out <细节文档.md>
 # ③ 读图:提取所有文字(OCR 专项)
 python scripts/eye.py ocr --image <图片>
 
-# ④ 问图:看图 + 提问 → 大脑推理(默认精扫模式喂细节文档)
+# ④ 问图:看图 + 提问 → 兜底大脑推理(仅无大脑环境;LLM agent 调用者直接用 ①②③)
 python scripts/eye.py ask --image <图片> --question "问题"
-python scripts/eye.py ask --image <图片> --question "问题" --brain deepseek
 
-# ⑤ 审图:审问循环(大脑追问 → 眼睛定向回答 → 收敛)
+# ⑤ 审图:兜底大脑审问循环(同上,仅供无大脑环境)
 python scripts/eye.py audit --image <图片> --rounds 2 --out <收敛文档.md>
 ```
 
@@ -64,8 +72,8 @@ python scripts/eye.py audit --image <图片> --rounds 2 --out <收敛文档.md>
 | `look` | 粗看(单次整体描述) | 1 | `--image` `--prompt` `--out` |
 | `scan` | 精扫(切片+审计+合并文档) | 10 | `--grid`(默认3) `--target`(1024) `--overlap`(0.12) `--out` |
 | `ocr` | 读图(OCR 文字提取) | 1 | `--image` `--out` |
-| `ask` | 问图(看图+问题→大脑) | 10+1 | `--question` `--mode look/scan` `--brain mmx/deepseek` `--out` |
-| `audit` | 审图(审问循环) | 12-15 | `--rounds`(默认2) `--brain` `--out` |
+| `ask` | 问图(看图+问题→兜底大脑) | 10+1 | `--question` `--mode look/scan` `--out` |
+| `audit` | 审图(兜底大脑审问循环) | 12-15 | `--rounds`(默认2) `--out` |
 
 通用参数:`--output json`(全局,放子命令前)输出 `{status, data, message}` 契约;`--timeout` 默认 600s。
 
@@ -86,11 +94,14 @@ python scripts/eye.py audit --image <图片> --rounds 2 --out <收敛文档.md>
 - **URL**:http(s) 自动下载到临时目录
 - **file-id**:`file-xxx` 透传给 mmx(跳过 base64)
 
-### 大脑选择
+### 大脑关系(架构修正 v1.1)
 
-- `--brain mmx`(默认):MiniMax-M3,零配置,走 mmx text chat
-- `--brain deepseek`:deepseek-v4-flash,需环境变量 `DEEPSEEK_API_KEY`;
-  未设置时报错提示,不自动造值(设计原则:不自动造替代值)
+- **图眼是纯眼睛**:只负责把图片变成高保真文本,输出给调用者。
+- **调用者即大脑**:deepseek-v4-flash 等 agent 通过 `/图眼` 调用本技能,拿到文本后
+  自己推理——不存在「图眼内部再调推理模型 API」的需求,也没有 API key 的说法。
+- **兜底大脑 MiniMax-M3**:仅 `ask` / `audit` 子命令内置,供**无大脑的纯 CLI 环境**
+  使用(走 mmx text chat,mmx 凭据已配置)。LLM agent 调用者应直接用 `look`/`scan`/`ocr`,
+  不需要也不建议走 ask/audit。
 
 ### 歧义消解原则
 
@@ -125,8 +136,7 @@ L4 审问   → 大脑生成追问 → 眼睛定向回答      (audit 模式)
 | 规则 | 违反后果 |
 |---|---|
 | 图片必须存在(本地/URL/file-id 三选一) | 非零退出,报错含字段名 |
-| `--brain deepseek` 未设 `DEEPSEEK_API_KEY` | 非零退出,提示如何修 |
-| 长文本大脑调用走 `--messages-file`(防 Windows 命令行超长) | 内部强制,无绕过 |
+| 长文本兜底大脑调用走 `--messages-file`(防 Windows 命令行超长) | 内部强制,无绕过 |
 | 所有错误 stderr + 非零退出码 | 静默失败=违规 |
 | `--output json` 输出 `{status, data, message}` | 契约破坏=违规 |
 
@@ -148,17 +158,17 @@ L4 审问   → 大脑生成追问 → 眼睛定向回答      (audit 模式)
 
 ## 依赖与环境
 
-- mmx-cli ≥ 1.0.15(已全局安装,API Key 已配置)
+- mmx-cli ≥ 1.0.15(已全局安装,API Key 已配置)——眼睛凭据
 - Pillow(切片用;若缺执行 `pip install Pillow`)
-- 大脑 mmx 模式:零配置;deepseek 模式:`$env:DEEPSEEK_API_KEY="sk-..."`
+- 调用者(大脑)= 使用本技能的 agent(如 deepseek-v4-flash),无需任何额外 API 配置
 
 ## 已验证可用
 
 - ✅ `scan` 精扫:1024×1024 细节密集桌面图,9 片审计,15.3K 字符细节文档
-- ✅ `ask` 问图:精扫 + MiniMax-M3 大脑,按位置归类便签内容,诚实标注模糊项
+- ✅ `ask` 问图(兜底大脑):精扫 + MiniMax-M3,按位置归类便签内容,诚实标注模糊项
 - ✅ `ocr` 文字提取:手写便签 "Buy milk and eggs" 精确识别
 - ✅ 15 项 pytest 全绿(切片逻辑 + CLI 契约,不碰网络)
-- ✅ deepseek 大脑(逻辑已实现,待用户提供 DEEPSEEK_API_KEY 后实测)
+- ✅ deepseek 调用场景:架构上由调用者消费文本即可,无需额外验证
 
 ## 已知问题 & 坑
 
@@ -170,4 +180,7 @@ L4 审问   → 大脑生成追问 → 眼睛定向回答      (audit 模式)
 
 ## Changelog
 
+- 2026-08-11 v1.1:架构修正——图眼定位为纯眼睛,调用者(deepseek 等 agent)即大脑;
+  删除 `--brain deepseek`(不存在 deepseek API 集成);ask/audit 降级为「兜底大脑 MiniMax-M3,
+  仅供无大脑 CLI 环境」;清理 research 临时产物,实证报告入 docs/。
 - 2026-08-11 v1.0:初版。look/scan/ocr/ask/audit 五个子命令 + 细节保真管线 + 15 项测试 + references/prompts.md + HELP HTML。

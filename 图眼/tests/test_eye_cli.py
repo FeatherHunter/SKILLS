@@ -55,6 +55,8 @@ def test_ask_requires_question():
     assert "--question" in r.stderr or "required" in r.stderr
 
 
-def test_brain_choices_validated():
-    r = run("ask", "--image", "x.png", "--question", "q", "--brain", "gpt5")
+def test_brain_param_removed():
+    """架构修正:图眼是纯眼睛,调用者即大脑,不存在 --brain 参数。"""
+    r = run("ask", "--image", "x.png", "--question", "q", "--brain", "deepseek")
     assert r.returncode != 0
+    assert "unrecognized arguments" in r.stderr

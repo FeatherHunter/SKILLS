@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>图眼 v1.1 · 清理与架构修正报告</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73; --line: #e8e8ed;
+    --blue: #0071e3; --blue-soft: #e8f1fd; --green: #34c759; --green-soft: #e9f9ef;
+    --amber: #ff9500; --amber-soft: #fff4e5; --red: #ff3b30; --red-soft: #ffeceb;
+    --purple: #af52de; --purple-soft: #f5eafc;
+    --radius: 18px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif; background: var(--bg); color: var(--text); line-height: 1.65; padding: 28px 14px 56px; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 740px; margin: 0 auto; }
+  .hero { background: linear-gradient(135deg, #1d1d1f 0%, #3a3a3c 100%); color: #fff; border-radius: 24px; padding: 34px 30px; margin-bottom: 18px; }
+  .hero .tag { display: inline-block; background: rgba(255,255,255,0.15); color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; padding: 4px 12px; border-radius: 999px; margin-bottom: 14px; }
+  .hero h1 { font-size: 25px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 10px; }
+  .hero p { color: rgba(255,255,255,0.78); font-size: 14.5px; }
+  .hero .meta { margin-top: 14px; font-size: 12px; color: rgba(255,255,255,0.5); }
+  .card { background: var(--card); border-radius: var(--radius); padding: 22px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.03); }
+  .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .card p, .card li { font-size: 13.5px; color: #3a3a3c; }
+  .card ul { padding-left: 18px; }
+  .card ul li { margin-bottom: 7px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 10px 0; }
+  th { text-align: left; font-size: 11.5px; color: var(--sub); font-weight: 600; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px 9px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  code.inline { background: var(--blue-soft); color: #0057a8; padding: 1px 7px; border-radius: 6px; font-size: 12.5px; font-family: "SF Mono", "Cascadia Code", Consolas, monospace; }
+  pre { background: #1d1d1f; color: #e8e8ed; border-radius: 12px; padding: 12px 14px; font-size: 12px; line-height: 1.55; overflow-x: auto; font-family: "SF Mono", "Cascadia Code", Consolas, monospace; margin: 8px 0; white-space: pre-wrap; word-break: break-all; }
+  .warn { background: var(--amber-soft); border-radius: 12px; padding: 11px 14px; font-size: 13px; margin: 10px 0; }
+  .ok { background: var(--green-soft); border-radius: 12px; padding: 11px 14px; font-size: 13px; margin: 10px 0; }
+  .note { font-size: 12px; color: var(--sub); margin-top: 8px; }
+  .status-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .status-item { background: #fafafc; border: 1px solid var(--line); border-radius: 14px; padding: 13px; }
+  .status-item .k { font-size: 11.5px; color: var(--sub); margin-bottom: 4px; }
+  .status-item .v { font-size: 13.5px; font-weight: 600; }
+  .pill-ok { color: var(--green); font-size: 12px; font-weight: 600; }
+  .pill-wait { color: var(--amber); font-size: 12px; font-weight: 600; }
+  @media (max-width: 480px) { body { padding: 16px 10px 40px; } .hero { padding: 26px 20px; } .hero h1 { font-size: 21px; } .card { padding: 18px 15px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <span class="tag">清理 + 架构修正</span>
+    <h1>图眼 v1.1 · 你的两点纠正都落地了</h1>
+    <p>① research 目录已清空；② 架构修正为「纯眼睛」——调用者即大脑，不存在 deepseek API key 的说法。</p>
+    <div class="meta">Mavis · 2026-08-11</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" style="background:var(--green)"></span>① research 清理完成</h2>
+    <table>
+      <tr><th>处理</th><th>内容</th></tr>
+      <tr><td>保留入库</td><td><code class="inline">图眼\docs\eye-detail-report.html</code>（细节保真实证报告，有长期复用价值）</td></tr>
+      <tr><td>移入 temp 备份</td><td>35 个临时文件 → <code class="inline">%TEMP%\eye-cleanup-20260811\</code>（测试图/切片/扫描 txt/前身脚本/b64）</td></tr>
+      <tr><td>清空</td><td><code class="inline">research\vision-eyes\</code> 现 0 文件，research 目录干净</td></tr>
+    </table>
+    <div class="ok">备份在系统 temp，确认不需要后系统会自动清理；想彻底删也不影响仓库。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" style="background:var(--blue)"></span>② 架构修正：图眼 = 纯眼睛</h2>
+    <p>你纠正得对——<strong>deepseek 是通过 /图眼 调用技能的调用者，它自己就是大脑</strong>。图眼不需要、也不应该在内部再去调 deepseek 的 API，所以根本不存在 DEEPSEEK_API_KEY 这回事。已改：</p>
+    <ul>
+      <li><strong>删</strong>：<code class="inline">--brain deepseek</code> 参数、deepseek API 集成代码、相关硬规则</li>
+      <li><strong>改定位</strong>：图眼只做「图片 → 高保真文本」，调用者拿到文本自己推理</li>
+      <li><strong>ask/audit 降级</strong>：MiniMax-M3 标注为「兜底大脑」，仅供无大脑的纯 CLI 环境；LLM agent 调用者直接用 look/scan/ocr</li>
+      <li><strong>同步</strong>：SKILL.md / HELP / references / AGENTS.md / CONTEXT.md 全部对齐</li>
+    </ul>
+    <div class="warn">使用路径确认：deepseek 对话里说「/图眼 精扫 <图片>」→ 图眼返回细节文本 → deepseek 自己推理回答。零额外配置。</div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" style="background:var(--amber)"></span>③ Git 状态：已暂存，commit 被并行 agent 的锁挡了一下</h2>
+    <div class="status-grid">
+      <div class="status-item"><div class="k">测试</div><div class="v">15 项全绿 <span class="pill-ok">✓</span></div></div>
+      <div class="status-item"><div class="k">v1.1 改动</div><div class="v">8 文件已暂存 <span class="pill-ok">✓</span></div></div>
+      <div class="status-item"><div class="k">commit</div><div class="v">等待锁释放 <span class="pill-wait">⏳</span></div></div>
+    </div>
+    <p>改动已全部 <code class="inline">git add</code> 暂存（图眼 8 文件），但连续 2 次提交被并行 agent 的 <code class="inline">index.lock</code> 挡住（居家管家 agent 正在提交 review 文件）。锁释放后执行：</p>
+<pre>cd D:\2Study\StudyNotes\SKILLS
+git commit --only 图眼/ -m "[图眼] v1.1 架构修正 · 图眼=纯眼睛,调用者即大脑"</pre>
+    <p class="note">或等你下次说一声，我直接补提交。暂存区已有内容不影响并行 agent，也不会误提交别人的文件（<code class="inline">--only</code> 限定路径）。</p>
+  </div>
+
+  <p class="note" style="text-align:center">Mavis · MiniMax Code · 2026-08-11</p>
+</div>
+</body>
+</html>

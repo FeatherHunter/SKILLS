@@ -13,7 +13,8 @@
 1. 用户表达「看图/精扫/读图/问图/审图」意图 → 读本 `SKILL.md` 路由表
 2. 根据场景分级选档:粗看 `look` / 精扫 `scan` / OCR `ocr` / 问答 `ask` / 审问 `audit`
 3. 带 `--output json` 拿结构化结果;落盘文档用 `<media type="file">` 主动发用户
-4. 问图/审图默认 `--brain mmx`(零配置);用户要接 deepseek 时提醒设 `DEEPSEEK_API_KEY`
+4. **调用者即大脑**:agent 拿到 look/scan/ocr 的文本输出后自己推理(如 deepseek-v4-flash
+   通过 /图眼 调用);ask/audit 的兜底大脑 MiniMax-M3 仅用于无大脑的纯 CLI 环境
 
 ## 开发与测试
 

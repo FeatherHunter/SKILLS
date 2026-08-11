@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#250 + #253 交付完成</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --green: #34c759; --blue: #0071e3; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 760px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--green);
+    background: rgba(52,199,89,0.10); border: 1px solid rgba(52,199,89,0.25);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--green); color: #fff; font-size: 12px; padding: 0 6px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-ok { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-blue { background: rgba(0,113,227,0.10); color: #0071e3; }
+  .b-warn { background: rgba(255,149,0,0.14); color: #c77100; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; }
+  .commit { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 12px; font-family: ui-monospace, "SF Mono", Consolas, monospace; margin-top: 8px; word-break: break-all; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">WAYFINDER · 交付完成</span>
+  <h1>#250 拆场景 + #253 scene_id 单一事实源</h1>
+  <p>2026-08-11 · 起点 → 现状盘点 → 方案拍板 → 实施 → 冒烟 → 提交</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">1</span>#250 SM6 拆场景 4→18</h2>
+  <table>
+    <thead><tr><th>项</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>场景资产</td><td><span class="badge b-ok">✅</span> scenes/SM6.yaml 4→18（购买5/保修5/证件4/账号4），独立唤醒词+独立 prompt（#248 格式），时间预填零填写</td></tr>
+      <tr><td>单一事实源</td><td><span class="badge b-ok">✅</span> 渲染 meta 从 references/scenarios.yaml 读取，SCENE_META 静态表删除；CLI 加 --scene</td></tr>
+      <tr><td>合并器</td><td><span class="badge b-ok">✅</span> 支持 scenario_id 同步（新增字段）</td></tr>
+      <tr><td>HELP</td><td><span class="badge b-ok">✅</span> DOM id 唯一化（s-{场景 id}）+ openChain 直达展开自身修复（暴露的既有 bug）</td></tr>
+      <tr><td>SKILL.md</td><td><span class="badge b-ok">✅</span> 路由 4→18 行 + 执行面/速查/模板表/总览同步 + 编号 31-95 重排</td></tr>
+      <tr><td>验收</td><td><span class="badge b-ok">✅</span> 18 场景 CLI 渲染 + 4 写操作回执 scene_id 与清单零差异 + 73 场景 HELP + hash 直达 + 398 测试</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2><span class="no">2</span>#253 位置域 scene_id 单一事实源</h2>
+  <table>
+    <thead><tr><th>项</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>公共模块</td><td><span class="badge b-ok">✅</span> 新增 位置/scenes.py（命令→唤醒词→清单反查，回退表兜底）</td></tr>
+      <tr><td>cli.py</td><td><span class="badge b-ok">✅</span> 15 处硬编码 → scenes.scene_id()</td></tr>
+      <tr><td>ops.py</td><td><span class="badge b-ok">✅</span> 4 处事件 scene_id → 清单读取</td></tr>
+      <tr><td>守卫测试</td><td><span class="badge b-ok">✅</span> 清单/回退一致 + cli.py 残留 0 断言</td></tr>
+      <tr><td>残留扫描</td><td><span class="badge b-warn">⏳ 其余域</span> 位置域 0 残留；快递购物 SM5（4 处）/ 穿搭 SM3（5 处）/ 联动 SM9（3 处）待逐域迁移</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2><span class="no">3</span>提交（待 push 2 个）</h2>
+  <div class="commit">e855159  [居家管家] #250 SM6 票据凭证域拆场景 4→18 · scene_id 单一事实源 + CLI --scene + 合并器 scenario_id + HELP DOM id 唯一化 + SKILL.md 18 行 + 18 场景冒烟 · 396 通过<br><br>fcae96b  [居家管家] #253 位置域 scene_id 单一事实源 · scenes.py + cli 15 处 + ops 4 处 + 守卫测试 · 398 通过<br><br>→ git push origin main</div>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:8px;">两个 commit 均已本地提交（pre-commit 自动跑全量 398 绿），远端待你 push。</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">4</span>待你拍板</h2>
+  <div class="opt"><span class="letter">A</span><div><span class="rec">人眼终审 #250（推荐）</span>：HELP 打开票据凭证域，18 个场景复制 prompt 试用几个，确认后我 close #250。</div></div>
+  <div class="opt"><span class="letter">B</span><div>#250 + #253 一起终审后 close。<span class="why">#253 位置域已完成，其余域按 issue 建议另开逐域 ticket 或保持 open 作总票。</span></div></div>
+  <div class="opt"><span class="letter">C</span><div>先不 close，继续下一批。</div></div>
+</div>
+
+<div class="footer">Mavis · wayfinder · #250+#253 交付（2026-08-11）</div>
+
+</body>
+</html>

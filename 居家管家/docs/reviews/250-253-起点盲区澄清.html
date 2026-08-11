@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#250+#253 认领 · 起点 + 盲区 + 澄清</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --blue: #0071e3; --green: #34c759; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--blue);
+    background: rgba(0,113,227,0.08); border: 1px solid rgba(0,113,227,0.2);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--blue); color: #fff; font-size: 12px; padding: 0 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .grid2 { grid-template-columns: 1fr; } }
+  .kv { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+  .kv .k { font-size: 11px; color: var(--sub); letter-spacing: 0.3px; margin-bottom: 4px; }
+  .kv .v { font-size: 13px; font-weight: 600; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: 0.3px; }
+  .q { margin-bottom: 18px; }
+  .q:last-child { margin-bottom: 0; }
+  .q .qtitle { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .q .qbg { font-size: 13px; color: var(--sub); margin-bottom: 10px; padding: 10px 12px; background: var(--bg); border-radius: 10px; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .opt .why { display: block; color: var(--sub); font-size: 12.5px; margin-top: 2px; }
+  .loc { font-size: 11px; color: var(--sub); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">WAYFINDER · 认领 2 ISSUE</span>
+  <h1>#250 拆场景 + #253 scene_id 单一事实源</h1>
+  <p>2026-08-11 · 已 claim · 起点 → 盲区 → 澄清（grill 收敛后动手）</p>
+</div>
+
+<!-- 起点 -->
+<div class="card">
+  <h2><span class="no">1</span>告诉起点</h2>
+  <div class="grid2">
+    <div class="kv">
+      <div class="k">#250 目标</div>
+      <div class="v">SM6 票据凭证域 4 场景 → 18 个细粒度场景（购买 5 + 保修 5 + 证件 4 + 账号 4），每场景独立唤醒词 + 独立 prompt，零新表/新 CLI</div>
+    </div>
+    <div class="kv">
+      <div class="k">#253 目标</div>
+      <div class="v">渲染/事件代码的 scene_id 硬编码 → 从场景清单单一事实源读取，先位置域 6 处，再逐域迁移</div>
+    </div>
+    <div class="kv">
+      <div class="k">当前进度</div>
+      <div class="v">#250：SM6.yaml 现状已读（4 场景各含「操作」选择式 prompt）；CLI 命令面齐全（purchase/warranty/cert/account 全子命令）；合并器 dry-run 正常。未开始改场景资产</div>
+    </div>
+    <div class="kv">
+      <div class="k">经验水平</div>
+      <div class="v">居家管家场景资产/合并器/HELP 流程有经验（#243 修过 help_center）；票据凭证域 CLI 结构已摸清；#253 场景清单结构已核查</div>
+    </div>
+  </div>
+</div>
+
+<!-- 盲区 -->
+<div class="card">
+  <h2><span class="no">2</span>发现盲区</h2>
+  <ul class="plain">
+    <li>
+      <div class="t">⚠️ 盲区 1 · #250 与 #253 顺序耦合</div>
+      <div class="d">#250 改 SM6.yaml 场景结构（4→18）会<b>重排 scene_id</b>（SM6-1~4 → 18 个新编号）。若先做 #253（scene_id 从清单读取），#250 后改清单会让位置域已迁移的读取逻辑仍然有效（读清单即可）；若 #253 仍硬编码，则 #250 重排后硬编码全错。<b>建议顺序：#250 先（改清单），#253 后（读新清单）</b>，或 #253 的「读取层」与 #250 解耦做。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 2 · #253 事实源选择（triage 已发现）</div>
+      <div class="d"><span class="loc">scenes/</span> 目录只有 SM1/2/3/5/6/8 六个 yaml（缺 SM4/SM7），不能单独当全量事实源。<b>必须以 references/scenarios.yaml 为权威</b>（9 域 59 场景，合并器产物）。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 3 · #250 场景拆分后「复制 prompt 零思考可填」的验收</div>
+      <div class="d">18 个场景各自独立 prompt，字段必须与 CLI 参数精确对应（#248 格式：字段名(推荐值): ______）。需逐场景核对 CLI 参数，防 prompt 写了 CLI 不认的参数。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 4 · #250 模板按钮语义对齐</div>
+      <div class="d">issue 说「模板按钮部分已就绪（新增X/更新/补照片/记录维修/执行保养）」——需逐模板核对按钮与 18 场景的对应，可能有模板需微调。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 5 · #253 跨域迁移规模</div>
+      <div class="d">位置域 6 处先行，但全技能 8 域同模式（物品/穿搭/统计/快递/家庭/票据/开始使用/联动）——本次会话只能做位置域，其余域需逐域新会话/新提交。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 6 · #250 验收 = 59→73 场景全量可用 + 每场景 Playwright 冒烟</div>
+      <div class="d">18 场景逐场景渲染 HTML + Playwright 冒烟是本次最大工作量；需确认验收深度（全 18 场景 vs 抽样）。</div>
+    </li>
+  </ul>
+</div>
+
+<!-- 澄清 -->
+<div class="card">
+  <h2><span class="no">3</span>采访澄清（grill）</h2>
+
+  <div class="q">
+    <div class="qtitle">Q1 · 两个 issue 的执行顺序</div>
+    <div class="qbg">背景：盲区 1 的耦合分析——#250 改场景清单会重排 scene_id；#253 是读取层改造。两者有先后依赖。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">先 #250 后 #253（推荐）</span>：先把 SM6 拆成 18 场景（清单定稿），再做 scene_id 读取层（读新清单）。<span class="why">#250 重排 scene_id 后，#253 直接读新清单零冲突；先做读取层会被 #250 重排打脸。</span></div></div>
+    <div class="opt"><span class="letter">B</span><div>先 #253 后 #250：读取层先行，位置域 6 处迁移。<span class="why">#253 独立可交付，但 #250 后重排编号需要读取层容错（读清单即可，其实也兼容）。</span></div></div>
+    <div class="opt"><span class="letter">C</span><div>两个并行推进。<span class="why">改动面大、互相耦合，不推荐本次会话并行。</span></div></div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle">Q2 · #250 验收深度</div>
+    <div class="qbg">背景：盲区 6——18 场景逐场景 Playwright 冒烟是最大工作量。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">全 18 场景逐场景渲染 + 冒烟（推荐）</span>：每个场景跑真实 CLI → 渲染 HTML → Playwright 断言关键元素。<span class="why">符合「每场景全流程 CLI 渲染 HTML + Playwright 冒烟」的 issue 验收原文。</span></div></div>
+    <div class="opt"><span class="letter">B</span><div>抽样 4-6 场景深验 + 其余静态校验。<span class="why">快，但可能有漏网场景。</span></div></div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle">Q3 · #253 本次范围（位置域先行确认）</div>
+    <div class="qbg">背景：盲区 5——全技能 8 域同模式，位置域 6 处是 issue 指定的先行域。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">本次只做位置域（推荐）</span>：6 处硬编码 → 读清单，验收「位置域 scene_id 与清单零差异 + 全技能硬编码残留扫描报告」。<span class="why">符合 issue「位置域先行落地，其余域逐域迁移」。</span></div></div>
+    <div class="opt"><span class="letter">B</span><div>本次做 2-3 个域。<span class="why">更快清零硬编码，但每域独立提交/验收的纪律被压缩。</span></div></div>
+  </div>
+</div>
+
+<div class="footer">Mavis · wayfinder · #250+#253 认领（2026-08-11）</div>
+
+</body>
+</html>

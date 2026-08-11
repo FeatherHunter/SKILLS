@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>票据凭证域现状 · 实际功能盘点</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --blue: #0071e3; --green: #34c759; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 760px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--blue);
+    background: rgba(0,113,227,0.08); border: 1px solid rgba(0,113,227,0.2);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--blue); color: #fff; font-size: 12px; padding: 0 6px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-ok { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-blue { background: rgba(0,113,227,0.10); color: #0071e3; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: 0.3px; }
+  .loc { font-size: 11px; color: var(--sub); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  .grp { background: var(--bg); font-weight: 700; }
+  .cmd { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 11.5px; background: var(--bg); padding: 1px 6px; border-radius: 5px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">聚焦盘点 · 票据凭证域（#250 任务对象）</span>
+  <h1>SM6 票据凭证 · 当前实际功能</h1>
+  <p>2026-08-11 · 底层能力已全部就绪，缺的只是「场景资产拆分」</p>
+</div>
+
+<!-- 数据层 -->
+<div class="card">
+  <h2><span class="no">1</span>数据层（4 张表 · 已落地）</h2>
+  <table>
+    <thead><tr><th>表</th><th>核心字段</th><th>支撑功能</th></tr></thead>
+    <tbody>
+      <tr><td class="loc">purchase_records</td><td>item_id / purchased_at / price / channel / merchant_contact / receipt_photo / return_window_days</td><td>购买记录 + 退货窗口计算 + 票据照片</td></tr>
+      <tr><td class="loc">warranties</td><td>item_id / kind(保修|保养) / start_date / duration_days / last_done_date</td><td>保修 + 保养周期（kind 区分，last_done_date=状态源）</td></tr>
+      <tr><td class="loc">service_events</td><td>warranty_id / event_type(维修|保养执行) / cost / note</td><td>维修记录 + 保养执行历史</td></tr>
+      <tr><td class="loc">certificates</td><td>cert_type / holder / cert_number(脱敏) / issued_at / expires_at / photo</td><td>证件登记 + 到期排序 + 号码脱敏</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:12.5px;color:var(--sub);margin-top:8px;">账号密码走独立 <span class="loc">accounts</span> 表（主密钥 Fernet 加密 · 密码全脱敏）。</p>
+</div>
+
+<!-- CLI 能力 -->
+<div class="card">
+  <h2><span class="no">2</span>CLI 实际能力（已全部可用）</h2>
+  <table>
+    <thead><tr><th>子命令</th><th>动作</th><th>参数</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="3">🧾 购买记录 purchase</td></tr>
+      <tr><td class="cmd">purchase list</td><td>查购买记录清单 HTML</td><td>--item-id / --year / --month</td></tr>
+      <tr><td class="cmd">purchase add</td><td>登记购买记录</td><td>--item-id / --date / --price / --channel / --merchant-contact / --receipt-photo / --return-window</td></tr>
+      <tr><td class="cmd">purchase stats</td><td>消费统计 HTML</td><td>--year</td></tr>
+      <tr class="grp"><td colspan="3">🛡 保修与保养 warranty</td></tr>
+      <tr><td class="cmd">warranty list</td><td>保修/保养清单 HTML（在保/将到期/已过）</td><td>--status</td></tr>
+      <tr><td class="cmd">warranty register</td><td>登记保修 或 设置保养周期</td><td>--item-id / --kind 保修|保养 / --start-date / --duration-days</td></tr>
+      <tr><td class="cmd">warranty repair</td><td>记录维修</td><td>--warranty-id / --date / --cost / --note</td></tr>
+      <tr><td class="cmd">warranty maintain</td><td>执行保养（刷新 last_done_date）</td><td>--warranty-id / --date / --note</td></tr>
+      <tr class="grp"><td colspan="3">🪪 证件 cert</td></tr>
+      <tr><td class="cmd">cert list</td><td>证件清单 HTML（号码 ****后4位 · 按到期排序）</td><td>--output</td></tr>
+      <tr><td class="cmd">cert add</td><td>登记证件（含照片归档）</td><td>--type / --holder / --number / --issued-at / --expires-at / --photo</td></tr>
+      <tr class="grp"><td colspan="3">🔑 账号密码 account</td></tr>
+      <tr><td class="cmd">account init-master</td><td>首次设置主密钥</td><td>--master-key</td></tr>
+      <tr><td class="cmd">account list</td><td>账号清单 HTML（密码 ******）</td><td>--output</td></tr>
+      <tr><td class="cmd">account add</td><td>存账号（加密存储）</td><td>--platform / --user / --pass / --master-key / --type</td></tr>
+      <tr><td class="cmd">account show</td><td>查看密码（敏感 · 仅 stdout 回显）</td><td>--platform / --master-key</td></tr>
+      <tr><td class="cmd">account update</td><td>改账号（重新录入语义）</td><td>--platform / --master-key / --user / --pass / --type</td></tr>
+      <tr><td class="cmd">account set-master</td><td>改主密钥</td><td>--master-key</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 场景 vs 能力对照 -->
+<div class="card">
+  <h2><span class="no">3</span>现状：场景资产 4 个（粗） vs 底层能力 15 个动作</h2>
+  <table>
+    <thead><tr><th>现状场景（1 词管多事）</th><th>底层已具备的动作</th><th>拆后场景</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge b-blue">购买记录</span><br>用户说「购买记录」→ AI 猜：查询？登记？统计？</td>
+        <td>list / list(年月过滤) / stats / add / 退货窗口</td>
+        <td>查购买记录 / <b>查上月购买</b> / <b>查今年花费</b> / 查退货窗口 / 登记购买记录</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-blue">保修</span><br>用户说「保修」→ AI 猜：查？登记？维修？保养？</td>
+        <td>list / register(保修) / register(保养) / repair / maintain</td>
+        <td>查保修状态 / 登记保修 / 记录维修 / 设置保养周期 / 执行保养</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-blue">证件</span><br>用户说「证件」→ AI 猜：查？登记？归档？</td>
+        <td>list / add(含照片) / 更新(模板按钮=重登记)</td>
+        <td>查证件到期 / 登记证件 / 证件归档 / 更新证件</td>
+      </tr>
+      <tr>
+        <td><span class="badge b-blue">账号</span><br>用户说「账号」→ AI 猜：查？存？改？看密码？</td>
+        <td>list / add / update / show / init-master / set-master</td>
+        <td>查账号 / 存账号 / 改账号 / 看密码</td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--sub);margin-top:10px;">
+    <span class="badge b-ok">✅ 结论</span> 底层 15 个动作已全部可用，<b>零新代码</b>。#250 拆 18 场景 = 把「1 词管多事」改成「1 词 1 事」，让用户不用猜。
+  </p>
+</div>
+
+<div class="footer">Mavis · 聚焦盘点 · 票据凭证域实际能力（2026-08-11）</div>
+
+</body>
+</html>

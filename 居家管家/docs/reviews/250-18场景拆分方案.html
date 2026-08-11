@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#250 原型验证 · 18 场景拆分方案</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --blue: #0071e3; --green: #34c759; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 760px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--blue);
+    background: rgba(0,113,227,0.08); border: 1px solid rgba(0,113,227,0.2);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--blue); color: #fff; font-size: 12px; padding: 0 6px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-ok { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-warn { background: rgba(255,149,0,0.14); color: #c77100; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: 0.3px; }
+  .group { background: var(--bg); font-weight: 700; font-size: 13px; }
+  .loc { font-size: 11px; color: var(--sub); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .opt .why { display: block; color: var(--sub); font-size: 12.5px; margin-top: 2px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">原型验证 · 方案待拍板</span>
+  <h1>#250 SM6 拆场景 4→18 · 方案</h1>
+  <p>2026-08-11 · 每个场景独立唤醒词 + 独立 prompt（#248 格式），全部 CLI 已支撑</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">1</span>18 场景拆分表</h2>
+  <table>
+    <thead><tr><th>#</th><th>场景</th><th>唤醒词</th><th>CLI 支撑</th><th>关键字段</th></tr></thead>
+    <tbody>
+      <tr class="group"><td colspan="5">购买记录（原 SM6-1 → 5 场景）</td></tr>
+      <tr><td>1</td><td>查购买记录</td><td>查购买记录</td><td class="loc">purchase list</td><td>物品(选填)/时间(选填)</td></tr>
+      <tr><td>2</td><td>查上月购买</td><td>查上月购买</td><td class="loc">purchase list --year --month</td><td>时间预填=上月,零填写</td></tr>
+      <tr><td>3</td><td>查今年花费</td><td>查今年花费</td><td class="loc">purchase stats --year</td><td>年份预填=今年,零填写</td></tr>
+      <tr><td>4</td><td>查退货窗口</td><td>查退货窗口</td><td class="loc">purchase list</td><td>物品(必填),看退货截止</td></tr>
+      <tr><td>5</td><td>登记购买记录</td><td>登记购买记录</td><td class="loc">purchase add</td><td>物品/日期/价格(选)/渠道(选)</td></tr>
+      <tr class="group"><td colspan="5">保修与保养（原 SM6-2 → 5 场景）</td></tr>
+      <tr><td>6</td><td>查保修状态</td><td>查保修状态</td><td class="loc">warranty list</td><td>状态(选填:全部/在保/将到期)</td></tr>
+      <tr><td>7</td><td>登记保修</td><td>登记保修</td><td class="loc">warranty register --kind 保修</td><td>物品/起始日/时长(月)</td></tr>
+      <tr><td>8</td><td>记录维修</td><td>记录维修</td><td class="loc">warranty repair</td><td>保修ID/日期/花费(选)</td></tr>
+      <tr><td>9</td><td>设置保养周期</td><td>设置保养周期</td><td class="loc">warranty register --kind 保养</td><td>物品/周期(月)/上次保养日(选)</td></tr>
+      <tr><td>10</td><td>执行保养</td><td>执行保养</td><td class="loc">warranty maintain</td><td>保养ID/日期</td></tr>
+      <tr class="group"><td colspan="5">证件管理（原 SM6-3 → 4 场景）</td></tr>
+      <tr><td>11</td><td>查证件到期</td><td>查证件到期</td><td class="loc">cert list</td><td>按到期排序,零填写</td></tr>
+      <tr><td>12</td><td>登记证件</td><td>登记证件</td><td class="loc">cert add</td><td>类型/持有人/号码/签发日/到期日</td></tr>
+      <tr><td>13</td><td>证件归档</td><td>证件归档</td><td class="loc">cert add --photo</td><td>证件(选)+照片发送</td></tr>
+      <tr><td>14</td><td>更新证件</td><td>更新证件</td><td class="loc">cert add(重登记语义·模板已有按钮)</td><td>证件ID/改的字段(只填要改的)</td></tr>
+      <tr class="group"><td colspan="5">账号密码（原 SM6-4 → 4 场景）</td></tr>
+      <tr><td>15</td><td>查账号</td><td>查账号</td><td class="loc">account list</td><td>密码脱敏,零填写</td></tr>
+      <tr><td>16</td><td>存账号</td><td>存账号</td><td class="loc">account add</td><td>平台/用户名/密码/类型(选)</td></tr>
+      <tr><td>17</td><td>改账号</td><td>改账号</td><td class="loc">account update</td><td>平台/主密钥/改的字段</td></tr>
+      <tr><td>18</td><td>看密码</td><td>看密码</td><td class="loc">account show</td><td>平台/主密钥(敏感·仅回显)</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--sub);margin-top:10px;">
+    <span class="badge b-ok">✅ 零新 CLI</span> 全部映射到既有 purchase/warranty/cert/account 子命令。
+    <span class="badge b-warn">⚠️ 2 处语义说明</span> ①「设置保养周期」= register kind=保养（同登记保修一个 CLI，不同字段/唤醒词）；②「更新证件」= 模板已有「更新」按钮，走 AI 重登记语义（issue 拍板零新 CLI，保持）。
+  </p>
+</div>
+
+<div class="card">
+  <h2><span class="no">2</span>prompt 样例（#248 格式）</h2>
+  <p style="font-size:12.5px;color:var(--sub);margin-bottom:10px;">18 个场景每个都是「独立唤醒词 + 独立 prompt，字段与 CLI 参数精确对应」。两个代表性样例：</p>
+  <div style="background:var(--bg);border-radius:12px;padding:14px;font-size:13px;margin-bottom:10px;">
+    <b>查上月购买</b>（时间预填 · 用户零填写）<br>
+    <span class="loc">请加载「居家管家」技能,帮我查上个月的购买记录(唤醒词:查上月购买):<br>&nbsp;&nbsp;月份(预填上月,如改可改): 2026-07</span>
+  </div>
+  <div style="background:var(--bg);border-radius:12px;padding:14px;font-size:13px;">
+    <b>登记购买记录</b><br>
+    <span class="loc">请加载「居家管家」技能,帮我登记一条购买记录(唤醒词:登记购买记录):<br>&nbsp;&nbsp;物品: _____________<br>&nbsp;&nbsp;日期(YYYY-MM-DD): _____________<br>&nbsp;&nbsp;价格(选填): _____________<br>&nbsp;&nbsp;渠道(选填,如:京东): _____________</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="no">3</span>待拍板</h2>
+  <div class="opt"><span class="letter">A</span><div><span class="rec">方案认可，按此实施（推荐）</span>：重写 SM6.yaml → 合并器 → scenarios.yaml → HELP 重建 → SKILL.md 路由 → 模板核对 → 全 18 场景冒烟。<span class="why">18 场景与 issue 拆分方向一致，CLI 全支撑。</span></div></div>
+  <div class="opt"><span class="letter">B</span><div>方案调整：指出要改的场景/唤醒词/字段。<span class="why">逐条反馈，收敛后实施。</span></div></div>
+</div>
+
+<div class="footer">Mavis · wayfinder #250 · 原型验证（2026-08-11）</div>
+
+</body>
+</html>

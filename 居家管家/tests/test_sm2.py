@@ -459,3 +459,25 @@ def test_merge_undo_button_item_precise(tmp_db, tmp_path):
     assert "TEST_酱油 (ID 11)" not in html
     # merged_items 进 scene(复制数据可追溯)
     assert '"merged_items"' in html
+
+# ═══════════════ #253 scene_id 单一事实源守卫 ═══════════════
+
+def test_sm2_scene_id_from_registry(tmp_path, monkeypatch):
+    """#253: 位置域场景 id 从场景清单读取,与回退表一致(防硬编码回归)"""
+    monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+    from 位置 import scenes
+    # 清单存在时,场景 id 应与回退表一致(当前清单 = 权威)
+    expected = {"sm2-view": "SM2-4", "sm2-manage": "SM2-1",
+                "sm2-fixed": "SM2-2", "sm2-suggest": "SM2-3"}
+    for cmd, want in expected.items():
+        got = scenes.scene_id(cmd)
+        assert got == want, f"{cmd}: 清单/回退 scene_id={got} 期望={want}"
+
+def test_sm2_cli_no_hardcoded_scene_id():
+    """#253: 位置域 cli.py 不得含硬编码 "SM2-x" 字面量(防回归)"""
+    src = Path(SCRIPTS_DIR, "位置", "cli.py").read_text(encoding="utf-8")
+    import re
+    hard = re.findall(r'"SM2-\d"', src)
+    assert not hard, f"位置域 cli.py 残留硬编码 scene_id: {hard}"
+    # 应通过 scenes.scene_id() 读取
+    assert "scenes.scene_id(" in src, "位置域 cli.py 未使用 scenes.scene_id()"

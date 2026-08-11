@@ -7,6 +7,7 @@ from datetime import datetime
 
 from .schema import (normalize_path, validate_segments, ensure_schema,
                      _prefix_clause, is_descendant_or_self, SEP)
+from . import scenes
 from . import tree as tree_mod
 
 # 事件类型扩展(代码层枚举 · 记录契约 #4:新域可扩展)
@@ -141,11 +142,14 @@ def create_node(conn, raw_path, cli_cmd=""):
     return True, f"位置「{path}」已创建", path
 
 
-def _rename_cascade(conn, old, new, scene_id="SM2-1", cli_cmd="", event_type=EVENT_LOCATION_RENAMED):
+def _rename_cascade(conn, old, new, scene_id=None, cli_cmd="", event_type=EVENT_LOCATION_RENAMED):
     """前缀级联改名:location_nodes + item_locations.location + items.fixed_location
 
+    scene_id: 事件记录场景标识(#253 单一事实源: 默认从清单读, 缺省回退 SM2-1)
     返回 {renamed_items: N, events: N, paths: [affected 完整路径样例]}
     """
+    if scene_id is None:
+        scene_id = scenes.scene_id("sm2-manage")
     cursor = conn.cursor()
     # 受影响物品(条目或固定位引用该路径子树)
     clause, params = _prefix_clause(old)
@@ -244,13 +248,15 @@ def rename_preview(conn, old_raw, new_raw):
             "fixed_affected": fixed, "paths": affected[:20]}
 
 
-def _merge_cascade(conn, src, tgt, scene_id="SM2-1", cli_cmd=""):
+def _merge_cascade(conn, src, tgt, scene_id=None, cli_cmd=""):
     """相似位置合并级联:条目/固定位前缀改写 src→tgt(去重)+ 子节点级联 + 删 src 节点 + 空父链清理
 
     与 _rename_cascade 的区别:合并的目标 tgt 节点通常已存在(相似检测的典型场景:
     同一位置两种写法,两节点都已建),不能对节点做「改名到 tgt」——那会撞
     location_nodes.path 的 UNIQUE 约束;正确做法是条目迁移 + 删源节点。
     """
+    if scene_id is None:
+        scene_id = scenes.scene_id("sm2-manage")
     cursor = conn.cursor()
     # 1. 受影响物品收集(条目 + 固定位,事件用)
     clause, params = _prefix_clause(src)
@@ -419,7 +425,7 @@ def fixed_set(conn, item_id, raw_location, cli_cmd=""):
                   f"设置固定位:{item['name']} → {path}",
                   payload={"before": {"fixed_location": old},
                            "after": {"fixed_location": path}},
-                  scene_id="SM2-2", cli_cmd=cli_cmd)
+                  scene_id=scenes.scene_id("sm2-fixed"), cli_cmd=cli_cmd)
     conn.commit()
     return True, f"已设置固定位:{item['name']} → {path}", {"item": item, "fixed_location": path}
 
@@ -440,7 +446,7 @@ def fixed_clear(conn, item_id, cli_cmd=""):
                   f"解除固定位:{item['name']}",
                   payload={"before": {"fixed_location": old},
                            "after": {"fixed_location": None}},
-                  scene_id="SM2-2", cli_cmd=cli_cmd)
+                  scene_id=scenes.scene_id("sm2-fixed"), cli_cmd=cli_cmd)
     conn.commit()
     return True, f"已解除固定位:{item['name']}", {"item": item, "fixed_location": None}
 

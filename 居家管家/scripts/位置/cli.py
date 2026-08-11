@@ -1,4 +1,4 @@
-# 位置/cli.py - SM2 域 CLI 子命令注册与分发(T3 · 公共层 3 处接线)
+﻿# 位置/cli.py - SM2 域 CLI 子命令注册与分发(T3 · 公共层 3 处接线)
 # home_manager.py 只做 3 处加法接线: import / register / dispatch
 import json
 import sys
@@ -74,7 +74,7 @@ def _receipt_scene(ok, msg, payload, scene_id, wake_word, command_cn,
 
 def run(args):
     """SM2 命令分发(返回进程退出码)"""
-    from 位置 import ops, tree
+    from 位置 import ops, scenes, tree
     from home_manager.db import get_conn
 
     cmd = args.command
@@ -87,7 +87,7 @@ def run(args):
         finally:
             conn.close()
         data["start_hint"] = not data["current_path"]
-        return _emit("space_view.html", data, "SM2-4", "空间视图", "空间视图",
+        return _emit("space_view.html", data, scenes.scene_id("sm2-view"), "空间视图", "空间视图",
                      target=data["current_path"] or "(全屋)", output_path=args.output)
 
     # ── SM2-1 位置管理 ──
@@ -98,7 +98,7 @@ def run(args):
                 data = ops.manage_payload(conn)
                 if args.action == "similar":
                     data["focus_similar"] = True
-                return _emit("location_manage.html", data, "SM2-1", "管位置", "管位置",
+                return _emit("location_manage.html", data, scenes.scene_id("sm2-manage"), "管位置", "管位置",
                              target="", output_path=args.output)
 
             if args.action == "selectors":
@@ -109,7 +109,7 @@ def run(args):
 
             if args.action == "create":
                 ok, msg, payload = ops.create_node(conn, args.path, cli_cmd=" ".join(sys.argv[1:]))
-                return _receipt_scene(ok, msg, {"target": payload}, "SM2-1",
+                return _receipt_scene(ok, msg, {"target": payload}, scenes.scene_id("sm2-manage"),
                                       "管位置", "新建位置",
                                       buttons=[{"label": "去放物品", "text": f"移物品(居家管家): 把物品移到「{payload}」"}],
                                       output_path=args.output)
@@ -121,7 +121,7 @@ def run(args):
                                      {"old": args.old, "new": args.new}, output_path=args.output)
                 if args.action == "rename-preview":
                     preview["mode"] = "rename"
-                    return _emit("confirm.html", preview, "SM2-1", "管位置", "位置改名",
+                    return _emit("confirm.html", preview, scenes.scene_id("sm2-manage"), "管位置", "位置改名",
                                  target=preview["old"], output_path=args.output)
                 ok, msg, payload = ops.rename_node(conn, args.old, args.new,
                                                    cli_cmd=" ".join(sys.argv[1:]))
@@ -133,7 +133,7 @@ def run(args):
                 payload["target"] = f"{preview['old']} → {preview['new']}"
                 payload["diff"] = [{"field": "位置路径", "before": preview["old"], "after": preview["new"]}]
                 payload["extra"] = {"涉及物品": preview["items_affected"]}
-                return _receipt_scene(ok, msg, payload, "SM2-1", "管位置", "位置改名",
+                return _receipt_scene(ok, msg, payload, scenes.scene_id("sm2-manage"), "管位置", "位置改名",
                                       buttons=[{"label": "撤销改名", "text": f"管位置(居家管家): 改名回退,把「{preview['new']}」改回「{preview['old']}」"}],
                                       output_path=args.output)
 
@@ -146,7 +146,7 @@ def run(args):
                                          {"src": old, "tgt": new}, output_path=args.output)
                     preview["src"], preview["tgt"] = old, new
                     preview["mode"] = "merge"
-                    return _emit("confirm.html", preview, "SM2-1", "管位置", "位置合并",
+                    return _emit("confirm.html", preview, scenes.scene_id("sm2-manage"), "管位置", "位置合并",
                                  target=f"{old} → {new}", output_path=args.output)
                 ok, msg, payload = ops.merge_node(conn, old, new,
                                                   cli_cmd=" ".join(sys.argv[1:]))
@@ -171,7 +171,7 @@ def run(args):
                     )
                 else:
                     undo_text = f"管位置(居家管家): 合并回退,把「{new}」改回「{old}」"
-                return _receipt_scene(ok, msg, payload, "SM2-1", "管位置", "位置合并",
+                return _receipt_scene(ok, msg, payload, scenes.scene_id("sm2-manage"), "管位置", "位置合并",
                                       buttons=[{"label": "撤销合并", "text": undo_text}],
                                       output_path=args.output)
 
@@ -190,10 +190,10 @@ def run(args):
                     n = cursor.fetchone()["n"]
                     return _emit("confirm.html", {"mode": "delete", "path": p,
                                                   "items_affected": n},
-                                 "SM2-1", "管位置", "删除位置", target=p, output_path=args.output)
+                                 scenes.scene_id("sm2-manage"), "管位置", "删除位置", target=p, output_path=args.output)
                 ok, msg, payload = ops.delete_node(conn, path, cli_cmd=" ".join(sys.argv[1:]))
                 return _receipt_scene(ok, msg, {"target": path, "extra": payload},
-                                      "SM2-1", "管位置", "删除位置", output_path=args.output)
+                                      scenes.scene_id("sm2-manage"), "管位置", "删除位置", output_path=args.output)
         finally:
             conn.close()
 
@@ -203,14 +203,14 @@ def run(args):
         try:
             if args.action == "list":
                 data = ops.fixed_list_payload(conn)
-                return _emit("fixed_spot.html", data, "SM2-2", "固定位", "固定位",
+                return _emit("fixed_spot.html", data, scenes.scene_id("sm2-fixed"), "固定位", "固定位",
                              target="", output_path=args.output)
             if args.action == "set":
                 ok, msg, payload = ops.fixed_set(conn, args.item_id, args.location,
                                                  cli_cmd=" ".join(sys.argv[1:]))
                 if ok:
                     payload["diff"] = [{"field": "固定位", "before": None, "after": args.location}]
-                    return _receipt_scene(True, msg, payload, "SM2-2", "固定位", "设置固定位",
+                    return _receipt_scene(True, msg, payload, scenes.scene_id("sm2-fixed"), "固定位", "设置固定位",
                                           buttons=[{"label": "解除固定位", "text": f"固定位(居家管家): 解除 ID={args.item_id} 的固定位"}],
                                           output_path=args.output)
                 return _emit_err("固定位", "设置固定位", msg, {"item_id": args.item_id},
@@ -219,7 +219,7 @@ def run(args):
                 ok, msg, payload = ops.fixed_clear(conn, args.item_id,
                                                    cli_cmd=" ".join(sys.argv[1:]))
                 if ok:
-                    return _receipt_scene(True, msg, payload, "SM2-2", "固定位", "解除固定位",
+                    return _receipt_scene(True, msg, payload, scenes.scene_id("sm2-fixed"), "固定位", "解除固定位",
                                           output_path=args.output)
                 return _emit_err("固定位", "解除固定位", msg, {"item_id": args.item_id},
                                  output_path=args.output)
@@ -236,21 +236,21 @@ def run(args):
                 data = {"batch": True, "mode": "batch", "recommendations": recs,
                         "total": len(recs),
                         "hint": "没有固定位的常用件全部列出;逐条确认后建议去设置固定位"}
-                return _emit("suggest_storage.html", data, "SM2-3", "收纳建议", "收纳建议",
+                return _emit("suggest_storage.html", data, scenes.scene_id("sm2-suggest"), "收纳建议", "收纳建议",
                              target=f"{len(recs)} 件", output_path=args.output)
             if args.item_ids:
                 ids = [int(x) for x in args.item_ids.split(",") if x.strip()]
                 recs = ops.recommend_items(conn, ids)
                 data = {"batch": False, "mode": "multi", "recommendations": recs,
                         "total": len(recs), "hint": f"指定 {len(ids)} 件逐条给建议"}
-                return _emit("suggest_storage.html", data, "SM2-3", "收纳建议", "收纳建议",
+                return _emit("suggest_storage.html", data, scenes.scene_id("sm2-suggest"), "收纳建议", "收纳建议",
                              target=f"{len(recs)} 件", output_path=args.output)
             rec = ops.recommend_item(conn, args.item_id)
             if not rec:
                 return _emit_err("收纳建议", "收纳建议", f"未找到 ID={args.item_id} 的物品",
                                  {"item_id": args.item_id}, output_path=args.output)
             data = {"batch": False, "mode": "single", "recommendations": [rec], "total": 1}
-            return _emit("suggest_storage.html", data, "SM2-3", "收纳建议", "收纳建议",
+            return _emit("suggest_storage.html", data, scenes.scene_id("sm2-suggest"), "收纳建议", "收纳建议",
                          target=rec["item"]["name"], output_path=args.output)
         finally:
             conn.close()

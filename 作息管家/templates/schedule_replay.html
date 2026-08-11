@@ -329,6 +329,12 @@ body {
 
 /* === 移动端 / 平板适配 === */
 @media (max-width: 768px) {
+  /* #269 对抗式审查修复: 手机端表格/跨域卡片 0 溢出 */
+  .pa-table, .mc-table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .pa-table th, .pa-table td, .mc-table th, .mc-table td { white-space: nowrap; }
+  .cross-item { flex-wrap: wrap; }
+  .cross-item .title { white-space: normal; word-break: break-all; min-width: 0; flex: 1; }
+}
   .cards-4 { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .card-stat { padding: 14px 16px; }
   .card-stat .value { font-size: 24px; }

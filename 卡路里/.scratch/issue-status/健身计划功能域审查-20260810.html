@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健身计划功能域 · 第一性原理审查</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --orange:#ff9500; --red:#ff3b30; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:680px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(0,113,227,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:21px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  h2{font-size:16px;font-weight:700;margin:18px 0 8px}
+  h3{font-size:14px;font-weight:700;margin:12px 0 6px}
+  p{font-size:13.5px;line-height:1.75}
+  .miss{background:#fff2f0;border:1px solid rgba(255,59,48,.2);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;color:#b3261e;margin:8px 0}
+  .have{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;color:#1c7c3a;margin:8px 0}
+  .suggest{background:#fff8e6;border:1px solid rgba(255,159,10,.3);border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.7;color:#8a6100;margin:8px 0}
+  .row{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .mark{flex-shrink:0;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .mark.have{background:rgba(52,199,89,.15);color:#1c7c3a}
+  .mark.miss{background:rgba(255,59,48,.14);color:#b3261e}
+  .mark.opt{background:rgba(255,149,0,.16);color:#b25e00}
+  .b{flex:1}
+  .t{font-size:13.5px;font-weight:600}
+  .d{font-size:12px;color:var(--ink2);line-height:1.6;margin-top:2px}
+  .flow{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+  .step{background:#f5f5f7;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:600}
+  .step.on{background:rgba(0,113,227,.08);border-color:rgba(0,113,227,.3);color:var(--blue)}
+  .arrow{color:var(--ink3);font-weight:700;align-self:center}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">#252 + 第一性原理审查</span>
+  <h1>健身计划功能域 · 缺口分析</h1>
+  <p class="sub">从完整生命周期（制定→查看→执行→复盘→调整→安全）对抗式审查 · 2026-08-10</p>
+</div>
+
+<div class="card">
+  <h2>一、#252「看完整计划」确认</h2>
+  <div class="miss">❌ 现状：脚本 <b>--mode full 已存在</b>（8 周 × 全部动作明细），但 <b>HELP / 触发词无入口</b>——29 场景里只有本周/下周/上周/指定周，一次看全计划只能逐周看。</div>
+  <p>这是用户很看重的功能域里最核心的查看缺口：<b>「我的整个计划长什么样」竟然没有一个入口</b>。同意 #252 必须做，建议直接并入本批验收。</p>
+</div>
+
+<div class="card">
+  <h2>二、生命周期全景（6 阶段）</h2>
+  <div class="flow">
+    <span class="step on">① 制定 5 场景</span><span class="arrow">→</span>
+    <span class="step on">② 查看 7 场景</span><span class="arrow">→</span>
+    <span class="step on">③ 执行 5 场景</span><span class="arrow">→</span>
+    <span class="step on">④ 复盘 6 场景</span><span class="arrow">→</span>
+    <span class="step on">⑤ 调整 5 场景</span><span class="arrow">→</span>
+    <span class="step on">⑥ 安全 1 场景</span>
+  </div>
+  <p class="sub">现有 29 场景覆盖 6 阶段闭环，主干完整。缺口集中在「查看」阶段的<b>全量视角</b>和<b>按实体查询</b>两个维度。</p>
+</div>
+
+<div class="card">
+  <h2>三、逐阶段缺口清单</h2>
+
+  <h3>② 查看阶段（缺口最集中）</h3>
+  <div class="row"><div class="mark miss">缺</div><div class="b"><div class="t">看完整计划（#252）</div>
+  <div class="d">全计划所有周 × 全部动作明细。脚本能力已有，缺入口。→ <b>必须补</b></div></div></div>
+  <div class="row"><div class="mark miss">缺</div><div class="b"><div class="t">看某天练什么（指定日期）</div>
+  <div class="d">现在只有「看今天练什么」。用户问「明天练什么」「周三练什么」没有直达入口（需看指定周 + 切天）。→ <b>建议补</b>（高频场景）</div></div></div>
+  <div class="row"><div class="mark opt">选</div><div class="b"><div class="t">按动作查计划（这动作哪天练 / 一周几次）</div>
+  <div class="d">如「卧推这周哪几天练」——按动作反查计划。健身常用，但属增强，可后置。</div></div></div>
+
+  <h3>④ 复盘阶段</h3>
+  <div class="row"><div class="mark opt">选</div><div class="b"><div class="t">训练容量/负荷趋势</div>
+  <div class="d">现在有完成率（组数）与动作完成率，缺「周总容量（kg×组）」「负荷渐进」趋势——增肌核心指标，可并入复盘增强。</div></div></div>
+  <div class="row"><div class="mark opt">选</div><div class="b"><div class="t">周期剩余进度</div>
+  <div class="d">概览有完成率，缺「本 8 周周期还剩 X 周 / Y 个训练日」的进度视角。轻量增强。</div></div></div>
+
+  <h3>⑤ 调整阶段</h3>
+  <div class="row"><div class="mark have">有</div><div class="b"><div class="t">改/删/撤销全覆盖</div>
+  <div class="d">改计划、改某天、删某天、改动作、撤销计划——5 场景闭环完整，无缺口。</div></div></div>
+
+  <h3>⑥ 安全阶段</h3>
+  <div class="row"><div class="mark have">有</div><div class="b"><div class="t">扫禁忌 ✅</div>
+  <div class="d">安全检查单场景覆盖。无缺口。</div></div></div>
+</div>
+
+<div class="card">
+  <h2>四、我的建议（等你拍板）</h2>
+  <div class="have">✅ <b>必做 1 个</b>：「看完整计划」（#252）——你最看重的查看缺口，直接并入本批验收</div>
+  <div class="suggest">💡 <b>建议做 1 个</b>：「看某天练什么（指定日期）」——「明天练什么」是健身场景最高频提问，现在要两步才能答</div>
+  <div class="suggest">💡 <b>可后置 3 个</b>：按动作查计划 / 训练容量趋势 / 周期剩余进度——增强价值，等 29 场景验收完再定</div>
+  <p class="sub" style="margin-top:8px">确认后我：①补 #252 全计划入口（5 处同步）②补指定日期入口 ③继续 29 场景验收（8-29 待交付）。</p>
+</div>
+
+</body>
+</html>

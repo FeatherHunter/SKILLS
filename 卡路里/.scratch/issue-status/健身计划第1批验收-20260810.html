@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健身计划验收 · 第 1 批（1-7 看训练计划）</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --orange:#ff9500; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:640px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(0,113,227,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  h2{font-size:15px;font-weight:700;margin:16px 0 8px}
+  p{font-size:13.5px;line-height:1.75}
+  .prompt{background:#f5f5f7;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.8;white-space:pre-wrap;border:1px solid var(--line);margin:6px 0}
+  .fix{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;color:#1c7c3a;margin:8px 0}
+  .note{background:#fff8e6;border:1px solid rgba(255,159,10,.3);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;color:#8a6100;margin:8px 0}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">#42 健身计划验收 · 第 1 批</span>
+  <h1>看训练计划 7 场景（1-7）</h1>
+  <p class="sub">同类批量交付 · 场景 HTML + HELP prompt 一起看 · 完成率梯度 36/0/73/107/33%</p>
+</div>
+
+<div class="card">
+  <h2>场景 1 · 看本周计划</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看本周计划」。
+
+我想看本周的训练日历。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <h2>场景 2 · 看下周计划</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看下周计划」。
+
+我想看下周的训练日历。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <h2>场景 3 · 看上周计划</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看上周计划」。
+
+我想看上周的训练日历。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <h2>场景 4 · 看指定周计划</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看指定周计划」。
+
+我想看某一周的训练日历。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。
+
+周次(如第 3 周):____</div>
+  <h2>场景 5 · 看今天练什么</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看今天练什么」。
+
+我想看今天要练的动作。如果今天休息或计划还没开始,请明确告诉我。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <h2>场景 6 · 看计划概览</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看计划概览」。
+
+我想看整个健身计划的概览。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <h2>场景 7 · 看计划 vs 实际</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看计划 vs 实际」。
+
+我想对比一段时间里计划和实际完成。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。
+
+时间范围(默认本周,可给日期):____</div>
+</div>
+
+<div class="card">
+  <h2>本轮修复（5 维审查驱动）</h2>
+  <div class="fix">✓ <b>plan_builder_wizard.html 历史 JS 语法错误修复</b>（8e081c0 引入、多轮未修好）：`： ''}` 残留 + map 闭合缺 `)`，node --check 验证通过<br>
+  ✓ <b>vs 模式真 bug</b>：CLI 字符串日期当 date 对象用 → AttributeError，改为 date.fromisoformat 解析<br>
+  ✓ <b>底部复制数据/复制日志按钮 + Toast</b>（全局双按钮规则，此前 7 页全部缺失）<br>
+  ✓ <b>进度条阈值</b>：完成度 36%/33% 从警示红改为琥珀（<30 才红），107% 绿<br>
+  ✓ <b>today 表格 5 列 → 4 列</b>：合并「已练/进度」，计划列紧凑格式，375px 不再换行<br>
+  ✓ <b>概览第 5 KPI 卡横跨整行</b>（原右侧空白）<br>
+  ✓ <b>vs/movement 数值表右对齐</b></div>
+  <div class="note">ℹ 测试 seed：8 周推拉腿计划（2026-07-20 起，今天=第 4 周）+ 120 条动作实绩（第 1 周 90%→107%、第 2 周 76%、第 3 周 73%、第 4 周 36% 进行中、5-8 周 0% 未开始）。</div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>健身计划功能域 · Issue 追踪总览</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --orange:#ff9500; --red:#ff3b30; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:680px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(0,113,227,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .no{flex-shrink:0;width:52px;font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:12px;font-weight:700;color:var(--blue)}
+  .b{flex:1;min-width:0}
+  .t{font-size:13.5px;font-weight:600;line-height:1.4}
+  .d{font-size:11.5px;color:var(--ink2);line-height:1.5;margin-top:2px}
+  .pr{flex-shrink:0;font-size:11px;font-weight:600;border-radius:20px;padding:4px 10px;white-space:nowrap}
+  .p0{background:rgba(255,59,48,.12);color:#b3261e}
+  .p1{background:rgba(255,149,0,.16);color:#b25e00}
+  .p2{background:#f0f0f2;color:var(--ink3)}
+  .link{font-size:11px;color:var(--ink3)}
+  .bar{display:flex;align-items:center;gap:10px;margin:12px 0 4px}
+  .track{flex:1;height:10px;background:#e8e8ed;border-radius:6px;overflow:hidden}
+  .fill{height:100%;background:linear-gradient(90deg,#34c759,#30d158);border-radius:6px}
+  .pct{font-size:14px;font-weight:700}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">功能域规划 · Issue 追踪</span>
+  <h1>健身计划 · 34 场景矩阵已落盘</h1>
+  <p class="sub">29 现有 + 5 缺口全部 Issue 化，每个 Issue 内置需求/现状/方案/验收标准 · 总纲 #259 索引</p>
+  <div class="bar">
+    <div class="track"><div class="fill" style="width:85%"></div></div>
+    <div class="pct">29/34</div>
+  </div>
+  <p class="sub">理想态完成度（含缺口规划）</p>
+</div>
+
+<div class="card">
+  <h2>缺口 Issue（5 个，全部 OPEN）</h2>
+  <div class="row">
+    <div class="no">#252</div>
+    <div class="b"><div class="t">看完整计划</div><div class="d">全计划所有周×动作 · 脚本 --mode full 已有缺入口 · <b>P0 并入本批验收</b></div></div>
+    <span class="pr p0">P0 必做</span>
+  </div>
+  <div class="row">
+    <div class="no">#255</div>
+    <div class="b"><div class="t">看某天练什么（指定日期）</div><div class="d">「明天练什么」高频直达 · 新增 --mode day</div></div>
+    <span class="pr p1">P1 建议</span>
+  </div>
+  <div class="row">
+    <div class="no">#256</div>
+    <div class="b"><div class="t">看某动作安排</div><div class="d">动作反查计划（哪天练/几组）· 实体视角</div></div>
+    <span class="pr p2">P2 增强</span>
+  </div>
+  <div class="row">
+    <div class="no">#257</div>
+    <div class="b"><div class="t">训练容量/负荷趋势</div><div class="d">渐进超负荷核心信号 · 复盘增强</div></div>
+    <span class="pr p2">P2 增强</span>
+  </div>
+  <div class="row">
+    <div class="no">#258</div>
+    <div class="b"><div class="t">周期剩余进度</div><div class="d">第 X/Y 周 + 剩余训练日 · 概览增强</div></div>
+    <span class="pr p2">P2 增强</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>执行顺序</h2>
+  <p style="font-size:13.5px;line-height:2">
+    ① <b>#252</b> 并入 #42 健身计划验收批次（本周交付）<br>
+    ② <b>#255</b> 紧随 #252（高频场景）<br>
+    ③ <b>#256 / #257 / #258</b> 在 #42 验收完成后排期
+  </p>
+  <p class="sub" style="margin-top:6px">每个 Issue 已内置验收标准（375px 适配 / 无数据态提示 / 5 处同步清单），新 session 接手即可开工，不依赖本对话记忆。</p>
+</div>
+
+</body>
+</html>

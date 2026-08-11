@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#252 看完整计划 · 验收</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:640px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(0,113,227,.1);color:var(--blue);font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  h2{font-size:15px;font-weight:700;margin:14px 0 8px}
+  p{font-size:13.5px;line-height:1.75}
+  .prompt{background:#f5f5f7;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.8;white-space:pre-wrap;border:1px solid var(--line);margin:6px 0}
+  .fix{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;color:#1c7c3a;margin:8px 0}
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:11.5px;background:#f5f5f7;border-radius:5px;padding:1px 5px}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">#252 · P0 已实现</span>
+  <h1>看完整计划 · 验收</h1>
+  <p class="sub">一次看整个健身计划（8 周 × 全部动作）· 5 处同步完成 · commit c00e6b2</p>
+</div>
+
+<div class="card">
+  <h2>验收 prompt（复制用）</h2>
+  <div class="prompt">请你加载技能 卡路里,执行唤醒词「看完整计划」。
+
+我想一次看完整的健身计划(所有周的全部训练安排)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+</div>
+
+<div class="card">
+  <h2>本轮实现（5 处同步）</h2>
+  <div class="fix">✓ <b>渲染器</b>：<span class="mono">--mode full</span> 场景名「健身计划」→「看完整计划」，docstring 声明；<b>full 返回 current_week，默认激活本周</b>（用户看全计划最关心当前）<br>
+  ✓ <b>_triggers.py</b>：新增 <span class="mono">plan_view_full</span> 场景（order 6，30 场景）<br>
+  ✓ <b>scene_data/05</b>：prompt 定稿 + data_fields（开发期数据）<br>
+  ✓ <b>SKILL.md</b>：frontmatter 触发词 + 速查表（看训练计划 7→8）+ 模板行 ×2<br>
+  ✓ <b>HELP</b>：scene_data + triggers 合并自动生效<br>
+  ✓ 附带：rest 空列「-」占位（375px 不显空洞）</div>
+  <p class="sub" style="margin-top:6px">验证：8 周 tab 全渲染、周切换正常、默认激活第 4 周（本周）、rest「-」占位、pytest 342 passed 无回归。</p>
+</div>
+
+</body>
+</html>

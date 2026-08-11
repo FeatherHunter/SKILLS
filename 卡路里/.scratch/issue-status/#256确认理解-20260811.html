@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#256 执行后 · 确认理解</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --orange:#ff9500; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:680px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(52,199,89,.14);color:#1c7c3a;font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  h2{font-size:15px;font-weight:700;margin:14px 0 8px}
+  p{font-size:13.5px;line-height:1.75}
+  .row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:none}
+  .k{flex-shrink:0;width:120px;font-weight:700;font-size:13px;color:var(--blue)}
+  .v{flex:1;font-size:13px;line-height:1.7}
+  .quiz{background:#f5f5f7;border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;font-size:13px;line-height:1.7}
+  .ans{color:var(--ink3);font-size:12px;margin-top:4px}
+  @media (max-width:420px){body{padding:14px 10px 36px} .k{width:100px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">执行后 · 确认理解</span>
+  <h1>#256 复盘：看懂过程，答明白再交付</h1>
+  <p class="sub">按框架走完「过程复盘 → 确认理解 → AI 反向考验 → 答明白再交付」</p>
+</div>
+
+<div class="card">
+  <h2>一、过程复盘</h2>
+  <div class="row"><div class="k">整体步骤</div><div class="v">设计推导（实体视角）→ 实现 build_action_data → 模板 renderAction → 4 用例渲染 → 视觉审查（发现 8 周冗余/重量断行）→ 折叠+nowrap 修复 → 5 处同步 → 测试补齐 → commit/push → 阶段审查（发现跳过采访澄清）→ 方向 A 确认 → 收尾</div></div>
+  <div class="row"><div class="k">资料/工具</div><div class="v">scene_data/05-健身计划.json（prompt 契约）· workout_plans 表 · Playwright 截图 + 视觉模型审查 · pytest · gh CLI · node --check</div></div>
+  <div class="row"><div class="k">困难</div><div class="v">① 循环计划 8 周重复展示冗余 ② 375px 重量列断行 ③ 并行会话 diet 测试阻塞 pre-commit ④ PowerShell 引号地狱</div></div>
+  <div class="row"><div class="k">解决思路</div><div class="v">① 每周相同自动折叠（去重检测）② white-space:nowrap ③ 临时移走并行 WIP 测试再移回 ④ 复杂逻辑一律写脚本文件</div></div>
+</div>
+
+<div class="card">
+  <h2>二、确认理解（关键概念）</h2>
+  <div class="row"><div class="k">子串双匹配</div><div class="v">命中条件 = 精确相等 OR 查询词是动作名的子串 OR 动作名是查询词的子串。「卧推」→「杠铃卧推」+「上斜哑铃卧推」；「深蹲」→「杠铃深蹲」。</div></div>
+  <div class="row"><div class="k">循环语义</div><div class="v">8 周计划结束后按 (week-1)%8+1 回卷重来。查「9/20 练什么」= 第 2 周的安排；「下次练习日」从今天往前找最近命中的 (周, 星期)。</div></div>
+  <div class="row"><div class="k">每周折叠</div><div class="v">检测所有周的位置是否相同（动作/星期/组数/重量全等）→ 相同则折叠为「每周相同（覆盖第 1-8 周）」1 行；不同则走全列表（保留渐进重量）。</div></div>
+  <div class="row"><div class="k">无匹配兜底</div><div class="v">「高翻」不在计划 → 提示「计划中无此动作」+ 相近候选（计划动作名含查询词任一字）。不自动造值，符合「数据缺失→拒绝+引导」原则。</div></div>
+</div>
+
+<div class="card">
+  <h2>三、AI 反向考验（3 题自测，答案折叠）</h2>
+  <div class="quiz"><b>Q1（判断）</b>：「看某动作安排」和「看动作完成率」是同一个功能。<br><span class="ans">✗ 错。前者按动作反查计划位置（哪天练/几组/下次），后者是复盘维度（动作实绩完成百分比 TOP 榜）。</span></div>
+  <div class="quiz"><b>Q2（选择）</b>：计划每周动作相同，查「杠铃卧推」位置列表会显示？<br><span class="ans">C。折叠为「每周相同（覆盖第 1-8 周）」1 行 + 下次练习日。8 行重复无信息量。</span></div>
+  <div class="quiz"><b>Q3（简答）</b>：「下次练习日」在循环计划里怎么算？<br><span class="ans">从今天起逐天往后推，每天算 (计划周次, 星期)，落在该动作的训练日组合里就停——最多查 90 天，取第一个命中日。</span></div>
+</div>
+
+<div class="card">
+  <h2>四、答明白再交付</h2>
+  <p>✅ 方向 A 已确认 · 4 用例已查看 · 关键概念已解释 · 遗留项（别名表/单字噪音/全景目录）已记录。<b>#256 正式交付完成。</b></p>
+  <p class="sub" style="margin-top:6px">下一个：#257 训练容量/负荷趋势（复盘增强 · 渐进超负荷核心信号）。</p>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#255 对抗式审查报告 · verifier 独立检查</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --orange:#ff9500; --red:#ff3b30; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:680px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(255,59,48,.12);color:#b3261e;font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  .verdict{display:inline-block;background:rgba(255,59,48,.1);color:#b3261e;font-weight:700;font-size:14px;border-radius:10px;padding:6px 14px;margin:8px 0}
+  .row{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .row:last-child{border-bottom:none}
+  .mark{flex-shrink:0;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700}
+  .fail{background:rgba(255,59,48,.14);color:#b3261e}
+  .pass{background:rgba(52,199,89,.15);color:#1c7c3a}
+  .b{flex:1}
+  .t{font-size:13.5px;font-weight:600}
+  .d{font-size:12px;color:var(--ink2);line-height:1.6;margin-top:2px}
+  .fix{background:#f0fbf3;border:1px solid rgba(52,199,89,.25);border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.7;color:#1c7c3a;margin:8px 0}
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:11.5px;background:#f5f5f7;border-radius:5px;padding:1px 5px}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">对抗式审查 · 已完成修复</span>
+  <h1>#255 审查报告（初版 FAIL → 已修复）</h1>
+  <p class="sub">Mavis 自查 + <b>verifier Agent 独立审查</b>（读 4 文件全文 + git diff 字节级对比 + 隔离 DB 9 组边界实测 + 全套 pytest）</p>
+  <div class="verdict">初版审查结论：FAIL（6 项发现，其中 2 项 🔴）</div>
+</div>
+
+<div class="card">
+  <h2>审查发现（按严重度）</h2>
+  <div class="row"><div class="mark fail">🔴</div><div class="b"><div class="t">SKILL.md 执行面映射错误（功能性）</div>
+  <div class="d">1776 行把「看某天练什么」映射成 <span class="mono">--mode week --week &lt;N&gt;</span>——agent 照 SKILL.md 执行会跑出整周视图而非指定日期，用户说「明天练什么」必跑错命令</div></div></div>
+  <div class="row"><div class="mark fail">🔴</div><div class="b"><div class="t">day 模式零测试覆盖</div>
+  <div class="d">pytest 参数化列表 8 个 mode 没有 day；342 passed 中无任何 day 断言——「声称覆盖实际零覆盖」</div></div></div>
+  <div class="row"><div class="mark fail">🟠</div><div class="b"><div class="t">非法日期裸崩</div>
+  <div class="d"><span class="mono">--start abc</span> → ValueError traceback（exit=1）</div></div></div>
+  <div class="row"><div class="mark fail">🟠</div><div class="b"><div class="t">srcLine 复制粘贴错误</div>
+  <div class="d">底部数据源显示 <span class="mono">weight_log</span>（体重渲染器的），实际来源 workout_plans——排障误导</div></div></div>
+  <div class="row"><div class="mark fail">🟡</div><div class="b"><div class="t">CLI 语义双义</div>
+  <div class="d"><span class="mono">--start</span> 在 vs=范围起点 / day=目标日 双义；<span class="mono">--end</span> 静默忽略</div></div></div>
+  <div class="row"><div class="mark fail">🟡</div><div class="b"><div class="t">同步遗漏 ×2</div>
+  <div class="d">SKILL.md 模板行 122/176 未加唤醒词；data_fields 声明 <span class="mono">is_rest_day</span>/<span class="mono">completion_rate</span> 与实际 payload 键 <span class="mono">is_rest</span>/<span class="mono">completion.rate</span> 不符</div></div></div>
+  <div class="row"><div class="mark pass">✅</div><div class="b"><div class="t">重构零回归（verifier PASS）</div>
+  <div class="d"><span class="mono">_build_day_data</span> 与旧 <span class="mono">build_today_data</span> 同 DB 实跑字节级一致（mode/完成度/休息日/unstarted 全同）</div></div></div>
+</div>
+
+<div class="card">
+  <h2>修复内容（commit cb62f3e）</h2>
+  <div class="fix">✓ SKILL.md:1776 执行面 → <span class="mono">--mode day --start &lt;D&gt;</span><br>
+  ✓ 新增 <span class="mono">--date</span> 专用参数（day 用；vs 保持 --start/--end），render() 统一预解析，非法值返回「⚠️ 日期格式无效」友好错误<br>
+  ✓ 测试补齐：参数化 9 mode + <span class="mono">test_day_mode_specific</span>（训练日/休息日/未开始/非法日期 4 态）+ <span class="mono">test_today_mode_unchanged</span>（重构回归）→ <b>345 passed</b><br>
+  ✓ srcLine → <span class="mono">meta.source</span>（workout_plans）<br>
+  ✓ SKILL.md 模板行 122/176 加唤醒词<br>
+  ✓ data_fields 修正为实际 payload 键</div>
+  <p class="sub" style="margin-top:6px">遗留：超周期日期按循环计划取模（8 周循环语义，docstring 已注明）——如需「超出周期」显式提示挂 #258 同源处理。</p>
+</div>
+
+<div class="card">
+  <h2>方法论沉淀</h2>
+  <p class="sub">① <b>5 处同步 ≠ 全部同步</b>：SKILL.md 有 frontmatter/速查表/执行面/模板清单多处，一致性工具只做子集校验——需逐处 grep 核对<br>
+  ② <b>「测试通过」≠「新功能有测试」</b>：342 passed 可能不含新功能断言——验收必须确认新代码有测试覆盖<br>
+  ③ <b>复制粘贴模板的惯性错误</b>：srcLine 从 weight 渲染器抄来没改——涉及数据来源的文案必须核对真实来源</p>
+</div>
+
+</body>
+</html>

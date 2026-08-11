@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#257 交付完整性审计 · 最终确认</title>
+<style>
+:root{
+  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+  --bg:#fafafa;--card:#fff;--border:#d2d2d7;
+  --accent:#0071e3;--accent-soft:#f5f5f7;
+  --green:#34c759;--green-soft:#E8F5E9;
+  --orange:#FF9500;--orange-soft:#FFF3E0;
+  --red:#FF3B30;--red-soft:#FFEBEE;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+.hero{background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);padding:32px 32px 28px;border-radius:20px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+.hero h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px}
+.hero .sub{font-size:14px;color:var(--fg2)}
+.section{background:var(--card);border-radius:16px;padding:22px 26px;margin-bottom:14px;box-shadow:var(--shadow)}
+.section h2{font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section h2::before{content:'';width:4px;height:16px;background:var(--accent);border-radius:2px}
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-right:6px}
+.tag.ok{background:var(--green-soft);color:var(--green)}
+.tag.warn{background:var(--orange-soft);color:var(--orange)}
+.tag.info{background:var(--accent-soft);color:var(--accent)}
+code{background:var(--accent-soft);padding:1px 6px;border-radius:5px;font-size:12.5px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+.data-table th{text-align:left;padding:9px 12px;background:var(--accent-soft);border-radius:8px;font-weight:600;font-size:12.5px}
+.data-table td{padding:8px 12px;border-bottom:1px solid #ececec}
+.data-table tr:last-child td{border-bottom:none}
+.mono{font-family:"SF Mono",Consolas,monospace;font-size:12px}
+.dim{font-size:12px;color:var(--fg3)}
+@media (max-width:640px){
+  .wrap{padding:24px 16px 60px}
+  .hero{padding:24px 20px;border-radius:16px}
+  .hero h1{font-size:21px}
+  .section{padding:16px 16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>#257 交付完整性审计 · 最终确认</h1>
+  <div class="sub">session 关闭零损失 · 第一性原理六项核查全过 · 2026-08-11 15:15</div>
+</header>
+
+<div class="section">
+  <h2>✅ 六项核查结果</h2>
+  <table class="data-table">
+    <tr><th>#</th><th>检查项</th><th>结果</th><th>证据</th></tr>
+    <tr><td>1</td><td>代码全部本地 commit</td><td><span class="tag ok">✓ 完成</span></td><td class="mono">7873ff1 / f0c30e2 / b2bfa31</td></tr>
+    <tr><td>2</td><td>交付报告持久化入库</td><td><span class="tag ok">✓ 完成</span></td><td>04-review.md + 3 份 HTML force-add + handoff</td></tr>
+    <tr><td>3</td><td>思想共识沉淀记忆</td><td><span class="tag ok">✓ 完成</span></td><td>容量口径 Σ(kg×次数) / 自动 TOP4 / 隔离双坑根治入 agent memory</td></tr>
+    <tr><td>4</td><td>生产库数据完整</td><td><span class="tag ok">✓ 完成</span></td><td>exercise_log 8297 / workout_plans 100 / config 1 + 快照保留</td></tr>
+    <tr><td>5</td><td>handoff 文档更新</td><td><span class="tag ok">✓ 完成</span></td><td>Temp + 工作区双份，含待 push 6 项</td></tr>
+    <tr><td>6</td><td>测试全绿</td><td><span class="tag ok">✓ 完成</span></td><td>376 passed + 20 xfailed（含 #257 专属 7 项）</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>📤 待 push 清单（用户执行）</h2>
+  <p>本地 ahead <strong>13 个 commit</strong>（含并行会话的）。#257 相关 3 个：</p>
+  <table class="data-table">
+    <tr><th>commit</th><th>内容</th></tr>
+    <tr><td class="mono">7873ff1</td><td>#257 测试隔离双坑根治（动态解析 DB + temp_db 依赖 + 守卫测试）</td></tr>
+    <tr><td class="mono">f0c30e2</td><td>#257 容量/负荷趋势功能（数据层 + 视图层 + 复制双 tab）</td></tr>
+    <tr><td class="mono">b2bfa31</td><td>#257 交付完整性审计归档（review.md + 3 报告 + handoff）</td></tr>
+  </table>
+  <p class="dim">执行：<code class="mono">git push origin main</code>（其余 10 个为并行会话 & 之前待 push 的，一并推）</p>
+</div>
+
+<div class="section">
+  <h2>⚠️ 关闭 session 前的唯一待办（需要你参与）</h2>
+  <div class="ctx" style="font-size:13px;color:var(--fg2)">
+    <strong>#257 close 需你验收</strong>（遵守「拍板前不 close」纪律）：<br>
+    ① 打开 3 个场景 HTML（本周/本月/全部）逐页确认——已通过 media 发送<br>
+    ② 体验增强建议 3 条拍板（推荐建议 1：容量环比一句话结论）<br>
+    ③ 确认 8/10 18:40 后无新训练/计划改动（备份恢复点）<br>
+    <br>
+    <strong>即便你现在关闭 session</strong>：所有代码/报告/记忆/handoff 已持久化，新 session 靠 handoff + 04-review.md + memory 可完整接续，零损失。
+  </div>
+</div>
+
+<footer style="text-align:center;color:var(--fg3);font-size:12px;padding-top:24px;border-top:1px solid var(--border);margin-top:32px">
+  #257 · 交付完整性审计最终确认 · 2026-08-11 15:15
+</footer>
+</div>
+</body>
+</html>

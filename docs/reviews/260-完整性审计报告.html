@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base Skill map · 完整性审计报告</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f7; color: #1d1d1f; line-height: 1.65;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 18px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: #86868b; font-size: 13.5px; margin-top: 4px; }
+  h2 { font-size: 16px; font-weight: 700; margin: 18px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  p, li { font-size: 13.8px; color: #3a3a3c; }
+  ul, ol { padding-left: 20px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.8px; margin: 10px 0; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #f0f0f2; vertical-align: top; }
+  th { background: #fafafc; font-weight: 600; color: #86868b; font-size: 11.5px; }
+  code { background: #f0f0f2; border-radius: 5px; padding: 1px 6px; font-size: 12px; font-family: "SF Mono", Consolas, monospace; }
+  .done { color: #1d7a44; font-weight: 700; }
+  .warn { color: #b25000; font-weight: 700; }
+  .verdict { background: #f0fdf4; border-left: 3px solid #34c759; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 14px; }
+  .fix { background: #fffbea; border-left: 3px solid #ff9500; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 13.5px; }
+  .muted { color: #86868b; font-size: 12.5px; }
+  .pill { display: inline-block; background: #f0f0f2; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: #515154; margin-right: 6px; }
+  .pill.green { background: #e8f6ee; color: #1d7a44; }
+  .pill.orange { background: #fff3e0; color: #b25000; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>Base Skill map · 完整性审计报告</h1>
+    <div class="sub">对抗式审查 + 第一性原理 · 2026-08-11 15:10 · 「session 关闭零损失」审计</div>
+  </div>
+
+  <div class="card">
+    <h2>① 审计结论（诚实回答你的问题）</h2>
+    <p><b>「所有工作完成了吗」—— 不完全是，审计发现并修复了 4 处损失点。</b>修复后：</p>
+    <table>
+      <tr><th>项</th><th>状态</th></tr>
+      <tr><td>T1-T5 决策（#261-#265）</td><td><span class="done">✅ 全部闭环</span></td></tr>
+      <tr><td>实施子票 #267（机制 3）/ #268（Base 入库）</td><td><span class="done">✅ 全部闭环</span></td></tr>
+      <tr><td>实施子票 #269（作息管家试点）</td><td><span class="warn">◐ OPEN（设计状态 · 下一张票）</span></td></tr>
+      <tr><td>map #260 本体</td><td><span class="warn">◐ OPEN（总览/规划者持续 · 设计状态）</span></td></tr>
+    </table>
+    <p class="muted" style="margin-top:6px">两个 OPEN 都不是「遗漏」：#269 是明确的下一步实施票（决策已定稿），#260 是你拍板「作为总览持续」的设计状态。信息零损失。</p>
+  </div>
+
+  <div class="card">
+    <h2>② 审计发现 + 修复（4 处）</h2>
+    <div class="fix"><b>1. #265（T5 迁移路径）决策定稿却未 close</b> —— 决策内容已转 #268/#269 实施，ticket 却没闭环。<br>✅ 修复：补 close + 决议评论（决策表 + 前置条件清单全在评论里）</div>
+    <div class="fix"><b>2. 交付 HTML 只存 .scratch（被 gitignore）——session 关闭即丢失</b> —— 6+ 份关键交付物（收口验收/判断/完成/268/267/对抗审查）都没入库。<br>✅ 修复：新建根级 <code>docs/reviews/</code>，归档 7 份（字节级一致无损失）</div>
+    <div class="fix"><b>3. 公共组件 SKILL 未挂载到 agent skill 体系（#268 交付遗漏）</b> —— 入库了但 agent 无法加载，「任何 agent 可用」的核心目标落空。<br>✅ 修复：Junction 挂载 <code>~/.minimax/skills/公共组件</code> → 仓库（与执行框架/居家管家同机制）</div>
+    <div class="fix"><b>4. AGENTS.md 缺「Base Skill 公共组件」强制条目</b> —— 未来任何 agent 做技能 HTML 渲染时不知道要走 Base（有复制粘贴漂移风险）。<br>✅ 修复：AGENTS.md 新增条目（对齐 Delivery fidelity / Execution framework 格式）</div>
+  </div>
+
+  <div class="card">
+    <h2>③ 思想共识 · 零损失确认</h2>
+    <table>
+      <tr><th>拍板结论</th><th>沉淀位置</th></tr>
+      <tr><td>Q1A/Q2A/Q3A（契约验收/机制3降票/开实施子票）</td><td>map Decisions so far + #264 close 评论</td></tr>
+      <tr><td>T5 试点=作息管家 / 按功能横切</td><td>#265 决议评论 + map</td></tr>
+      <tr><td>跨技能硬编码修正（skill_name 参数化）</td><td>公共组件/CHANGELOG.md + 契约 v1.1</td></tr>
+      <tr><td>NO-SHARED 豁免与 SHARED 互斥</td><td>公共组件/docs/component-contract.md</td></tr>
+      <tr><td>「AI 交付 60%」根因分析</td><td>docs/agents/delivery-fidelity.md（规范）+ docs/reviews 原始分析</td></tr>
+      <tr><td>「外部四块机制」执行框架落地</td><td>AGENTS.md + docs/agents/execution-framework.md + 执行框架 SKILL + map</td></tr>
+    </table>
+    <div class="verdict"><b>结论：思想层面共识全部落在持久层</b>（map / issue 评论 / 契约 / 规范 / AGENTS.md / docs/reviews），任何一条都不会随 session 关闭丢失。</div>
+  </div>
+
+  <div class="card">
+    <h2>④ session 关闭后 · 下一个 session 怎么接</h2>
+    <p>任何 agent 重新打开 #260 map 就能接上：</p>
+    <ul>
+      <li><b>状态</b>：Decisions so far 完整记录 T1-T5 + #267/#268 决议；票清单标出 #269 = 唯一剩余实施票</li>
+      <li><b>资产</b>：<code>公共组件/</code>（8 文件 + 17 测试）已入库 + 挂载；契约 v1.1 在 docs/</li>
+      <li><b>规范</b>：AGENTS.md 登记 Base Skill + 执行框架；docs/agents/ 两条规范</li>
+      <li><b>下一步</b>：认领 #269 → 作息管家试点（接管线 + 复制按钮波）→ 产出迁移操作手册 → 用户页面验收</li>
+      <li><b>归档</b>：docs/reviews/ 7 份交付 HTML（审计/验收/收口全程）</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 待 push 清单（push 由你负责 · 9 个 commit）</h2>
+    <table>
+      <tr><th>commit</th><th>归属</th><th>说明</th></tr>
+      <tr><td><code>fec0cec</code></td><td><span class="pill green">我的</span></td><td>审计补充 · AI交付60%根因归档</td></tr>
+      <tr><td><code>6884738</code></td><td><span class="pill green">我的</span></td><td>完整性审计 · 归档 + AGENTS 登记 + 挂载补齐</td></tr>
+      <tr><td><code>2931481</code></td><td><span class="pill green">我的</span></td><td>执行框架机制 3 · 辅助 SKILL 入库</td></tr>
+      <tr><td><code>f250bea</code></td><td><span class="pill green">我的</span></td><td>Base Skill 定稿入库 · 公共组件/</td></tr>
+      <tr><td><code>fcae96b</code></td><td><span class="pill orange">并行</span></td><td>[居家管家] #253 位置域 scene_id</td></tr>
+      <tr><td><code>e855159</code></td><td><span class="pill orange">并行</span></td><td>[居家管家] #250 SM6 票据凭证域</td></tr>
+      <tr><td><code>be06a72 / fb01441 / badb012</code></td><td><span class="pill orange">并行</span></td><td>[居家管家] #244/#243 归档 + 修复</td></tr>
+    </table>
+    <p class="muted" style="margin-top:6px">我的 4 个 + 并行 agent 的 5 个。你一条 <code>git push</code> 全带走。</p>
+  </div>
+
+  <div class="card">
+    <h2>⑥ 一句话总结</h2>
+    <div class="verdict"><b>审计完成：4 处损失点全部修复，思想共识全部落库，交付物全部归档，待 push 清单明确。</b>现在永久关闭本 session 也不会有任何损失——下一个 session 打开 #260 就能无缝继续 #269。</div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -144,17 +144,17 @@ tbody tr:hover td{background:var(--accent-soft)}
   padding:10px 14px;border-radius:10px;margin-top:8px;
 }
 .copy-section h3{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--fg2)}
-.copy-tabs{
-  display:inline-flex;background:var(--gray-soft);
-  border-radius:9px;padding:3px;margin-bottom:10px;
-}
-.copy-tab{
-  border:none;background:transparent;color:var(--fg2);
-  font-size:12px;font-weight:600;padding:5px 14px;border-radius:7px;
+.copy-actions{display:flex;gap:10px;margin-bottom:10px}
+.copy-actions .btn{flex:1;justify-content:center;padding:9px 0}
+.copy-ext{display:none;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.copy-ext.show{display:flex}
+.btn-ext{
+  border:1px solid var(--accent);background:#fff;color:var(--accent);
+  font-size:12px;font-weight:600;padding:6px 14px;border-radius:8px;
   cursor:pointer;transition:all .15s;
 }
-.copy-tab.active{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.copy-tab:not(.active):hover{color:var(--fg)}
+.btn-ext:hover{background:var(--accent-soft)}
+.btn-ext.active{background:var(--accent);color:#fff}
 .copy-section pre{
   background:#1d1d1f;color:#f5f5f7;
   padding:12px 16px;border-radius:10px;
@@ -246,14 +246,14 @@ footer{
 
 <div class="copy-section">
   <h3>📤 复制回 AI</h3>
-  <div class="copy-tabs" role="tablist">
-    <button class="copy-tab active" id="tabPrompt" onclick="switchTab('prompt')" role="tab">复制 prompt</button>
-    <button class="copy-tab" id="tabData" onclick="switchTab('data')" role="tab">复制数据</button>
+  <div class="copy-actions">
+    <button class="btn" id="btnData" onclick="copyData()">复制数据</button>
+    <button class="btn" id="btnLog" onclick="copyLog()">复制日志</button>
   </div>
-  <pre id="copyText" class="copy-body">加载中...</pre>
-  <button class="btn" id="copyBtn" onclick="copyToAI()">复制</button>
+  <div class="copy-ext" id="copyExt"></div>
 </div>
 <div id="copyDataStore" hidden></div>
+<div id="copyLogStore" hidden></div>
 
 <footer>
   卡路里 Skill · 训练复盘 · 数据来源 exercise_review.py --format json<br>
@@ -277,25 +277,9 @@ function escapeHTML(s) {
   }[c]));
 }
 
-let copyTab = 'prompt';
-function switchTab(tab) {
-  copyTab = tab;
-  document.getElementById('tabPrompt').classList.toggle('active', tab === 'prompt');
-  document.getElementById('tabData').classList.toggle('active', tab === 'data');
-  const root = window.__DATA__ || {};
-  const meta = (root.__meta__) || {};
-  const el = document.getElementById('copyText');
-  if (tab === 'prompt') {
-    el.textContent = meta.prompt_template || '（未注入 prompt，请从 HELP 复制）';
-  } else {
-    el.textContent = document.getElementById('copyDataStore').textContent;
-  }
-}
-
-function copyToAI() {
-  const text = document.getElementById('copyText').textContent;
+function _copyNow(text, label) {
   navigator.clipboard.writeText(text).then(() => {
-    toast(copyTab === 'prompt' ? 'prompt' : '数据');
+    toast(label);
   }).catch(() => {
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -304,6 +288,22 @@ function copyToAI() {
     document.execCommand('copy');
     document.body.removeChild(ta);
   });
+}
+function copyData() {
+  _copyNow(document.getElementById('copyDataStore').textContent, '数据');
+}
+function copyLog() {
+  _copyNow(document.getElementById('copyLogStore').textContent, '日志');
+}
+function copyRelated(name) {
+  // 激活态：当前扩展按钮高亮，其余取消
+  document.querySelectorAll('.btn-ext').forEach(b => {
+    b.classList.toggle('active', b.dataset.scene === name);
+  });
+  const root = window.__DATA__ || {};
+  const meta = (root.__meta__) || {};
+  const rs = (meta.related_scenes || []).find(s => s.name === name);
+  _copyNow(rs ? rs.prompt : '', name);
 }
 
 function classifyDay(rate) {
@@ -572,11 +572,11 @@ function render() {
     </tr>`;
   }).join('');
 
-  // COPY：数据摘要（人类可读纯文本）写入 hidden store；prompt 由 tab 切换显示
+  // COPY：数据摘要（人类可读纯文本）写入 copyDataStore；日志写入 copyLogStore
+  const meta = (root.__meta__) || {};
   let txt = `训练复盘 (${dates[0]} ~ ${dates[dates.length-1]})\n`;
   txt += `训练 ${trainDays}/${totalDays} 天，平均完成率 ${avgRate}%\n`;
   txt += `异常: ${anomaliesCount} 条\n`;
-  const meta = (root.__meta__) || {};
   if (meta.volume) {
     const vol = meta.volume;
     txt += `容量: 实做 ${fmtK(vol.total_actual)} / 计划 ${fmtK(vol.total_plan)} kg×次\n`;
@@ -584,19 +584,35 @@ function render() {
       txt += `  ${w.label}: 实做 ${fmtK(w.actual)} / 计划 ${fmtK(w.plan)}\n`;
     });
   }
-  txt += `\n每日明细:\n`;
+  document.getElementById('copyDataStore').textContent = txt;
+
+  let log = `训练复盘日志 (${dates[0]} ~ ${dates[dates.length-1]})\n`;
+  log += `训练 ${trainDays}/${totalDays} 天，平均完成率 ${avgRate}% · 异常 ${anomaliesCount} 条\n`;
+  if (meta.volume) {
+    const vol = meta.volume;
+    log += `容量: 实做 ${fmtK(vol.total_actual)} / 计划 ${fmtK(vol.total_plan)} kg×次\n`;
+  }
+  log += `\n每日明细:\n`;
   dates.forEach(d => {
     const data = root[d];
     const r = data.completion_rate;
     const rStr = r !== null ? `${Math.round(r)}%` : '休';
-    txt += `  ${d}: ${rStr} (${data.actual_total_sets}/${data.plan_total_sets})${data.note ? ' - ' + data.note : ''}\n`;
+    const sessions = (data.sessions || []).filter(Boolean).join(' / ');
+    log += `  ${d} [W${data.plan_week || '?'}] ${rStr} (${data.actual_total_sets}/${data.plan_total_sets})`;
+    if (sessions) log += ` · ${sessions}`;
+    if (data.note) log += ` - ${data.note}`;
+    log += '\n';
   });
-  document.getElementById('copyDataStore').textContent = txt;
-  // 默认 tab = prompt（自包含、空白 AI 可执行）；无 prompt 时回退数据
-  if (!meta.prompt_template) {
-    switchTab('data');
-  } else {
-    switchTab('prompt');
+  document.getElementById('copyLogStore').textContent = log;
+
+  // 扩展按钮（related_scenes）：本周页面给出「计划复盘本月/全部」入口
+  const extEl = document.getElementById('copyExt');
+  const related = meta.related_scenes || [];
+  if (related.length) {
+    extEl.innerHTML = related.map(s =>
+      `<button class="btn-ext" data-scene="${s.name.replace(/"/g, '&quot;')}" onclick="copyRelated('${s.name.replace(/'/g, "\\'")}')">${escapeHTML(s.name)}</button>`
+    ).join('');
+    extEl.classList.add('show');
   }
 
   // #257 容量/负荷图表（数据在 __meta__.volume）

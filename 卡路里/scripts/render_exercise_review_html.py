@@ -48,23 +48,36 @@ SCENE_RANGE_HINT = {
     '计划复盘（全部）': '全部',
 }
 
+# 复盘场景组(扩展按钮: 当前场景外其余场景)
+REVIEW_SCENES = ['计划复盘（本周）', '计划复盘（本月）', '计划复盘（全部）']
+
 
 def load_scene_prompt(scene: str) -> dict:
-    """从 scene_data 读场景 prompt_template(与 HELP 复制按钮零差异)"""
+    """从 scene_data 读场景 prompt_template(与 HELP 复制按钮零差异)
+
+    返回 {scene_name, prompt_template, related_scenes:[{name,prompt},...]}
+    related_scenes = 同组其余复盘场景(供「计划复盘本月」等扩展按钮)。
+    """
     scene_file = SKILL_DIR / '.scratch' / 'scene_data' / '05-健身计划.json'
-    if not scene_file.exists():
-        return {'scene_name': scene, 'prompt_template': ''}
-    try:
-        scenes = json.loads(scene_file.read_text(encoding='utf-8'))
-        for s in scenes:
-            if isinstance(s, dict) and s.get('name') == scene:
-                return {
-                    'scene_name': scene,
-                    'prompt_template': s.get('prompt_template', ''),
-                }
-    except Exception:
-        pass
-    return {'scene_name': scene, 'prompt_template': ''}
+    prompts = {}
+    if scene_file.exists():
+        try:
+            scenes = json.loads(scene_file.read_text(encoding='utf-8'))
+            for s in scenes:
+                if isinstance(s, dict) and s.get('name') in REVIEW_SCENES:
+                    prompts[s['name']] = s.get('prompt_template', '')
+        except Exception:
+            pass
+    related = [
+        {'name': n, 'prompt': prompts.get(n, '')}
+        for n in REVIEW_SCENES
+        if n != scene and prompts.get(n)
+    ]
+    return {
+        'scene_name': scene,
+        'prompt_template': prompts.get(scene, ''),
+        'related_scenes': related,
+    }
 
 
 def fetch_json(start: str, end: str) -> dict:
@@ -91,6 +104,7 @@ def render_html(data: dict, scene_meta: dict | None = None) -> str:
         meta = inner.setdefault('__meta__', {})
         meta['scene_name'] = scene_meta.get('scene_name', '')
         meta['prompt_template'] = scene_meta.get('prompt_template', '')
+        meta['related_scenes'] = scene_meta.get('related_scenes', [])
     template = TEMPLATE_PATH.read_text(encoding='utf-8')
     placeholder = '<!--INJECT-DATA-->'
     if template.count(placeholder) != 1:

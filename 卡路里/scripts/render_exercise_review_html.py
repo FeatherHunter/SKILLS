@@ -30,14 +30,41 @@ TEMPLATE_PATH = SKILL_DIR / 'templates' / 'exercise_review.html'
 def build_parser():
     p = argparse.ArgumentParser(
         prog="render_exercise_review_html",
-        description="渲染训练复盘 HTML(完成率热力图 + 异常高亮)",
+        description="渲染训练复盘 HTML(完成率热力图 + 异常高亮 + 容量/负荷趋势)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p.add_argument("--start", help="开始日期 YYYY-MM-DD")
     p.add_argument("--end", help="结束日期 YYYY-MM-DD")
     p.add_argument("--days", type=int, help="最近 N 天(默认 7)")
     p.add_argument("--output", help="输出文件路径")
+    p.add_argument("--scene", help="场景名(计划复盘（本周）/（本月）/（全部）),用于注入复制 prompt")
     return p
+
+
+# 复盘场景 -> 数据范围语义(与 _triggers.py 一致;仅用于 prompt 提示)
+SCENE_RANGE_HINT = {
+    '计划复盘（本周）': '最近 7 天',
+    '计划复盘（本月）': '本月',
+    '计划复盘（全部）': '全部',
+}
+
+
+def load_scene_prompt(scene: str) -> dict:
+    """从 scene_data 读场景 prompt_template(与 HELP 复制按钮零差异)"""
+    scene_file = SKILL_DIR / '.scratch' / 'scene_data' / '05-健身计划.json'
+    if not scene_file.exists():
+        return {'scene_name': scene, 'prompt_template': ''}
+    try:
+        scenes = json.loads(scene_file.read_text(encoding='utf-8'))
+        for s in scenes:
+            if isinstance(s, dict) and s.get('name') == scene:
+                return {
+                    'scene_name': scene,
+                    'prompt_template': s.get('prompt_template', ''),
+                }
+    except Exception:
+        pass
+    return {'scene_name': scene, 'prompt_template': ''}
 
 
 def fetch_json(start: str, end: str) -> dict:
@@ -52,14 +79,24 @@ def fetch_json(start: str, end: str) -> dict:
     return json.loads(result.stdout)
 
 
-def render_html(data: dict) -> str:
-    """读模板 + 注入"""
+def render_html(data: dict, scene_meta: dict | None = None) -> str:
+    """读模板 + 注入
+
+    注：exercise_review.py --format json 返回 {status, data, message} 包装，
+    模板按「日期 dict（含 __meta__）」消费，此处解包 data['data']。
+    scene_meta: {scene_name, prompt_template} 注入 __meta__ 供复制 prompt 按钮。
+    """
+    inner = data.get('data', data) if isinstance(data, dict) else data
+    if scene_meta and isinstance(inner, dict):
+        meta = inner.setdefault('__meta__', {})
+        meta['scene_name'] = scene_meta.get('scene_name', '')
+        meta['prompt_template'] = scene_meta.get('prompt_template', '')
     template = TEMPLATE_PATH.read_text(encoding='utf-8')
     placeholder = '<!--INJECT-DATA-->'
     if template.count(placeholder) != 1:
         raise ValueError(f"模板占位符数量异常: {template.count(placeholder)}")
 
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
+    payload = json.dumps(inner, ensure_ascii=False).replace('</', '<\\/')
     inject = f'<script>window.__DATA__ = {payload};</script>'
     return template.replace(placeholder, inject, 1)
 
@@ -78,7 +115,8 @@ def main():
 
     try:
         data = fetch_json(start, end)
-        html = render_html(data)
+        scene_meta = load_scene_prompt(args.scene) if args.scene else None
+        html = render_html(data, scene_meta)
     except Exception as e:
         print(f"❌ 渲染失败: {e}", file=sys.stderr)
         return 1

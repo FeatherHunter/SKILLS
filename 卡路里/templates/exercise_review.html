@@ -65,7 +65,7 @@ body{
   background:var(--accent);border-radius:2px;
 }
 .heatmap{
-  display:grid;grid-template-columns:repeat(7,1fr);
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));
   gap:6px;
 }
 .day-cell{
@@ -74,6 +74,7 @@ body{
   align-items:center;justify-content:center;
   padding:8px;font-size:11px;color:var(--fg3);
   border:1px solid var(--border);
+  overflow:hidden;text-align:center;
 }
 .day-cell.r100{background:var(--green);color:#fff;border-color:var(--green)}
 .day-cell.r50-99{background:var(--orange);color:#fff;border-color:var(--orange)}
@@ -92,6 +93,7 @@ body{
 .legend .dot{width:10px;height:10px;border-radius:3px}
 
 /* TABLE */
+.table-wrap{width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
 table{
   width:100%;border-collapse:collapse;
   background:var(--card);border-radius:14px;
@@ -127,7 +129,32 @@ tbody tr:hover td{background:var(--accent-soft)}
   padding:16px 20px;margin-top:20px;
   box-shadow:var(--shadow);
 }
-.copy-section h3{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--fg2)}
+
+/* VOLUME CHARTS (#257) */
+.chart-box{width:100%;overflow-x:auto}
+.chart-box svg{display:block;width:100%;height:auto}
+.chart-note{font-size:12px;color:var(--fg2);margin-top:8px}
+.chart-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:11.5px;color:var(--fg2)}
+.chart-legend .item{display:flex;align-items:center;gap:5px}
+.legend-line{width:16px;height:3px;border-radius:2px}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+.empty-tip{
+  background:var(--orange-soft);color:var(--orange);
+  font-size:12.5px;font-weight:600;
+  padding:10px 14px;border-radius:10px;margin-top:8px;
+}
+.copy-section h3{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--fg2)}
+.copy-tabs{
+  display:inline-flex;background:var(--gray-soft);
+  border-radius:9px;padding:3px;margin-bottom:10px;
+}
+.copy-tab{
+  border:none;background:transparent;color:var(--fg2);
+  font-size:12px;font-weight:600;padding:5px 14px;border-radius:7px;
+  cursor:pointer;transition:all .15s;
+}
+.copy-tab.active{background:var(--card);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.copy-tab:not(.active):hover{color:var(--fg)}
 .copy-section pre{
   background:#1d1d1f;color:#f5f5f7;
   padding:12px 16px;border-radius:10px;
@@ -143,7 +170,6 @@ tbody tr:hover td{background:var(--accent-soft)}
   border:none;cursor:pointer;
 }
 .btn:hover{opacity:.85}
-.btn.copied{background:var(--green)}
 
 #backTop{
   position:fixed;bottom:24px;right:24px;
@@ -166,6 +192,11 @@ footer{
   .hero h1{font-size:22px}
   .stats{grid-template-columns:repeat(2,1fr)}
   th,td{padding:8px 10px;font-size:12px}
+  .heatmap{gap:4px}
+  .day-cell{padding:4px 2px;aspect-ratio:auto;min-height:52px;border-radius:8px}
+  .day-cell .date{font-size:9px;margin-bottom:1px}
+  .day-cell .pct{font-size:12px}
+  .day-cell .note{display:none}
 }
 </style>
 </head>
@@ -191,6 +222,19 @@ footer{
 </div>
 
 <div class="section">
+  <h2>📈 周训练容量 · 计划 vs 实做</h2>
+  <div id="volumeChart" class="chart-box"></div>
+  <div id="volumeNote" class="chart-note"></div>
+</div>
+
+<div class="section">
+  <h2>📉 主项动作负荷趋势</h2>
+  <div id="movementChart" class="chart-box"></div>
+  <div id="movementLegend" class="chart-legend"></div>
+  <div id="movementNote" class="chart-note"></div>
+</div>
+
+<div class="section">
   <h2>📋 每日明细</h2>
 </div>
 <div class="table-wrap"><table>
@@ -202,9 +246,14 @@ footer{
 
 <div class="copy-section">
   <h3>📤 复制回 AI</h3>
-  <pre id="copyText">加载中...</pre>
-  <button class="btn" id="copyBtn" onclick="copyToAI()">复制摘要</button>
+  <div class="copy-tabs" role="tablist">
+    <button class="copy-tab active" id="tabPrompt" onclick="switchTab('prompt')" role="tab">复制 prompt</button>
+    <button class="copy-tab" id="tabData" onclick="switchTab('data')" role="tab">复制数据</button>
+  </div>
+  <pre id="copyText" class="copy-body">加载中...</pre>
+  <button class="btn" id="copyBtn" onclick="copyToAI()">复制</button>
 </div>
+<div id="copyDataStore" hidden></div>
 
 <footer>
   卡路里 Skill · 训练复盘 · 数据来源 exercise_review.py --format json<br>
@@ -228,10 +277,25 @@ function escapeHTML(s) {
   }[c]));
 }
 
+let copyTab = 'prompt';
+function switchTab(tab) {
+  copyTab = tab;
+  document.getElementById('tabPrompt').classList.toggle('active', tab === 'prompt');
+  document.getElementById('tabData').classList.toggle('active', tab === 'data');
+  const root = window.__DATA__ || {};
+  const meta = (root.__meta__) || {};
+  const el = document.getElementById('copyText');
+  if (tab === 'prompt') {
+    el.textContent = meta.prompt_template || '（未注入 prompt，请从 HELP 复制）';
+  } else {
+    el.textContent = document.getElementById('copyDataStore').textContent;
+  }
+}
+
 function copyToAI() {
   const text = document.getElementById('copyText').textContent;
   navigator.clipboard.writeText(text).then(() => {
-    toast('已复制');
+    toast(copyTab === 'prompt' ? 'prompt' : '数据');
   }).catch(() => {
     const ta = document.createElement('textarea');
     ta.value = text;
@@ -256,14 +320,172 @@ function rateClass(rate) {
   return 'bad';
 }
 
+function fmtK(n) {
+  if (n >= 10000) return (n / 10000).toFixed(1).replace(/\.0$/, '') + '万';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  return String(Math.round(n));
+}
+
+/* ---------- #257 周容量双柱 ---------- */
+function renderVolume(volume) {
+  const el = document.getElementById('volumeChart');
+  const note = document.getElementById('volumeNote');
+  if (!volume || !volume.weeks || !volume.weeks.length) {
+    el.innerHTML = '<p class="chart-note">暂无容量数据</p>';
+    return;
+  }
+  const weeks = volume.weeks;
+  const W = 640, H = 248, PL = 46, PR = 14, PT = 36, PB = 36;
+  const iw = W - PL - PR, ih = H - PT - PB;
+  const maxV = Math.max(1, ...weeks.map(w => Math.max(w.plan || 0, w.actual || 0)));
+  // Y 轴刻度：向上取整
+  const rawStep = maxV / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const step = Math.ceil(rawStep / mag) * mag;
+  const yMax = step * 4;
+  const y = v => PT + ih - (v / yMax) * ih;
+
+  const groupW = iw / weeks.length;
+  const barW = Math.min(34, groupW * 0.32);
+  const gap = 6;
+  const half = barW / 2 + gap / 2;
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="周训练容量计划 vs 实做柱状图">`;
+  // 网格 + Y 刻度
+  for (let i = 0; i <= 4; i++) {
+    const v = step * i, yy = y(v);
+    svg += `<line x1="${PL}" y1="${yy}" x2="${W - PR}" y2="${yy}" stroke="#ececec" stroke-width="1"/>`;
+    svg += `<text x="${PL - 8}" y="${yy + 4}" text-anchor="end" font-size="13.5" fill="#6e6e73">${fmtK(v)}</text>`;
+  }
+  // X 标签 + 柱子
+  weeks.forEach((wk, i) => {
+    const cx = PL + groupW * i + groupW / 2;
+    const p = wk.plan || 0, a = wk.actual || 0;
+    const py = y(p), ay = y(a);
+    // 计划柱（浅蓝描边）
+    svg += `<rect x="${cx - half}" y="${py}" width="${barW}" height="${Math.max(0, PT + ih - py)}" rx="4" fill="rgba(0,113,227,.18)" stroke="var(--accent)" stroke-width="2"/>`;
+    // 实做柱（绿）
+    svg += `<rect x="${cx - half + barW + gap}" y="${ay}" width="${barW}" height="${Math.max(0, PT + ih - ay)}" rx="4" fill="${wk.actual > 0 ? 'var(--green)' : 'var(--gray)'}" opacity="${wk.actual > 0 ? 1 : .35}"/>`;
+    svg += `<text x="${cx}" y="${PT + ih + 26}" text-anchor="middle" font-size="13.5" fill="#86868b">${escapeHTML(wk.label)}</text>`;
+    if (p > 0) svg += `<text x="${cx}" y="${py - 6}" text-anchor="middle" font-size="13" fill="#6e6e73">${fmtK(p)}</text>`;
+    if (a > 0) svg += `<text x="${cx + barW + gap - 0}" y="${ay - 6}" text-anchor="middle" font-size="13" fill="#2ea24b" transform="translate(${barW/2+gap/2},0)">${fmtK(a)}</text>`;
+  });
+  svg += '</svg>';
+  el.innerHTML = svg;
+  if (!volume.has_actual) {
+    note.innerHTML = '<div class="empty-tip">⚠️ 实做数据不足：当前范围无带重量实绩，仅显示计划容量</div>';
+  } else {
+    const last = weeks[weeks.length - 1];
+    const pct = last.plan > 0 ? Math.round((last.actual / last.plan) * 100) : 0;
+    note.innerHTML = `本周容量 ${fmtK(last.actual)} / 计划 ${fmtK(last.plan)}（${pct}%）· 累计实做 ${fmtK(volume.total_actual)} / 计划 ${fmtK(volume.total_plan)}`;
+  }
+}
+
+/* ---------- #257 主项动作负荷折线 ---------- */
+const MOV_COLORS = ['#0071e3', '#34c759', '#FF9500', '#AF52DE'];
+
+function catmull(points) {
+  if (points.length < 3) return points.map(p => [p.x, p.y]);
+  const d = [];
+  for (let i = 0; i < points.length; i++) {
+    const p0 = points[Math.max(0, i - 1)], p1 = points[i],
+          p2 = points[Math.min(points.length - 1, i + 1)], p3 = points[Math.min(points.length - 1, i + 2)];
+    const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+    const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+    d.push((d.length ? 'C' : 'M') + `${c1.x.toFixed(1)},${c1.y.toFixed(1)} ${c2.x.toFixed(1)},${c2.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`);
+  }
+  return d;
+}
+
+function renderMovements(volume) {
+  const el = document.getElementById('movementChart');
+  const note = document.getElementById('movementNote');
+  const legendEl = document.getElementById('movementLegend');
+  if (!volume || !volume.movements || !volume.movements.length) {
+    el.innerHTML = '<p class="chart-note">暂无主项动作数据</p>';
+    return;
+  }
+  const movs = volume.movements;
+  const weeks = (volume.weeks || []).map(w => w.label);
+  const W = 640, H = 248, PL = 46, PR = 14, PT = 36, PB = 36;
+  const iw = W - PL - PR, ih = H - PT - PB;
+  const placedLabels = [];
+  // 最大值：计划或实做
+  const allV = [];
+  movs.forEach(m => m.weeks.forEach(w => { if (w.plan) allV.push(w.plan); if (w.actual) allV.push(w.actual); }));
+  const maxV = Math.max(1, ...allV);
+  const rawStep = maxV / 4;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const step = Math.ceil(rawStep / mag) * mag;
+  const yMax = step * 4;
+  const y = v => PT + ih - (v / yMax) * ih;
+  const x = i => weeks.length <= 1 ? PL + iw / 2 : PL + (iw * i) / (weeks.length - 1);
+
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="主项动作每周负荷趋势折线图">`;
+  for (let i = 0; i <= 4; i++) {
+    const v = step * i, yy = y(v);
+    svg += `<line x1="${PL}" y1="${yy}" x2="${W - PR}" y2="${yy}" stroke="#ececec" stroke-width="1"/>`;
+    svg += `<text x="${PL - 8}" y="${yy + 4}" text-anchor="end" font-size="13.5" fill="#6e6e73">${fmtK(v)}</text>`;
+  }
+  weeks.forEach((lb, i) => {
+    svg += `<text x="${x(i)}" y="${PT + ih + 26}" text-anchor="middle" font-size="13.5" fill="#86868b">${escapeHTML(lb)}</text>`;
+  });
+  movs.forEach((m, mi) => {
+    const color = MOV_COLORS[mi % MOV_COLORS.length];
+    // 实做折线（实线）
+    const pts = m.weeks.map((w, i) => ({ x: x(i), y: y(w.actual || 0), v: w.actual || 0 })).filter(p => p.v > 0);
+    const hasActual = pts.length > 0;
+    if (hasActual) {
+      const line = catmull(pts);
+      svg += `<path d="${line.join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>`;
+      // 标签只标首尾点；同列多线靠拢时跳过（碰撞检测），避免重叠
+      pts.forEach((p, pi) => {
+        svg += `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#fff" stroke="${color}" stroke-width="2"/>`;
+        if (pi === 0 || pi === pts.length - 1) {
+          if (!placedLabels.some(L => Math.abs(L.x - p.x) < 34 && Math.abs(L.y - p.y) < 16)) {
+            placedLabels.push({ x: p.x, y: p.y });
+            // 首点标签从点右侧展开（避开左侧 Y 轴刻度带），末点居中
+            const anchor = pi === 0 ? 'start' : 'middle';
+            const lx = pi === 0 ? p.x + 7 : p.x;
+            svg += `<text x="${lx}" y="${p.y - 14}" text-anchor="${anchor}" font-size="13" fill="${color}" font-weight="600">${fmtK(p.v)}</text>`;
+          }
+        }
+      });
+    }
+    // 计划线（浅色虚线）
+    const pPts = m.weeks.map((w, i) => ({ x: x(i), y: y(w.plan || 0), v: w.plan || 0 })).filter(p => p.v > 0);
+    if (pPts.length > 1) {
+      const line = catmull(pPts);
+      svg += `<path d="${line.join(' ')}" fill="none" stroke="${color}" stroke-width="1.5" stroke-dasharray="5 4" opacity=".45"/>`;
+    }
+  });
+  svg += '</svg>';
+  el.innerHTML = svg;
+
+  legendEl.innerHTML = movs.map((m, mi) => {
+    const color = MOV_COLORS[mi % MOV_COLORS.length];
+    const pct = m.plan_total > 0 ? Math.round((m.actual_total / m.plan_total) * 100) : 0;
+    return `<div class="item"><span class="legend-line" style="background:${color}"></span>${escapeHTML(m.name)}<span style="color:var(--fg3)">实做 ${fmtK(m.actual_total)} / 计划 ${fmtK(m.plan_total)}（${pct}%）</span></div>`;
+  }).join('');
+
+  if (volume.has_actual) {
+    note.innerHTML = '实线 = 每周实做负荷 · 浅色虚线 = 计划目标 · 圆点数值 = 该周 Σ(kg×次数)';
+  } else {
+    note.innerHTML = '<div class="empty-tip">⚠️ 实做数据不足：当前范围无带重量实绩，仅显示计划参考线</div>';
+  }
+}
+
 function render() {
   if (!DATA) {
     document.querySelector('.hero h1').textContent = '❌ 数据加载失败';
     return;
   }
 
-  const days = Object.values(DATA);
-  const dates = Object.keys(DATA).sort();
+  // 解包：__DATA__ 可能带 {status,data,message} 包装；消费纯日期 dict
+  const raw = DATA;
+  const root = (raw && raw.data && typeof raw.data === 'object' && !raw.data.hasOwnProperty('completion_rate')) ? raw.data : raw;
+  const dates = Object.keys(root).filter(k => k !== '__meta__').sort();
+  const days = dates.map(d => root[d]);
   if (dates.length === 0) {
     document.getElementById('subtitle').textContent = '暂无数据';
     return;
@@ -307,7 +529,7 @@ function render() {
   // HEATMAP
   const heatmap = document.getElementById('heatmap');
   heatmap.innerHTML = dates.map((d, i) => {
-    const data = DATA[d];
+    const data = root[d];
     const dateObj = new Date(d);
     const dayOfWeek = dateObj.getDay();
     const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
@@ -328,7 +550,7 @@ function render() {
   // TABLE
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = dates.map(d => {
-    const data = DATA[d];
+    const data = root[d];
     const rate = data.completion_rate;
     const rateStr = rate !== null ? `${Math.round(rate)}%` : '休';
     const rateCls = rateClass(rate);
@@ -350,17 +572,36 @@ function render() {
     </tr>`;
   }).join('');
 
-  // COPY
+  // COPY：数据摘要（人类可读纯文本）写入 hidden store；prompt 由 tab 切换显示
   let txt = `训练复盘 (${dates[0]} ~ ${dates[dates.length-1]})\n`;
   txt += `训练 ${trainDays}/${totalDays} 天，平均完成率 ${avgRate}%\n`;
-  txt += `异常: ${anomaliesCount} 条\n\n`;
+  txt += `异常: ${anomaliesCount} 条\n`;
+  const meta = (root.__meta__) || {};
+  if (meta.volume) {
+    const vol = meta.volume;
+    txt += `容量: 实做 ${fmtK(vol.total_actual)} / 计划 ${fmtK(vol.total_plan)} kg×次\n`;
+    vol.weeks.forEach(w => {
+      txt += `  ${w.label}: 实做 ${fmtK(w.actual)} / 计划 ${fmtK(w.plan)}\n`;
+    });
+  }
+  txt += `\n每日明细:\n`;
   dates.forEach(d => {
-    const data = DATA[d];
+    const data = root[d];
     const r = data.completion_rate;
     const rStr = r !== null ? `${Math.round(r)}%` : '休';
     txt += `  ${d}: ${rStr} (${data.actual_total_sets}/${data.plan_total_sets})${data.note ? ' - ' + data.note : ''}\n`;
   });
-  document.getElementById('copyText').textContent = txt;
+  document.getElementById('copyDataStore').textContent = txt;
+  // 默认 tab = prompt（自包含、空白 AI 可执行）；无 prompt 时回退数据
+  if (!meta.prompt_template) {
+    switchTab('data');
+  } else {
+    switchTab('prompt');
+  }
+
+  // #257 容量/负荷图表（数据在 __meta__.volume）
+  renderVolume(meta.volume || null);
+  renderMovements(meta.volume || null);
 }
 
 render();

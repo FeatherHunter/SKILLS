@@ -255,13 +255,51 @@ def exercise_review(start_date, end_date=None, as_dict=False, silent=False):
     cur = datetime.strptime(start_date, '%Y-%m-%d').date()
     end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
 
+    # #257 容量聚合（Σ kg×次数，仅 weight>0 & unit=kg / load_kg>0）
+    vol_plan_week = defaultdict(float)      # 自然周 -> 计划容量
+    vol_actual_week = defaultdict(float)    # 自然周 -> 实绩容量
+    vol_plan_mov = defaultdict(float)       # (周, 动作名) -> 计划容量
+    vol_actual_mov = defaultdict(float)     # (周, 动作名) -> 实绩容量
+    vol_mov_total = defaultdict(lambda: {'plan': 0.0, 'actual': 0.0})  # 动作名 -> 容量合计(TOP4 用)
+    vol_weeks = []                          # 有序自然周列表 ['2026-W30', ...]
+    week_monday = {}                        # 自然周 -> 该周周一日期(date)
+
+    def _iso_week(d):
+        iso = d.isocalendar()
+        return f'{iso[0]}-W{iso[1]:02d}'
+
     while cur <= end_dt:
         date_str = cur.strftime('%Y-%m-%d')
+        wk = _iso_week(cur)
+        if not vol_weeks or vol_weeks[-1] != wk:
+            vol_weeks.append(wk)
+            week_monday[wk] = cur
 
         plan = get_day_plan(cur)
         plan_sessions = plan.get('sessions', [])
         plan_total_sets = sum(s.get('total_sets') or 0 for s in plan_sessions)
         session_labels = [s.get('session_label', '') for s in plan_sessions]
+
+        # 计划容量：movements[].sets[].weight × reps，仅 unit=kg 且 weight>0
+        for s in plan_sessions:
+            for m in s.get('movements', []):
+                name = m.get('name', '')
+                for st in m.get('sets', []) or []:
+                    try:
+                        w = float(st.get('weight') or 0)
+                        reps = int(float(st.get('reps') or 0))
+                    except (TypeError, ValueError):
+                        w, reps = 0, 0
+                    if w <= 0 or reps <= 0:
+                        continue
+                    # unit 缺省/空/显式 kg 都计入；min/秒/次 等非重量单位排除
+                    unit = st.get('unit') or ''
+                    if unit and unit != 'kg':
+                        continue
+                    ton = w * reps
+                    vol_plan_week[wk] += ton
+                    vol_plan_mov[(wk, name)] += ton
+                    vol_mov_total[name]['plan'] += ton
 
         c.execute('''
             SELECT id, exercise_type, duration_minutes, calories_burned,
@@ -283,6 +321,14 @@ def exercise_review(start_date, end_date=None, as_dict=False, silent=False):
             actual[etype]['load_max'] = max(actual[etype]['load_max'], r[6] or 0)
             actual[etype]['calories'] += r[3] or 0
             actual[etype]['minutes'] += r[2] or 0
+            # #257 实绩容量：Σ load_kg × reps
+            load = r[6] or 0
+            reps = r[5] or 0
+            if load > 0 and reps > 0:
+                ton = load * reps
+                vol_actual_week[wk] += ton
+                vol_actual_mov[(wk, etype)] += ton
+                vol_mov_total[etype]['actual'] += ton
         actual_total_sets = sum(v['sets'] for v in actual.values())
 
         anomalies = []
@@ -339,12 +385,62 @@ def exercise_review(start_date, end_date=None, as_dict=False, silent=False):
             if atype in by_severity_count:
                 by_severity_count[atype] += 1
 
+    # #257 组装 volume：周容量柱状（计划 vs 实做）+ 主项 TOP4 负荷折线
+    def _week_label(wk):
+        """'2026-W30' -> '7/20~26'（ISO 周一到周日）"""
+        try:
+            monday = week_monday[wk]
+            sunday = monday + timedelta(days=6)
+            if monday.month == sunday.month:
+                return f'{monday.month}/{monday.day}~{sunday.day}'
+            return f'{monday.month}/{monday.day}~{sunday.month}/{sunday.day}'
+        except Exception:
+            return wk
+
+    volume_weeks = []
+    for wk in vol_weeks:
+        volume_weeks.append({
+            'week': wk,
+            'label': _week_label(wk),
+            'plan': round(vol_plan_week.get(wk, 0.0)),
+            'actual': round(vol_actual_week.get(wk, 0.0)),
+            'actual_sets': 0,  # 由模板按需补充（不额外查询）
+        })
+
+    # 主项 TOP4：按 (计划+实绩) 容量合计排序
+    top_names = sorted(vol_mov_total.keys(),
+                       key=lambda n: -(vol_mov_total[n]['plan'] + vol_mov_total[n]['actual']))[:4]
+    volume_movements = []
+    for name in top_names:
+        weeks = []
+        for wk in vol_weeks:
+            weeks.append({
+                'week': wk,
+                'label': _week_label(wk),
+                'plan': round(vol_plan_mov.get((wk, name), 0.0)),
+                'actual': round(vol_actual_mov.get((wk, name), 0.0)),
+            })
+        volume_movements.append({
+            'name': name,
+            'plan_total': round(vol_mov_total[name]['plan']),
+            'actual_total': round(vol_mov_total[name]['actual']),
+            'weeks': weeks,
+        })
+
+    total_actual_ton = sum(vol_actual_week.values())
     enriched_meta = {
         'by_severity_count': by_severity_count,
         'total_days': len(results),
         'train_days': sum(1 for r in results.values() if not r.get('is_rest_day')),
         'rest_days': sum(1 for r in results.values() if r.get('is_rest_day')),
         'total_calories': sum(r.get('calories_burned') or 0 for r in results.values()),
+        'volume': {
+            'weeks': volume_weeks,
+            'movements': volume_movements,
+            'total_plan': round(sum(vol_plan_week.values())),
+            'total_actual': round(total_actual_ton),
+            'has_actual': total_actual_ton > 0,
+        },
     }
 
     if as_dict or silent:

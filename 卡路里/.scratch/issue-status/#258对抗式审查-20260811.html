@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#258 对抗式审查报告</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#ffffff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --lineS:#e5e5ea; --blue:#0071e3; --green:#34c759; --amber:#ff9f0a; --red:#ff3b30;
+    --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;line-height:1.65}
+  .app{max-width:720px;margin:0 auto;padding:32px 20px 64px}
+  .header h1{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .header p{color:var(--ink3);font-size:13px;margin-top:4px}
+  .card{background:var(--card);border:1px solid var(--lineS);border-radius:16px;padding:20px 22px;margin-top:16px;box-shadow:var(--shadow)}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:10px}
+  .card p{font-size:14px}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 10px;border-radius:99px;margin-right:6px}
+  .p-fix{background:#eef6ff;color:var(--blue)}
+  .p-ok{background:#f0fdf4;color:#15803d}
+  .p-q{background:#fff4e5;color:#b45309}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{font-size:11px;color:var(--ink3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--lineS);font-weight:500}
+  td{padding:9px 8px;border-bottom:1px solid var(--lineS);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:#f8f8fa;padding:1px 5px;border-radius:6px}
+  .diag{background:#f8f8fa;border:1px solid var(--lineS);border-radius:10px;padding:12px 14px;font-size:12.5px;margin-top:8px;line-height:1.7}
+  .diag b{color:var(--ink)}
+  ul{padding-left:18px;font-size:13.5px}
+  li{margin:5px 0}
+  .qbox{background:#fff4e5;border:1px solid #fed7aa;border-radius:12px;padding:14px 16px;margin-top:10px;font-size:14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>#258 对抗式审查报告</h1>
+    <p>第一性原理 · 逐项挑战交付假设 · 2026-08-11</p>
+  </div>
+
+  <div class="card">
+    <h2>审查结论总览</h2>
+    <table>
+      <tr><th>#</th><th>审查项</th><th>判定</th><th>处置</th></tr>
+      <tr><td>1</td><td>渲染级测试依赖真实日期（时间炸弹）</td><td><span class="pill p-fix">已修复</span></td><td>周期结束后测试必挂 → 改为断言字段存在+类型正确，不锁状态值</td></tr>
+      <tr><td>2</td><td>SKILL.md 速查表未同步（交付纪律 #3）</td><td><span class="pill p-fix">已修复</span></td><td>619 行「看计划概览」补周期剩余进度描述</td></tr>
+      <tr><td>3</td><td>CSS 选择器脆弱（nth-child(7) 写死）</td><td><span class="pill p-fix">已修复</span></td><td>改通用规则 nth-child(odd):last-child，KPI 卡数变化不破版</td></tr>
+      <tr><td>4</td><td>概览「线性周次」vs 系统「循环周次」语义冲突</td><td><span class="pill p-ok">验证正确</span></td><td>分层设计成立：概览=计划生命周期，calc_plan_week=内容循环；重定覆盖 config 自动复位</td></tr>
+      <tr><td>5</td><td>剩余训练日口径（完整周 vs 精确到天）</td><td><span class="pill p-q">待拍板</span></td><td>当前=剩余完整周×每周训练日；如需「今天后逐日数」可增强</td></tr>
+      <tr><td>6</td><td>每周训练日数假设（DISTINCT 周内结构一致）</td><td><span class="pill p-ok">合理</span></td><td>循环计划语义=每周结构相同（SKILL.md 明示），假设成立</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>① 时间炸弹测试（已修）</h2>
+    <p>原测试 <span class="mono">test_render_contains_period_section</span> 断言 <span class="mono">period_status == "active"</span>——但渲染走真实 <span class="mono">date.today()</span>，seed 周期 2026-08-30 结束后必挂。这是「测试在写的时候绿，一个月后无声红」的隐患。</p>
+    <div class="diag">修复：断言 <span class="mono">period_status ∈ (active/unstarted/finished)</span> + 字段类型正确（int），锁定「结构存在」，不锁「具体状态值」。任何一天跑都绿。</div>
+  </div>
+
+  <div class="card">
+    <h2>② SKILL.md 多源同步（已修）</h2>
+    <p>交付纪律 #3 要求 frontmatter/速查表/执行面/模板行逐处核对。619 行速查表「看计划概览」描述仍停留在 4 KPI，未体现周期进度。</p>
+    <div class="diag">修复：<span class="mono">KPI(总周数/完成率/训练日/动作数)+ 周期剩余进度(#258: 第 X/Y 周 + 剩余周数/训练日 + 结束态)+ 每周完成率</span></div>
+  </div>
+
+  <div class="card">
+    <h2>③ CSS 选择器脆弱（已修）</h2>
+    <p>375px 媒体查询原写 <span class="mono">.kpi-card:nth-child(7){grid-column:span 2}</span>——写死「第 7 张」：将来 KPI 卡增删即破版。</p>
+    <div class="diag">修复：<span class="mono">.kpi-card:nth-child(odd):last-child{grid-column:span 2}</span>——「奇数张的末位通栏」通用规则，卡数 5/7/9 都正确。</div>
+  </div>
+
+  <div class="card">
+    <h2>④ 循环语义冲突（验证后：设计正确）</h2>
+    <p>对抗挑战：系统 <span class="mono">calc_plan_week</span> 取模循环（第 5 周=第 1 周动作），我的概览线性判定（第 5 周=finished）——会不会自相矛盾？</p>
+    <div class="diag">实测（生产 4 周计划）：第 5 周起概览显示「本周期已完成 · 第 4/4 周」，而循环语义算第 1 周。<br><br><b>结论：分层语义，非冲突。</b><br>
+    · <b>概览周期进度</b> = 计划<u>生命周期</u>：start_date 起的 total_weeks 一轮，练完提示「可重定」<br>
+    · <b>calc_plan_week</b> = 动作<u>内容循环</u>：轮内周次取模，看某天练什么仍给正确动作<br>
+    · <b>闭环</b>：plan_generator.py:192 定计划时 DELETE+INSERT 覆盖 config → 用户重定后 start_date 重置，概览自动回第 1 周。生命周期由 config 单一事实源驱动，永不漂移。</div>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 剩余训练日口径（待你拍板）</h2>
+    <p>当前实现：<span class="mono">remaining_training_days = 剩余完整周 × 每周训练日数</span>（不含当前周）。例：第 4/8 周周三看 → 剩 4 周 × 4 天 = 16。</p>
+    <p style="margin-top:6px;color:var(--ink2);font-size:13px">备选口径：从<b>明天起逐日数</b>到周期结束——会把「当前周剩余的训练日」也算进去（如第 4 周周三还有周五一次训练 → 17 而非 16）。更贴近「我还能练几次」的直觉，但实现略复杂。</p>
+    <div class="qbox"><b>请拍板：</b>A · 保持现状（完整周口径，简单一致）　B · 精确到天（含当前周剩余训练日）</div>
+  </div>
+
+  <div class="card">
+    <h2>修复后验证</h2>
+    <ul>
+      <li>全量测试 <b>380 passed + 20 xfailed</b>（三处修复后重跑，无回归）</li>
+      <li>三态（active/finished/unstarted）375px DOM 实测：0 溢出、0 JS 报错、进度条宽度正确</li>
+      <li>SKILL.md 单处同步完成（619 行速查表）</li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

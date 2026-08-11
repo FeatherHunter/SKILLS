@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#258 验收包 · 周期剩余进度</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#ffffff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --lineS:#e5e5ea; --blue:#0071e3; --green:#34c759; --amber:#ff9f0a; --red:#ff3b30;
+    --shadow:0 1px 3px rgba(0,0,0,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif;line-height:1.65}
+  .app{max-width:720px;margin:0 auto;padding:32px 20px 64px}
+  .header h1{font-size:26px;font-weight:700;letter-spacing:-.02em}
+  .header p{color:var(--ink3);font-size:13px;margin-top:4px}
+  .card{background:var(--card);border:1px solid var(--lineS);border-radius:16px;padding:20px 22px;margin-top:16px;box-shadow:var(--shadow)}
+  .card h2{font-size:15px;font-weight:600;margin-bottom:10px}
+  .card p{font-size:14px}
+  .pill{display:inline-block;font-size:11px;font-weight:600;padding:2px 10px;border-radius:99px;margin-right:6px}
+  .p-ok{background:#f0fdf4;color:#15803d}
+  .p-warn{background:#fff4e5;color:#b45309}
+  .p-info{background:#eef6ff;color:var(--blue)}
+  .dim{background:#f8f8fa;border:1px solid var(--lineS);border-radius:10px;padding:12px 14px;font-size:13px;color:var(--ink2);margin-top:8px;white-space:pre-wrap}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+  th{font-size:11px;color:var(--ink3);text-align:left;padding:6px 8px;border-bottom:1px solid var(--lineS);font-weight:500}
+  td{padding:8px;border-bottom:1px solid var(--lineS);vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  .demo{background:#f8f8fa;border:1px solid var(--lineS);border-radius:12px;padding:14px 16px;margin:12px 0;font-size:13px}
+  .bar{background:var(--lineS);border-radius:99px;height:10px;overflow:hidden;margin:8px 0}
+  .fill{background:var(--blue);height:100%;border-radius:99px;width:50%}
+  .row{display:flex;justify-content:space-between;font-size:12px;color:var(--ink2)}
+  .shots{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px}
+  .shot{border:1px solid var(--lineS);border-radius:12px;overflow:hidden}
+  .shot img{width:100%;display:block}
+  .shot .cap{font-size:11px;color:var(--ink3);padding:6px 8px;text-align:center}
+  ul{padding-left:18px;font-size:13.5px}
+  li{margin:5px 0}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <h1>#258 周期剩余进度 · 验收包</h1>
+    <p>看计划概览增强 · 2026-08-11</p>
+  </div>
+
+  <div class="card">
+    <h2>做了什么事</h2>
+    <p>「看计划概览」顶部新增<b>周期进度条</b>（第 X/Y 周 + 完成百分比），KPI 追加<b>剩余周数</b>和<b>剩余训练日</b>；三态处理：进行中 / 未开始 / 周期已结束（结束态提示「本周期已完成」，不误报为「完成率达标」）。</p>
+    <div class="demo">
+      <div class="row"><span>周期进度(实景)</span><span><b>第 4 / 8 周</b> · 剩余 4 周 · 16 个训练日</span></div>
+      <div class="bar"><div class="fill"></div></div>
+      <div class="row"><span>整体完成率 35.2%</span><span>周期结束 2026-09-13</span></div>
+    </div>
+    <p style="font-size:13px;color:var(--ink2)">进度条固定蓝色 = 时间维度；完成率绿色/琥珀/红 = 执行维度。两者不再混淆（对抗审查中视觉模型抓出的语义冲突已修）。</p>
+  </div>
+
+  <div class="card">
+    <h2>场景 HTML + HELP prompt（一起看）</h2>
+    <p style="font-size:13px;color:var(--ink2)">场景文件：<code>看计划概览_结果_20260811.html</code>（media 已发）。</p>
+    <p style="font-size:13px;margin-top:8px">HELP「复制 prompt」内容（与 scene_data 定稿零差异）：</p>
+    <div class="dim">请你加载技能 卡路里,执行唤醒词「看计划概览」。
+
+我想看整个健身计划的概览。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+    <p style="font-size:12px;color:var(--ink3);margin-top:6px">prompt 未变（#258 不新增唤醒词，概览内部升级）✅</p>
+  </div>
+
+  <div class="card">
+    <h2>5 维对抗式审查结果</h2>
+    <table>
+      <tr><th>维度</th><th>结论</th><th>证据</th></tr>
+      <tr><td>① 复制数据/日志按钮</td><td><span class="pill p-ok">通过</span></td><td>复制数据含「周期进度: 第 4/8 周 · 剩余 4 周 · 16 个训练日」新行；按钮文字恒定 + Toast「知道了」面板；Playwright 实测复制内容正确</td></tr>
+      <tr><td>② 呈现数据 vs 契约</td><td><span class="pill p-ok">通过</span></td><td>三态实测：active=第4/8周·剩4周·16日；unstarted=0/8·全部剩余；finished=8/8·剩0·提示已结束；数据源 workout_plans 真实</td></tr>
+      <tr><td>③ 375px 手机适配</td><td><span class="pill p-ok">通过</span></td><td>375/390/414 三档 DOM 实测 0 溢出、0 JS 报错；KPI 7 卡 2 列 + 第 7 卡通栏；进度条不换行</td></tr>
+      <tr><td>④ 设计师风格</td><td><span class="pill p-ok">通过</span></td><td>视觉模型定性：浅色 Apple 风一致、卡片层级清楚、无重叠错位；按钮颜色 2 色(蓝+白底) ≤3 色规则</td></tr>
+      <tr><td>⑤ 体验增强建议</td><td><span class="pill p-warn">1 条已采纳</span></td><td>对抗审查发现「绿色满格=完美通关」误读 → 已改：进度条统一蓝色、结束态琥珀色警示 + 文案明确「结束≠达标」。供你拍板是否再加环比等</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>三态截图（375px）</h2>
+    <div class="shots">
+      <div class="shot"><img src="shots/_258_active_375.png" alt="active"><div class="cap">进行中 · 第 4/8 周</div></div>
+      <div class="shot"><img src="shots/_258_finished_375.png" alt="finished"><div class="cap">已结束 · 第 8/8 周</div></div>
+      <div class="shot"><img src="shots/_258_unstarted_375.png" alt="unstarted"><div class="cap">未开始 · 第 0/8 周</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>测试与改动</h2>
+    <ul>
+      <li>新增 <code>tests/test_overview_period.py</code> 6 项：active(第2周/末周) + unstarted + finished + HTML 渲染断言 + 结束态文案（显式依赖 temp_db）</li>
+      <li>全量 <b>380 passed + 20 xfailed</b>（无回归）</li>
+      <li>改动：<code>scripts/render_workout_plan.py</code>（build_overview_data + _period_progress）、<code>templates/workout_plan_view.html</code>（renderOverview + period 样式 + 复制数据 + 375px）</li>
+      <li>「当前周次」复用 #252 的线性计算思路，不重复造轮子；剩余训练日 = 剩余周 × 每周实际非休息日数</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>待你拍板（✅ 已拍板 B · 精确到天）</h2>
+    <p style="font-size:14px"><b>页面 OK 吗？</b>OK 我就 commit + 收尾（结论表 + 更新验收记录 + 待 push 清单）。若有细节要调，直接说。</p>
+    <p style="font-size:13px;margin-top:8px">✅ <b>剩余训练日口径已按你的拍板升级为 B（精确到天）</b>：从明天起逐日数到周期结束，当前周剩余训练日也计入（如第 4/8 周周三看 → 含本周五）。已补周中测试 + 全量 381 passed。</p>
+  </div>
+</div>
+</body>
+</html>

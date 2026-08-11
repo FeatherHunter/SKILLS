@@ -37,7 +37,7 @@ accepted — 2026-08-10（issue #246 修复 · commit 937a24c）
   - count 与分类合计在含收入月份不一致（如 2026-05：count=116，分类合计=108）——这是设计使然，非 bug
   - 消费者若想算「支出笔数」必须自行过滤，不能直接用顶层 count（顶层是全量）
 - **验证**：
-  - `tests/test_db.py::test_monthly_summary` / `scripts/run_tests.py::test_monthly_summary` 断言 `count >= sum(c['count'])`
+  - `tests/test_analysis.py::TestSummaryFamily::test_monthly_kpi_and_categories` 断言 `count >= sum(c['count'])`（2026-08-11 #254 退役 run_tests.py 时补入 pytest 体系）
   - 复现命令实测：`monthly --month 2026-08` → 顶层 count=19，分类合计=19，expense=3569.43（2026-08 无收入，两口径重合）
   - 全量 pytest：421 pass / 1 fail（fail 为 pre-existing `test_summary_today`，与本改动无关，基线对照一致）
 

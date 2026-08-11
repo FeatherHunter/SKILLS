@@ -77,6 +77,8 @@ class TestSummaryFamily:
         assert d["expense"] == 80.0 and d["income"] == 8000.0 and d["net"] == 7920.0
         cats = d["categories"]
         assert sum(c["total"] for c in cats) == 80.0
+        # 顶层 count 口径 = 全量记录数(含收入, ADR-0003);分类合计仅支出 → count >= 分类 count 合计
+        assert d["count"] >= sum(c["count"] for c in cats)
 
     def test_monthly_empty(self, empty_db):
         """看月度:空库 → 0 不崩"""

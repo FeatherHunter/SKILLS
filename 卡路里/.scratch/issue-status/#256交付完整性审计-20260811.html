@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#256 交付完整性审计 · 零损失确认</title>
+<style>
+  :root{
+    --bg:#f5f5f7; --card:#fff; --ink:#1d1d1f; --ink2:#6e6e73; --ink3:#a1a1a6;
+    --blue:#0071e3; --green:#34c759; --orange:#ff9500; --line:rgba(0,0,0,.08);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro SC","PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);padding:20px 16px 48px;max-width:680px;margin:0 auto}
+  .card{background:var(--card);border-radius:18px;padding:20px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  .tag{display:inline-block;background:rgba(52,199,89,.14);color:#1c7c3a;font-size:11px;font-weight:600;border-radius:6px;padding:3px 8px;margin-bottom:10px}
+  h1{font-size:20px;font-weight:700;line-height:1.35;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--ink2);line-height:1.7}
+  h2{font-size:15px;font-weight:700;margin:14px 0 8px}
+  .row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);align-items:flex-start}
+  .row:last-child{border-bottom:none}
+  .mark{flex-shrink:0;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .mark.ok{background:rgba(52,199,89,.15);color:#1c7c3a}
+  .mark.warn{background:rgba(255,149,0,.16);color:#b25e00}
+  .b{flex:1}
+  .t{font-size:13.5px;font-weight:600}
+  .d{font-size:12px;color:var(--ink2);line-height:1.6;margin-top:2px}
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:11.5px;background:#f5f5f7;border-radius:5px;padding:1px 5px}
+  .push{background:#f0fbf3;border:1px solid rgba(52,199,89,.3);border-radius:12px;padding:14px;font-size:13px;line-height:1.8;margin:8px 0}
+  @media (max-width:420px){body{padding:14px 10px 36px} h1{font-size:18px}}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <span class="tag">交付完整性审计 · 通过</span>
+  <h1>#256 零损失确认：可安全关闭 session</h1>
+  <p class="sub">从第一性原理逐层对抗式核查 · 2026-08-11 09:2x</p>
+</div>
+
+<div class="card">
+  <h2>一、代码与测试</h2>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">#256 代码已 commit</div><div class="d">cf1ba6a（action 模式 + 折叠 + 测试，5 文件 244+）——本地与远端一致</div></div></div>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">测试覆盖</div><div class="d">parametrize + action + test_action_mode_specific 4 态（精确/子串/无匹配+候选/空名）→ 350 passed（排除并行 WIP diet 测试）</div></div></div>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">边界防护</div><div class="d">非法日期友好错误 · 无匹配相近候选 · 空名拦截 · 每周不同计划走全列表（重量演进保留）</div></div></div>
+</div>
+
+<div class="card">
+  <h2>二、交付物持久化</h2>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">验收记录入库</div><div class="d">新建 <span class="mono">04-健身计划-review.md</span>（#252/#255/#256 闭环 + #42 验收进度 + 遗留项）</div></div></div>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">交付报告入库（审计发现 7 份被根 .gitignore 挡 → 已 force-add）</div><div class="d">#252看完整计划验收 / #255对抗式审查 / #256阶段审查 / #256确认理解 / 健身计划Issue追踪 / 功能域审查 / 第1批验收 → commit 026da72</div></div></div>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">handoff 更新</div><div class="d">handoff-卡路里-20260810.md 追加 8-11 状态（健身计划域闭环 + 剩余清单 + push 规则）</div></div></div>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">3 份 _gallery_ 不入库</div><div class="d">设计上忽略的临时产物（.gitignore 规则），无丢失风险</div></div></div>
+</div>
+
+<div class="card">
+  <h2>三、issue 状态闭环</h2>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">#256 已 close + 结论表评论</div><div class="d">方向 A 确认 + 4 用例验收 + 关键设计决策 + 遗留项，评论已贴</div></div></div>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">总纲 #259 已更新</div><div class="d">#252/#255/#256 ✅ 全部闭环；剩余 #257/#258</div></div></div>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">#257/#258 已认领</div><div class="d">总纲 + 验收记录标注顺序，新 session 可接续</div></div></div>
+</div>
+
+<div class="card">
+  <h2>四、思想共识沉淀</h2>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">任务阶段框架（新）</div><div class="d">执行前（告诉起点/发现盲区/采访澄清/原型验证/执行计划）→ 执行中（记录偏离）→ 执行后（复盘/确认理解/反向考验/答明白再交付）→ 已入 user memory</div></div></div>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">交付验收纪律（#255 教训）</div><div class="d">拍板前不 close + 新功能自带测试 + 多源同步核对 → 已入 user memory</div></div></div>
+  <div class="row"><div class="mark ok">✓</div><div class="b"><div class="t">push 由用户负责（本轮执行）</div><div class="d">AI 只 commit + 测试 + 列待 push 清单，不主动 push</div></div></div>
+</div>
+
+<div class="card">
+  <h2>五、待 push 清单（交由你执行）</h2>
+  <div class="push">📤 本地 commit <b>026da72</b>（#256 收尾审计 · 7 份报告 + 验收记录 + handoff 入库）<b>尚未推送</b>。<br>
+  执行：<span class="mono">git push origin main</span><br>
+  （此前 cf1ba6a 等 #256 代码 commit 已在远端 ✅）</div>
+  <p class="sub">审计中发现并已修复：7 份交付报告被根 .gitignore 挡住未入库（已 force-add 补齐 026da72）。除此之外本地 = 远端，无其他待处理。</p>
+</div>
+
+<div class="card">
+  <h2>结论</h2>
+  <p class="sub" style="font-size:14px;line-height:1.8">✅ <b>#256 全部工作已完成</b>：代码/测试/记录/报告/issue 状态/思想共识六层持久化。<b>永久关闭本 session 无任何损失</b>——唯一待办是 026da72 的 push，由你执行（清单见上）。</p>
+</div>
+
+</body>
+</html>

@@ -94,11 +94,19 @@ def get_profile_activity_level():
 def _get_db():
     """获取数据库连接（调用方需 conn.close()）
 
+    2026-08-11 #257 事故根治: 改为动态解析 find_db_path(不再用模块级 DB_PATH
+    缓存)——模块级常量在 pytest collection 时固化为生产路径, 导致测试
+    monkeypatch SKILLS_DB_PATH 后 analysis 仍读写生产库(曾清空 exercise_log 8297 行)。
+    动态解析行为与旧逻辑一致(环境变量优先级不变), 但抗 monkeypatch。
     若 DB 不存在则先初始化。
     """
-    if not DB_PATH.exists():
-        init_db(DB_PATH)
-    return get_db(DB_PATH)
+    from db import find_db_path, get_db, init_db
+    from pathlib import Path as _P
+    _skill = _P(__file__).resolve().parent.parent.parent
+    db_path = find_db_path(_skill, DB_FILENAME)
+    if not db_path.exists():
+        init_db(db_path)
+    return get_db(db_path)
 
 
 def _parse_date(s):

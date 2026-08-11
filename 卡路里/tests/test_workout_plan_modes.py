@@ -23,12 +23,16 @@ import render_workout_plan as rwp  # noqa: E402
 
 
 @pytest.fixture()
-def seed_plan():
-    """写入一份 2 周测试计划 + 今日实绩(function-scope,每测试独立)"""
-    from db import find_db_path, get_db
-    from workout_plan import DB_PATH
+def seed_plan(temp_db):
+    """写入一份 2 周测试计划 + 今日实绩(function-scope,每测试独立)
 
-    db_path = find_db_path(Path(__file__).resolve().parent.parent, "calorie_data.db")
+    显式依赖 temp_db(session-scope): 2026-08-11 事故教训——此前未请求
+    temp_db, 单独跑本文件时 SKILLS_DB_PATH 解析到生产库, DELETE 会清空
+    生产库 workout_plan_config/workout_plans(与 #257 事故同源)。
+    """
+    from db import get_db
+
+    db_path = temp_db
     conn = get_db(db_path)
     c = conn.cursor()
     c.execute("DELETE FROM workout_plan_config")

@@ -52,9 +52,14 @@ EQUIPMENT_KEYWORDS = {
 
 
 def _get_db():
-    if not DB_PATH.exists():
-        init_db(DB_PATH)
-    return get_db(DB_PATH)
+    """动态解析 DB 路径(2026-08-11 #257 事故根治: 模块级 DB_PATH 在 collection 时
+    固化生产路径, 测试 monkeypatch SKILLS_DB_PATH 不生效; 与 render_workout_plan 一致,
+    每次调用按环境变量解析, 行为不变但抗 monkeypatch)"""
+    from db import find_db_path, get_db, init_db
+    db_path = find_db_path(SKILL_DIR, DB_FILENAME)
+    if not db_path.exists():
+        init_db(db_path)
+    return get_db(db_path)
 
 
 def load_catalog():

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#103 数据层总账 · Wayfinder 对账</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --sub: #6e6e73;
+    --blue: #0071e3;
+    --green: #34c759;
+    --red: #ff3b30;
+    --orange: #ff9500;
+    --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6;
+    padding: 28px 16px 48px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--blue);
+    background: rgba(0,113,227,0.08); border: 1px solid rgba(0,113,227,0.2);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card {
+    background: var(--card); border-radius: 16px; padding: 22px 20px;
+    margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card h2 {
+    font-size: 17px; font-weight: 700; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card h2 .no {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 22px; border-radius: 7px;
+    background: var(--blue); color: #fff; font-size: 12px; padding: 0 6px;
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .grid2 { grid-template-columns: 1fr; } }
+  .kv { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+  .kv .k { font-size: 11px; color: var(--sub); letter-spacing: 0.3px; margin-bottom: 4px; }
+  .kv .v { font-size: 14px; font-weight: 600; }
+  .kv .v.small { font-weight: 500; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: 0.3px; }
+  td .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-done { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-gone { background: rgba(255,59,48,0.10); color: #c22f26; }
+  .b-todo { background: rgba(255,149,0,0.14); color: #c77100; }
+  .b-warn { background: rgba(255,149,0,0.10); color: #b06000; }
+  .loc { font-size: 11px; color: var(--sub); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  .risk { font-size: 12px; color: var(--sub); margin-top: 4px; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  .q { margin-bottom: 18px; }
+  .q:last-child { margin-bottom: 0; }
+  .q .qtitle { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .q .qbg { font-size: 13px; color: var(--sub); margin-bottom: 10px; padding: 10px 12px; background: var(--bg); border-radius: 10px; }
+  .q .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px;
+    font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start;
+  }
+  .opt .letter {
+    flex: none; width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px;
+  }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .opt .x { color: var(--sub); }
+  .opt .why { display: block; color: var(--sub); font-size: 12.5px; margin-top: 2px; }
+  .dir { border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+  .dir .h { font-weight: 700; font-size: 15px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .dir .d { font-size: 13px; color: var(--sub); }
+  .dir .pros { margin-top: 8px; font-size: 12.5px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">WAYFINDER · 决策地图</span>
+  <h1>#103 数据层变更总账 · 对账</h1>
+  <p>2026-08-11 · 从第一性原理出发：先搞清楚「账上写的」和「代码里实际有的」差多少</p>
+</div>
+
+<!-- 起点 -->
+<div class="card">
+  <h2><span class="no">1</span>告诉起点</h2>
+  <div class="grid2">
+    <div class="kv">
+      <div class="k">最终目标</div>
+      <div class="v small">把 #103 数据层变更总账走到终点：<b>18 项变更逐项对账、状态可追溯、剩余工作明确</b>，让这张总账不再是一张「挂了三个月的规格备忘」</div>
+    </div>
+    <div class="kv">
+      <div class="k">当前进度</div>
+      <div class="v small">刚完成代码级对账：<b>18 项中 15 项已落地、1 项已废弃</b>（SM9 拍板删频控）。剩余 = DDL 收编 + #220 补账 + 总账状态更新</div>
+    </div>
+    <div class="kv">
+      <div class="k">经验水平</div>
+      <div class="v small">居家管家代码库<b>有经验</b>：schema 结构、域内 ensure_tables 模式、db.py 迁移路径都摸过</div>
+    </div>
+    <div class="kv">
+      <div class="k">不熟悉之处</div>
+      <div class="v small">「DDL 收编进 db.py」这一步<b>没做过完整实操</b>（生产库迁移风险点）；#220 理论风险的触发路径未实测</div>
+    </div>
+  </div>
+</div>
+
+<!-- 对账总览 -->
+<div class="card">
+  <h2><span class="no">2</span>对账总览：账 vs 代码</h2>
+  <p style="font-size:13px;color:var(--sub);margin-bottom:12px;">总账 #103 的 18 项变更，逐项对照实际代码。结论先行：<b style="color:#248a3d;">账上写「待做」，代码里基本都做完了</b>——实施期各 SM 域开发时已把表建出来了。</p>
+  <table>
+    <thead>
+      <tr><th>变更项</th><th>状态</th><th>实际落点</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>① item_events 表</td><td><span class="badge b-done">已落地</span></td><td class="loc">scripts/物品/events.py</td></tr>
+      <tr><td>② inventory_records 表</td><td><span class="badge b-done">已落地</span></td><td class="loc">scripts/物品/events.py</td></tr>
+      <tr><td>③ photo 表(多图)</td><td><span class="badge b-done">已落地</span></td><td class="loc">events.py · 主图回写 items.photo</td></tr>
+      <tr><td>④ 联动偏好表(频控)</td><td><span class="badge b-gone">已废弃</span></td><td class="loc">SM9 拍板删三态频控 · 不建表</td></tr>
+      <tr><td>⑤ categories.seed_key</td><td><span class="badge b-done">已落地</span></td><td class="loc">db.py migrate_add_seed_key_column</td></tr>
+      <tr><td>⑥ items 购买记录</td><td><span class="badge b-done">已落地</span></td><td class="loc">purchase_records 表(票据凭证域)</td></tr>
+      <tr><td>⑦ 到期日期</td><td><span class="badge b-done">已落地</span></td><td class="loc">item_locations.expiration_date</td></tr>
+      <tr><td>⑧ 最后使用时间</td><td><span class="badge b-done">已落地</span></td><td class="loc">items.last_accessed_at</td></tr>
+      <tr><td>⑨ 最低库存</td><td><span class="badge b-done">已落地</span></td><td class="loc">stock_thresholds 表(快递购物域)</td></tr>
+      <tr><td>⑩ 保养周期/上次保养</td><td><span class="badge b-done">已落地</span></td><td class="loc">warranties 表(票据凭证域)</td></tr>
+      <tr><td>⑪ 维修记录</td><td><span class="badge b-done">已落地</span></td><td class="loc">service_events 表(票据凭证域)</td></tr>
+      <tr><td>⑫ 约定归还日</td><td><span class="badge b-done">已落地</span></td><td class="loc">borrow_records.due_date(记录级修正)</td></tr>
+      <tr><td>⑬ 借用对象表</td><td><span class="badge b-done">已落地</span></td><td class="loc">family_members + object_name</td></tr>
+      <tr><td>⑭ 家人档案表</td><td><span class="badge b-done">已落地</span></td><td class="loc">family_members(家庭协作域)</td></tr>
+      <tr><td>⑮ 证件表</td><td><span class="badge b-done">已落地</span></td><td class="loc">certificates(票据凭证域)</td></tr>
+      <tr><td>⑯ 状态机「找不到」</td><td><span class="badge b-done">已落地</span></td><td class="loc">validators.py STATUSES</td></tr>
+      <tr><td>⑰ photo 单字段→表迁移</td><td><span class="badge b-done">已落地</span></td><td class="loc">photo 表为源 · items.photo 冗余保留</td></tr>
+      <tr><td>⑱ 位置字符串→位置体系</td><td><span class="badge b-done">已落地</span></td><td class="loc">location_nodes(#119 已收编 db.py)</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--sub);margin-top:12px;">15 项 ✅ 已落地、1 项 ⛔ 已废弃、真正缺的只有 <b style="color:#c77100;">2 项收尾</b>：① 域内表的 DDL 还没收编进 <span class="loc">db.py init_db</span>（各域靠 ensure_tables 自持）；② #220 补账（日期重建路径丢 category_id，理论风险）。</p>
+</div>
+
+<!-- 盲区 -->
+<div class="card">
+  <h2><span class="no">3</span>发现盲区</h2>
+  <ul class="plain">
+    <li>
+      <div class="t">⚠️ 盲区 1 · 规则偏离已发生：D1 硬规则说「最后处理、单开 ISSUE」，但实施期各域已自持建表</div>
+      <div class="d">总账说数据层改动必须最后统一做，实际是 SM1/5/6/7 开发时各自 ensure_tables 把表建了。这不是坏事（域内自持模式可工作），但<b>「最后统一收编」这件事一直没发生</b>，账和代码已经对不上。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 2 · 总账还挂着一条已废弃的变更（联动偏好表）</div>
+      <div class="d">SM9 审查（2026-08-10）已拍板删三态频控、顺路建议无条件。总账 #103 第 4 项还写着「新增联动偏好表」，没更新——这就是账过时的直接证据。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 3 · #220 理论风险没裁决：日期重建路径丢 category_id</div>
+      <div class="d">migrate_add_date_columns 重建 items 时列清单不含 category_id（低概率但真实）。D1 收尾时顺手修，还是标注 won't-fix？需要拍板。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 4 · 「收编进 db.py」= 动生产库初始化路径，有迁移风险</div>
+      <div class="d">把 4 个域的 DDL 收编进 init_db 后，老库升级会走一遍全部建表路径。需要迁移测试兜底（test_db_schema.py 已有 location_nodes 先例），否则可能踩「老库重建丢列」这类坑（#220 同类）。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 5 · 测试覆盖只防删表，不防「收编不完整」</div>
+      <div class="d">test_db_schema.py 断言了 location_nodes/fixed_location，但没断言 item_events 等域表的收编。收编后要不要把全部 D1 表列入「必须存在」清单？</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 6 · 总账自身的归宿：全部落地后，是 close 还是转成「已完成记录」？</div>
+      <div class="d">总账是规格期产物，实施完成后应更新状态并归档，避免变成长期悬挂的 open issue。T11 #115 实施票也要同步。</div>
+    </li>
+  </ul>
+</div>
+
+<!-- 采访澄清 -->
+<div class="card">
+  <h2><span class="no">4</span>采访澄清</h2>
+
+  <div class="q">
+    <div class="qtitle">Q1 · 成功的标准是什么？</div>
+    <div class="qbg">背景：#103 的 18 项变更里 15 项代码层面已存在，但「账」还没更新，总账仍是规格期原样。所以「完成」至少有两个层次——是「账对上就行」，还是「账对上 + 代码结构也收编到位」？</div>
+    <div class="opts">
+      <div class="opt"><span class="letter">A</span><div><span class="rec">对账闭环（推荐先确认）</span>：总账 18 项逐项标注实际状态（✅/⛔/待办），#220 裁决，总账 + T11 状态更新。不动现有代码结构。<span class="why">最小、零风险，先把「账」修对，这是第一性原理的第一步。</span></div></div>
+      <div class="opt"><span class="letter">B</span><div><span class="x">对账 + DDL 收编</span>：A 之外，再把 4 个域的 ensure_tables DDL 收编进 db.py init_db，统一建表入口 + 迁移测试。<span class="why">工作量约 A 的 3-4 倍，动生产库初始化路径，但真正完成「最后统一处理」。</span></div></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle">Q2 · 方向差距很大，你想走哪条路？</div>
+    <div class="qbg">背景：这是 wayfinder 的原型验证环节，我给出 3 个差距明显的方向，你选一个，后续再收敛细节。差距 = 动代码的程度从 0 到「重构建表入口」。</div>
+    <div class="opts">
+      <div class="opt"><span class="letter">A</span><div>只对账不改代码：更新 #103 总账 + 裁决 #220 + 同步 T11。<span class="why">30 分钟级别，交付一张可信的总账。</span></div></div>
+      <div class="opt"><span class="letter">B</span><div><span class="rec">对账 + 收编 + 迁移测试（推荐）</span>：A 的基础上，把 4 域 DDL 收编进 db.py，测试兜底（沿用 location_nodes 先例），#220 顺手修。<span class="why">一次把 D1 真正做完，账和结构都对上。</span></div></div>
+      <div class="opt"><span class="letter">C</span><div>对账 + 重构「域表自持 → 统一 schema 模块」：把各域 DDL 抽成统一 schema.py 注册表，db.py 按注册表建表。<span class="why">最彻底但改动面最大，可能引入新风险，适合想一劳永逸。</span></div></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle">Q3 · #220 补账（日期重建丢 category_id）怎么处理？</div>
+    <div class="qbg">背景：#220 是 D1 #119/#120 修复时发现的：老库若 items 表还带日期列，重建路径的列清单不含 category_id，会丢列丢数据。概率接近零（生产库已验证不触发），但属真实理论风险。</div>
+    <div class="opts">
+      <div class="opt"><span class="letter">A</span><div><span class="rec">顺手修掉（推荐）</span>：重建列清单动态保留 category_id（与 #120 fixed_location 同类修复）。<span class="why">改 3-5 行 + 一个回归测试，成本极低。</span></div></div>
+      <div class="opt"><span class="letter">B</span><div>标 won't-fix：概率接近零、生产库不触发，关闭并记录理由。</div></div>
+      <div class="opt"><span class="letter">C</span><div>先不动，留 open 观察。</div></div>
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle">Q4 · 联动偏好表（总账第 4 项）的最终标记？</div>
+    <div class="qbg">背景：SM9 已拍板删三态频控。总账还挂着它，需要明确标记为「已废弃·不实施」，避免下次对账再误判。</div>
+    <div class="opts">
+      <div class="opt"><span class="letter">A</span><div><span class="rec">标记已废弃（推荐）</span>：总账内注明「SM9 拍板删除，不建表」。</div></div>
+      <div class="opt"><span class="letter">B</span><div>直接从总账移除（不留痕）。</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">Mavis · wayfinder 会话 · 对账数据来自代码级核查（2026-08-11 08:5x）</div>
+
+</body>
+</html>

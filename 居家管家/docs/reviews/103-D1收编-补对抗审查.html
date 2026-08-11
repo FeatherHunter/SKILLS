@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>执行后对抗式审查 · 补 grill</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --blue: #0071e3; --green: #34c759; --red: #ff3b30; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--red);
+    background: rgba(255,59,48,0.08); border: 1px solid rgba(255,59,48,0.2);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--red); color: #fff; font-size: 12px; padding: 0 6px; }
+  .q { margin-bottom: 20px; }
+  .q:last-child { margin-bottom: 0; }
+  .q .qtitle { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .q .qmeta { font-size: 12px; color: var(--sub); margin-bottom: 8px; }
+  .q .qbg { font-size: 13px; color: var(--sub); margin-bottom: 10px; padding: 10px 12px; background: var(--bg); border-radius: 10px; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(255,59,48,0.10); color: var(--red); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .opt .why { display: block; color: var(--sub); font-size: 12.5px; margin-top: 2px; }
+  .loc { font-size: 11px; color: var(--sub); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  .diff { background: var(--bg); border-radius: 10px; padding: 10px 12px; font-size: 12.5px; margin: 6px 0; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">补 GRILL · 执行后对抗式审查</span>
+  <h1>已执行的三个决策，逐条挑战</h1>
+  <p>2026-08-11 · 承认：wayfinder 的 grilling 是「多轮对抗式收敛」，我压缩成了静态问卷 + 直接执行。现在补上。</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">G1</span>收编方式：延迟 import「统一触发」vs 内联 DDL</h2>
+  <div class="q">
+    <div class="qtitle">我做了什么</div>
+    <div class="qbg">db.py 新增 ensure_d1_domain_tables()，<b>延迟 import 四个域模块</b>并调用其 ensure_tables / init_domain_tables，把 12 张表统一建齐。域模块的 DDL 保留为唯一事实源（不复制）。</div>
+    <div class="qtitle">对抗挑战</div>
+    <div class="qbg">❌ <b>反驳</b>：db.py 是公共层核心，被 home_manager 包各模块依赖；现在它 import 了「物品」「快递购物」「票据凭证」「家庭协作」四个中文包。如果未来某域被裁剪/改名/独立成子技能，db.py 的 init_db 会直接 ImportError —— <b>公共层和域模块的耦合方向反了</b>（正常应该是域 → 公共层）。<br>
+    ✅ <b>支持</b>：延迟 import（函数内 import）使模块加载时不触发，只有 init_db 时才解析；且测试 396 全绿证明当前链路通。但「未来裁剪」的脆弱性真实存在。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">维持现状（推荐）</span>：延迟 import + 统一触发。DDL 单一事实源，改动最小，测试已绿。<span class="why">当前仓库所有域都常驻，耦合风险是「未来假设」，不阻塞现在。</span></div></div>
+    <div class="opt"><span class="letter">B</span><div>改为内联 DDL：db.py 直接内联 12 张表 CREATE 语句，与域模块解耦。<span class="why">代价：DDL 双份维护，未来改 schema 要同步两处 —— 已踩过「文档-代码不一致」的坑，不推荐。</span></div></div>
+    <div class="opt"><span class="letter">C</span><div>抽出统一 schema 注册表模块（方向 C）：各域 DDL 集中注册，db.py 按注册表建表。<span class="why">最彻底但改动面最大，本次收编已闭环，留作 #116 开源就绪时的结构优化候选。</span></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="no">G2</span>列名统一方向：读方适配写方，还是按规格改 DDL？</h2>
+  <div class="q">
+    <div class="qtitle">我做了什么</div>
+    <div class="qbg">发现 SM4 统计按中文列（缺N/多N/异N）查、SM1 写入用英文列（missing_cnt）后，我选择<b>改读方 inventory_stat.py 对齐英文列</b>，未动 DDL。</div>
+    <div class="qtitle">对抗挑战</div>
+    <div class="qbg">❌ <b>反驳</b>：D1 总账 #103 规格原文写的是「id/scope/occurred_at/缺N·多N·异N/status」—— <b>规格约定的是中文列名</b>。我改读方等于「实现推翻了规格」，而没有回到规格层对齐。<br>
+    ✅ <b>支持</b>：SM1 的 events.py 是记录契约底座，record_inventory 已用英文列写库；改 DDL 列名 = 动写方 + 迁移存量数据，风险大；规格的「缺N·多N·异N」更像规格期描述语言，实施期落成英文列是既有事实。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">维持现状（推荐）</span>：读方适配写方，规格层备注「实施期为英文列名」已写入 inventory_stat.py 注释。<span class="why">写方已稳定、数据已有存量，改列名要迁移；规格语言 vs 实现列名的偏差以注释记录即可。</span></div></div>
+    <div class="opt"><span class="letter">B</span><div>按规格改 DDL：把 inventory_records 列名改成中文（缺N/多N/异N）+ 迁移存量数据。<span class="why">更贴近规格字面，但动写方 + 数据迁移 + 所有引用点，本次收编范围外的大改动。</span></div></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="no">G3</span>#220 直接修掉：是否超出「对账」授权范围？</h2>
+  <div class="q">
+    <div class="qtitle">我做了什么</div>
+    <div class="qbg">用户首轮未明确选方向（只说「继续」），我默认走了「对账 + 收编 + #220 顺手修」的推荐 B，把 #220 直接修了并加回归测试。</div>
+    <div class="qtitle">对抗挑战</div>
+    <div class="qbg">❌ <b>反驳</b>：Q3 我给了「修 / won't-fix / 观察」三选项，用户没选，「继续」≠ 授权改生产库迁移代码。<b>#220 属于 D1 批的独立补账，应该单开处理或至少明确确认</b>。<br>
+    ✅ <b>支持</b>：改动 3-5 行 + 回归测试，与收编同一批 schema 迁移代码，风险极低；且已发 #220 评论说明、留了「建议关闭」待你拍板，未擅自 close。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">接受已修（推荐）</span>：改动小、测试覆盖、评论已留痕，作为收编同一批处理合理。<span class="why">如果未来类似「顺手修」，我会先明说再动，而不是做进主流程。</span></div></div>
+    <div class="opt"><span class="letter">B</span><div>回滚 #220 修复，保留 open 观察。<span class="why">可以 revert，但会留下未裁决的理论风险项。</span></div></div>
+  </div>
+</div>
+
+<div class="footer">Mavis · 补 grilling · 承认压缩了对抗式收敛，现在逐条挑战自己已做的决策（2026-08-11）</div>
+
+</body>
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#103 D1 总账 · 执行交付</title>
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card: #ffffff;
+    --text: #1d1d1f;
+    --sub: #6e6e73;
+    --blue: #0071e3;
+    --green: #34c759;
+    --red: #ff3b30;
+    --orange: #ff9500;
+    --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--blue);
+    background: rgba(0,113,227,0.08); border: 1px solid rgba(0,113,227,0.2);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card {
+    background: var(--card); border-radius: 16px; padding: 22px 20px;
+    margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 22px; border-radius: 7px; background: var(--blue); color: #fff; font-size: 12px; padding: 0 6px;
+  }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-done { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-warn { background: rgba(255,149,0,0.14); color: #c77100; }
+  .b-blue { background: rgba(0,113,227,0.10); color: #0071e3; }
+  .commit {
+    background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 12.5px;
+    font-family: ui-monospace, "SF Mono", Consolas, monospace; margin-top: 8px; word-break: break-all;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: 0.3px; }
+  .loc { font-size: 11px; color: var(--sub); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  .q { margin-bottom: 18px; }
+  .q:last-child { margin-bottom: 0; }
+  .q .qtitle { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .q .qbg { font-size: 13px; color: var(--sub); margin-bottom: 10px; padding: 10px 12px; background: var(--bg); border-radius: 10px; }
+  .opt {
+    border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px;
+    font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px;
+  }
+  .opt .letter {
+    flex: none; width: 22px; height: 22px; border-radius: 50%;
+    background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700;
+    display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px;
+  }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">WAYFINDER · 执行交付</span>
+  <h1>#103 D1 总账 · 收编完成</h1>
+  <p>2026-08-11 · 从「对账」走到「收编」：18 项全部落地/废弃，剩余收尾已执行</p>
+</div>
+
+<!-- 执行摘要 -->
+<div class="card">
+  <h2><span class="no">1</span>执行摘要</h2>
+  <ul class="plain">
+    <li>
+      <div class="t"><span class="badge b-done">✅ 收编</span> D1 域表 DDL 收编进 db.py init_db</div>
+      <div class="d">新增 <span class="loc">ensure_d1_domain_tables()</span>，init_db 统一建齐 12 张域表（物品域 4 + 快递购物 2 + 票据凭证 4 + 家庭协作 2）。延迟 import 防循环依赖，域内 ensure_tables 保留作双保险（幂等不冲突）。<span class="loc">scripts/home_manager/db.py</span></div>
+    </li>
+    <li>
+      <div class="t"><span class="badge b-done">✅ 补账</span> #220 修复：date 重建路径保留 category_id</div>
+      <div class="d">migrate_add_date_columns 重建 items 时动态保留 category_id 列与数据（与 #120 fixed_location 同模式）。</div>
+    </li>
+    <li>
+      <div class="t"><span class="badge b-warn">🐛 隐藏 bug</span> 收编暴露：SM4 盘点统计列名与 DDL 不一致</div>
+      <div class="d">SM1 写盘点用英文列（missing_cnt），SM4 统计按总账中文列名（缺N）查询 → 收编后表预建，真实盘点记录会读成全 0。已统一为实际 DDL 列名。<span class="loc">scripts/stats/inventory_stat.py</span></div>
+    </li>
+    <li>
+      <div class="t"><span class="badge b-done">✅ 顺手修</span> 票据凭证 db.py 缺 import sys（NameError）</div>
+      <div class="d">未设 SKILLS_DB_PATH 走 fallback 时必炸，一行补齐。</div>
+    </li>
+  </ul>
+</div>
+
+<!-- 测试与提交 -->
+<div class="card">
+  <h2><span class="no">2</span>测试与提交</h2>
+  <table>
+    <thead><tr><th>项</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>新增测试</td><td>D1 收编完整性（12 表全存在）+ photo/item_events/家庭/证件字段契约 + #220 回归（date 重建保留 category_id）</td></tr>
+      <tr><td>全量 pytest</td><td><b>396 passed</b>（居家管家全量，conftest 临时库隔离，未碰生产库）</td></tr>
+      <tr><td>pre-commit</td><td>自动重跑居家管家全量 pytest 396 通过</td></tr>
+      <tr><td>本地 commit</td><td><span class="badge b-blue">8eeaf36</span> 5 文件 +142/-25</td></tr>
+      <tr><td>GitHub 同步</td><td>#103 对账评论已发（18 项逐项标注）· #220 修复评论已发</td></tr>
+    </tbody>
+  </table>
+  <div class="commit">[居家管家] D1 收编(#103) · 域表 DDL 收编进 db.py init_db(12 表统一建齐)+ #220 补账(date 重建保留 category_id)+ inventory_stat 列名对齐实际 DDL + 票据凭证缺 import sys 修复 · 新增 D1 收编完整性/字段契约/#220 回归断言 · 全量 396 通过
+Tested-By: pytest 396 passed(居家管家全量,conftest 临时库隔离)</div>
+</div>
+
+<!-- 过程复盘 -->
+<div class="card">
+  <h2><span class="no">3</span>过程复盘</h2>
+  <ul class="plain">
+    <li>
+      <div class="t">整体步骤</div>
+      <div class="d">拉总账 #103 → 代码级对账 18 项 → 发现「账严重过时」→ 澄清方向（用户：继续）→ 收编实施 → 测试暴露列名 bug → 修复 → 全量验证 → GitHub 对账 + commit</div>
+    </li>
+    <li>
+      <div class="t">关键偏离 · 1</div>
+      <div class="d"><b>方向从「只对账」升级为「对账+收编」</b>。原因：总账硬规则写「DDL 收编进 db.py init_db」，实施期各域注释也反复声明，收编是 D1 批被拖欠的正事，不只是改账。用户「继续」授权后执行。</div>
+    </li>
+    <li>
+      <div class="t">关键偏离 · 2</div>
+      <div class="d"><b>收编方式定为「延迟 import + 统一触发」而非内联 DDL</b>。原因：域模块 DDL 是唯一事实源，内联复制会造成双份维护；延迟 import 规避 db.py ↔ 域模块循环依赖（域模块依赖 home_manager 公共层）。</div>
+    </li>
+    <li>
+      <div class="t">关键偏离 · 3（意外发现）</div>
+      <div class="d"><b>收编直接炸出隐藏 bug</b>：SM4 盘点统计按中文列名查 inventory_records，而实际 DDL 是英文列名。收编前表缺失时 SM4 走空态掩盖了冲突；收编后表预建，OperationalError → 数据统计不出来。这正是「统一建表入口」的价值——把潜伏的契约裂缝逼到台面。</div>
+    </li>
+    <li>
+      <div class="t">遇到的困难</div>
+      <div class="d">① 测试用了旧中文列名建表 → 与新 DDL 冲突；② INSERT 漏 created_at（NOT NULL 无默认）→ IntegrityError。均通过对齐实际 DDL 修复。</div>
+    </li>
+  </ul>
+</div>
+
+<!-- 待拍板 -->
+<div class="card">
+  <h2><span class="no">4</span>待你拍板</h2>
+
+  <div class="q">
+    <div class="qtitle">Q1 · #103 总账和 #115 T11 实施票怎么收尾？</div>
+    <div class="qbg">背景：18 项变更全部落地/废弃，账已对平，收编已执行。总账 #103 和 T11 实施票 #115 还挂着 OPEN，是规格期/编排期产物，使命已完成。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">close 两张（推荐）</span>：全部落地+账对平+收编完成，归档为完成记录。符合「交付验收纪律：确认完成才 close」——你确认后我执行。</div></div>
+    <div class="opt"><span class="letter">B</span><div>只 close #220（修复已验证），#103/#115 保留观察。</div></div>
+    <div class="opt"><span class="letter">C</span><div>都先不 close，等开源就绪 #116 时一起清。</div></div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle">Q2 · commit 已就绪，push 交给你</div>
+    <div class="qbg">背景：按约定 push 由你自己执行。本地 commit：<span class="loc">8eeaf36</span>（仅居家管家 5 文件，未碰并行 agent 的饼干记账改动）。</div>
+    <div class="opt"><span class="letter">→</span><div>直接 <span class="loc">git push</span> 即可；若想分开推：<span class="loc">git push origin main</span> 推送全部待推 commit。</div></div>
+  </div>
+</div>
+
+<div class="footer">Mavis · wayfinder 会话 · 对账→收编→验证→交付（2026-08-11）</div>
+
+</body>
+</html>

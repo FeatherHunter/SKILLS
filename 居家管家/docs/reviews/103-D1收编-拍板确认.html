@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#103 拍板确认 · 收尾</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --blue: #0071e3; --green: #34c759; --red: #ff3b30; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--green);
+    background: rgba(52,199,89,0.10); border: 1px solid rgba(52,199,89,0.25);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--green); color: #fff; font-size: 12px; padding: 0 6px; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-done { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-blue { background: rgba(0,113,227,0.10); color: #0071e3; }
+  .commit { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 12.5px; font-family: ui-monospace, "SF Mono", Consolas, monospace; margin-top: 8px; word-break: break-all; }
+  .q { margin-bottom: 18px; }
+  .q:last-child { margin-bottom: 0; }
+  .q .qtitle { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .q .qbg { font-size: 13px; color: var(--sub); margin-bottom: 10px; padding: 10px 12px; background: var(--bg); border-radius: 10px; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">拍板确认</span>
+  <h1>G1-G3 全部维持现状 · 收尾清单</h1>
+  <p>2026-08-11 · 三个对抗决策已确认，无需代码改动，commit 有效</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">✓</span>拍板结果</h2>
+  <ul class="plain">
+    <li>
+      <div class="t"><span class="badge b-done">G1 · A</span> 收编方式维持「延迟 import + 统一触发」</div>
+      <div class="d">DDL 单一事实源保留在域模块，db.py 只做统一建表入口。耦合风险属未来假设，不阻塞现在。</div>
+    </li>
+    <li>
+      <div class="t"><span class="badge b-done">G2 · A</span> 列名统一维持「读方适配写方」</div>
+      <div class="d">inventory_stat.py 对齐英文列（missing_cnt/extra_cnt/diff_cnt），规格偏差以注释记录。不迁移存量。</div>
+    </li>
+    <li>
+      <div class="t"><span class="badge b-done">G3 · A</span> #220 修复接受</div>
+      <div class="d">改动小、测试覆盖、评论留痕，作为收编同一批处理。教训已记：未来「顺手修」先明说再动。</div>
+    </li>
+  </ul>
+  <div class="commit">[居家管家] D1 收编(#103) · 域表 DDL 收编进 db.py init_db(12 表统一建齐)+ #220 补账(date 重建保留 category_id)+ inventory_stat 列名对齐实际 DDL + 票据凭证缺 import sys 修复 · 新增 D1 收编完整性/字段契约/#220 回归断言 · 全量 396 通过
+Tested-By: pytest 396 passed(居家管家全量,conftest 临时库隔离)
+→ commit 8eeaf36（本地已提交，待你 push）</div>
+</div>
+
+<div class="card">
+  <h2><span class="no">1</span>最后一项待拍板：#103 / #115 归宿</h2>
+  <div class="q">
+    <div class="qtitle">背景</div>
+    <div class="qbg">18 项变更全部落地/废弃、账已对平、收编已执行且你已确认三个决策。#103（总账）和 #115（T11 实施票）都是规格期/编排期产物，使命已完成，仍挂着 OPEN。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">close 两张（推荐）</span>：全部落地 + 账对平 + 决策确认，归档为完成记录。确认后我执行 close。</div></div>
+    <div class="opt"><span class="letter">B</span><div>只 close #220（修复已验证），#103/#115 保留观察。</div></div>
+    <div class="opt"><span class="letter">C</span><div>都先不 close，等开源就绪 #116 时一起清。</div></div>
+  </div>
+</div>
+
+<div class="footer">Mavis · wayfinder #103 · 对账→收编→对抗审查→拍板（2026-08-11）</div>
+
+</body>
+</html>

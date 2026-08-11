@@ -905,6 +905,7 @@ def main():
         'live_profile_update': ('改档案', 'receipt'),
         'live_diet_add': ('记一餐', 'receipt'),
         'live_diet_batch': ('批量补记饮食', 'receipt'),
+        'live_diet_batch_meal': ('记一餐(同餐合并)', 'receipt'),
         'live_diet_copy': ('复制昨日饮食', 'receipt'),
         'live_diet_update': ('改饮食记录', 'receipt'),
         'live_diet_update_date': ('改某日饮食', 'receipt'),
@@ -921,7 +922,7 @@ def main():
     }
     active = None
     for flag_name in ('live_profile_set', 'live_profile_activity', 'live_profile_update',
-                      'live_diet_add', 'live_diet_batch', 'live_diet_copy',
+                      'live_diet_add', 'live_diet_batch', 'live_diet_batch_meal', 'live_diet_copy',
                       'live_diet_update', 'live_diet_update_date', 'live_diet_delete',
                       'live_diet_delete_meal', 'live_diet_delete_date', 'live_diet_delete_range',
                       'live_water_add', 'live_product_add', 'live_product_update',

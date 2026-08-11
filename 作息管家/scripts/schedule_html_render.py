@@ -161,12 +161,25 @@ def render_list_events(date: str, *, include_inactive: bool = True) -> dict:
         "copy_prompt": _build_list_events_copy_prompt(date, all_events),
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    data = _ensure_base_meta(data, "查日程", "查日程")
+    data.update(_build_base_scene_block(
+        "查日程", "查日程",
+        [f"{summary.get('total_active', 0)} 条活跃 · {summary.get('total_inactive', 0)} 条停用",
+         f"已完成 {summary.get('completed_count', 0)} · 未复盘 {summary.get('unreviewed_count', 0)}"],
+        [{"heading": "事件明细", "rows": [
+            f"{e.get('time_start') or ''}-{e.get('time_end') or ''} {e.get('title') or ''} ({e.get('category') or ''})"
+            for e in (all_events or [])[:15]
+        ] if all_events else ["今日无日程计划"]},
+         {"heading": "同步状态", "rows": [
+            f"未同步飞书 {summary.get('unsynced_count', 0)} 条",
+         ]}],
+    ))
     return {
         "status": "ok",
         "data": data,
         "message": f"✓ {date} 日程 HTML 渲染数据已生成({summary['total_active']} 活跃 + {summary['total_inactive']} 停用)",
     }
-
 
 def render_query_plans(dates_raw: str) -> dict:
     """
@@ -523,6 +536,48 @@ def record_output_path(mode: str, meta: dict = None) -> Path:
         # plan-receipt 也走此函数(向后兼容),实际由 plan_receipt 中文映射处理
         return _naming_path(CN_COMMAND_MAP["plan_receipt"], "plan/receipt")
     return _naming_path("unknown")
+
+
+def _build_base_scene_block(command_cn: str, wake_word: str,
+                            summary: list, sections: list,
+                            buttons: list = None) -> dict:
+    """#269 补齐: 构造 Base scene.snapshot + copy_log 数据块（复制数据/日志按钮用）
+
+    领域无关: 技能把场景数据组织成 title/summary/sections 通用结构,
+    Base buildDataText/buildLogText 只渲染（用户决策 2: 接口参数要什么技能就传什么）。
+    """
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return {
+        "scene": {
+            "scene_id": command_cn,
+            "snapshot": {
+                "title": command_cn,
+                "summary": summary,
+                "sections": sections,
+            },
+            "buttons": buttons or [],
+        },
+        "copy_log": {
+            "thinking": f"意图理解: {command_cn} → schedule_cli → 渲染 HTML",
+            "data_structure": "schedule_records/schedule_plans 表 · 查询/写入",
+            "call_chain": "schedule_cli.py → schedule_html_render.py → Base injector",
+            "timestamp": now,
+            "exception": "无",
+        },
+    }
+
+
+def _ensure_base_meta(payload: dict, command_cn: str, wake_word: str = "") -> dict:
+    """#269 补齐: 确保 payload.meta 含 Base 信封契约必填字段（复制数据/日志标题用）"""
+    meta = payload.get("meta", {})
+    meta.setdefault("command_cn", command_cn)
+    meta.setdefault("occurred_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    meta.setdefault("skill_name", "作息管家")
+    meta.setdefault("skill_version", "v1.2")
+    if wake_word:
+        meta.setdefault("wake_word", wake_word)
+    payload["meta"] = meta
+    return payload
 
 
 def title_for_mode(meta: dict) -> str:
@@ -969,6 +1024,20 @@ def render_records_detail(date: str, record_id: int = None) -> dict:
         ),
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "作息详情", "查作息")
+    payload.update(_build_base_scene_block(
+        "作息详情", "查作息",
+        [f"{len(records)} 条记录 · 总时长 {_fmt_dur(total_minutes)}",
+         f"日期 {date}"],
+        [{"heading": "记录明细", "rows": [
+            f"{r.get('time_start') or ''}-{r.get('time_end') or ''} {r.get('activity') or ''} ({r.get('category') or ''})"
+            for r in (records or [])[:15]
+        ]},
+         {"heading": "统计", "rows": [
+            f"总时长 {_fmt_dur(total_minutes)} · 共 {len(records)} 条",
+         ]}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -1095,6 +1164,20 @@ def render_plans_preview(date: str, plan_events: list, locked_events: list = Non
         "copy_prompt": copy_prompt,
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "商量计划预览", "商量计划")
+    payload.update(_build_base_scene_block(
+        "商量计划预览", "商量计划",
+        [f"候选 {len(plan_events)} 段 · 冲突 {len(conflicts)} 处 · 覆盖率 {coverage_pct}%"],
+        [{"heading": "候选事件", "rows": [
+            f"{e.get('time_start') or ''}-{e.get('time_end') or ''} {e.get('title') or ''} ({e.get('category') or ''})"
+            for e in (plan_events or [])[:15]
+        ] if plan_events else ["无候选事件"]},
+         {"heading": "已锁定", "rows": [
+            f"{e.get('time_start') or ''}-{e.get('time_end') or ''} {e.get('title') or ''}"
+            for e in (locked_events or [])[:10]
+        ] if locked_events else ["无已锁定事件"]}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -1158,6 +1241,19 @@ def render_plans_review(date: str) -> dict:
         "ai_questions": ai_questions_for_day(date, [], 0, 0, 0),  # 占位
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "复盘", "复盘")
+    payload.update(_build_base_scene_block(
+        "复盘", "复盘",
+        [f"{date} · {total} 段事件 · {reviewed_count} 已标记"],
+        [{"heading": "计划事件", "rows": [
+            f"{e.get('time_start') or ''}-{e.get('time_end') or ''} {e.get('title') or ''}: {e.get('completion') or '未复盘'}"
+            for e in (plan_events or [])[:15]
+        ] if plan_events else ["无计划事件"]},
+         {"heading": "复盘统计", "rows": [
+            f"已标记 {reviewed_count}/{total}",
+         ]}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -1277,6 +1373,26 @@ def render_receipt(record_id: int) -> dict:
             "review":   prompt_review,     # §1 按钮 3:晚点复盘
         },        "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "记作息回执", "记作息")
+    payload.update(_build_base_scene_block(
+        "记作息回执", "记作息",
+        [f"今日已记录 {today_count} 条 · 累计 {today_mins} 分钟",
+         f"本条: {record.get('activity') or ''} {record.get('time_start') or ''}-{record.get('time_end') or ''}"],
+        [{"heading": "本条记录", "rows": [
+            f"id={record_id} · {date}",
+            f"{record.get('activity') or ''} {record.get('time_start') or ''}-{record.get('time_end') or ''}",
+            f"时长 {record.get('duration_minutes') or 0} 分钟",
+            f"分类: {category}",
+        ]},
+         {"heading": "今日统计", "rows": [
+            f"分类排名: {category} #{category_rank}/{category_total}",
+            f"本周累计 {week_count} 条",
+         ]}],
+        buttons=[{"label": "继续记下一条", "text": prompt_continue, "kind": "primary"},
+                 {"label": "看今日全貌", "text": prompt_overview, "kind": "primary"},
+                 {"label": "晚点复盘", "text": prompt_review, "kind": "primary"}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -1502,6 +1618,12 @@ def render_record_result(record_id: int, warning: str = None) -> dict:
             "record_id": record_id,
             "date": date,
             "is_today": is_today,
+            # #269 Base 信封契约必填字段（复制数据/日志标题用）
+            "command_cn": "记作息结果",
+            "occurred_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "skill_name": "作息管家",
+            "wake_word": "记作息",
+            "skill_version": "v1.2",
             "inference_window": {
                 "start": _fmt_hhmm(window_start_min),
                 "end": record.get("time_end") or "00:00",
@@ -1528,6 +1650,42 @@ def render_record_result(record_id: int, warning: str = None) -> dict:
         "prompts": prompts,
         "warning": warning,
         "errors": [],
+        # #269 补齐: snapshot 结构化数据（复制数据/日志按钮 · Base 领域无关接口）
+        "scene": {
+            "scene_id": "record-result",
+            "snapshot": {
+                "title": "记作息结果",
+                "summary": [
+                    f"今日已记录 {today_count} 条 · 累计 {today_mins} 分钟",
+                    f"本条: {record.get('activity') or ''} {record.get('time_start') or ''}-{record.get('time_end') or ''}",
+                    f"覆盖 {coverage_pct}% · 缺口 {len(gap_slots)} 段",
+                ],
+                "sections": [
+                    {"heading": "本条记录", "rows": [
+                        f"id={record_id} · {date}",
+                        f"{record.get('activity') or ''} {record.get('time_start') or ''}-{record.get('time_end') or ''}",
+                        f"时长 {record.get('duration_minutes') or 0} 分钟",
+                        f"分类: {category}",
+                    ]},
+                    {"heading": "今日统计", "rows": [
+                        f"分类排名: {category} #{category_rank}/{category_total}",
+                        f"本周累计 {week_count} 条",
+                    ]},
+                ],
+            },
+            "buttons": [
+                {"label": "继续记下一条", "text": prompts.get("continue", ""), "kind": "primary"},
+                {"label": "看今日全貌", "text": prompts.get("overview", ""), "kind": "primary"},
+                {"label": "晚点复盘", "text": prompts.get("review", ""), "kind": "primary"},
+            ],
+        },
+        "copy_log": {
+            "thinking": "意图理解: 用户报作息 → add CLI 写库 → 生成三件套结果 HTML",
+            "data_structure": f"schedule_records 表 · INSERT id={record_id}",
+            "call_chain": "schedule_cli.py add → render-record-result → injector",
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "exception": "无",
+        },
     }
     return {
         "status": "ok",
@@ -1683,6 +1841,24 @@ def render_record_receipt_edit(record_id: int, diff: dict = None) -> dict:
         },
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "修正作息回执", "改作息")
+    payload.update(_build_base_scene_block(
+        "修正作息回执", "改作息",
+        [f"id={record_id} 已纠正 · 共 {diff_count} 处变更",
+         f"{record.get('activity') or ''} {record.get('time_start') or ''}-{record.get('time_end') or ''}"],
+        [{"heading": "变更明细", "rows": [
+            f"{d.get('field') or ''}: {d.get('old') or ''} → {d.get('new') or ''}"
+            for d in diff_lines[:12]
+        ] if diff_lines else ["无变更"]},
+         {"heading": "今日统计", "rows": [
+            f"今日 {today_count} 条 · 累计 {today_mins} 分钟",
+            f"本周累计 {week_count} 条",
+         ]}],
+        buttons=[{"label": "继续记下一条", "text": prompt_continue, "kind": "primary"},
+                 {"label": "看今日全貌", "text": prompt_overview, "kind": "primary"},
+                 {"label": "晚点复盘", "text": prompt_review, "kind": "primary"}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -1806,6 +1982,26 @@ def render_plan_receipt(plan_id: int, action: str = "update") -> dict:
         "prompts": {"adjust": prompt_adjust, "overview": prompt_overview, "review": prompt_review},
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "改日程回执", "改日程")
+    base_scene = _build_base_scene_block(
+        "改日程回执", "改日程",
+        [f"{plan.get('title') or ''} {plan.get('time_start') or ''}-{plan.get('time_end') or ''}",
+         f"状态: {plan.get('completion') or '未复盘'} · 日期: {date}"],
+        [{"heading": "计划详情", "rows": [
+            f"id={plan_id} · {date}",
+            f"{plan.get('title') or ''} {plan.get('time_start') or ''}-{plan.get('time_end') or ''}",
+            f"分类: {plan.get('category') or ''}",
+            f"完成: {plan.get('completion') or '未复盘'}",
+        ]},
+         {"heading": "今日计划统计", "rows": [
+            f"今日 {stats.get('today_count', 0)} 条 · 完成率 {stats.get('completion_rate', 0)}%",
+         ]}],
+        buttons=[{"label": "调整计划", "text": prompt_adjust, "kind": "primary"},
+                 {"label": "看今日全貌", "text": prompt_overview, "kind": "primary"},
+                 {"label": "晚点复盘", "text": prompt_review, "kind": "primary"}],
+    )
+    payload.update(base_scene)
     return {
         "status": "ok", "data": payload,
         "message": f"✓ id={plan_id} 计划 {action_verb_zh}回执已生成(今日 {stats['today_count']} 条计划,完成率 {stats['completion_rate']}%)",
@@ -1853,6 +2049,24 @@ def render_plan_receipt_add(plan_id: int) -> dict:
         "prompts": {"continue": prompt_continue, "overview": prompt_overview, "review": prompt_review},
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "补日程回执", "补日程")
+    payload.update(_build_base_scene_block(
+        "补日程回执", "补日程",
+        [f"{plan.get('title') or ''} {plan.get('time_start') or ''}-{plan.get('time_end') or ''}",
+         f"今日 {stats.get('today_count', 0)} 条计划 · 完成率 {stats.get('completion_rate', 0)}%"],
+        [{"heading": "计划详情", "rows": [
+            f"id={plan_id} · {plan.get('date') or ''}",
+            f"{plan.get('title') or ''} {plan.get('time_start') or ''}-{plan.get('time_end') or ''}",
+            f"分类: {plan.get('category') or ''}",
+        ]},
+         {"heading": "今日统计", "rows": [
+            f"今日 {stats.get('today_count', 0)} 条 · 完成率 {stats.get('completion_rate', 0)}%",
+         ]}],
+        buttons=[{"label": "继续补下一条", "text": prompt_continue, "kind": "primary"},
+                 {"label": "看今日全貌", "text": prompt_overview, "kind": "primary"},
+                 {"label": "晚点复盘", "text": prompt_review, "kind": "primary"}],
+    ))
     return {
         "status": "ok", "data": payload,
         "message": f"✓ id={plan_id} 计划 已补回执已生成(今日 {stats['today_count']} 条计划,完成率 {stats['completion_rate']}%)",
@@ -1900,6 +2114,25 @@ def render_plan_receipt_write(plan_id: int) -> dict:
         "prompts": {"continue": prompt_continue, "overview": prompt_overview, "look_all": prompt_look_all},
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "写日程回执", "写日程")
+    payload.update(_build_base_scene_block(
+        "写日程回执", "写日程",
+        [f"{plan.get('title') or ''} {plan.get('time_start') or ''}-{plan.get('time_end') or ''}",
+         f"今日 {stats.get('today_count', 0)} 条 · 完成率 {stats.get('completion_rate', 0)}%"],
+        [{"heading": "计划详情", "rows": [
+            f"id={plan_id} · {plan.get('date') or ''}",
+            f"{plan.get('title') or ''} {plan.get('time_start') or ''}-{plan.get('time_end') or ''}",
+            f"分类: {plan.get('category') or ''}",
+        ]},
+         {"heading": "今日统计", "rows": [
+            f"今日 {stats.get('today_count', 0)} 条 · 完成率 {stats.get('completion_rate', 0)}%",
+            f"已写反思 {stats.get('note_count', 0)} 条",
+         ]}],
+        buttons=[{"label": "继续写摘要", "text": prompt_continue, "kind": "primary"},
+                 {"label": "看今日全貌", "text": prompt_overview, "kind": "primary"},
+                 {"label": "看全部计划", "text": prompt_look_all, "kind": "primary"}],
+    ))
     return {
         "status": "ok", "data": payload,
         "message": f"✓ id={plan_id} 计划 已写摘要回执已生成(今日 {stats['today_count']} 条计划,完成率 {stats['completion_rate']}%,已写反思 {stats['note_count']} 条)",
@@ -1989,6 +2222,21 @@ def render_record_day(date: str) -> dict:
         ),
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "查作息记录", "查作息")
+    _health = payload.get("health") or {}
+    payload.update(_build_base_scene_block(
+        "查作息记录", "查作息",
+        [f"{len(records)} 条记录 · 总时长 {_fmt_dur(total_minutes)}",
+         f"健康分 {_health.get('score', '—')} ({_health.get('label', '')})"],
+        [{"heading": "分类统计", "rows": [
+            f"{s.get('category') or ''}: {_fmt_dur(s.get('total_minutes') or 0)} ({s.get('percent', 0)}%)"
+            for s in (summary_items or [])[:8]
+        ]},
+         {"heading": "健康分", "rows": [
+            f"得分 {_health.get('score', '—')} · {_health.get('label', '')}",
+         ]}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -2077,6 +2325,21 @@ def render_record_range(start: str, end: str) -> dict:
         ),
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "查作息区间", "查作息")
+    payload.update(_build_base_scene_block(
+        "查作息区间", "查作息",
+        [f"{len(records)} 条记录 · 总时长 {_fmt_dur(total)}",
+         f"区间 {start} ~ {end}"],
+        [{"heading": "分类统计", "rows": [
+            f"{s.get('category') or ''}: {_fmt_dur(s.get('total_minutes') or 0)}"
+            for s in (summary_items or [])[:8]
+        ]},
+         {"heading": "每日明细", "rows": [
+            f"{d}: {len([r for r in records if r.get('date') == d])} 条"
+            for d in (days or [])[:10]
+        ]}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -2127,6 +2390,20 @@ def render_record_compare(label_a: str, start_a: str, end_a: str, label_b: str, 
         ),
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "查作息对比", "查作息")
+    payload.update(_build_base_scene_block(
+        "查作息对比", "查作息",
+        [f"{label_a} vs {label_b} · {len(diffs)} 项差异"],
+        [{"heading": "对比区间", "rows": [
+            f"{label_a}: {start_a}~{end_a}",
+            f"{label_b}: {start_b}~{end_b}",
+        ]},
+         {"heading": "差异项", "rows": [
+            f"{d.get('field') or d.get('category') or ''}: {d.get('a') or ''} vs {d.get('b') or ''}"
+            for d in (diffs or [])[:12]
+        ] if diffs else ["无显著差异"]}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -2204,6 +2481,21 @@ def render_record_category(category: str, start: str, end: str) -> dict:
         ),
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "查作息类别", "查作息")
+    payload.update(_build_base_scene_block(
+        "查作息类别", "查作息",
+        [f"「{l1_target}」{start}~{end} · 总 {_fmt_dur(total)}",
+         f"{days_count} 天活跃 · 日均 {_fmt_dur(daily_avg)}"],
+        [{"heading": "分类统计", "rows": [
+            f"总时长 {_fmt_dur(total)} · 日均 {_fmt_dur(daily_avg)}",
+            f"活跃天数 {days_count}",
+        ]},
+         {"heading": "每日明细", "rows": [
+            f"{d}: {sum((x.get('mins') or 0) for x in row) if row else 0} 分钟"
+            for d, row in zip((sorted_dates or [])[:12], matrix[:12])
+        ]}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -2278,6 +2570,16 @@ def render_record_anomaly(window_days: int = 7) -> dict:
         ),
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "查作息异常", "查作息")
+    payload.update(_build_base_scene_block(
+        "查作息异常", "查作息",
+        [f"最近 {window_days} 天 · 检出 {len(anomalies)} 项异常"],
+        [{"heading": "异常清单", "rows": [
+            f"{a.get('date') or ''} {a.get('category') or ''}: {a.get('detail') or a.get('deviation') or ''}"
+            for a in (anomalies or [])[:12]
+        ] if anomalies else ["无异常（对比近 30 天均值,阈值 ±20%）"]}],
+    ))
     return {
         "status": "ok",
         "data": payload,
@@ -2943,6 +3245,22 @@ def render_replay(start: str, end: str, ai_engine: str = "mock",
         ),
         "errors": [],
     }
+
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    payload = _ensure_base_meta(payload, "区间复盘", "复盘")
+    payload.update(_build_base_scene_block(
+        "区间复盘", "复盘",
+        [f"{start}~{end} · {total_records} 条记录 · 总时长 {_fmt_dur(total_minutes)}",
+         f"计划 {len(plans)} 段 · 已完成 {sum(1 for p in plans if p.get('completion') == '已完成')}"],
+        [{"heading": "复盘概览", "rows": [
+            f"记录 {total_records} 条 · 总时长 {_fmt_dur(total_minutes)}",
+            f"计划 {len(plans)} 段 · 已完成 {sum(1 for p in plans if p.get('completion') == '已完成')}",
+        ]},
+         {"heading": "分类统计", "rows": [
+            f"{s.get('category') or ''}: {_fmt_dur(s.get('total_minutes') or 0)}"
+            for s in (summary_items or [])[:8]
+        ] if summary_items else ["无数据"]}],
+    ))
 
     # 5 状态判定优先级:incomplete > offline > ok
     if has_records != has_plans:

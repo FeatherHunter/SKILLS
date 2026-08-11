@@ -178,6 +178,8 @@
       <span class="copied-badge">✅ 已复制</span>
     </button>
   </div>
+  <!-- #269 补齐: 复制数据/复制日志（Base actionBar · 08 规范硬标准） -->
+  <div id="actionbar-zone"></div>
 </div>
 
 <section>
@@ -278,6 +280,12 @@
       window.copyText(prompt);
     });
   });
+
+  // #269 补齐: 复制数据/复制日志（Base actionBar · 08 规范硬标准）
+  var abZone = document.getElementById("actionbar-zone");
+  if (abZone && window.actionBar) {
+    abZone.innerHTML = window.actionBar(payload);
+  }
 })();
 </script>
 </body>

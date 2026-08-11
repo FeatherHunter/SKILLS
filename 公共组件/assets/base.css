@@ -69,13 +69,13 @@ button.copy.ghost {
 }
 
 /* ── actionBar 网格（偶数一行 2 个; 奇数时重要按钮单独一行由模板控制 wide）── */
-.actions {
+.hm-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 14px;
 }
-.actions .copy.wide {
+.hm-actions .copy.wide {
   grid-column: 1 / -1;
   background: var(--blue);
   color: #fff;
@@ -219,7 +219,7 @@ button.copy.ghost {
   margin: 12px 0;
 }
 .hm-error-title { font-size: 15px; font-weight: 700; color: #a83228; margin-bottom: 14px; }
-.hm-error .actions { margin-top: 0; }
+.hm-error .hm-actions { margin-top: 0; }
 
 /* ── 复制预览面板（actionBar preview）── */
 .hm-preview-overlay {
@@ -265,9 +265,9 @@ button.copy.ghost {
 
 /* 手机适配: 单列网格保持按钮不换行 */
 @media (max-width: 820px) {
-  .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .actions .copy.wide { grid-column: 1 / -1; }
-  .actions .copy { min-height: 46px; }
+  .hm-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hm-actions .copy.wide { grid-column: 1 / -1; }
+  .hm-actions .copy { min-height: 46px; }
   .sl-batchbar { flex-direction: column; align-items: stretch; }
   .sl-count { margin-left: 0; }
   .hm-confirm-panel { padding: 20px 18px; }

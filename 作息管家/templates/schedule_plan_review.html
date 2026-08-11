@@ -486,8 +486,15 @@
     // Base copyText v2: 按钮文字恒定, 反馈走独立 Toast（#269 用户拍板）
     window.copyText(buildCopyPrompt());
   });
-  
+
+  // #269 补齐: 复制数据/复制日志（Base actionBar · 08 规范硬标准）
+  var abZone = document.getElementById("actionbar-zone");
+  if (abZone && window.actionBar) {
+    abZone.innerHTML = window.actionBar(payload);
+  }
 })();
 </script>
+<!-- #269 补齐: 复制数据/复制日志（Base actionBar · 08 规范硬标准） -->
+<div class="wrap" style="max-width:980px;margin:0 auto;padding:0 24px 48px"><div id="actionbar-zone"></div></div>
 </body>
 </html>

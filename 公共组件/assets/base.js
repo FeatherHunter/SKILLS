@@ -244,7 +244,7 @@ function actionBar(p, extra, opts){
   opts = opts || {};
   var btns = arr(extra || []);
   var sb = opts.noSb ? [] : arr(p && p.data && p.data.scene && p.data.scene.buttons || []);
-  var html = '<div class="actions">';
+  var html = '<div class="hm-actions">';
   btns.concat(sb).forEach(function(b){
     html += '<button class="copy '+(b.kind||'')+'" onclick="copyText(this.dataset.t)" data-t="'+esc(b.text).replace(/"/g,'&quot;')+'">'+esc(b.label)+'</button>';
   });

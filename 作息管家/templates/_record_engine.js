@@ -168,6 +168,7 @@
     html += recordsCollapsible(records);
 
     html += copyPromptBlock(data);
+    html += actionBarBlock(payload);  // #269 补齐: 复制数据/复制日志（08 规范硬标准）
     document.getElementById("root").innerHTML = html;
   }
 
@@ -287,6 +288,7 @@
     html += recordsCollapsible(data.records || []);
 
     html += copyPromptBlock(data);
+    html += actionBarBlock(payload);  // #269 补齐: 复制数据/复制日志（08 规范硬标准）
     document.getElementById("root").innerHTML = html;
   }
 
@@ -334,6 +336,7 @@
     html += recordsCollapsible(data.records || []);
 
     html += copyPromptBlock(data);
+    html += actionBarBlock(payload);  // #269 补齐: 复制数据/复制日志（08 规范硬标准）
     document.getElementById("root").innerHTML = html;
   }
 
@@ -377,6 +380,7 @@
     html += recordsCollapsible(data.records || []);
 
     html += copyPromptBlock(data);
+    html += actionBarBlock(payload);  // #269 补齐: 复制数据/复制日志（08 规范硬标准）
     document.getElementById("root").innerHTML = html;
   }
 
@@ -417,6 +421,7 @@
     html += recordsCollapsible(data.records || []);
 
     html += copyPromptBlock(data);
+    html += actionBarBlock(payload);  // #269 补齐: 复制数据/复制日志（08 规范硬标准）
     document.getElementById("root").innerHTML = html;
   }
 
@@ -459,6 +464,7 @@
     }
 
     html += copyPromptBlock(data);
+    html += actionBarBlock(payload);  // #269 补齐: 复制数据/复制日志（08 规范硬标准）
     document.getElementById("root").innerHTML = html;
   }
 
@@ -539,6 +545,7 @@
     html += recordsCollapsible(records);
 
     html += copyPromptBlock(data);
+    html += actionBarBlock(payload);  // #269 补齐: 复制数据/复制日志（08 规范硬标准）
     document.getElementById("root").innerHTML = html;
   }
 
@@ -562,6 +569,15 @@
       return window.CopyPromptHelper.renderBlock(data && data.copy_prompt);
     }
     // fallback:helper 未加载时直接返回空(开发者会立即看到缺按钮)
+    return "";
+  }
+
+  // #269 补齐: 复制数据/复制日志按钮（Base actionBar · 08 规范硬标准）
+  // 渲染在复制 prompt 区下方;payload 来自模板 #payload script（含 scene.snapshot）
+  function actionBarBlock(payload){
+    if (window.actionBar && payload && payload.data && payload.data.scene) {
+      return window.actionBar(payload);
+    }
     return "";
   }
 

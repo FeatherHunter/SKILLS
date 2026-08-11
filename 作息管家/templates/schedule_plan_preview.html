@@ -164,6 +164,8 @@
     <div class="copy-preview" id="copy-preview">加载中…</div>
   </div>
   <button class="copy-btn" id="copy-btn">复制 4 部分 prompt</button>
+  <!-- #269 补齐: 复制数据/复制日志（Base actionBar · 08 规范硬标准） -->
+  <div id="actionbar-zone"></div>
 </div>
 
 <section>
@@ -289,6 +291,12 @@
   copyBtn.addEventListener("click", function(){
     // Base copyText v2: 按钮文字恒定, 反馈走独立 Toast（#269 用户拍板）
     window.copyText(copyPrompt);
+  });
+
+  // #269 补齐: 复制数据/复制日志（Base actionBar · 08 规范硬标准）
+  var abZone = document.getElementById("actionbar-zone");
+  if (abZone && window.actionBar) {
+    abZone.innerHTML = window.actionBar(payload);
   });
   
 

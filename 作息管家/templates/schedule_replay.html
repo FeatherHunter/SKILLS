@@ -392,6 +392,8 @@ body {
   <h3>📋 复制 4 部分 prompt 给 AI(含复盘 → 计划衔接引导)</h3>
   <pre class="copy-preview" id="copy-preview"></pre>
   <button class="copy-prompt-btn" id="copy-prompt-btn" type="button">复制完整 prompt</button>
+  <!-- #269 补齐: 复制数据/复制日志（Base actionBar · 08 规范硬标准） -->
+  <div id="actionbar-zone"></div>
 </div>
 
 <div class="footer">
@@ -731,11 +733,7 @@ body {
     var btn = document.getElementById("pg-copy-btn");
     if (btn) {
       btn.addEventListener("click", function(){
-        copyText(guide.prompt || "", function(){
-          btn.textContent = "✓ 已复制";
-          btn.classList.add("copied");
-          setTimeout(function(){ btn.textContent = "复制补齐计划 prompt"; btn.classList.remove("copied"); }, 2200);
-        });
+        window.copyText(guide.prompt || "");
       });
     }
   }
@@ -793,13 +791,7 @@ body {
   // === 复制 prompt(总纲 §04 原则 10) ===
   
   
-  function showToast(){
-    var toast = document.getElementById("toast");
-    if (toast) {
-      toast.classList.add("show");
-      setTimeout(function(){ toast.classList.remove("show"); }, 4500);
-    }
-  }
+  
 
   var previewEl = document.getElementById("copy-preview");
   var btnEl = document.getElementById("copy-prompt-btn");
@@ -809,13 +801,14 @@ body {
   }
   if (btnEl) {
     btnEl.addEventListener("click", function(){
-      copyText(d.copy_prompt || "", function(){
-        btnEl.textContent = "✓ 已复制";
-        btnEl.classList.add("copied");
-        setTimeout(function(){ btnEl.textContent = "复制完整 prompt"; btnEl.classList.remove("copied"); }, 2200);
-        showToast();
-      });
+      window.copyText(d.copy_prompt || "");
     });
+  }
+
+  // #269 补齐: 复制数据/复制日志（Base actionBar · 08 规范硬标准）
+  var abZone = document.getElementById("actionbar-zone");
+  if (abZone && window.actionBar) {
+    abZone.innerHTML = window.actionBar(payload);
   }
 })();
 </script>

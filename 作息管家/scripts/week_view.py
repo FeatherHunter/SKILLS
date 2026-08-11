@@ -182,6 +182,24 @@ def render_record_week(anchor: str = "") -> dict:
         "copy_prompt": _build_copy_prompt(meta, records, summary_items, health),
         "errors": [],
     }
+    # #269 补齐: Base scene.snapshot + meta 信封（复制数据/日志按钮）
+    from schedule_html_render import _ensure_base_meta, _build_base_scene_block
+    from calculations import fmt_dur_short
+    payload = _ensure_base_meta(payload, "周视图", "周视图")
+    _h = health or {}
+    payload.update(_build_base_scene_block(
+        "周视图", "周视图",
+        [f"{start}~{end} · 总时长 {fmt_dur_short(total_minutes)}",
+         f"健康分 {_h.get('score', '—')} ({_h.get('label', '')})"],
+        [{"heading": "每日总览", "rows": [
+            f"{days[i] if i < len(days) else '?'}: {day_totals[i] if i < len(day_totals) else 0} 分钟"
+            for i in range(min(7, len(day_totals) if day_totals else 0))
+        ]},
+         {"heading": "分类统计", "rows": [
+            f"{s.get('category') or ''}: {fmt_dur_short(s.get('total_minutes') or 0)}"
+            for s in (summary_items or [])[:8]
+        ]}],
+    ))
     return {
         "status": "ok",
         "data": payload,

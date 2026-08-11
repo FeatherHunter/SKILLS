@@ -179,6 +179,10 @@
       '<div class="empty-state"><h3>这一天还没有日程计划</h3>' +
       '<p>没有任何已规划的日程事件。</p>' +
       '<p class="hint">试试用「商量计划 / 一起规划 / 规划明天」唤起新计划。</p></div>');
+    // #269 补齐: 空态也渲染复制数据/复制日志（08 规范硬标准 · 复制空快照）
+    if (window.actionBar && payload && payload.data && payload.data.scene) {
+      root.insertAdjacentHTML("beforeend", window.actionBar(payload));
+    }
     return;
   }
 
@@ -251,6 +255,11 @@
   // 委托 window.CopyPromptHelper(_copy_prompt_helper.js),与 record 域 6 模板共享同一份逻辑
   if (window.CopyPromptHelper && data.copy_prompt) {
     html += window.CopyPromptHelper.renderBlock(data.copy_prompt);
+  }
+
+  // #269 补齐: 复制数据/复制日志（Base actionBar · 08 规范硬标准）
+  if (window.actionBar && payload && payload.data && payload.data.scene) {
+    html += window.actionBar(payload);
   }
 
   root.innerHTML = html;

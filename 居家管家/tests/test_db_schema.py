@@ -208,3 +208,87 @@ def test_rebuild_preserves_fixed_location_date_migration(tmp_path, monkeypatch):
     conn.close()
     assert row is not None and row[0] == "卧室/衣柜", \
         f"日期重建路径丢 fixed_location 数据: {row}"
+
+
+# ═══════════════════ D1 批收编(#103 剩余项)═══ 2026-08-11 追加 ═══════════════════
+
+_D1_DOMAIN_TABLES = [
+    # SM1 物品域(记录契约底座)
+    "item_events", "inventory_records", "photo", "item_relations",
+    # SM5 快递购物域
+    "shopping_items", "stock_thresholds",
+    # SM6 票据凭证域
+    "purchase_records", "warranties", "service_events", "certificates",
+    # SM7 家庭协作域
+    "family_members", "borrow_records",
+]
+
+
+def test_d1_domain_tables_all_exist(conn):
+    """D1 收编(#103):init_db 后全部域表必须存在(防删表拦截)"""
+    tables = {r[0] for r in conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table'")}
+    missing = [t for t in _D1_DOMAIN_TABLES if t not in tables]
+    assert not missing, f"D1 收编后缺失域表: {missing}"
+
+
+def test_d1_photo_table_columns(conn):
+    """D1 #103:photo 多图表字段契约(SM1 子功能 5)"""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(photo)")}
+    required = {"id", "item_id", "sort_order", "photo_type", "file_path", "created_at"}
+    missing = required - cols
+    assert not missing, f"photo 表缺失字段: {missing}"
+
+
+def test_d1_item_events_table_columns(conn):
+    """D1 #103:item_events 记录契约字段(SM1 存储方案)"""
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(item_events)")}
+    required = {"id", "item_id", "event_type", "occurred_at", "summary",
+                "payload_json", "scene_id", "cli_cmd"}
+    missing = required - cols
+    assert not missing, f"item_events 表缺失字段: {missing}"
+
+
+def test_d1_family_and_cert_columns(conn):
+    """D1 #103:家庭协作/证件表关键字段"""
+    fam = {r[1] for r in conn.execute("PRAGMA table_info(family_members)")}
+    assert {"id", "name", "relation", "note"} <= fam, f"family_members 缺字段: {fam}"
+    br = {r[1] for r in conn.execute("PRAGMA table_info(borrow_records)")}
+    assert {"id", "direction", "item_id", "item_name", "object_name",
+            "borrowed_at", "due_date", "returned_at"} <= br, f"borrow_records 缺字段: {br}"
+    cert = {r[1] for r in conn.execute("PRAGMA table_info(certificates)")}
+    assert {"id", "cert_type", "cert_number", "expires_at"} <= cert, \
+        f"certificates 缺字段: {cert}"
+
+
+def test_rebuild_preserves_category_id_date_migration(tmp_path, monkeypatch):
+    """D1 #220 回归:日期列重建路径(migrate_add_date_columns)必须保留 category_id 列与数据"""
+    import importlib
+    import sqlite3
+    import home_manager.db as db_mod
+
+    monkeypatch.setenv("SKILLS_DB_PATH", str(tmp_path))
+    importlib.reload(db_mod)
+    # 构造老库:category 已 nullable + 日期列(触发日期重建)+ category_id 已有数据
+    conn = sqlite3.connect(str(tmp_path / "home.db"))
+    conn.execute("""CREATE TABLE items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, category TEXT,
+        owner TEXT DEFAULT '使用者', purchase_price REAL, remark TEXT, photo TEXT,
+        access_count INTEGER DEFAULT 0, last_accessed_at TIMESTAMP,
+        purchase_date TEXT, expiration_date TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )""")
+    conn.execute("INSERT INTO items (id, name, category, purchase_date) VALUES (1, '物品', '衣物', '2026-01-01')")
+    conn.execute("ALTER TABLE items ADD COLUMN category_id INTEGER REFERENCES categories(id)")
+    conn.execute("UPDATE items SET category_id = 3 WHERE id = 1")
+    conn.commit()
+    conn.close()
+
+    db_mod.init_db()
+    conn = sqlite3.connect(str(tmp_path / "home.db"))
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(items)")}
+    row = conn.execute("SELECT category_id FROM items WHERE id = 1").fetchone()
+    conn.close()
+    assert "category_id" in cols, f"日期重建路径丢 category_id 列: {cols}"
+    assert row is not None and row[0] == 3, \
+        f"日期重建路径丢 category_id 数据: {row}"

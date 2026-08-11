@@ -225,7 +225,8 @@ def test_expiring_empty(tmp_db):
 
 # ═══════════ SM4-4 盘点统计 ═══════════
 
-def test_inventory_stat_empty_when_no_table(seeded):
+def test_inventory_stat_empty_when_no_data(seeded):
+    """收编后表已预建但无数据 → 空态引导首次盘点(has_data=False)"""
     from stats.inventory_stat import inventory_stat_payload
     d = inventory_stat_payload(seeded)
     assert d["has_data"] is False
@@ -234,17 +235,14 @@ def test_inventory_stat_empty_when_no_table(seeded):
 
 
 def test_inventory_stat_with_d1_table(seeded):
-    """模拟 D1 建表后: 盘点记录数据正确呈现"""
+    """收编后表已由 init_db 预建(英文列,SM1 events.py DDL): 盘点记录数据正确呈现"""
     from stats.inventory_stat import inventory_stat_payload
     c = seeded.cursor()
-    c.execute(
-        "CREATE TABLE inventory_records (id INTEGER PRIMARY KEY AUTOINCREMENT, "
-        "scope TEXT, occurred_at TEXT, 缺N INTEGER DEFAULT 0, 多N INTEGER DEFAULT 0, "
-        "异N INTEGER DEFAULT 0, status TEXT)")
-    c.execute("INSERT INTO inventory_records (scope, occurred_at, 缺N, 多N, 异N, status) "
-              "VALUES ('卧室', '2026-07-01 10:00:00', 2, 1, 0, 'done')")
-    c.execute("INSERT INTO inventory_records (scope, occurred_at, 缺N, 多N, 异N, status) "
-              "VALUES ('客厅', '2026-08-01 10:00:00', 1, 0, 1, 'done')")
+    # 表已存在(收编),直接用实际 DDL 列名插入(created_at NOT NULL 无默认,须显式给)
+    c.execute("INSERT INTO inventory_records (scope, occurred_at, missing_cnt, extra_cnt, diff_cnt, status, created_at) "
+              "VALUES ('卧室', '2026-07-01 10:00:00', 2, 1, 0, '已完成', '2026-07-01 10:00:00')")
+    c.execute("INSERT INTO inventory_records (scope, occurred_at, missing_cnt, extra_cnt, diff_cnt, status, created_at) "
+              "VALUES ('客厅', '2026-08-01 10:00:00', 1, 0, 1, '已完成', '2026-08-01 10:00:00')")
     seeded.commit()
     d = inventory_stat_payload(seeded)
     assert d["has_data"] is True

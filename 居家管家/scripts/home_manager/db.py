@@ -213,9 +213,35 @@ def init_db():
     migrate_add_location_nodes(conn)
     migrate_add_fixed_location_column(conn)
 
+    # ── D1 批收编:各域自持表统一建齐(D1 总账 #103 剩余项)──
+    # 实施期各域以域内 ensure_tables 自持建表;收编 = init_db 统一触发,
+    # 保证新库/老库升级一次 init 后全部 D1 域表存在(幂等,域内 ensure_tables 保留双保险)。
+    ensure_d1_domain_tables(conn)
+
     conn.commit()
     conn.close()
     return True
+
+
+def ensure_d1_domain_tables(conn):
+    """D1 批收编(D1 总账 #103):统一建齐各域自持表,新老库一次 init 全齐
+
+    覆盖(与各域模块 ensure_tables 同源,幂等,调用方传同一 conn 不冲突):
+      SM1 物品域:   item_events / inventory_records / photo / item_relations
+      SM5 快递购物: shopping_items / stock_thresholds
+      SM6 票据凭证: purchase_records / warranties / service_events / certificates
+      SM7 家庭协作: family_members / borrow_records
+    延迟 import 防循环依赖(域模块多依赖 home_manager.* 公共层)。
+    """
+    from 物品 import events as item_events
+    from 快递购物 import schema as shopping_schema
+    from 票据凭证 import db as tickets_db
+    from 家庭协作 import family_ops
+
+    item_events.ensure_tables(conn)
+    shopping_schema.ensure_tables(conn)
+    tickets_db.init_domain_tables(conn)
+    family_ops.ensure_tables(conn)
 
 
 def migrate_add_location_nodes(conn):
@@ -290,6 +316,12 @@ def migrate_add_date_columns(conn):
         has_fixed_location = "fixed_location" in items_columns
         fixed_ddl = ", fixed_location TEXT" if has_fixed_location else ""
         fixed_io = ", fixed_location" if has_fixed_location else ""
+        # D1 #220:源表若已有 category_id(分类体系),重建必须保留,否则列与数据被丢弃
+        # (migrate_add_date_columns 先于 migrate_add_category_id_column 执行,
+        #  老库 category 仍 NOT NULL 的路径在上一补丁已重建并含 category_id)
+        has_category_id = "category_id" in items_columns
+        cat_ddl = ", category_id INTEGER REFERENCES categories(id)" if has_category_id else ""
+        cat_io = ", category_id" if has_category_id else ""
         cursor.execute(f"""
             CREATE TABLE IF NOT EXISTS items_new (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -300,14 +332,14 @@ def migrate_add_date_columns(conn):
                 remark TEXT,
                 photo TEXT,
                 access_count INTEGER DEFAULT 0,
-                last_accessed_at TIMESTAMP{fixed_ddl},
+                last_accessed_at TIMESTAMP{fixed_ddl}{cat_ddl},
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         cursor.execute(f"""
-            INSERT INTO items_new (id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at{fixed_io}, created_at, updated_at)
-            SELECT id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at{fixed_io}, created_at, updated_at FROM items
+            INSERT INTO items_new (id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at{fixed_io}{cat_io}, created_at, updated_at)
+            SELECT id, name, category, owner, purchase_price, remark, photo, access_count, last_accessed_at{fixed_io}{cat_io}, created_at, updated_at FROM items
         """)
         cursor.execute("DROP TABLE items")
         cursor.execute("ALTER TABLE items_new RENAME TO items")

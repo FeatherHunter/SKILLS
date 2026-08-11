@@ -1,18 +1,20 @@
 # inventory_stat.py - SM4-4 盘点统计(stats_inventory · 盘点统计)
 #
-# 数据基础: inventory_records(D1 新表 #2,物理建表归 D1 批)。
-# 本域按 D1 约定结构查询:id/scope/occurred_at/缺N/多N/异N/status;
-# 表不存在 → 优雅空态(has_data=False) + 引导首次盘点(→ 6-1 盘点核对)。
-# D1 建表后本模块自动生效,无需改动。
+# 数据基础: inventory_records(D1 新表 #2,物理建表已收编进 db.py init_db)。
+# 本域按实际 DDL 列名查询(missing_cnt/extra_cnt/diff_cnt,与 SM1 events.py 写入一致);
+# 表存在但无数据 → 优雅空态(has_data=False) + 引导首次盘点(→ 6-1 盘点核对)。
+# 注:D1 总账 #103 规格写「缺N·多N·异N」,SM1 实施期落地为英文列名(记录契约底座),
+#     本模块以实际 DDL 为准(2026-08-11 收编时发现列名不一致并修正)。
 
 import sqlite3
 from datetime import date, datetime, timedelta
 
 from . import build_meta
 
-# D1 约定结构(与 D1 总账 #103 一致,查询契约)
+# D1 约定结构(与实际 DDL 一致,查询契约;SM1 events.py record_inventory 写入)
 D1_TABLE = "inventory_records"
-D1_FIELDS = ("id", "scope", "occurred_at", "缺N", "多N", "异N", "status")
+D1_FIELDS = ("id", "scope", "occurred_at", "missing_cnt", "extra_cnt",
+             "diff_cnt", "status")
 
 
 def _today():
@@ -88,9 +90,9 @@ def inventory_stat_payload(conn):
     last_occurred = _parse_dt(records[0].get("occurred_at"))
     days_since = (today - last_occurred).days if last_occurred else None
 
-    total_missing = sum(int(r.get("缺N") or 0) for r in records)
+    total_missing = sum(int(r.get("missing_cnt") or 0) for r in records)
     total_diff = sum(
-        int(r.get("缺N") or 0) + int(r.get("多N") or 0) + int(r.get("异N") or 0)
+        int(r.get("missing_cnt") or 0) + int(r.get("extra_cnt") or 0) + int(r.get("diff_cnt") or 0)
         for r in records
     )
 
@@ -119,9 +121,9 @@ def inventory_stat_payload(conn):
         {
             "occurred_at": (r.get("occurred_at") or "")[:19],
             "scope": r.get("scope") or "(未命名范围)",
-            "missing": int(r.get("缺N") or 0),
-            "extra": int(r.get("多N") or 0),
-            "diff": int(r.get("异N") or 0),
+            "missing": int(r.get("missing_cnt") or 0),
+            "extra": int(r.get("extra_cnt") or 0),
+            "diff": int(r.get("diff_cnt") or 0),
             "status": r.get("status") or "",
         }
         for r in records

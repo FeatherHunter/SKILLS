@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>睡眠时长 vs 减重</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
+    --card:#fff;--line:#e8e8ed;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:linear-gradient(180deg,#f2f7ff 0%,#fafafa 100%);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:880px;margin:0 auto;padding:56px 24px 80px}
+
+  .hero{background:linear-gradient(135deg,#e8f0ff 0%,#dceaff 100%);border-radius:28px;padding:44px 40px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+  .hero .moon{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#5e5ce6,#007aff);color:#fff;font-size:34px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,122,255,.35);animation:popIn .6s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes popIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+  .hero h1{font-size:32px;line-height:1.15;letter-spacing:-.03em;margin-bottom:8px;color:#0a63ce;font-weight:700}
+  .hero .sub{font-size:15px;color:#3a6bbf;margin-bottom:14px}
+  .hero .insight{background:rgba(255,255,255,.7);border:1px solid rgba(0,122,255,.18);border-radius:14px;padding:12px 18px;font-size:13.5px;color:#1d3a6e;line-height:1.7;text-align:left}
+  .hero .insight b{color:#0a63ce}
+
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:8px 0 24px}
+  .stat{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:3px;border:1px solid var(--line)}
+  .stat .n{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:11px;color:var(--fg3);letter-spacing:.04em;margin-top:2px}
+  .stat .d{font-size:12px;color:var(--fg2);line-height:1.5}
+  .stat.blue .n{color:var(--blue)}
+  .stat.good .n{color:var(--good)}
+  .stat.warn .n{color:var(--warn)}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 28px;margin:16px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  section h2{font-size:20px;letter-spacing:-.02em;margin-bottom:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  section h2 .sec-num{font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.05em;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  section .sub{color:var(--fg2);font-size:13px;margin-bottom:16px;line-height:1.65}
+
+  .chart-box{width:100%;overflow:hidden}
+  .chart-box svg{display:block;width:100%}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--fg2);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .legend i{width:18px;height:3px;border-radius:2px;display:inline-block}
+  .legend i.dot{width:8px;height:8px;border-radius:50%}
+  .lg-sleep{background:var(--blue)}
+  .lg-weight{background:var(--good)}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th{font-size:11px;color:var(--fg3);text-align:left;font-weight:600;letter-spacing:.05em;padding:8px 10px;border-bottom:1px solid var(--line)}
+  td{padding:10px;border-bottom:1px solid #f0f0f2;font-variant-numeric:tabular-nums}
+  tr:last-child td{border-bottom:none}
+  td .bar{display:inline-block;height:6px;border-radius:3px;margin-left:8px;vertical-align:middle}
+  .delta-up{color:var(--danger);font-weight:600}
+  .delta-down{color:var(--good);font-weight:600}
+  .delta-flat{color:var(--fg3)}
+  .b-label{font-weight:600;color:var(--fg)}
+  .b-label small{color:var(--fg3);font-weight:400}
+
+  .corr-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .corr-card{background:var(--soft);border:1px solid rgba(0,122,255,.15);border-radius:14px;padding:14px 16px}
+  .corr-card .l{font-size:11px;color:var(--fg3);letter-spacing:.05em;margin-bottom:4px}
+  .corr-card .v{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--blue2)}
+  .corr-card .h{font-size:12px;color:var(--fg2);margin-top:2px}
+
+  .empty{text-align:center;padding:32px 16px;color:var(--fg3);font-size:13.5px;line-height:1.8}
+
+  .footer{margin-top:36px;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7}
+
+  @media(max-width:760px){
+    .wrap{padding:36px 12px 60px}
+    .hero{padding:30px 18px;border-radius:22px}
+    .hero h1{font-size:25px}
+    .summary{grid-template-columns:repeat(2,1fr);gap:10px}
+    section{padding:20px 16px;border-radius:18px}
+    section h2{font-size:17px}
+    .corr-grid{grid-template-columns:1fr}
+    table{font-size:12.5px}
+    th,td{padding:8px 6px}
+    .legend{gap:14px;font-size:11px}
+  }
+</style>
+<style><!--SHARED-CSS--></style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="moon">🌙</div>
+  <h1>睡眠时长 vs 减重</h1>
+  <p class="sub" id="hero-window">—</p>
+  <div class="insight" id="hero-insight">加载中…</div>
+</header>
+
+<div class="summary">
+  <div class="stat blue">
+    <div class="n" id="stat-days">—</div>
+    <div class="l">对齐天数</div>
+    <div class="d">同天有睡眠+体重</div>
+  </div>
+  <div class="stat blue">
+    <div class="n" id="stat-sleep">—</div>
+    <div class="l">睡眠天数</div>
+    <div class="d">作息管家提供</div>
+  </div>
+  <div class="stat good">
+    <div class="n" id="stat-weight">—</div>
+    <div class="l">体重天数</div>
+    <div class="d">卡路里本地</div>
+  </div>
+  <div class="stat warn">
+    <div class="n" id="stat-groups">—</div>
+    <div class="l">覆盖分组</div>
+    <div class="d">睡眠 5 档中几档</div>
+  </div>
+</div>
+
+<section>
+  <h2><span class="sec-num">§1</span>每日睡眠 vs 体重</h2>
+  <p class="sub">左轴 = 睡眠时长（分钟）· 右轴 = 体重（kg）· 仅对齐日</p>
+  <div class="chart-box" id="chart"></div>
+  <div class="legend">
+    <span><i class="lg-sleep"></i>睡眠时长（分钟）</span>
+    <span><i class="lg-weight"></i>体重（kg）</span>
+  </div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§2</span>睡眠分位分组 · 体重变化</h2>
+  <p class="sub">按每日睡眠时长分 5 档，对比各组体重净变化（组首日 → 组末日）</p>
+  <div class="table-wrap" id="group-table"></div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§3</span>相关性</h2>
+  <p class="sub">睡眠与体重的关系：同天看 + 前 1 夜睡眠对次日体重的影响</p>
+  <div class="corr-grid" id="corr-grid"></div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§4</span>复制给 AI</h2>
+  <p class="sub">把本次分析数据 / 执行日志发给 AI，继续追问或存档</p>
+  <div id="actionbar-zone"></div>
+</section>
+
+<div class="footer">
+  <p>本页由 <code>render_cross_skill_cs02.py</code> 生成 · 技能互联（Skill Link）全链路：作息管家提供 sleep 域 → 卡路里消费合并</p>
+  <p class="note">CS-02 · 组合表定义 · 2026-08-11 试点</p>
+</div>
+
+</div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
+<script>
+(function(){
+  "use strict";
+
+  function esc(s){ return String(s ?? "").replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+
+  var raw = document.getElementById("payload");
+  var payload, err = null;
+  try { payload = JSON.parse(raw.textContent || "{}"); }
+  catch(e){ err = e.message; }
+
+  if (err) {
+    document.body.insertAdjacentHTML("afterbegin", '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据解析失败: ' + esc(err) + '</div>');
+    return;
+  }
+  if (payload.status !== "ok" || !payload.data) {
+    var msg = payload.message || payload.error || "未知错误";
+    document.body.insertAdjacentHTML("afterbegin", '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据加载失败: ' + esc(msg) + '</div>');
+    return;
+  }
+
+  var data = payload.data;
+  var meta = data.meta || {};
+  var cs = data.cs02 || {};
+  var series = cs.series || [];
+
+  function dur(m){ m = Math.round(m); var h = Math.floor(m/60), mm = m % 60; return (h ? h + "h" + (mm<10?"0":"") : "") + mm + "m"; }
+
+  // Hero
+  document.getElementById("hero-window").textContent = (cs.start || "—") + " ~ " + (cs.end || "—") + " · " + (meta.occurred_at || "");
+  document.getElementById("hero-insight").innerHTML = esc(cs.insight || "数据不足，暂时无法形成洞察。");
+
+  // 摘要卡
+  document.getElementById("stat-days").textContent = cs.days ?? 0;
+  document.getElementById("stat-sleep").textContent = cs.sleep_days ?? 0;
+  document.getElementById("stat-weight").textContent = cs.weight_days ?? 0;
+  document.getElementById("stat-groups").textContent = (cs.groups || []).length + " / 5";
+
+  // §1 双轴折线
+  renderChart();
+
+  // §2 分组表
+  renderGroups();
+
+  // §3 相关性
+  renderCorr();
+
+  // §4 actionBar（复制数据/日志 · Base 控件）
+  var abZone = document.getElementById("actionbar-zone");
+  if (abZone && window.actionBar) {
+    abZone.innerHTML = window.actionBar(payload);
+  }
+
+  function renderChart(){
+    var box = document.getElementById("chart");
+    if (!series.length) {
+      box.innerHTML = '<div class="empty">📭 窗口内没有「同一天既有睡眠又有体重」的数据。<br>多记录几天，或扩大时间窗口再试。</div>';
+      return;
+    }
+    var W = Math.max(box.clientWidth || 760, 300);
+    var H = Math.round(W * 0.42);
+    var padL = 46, padR = 46, padT = 18, padB = 30;
+    var pw = W - padL - padR, ph = H - padT - padB;
+    var n = series.length;
+
+    var sleepMin = 0, sleepMax = 720;
+    var wv = series.map(function(s){ return s.weight_kg; });
+    var wMin = Math.min.apply(null, wv), wMax = Math.max.apply(null, wv);
+    var wSpan = (wMax - wMin) || 1;
+    wMin -= wSpan * 0.15; wMax += wSpan * 0.15;
+
+    function x(i){ return padL + (n === 1 ? pw / 2 : i * pw / (n - 1)); }
+    function ySleep(m){ return padT + ph - (Math.min(Math.max(m, sleepMin), sleepMax) - sleepMin) / (sleepMax - sleepMin) * ph; }
+    function yW(kg){ return padT + ph - (kg - wMin) / (wMax - wMin) * ph; }
+
+    var pathSleep = series.map(function(s, i){ return (i ? "L" : "M") + x(i).toFixed(1) + " " + ySleep(s.sleep_min).toFixed(1); }).join(" ");
+    var pathW = series.map(function(s, i){ return (i ? "L" : "M") + x(i).toFixed(1) + " " + yW(s.weight_kg).toFixed(1); }).join(" ");
+
+    // y 轴刻度：睡眠 4 档（0/240/480/720 分钟）
+    var ticksSleep = [0, 240, 480, 720].map(function(v){
+      return '<line x1="' + padL + '" y1="' + ySleep(v) + '" x2="' + (W - padR) + '" y2="' + ySleep(v) + '" stroke="#f0f0f2" stroke-width="1"/>'
+           + '<text x="' + (padL - 6) + '" y="' + (ySleep(v) + 4) + '" text-anchor="end" font-size="10" fill="#9b9ba0">' + v + '</text>';
+    }).join("");
+    // 体重刻度：3 档
+    var ticksW = [0, 0.5, 1].map(function(t){
+      var v = wMin + (wMax - wMin) * t;
+      var label = v.toFixed(1);
+      return '<line x1="' + (W - padR) + '" y1="' + yW(v) + '" x2="' + (W - padR + 4) + '" y2="' + yW(v) + '" stroke="#d2d2d7" stroke-width="1"/>'
+           + '<text x="' + (W - padR + 8) + '" y="' + (yW(v) + 4) + '" font-size="10" fill="#9b9ba0">' + label + '</text>';
+    }).join("");
+    // x 轴日期标签（首/中/尾）
+    var idxs = [];
+    if (n <= 8) { for (var i = 0; i < n; i++) idxs.push(i); }
+    else { idxs = [0, Math.floor((n - 1) / 2), n - 1]; }
+    var xLabels = idxs.map(function(i){
+      return '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="#9b9ba0">' + esc(series[i].date.slice(5)) + '</text>';
+    }).join("");
+
+    box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg">'
+      + ticksSleep + ticksW + xLabels
+      + '<line x1="' + padL + '" y1="' + (padT + ph) + '" x2="' + (W - padR) + '" y2="' + (padT + ph) + '" stroke="#d2d2d7" stroke-width="1"/>'
+      + '<path d="' + pathSleep + '" fill="none" stroke="#007aff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
+      + '<path d="' + pathW + '" fill="none" stroke="#34c759" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
+      + series.map(function(s, i){
+          return '<circle cx="' + x(i).toFixed(1) + '" cy="' + ySleep(s.sleep_min).toFixed(1) + '" r="3" fill="#007aff"/>'
+               + '<circle cx="' + x(i).toFixed(1) + '" cy="' + yW(s.weight_kg).toFixed(1) + '" r="3" fill="#34c759"/>';
+        }).join("")
+      + '</svg>';
+  }
+
+  function renderGroups(){
+    var box = document.getElementById("group-table");
+    var groups = cs.groups || [];
+    if (!groups.length) {
+      box.innerHTML = '<div class="empty">暂无分组数据。</div>';
+      return;
+    }
+    var rows = groups.map(function(g){
+      var d = g.weight_delta;
+      var cls = (d === null || d === undefined) ? "delta-flat" : (d > 0.05 ? "delta-up" : (d < -0.05 ? "delta-down" : "delta-flat"));
+      var arrow = (d === null || d === undefined) ? "" : (d > 0.05 ? "▲" : (d < -0.05 ? "▼" : "▬"));
+      var dS = (d === null || d === undefined) ? "—" : (d > 0 ? "+" : "") + d.toFixed(2) + " kg";
+      var bar = (d === null || d === undefined) ? "" : '<span class="bar" style="width:' + Math.min(Math.abs(d) * 40, 80) + 'px;background:' + (d > 0.05 ? "var(--danger)" : "var(--good)") + '"></span>';
+      return '<tr><td class="b-label">' + esc(g.label) + '</td>'
+        + '<td>' + g.days + ' 天</td>'
+        + '<td>' + dur(g.sleep_avg || 0) + '</td>'
+        + '<td class="' + cls + '">' + arrow + ' ' + dS + bar + '</td></tr>';
+    }).join("");
+    box.innerHTML = '<table><thead><tr><th>睡眠档</th><th>天数</th><th>日均睡眠</th><th>体重净变化</th></tr></thead><tbody>'
+      + rows + '</tbody></table>';
+  }
+
+  function renderCorr(){
+    var grid = document.getElementById("corr-grid");
+    var corr = cs.correlation || {};
+    function card(label, r, hint){
+      if (r === null || r === undefined) {
+        return '<div class="corr-card"><div class="l">' + esc(label) + '</div><div class="v">—</div><div class="h">' + esc(hint) + '</div></div>';
+      }
+      var strength = Math.abs(r) >= 0.5 ? "强" : (Math.abs(r) >= 0.3 ? "中" : "弱");
+      var dir = r > 0 ? "正相关（睡得久体重偏高）" : (r < 0 ? "负相关（睡得久体重偏低）" : "无相关");
+      return '<div class="corr-card"><div class="l">' + esc(label) + '</div><div class="v">r = ' + r.toFixed(2) + '</div><div class="h">' + strength + dir + ' · ' + esc(hint) + '</div></div>';
+    }
+    grid.innerHTML =
+      card("同日相关", corr.same_day, "当天睡眠时长 vs 当天体重") +
+      card("前夜相关（滞后 1 天）", corr.lag_1day, "前一夜睡眠 vs 次日体重");
+  }
+})();
+</script>
+</body>
+</html>

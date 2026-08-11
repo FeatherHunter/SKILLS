@@ -1,0 +1,55 @@
+# -*- coding: utf-8 -*-
+"""<技能名> · 技能互联注册表（提供方侧 · 模板脚手架）
+
+用法（技能互联 SKILL.md「接入步骤」）:
+  1. 本模板复制到 <技能>/PUBLIC_DOMAINS.py
+  2. 按下面注册表格式填自己的域（一个域一段）
+  3. 在 技能互联/skill_registry.yaml 登记: 技能名 → 路径 + module: PUBLIC_DOMAINS
+  4. 校验器（check_public_contract · #273）跑绿
+
+契约: 技能互联/docs/契约规范-v1.md（#272 定稿 · 2026-08-11 用户逐条拍板）
+形态: 本文件只放注册表 + 取数函数；命令真身（skilllink-read）住技能互联 Base。
+
+⚠️ DB 连接注意（#274 实测教训）:
+  get_connection 必须**函数内动态取**（import 技能 DB 模块后属性访问），
+  不能模块级 from-import 绑定——否则测试 fixture 的 monkeypatch 在 import
+  缓存下失效（跨用例连到旧临时 DB）。
+"""
+
+# import sys
+# from pathlib import Path
+# _SCRIPTS = Path(__file__).resolve().parent / "scripts"
+# if str(_SCRIPTS) not in sys.path:
+#     sys.path.insert(0, str(_SCRIPTS))
+
+
+def fetch_<domain>(start: str, end: str) -> list[dict]:
+    """取 [start, end] 的 <域中文名> 数据（一行一条，按 date 升序）。
+
+    fetch 签名契约（技能互联）: fetch(start, end) -> list[dict]。
+    字段名与类型须与注册表 fields 声明一致（AI 靠它理解数据）。
+    """
+    # import <技能_db模块>
+    # conn = <技能_db模块>.get_connection()
+    # try:
+    #     rows = conn.execute(
+    #         "SELECT date, <字段> FROM <表> WHERE date >= ? AND date <= ? ORDER BY date",
+    #         (start, end),
+    #     ).fetchall()
+    # finally:
+    #     conn.close()
+    # return [{"date": r[0], "<字段>": r[1]} for r in rows]   # 注意: 无 row_factory 时用位置索引
+    return []
+
+
+PUBLIC_DOMAINS = {
+    # "<域名称>": {          # 机器标识（如 sleep）
+    #     "name": "<中文名>",  # 人类可读（如 睡眠）
+    #     "desc": "<一句话说明>",  # 帮 AI 判断该域适不适合当前场景
+    #     "fields": [         # 字段列表（契约 v1 §3/§4）
+    #         {"name": "date", "type": "date", "unit": "", "desc": "日期（YYYY-MM-DD）"},
+    #         {"name": "<字段>", "type": "number", "unit": "<单位>", "desc": "<说明>"},
+    #     ],
+    #     "fetch": fetch_<domain>,
+    # },
+}

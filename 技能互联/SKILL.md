@@ -48,18 +48,18 @@ disable-model-invocation: true
 ```
 技能互联/                    # Base Skill（与公共组件平级）
   SKILL.md                  # 本文件（Base 定义：定位 + 资产清单 + 接入步骤 + 强制依赖表述）
-  README.md                 # 使用手册（接入步骤 + 校验器 + 总览）【待 #271 产出后建】
+  README.md                 # 使用手册（接入步骤 + 校验器 + 总览）【待 #273/README ticket 产出后建】
   CHANGELOG.md              # 版本变更记录（对齐公共组件）【待建】
-  skilllink.py              # 命令真身（公共 runner）：参数解析 + 统一信封 + --what/--contract【待 #274 试点实现】
-  skill_registry.yaml       # 技能名 → 路径 + 注册表模块（Base 侧单一真相源）【待建】
+  skilllink.py              # 命令真身（公共 runner）：参数解析 + 统一信封 + --what【✅ #274 试点实现】
+  skill_registry.yaml       # 技能名 → 路径 + 注册表模块（Base 侧单一真相源）【✅ #274 落地 · 已登记 作息管家/卡路里】
   scaffolds/
-    PUBLIC_DOMAINS.py.template  # 模板脚手架：新技能接入时复制改名 + 填注册表【待 #274 试点建】
+    PUBLIC_DOMAINS.py.template  # 模板脚手架：新技能接入时复制改名 + 填注册表【✅ #274 落地】
   templates/
     overview.html           # 互联总览 HELP（#276 落地，骨架先占位）【待 #276】
   docs/
     契约规范-v1.md           # 数据契约规范 v1（定稿 · 2026-08-11 · 用户逐条拍板）
   tests/
-    test_skilllink.py       # 命令/信封守卫测试（temp_db 隔离约定）【待 #274 试点建】
+    test_skilllink.py       # 命令/信封守卫测试（temp_db 隔离约定）【✅ #274 落地 · 7 passed】
 ```
 
 > 注册表约定（#271 拍板）：`skill_registry.yaml` **只存技能名 → 路径 + 注册表模块**，不存 DB 路径——skilllink 查询数据时各技能自己 `find_db_path` 动态解析（尊重 `SKILLS_DB_PATH` 环境变量，测试天然隔离，绝不写死生产路径）。yaml 由新技能接入时手工登记，校验器双向检查（技能存在没登记 / 登记了没注册表 → 都红）。
@@ -76,7 +76,7 @@ disable-model-invocation: true
 - ✅ #272 契约规范 v1 定稿（closed）
 - ✅ #271 Base 骨架设计（closed · 本文件 = 骨架定稿）
 - ⏳ #273 校验器（01/02 已闭 → **可认领**）
-- ⏳ #274 作息管家试点（契约已闭 → **可认领**）
+- ✅ #274 作息管家试点（closed 2026-08-11 · Base 最小实现 + sleep 域 + CS-02 全链路）
 - ⏳ #275 组合表落库（frontier · 可认领）
 - ⏳ #276 互联总览（阻塞 03/04）
 - ⏳ #277-#282 六技能消费方开发（#272 已闭 → 解锁，逐个 grilling）

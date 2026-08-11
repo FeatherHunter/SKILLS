@@ -43,6 +43,19 @@ disable-model-invocation: true
 - **命令**：`skilllink-read --skill <技能> --domain <域> --from <开始> --to <结束>`（--what 问能力）
 - **命令真身住本 Base**：`skilllink.py`（公共 runner：参数解析 + 统一信封 + --what/--contract），各技能只填注册表，不重复实现
 
+## 执行联动（#275 组合表落库后 · 2026-08-12 补）
+
+**当用户发起一个联动场景（唤醒词含「协同/联动」或命中技能 HELP 的技能协同分类）时，AI 按以下顺序执行：**
+
+1. **读组合表**：打开 `references/combos.yaml`（权威源 · 36 场景 × 11 字段），按唤醒词找到对应场景（id / name / wake_word 匹配）
+2. **读场景字段**：从该场景条目取 external_ww（外部技能怎么问）、external_data（要什么数据）、calorie_side（卡路里侧出什么）、merge_logic（怎么合并）、present（怎么呈现）
+3. **查外部技能数据**：
+   - 已接入（registry 有登记）→ 调 `skilllink-read --skill <技能> --domain <域> --from <开始> --to <结束>`
+   - 未接入 → 降级：按 external_ww 加载对方技能对话式查，或如实告知「该技能未接入」
+4. **合并呈现**：按 merge_logic 对齐两边数据，按 present 渲染 HTML（走公共组件），降级场景标注「近似」交用户确认
+
+> 组合表是**需求语义**（做什么/怎么合并），注册表是**实现声明**（能提供什么域）——各司其职，不互相替代。改场景字段改 combos.yaml（勿手改派生文件 11-技能协同.json）。
+
 ## 目录结构（#271 定稿）
 
 ```
@@ -58,6 +71,8 @@ disable-model-invocation: true
     overview.html           # 互联总览 HELP（#276 落地，骨架先占位）【待 #276】
   docs/
     契约规范-v1.md           # 数据契约规范 v1（定稿 · 2026-08-11 · 用户逐条拍板）
+  references/
+    combos.yaml             # 联动组合表（权威源 · 36 场景 × 11 字段 · #275 落库 v1.0）
   tests/
     test_skilllink.py       # 命令/信封守卫测试（temp_db 隔离约定）【✅ #274 落地 · 7 passed】
 ```

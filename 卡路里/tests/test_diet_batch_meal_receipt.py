@@ -137,3 +137,30 @@ def test_batch_meal_without_time_same_instant(temp_db):
     # 两条写库 time 必须一致(同餐同时刻)
     assert data['data']['new_record']['food_count'] == 2
     p.unlink(missing_ok=True)
+
+
+def test_cli_batch_meal_renders(tmp_path):
+    """盲区审查(#49 · 2026-08-11):--live-diet-batch-meal CLI 端到端渲染
+
+    此前 argparse 定义了该 flag,但 main() 的 active 检测循环漏了它 → active=None
+    → 'NoneType'.startswith 崩溃 → CLI 调用必崩(b633c9e 修复)。本用例走 CLI
+    subprocess(隔离 DB),锁住 main() 入口整条链路,防止单测只调函数再次漏网。
+    """
+    import os
+    import subprocess
+    env_dir = tmp_path / 'db'
+    env_dir.mkdir()
+    meal_file = env_dir / 'meal.json'
+    meal_file.write_text(json.dumps([
+        {'food_name': '豆腐汤', 'grams': 300, 'calories': 90, 'protein': 5, 'carbs': 4, 'fat': 6},
+    ], ensure_ascii=False), encoding='utf-8')
+    env = {**os.environ, 'SKILLS_DB_PATH': str(env_dir)}
+    res = subprocess.run(
+        [sys.executable, 'render_crud_receipt.py', '--live-diet-batch-meal',
+         '--input', str(meal_file), '--chain', '1.CLI端到端批量同餐合并'],
+        cwd=str(Path(__file__).resolve().parent.parent / 'scripts'),
+        env=env, capture_output=True, text=True, encoding='utf-8', timeout=120)
+    assert res.returncode == 0, f'CLI 渲染失败: {res.stderr}'
+    html_files = list((env_dir / 'calorie_html').glob('记一餐(同餐合并)_回执_*.html'))
+    assert html_files, f'未生成同餐合并回执,实际:{[p.name for p in (env_dir / "calorie_html").iterdir()]}'
+    assert html_files[0].read_text(encoding='utf-8').strip()

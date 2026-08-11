@@ -154,11 +154,18 @@ def test_help_html_search_shortcut():
 
 
 def test_help_html_mobile_touch_target():
-    """移动端场景头部一行布局:复制按钮视觉紧凑(28px,与行内元素平衡)+ 标题截断(体验增强 · 对抗式审查 #2)"""
+    """移动端场景头部两行布局(#243 修复):第一行=箭头+徽章+复制按钮,第二行=标题独占全宽完整显示"""
     h = HELP_HTML.read_text(encoding="utf-8")
     assert "min-height:28px" in h, "移动端复制按钮应视觉紧凑(28px,与 chip/徽章平衡)"
-    assert ".scene-head .scene-id{display:none}" in h, "移动端应隐藏低价值 scene-id(一行布局)"
-    assert "text-overflow:ellipsis" in h, "移动端标题必须截断(一行布局)"
+    assert ".scene-head .scene-id{display:none}" in h, "移动端应隐藏低价值 scene-id"
+    # #243 拍板:移动端标题必须完整显示 → 标题独占一行(flex-basis:100%),禁止 ellipsis 截断
+    assert "flex-basis:100%" in h, "移动端标题应独占一行(flex-basis:100%,完整显示)"
+    assert ".scene-head .scene-title{min-width:0;font-size:13.5px;flex-basis:100%;order:5}" in h, \
+        "移动端标题不得 ellipsis 截断,必须完整换行显示"
+    # 移动端 @media 场景头部块(标题独占行)不得出现 ellipsis
+    mobile_block = h[h.index("场景头部"):h.index("</style>")]
+    assert "text-overflow:ellipsis" not in mobile_block, \
+        "移动端标题不得 ellipsis 截断(#243 拍板:标题完整显示)"
 
 
 # ────────────────────────────────────────────────────────────

@@ -54,7 +54,7 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin-bottom:8px}
 .scene:last-child{margin-bottom:0}
 .scene>summary.scene-head{padding:14px 16px;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;flex-wrap:wrap;list-style:none;transition:background .15s}
 .scene>summary.scene-head::-webkit-details-marker{display:none}
-.scene>summary.scene-head::before{content:"▸";font-size:11px;color:var(--fg3);transition:transform .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;line-height:1}
+.scene>summary.scene-head::before{content:"▸";font-size:11px;color:var(--fg3);transition:transform .15s;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:0;margin-right:0;line-height:1}
 .scene[open]>summary.scene-head::before{transform:rotate(90deg);color:var(--blue)}
 .scene>summary.scene-head:hover{background:var(--soft)}
 .scene-id{font-size:11px;color:var(--fg3);font-weight:700;font-family:ui-monospace,Menlo,monospace}
@@ -80,7 +80,7 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin-bottom:8px}
 .module{background:var(--card);border-radius:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-bottom:12px;overflow:hidden}
 .module>summary{padding:9px 14px;cursor:pointer;font-size:14.5px;font-weight:700;color:var(--fg);user-select:none;display:flex;align-items:center;gap:10px;list-style:none;transition:background .15s}
 .module>summary::-webkit-details-marker{display:none}
-.module>summary::before{content:"▶";display:inline-flex;align-items:center;justify-content:center;width:12px;margin-right:-2px;font-size:9px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.module>summary::before{content:"▶";display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:0;margin-right:0;font-size:9px;color:var(--fg3);transition:transform .15s;flex-shrink:0;line-height:1}
 .module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
 .module>summary:hover{background:var(--soft)}
 .module-body{padding:0 12px 8px}
@@ -91,7 +91,7 @@ h1{font-size:30px;line-height:1.2;letter-spacing:-.02em;margin-bottom:8px}
 .sub-module{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;overflow:hidden}
 .sub-module>summary{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:600;color:var(--fg2);user-select:none;list-style:none;display:flex;align-items:center;gap:8px;transition:background .15s}
 .sub-module>summary::-webkit-details-marker{display:none}
-.sub-module>summary::before{content:"▸";display:inline-flex;align-items:center;justify-content:center;width:8px;margin-right:-8px;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+.sub-module>summary::before{content:"▸";display:inline-flex;align-items:center;justify-content:center;width:auto;min-width:0;margin-right:0;font-size:10px;color:var(--fg3);transition:transform .15s;flex-shrink:0;line-height:1}
 .sub-module[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
 .sub-module>summary:hover{background:var(--soft)}
 .module>summary:active,.sub-module>summary:active,.scene>summary:active{background:var(--soft)}
@@ -133,10 +133,10 @@ footer{text-align:center;color:var(--fg3);font-size:11px;padding:20px 0 0;margin
   .toast.show{transform:translateX(0) scale(1)}
   .init-banner{flex-direction:column;align-items:stretch;text-align:center}
   .init-banner .copy-btn{width:100%}
-  /* 场景头部一行:隐藏低价值 id,标题截断,按钮紧凑 */
-  .scene>summary.scene-head{flex-wrap:nowrap;gap:4px;padding:9px 10px}
+  /* 场景头部:第一行=箭头+徽章+按钮,第二行=标题独占全宽(移动端标题完整+减少孤字) */
+  .scene>summary.scene-head{flex-wrap:wrap;gap:4px 6px;padding:9px 10px}
   .scene-head .scene-id{display:none}
-  .scene-head .scene-title{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13.5px}
+  .scene-head .scene-title{min-width:0;font-size:13.5px;flex-basis:100%;order:5}
   .scene-head .chip{font-size:10.5px;padding:1px 7px}
   .scene-head .type-badge{font-size:10px;padding:1px 7px}
   .scene-head .copy-btn{min-height:28px;min-width:56px;padding:0 10px;font-size:11px;margin-left:auto}

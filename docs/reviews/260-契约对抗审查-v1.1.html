@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>对抗式审查 · 两份契约 v1</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f7; color: #1d1d1f; line-height: 1.65;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 18px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: #86868b; font-size: 13.5px; margin-top: 4px; }
+  h2 { font-size: 16px; font-weight: 700; margin: 16px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  .sev { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 999px; margin-left: 6px; vertical-align: 1px; }
+  .sev-h { background: #fdecec; color: #b42318; }
+  .sev-m { background: #fff3d6; color: #9a6b00; }
+  .sev-l { background: #f3f3f5; color: #6e6e73; }
+  .issue { border: 1.5px solid #e5e5ea; border-radius: 14px; padding: 14px 16px; margin: 12px 0; }
+  .issue-head { font-size: 14.5px; font-weight: 700; margin-bottom: 4px; }
+  .issue .why { font-size: 13.5px; margin-top: 6px; }
+  .issue .fix { font-size: 13.5px; margin-top: 6px; background: #f6fafe; border-radius: 10px; padding: 8px 12px; }
+  .issue .fix b { color: #0a5bc4; }
+  .issue .why b { color: #1d1d1f; }
+  code { background: #f0f0f2; border-radius: 5px; padding: 1px 6px; font-size: 12.5px; font-family: "SF Mono", Consolas, monospace; }
+  .verdict { background: #f0fdf4; border-left: 3px solid #34c759; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 14px; }
+  .muted { color: #86868b; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>对抗式审查 · 两份契约 v1</h1>
+    <div class="sub">扮演 verifier：挑毛病，不走过场——从第一性原理问「这契约拿去实施，会在哪翻车」</div>
+  </div>
+
+  <div class="card">
+    <h2>高优先级（必改，不改实施必翻车）</h2>
+
+    <div class="issue">
+      <div class="issue-head">① Base 资产与居家管家《_shared.py》双源漂移风险 <span class="sev sev-h">高</span></div>
+      <div class="why"><b>为什么是问题</b>：契约说 base.js「逐字来自 v2 基准（居家管家 _shared.py）」——但 _shared.py 是<b>技能内文件</b>，Base assets/base.js 是<b>新文件</b>，两者同源并存。这正是拷贝漂移的病根（饼干记账前科）：改 Base 后居家管家还用旧 _shared.py → 又分叉。<b>唯一真相源没定义。</b></div>
+      <div class="fix"><b>修法</b>：契约声明「<b>Base = 唯一真相源</b>；各技能原实现（含居家管家 _shared.py / 饼干记账 _shared_js.py 等）在对应技能迁移完成后<b>退役</b>」；迁移完成前，修改只允许发生在 Base，技能文件只读。</div>
+    </div>
+
+    <div class="issue">
+      <div class="issue-head">② payload 信封契约缺失 <span class="sev sev-h">高</span></div>
+      <div class="why"><b>为什么是问题</b>：Base 组件（buildDataText/buildLogText/metaHeader）依赖 <code>data.meta</code>（command_cn/occurred_at）和 <code>data.scene</code> 结构——但契约没定义「payload 信封」：6 技能 payload 结构不一样，注入器也不校验结构。<b>组件契约缺了它依赖的输入契约</b>（T3 早就提过「先定 payload 信封契约」，v1 漏了）。</div>
+      <div class="fix"><b>修法</b>：契约补「<b>payload 信封契约</b>」：<code>{status:'ok', data:{meta:{command_cn, occurred_at, wake_word?, skill_version?}, scene:{...}}}</code>；注入器加结构校验（可选开关），build* 函数依赖字段列出清单。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>中优先级（应改，不然后面返工）</h2>
+
+    <div class="issue">
+      <div class="issue-head">③ 硬拦截的豁免通道未定义 <span class="sev sev-m">中</span></div>
+      <div class="why"><b>为什么是问题</b>：硬拦截 = 模板必须恰 1 个 SHARED-HELPERS。但全仓库模板都真的需要公共 JS 吗？纯静态页（error 简单页？）被硬拦会逼着无意义注入。<b>没有豁免机制，「强制」会误伤合理场景。</b></div>
+      <div class="fix"><b>修法</b>：定义豁免规则：模板头部声明 <code>&lt;!--NO-SHARED--&gt;</code> 显式豁免（白名单式，缺省=必须注入）；豁免名单由 render 公共层维护并审查。</div>
+    </div>
+
+    <div class="issue">
+      <div class="issue-head">④ 签名变更/版本机制缺失 <span class="sev sev-m">中</span></div>
+      <div class="why"><b>为什么是问题</b>：Base 是跨技能资产，改一个签名波及 6 技能 100+ 模板。契约说「修改走公共层 ISSUE」，但<b>没有版本号/破坏性变更规则</b>——签名改了，哪些技能必须同步？怎么知道谁还没跟上？</div>
+      <div class="fix"><b>修法</b>：契约加版本字段（Base v1.0）；<b>签名变更 = 破坏性变更</b>：必须全技能同步 + 一次性完成 + 变更记录进 CHANGELOG；兼容期规则（旧签名保留一个版本周期）。</div>
+    </div>
+
+    <div class="issue">
+      <div class="issue-head">⑤ HELP 场景卡片的「可编辑字段」结构缺失 <span class="sev sev-m">中</span></div>
+      <div class="why"><b>为什么是问题</b>：复制按钮契约 v2（#123 拍板）要求「复制 prompt 参数化：可编辑字段 + 实时预览 + 空值拦截」——HELP 场景卡片大概率要支持这个。参数化 HELP 契约的 scenes 数据结构没定义 <code>editable_fields</code>，<b>会与复制按钮契约 v2 冲突</b>。</div>
+      <div class="fix"><b>修法</b>：scenes 参数补 <code>editable_fields?: [{name, label, value, hint}]</code>（复用 Base P0 copyText + 表单交互），与复制按钮契约 v2 对齐。</div>
+    </div>
+
+    <div class="issue">
+      <div class="issue-head">⑥ output_filename 路径安全 <span class="sev sev-m">中</span></div>
+      <div class="why"><b>为什么是问题</b>：文件名参数化——如果外部传入 <code>../../x</code> 就能写出任意路径。安全盲区。</div>
+      <div class="fix"><b>修法</b>：文件名 sanitize：只允许 <code>[a-zA-Z0-9_\-\u4e00-\u9fa5]</code> + .html 后缀，禁路径分隔符；校验失败报错。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>低优先级（可选，先记着）</h2>
+    <div class="issue">
+      <div class="issue-head">⑦ P0/P1 实施分界未定义 <span class="sev sev-l">低</span></div>
+      <div class="why">第一版 P0+P1 一起入库，P0/P1 标签变成纯分类——实施时谁先验收、谁先冻结没写清。</div>
+      <div class="fix"><b>修法</b>：写清「P0 先行冻结验收 → P1 跟随」的两步走（原型已按此验证）。</div>
+    </div>
+    <div class="issue">
+      <div class="issue-head">⑧ scene_data 兼容性未调查 <span class="sev sev-l">低</span></div>
+      <div class="why">参数化 HELP 假设了统一 scenes 结构，但各技能 scene_data JSON 是否兼容没盘过——有「脑补」风险（你的原则：不脑补）。</div>
+      <div class="fix"><b>修法</b>：HELP 参数化实施前（P2 阶段）先做 scene_data 结构盘点，确认统一结构可行再定稿；本契约标注「待盘点确认」。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>结论</h2>
+    <div class="verdict">必改 2 条（双源漂移 + payload 信封）→ 应改 4 条（豁免/版本/可编辑字段/文件名安全）→ 可选 2 条（P0/P1 分界 + scene_data 盘点）。<b>第①条最重要</b>：不定义唯一真相源，Base 出生第一天就带着「会再次分叉」的种子。</div>
+    <p class="muted">你拍板：① 这 8 条全部修进契约 v1.1？② 还是先修高+中（6 条）、低 2 条记 map 盲区？③ 或者你有不同判断？</p>
+  </div>
+
+</div>
+</body>
+</html>

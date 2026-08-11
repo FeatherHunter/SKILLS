@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T4 收口完成 · Base Skill map 进入实施期</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f7; color: #1d1d1f; line-height: 1.65;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 18px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: #86868b; font-size: 13.5px; margin-top: 4px; }
+  h2 { font-size: 16px; font-weight: 700; margin: 18px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  p, li { font-size: 13.8px; color: #3a3a3c; }
+  ul, ol { padding-left: 20px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.8px; margin: 10px 0; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #f0f0f2; vertical-align: top; }
+  th { background: #fafafc; font-weight: 600; color: #86868b; font-size: 11.5px; }
+  code { background: #f0f0f2; border-radius: 5px; padding: 1px 6px; font-size: 12px; font-family: "SF Mono", Consolas, monospace; }
+  .done { color: #1d7a44; font-weight: 700; }
+  .todo { color: #9a6b00; font-weight: 700; }
+  .pill { display: inline-block; background: #f0f0f2; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: #515154; margin-right: 6px; }
+  .pill.green { background: #e8f6ee; color: #1d7a44; }
+  .verdict { background: #f0fdf4; border-left: 3px solid #34c759; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 14px; }
+  .warn { background: #fffbea; border-left: 3px solid #ff9500; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 13.5px; }
+  .muted { color: #86868b; font-size: 12.5px; }
+  .timeline { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+  .tl { display: flex; gap: 10px; align-items: baseline; font-size: 13.5px; }
+  .tl .t { color: #86868b; font-size: 12px; width: 84px; flex-shrink: 0; }
+  .tl .dot { color: #34c759; font-weight: 700; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>T4 收口完成 · map 进入实施期</h1>
+    <div class="sub">你的 Q1A/Q2A/Q3A 拍板全部落地：契约验收通过 · 机制 3 独立 · 实施子票开出</div>
+  </div>
+
+  <div class="card">
+    <h2>① 本次做了什么</h2>
+    <div class="timeline">
+      <div class="tl"><span class="t">13:0x</span><span><span class="dot">✔</span> 认领 T4(#264)：assignee = FeatherHunter</span></div>
+      <div class="tl"><span class="t">13:0x</span><span><span class="dot">✔</span> 复跑注入器原型 11/11 全绿（含守卫三反例硬拦截）</span></div>
+      <div class="tl"><span class="t">13:0x</span><span><span class="dot">✔</span> 交付收口验收页（两份契约 v1.1 摘要 + 3 拍板点）</span></div>
+      <div class="tl"><span class="t">13:0x</span><span><span class="dot">✔</span> 你拍板「三个都是 A」</span></div>
+      <div class="tl"><span class="t">13:05</span><span><span class="dot">✔</span> 开 3 张实施子票 + wire 阻塞 + close T4 + 更新 map #260</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② 3 张子票（均挂 parent #260）</h2>
+    <table>
+      <tr><th>票</th><th>类型</th><th>内容</th><th>阻塞</th></tr>
+      <tr><td><a href="https://github.com/FeatherHunter/SKILLS/issues/267">机制 3 · 辅助 SKILL 操作手册 #267</a></td><td>task(AFK)</td><td>执行前/中/后框架的独立辅助 SKILL；wayfinder 技能文件零改动</td><td>—</td></tr>
+      <tr><td><a href="https://github.com/FeatherHunter/SKILLS/issues/268">Base Skill 定稿入库 #268</a></td><td>task(AFK)</td><td><code>公共组件/</code> 资产：SKILL.md/README/CHANGELOG/base.js P0+P1/base.css/injector.py/两份契约 + 守卫测试</td><td>⛓ #264（已解）</td></tr>
+      <tr><td><a href="https://github.com/FeatherHunter/SKILLS/issues/269">作息管家试点 #269</a></td><td>task(HITL)</td><td>接注入管线 + 波次1 复制按钮全页面统一 + 迁移操作手册提炼</td><td>⛓ #268</td></tr>
+    </table>
+    <p class="muted" style="margin-top:6px">Frontier：<span class="pill green">可取 #267</span><span class="pill green">可取 #268</span><span class="pill">#269 等 #268 解阻塞</span></p>
+  </div>
+
+  <div class="card">
+    <h2>③ T4(#264) 闭环确认</h2>
+    <div class="check" style="display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f7;font-size:13.5px;"><span class="done">✅</span><span>注入器原型跑通（11/11 + 白屏修复）</span></div>
+    <div class="check" style="display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f7;font-size:13.5px;"><span class="done">✅</span><span>组件契约 v1.1 + HELP 模板契约 v1.1（对抗审查 9 条修正）</span></div>
+    <div class="check" style="display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f7;font-size:13.5px;"><span class="done">✅</span><span>执行框架机制 1/2/4</span></div>
+    <div class="check" style="display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f7;font-size:13.5px;"><span class="done">✅</span><span>用户人工验收（Q1A 通过）</span></div>
+    <div class="check" style="display:flex;align-items:baseline;gap:8px;padding:6px 0;font-size:13.5px;"><span class="done">✅</span><span>机制 3 → #267（Q2A 独立）</span></div>
+    <div class="verdict" style="margin-top:10px"><b>#264 closed</b>（2026-08-11 13:05，决议评论已贴）——T4 决策使命全部完成，实施随 #268/#269 推进。</div>
+  </div>
+
+  <div class="card">
+    <h2>④ map #260 已同步</h2>
+    <ul>
+      <li>Decisions so far：T4 更新为 closed（含契约 v1.1 要点 + 收口决议）</li>
+      <li>票清单：新增「实施子票」区（#267/#268/#269）+ Frontier 更新</li>
+      <li>盲区清单：试点选择已拍板（作息管家）</li>
+      <li>本地镜像 map.md 已同步（GitHub 正文 = 真相源）</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 待 push 清单（push 由你负责）</h2>
+    <table>
+      <tr><th>commit</th><th>说明</th></tr>
+      <tr><td><code>5bee226</code></td><td>docs/agents/delivery-fidelity.md（AI 交付 6 保真手段）</td></tr>
+      <tr><td><code>572aba2</code></td><td>docs/agents/execution-framework.md（执行前/中/后框架）</td></tr>
+      <tr><td><code>be06a72 / fb01441 / badb012</code></td><td>[居家管家] #244/#243 交付归档 + 修复（其他会话产出，含 Playwright 四档实测）</td></tr>
+    </table>
+    <p class="muted" style="margin-top:6px">本次会话无本地 commit（全部是 GitHub issue 操作 + .scratch 交付物，后者不入 git）</p>
+  </div>
+
+  <div class="card">
+    <h2>⑥ 下一步建议</h2>
+    <p>按 wayfinder 规则本会话只收口了 T4（1 个 ticket）。实施期从 <b>#268（Base 定稿入库）</b>开始最顺——它是 #269 的阻塞、也是第一批串行的第一站；#267（机制 3）可并行。</p>
+    <div class="warn"><b>要不要现在继续？</b>直接说「继续 #268」我就开工：把原型定稿成 <code>公共组件/</code> 资产（含守卫测试 + 全中文 commit）。或者你想先歇会儿/先 push，也行。</div>
+  </div>
+
+</div>
+</body>
+</html>

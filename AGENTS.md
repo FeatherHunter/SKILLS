@@ -79,3 +79,7 @@ GitHub Issues（`FeatherHunter/SKILLS`），按技能前缀分区：`[备忘录]
 ### Execution framework（执行框架）
 
 用户定制的「执行前 / 执行中 / 执行后」三项工作要求：**执行前**（告诉起点 → 发现盲区 → 采访澄清 → 原型验证 → 执行计划）、**执行中**（记录偏离）、**执行后**（过程复盘 → 确认理解 → AI 反向考验 → 答明白再交付）。任何 agent 执行 wayfinder / map / ticket / 技能任务时默认遵守；**不修改 wayfinder 技能文件**，靠本约定 + `docs/agents/execution-framework.md` + 辅助 SKILL 落实。详见 `docs/agents/execution-framework.md`。
+
+### Base Skill（公共组件）
+
+跨技能前端公共层（`公共组件/`，契约见 `公共组件/docs/component-contract.md`）：**占位符注入管线**（`<!--INJECT-DATA-->` / `<!--SHARED-HELPERS-->` 硬拦截 + `<!--NO-SHARED-->` 豁免）+ **P0/P1 组件**（toast / copyText v2 / 守卫组 / buildDataText / actionBar / token A 组）。任何 agent 给技能写 HTML 渲染/改造复制按钮/统一 Toast 时默认走 Base（单一真相源，技能内文件只读防漂移）；注入器 `公共组件/injector.py`，修改契约走公共层 ISSUE。详见 `公共组件/SKILL.md` + `公共组件/README.md`。

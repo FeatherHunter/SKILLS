@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#268 交付完成 · Base Skill 定稿入库</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f7; color: #1d1d1f; line-height: 1.65;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 18px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: #86868b; font-size: 13.5px; margin-top: 4px; }
+  h2 { font-size: 16px; font-weight: 700; margin: 18px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  p, li { font-size: 13.8px; color: #3a3a3c; }
+  ul, ol { padding-left: 20px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.8px; margin: 10px 0; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #f0f0f2; vertical-align: top; }
+  th { background: #fafafc; font-weight: 600; color: #86868b; font-size: 11.5px; }
+  code { background: #f0f0f2; border-radius: 5px; padding: 1px 6px; font-size: 12px; font-family: "SF Mono", Consolas, monospace; }
+  .done { color: #1d7a44; font-weight: 700; }
+  .verdict { background: #f0fdf4; border-left: 3px solid #34c759; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 14px; }
+  .warn { background: #fffbea; border-left: 3px solid #ff9500; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 13.5px; }
+  .muted { color: #86868b; font-size: 12.5px; }
+  .tree { font-family: "SF Mono", Consolas, monospace; font-size: 12.5px; background: #fafafc; border-radius: 12px; padding: 14px 16px; line-height: 1.75; white-space: pre; overflow-x: auto; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>#268 交付完成 · Base Skill 定稿入库</h1>
+    <div class="sub">公共组件/ 目录就绪 · 守卫测试 17/17 全绿 · #269 解阻塞 · commit f250bea</div>
+  </div>
+
+  <div class="card">
+    <h2>① 交付了什么</h2>
+    <div class="tree">公共组件/
+├── SKILL.md              Base Skill 定义（触发词/资产清单/占位符契约）
+├── README.md             使用手册（接管线 5 步/占位符/payload 信封/验收清单）
+├── CHANGELOG.md          版本变更记录（v1.1 首个正式版）
+├── assets/
+│   ├── base.js           P0+P1 13 函数（守卫组/copyText v2/toast + 4 个 P1 组件）
+│   └── base.css          token A 组 12 变量 + 按钮样式（≤3 色/ghost 独立行/手机适配）
+├── injector.py           注入器（硬拦截 + --strict-payload + NO-SHARED 豁免）
+├── docs/
+│   ├── component-contract.md     组件契约 v1.1（冻结接口）
+│   └── help-template-contract.md 参数化 HELP 契约 v1.1（P2 第二版）
+└── tests/
+    └── test_injector.py  守卫测试 17 项</div>
+  </div>
+
+  <div class="card">
+    <h2>② 验证结果</h2>
+    <table>
+      <tr><th>验证</th><th>结果</th></tr>
+      <tr><td>守卫测试 pytest</td><td><span class="done">✅ 17/17 全绿</span>（硬拦截反例 ×5 / 豁免通道 ×3 / payload 校验 ×6 / CLI 端到端）</td></tr>
+      <tr><td>真机端到端</td><td><span class="done">✅ 8/8</span>：居家管家真实模板 → 占位符 0 残留 + base.js/payload 注入 + 修正生效</td></tr>
+      <tr><td>git 提交</td><td><span class="done">✅ f250bea</span> 全中文 + Tested-By: pytest 17 passed，8 文件，pycache 未混入</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>③ 实施中对抗式审查发现（修正原型 3 处）</h2>
+    <ul>
+      <li><b>跨技能硬编码</b>：原型 base.js 写死「居家管家」「v2.0-SM1」→ 参数化（<code>me.skill_name</code> / <code>me.skill_version</code>），契约信封补 <code>meta.skill_name</code>（可选）——不修的话所有技能复制出的数据都叫「居家管家」</li>
+      <li><b>豁免语义收紧</b>：<code>&lt;!--NO-SHARED--&gt;</code> 与 SHARED <b>互斥</b>（声明豁免后 SHARED 必须 0）——既豁免又带占位符是矛盾声明，拦截</li>
+      <li><b>资产自污染</b>：base.js 头部注释原含裸占位符文本，注入后守卫「占位符 0 残留」断言会被污染 → 注释改为无尖括号写法</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>④ 当前 map 状态</h2>
+    <table>
+      <tr><th>票</th><th>状态</th></tr>
+      <tr><td>T1-T5 决策（#261-#265）</td><td>✅ 全部定稿/闭环</td></tr>
+      <tr><td>#268 Base 定稿入库</td><td><span class="done">✅ closed</span>（本次完成）</td></tr>
+      <tr><td>#269 作息管家试点</td><td>◐ open · <b>已解阻塞可取</b></td></tr>
+      <tr><td>#267 机制 3 操作手册</td><td>◐ open · 可并行</td></tr>
+    </table>
+    <div class="verdict"><b>Frontier</b>：#269（作息管家试点 · 接管线 + 复制按钮波）是本 map 当前最重要的下一张票——它产出的「第一个完整范式 + 操作手册」是后续全技能迁移的基础。</div>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 待 push 清单（push 由你负责）</h2>
+    <table>
+      <tr><th>commit</th><th>说明</th></tr>
+      <tr><td><code>f250bea</code> <b>（本次新增）</b></td><td>[跨技能] Base Skill 定稿入库 · 公共组件/ 目录（P0+P1 第一版）</td></tr>
+      <tr><td><code>5bee226 / 572aba2</code></td><td>docs/agents/ 两条规范（之前遗留）</td></tr>
+      <tr><td><code>be06a72 / fb01441 / badb012</code></td><td>[居家管家] 归档/修复（其他会话产出）</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>⑥ 下一步</h2>
+    <p>按 wayfinder 规则本 session 已 resolve 一张票（#268），到此收手。下一张票 <b>#269（作息管家试点）</b> 等你一句「继续 #269」就开工——接管线 + 复制按钮波 + 迁移手册，产出后需要你打开页面人工验收（成功标准：所有相关页面打开 / 按钮样式统一 / prompt 内容正确）。</p>
+    <div class="warn"><b>注意</b>：#269 改作息管家生产渲染，接管线时会跑真实渲染——按隔离红线，验证会用临时 DB 路径，不碰生产库。</div>
+  </div>
+
+</div>
+</body>
+</html>

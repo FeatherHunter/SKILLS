@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>判断：现在该收口，不是推进</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f7; color: #1d1d1f; line-height: 1.65;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 18px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: #86868b; font-size: 13.5px; margin-top: 4px; }
+  h2 { font-size: 16px; font-weight: 700; margin: 16px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  p, li { font-size: 13.8px; color: #3a3a3c; }
+  ul, ol { padding-left: 20px; }
+  li { margin: 4px 0; }
+  .q3 { border: 1.5px solid #e5e5ea; border-radius: 14px; padding: 12px 16px; margin: 10px 0; }
+  .q3 .q { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .q3 .a { font-size: 13.5px; }
+  .judge { background: #f0fdf4; border-left: 3px solid #34c759; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 14px; }
+  .warn { background: #fffbea; border-left: 3px solid #ff9500; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 13.5px; }
+  .steps { display: flex; flex-direction: column; gap: 8px; margin: 12px 0; }
+  .step { background: #fafafc; border-radius: 12px; padding: 10px 14px; font-size: 13.5px; }
+  .step b { color: #0a5bc4; }
+  .muted { color: #86868b; font-size: 12.5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>我的判断：现在该收口，不该继续推进</h1>
+    <div class="sub">你问「现在应该怎么办」——我按交付保真手段 1（三问自检）先审自己，再给判断</div>
+  </div>
+
+  <div class="card">
+    <h2>① 三问自检（交付保真手段 1，强制）</h2>
+
+    <div class="q3">
+      <div class="q">我做了什么假设？</div>
+      <div class="a">假设「契约 v1.1 落地 = 验收完成」——<b>错的</b>。你认同的是对抗式审查的<b>方向</b>，两份契约全文你还没逐条看过；#264 验收清单里「用户人工验收」这一项，我跳过了就准备往下做机制 3。另外假设「机制 3 SKILL 必须在 #264 里做完」——<b>这是我自己的排期，不是你的优先级</b>。</div>
+    </div>
+
+    <div class="q3">
+      <div class="q">哪些是我自己拍的板？</div>
+      <div class="a">「接下来做机制 3」——我自己定的下一步，没等你验收契约就往前冲；「契约 v1.1 就算通过」——我替你做了验收判断。</div>
+    </div>
+
+    <div class="q3">
+      <div class="q">什么算成功？</div>
+      <div class="a">#264 的成功 = 形态决策定稿 + 原型验证 + 契约<b>经你验收</b>通过 → 实施转新子票。不是「我产出越多越好」。</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>② 第一性原理：T4 的使命其实已经完成了</h2>
+    <p>回头看 T4 的本质（issue 写的）：<b>「包组织 / 引用机制 / 强制依赖 / 版本演进」的设计决策</b>——不是「无限打磨契约」。这些决策在 #264 已经全部拍板：</p>
+    <ul>
+      <li>形态 A 注入器 ✅（你拍板）</li>
+      <li>目录名 / 硬拦截 / P0+P1 / HELP 参数化 ✅（你拍板）</li>
+      <li>原型验证跑通 ✅（11/11，白屏 bug 还实锤了 P0+P1）</li>
+      <li>契约 v1.1（含对抗审查 8 条修正）✅（方向你认同）</li>
+    </ul>
+    <div class="judge"><b>判断：T4 的决策使命已完成。</b>再往下做机制 3、契约 v1.2，都是「惯性冲刺」——不是 T4 该干的。我连续 4 次「二次 write 覆盖」错误也说明：速度上来了，质量在掉。该停。</div>
+  </div>
+
+  <div class="card">
+    <h2>③ 收口方案（而不是继续推进）</h2>
+    <div class="steps">
+      <div class="step"><b>1. 你先验收两份契约</b>——component-contract.md + help-template-contract.md 逐条过（或指出哪条要改）；这是 #264 验收清单里挂着的一项，不能跳过</div>
+      <div class="step"><b>2. 验收通过 → #264 标「决策完成」</b>，实施按 T5 决策<b>开新子票挂 #260</b>（Base 定稿入库 / 作息管家试点·复制按钮波），不在 #264 里继续堆</div>
+      <div class="step"><b>3. 机制 3（执行框架 SKILL）降为独立子票</b>——它是执行框架的落地项，不是 Base 实施的前置，不该卡 T4 收口</div>
+      <div class="step"><b>4. 待 push 清单给你</b>（5bee226 / 572aba2）——本地 commit 已齐，push 你负责</div>
+    </div>
+    <div class="warn"><b>不继续做</b>：机制 3、契约 v1.2、作息管家试点——都等收口完、你点头再动。</div>
+  </div>
+
+  <div class="card">
+    <h2>④ 等你拍板</h2>
+    <p>两个选择：</p>
+    <ul>
+      <li><b>A 按收口方案走</b>：你先看两份契约 → 通过后我标 #264 完成 + 开实施子票挂 #260 + 机制 3 降子票</li>
+      <li><b>B 你有别的判断</b>：直接说，我按你的来</li>
+    </ul>
+    <p class="muted">我的推荐：A。T4 该收口了，再拖就是把「设计」做成无底洞。</p>
+  </div>
+
+</div>
+</body>
+</html>

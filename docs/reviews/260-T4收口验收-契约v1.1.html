@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T4 收口验收 · Base 契约 v1.1</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f7; color: #1d1d1f; line-height: 1.65;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 18px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: #86868b; font-size: 13.5px; margin-top: 4px; }
+  h2 { font-size: 16px; font-weight: 700; margin: 18px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  p, li { font-size: 13.8px; color: #3a3a3c; }
+  ul, ol { padding-left: 20px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.8px; margin: 10px 0; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #f0f0f2; vertical-align: top; }
+  th { background: #fafafc; font-weight: 600; color: #86868b; font-size: 11.5px; }
+  code { background: #f0f0f2; border-radius: 5px; padding: 1px 6px; font-size: 12px; font-family: "SF Mono", Consolas, monospace; }
+  .done { color: #1d7a44; font-weight: 700; }
+  .todo { color: #9a6b00; font-weight: 700; }
+  .check { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f5f5f7; font-size: 13.5px; }
+  .check:last-child { border-bottom: none; }
+  .verdict { background: #f0fdf4; border-left: 3px solid #34c759; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 14px; }
+  .warn { background: #fffbea; border-left: 3px solid #ff9500; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 13.5px; }
+  .q { border: 1.5px solid #e5e5ea; border-radius: 14px; padding: 12px 16px; margin: 10px 0; }
+  .q .qt { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .q .qb { font-size: 13px; color: #86868b; margin-bottom: 6px; }
+  .q .opts { font-size: 13.5px; }
+  .muted { color: #86868b; font-size: 12.5px; }
+  .pill { display: inline-block; background: #f0f0f2; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: #515154; margin-right: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>T4 收口验收 · Base 组件契约 v1.1</h1>
+    <div class="sub">#264 形态设计已定稿，最后一步 = 你验收两份契约 + 定机制 3 去向。本页 = 验收对象摘要（全文 md 在 .scratch/base-skill/，入库时进 <code>公共组件/docs/</code>）</div>
+  </div>
+
+  <div class="card">
+    <h2>① 原型验证（刚复跑 · 11/11 全绿）</h2>
+    <p><b>注入器原型</b>：居家管家真实模板「录物品回执」→ 占位符替换 → base.js 注入 → payload 注入 → 出页。守卫三反例（缺 SHARED / 缺 INJECT / 重复 SHARED）全部硬拦截报错。</p>
+    <p style="margin-top:6px"><span class="pill">✅ 占位符 0 残留</span><span class="pill">✅ base.js 注入</span><span class="pill">✅ payload 注入</span><span class="pill">✅ 标题完整</span><span class="pill">✅ 守卫拦截 ×3</span></p>
+    <p class="muted" style="margin-top:6px">产物：<code>.scratch/base-skill/prototype/demo/out/receipt.html</code>（18KB，你之前看过）</p>
+  </div>
+
+  <div class="card">
+    <h2>② 组件契约 v1.1（对抗式审查 6 条修正已含）</h2>
+
+    <h2 style="font-size:14px">占位符标准 + 硬拦截</h2>
+    <table>
+      <tr><th>占位符</th><th>规则</th></tr>
+      <tr><td><code>&lt;!--INJECT-DATA--&gt;</code></td><td>必须恰好 1（缺失/重复 → 渲染失败）</td></tr>
+      <tr><td><code>&lt;!--SHARED-HELPERS--&gt;</code></td><td>必须恰好 1（硬拦截，缺 → 拒绝渲染）</td></tr>
+      <tr><td><code>&lt;!--CHARTS-HELPERS--&gt;</code></td><td>0 或 1（图表，第二版）</td></tr>
+      <tr><td><code>&lt;!--NO-SHARED--&gt;</code></td><td><b>v1.1 豁免通道</b>：确无公共 JS 的静态页显式声明免注入；缺省 = 必须注入（白名单式）</td></tr>
+    </table>
+
+    <h2 style="font-size:14px">payload 信封契约（v1.1 新增）</h2>
+    <p>统一信封：<code>status</code> / <code>data.meta.command_cn</code> / <code>data.meta.occurred_at</code> / <code>data.scene</code> 必填；注入器 <code>--strict-payload</code> 开关做结构校验（存量技能过渡期可关）。</p>
+
+    <h2 style="font-size:14px">P0 冻结签名（8 个，原型已验证）</h2>
+    <table>
+      <tr><th>函数</th><th>语义</th></tr>
+      <tr><td><code>esc/arr/val/yes/validate</code></td><td>守卫组（XSS 转义/安全数组/未填写/徽章/数据守门）</td></tr>
+      <tr><td><code>_fbCopy(s)</code></td><td>execCommand fallback（内部）</td></tr>
+      <tr><td><code>copyText(s)</code></td><td>v2 语义：clipboard + fallback + 双 toast，<b>不改按钮文字</b></td></tr>
+      <tr><td><code>toast(msg, detail?)</code></td><td>hm-toast 面板（📋+标题+详情+「✓ 知道了」，4.5s，≤820px 全宽）</td></tr>
+    </table>
+
+    <h2 style="font-size:14px">P1 契约（6 组件 + token A 组）</h2>
+    <p><code>metaHeader</code>（页头）/ <code>remindersBlock</code>（顺路提醒）/ <code>buildDataText</code>（人类可读数据 · 对齐 #248）/ <code>buildLogText</code>（6 段日志 · 对齐 #248）/ <code>actionBar</code>（复制数据/日志 ghost 独立一行）/ token A 组（12 个 CSS 变量）</p>
+    <p class="muted" style="margin-top:4px">P0/P1 实施分界（v1.1）：一起入库，验收分两步——P0 先行冻结验收，P1 跟随（需先过 payload 信封）</p>
+
+    <h2 style="font-size:14px">唯一真相源 + 版本机制（v1.1 新增）</h2>
+    <p><b>Base <code>assets/</code> = 唯一真相源</b>，技能原实现（居家管家 _shared.py / 饼干 _shared_js.py / 备忘录 clipboard.js）迁移后退役；迁移完成前 Base 只读，防同源双写漂移。签名变更 = 破坏性变更（全技能同步 + CHANGELOG + 公共层 ISSUE），非破坏性可独立发布。</p>
+  </div>
+
+  <div class="card">
+    <h2>③ 参数化 HELP 模板契约 v1.1（3 条修正已含）</h2>
+    <p>设计原则：<b>一套模板 + 外部数据 → 任意技能 HELP 页；传入什么，页面就是什么</b>（P2 第二版，第一版不做）</p>
+    <table>
+      <tr><th>注入参数</th><th>必填</th><th>落点</th></tr>
+      <tr><td><code>skill_name</code></td><td>✅</td><td>标题、文件名（<code>help_&lt;技能名&gt;.html</code>）</td></tr>
+      <tr><td><code>title / subtitle</code></td><td>✅ / 可选</td><td>顶部标题区</td></tr>
+      <tr><td><code>groups</code></td><td>✅</td><td>内容目录区（分组导航）</td></tr>
+      <tr><td><code>scenes</code></td><td>✅</td><td>场景卡片（prompt_template + 可选 editable_fields）</td></tr>
+      <tr><td><code>output_filename</code></td><td>可选</td><td>文件名参数化（v1.1：sanitize 强制，防路径穿越）</td></tr>
+    </table>
+    <p style="margin-top:6px"><b>v1.1 修正</b>：① <code>editable_fields</code>（对齐复制按钮契约 v2 可编辑字段+实时预览+空值拦截）② 文件名 sanitize（只允许字母数字下划线中文 + 结尾 .html，路径分隔符拒绝）③ <b>scene_data 兼容性标注待盘点</b>——各技能 scene_data 结构可能不一致，P2 实施前必做盘点，盘点前本契约视为草案</p>
+    <p class="muted" style="margin-top:4px">prompt_template 与各技能 scene_data 的定稿 <b>零差异</b>（一致性契约 #123）</p>
+  </div>
+
+  <div class="card">
+    <h2>④ 验收清单状态</h2>
+    <div class="check"><span class="done">✅</span><span>注入器原型跑通（居家管家真实模板 · 11/11 · 白屏修复）</span></div>
+    <div class="check"><span class="done">✅</span><span>P0 冻结签名 + P1 契约（component-contract.md v1.1）</span></div>
+    <div class="check"><span class="done">✅</span><span>参数化 HELP 模板契约（help-template-contract.md v1.1）</span></div>
+    <div class="check"><span class="done">✅</span><span>执行框架机制 1/2/4（AGENTS.md / 规范文档 / map 承载）</span></div>
+    <div class="check"><span class="todo">⬜</span><span>执行框架机制 3（辅助 SKILL 操作手册）——去向待你拍板（见 Q2）</span></div>
+    <div class="check"><span class="todo">⬜</span><span>用户人工验收（本页）——待你拍板（见 Q1）</span></div>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 待拍板（带背景 · 每题有推荐）</h2>
+
+    <div class="q">
+      <div class="qt">Q1 · 两份契约 v1.1 是否通过验收？</div>
+      <div class="qb">背景：契约 = Base 的冻结接口（占位符/签名/payload 信封/版本机制），定稿后修改必须走公共层 ISSUE。原型已验证 P0 可执行，P1 是文档契约。你要逐条看全文（.scratch 两个 md）还是信任摘要？</div>
+      <div class="opts">推荐 <b>A 通过</b>（摘要已覆盖全部关键决策，对抗式审查 8 条你都已认同方向）；<b>B 先看全文再定</b>（我把两份 md 全文发你）；<b>C 有要改的</b>（指出条目，我修契约再验）</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">Q2 · 机制 3（辅助 SKILL 操作手册）去向？</div>
+      <div class="qb">背景：机制 3 是「执行前/中/后」框架的外部落地件之一（操作手册 SKILL），它不是 Base 实施的前置，只是执行框架的配套。上个会话判断它不该卡 T4 收口——降为独立子票更干净。</div>
+      <div class="opts">推荐 <b>A 降独立子票挂 #260</b>（收口 T4，机制 3 与实施子票并行）；<b>B 留在 #264 做完</b>（T4 验收项齐了再 close，但拖收口）</div>
+    </div>
+
+    <div class="q">
+      <div class="qt">Q3 · 收口后下一步？</div>
+      <div class="qb">背景：T5 已定稿（试点=作息管家 · 复制按钮波 · 按功能横切）。按角色升级决议，实施以子 issue 挂 #260 推进，第一批串行（Base 定稿入库 → 作息管家试点 → 操作手册）。</div>
+      <div class="opts">推荐 <b>A 本会话继续开实施子票</b>（Q1/Q2 拍板后我直接开票：Base 定稿入库 + 作息管家试点）；<b>B 先收口，实施另起会话</b>（你验收完 T4 close，子票下次开）</div>
+    </div>
+
+    <div class="verdict"><b>我的整体建议</b>：Q1 选 A（或 B 看全文）、Q2 选 A（机制 3 独立）、Q3 选 A（本会话继续开实施子票）——T4 决策使命已完成，收口后把力气花在真正要动手的「Base 定稿 + 作息管家试点」上。</div>
+  </div>
+
+</div>
+</body>
+</html>

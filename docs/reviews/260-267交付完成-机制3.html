@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#267 交付完成 · 执行框架机制 3</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f5f7; color: #1d1d1f; line-height: 1.65;
+    padding: 24px 16px 48px;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  .card { background: #fff; border-radius: 18px; padding: 24px; margin-bottom: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+  .sub { color: #86868b; font-size: 13.5px; margin-top: 4px; }
+  h2 { font-size: 16px; font-weight: 700; margin: 18px 0 8px; }
+  h2:first-child { margin-top: 0; }
+  p, li { font-size: 13.8px; color: #3a3a3c; }
+  ul, ol { padding-left: 20px; }
+  li { margin: 4px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.8px; margin: 10px 0; }
+  th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid #f0f0f2; vertical-align: top; }
+  th { background: #fafafc; font-weight: 600; color: #86868b; font-size: 11.5px; }
+  code { background: #f0f0f2; border-radius: 5px; padding: 1px 6px; font-size: 12px; font-family: "SF Mono", Consolas, monospace; }
+  .done { color: #1d7a44; font-weight: 700; }
+  .verdict { background: #f0fdf4; border-left: 3px solid #34c759; border-radius: 0 12px 12px 0; padding: 12px 16px; margin: 10px 0; font-size: 14px; }
+  .muted { color: #86868b; font-size: 12.5px; }
+  .pill { display: inline-block; background: #f0f0f2; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: #515154; margin-right: 6px; }
+  .pill.green { background: #e8f6ee; color: #1d7a44; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="card">
+    <h1>#267 交付完成 · 执行框架机制 3</h1>
+    <div class="sub">执行框架/SKILL.md 入库 · Junction 挂载 agent skill 体系 · 22 项校验全 PASS · commit 2931481</div>
+  </div>
+
+  <div class="card">
+    <h2>① 交付了什么</h2>
+    <ul>
+      <li><b><code>执行框架/SKILL.md</code></b>（148 行）：用户「执行前/中/后」框架的可加载操作手册</li>
+      <li><b>Junction 挂载</b>：<code>~/.minimax/skills/执行框架</code> → 仓库 <code>执行框架/</code>（与居家管家/卡路里同一挂载机制，任何 agent 可加载）</li>
+    </ul>
+    <p style="margin-top:8px"><b>SKILL 内容覆盖</b>：</p>
+    <table>
+      <tr><th>阶段</th><th>环节</th></tr>
+      <tr><td>执行前</td><td>告诉起点（四行模板）/ 发现盲区（四类）/ 采访澄清（grilling 四连问）/ 原型验证（2~4 方向）/ 执行计划</td></tr>
+      <tr><td>执行中</td><td>记录偏离（四问实时模板）</td></tr>
+      <tr><td>执行后</td><td>过程复盘 / 确认理解 / AI 反向考验（4 题型）/ 答明白再交付（门禁：没答对不 close）</td></tr>
+      <tr><td>贯穿</td><td>交付保真三问自检 + 偏离记录模板 + 与既有约定衔接表 + 触发场景速查</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>② 验收结果（对照 #267 验收标准）</h2>
+    <table>
+      <tr><th>验收项</th><th>结果</th></tr>
+      <tr><td>SKILL 可被任何 agent 加载执行</td><td><span class="done">✅</span> Junction 挂载 + 触发词（按执行框架来/执行前检查/五段式等）</td></tr>
+      <tr><td>覆盖执行前/中/后 + 交付保真三问</td><td><span class="done">✅</span> 10 环节逐项校验 PASS</td></tr>
+      <tr><td>与 execution-framework.md 零冲突</td><td><span class="done">✅</span> 22 项校验全 PASS（10 环节覆盖 + 11 冲突核对 + wayfinder 零改动）</td></tr>
+      <tr><td>不修改 wayfinder 技能文件</td><td><span class="done">✅</span> git status 确认零改动</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>③ 外部四块机制 · 全齐</h2>
+    <table>
+      <tr><th>机制</th><th>状态</th></tr>
+      <tr><td>① AGENTS.md 强制条目</td><td><span class="done">✅</span> 已有</td></tr>
+      <tr><td>② docs/agents/execution-framework.md 规范</td><td><span class="done">✅</span> 已有</td></tr>
+      <tr><td>③ 辅助 SKILL 操作手册</td><td><span class="done">✅ 本次完成</span></td></tr>
+      <tr><td>④ map 正文承载</td><td><span class="done">✅</span> 已有</td></tr>
+    </table>
+    <div class="verdict"><b>至此「执行前/中/后」框架四条落地通道全部打通</b>——任何 agent 靠 AGENTS.md 强制条目 + 规范文档 + 可加载 SKILL + map 承载，执行任何 wayfinder/map/ticket/技能任务时自动遵守。</div>
+  </div>
+
+  <div class="card">
+    <h2>④ map #260 当前状态</h2>
+    <table>
+      <tr><th>票</th><th>状态</th></tr>
+      <tr><td>T1-T5 决策（#261-#265）</td><td>✅ 全部定稿/闭环</td></tr>
+      <tr><td>#267 机制 3</td><td><span class="done">✅ closed</span>（本次完成）</td></tr>
+      <tr><td>#268 Base 定稿入库</td><td><span class="done">✅ closed</span></td></tr>
+      <tr><td>#269 作息管家试点</td><td>◐ open · <b>唯一剩余实施子票 · 可取</b></td></tr>
+    </table>
+    <p style="margin-top:8px"><span class="pill green">Frontier：#269</span></p>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 待 push 清单（push 由你负责）</h2>
+    <table>
+      <tr><th>commit</th><th>说明</th></tr>
+      <tr><td><code>2931481</code> <b>（本次新增）</b></td><td>[跨技能] 执行框架机制 3 · 辅助 SKILL 操作手册入库</td></tr>
+      <tr><td><code>f250bea</code> <b>（上次新增）</b></td><td>[跨技能] Base Skill 定稿入库 · 公共组件/ 目录</td></tr>
+      <tr><td><code>5bee226 / 572aba2</code></td><td>docs/agents/ 两条规范（遗留）</td></tr>
+      <tr><td><code>be06a72 / fb01441 / badb012</code></td><td>[居家管家] 归档/修复（其他会话产出）</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>⑥ 下一步</h2>
+    <p>实施子票只剩 <b>#269（作息管家试点 · 接管线 + 复制按钮波）</b>。它是 T5 决策的第一波、产出「第一个完整范式 + 迁移操作手册」，完成后需要你打开作息管家页面人工验收。你说「继续 #269」我就开工。</p>
+  </div>
+
+</div>
+</body>
+</html>

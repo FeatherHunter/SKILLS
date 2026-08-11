@@ -190,12 +190,23 @@ def cs02(start: str, end: str) -> dict:
 
 
 def _insight(days: int, groups: list[dict], r_same, r_lag1) -> str:
+    """一句话洞察（#274 对抗审查决策 A/B 落地 · 2026-08-12）
+
+    A: 组内净变化口径透明化——文案明示「组内净变化 = 该组首日→末日体重差」
+       （保持现状算法，靠标注防误读，不换算法）
+    B: 样本少标注——分组天数 < 5 时自动加「样本少，仅供参考」
+    """
+    def _low_sample_note() -> str:
+        low = [g["label"] for g in groups if g["days"] < 5]
+        return f"其中 {'、'.join(low)} 样本少（<5 天），仅供参考。" if low else ""
+
     if days < 5:
         return f"对齐天数不足（{days} 天），需要更多「同天有睡眠+体重」的数据才能看趋势。"
     if len(groups) < 2:
         g = groups[0]
         return (f"窗口内 {days} 天睡眠时长集中在 {g['label']}（日均 {g['sleep_avg']:.0f} 分钟），"
-                f"体重净变化 {g['weight_delta']:+.2f} kg，暂无法跨睡眠水平对比。")
+                f"体重净变化 {g['weight_delta']:+.2f} kg（组内净变化 = 该组首日→末日体重差），"
+                f"暂无法跨睡眠水平对比。")
     best = max(groups, key=lambda g: abs(g["weight_delta"] or 0))
     worst = min(groups, key=lambda g: abs(g["weight_delta"] or 0))
     r_label = f"同日相关 r={r_same:+.2f}" if r_same is not None else "同日数据不足"
@@ -203,9 +214,10 @@ def _insight(days: int, groups: list[dict], r_same, r_lag1) -> str:
     if best["weight_delta"] is not None and worst["weight_delta"] is not None:
         diff = best["weight_delta"] - worst["weight_delta"]
         return (f"窗口内 {days} 天：睡 {best['label']} 的日子体重净变化 {best['weight_delta']:+.2f} kg "
-                f"vs 睡 {worst['label']} 的日子 {worst['weight_delta']:+.2f} kg（组间差 {diff:+.2f} kg）。"
-                f"{r_label} · {lag_label}。")
-    return f"窗口内 {days} 天，{r_label} · {lag_label}。"
+                f"vs 睡 {worst['label']} 的日子 {worst['weight_delta']:+.2f} kg"
+                f"（组间差 {diff:+.2f} kg · 组内净变化 = 该组首日→末日体重差）。"
+                f"{r_label} · {lag_label}。{_low_sample_note()}")
+    return f"窗口内 {days} 天，{r_label} · {lag_label}。{_low_sample_note()}"
 
 
 def default_window(days: int = 30) -> tuple[str, str]:

@@ -205,6 +205,26 @@ def test_bucket_boundaries():
     assert _bucket_of(720) == ">9h"
 
 
+def test_insight_low_sample_note(temp_db):
+    """决策 B 落地: 分组天数 <5 → 洞察自动加「样本少，仅供参考」+ 口径标注"""
+    days = _make_days(9)
+    # 前 4 天 <6h（340）体重 +0.4；后 5 天 7-8h（450）体重 -0.4
+    sleep_rows = [(d, "维持.睡眠", 340 if i < 4 else 450) for i, d in enumerate(days)]
+    weight_rows = []
+    for i, d in enumerate(days):
+        w = 71.0 + 0.4 if i < 4 else 71.0 - 0.4
+        weight_rows.append((d, round(w, 2)))
+    _seed_schedule(temp_db, sleep_rows)
+    _seed_weight(weight_rows)
+
+    from cross_skill import cs02
+
+    result = cs02(days[0], days[-1])
+    assert result["ok"] is True
+    assert "<6h" in result["insight"] and "样本少（<5 天），仅供参考" in result["insight"]
+    assert "组内净变化 = 该组首日→末日体重差" in result["insight"]
+
+
 def test_render_cs02_html(temp_db):
     """端到端: render → 注入管线成功 → 产物含注入数据 + 复制按钮区"""
     days = _make_days(6)

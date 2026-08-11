@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#243 执行偏离 · 标题截断冲突</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --blue: #0071e3; --green: #34c759; --orange: #ff9500; --red: #ff3b30; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--orange);
+    background: rgba(255,149,0,0.10); border: 1px solid rgba(255,149,0,0.25);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--orange); color: #fff; font-size: 12px; padding: 0 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: 0.3px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-ok { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-warn { background: rgba(255,149,0,0.14); color: #c77100; }
+  .b-bug { background: rgba(255,59,48,0.10); color: #c22f26; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(255,149,0,0.10); color: #c77100; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .opt .why { display: block; color: var(--sub); font-size: 12.5px; margin-top: 2px; }
+  .loc { font-size: 11px; color: var(--sub); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">执行偏离 · 记录 + 拍板</span>
+  <h1>箭头修好了，但标题截断冲突浮现</h1>
+  <p>2026-08-11 · 执行中遇到新情况，按框架记录偏离并请拍板</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">1</span>实测结果（Playwright DOM 测量）</h2>
+  <table>
+    <thead><tr><th>验证项</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>箭头负 margin 消除</td><td><span class="badge b-ok">✅ 完成</span> module 7.8px / sub 8.4px / scene 9.2px 自然宽度，margin-right 全 0</td></tr>
+      <tr><td>箭头完整可见</td><td><span class="badge b-ok">✅ 通过</span> 三档视口折叠态箭头无裁切（视觉模型确认截图）</td></tr>
+      <tr><td>展开态旋转</td><td><span class="badge b-ok">✅ 通过</span> rotate(90°) transform 正常</td></tr>
+      <tr><td>搜索直达（goToScene）</td><td><span class="badge b-ok">✅ 通过</span> 展开祖先链后箭头状态正常</td></tr>
+      <tr><td>全页横向溢出</td><td><span class="badge b-ok">✅ 通过</span> 三档视口 pageOverflowX=False</td></tr>
+      <tr><td><b>标题完整性（375px）</b></td><td><span class="badge b-bug">⚠️ 冲突</span> 改动前 22/59 截断 → 改动后 25/59（箭头占 9px 后 3 个边界标题恶化）</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--sub);margin-top:10px;">
+    根因：模板 <span class="loc">@media(max-width:820px)</span> 有意设计标题截断（L136 注释「隐藏低价值 id,标题截断,按钮紧凑」）。<b>移动端标题省略是既有设计决策</b>，但 issue 修复约束「右侧场景/子功能详细名字必须完全显示」与它冲突——我的箭头修复让标题可用宽度减 9px，3 个标题从完整变省略。
+  </p>
+</div>
+
+<div class="card">
+  <h2><span class="no">2</span>偏离记录</h2>
+  <table>
+    <thead><tr><th>项</th><th>内容</th></tr></thead>
+    <tbody>
+      <tr><td>新情况</td><td>移动端标题 ellipsis 是模板 @media(≤820px) 有意设计；箭头自然宽度占用 9px 后边界标题被截断数 +3</td></tr>
+      <tr><td>为何冲突</td><td>issue 约束「标题必须完全显示」vs 模板既有移动端「标题截断」设计——两者在 ≤820px 本就矛盾，箭头修复把它推到台面</td></tr>
+      <tr><td>关键决策点</td><td>标题截断是否算本次修复范围？还是移动端标题也应完整显示（符合你的「0 省略」偏好）？</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2><span class="no">3</span>请拍板</h2>
+  <div class="opt"><span class="letter">A</span><div><span class="rec">移动端标题也改为完整显示（推荐）</span>：去掉 @media 里的 ellipsis 截断，让标题换行完整显示（scene-head 已有 flex-wrap:wrap）。<span class="why">符合你的「手机端 0 省略」偏好 + issue「标题必须完全显示」约束；代价是移动端标题可能占 2 行，行高增加。</span></div></div>
+  <div class="opt"><span class="letter">B</span><div>接受移动端截断为既有设计：箭头修复保持，标题截断按模板原设计（22→25 是箭头 9px 的必然代价，接受）。<span class="why">改动最小，但 3 个标题视觉上变差，issue 约束未完全满足。</span></div></div>
+  <div class="opt"><span class="letter">C</span><div>补偿方案：箭头自然宽度 + 微调 gap/padding 把 9px 让回标题，保持截断设计不变。<span class="why">标题回到改动前状态（22 截断），但「完全显示」约束仍未满足。</span></div></div>
+</div>
+
+<div class="footer">Mavis · wayfinder #243 · 执行偏离记录（2026-08-11）</div>
+
+</body>
+</html>

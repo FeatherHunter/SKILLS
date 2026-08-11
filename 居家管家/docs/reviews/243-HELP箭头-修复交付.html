@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#243 修复交付 · 人眼终审</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --green: #34c759; --blue: #0071e3; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--green);
+    background: rgba(52,199,89,0.10); border: 1px solid rgba(52,199,89,0.25);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--green); color: #fff; font-size: 12px; padding: 0 6px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-ok { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-warn { background: rgba(255,149,0,0.14); color: #c77100; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: 0.3px; }
+  .commit { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 12.5px; font-family: ui-monospace, "SF Mono", Consolas, monospace; margin-top: 8px; word-break: break-all; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">WAYFINDER · #243 交付</span>
+  <h1>HELP 折叠箭头 · 修复完成</h1>
+  <p>2026-08-11 · 起点 → 澄清 → 执行 → 偏离拍板 → 验证 → 交付</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">1</span>修复内容</h2>
+  <ul class="plain">
+    <li>
+      <div class="t"><span class="badge b-ok">✅ 箭头</span> 去固定宽回归自然宽度</div>
+      <div class="d">三处 ::before 去掉固定宽与负 margin（width:auto; min-width:0; margin-right:0），保留 flex-shrink:0 + line-height:1，间距交给 summary 既有 gap。</div>
+    </li>
+    <li>
+      <div class="t"><span class="badge b-ok">✅ 移动端标题</span> 两行布局完整显示（拍板 A）</div>
+      <div class="d">@media(≤820px) 场景头部重构：第一行=箭头+徽章+复制按钮，第二行=标题独占全宽（flex-basis:100%），去除 ellipsis 截断——标题可用宽度翻倍，无孤字、无生硬断词。</div>
+    </li>
+    <li>
+      <div class="t"><span class="badge b-ok">✅ 产物同步</span> 居家管家.html 已重建</div>
+      <div class="d">build_manual.py 重新生成（pre-commit 钩子自动同步）。</div>
+    </li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2><span class="no">2</span>验证结果（工具 + 人眼双轨）</h2>
+  <table>
+    <thead><tr><th>验证项</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>四档视口标题溢出</td><td><span class="badge b-ok">✅</span> 320/375/390/1280：场景 0/59、子功能 0/30、模块 0/9</td></tr>
+      <tr><td>全页横向溢出</td><td><span class="badge b-ok">✅</span> 四档 False</td></tr>
+      <tr><td>箭头完整性</td><td><span class="badge b-ok">✅</span> 自然宽 7.8~9.2px，margin 全 0，折叠态无裁切</td></tr>
+      <tr><td>展开态 / 搜索直达</td><td><span class="badge b-ok">✅</span> rotate 正常，goToScene 展开祖先链后正常</td></tr>
+      <tr><td>人眼终审（视觉模型）</td><td><span class="badge b-ok">✅</span> 两行布局美观、标题完整无省略、无孤字、按钮无挤压</td></tr>
+      <tr><td>最长标题极端（320px）</td><td><span class="badge b-ok">✅</span> 最长的「管理位置体系(查看/新建/改名/合并/规范化)」2 行完整、0 溢出</td></tr>
+      <tr><td>全量 pytest</td><td><span class="badge b-ok">✅</span> 396 passed（测试契约已更新）</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2><span class="no">3</span>执行中偏离记录</h2>
+  <ul class="plain">
+    <li>
+      <div class="t">偏离 1 · 移动端标题截断冲突</div>
+      <div class="d">箭头修复后实测发现：@media(≤820px) 模板原设计「标题 ellipsis 截断」（旧一行布局），与 issue 约束「标题必须完全显示」冲突。拍板 A：移动端标题也完整显示，重构为两行布局。</div>
+    </li>
+    <li>
+      <div class="t">偏离 2 · 测试契约需更新</div>
+      <div class="d">test_help_html_mobile_touch_target 旧断言「移动端标题必须截断」是旧设计假设，随拍板更新为「标题独占一行完整显示 + 禁 ellipsis」。</div>
+    </li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2><span class="no">4</span>提交 + 待办</h2>
+  <div class="commit">badb012  [居家管家] #243 修复 · HELP 折叠箭头去固定宽 + 移动端两行布局(标题完整显示) + 产物同步 · Playwright 四档实测 0 溢出 · 全量 396 通过</div>
+  <ul class="plain" style="margin-top:10px;">
+    <li>
+      <div class="t">⏳ push 待你执行</div>
+      <div class="d">commit badb012 已本地提交（含 pre-commit 自动同步产物 + 重跑 396 绿），远端待 push。</div>
+    </li>
+    <li>
+      <div class="t">👁 人眼终审</div>
+      <div class="d">请在手机上打开 HELP 页面确认最终效果（.scratch/issue243/help_rendered.html 已含修复）。确认后我 close #243。</div>
+    </li>
+  </ul>
+</div>
+
+<div class="footer">Mavis · wayfinder #243 · 修复交付（2026-08-11）</div>
+
+</body>
+</html>

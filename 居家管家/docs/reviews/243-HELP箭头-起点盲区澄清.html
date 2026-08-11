@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#243 wayfinder · 起点 + 盲区 + 澄清</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --blue: #0071e3; --green: #34c759; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--blue);
+    background: rgba(0,113,227,0.08); border: 1px solid rgba(0,113,227,0.2);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--blue); color: #fff; font-size: 12px; padding: 0 6px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .grid2 { grid-template-columns: 1fr; } }
+  .kv { background: var(--bg); border-radius: 12px; padding: 12px 14px; }
+  .kv .k { font-size: 11px; color: var(--sub); letter-spacing: 0.3px; margin-bottom: 4px; }
+  .kv .v { font-size: 13px; font-weight: 600; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  .loc { font-size: 11px; color: var(--sub); font-family: ui-monospace, "SF Mono", Consolas, monospace; }
+  .q { margin-bottom: 18px; }
+  .q:last-child { margin-bottom: 0; }
+  .q .qtitle { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .q .qbg { font-size: 13px; color: var(--sub); margin-bottom: 10px; padding: 10px 12px; background: var(--bg); border-radius: 10px; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .opt .why { display: block; color: var(--sub); font-size: 12.5px; margin-top: 2px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">WAYFINDER · #243 执行前</span>
+  <h1>HELP 折叠箭头 bug · 起点 + 盲区 + 澄清</h1>
+  <p>2026-08-11 · 从第一性原理出发，grill 收敛后再动手</p>
+</div>
+
+<!-- 起点 -->
+<div class="card">
+  <h2><span class="no">1</span>告诉起点</h2>
+  <div class="grid2">
+    <div class="kv">
+      <div class="k">最终目标</div>
+      <div class="v">修复 HELP 三级目录折叠态箭头宽度显示不全，且右侧标题完整不挤压</div>
+    </div>
+    <div class="kv">
+      <div class="k">当前进度</div>
+      <div class="v">triage 已核实：3 处 CSS 规则（场景 8px/-8px · 域 12px/-2px · 子功能 8px/-8px）与 issue 描述逐字一致；根因 = 固定盒宽 < 字符自然宽 + 负 margin 挤压</div>
+    </div>
+    <div class="kv">
+      <div class="k">经验水平</div>
+      <div class="v">CSS/HTML 有经验；help_center.html 结构已读（3 层折叠 + JS 动态构建 + goToScene 直达）</div>
+    </div>
+    <div class="kv">
+      <div class="k">不熟悉之处</div>
+      <div class="v">375px 移动端实际渲染效果未实测；不同字体下 ▸ 字形宽度差异未量化</div>
+    </div>
+  </div>
+</div>
+
+<!-- 盲区 -->
+<div class="card">
+  <h2><span class="no">2</span>发现盲区</h2>
+  <ul class="plain">
+    <li>
+      <div class="t">⚠️ 盲区 1 · 方案 1（去固定宽）依赖字形，跨字体/平台表现不一致</div>
+      <div class="d">▸ 字符在 Windows 微软雅黑 / macOS SF / 移动端字体下自然宽不同。去固定宽能保证「不被裁」，但不同设备视觉宽度仍有差异——这是字符方案的固有脆弱性，方案 2（border chevron/SVG）才彻底可控。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 2 · 移动端 summary 无 wrap 保护</div>
+      <div class="d">场景级 summary 有 <span class="loc">flex-wrap:wrap</span>，但域/子功能级 summary（L81/L92）<b>没有 wrap</b>。超长模块名 + 箭头在 375px 可能横向溢出——修复箭头时要不要连带处理？</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 3 · 纯 CSS 视觉 bug，自动化测试难覆盖</div>
+      <div class="d">「箭头完整可见」无法用 pytest 断言；需要 Playwright DOM 测量（箭头宽度 vs 字符宽度、标题是否被挤压）+ 人眼终审。工具链里 Playwright 是否可用需确认。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 4 · 搜索直达态（goToScene）联动验证</div>
+      <div class="d">hash 直达展开祖先链后，箭头处于展开态（rotate 90°）。修复后需确认两种状态都正常，不能只测折叠态。</div>
+    </li>
+    <li>
+      <div class="t">⚠️ 盲区 5 · 是否影响其他模板</div>
+      <div class="d">help_center.html 独有该问题（其它模板无三级折叠 summary::before 负 margin 模式），修复范围应限定本文件。</div>
+    </li>
+  </ul>
+</div>
+
+<!-- 澄清 -->
+<div class="card">
+  <h2><span class="no">3</span>采访澄清（grill）</h2>
+
+  <div class="q">
+    <div class="qtitle">Q1 · 修复方案选哪个？</div>
+    <div class="qbg">背景：issue 给了两个方向——方案 1「去固定宽回归自然宽度」改动最小（3 处 CSS），方案 2「border 拼 chevron / 内联 SVG」更稳但改动大。这是核心技术决策，决定代码改动面。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">方案 1 先修（推荐起步）</span>：3 处 CSS 去掉固定宽/负 margin，回归自然宽度 + flex-shrink:0 保护。改动最小，先看实测效果。<span class="why">低风险快验证；若跨字体仍不稳再升级方案 2。</span></div></div>
+    <div class="opt"><span class="letter">B</span><div>方案 2 一步到位：border 拼 chevron（10×10px 精确可控），折叠/展开仅切 rotate，两态宽度一致。<span class="why">彻底解决字形脆弱性，但改动面大（3 处样式 + 旋转逻辑）且 chevron 形状需打磨。</span></div></div>
+    <div class="opt"><span class="letter">C</span><div>先方案 1 实测，不行再上方案 2（两阶段）。<span class="why">最稳但耗时最长，本次会话可能跨两轮。</span></div></div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle">Q2 · 移动端 summary 无 wrap 保护（盲区 2）连带修吗？</div>
+    <div class="qbg">背景：域/子功能级 summary 无 flex-wrap，长标题在 375px 可能溢出。修箭头时发现此隐患，但 issue 范围只说箭头。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">只修箭头，不动 wrap（推荐）</span>：严格按 issue 范围，避免范围蔓延；wrap 问题若实测未出现就不处理。<span class="why">符合「修复约束：不能挤压标题」的既有边界；如实测发现溢出再单独提 issue。</span></div></div>
+    <div class="opt"><span class="letter">B</span><div>箭头 + wrap 一起修：顺手给域/子功能 summary 加 flex-wrap:wrap。<span class="why">一次解决移动端隐患，但超出 issue 验收范围。</span></div></div>
+  </div>
+
+  <div class="q">
+    <div class="qtitle">Q3 · 验证方式确认</div>
+    <div class="qbg">背景：按「工具+人眼双轨」方法论——工具定标准（Playwright DOM 测量箭头宽度/标题完整性），人眼定终审（整体视觉）。我需要先确认 Playwright 在当前环境可用。</div>
+    <div class="opt"><span class="letter">A</span><div><span class="rec">工具实测 + 交付你人眼终审（推荐）</span>：我跑 Playwright 测量 + 截图，HTML 交付后你手机/浏览器打开看实际效果。<span class="why">与既有验收纪律一致。</span></div></div>
+    <div class="opt"><span class="letter">B</span><div>只改代码 + 截图，不做 DOM 测量断言。<span class="why">快但定量证据弱。</span></div></div>
+  </div>
+</div>
+
+<div class="footer">Mavis · wayfinder #243 · 已 claim · grill 收敛中（2026-08-11）</div>
+
+</body>
+</html>

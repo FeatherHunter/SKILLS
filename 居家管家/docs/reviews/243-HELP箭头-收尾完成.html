@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#243 收尾完成</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --green: #34c759; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--green);
+    background: rgba(52,199,89,0.10); border: 1px solid rgba(52,199,89,0.25);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li .t { font-weight: 600; }
+  ul.plain li .d { color: var(--sub); font-size: 13px; margin-top: 3px; }
+  .commit { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 12.5px; font-family: ui-monospace, "SF Mono", Consolas, monospace; margin-top: 8px; word-break: break-all; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">完成</span>
+  <h1>#243 HELP 折叠箭头 · 闭环</h1>
+  <p>2026-08-11 · 起点 → grill → 执行 → 偏离拍板 → 双轨验证 → 人眼终审 → close</p>
+</div>
+
+<div class="card">
+  <h2>✅ 闭环清单</h2>
+  <ul class="plain">
+    <li>
+      <div class="t">Issue 状态</div>
+      <div class="d">#243 已 close，附修复说明 + 收尾评论。</div>
+    </li>
+    <li>
+      <div class="t">代码落地</div>
+      <div class="d">箭头去固定宽 + 移动端两行布局 + 测试契约更新，commit badb012（本地，pre-commit 已自动同步产物 + 396 绿）。</div>
+    </li>
+    <li>
+      <div class="t">验证闭环</div>
+      <div class="d">Playwright 四档视口 DOM 测量 + 视觉模型人眼 + 你手机终审，三方一致。</div>
+    </li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2>⏳ 待 push（当前 1 个 commit）</h2>
+  <div class="commit">
+    badb012  [居家管家] #243 修复 · HELP 折叠箭头 + 移动端两行布局（#103 的两个 commit 已不在待推列表，应已 push）<br><br>
+    → git push origin main
+  </div>
+</div>
+
+<div class="footer">Mavis · wayfinder #243 · 闭环完成（2026-08-11）</div>
+
+</body>
+</html>

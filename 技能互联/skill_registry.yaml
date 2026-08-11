@@ -7,11 +7,11 @@
 #
 # 接入原则（map #270 Not yet specified）：各技能提供哪些域由联动组合表需求倒推，
 # 不为完整而完整。未接入技能不登记；接入时（#277-#282 消费方/提供方开发）在此补行。
+# check_public_contract 校验器双向守护（#273 拍板 D5）：登记了必须有 PUBLIC_DOMAINS.py，
+# 写了注册表必须登记——两件事都兑现才算接入。卡路里曾提前登记，已按 #273 D5 移除，
+# 待 #277 接入时补行（卡路里是 CS-02 消费方，消费方不需要提供方注册表，不登记）。
 
 skills:
   作息管家:
     path: 作息管家
-    module: PUBLIC_DOMAINS
-  卡路里:
-    path: 卡路里
     module: PUBLIC_DOMAINS

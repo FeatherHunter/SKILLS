@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""Base 注入器守卫测试
+"""Base 注入器守卫测试 v1.2
 
 覆盖:
-- 正常注入（占位符替换 + base.js 注入 + payload 注入）
-- 硬拦截反例: 缺 SHARED / 缺 INJECT / 重复 SHARED / 重复 INJECT / CHARTS 重复
-- 豁免通道: <!--NO-SHARED--> 显式声明后 SHARED 可为 0；豁免但 SHARED 重复 → 拦截
+- 正常注入（占位符替换 + base.js/base.css 注入 + payload 注入）
+- 硬拦截反例: 缺 SHARED / 缺 SHARED-CSS / 缺 INJECT / 重复 SHARED / 重复 INJECT / CHARTS 重复
+- 豁免通道: <!--NO-SHARED--> 显式声明后 SHARED/CSS 可为 0；豁免但 SHARED 重复 → 拦截
 - payload 结构校验: --strict-payload 缺必填字段 → error；非 strict 仅 json 合法性
 - CLI 端到端: subprocess 跑 injector.py（临时目录, 无 DB 接触）
 """
@@ -22,6 +22,7 @@ from injector import inject, validate_payload  # noqa: E402
 
 INJECT = '<!--INJECT-DATA-->'
 SHARED = '<!--SHARED-HELPERS-->'
+SHARED_CSS = '<!--SHARED-CSS-->'
 NO_SHARED = '<!--NO-SHARED-->'
 CHARTS = '<!--CHARTS-HELPERS-->'
 
@@ -37,13 +38,19 @@ VALID_PAYLOAD = {
         },
         'scene': {
             'scene_id': 'item-receipt',
-            'item': {'name': '海蛎煎蛋', 'id': 1001},
+            'snapshot': {
+                'title': '录物品',
+                'summary': ['海蛎煎蛋 已录入'],
+                'sections': [{'heading': '明细', 'rows': ['id=1001']}],
+            },
         },
     },
 }
 
 TEMPLATE_OK = (
-    '<!doctype html><html><head><title>t</title></head><body>'
+    '<!doctype html><html><head><title>t</title>'
+    f'<style>{SHARED_CSS}</style>'
+    '</head><body>'
     f'<script id="payload" type="application/json">{INJECT}</script>'
     f'<script>{SHARED}</script>'
     '</body></html>'
@@ -54,53 +61,72 @@ def _js():
     return 'function esc(s){return 1;}'
 
 
+def _css():
+    return ':root{--blue:#007aff}'
+
+
 # ── 正常注入 ──────────────────────────────────────────────
 
 def test_inject_ok():
+    html, err = inject(TEMPLATE_OK, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
+    assert err is None
+    assert SHARED not in html and INJECT not in html and SHARED_CSS not in html
+    assert 'function esc(' in html
+    assert ':root{--blue' in html
+    assert '海蛎煎蛋' in html
+
+
+def test_inject_without_css_ok_for_backward_compat():
+    # 兼容: 调用方不传 css_asset → SHARED-CSS 替换为空（存量调用不影响 JS 注入）
     html, err = inject(TEMPLATE_OK, VALID_PAYLOAD, js_asset=_js())
     assert err is None
-    assert SHARED not in html and INJECT not in html
-    assert 'function esc(' in html
-    assert '海蛎煎蛋' in html
+    assert SHARED_CSS not in html
 
 
 # ── 硬拦截反例 ────────────────────────────────────────────
 
 def test_missing_shared_blocked():
     src = TEMPLATE_OK.replace(SHARED, '')
-    html, err = inject(src, VALID_PAYLOAD, js_asset=_js())
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
     assert err is not None and 'SHARED-HELPERS' in err and '0 个' in err
+
+
+def test_missing_shared_css_blocked():
+    src = TEMPLATE_OK.replace(SHARED_CSS, '')
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
+    assert err is not None and 'SHARED-CSS' in err and '0 个' in err
 
 
 def test_missing_inject_blocked():
     src = TEMPLATE_OK.replace(INJECT, '')
-    html, err = inject(src, VALID_PAYLOAD, js_asset=_js())
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
     assert err is not None and 'INJECT-DATA' in err and '0 个' in err
 
 
 def test_duplicate_shared_blocked():
     src = TEMPLATE_OK.replace(SHARED, SHARED + SHARED)
-    html, err = inject(src, VALID_PAYLOAD, js_asset=_js())
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
     assert err is not None and '2 个' in err
 
 
 def test_duplicate_inject_blocked():
     src = TEMPLATE_OK.replace(INJECT, INJECT + INJECT)
-    html, err = inject(src, VALID_PAYLOAD, js_asset=_js())
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
     assert err is not None and '2 个' in err
 
 
 def test_duplicate_charts_blocked():
     src = TEMPLATE_OK.replace(SHARED, SHARED + CHARTS + CHARTS)
-    html, err = inject(src, VALID_PAYLOAD, js_asset=_js())
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
     assert err is not None and 'CHARTS-HELPERS' in err and '2 次' in err
 
 
 # ── 豁免通道 ──────────────────────────────────────────────
 
 def test_no_shared_exempt_ok():
-    src = TEMPLATE_OK.replace(SHARED, NO_SHARED)
-    html, err = inject(src, VALID_PAYLOAD, js_asset=_js())
+    # 豁免: SHARED + CSS 都要为 0 → 用 NO-SHARED 替换两个占位符
+    src = TEMPLATE_OK.replace(SHARED, NO_SHARED).replace(SHARED_CSS, '')
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
     assert err is None
     assert NO_SHARED not in html  # 标记本身被移除
     assert '海蛎煎蛋' in html
@@ -108,14 +134,14 @@ def test_no_shared_exempt_ok():
 
 def test_no_shared_with_shared_conflict_blocked():
     # 声明豁免但仍有 SHARED → 互斥冲突拦截
-    src = TEMPLATE_OK.replace(SHARED, NO_SHARED + SHARED)
-    html, err = inject(src, VALID_PAYLOAD, js_asset=_js())
+    src = TEMPLATE_OK.replace(SHARED, NO_SHARED + SHARED).replace(SHARED_CSS, '')
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
     assert err is not None and '豁免' in err
 
 
 def test_no_shared_duplicate_blocked():
-    src = TEMPLATE_OK.replace(SHARED, NO_SHARED + NO_SHARED)
-    html, err = inject(src, VALID_PAYLOAD, js_asset=_js())
+    src = TEMPLATE_OK.replace(SHARED, NO_SHARED + NO_SHARED).replace(SHARED_CSS, '')
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css())
     assert err is not None and 'NO-SHARED' in err and '最多出现 1 次' in err
 
 
@@ -148,7 +174,7 @@ def test_validate_payload_non_strict_passes():
 def test_inject_strict_missing_meta_blocked():
     p = json.loads(json.dumps(VALID_PAYLOAD))
     p['data']['meta'].pop('command_cn')
-    html, err = inject(TEMPLATE_OK, p, js_asset=_js(), strict=True)
+    html, err = inject(TEMPLATE_OK, p, js_asset=_js(), css_asset=_css(), strict=True)
     assert err is not None and 'command_cn' in err
 
 
@@ -171,6 +197,7 @@ def test_cli_end_to_end(tmp_path):
     assert result['status'] == 'ok'
     html = out.read_text(encoding='utf-8')
     assert SHARED not in html and '海蛎煎蛋' in html
+    assert ':root { --fg' in html or '--blue: #007aff' in html  # base.css 已注入
 
     # 硬拦截: 模板缺 SHARED → CLI 退出码 1 + status error
     tpl_broken = tmp_path / 'broken.html'
@@ -181,6 +208,16 @@ def test_cli_end_to_end(tmp_path):
         capture_output=True, text=True, encoding='utf-8', timeout=30)
     assert r2.returncode == 1
     assert json.loads(r2.stdout)['status'] == 'error'
+
+    # 硬拦截: 模板缺 SHARED-CSS → CLI 退出码 1
+    tpl_nocss = tmp_path / 'nocss.html'
+    tpl_nocss.write_text(TEMPLATE_OK.replace(SHARED_CSS, ''), encoding='utf-8')
+    r2b = subprocess.run(
+        [sys.executable, str(INJECTOR_DIR / 'injector.py'), str(tpl_nocss),
+         '--payload', str(payload), '--output', str(tmp_path / 'b2.html')],
+        capture_output=True, text=True, encoding='utf-8', timeout=30)
+    assert r2b.returncode == 1
+    assert 'SHARED-CSS' in json.loads(r2b.stdout)['message']
 
     # strict 校验: 缺必填字段 → CLI error
     p_bad = {'status': 'ok', 'data': {'scene': {}}}

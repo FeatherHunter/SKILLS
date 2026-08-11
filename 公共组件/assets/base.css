@@ -1,0 +1,93 @@
+/* Base Skill token A 组 + 按钮样式 v1.1（唯一真相源 · 跨技能）
+ * 来源: 居家管家模板 :root token（对齐 #248/08-HTML交互规范.md 按钮规范）
+ * P1: token A 组 12 变量 + 复制按钮三态（常规/ghost/red）+ actionBar 网格
+ * 注入点: 由模板 <link>/<style> 引用本文件（或注入器 SHARED 资产扩展）
+ */
+
+/* ── token A 组（12 变量, 与组件契约 §6 一致）── */
+:root {
+  --fg: #1d1d1f;          /* 主文字 */
+  --fg2: #6e6e73;         /* 次级文字 */
+  --fg3: #86868b;         /* 弱化文字/占位 */
+  --bg: #f5f5f7;          /* 页面底色 */
+  --card: #ffffff;        /* 卡片底 */
+  --line: #d2d2d7;        /* 分隔线 */
+  --blue: #007aff;        /* 主色（场景按钮） */
+  --blue2: #0a63ce;       /* 主色深（按压态/链接） */
+  --soft: #f5f8ff;        /* 浅蓝底（stage 徽章） */
+  --ok: #34c759;          /* 成功/通过 */
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 36px rgba(0,0,0,.06);
+}
+
+/* ── 复制按钮基础（对齐 08 规范: ≤3 色按功能区分）── */
+button.copy {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  border: none;
+  background: var(--line);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0;
+  font-size: 13.5px;
+  min-height: 44px;
+  min-width: 0;
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-family: inherit;
+}
+button.copy:focus { outline: none; }
+button.copy:active { filter: brightness(.93); }
+
+/* 主场景按钮（蓝实心, 单色系） */
+button.copy.primary {
+  background: var(--blue);
+  color: #fff;
+}
+button.copy.primary:active { background: var(--blue2); }
+
+/* 危险/破坏性操作（红实心） */
+button.copy.red {
+  background: #ff3b30;
+  color: #fff;
+}
+button.copy.red:active { background: #c0392b; }
+
+/* ghost: 复制数据/复制日志 = 白底 + 主色描边 + 主色文字胶囊（独立一行） */
+button.copy.ghost {
+  background: var(--card);
+  color: var(--blue);
+  border: 1.5px solid var(--blue);
+  min-height: 48px;
+}
+
+/* ── actionBar 网格（偶数一行 2 个; 奇数时重要按钮单独一行由模板控制 wide）── */
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+.actions .copy.wide {
+  grid-column: 1 / -1;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+}
+
+/* 成功/失败徽章（yes 函数用） */
+.ok { color: var(--ok); font-weight: 700; }
+.bad { color: #ff3b30; font-weight: 700; }
+
+/* 手机适配: 单列网格保持按钮不换行 */
+@media (max-width: 820px) {
+  .actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .actions .copy.wide { grid-column: 1 / -1; }
+  .actions .copy { min-height: 46px; }
+}

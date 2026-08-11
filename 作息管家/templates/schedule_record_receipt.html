@@ -98,7 +98,7 @@
     .record-card .grid{grid-template-columns:1fr}
     .actions .act-btn{flex-direction:column;text-align:center;align-items:flex-start;gap:8px}
   }
-</style>
+<style><!--SHARED-CSS--></style></style>
 </head>
 <body>
 <div class="wrap">
@@ -213,7 +213,7 @@
 
 </div>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 <script>
 (function(){
   "use strict";
@@ -281,39 +281,15 @@
   document.getElementById("prompts-full").textContent = fullText.trim();
 
   // 5. ⭐ 3 个操作按钮 = 各自复制专属 prompt
-  function copyToClipboard(text, onSuccess){
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(onSuccess).catch(function(){
-        fallbackCopy(text); onSuccess();
-      });
-    } else {
-      fallbackCopy(text); onSuccess();
-    }
-  }
-  function fallbackCopy(text){
-    var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); } catch(e) {}
-    document.body.removeChild(ta);
-  }
+  
+  
 
   document.querySelectorAll(".act-btn").forEach(function(btn){
     btn.addEventListener("click", function(){
       var key = btn.getAttribute("data-prompt-key");
       var prompt = prompts[key];
       if (!prompt) return;
-      copyToClipboard(prompt, function(){
-        // 视觉反馈:按钮变绿"✅ 已复制"
-        btn.classList.add("copied");
-        // 2.5s 后恢复
-        setTimeout(function(){
-          btn.classList.remove("copied");
-        }, 2500);
-      });
+      window.copyText(prompt);
     });
   });
 })();

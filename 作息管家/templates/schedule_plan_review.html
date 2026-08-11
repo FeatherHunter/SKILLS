@@ -135,7 +135,7 @@
     .status-bar{height:auto;min-height:var(--bar-h)}
     .status-options .opt{min-width:80px;font-size:11px}
   }
-</style>
+<style><!--SHARED-CSS--></style></style>
 </head>
 <body>
 <div class="wrap">
@@ -215,7 +215,7 @@
   </div>
 </div>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 <script>
 (function(){
   "use strict";
@@ -483,33 +483,10 @@
   // 8. ⭐ 复制按钮(底部 status bar)
   barCopyBtn.addEventListener("click", function(){
     if (barCopyBtn.disabled) return;
-    var text = buildCopyPrompt();
-    var done = function(){
-      barCopyBtn.textContent = "✅ 已复制 · 粘贴给 AI";
-      barCopyBtn.classList.add("copied");
-      setTimeout(function(){
-        barCopyBtn.classList.remove("copied");
-        refreshStatusBar();  // 恢复 status bar 文字(100% 或部分)
-      }, 2500);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(function(){
-        fallbackCopy(text); done();
-      });
-    } else {
-      fallbackCopy(text); done();
-    }
+    // Base copyText v2: 按钮文字恒定, 反馈走独立 Toast（#269 用户拍板）
+    window.copyText(buildCopyPrompt());
   });
-  function fallbackCopy(text){
-    var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); } catch(e) {}
-    document.body.removeChild(ta);
-  }
+  
 })();
 </script>
 </body>

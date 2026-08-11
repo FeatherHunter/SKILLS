@@ -113,7 +113,7 @@
     .copy-zone .copy-btn{justify-self:stretch}
     .tl .seg{font-size:8px;min-height:32px}
   }
-</style>
+<style><!--SHARED-CSS--></style></style>
 </head>
 <body>
 <div class="wrap">
@@ -214,7 +214,7 @@
 
 </div>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 <script>
 (function(){
   "use strict";
@@ -287,33 +287,10 @@
   // 5. 复制按钮
   var copyBtn = document.getElementById("copy-btn");
   copyBtn.addEventListener("click", function(){
-    var text = copyPrompt;
-    var done = function(){
-      copyBtn.textContent = "✅ 已复制 · 粘贴给 AI";
-      copyBtn.classList.add("copied");
-      setTimeout(function(){
-        copyBtn.textContent = "复制 4 部分 prompt";
-        copyBtn.classList.remove("copied");
-      }, 2500);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(function(){
-        fallbackCopy(text); done();
-      });
-    } else {
-      fallbackCopy(text); done();
-    }
+    // Base copyText v2: 按钮文字恒定, 反馈走独立 Toast（#269 用户拍板）
+    window.copyText(copyPrompt);
   });
-  function fallbackCopy(text){
-    var ta = document.createElement("textarea");
-    ta.value = text;
-    ta.style.position = "fixed";
-    ta.style.opacity = "0";
-    document.body.appendChild(ta);
-    ta.select();
-    try { document.execCommand("copy"); } catch(e) {}
-    document.body.removeChild(ta);
-  }
+  
 
   // 6. 24h 时间块
   var tl = document.getElementById("timeline");

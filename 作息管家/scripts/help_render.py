@@ -31,6 +31,7 @@ import argparse
 import datetime as dt
 import html
 import json
+import os
 import re
 import sys
 from collections import OrderedDict
@@ -42,6 +43,28 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 SCENARIOS_PATH = SKILL_DIR / "references" / "scenarios.yaml"
 TEMPLATE_PATH = SKILL_DIR / "templates" / "help_center.html"
+
+# #269 Base 试点: Base 资产在模块加载时固化为字符串常量
+# （防 reload 后 SCRIPT_DIR 漂移到 temp 导致后续测试读不到真实资产;
+#   help_mobile 复制公共组件到 temp 后 reload, 本模块从 temp 读到字符串固化,
+#   后续 help_sync 用固化字符串不再读文件——两层都稳定）
+def _load_base_assets() -> tuple[str, str]:
+    """加载 Base JS/CSS 资产。优先真实仓库, fallback 环境变量。"""
+    candidates = [
+        SCRIPT_DIR.parent.parent / "公共组件",  # 真实仓库 <repo>/公共组件
+        Path(os.environ.get('SKILLS_BASE_DIR') or "") if os.environ.get('SKILLS_BASE_DIR') else None,
+    ]
+    for d in candidates:
+        if d is None:
+            continue
+        js = d / "assets" / "base.js"
+        css = d / "assets" / "base.css"
+        if js.exists() and css.exists():
+            return js.read_text(encoding="utf-8").strip(), css.read_text(encoding="utf-8").strip()
+    return "", ""
+
+
+_BASE_JS, _BASE_CSS = _load_base_assets()
 
 
 def get_html_base_dir() -> Path:
@@ -330,7 +353,13 @@ def build_payload(scenarios: list[dict], categories: list[dict]) -> dict:
 
 
 def inject_data(template: str, payload: dict) -> str:
-    """替换模板中的占位符(总纲 §04 原则 4)"""
+    """替换模板中的占位符(总纲 §04 原则 4)
+
+    #269 Base 试点改造: 模板已含 SHARED-HELPERS(JS) + SHARED-CSS 占位符,
+    注入 Base 资产(复制按钮/toast 统一组件);INJECT-DATA 保留本函数特化
+    (escape_for_js —— HELP 的 payload 注入 JS 变量上下文, Base injector 的
+    标准 JSON 注入不适用, 此处是「模板预处理」而非注入器)。
+    """
     # 1. 占位符唯一性校验
     if template.count("<!--INJECT-DATA-->") != 1:
         raise ValueError(f"模板占位符 <!--INJECT-DATA--> 必须唯一(实际 {template.count('<!--INJECT-DATA-->')} 处)")
@@ -347,6 +376,14 @@ def inject_data(template: str, payload: dict) -> str:
     )
     # INJECT-SECTIONS 留给浏览器端 JS 渲染(无需注入,占位符保留为空字符串)
     out = out.replace("<!--INJECT-SECTIONS-->", "", 1)
+
+    # 4. Base 资产注入（SHARED-HELPERS/SHARED-CSS, #269 用户拍板统一 Base 组件）
+    # 资产在模块加载时固化为字符串（_BASE_JS/_BASE_CSS）, 防 reload 后路径漂移
+    if "<!--SHARED-HELPERS-->" in out and _BASE_JS:
+        out = out.replace("<!--SHARED-HELPERS-->", _BASE_JS, 1)
+    if "<!--SHARED-CSS-->" in out and _BASE_CSS:
+        out = out.replace("<!--SHARED-CSS-->", _BASE_CSS, 1)
+
     return out
 
 

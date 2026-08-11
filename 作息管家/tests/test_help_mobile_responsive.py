@@ -109,7 +109,9 @@ def test_anchor_template_intact():
     assert css.count("<!--INJECT-DATA-->") == 1, "INJECT-DATA 占位符必须唯一"
     # 关键脚本钩子必须保留
     assert "addEventListener" in css, "addEventListener 缺失(复制按钮事件)"
-    assert "navigator.clipboard" in css, "剪贴板 API 缺失"
+    # #269 Base 试点: 复制走 Base copyText(按钮文字恒定 + toast), 不再自研 clipboard
+    assert "<!--SHARED-HELPERS-->" in css, "SHARED-HELPERS 占位符缺失(Base 注入点)"
+    assert "window.copyText" in css, "复制按钮未接 Base copyText"
     # 双 .wrap 元素契约保留(hero wrap + main wrap),事件委托修复的护栏
     assert css.count('class="wrap"') == 2, "双 .wrap 契约不满足(hero + main)"
 
@@ -139,6 +141,12 @@ def _render_and_load_mock_page():
         shutil.copytree(SKILL_DIR, tmp_skill, ignore=shutil.ignore_patterns(
             ".git", ".db", ".pytest_cache", "__pycache__", "node_modules", ".scratch"
         ))
+        # #269 Base 试点: 复制公共组件(强制依赖)到 tmp 保持 <repo>/公共组件 布局
+        base_dir = SKILL_DIR.parent / "公共组件"
+        if base_dir.exists():
+            shutil.copytree(base_dir, Path(td) / "公共组件",
+                            ignore=shutil.ignore_patterns("__pycache__"))
+            os.environ["SKILLS_BASE_DIR"] = str(Path(td) / "公共组件")
         os.environ["SKILLS_DB_PATH"] = str(tmp_skill / ".db")
         sys.path.insert(0, str(tmp_skill / "scripts"))
         import importlib
@@ -149,7 +157,11 @@ def _render_and_load_mock_page():
         out.parent.mkdir(parents=True, exist_ok=True)
         result = hr.render(out)
         assert result["status"] == "ok", f"render 失败: {result}"
-        return out.read_text(encoding="utf-8")
+        html_text = out.read_text(encoding="utf-8")
+        # 恢复环境变量（#269 Base 试点: 防 SKILLS_BASE_DIR/SKILLS_DB_PATH 残留污染后续测试）
+        os.environ.pop("SKILLS_BASE_DIR", None)
+        os.environ.pop("SKILLS_DB_PATH", None)
+        return html_text
 
 
 def test_mobile_360_no_cat_name_vertical_text():

@@ -137,7 +137,7 @@
     .copy-zone .copy-btn{justify-self:stretch}
     .tl .seg{font-size:8px;min-height:32px}
   }
-</style>
+<style><!--SHARED-CSS--></style></style>
 </head>
 <body>
 <div class="wrap">
@@ -248,7 +248,7 @@
 
 </div>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 <script>
 (function(){
   "use strict";
@@ -258,32 +258,8 @@
       return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
     });
   }
-  function copyText(text, onDone, onFail){
-    function fallback(){
-      try {
-        var ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        document.body.removeChild(ta);
-        if (onDone) onDone();
-      } catch(err){ if (onFail) onFail(err); }
-    }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(onDone).catch(fallback);
-    } else { fallback(); }
-  }
-  function flashBtn(btn, label, cls){
-    btn.textContent = label;
-    btn.classList.add(cls || "copied");
-    setTimeout(function(){
-      btn.textContent = btn.dataset.label || "";
-      btn.classList.remove(cls || "copied");
-    }, 2000);
-  }
+  
+  
 
   var raw = document.getElementById("payload");
   var payload, err = null;
@@ -376,24 +352,19 @@
   var copyBtn = document.getElementById("copy-btn");
   copyBtn.dataset.label = "复制 4 部分 prompt";
   copyBtn.addEventListener("click", function(){
-    copyText(copyPrompt, function(){ flashBtn(copyBtn, "✅ 已复制 · 粘贴给 AI"); },
-             function(){ flashBtn(copyBtn, "✗ 复制失败"); });
+    window.copyText(copyPrompt);
   });
 
-  // 5. 08 动作层:复制数据 / 复制日志
+  // 5. 08 动作层:复制数据 / 复制日志（Base buildDataText/buildLogText · 按钮文字恒定 + toast）
   var copyDataBtn = document.getElementById("copy-data-btn");
   copyDataBtn.dataset.label = "📋 复制数据";
   copyDataBtn.addEventListener("click", function(){
-    copyText(JSON.stringify(data.copy_data || {}, null, 2),
-             function(){ flashBtn(copyDataBtn, "✅ 数据已复制"); },
-             function(){ flashBtn(copyDataBtn, "✗ 复制失败"); });
+    window.copyText(window.buildDataText(window.__hmPayload));
   });
   var copyLogBtn = document.getElementById("copy-log-btn");
   copyLogBtn.dataset.label = "🪵 复制日志";
   copyLogBtn.addEventListener("click", function(){
-    copyText(JSON.stringify(data.copy_log || {}, null, 2),
-             function(){ flashBtn(copyLogBtn, "✅ 日志已复制"); },
-             function(){ flashBtn(copyLogBtn, "✗ 复制失败"); });
+    window.copyText(window.buildLogText(window.__hmPayload));
   });
 
   // 6. 24h 时间轴

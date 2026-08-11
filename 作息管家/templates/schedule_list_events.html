@@ -114,7 +114,7 @@
     .cards-grid{grid-template-columns:1fr}
     .hour-row{grid-template-columns:40px 1fr;font-size:12px}
   }
-</style>
+<style><!--SHARED-CSS--></style></style>
 </head>
 <body>
 <div class="wrap">
@@ -133,7 +133,7 @@
   </div>
 </div>
 
-<script id="payload" type="application/json">{{ PAYLOAD }}</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 <script src="_copy_prompt_helper.js"></script>
 <script>
 (function(){

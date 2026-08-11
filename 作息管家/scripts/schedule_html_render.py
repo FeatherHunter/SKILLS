@@ -30,6 +30,14 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_DIR = SKILL_DIR / "templates"
 
+# Base Skill 资产目录（#269 试点 · 公共组件/ 唯一真相源）
+# 仓库布局: <repo>/公共组件/ —— 作息管家在 <repo>/作息管家/
+# 真实仓库路径优先; 环境变量 SKILLS_BASE_DIR 仅作 fallback（测试隔离用）
+import os as _os
+BASE_SKILL_DIR = SKILL_DIR.parent / "公共组件"
+if not (BASE_SKILL_DIR / "assets" / "base.js").exists():
+    BASE_SKILL_DIR = Path(_os.environ.get('SKILLS_BASE_DIR') or BASE_SKILL_DIR)
+
 # 复用 schedule_db 的 DB 配置(不重复定义)
 sys.path.insert(0, str(SCRIPT_DIR))
 
@@ -250,83 +258,68 @@ def _get_feishu_summary() -> dict:
 
 def inject_into_template(template_name: str, payload: dict, output_path: Path) -> Path:
     """
-    读模板 → JSON 注入 → CSS/JS inline → 写单文件副本。
+    读模板 → 模板预处理（{{title}} + 私有 CSS/JS inline）→ Base 注入器 → 写单文件副本。
+
+    #269 试点改造（2026-08-11 用户拍板 · Base 契约 v1.2）:
+    - payload 注入逻辑全收敛到 Base injector.py（单一真相源, 改注入器只改 Base, 全技能生效）
+    - 本函数只保留作息管家「模板预处理」: {{title}} 替换 + _record_styles.css/_record_engine.js/
+      _copy_prompt_helper.js inline（单文件自包含产品要求, 非注入逻辑）
+    - 模板统一补占位符: INJECT-DATA / SHARED-HELPERS(JS) / SHARED-CSS——缺失 → Base 硬拦截报错
 
     第一性:HTML 自称"单文件自包含,无外部依赖"(offline banner 文案)。
     旧实现把 _record_styles.css / _record_engine.js 复制到输出目录 —
     在 Chrome 本地 file:// 协议下能用,但飞书/邮件消息预览/移动浏览器拿到
     的 HTML 没有伴随 CSS/JS 文件 → JS 失败 → "加载中..." + 空白页面。
 
-    新实现:inline CSS/JS 进 HTML,真正做到单文件可分享。
-
     严格遵循手册 §8:生成副本,不污染原模板。
     """
+    # ── 1. 模板预处理（作息管家特有 · 非注入逻辑）──
     template_path = TEMPLATE_DIR / template_name
     if not template_path.exists():
         raise FileNotFoundError(f"模板不存在: {template_path}")
 
     template_text = template_path.read_text(encoding="utf-8")
-    payload_str = json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
-    payload_str = payload_str.replace("</", "<\\/")
 
-    anchor = '<script id="payload" type="application/json">'
-    if anchor not in template_text:
-        raise RuntimeError(
-            f"模板 {template_name} 缺少 {anchor} 锚点"
-        )
-
-    # 找到锚点位置,把锚点开始到 </script> 结束 整段替换为「锚点 + payload + </script>」
-    close_tag = "</script>"
-    start_idx = template_text.find(anchor)
-    end_idx = template_text.find(close_tag, start_idx)
-    if end_idx < 0:
-        raise RuntimeError(f"模板 {template_name} 缺少 {close_tag} 闭合")
-    end_idx += len(close_tag)  # 包含 </script>
-
-    head = template_text[:start_idx]
-    tail = template_text[end_idx:]
-    injected = head + anchor + payload_str + close_tag + tail
-
-    # {{ 占位符替换
+    # {{ 占位符替换（title 等）
     title = title_for_mode(payload.get("data", {}).get("meta", {}))
-    injected = injected.replace("{{ title }}", title).replace("{{ TITLE }}", title)
-    injected = injected.replace("{{ template_name }}", template_name)
+    template_text = template_text.replace("{{ title }}", title).replace("{{ TITLE }}", title)
+    template_text = template_text.replace("{{ template_name }}", template_name)
 
-    # === v1.2.0 第一性 inline CSS/JS ===
-    # 模板里 <link rel="stylesheet" href="_record_styles.css"> →
-    # 内联 CSS 进 <style> 块
+    # 私有 CSS/JS inline（单文件自包含）: _record_styles.css / _record_engine.js / _copy_prompt_helper.js
     css_link = '<link rel="stylesheet" href="_record_styles.css">'
-    if css_link in injected:
+    if css_link in template_text:
         css_text = (TEMPLATE_DIR / "_record_styles.css").read_text(encoding="utf-8")
-        injected = injected.replace(
-            css_link,
-            "<style>\n" + css_text + "\n</style>"
-        )
+        template_text = template_text.replace(css_link, "<style>\n" + css_text + "\n</style>")
 
-    # 模板里 <script src="_record_engine.js"></script> →
-    # 内联 JS 进 <script> 块
     js_src = '<script src="_record_engine.js"></script>'
-    if js_src in injected:
+    if js_src in template_text:
         js_text = (TEMPLATE_DIR / "_record_engine.js").read_text(encoding="utf-8")
-        # 与 payload 同款转义(2026-08-09 对抗式复查):内联 JS 若含 </script>
-        # 字面量(注释/字符串)会被 HTML 解析器提前截断 script 块。
-        # JS 字符串里 \/ === /,零语义影响。
         js_text = js_text.replace("</", "<\\/")
-        injected = injected.replace(
-            js_src,
-            "<script>\n" + js_text + "\n</script>"
-        )
+        template_text = template_text.replace(js_src, "<script>\n" + js_text + "\n</script>")
 
-    # 模板里 <script src="_copy_prompt_helper.js"></script> →
-    # 内联共享复制 prompt helper(ADR-0002 Q6 · _record_engine.js + schedule_list_events.html 共用)
     helper_src = '<script src="_copy_prompt_helper.js"></script>'
-    if helper_src in injected:
+    if helper_src in template_text:
         helper_text = (TEMPLATE_DIR / "_copy_prompt_helper.js").read_text(encoding="utf-8")
-        helper_text = helper_text.replace("</", "<\\/")  # 同款转义,防 </script> 字面量截断
-        injected = injected.replace(
-            helper_src,
-            "<script>\n" + helper_text + "\n</script>"
+        helper_text = helper_text.replace("</", "<\\/")
+        template_text = template_text.replace(helper_src, "<script>\n" + helper_text + "\n</script>")
+
+    # ── 2. Base 注入器（payload + base.js + base.css）──
+    # 注: 模板必须含恰好 1 个 INJECT-DATA + SHARED-HELPERS + SHARED-CSS 占位符,
+    #     缺失/重复 → Base injector 硬拦截抛错（守卫机制, #269 用户拍板「违规直接报错」）
+    try:
+        sys.path.insert(0, str(BASE_SKILL_DIR))
+        from injector import inject
+        base_js = (BASE_SKILL_DIR / 'assets' / 'base.js').read_text(encoding='utf-8').strip()
+        base_css = (BASE_SKILL_DIR / 'assets' / 'base.css').read_text(encoding='utf-8').strip()
+        injected, err = inject(template_text, payload, js_asset=base_js, css_asset=base_css,
+                               strict=False)
+    except ImportError:
+        raise RuntimeError(
+            "Base Skill 资产缺失: 找不到 公共组件/injector.py。"
+            "请确认 公共组件/ 目录已安装（#269 Base 试点依赖, commit 72e3b6e）"
         )
+    if err:
+        raise RuntimeError(f"Base 注入失败({template_name}): {err}")
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(injected, encoding="utf-8")

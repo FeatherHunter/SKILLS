@@ -300,74 +300,6 @@
     color: var(--fg3); font-size: 15px;
   }
   .cat-block.hidden, .ww-block.hidden, .sc-block.hidden { display: none; }
-
-  /* ===== Toast(iOS 通知风格 · 对标卡路里 v2.4.12) ===== */
-  .toast {
-    position: fixed; left: 50%; bottom: 32px;
-    transform: translateX(-50%) scale(0.9);
-    opacity: 0;
-    background: rgba(28, 28, 30, 0.94);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    backdrop-filter: blur(20px) saturate(180%);
-    color: #f0f0f0;
-    border-radius: 14px;
-    padding: 13px 14px 13px 16px;
-    display: flex; align-items: flex-start; gap: 12px;
-    max-width: 480px; min-width: 320px;
-    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.32), 0 0 0 0.5px rgba(255,255,255,0.08) inset;
-    pointer-events: none;
-    transition: opacity 0.22s ease-out, transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 9999;
-  }
-  .toast.show {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
-    pointer-events: auto;
-  }
-  .toast-icon {
-    font-size: 22px; line-height: 1; padding-top: 1px; flex-shrink: 0;
-  }
-  .toast-body { flex: 1; min-width: 0; }
-  .toast-title {
-    font-weight: 600; font-size: 13px; line-height: 1.4;
-    color: #fff; margin-bottom: 3px;
-  }
-  .toast-title em {
-    font-style: normal; color: #4dd96b; font-weight: 600;
-  }
-  .toast-detail {
-    font-size: 11.5px; line-height: 1.55;
-    color: #c8c8cc;
-  }
-  .toast-close {
-    background: rgba(255, 255, 255, 0.10);
-    color: #4dd96b;
-    border: 0;
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 11px;
-    font-weight: 500;
-    font-family: inherit;
-    cursor: pointer;
-    white-space: nowrap;
-    margin-left: 6px; flex-shrink: 0;
-    transition: background 0.12s;
-  }
-  .toast-close:hover { background: rgba(255, 255, 255, 0.18); }
-  .toast-close:active { transform: scale(0.96); }
-  /* 移动端 toast 适配(对标卡路里) */
-  @media (max-width: 640px) {
-    .toast {
-      left: 12px; right: 12px;
-      bottom: calc(12px + env(safe-area-inset-bottom, 0));
-      transform: translateX(0) scale(0.95);
-      max-width: none; min-width: 0;
-      padding: 12px 12px 12px 14px;
-    }
-    .toast.show { transform: translateX(0) scale(1); }
-    .toast-icon { font-size: 20px; }
-    .toast-title { font-size: 12.5px; }
-    .toast-detail { font-size: 11px; }
   }
 
   /* ===== Footer ===== */
@@ -410,6 +342,7 @@
     .cat-meta { width: 100%; justify-content: flex-start; }
   }
 </style>
+<style><!--SHARED-CSS--></style>
 </head>
 <body>
 
@@ -444,15 +377,9 @@
   </div>
 </div>
 
-<!-- Toast(iOS 通知风格 · 对标卡路里 v2.4.12) -->
-<div id="toast" class="toast" role="status" aria-live="polite">
-  <div class="toast-icon">📋</div>
-  <div class="toast-body">
-    <div class="toast-title">已复制 <em id="toastWake">prompt</em></div>
+
     <div class="toast-detail">粘贴给 AI(微信/飞书/任何 AI 工具),作息管家技能会自动执行这个流程,完成后你会在飞书收到 HTML</div>
   </div>
-  <button class="toast-close" id="toastClose" type="button">✓ 知道了</button>
-</div>
 
 <script>
 window.__SCENARIOS__ = <!--INJECT-DATA-->;
@@ -464,32 +391,7 @@ window.__SCENARIOS__ = <!--INJECT-DATA-->;
       return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
     });
   }
-  // === Toast 控制器(对标卡路里 v2.4.12 · iOS 通知风格) ===
-  // showToast(wake):wake 是被复制的唤醒词名(如 "#6 查作息" / "#14 复盘"),
-  // toast 标题显示 "已复制 #6 查作息",副标题固定提示用户粘给 AI + 飞书闭环
-  const toastEl = document.getElementById('toast');
-  const toastWakeEl = document.getElementById('toastWake');
-  const toastCloseEl = document.getElementById('toastClose');
-  let toastTimer = null;
-
-  function showToast(wake) {
-    // wake 可以是唤醒词字符串;若未传则用 "prompt" 占位
-    const wakeText = (wake && String(wake).trim()) || 'prompt';
-    if (toastWakeEl) toastWakeEl.textContent = wakeText;
-    if (toastEl) {
-      toastEl.classList.add('show');
-      clearTimeout(toastTimer);
-      // 4.5s 自动消失(对标卡路里,够用户读完副标题)
-      toastTimer = setTimeout(function(){ toastEl.classList.remove('show'); }, 4500);
-    }
-  }
-  // 关闭按钮:点击立即消失
-  if (toastCloseEl) {
-    toastCloseEl.addEventListener('click', function(){
-      toastEl.classList.remove('show');
-      clearTimeout(toastTimer);
-    });
-  }
+  
   function wakeNum(wake) {
     // "#0 记作息" → "00"
     const m = String(wake || '').match(/^#?(\d+|[A-Z]\d+)/);
@@ -590,49 +492,14 @@ window.__SCENARIOS__ = <!--INJECT-DATA-->;
 
   // === 3. 默认折叠(全部 details 不加 open 属性)==
 
-  // === 4. 复制按钮 ===
+  // === 4. 复制按钮 ===（Base copyText v2: 按钮文字恒定 + 统一 toast · #269 用户拍板）
   mainEl.addEventListener('click', function(e){
     const btn = e.target.closest('.copy-btn');
     if (!btn) return;
     const text = btn.getAttribute('data-prompt') || '';
-    // 找到所属场景的唤醒词(对标卡路里):toast 显示"已复制 #6 查作息 · 单条添加"
-    // sc-block 自身只含 scenario_title,wake_word 在父级 .ww-block > .ww-name
-    let wake = '';
-    const scBlock = btn.closest('.sc-block');
-    if (scBlock) {
-      const scTitleEl = scBlock.querySelector('.sc-title');
-      if (scTitleEl) wake = scTitleEl.textContent.trim();
-      const wwBlock = scBlock.closest('.ww-block');
-      if (wwBlock) {
-        const wwNameEl = wwBlock.querySelector('.ww-name');
-        if (wwNameEl) wake = wwNameEl.textContent.trim() + ' · ' + wake;
-      }
-    }
-    showToast(wake || 'prompt');
-
-    const done = function(){
-      btn.textContent = '✓ 已复制';
-      btn.classList.add('copied');
-      // toast 已在 showToast(wake) 中显示,这里只控制按钮视觉
-      setTimeout(function(){
-        btn.textContent = '复制 prompt';
-        btn.classList.remove('copied');
-      }, 2200);
-    };
-    const fallback = function(){
-      const ta = document.createElement('textarea');
-      ta.value = text; ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;';
-      document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); done(); } catch(e) {
-        btn.textContent = '✗ 复制失败';
-        btn.classList.add('failed');
-      }
-      document.body.removeChild(ta);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(fallback);
-    } else {
-      fallback();
+    // Base copyText: 复制 + toast「已复制 · 粘贴给 AI」，按钮文字恒定（全技能统一）
+    if (window.copyText) {
+      window.copyText(text);
     }
   });
 
@@ -681,5 +548,5 @@ window.__SCENARIOS__ = <!--INJECT-DATA-->;
 })();
 </script>
 
-</body>
+<script><!--SHARED-HELPERS--></script></body>
 </html>

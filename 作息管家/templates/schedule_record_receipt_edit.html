@@ -112,7 +112,7 @@
     .record-card .grid{grid-template-columns:1fr}
     .actions .act-btn{flex-direction:column;text-align:center;align-items:flex-start;gap:8px}
   }
-</style>
+<style><!--SHARED-CSS--></style></style>
 </head>
 <body>
 <div class="wrap">
@@ -239,7 +239,7 @@
 </footer>
 
 </div>
-<script id="payload" type="application/json"></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 <script>
 // 纠正回执专用逻辑:渲染 diff 视图(2026-07-24)
 (function(){
@@ -330,24 +330,11 @@
     btn.addEventListener("click", function(){
       var key = btn.getAttribute("data-prompt-key");
       var text = prompts[key] || "";
-      // Copy to clipboard
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(function(){
-          btn.classList.add("copied");
-          setTimeout(function(){ btn.classList.remove("copied"); }, 1500);
-        });
-      } else {
-        // Fallback: select + exec
-        var ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand("copy"); } catch(e) {}
-        document.body.removeChild(ta);
-        btn.classList.add("copied");
-        setTimeout(function(){ btn.classList.remove("copied"); }, 1500);
-      }
+      // Base copyText v2: 按钮文字恒定, 反馈走独立 Toast（#269 用户拍板）
+      window.copyText(text);
     });
+  });
+
   });
 })();
 </script>

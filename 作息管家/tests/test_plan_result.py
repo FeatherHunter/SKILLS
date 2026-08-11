@@ -274,7 +274,7 @@ def test_cmd_plan_result_renders_html(capsys, tmp_path, isolated_env, monkeypatc
     html = fp.read_text(encoding="utf-8")
     # 注入契约:payload 锚点 + 内联数据
     assert '<script id="payload" type="application/json">' in html
-    assert '"mode":"plan-result"' in html
+    assert '"mode": "plan-result"' in html or '"mode":"plan-result"' in html  # Base injector 标准 dumps(带空格)
     # 08 动作层:复制数据/复制日志按钮
     assert "复制数据" in html
     assert "复制日志" in html
@@ -400,7 +400,7 @@ def test_cmd_plan_result_conflict_detected(capsys, tmp_path, isolated_env, monke
     assert out["data"]["locked_count"] == 1
     assert out["data"]["conflict_count"] == 1
     html = Path(out["data"]["file_path"]).read_text(encoding="utf-8")
-    assert '"status":"conflict"' in html
+    assert '"status": "conflict"' in html or '"status":"conflict"' in html  # Base injector 标准 dumps(带空格)
 
 
 def test_commands_dispatch_via_cli(capsys, tmp_path, isolated_env, monkeypatch):

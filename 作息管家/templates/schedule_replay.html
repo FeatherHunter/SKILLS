@@ -353,7 +353,7 @@ body {
   .hero h1 { font-size: 20px; }
   .copy-prompt-btn { width: 100%; }
 }
-</style>
+<style><!--SHARED-CSS--></style></style>
 </head>
 <body>
 <div class="wrap">
@@ -408,7 +408,7 @@ body {
   </div>
 </div>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 <script>
 /* === T3 · schedule_replay.html 一体模板渲染(粒度路由 · 健康分全粒度 · 缺计划补齐 · 计划衔接)=== */
 (function(){
@@ -791,21 +791,8 @@ body {
   }
 
   // === 复制 prompt(总纲 §04 原则 10) ===
-  function copyText(text, done){
-    var fail = function(){};
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(function(){
-        fallbackCopy(text); done();
-      });
-    } else { fallbackCopy(text); done(); }
-  }
-  function fallbackCopy(text){
-    var ta = document.createElement("textarea");
-    ta.value = text; ta.style.cssText = "position:fixed;top:0;left:-9999px;opacity:0";
-    document.body.appendChild(ta); ta.select();
-    try { document.execCommand("copy"); } catch(e) {}
-    document.body.removeChild(ta);
-  }
+  
+  
   function showToast(){
     var toast = document.getElementById("toast");
     if (toast) {

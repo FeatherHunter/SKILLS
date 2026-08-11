@@ -75,3 +75,7 @@ GitHub Issues（`FeatherHunter/SKILLS`），按技能前缀分区：`[备忘录]
 ### Delivery fidelity（交付保真规范）
 
 解决「AI 交付只有 60%」的六个保真手段（交付前三问自检 / grilling 问边界 / 先交决策清单 / 验收标准进 ticket / verifier 独立审查 / 小步交付+里程碑确认）。任何 agent 交付任何工作前默认遵守：小事至少用手段 1，跨技能/跨会话大任务手段 1-6 全用。详见 `docs/agents/delivery-fidelity.md`。
+
+### Execution framework（执行框架）
+
+用户定制的「执行前 / 执行中 / 执行后」三项工作要求：**执行前**（告诉起点 → 发现盲区 → 采访澄清 → 原型验证 → 执行计划）、**执行中**（记录偏离）、**执行后**（过程复盘 → 确认理解 → AI 反向考验 → 答明白再交付）。任何 agent 执行 wayfinder / map / ticket / 技能任务时默认遵守；**不修改 wayfinder 技能文件**，靠本约定 + `docs/agents/execution-framework.md` + 辅助 SKILL 落实。详见 `docs/agents/execution-framework.md`。

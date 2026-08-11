@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#257 交付完整性审计 · 最终确认 v2</title>
+<style>
+:root{
+  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+  --bg:#fafafa;--card:#fff;--border:#d2d2d7;
+  --accent:#0071e3;--accent-soft:#f5f5f7;
+  --green:#34c759;--green-soft:#E8F5E9;
+  --orange:#FF9500;--orange-soft:#FFF3E0;
+  --red:#FF3B30;--red-soft:#FFEBEE;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+.hero{background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);padding:32px 32px 28px;border-radius:20px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+.hero h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px}
+.hero .sub{font-size:14px;color:var(--fg2)}
+.section{background:var(--card);border-radius:16px;padding:22px 26px;margin-bottom:14px;box-shadow:var(--shadow)}
+.section h2{font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section h2::before{content:'';width:4px;height:16px;background:var(--accent);border-radius:2px}
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-right:6px}
+.tag.ok{background:var(--green-soft);color:var(--green)}
+.tag.warn{background:var(--orange-soft);color:var(--orange)}
+.tag.info{background:var(--accent-soft);color:var(--accent)}
+code{background:var(--accent-soft);padding:1px 6px;border-radius:5px;font-size:12.5px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+.data-table th{text-align:left;padding:9px 12px;background:var(--accent-soft);border-radius:8px;font-weight:600;font-size:12.5px}
+.data-table td{padding:8px 12px;border-bottom:1px solid #ececec}
+.data-table tr:last-child td{border-bottom:none}
+.mono{font-family:"SF Mono",Consolas,monospace;font-size:12px}
+.dim{font-size:12px;color:var(--fg3)}
+@media (max-width:640px){
+  .wrap{padding:24px 16px 60px}
+  .hero{padding:24px 20px;border-radius:16px}
+  .hero h1{font-size:21px}
+  .section{padding:16px 16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>#257 交付完整性审计 · 最终确认 v2</h1>
+  <div class="sub">对抗式审查 · 第一性原理六项核查全过 · 2026-08-11 17:55</div>
+</header>
+
+<div class="section">
+  <h2>✅ 六项核查结果（对抗式复核）</h2>
+  <table class="data-table">
+    <tr><th>#</th><th>检查项</th><th>结果</th><th>证据</th></tr>
+    <tr><td>1</td><td>代码全部本地 commit</td><td><span class="tag ok">✓</span></td><td class="mono">7873ff1 / f0c30e2 / a11d494 等 8 个 #257 commit</td></tr>
+    <tr><td>2</td><td>交付报告持久化入库</td><td><span class="tag ok">✓</span></td><td>04-review.md + 4 份 HTML（五维审查/事故复盘/审计/最终确认）</td></tr>
+    <tr><td>3</td><td>思想共识沉淀记忆</td><td><span class="tag ok">✓ 本次补齐</span></td><td>容量口径/TOP4/隔离双坑 + <strong>本次新沉淀：复制区按钮语义共识</strong></td></tr>
+    <tr><td>4</td><td>生产库数据完整</td><td><span class="tag ok">✓</span></td><td>8297/100/1 已恢复 + 快照保留</td></tr>
+    <tr><td>5</td><td>handoff 文档更新</td><td><span class="tag ok">✓ 本次修正</span></td><td>待 push 修正为 4 个（此前描述过时）</td></tr>
+    <tr><td>6</td><td>issue 闭环</td><td><span class="tag ok">✓</span></td><td>结论表评论 + <strong>CLOSED</strong>（用户逐页确认后）</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>📤 待 push 清单（用户执行）</h2>
+  <p>本地 ahead <strong>4 个</strong>（#257 收尾；先前 10 个用户已 push）：</p>
+  <table class="data-table">
+    <tr><th>commit</th><th>内容</th></tr>
+    <tr><td class="mono">a11d494</td><td>#257 复制区重构（复制数据/日志双按钮 + 扩展按钮 + 隐藏预览框）· 用户拍板</td></tr>
+    <tr><td class="mono">6f46e7c</td><td>#257 验收记录入库（04-review.md 追加验收结论）</td></tr>
+    <tr><td class="mono">ab1c021</td><td>handoff 归档（#257 已 close 状态）</td></tr>
+    <tr><td class="mono">990f0d1</td><td>handoff 待 push 清单修正（4 个）</td></tr>
+  </table>
+  <p class="dim">执行：<code class="mono">git push origin main</code></p>
+</div>
+
+<div class="section">
+  <h2>🧠 思想共识沉淀清单（本次核对完整）</h2>
+  <div class="ctx" style="font-size:13px;color:var(--fg2)">
+    <strong>已沉淀（user/agent memory）</strong>：<br>
+    ① 容量口径 = Σ(kg×次数)（用户拍板 A）<br>
+    ② 主项动作 = 自动 TOP4（用户拍板 A）<br>
+    ③ 测试隔离双坑根治（temp_db 非 autouse + 模块级 DB_PATH collection 固化）<br>
+    ④ <strong>复制区按钮语义共识</strong>（本次补齐）：按钮写功能名不写「复制 prompt」；复制数据/复制日志双按钮；扩展按钮体现扩展思维 + 激活态高亮；预览框可省<br>
+    <br>
+    <strong>遗留待办（不阻塞 close，但记录在案）</strong>：备份 cron 8/11 起持续失败（WinError 206），建议另派 agent 修复。
+  </div>
+</div>
+
+<footer style="text-align:center;color:var(--fg3);font-size:12px;padding-top:24px;border-top:1px solid var(--border);margin-top:32px">
+  #257 · 交付完整性审计最终确认 v2 · 2026-08-11 17:55 · 全量 374 passed + 20 xfailed
+</footer>
+</div>
+</body>
+</html>

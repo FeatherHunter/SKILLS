@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#257 5 维对抗式审查 · 计划复盘增强</title>
+<style>
+:root{
+  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+  --bg:#fafafa;--card:#fff;--border:#d2d2d7;
+  --accent:#0071e3;--accent-soft:#f5f5f7;
+  --green:#34c759;--green-soft:#E8F5E9;
+  --orange:#FF9500;--orange-soft:#FFF3E0;
+  --red:#FF3B30;--red-soft:#FFEBEE;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+.hero{background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);padding:32px 32px 28px;border-radius:20px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+.hero h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px}
+.hero .sub{font-size:14px;color:var(--fg2)}
+.section{background:var(--card);border-radius:16px;padding:22px 26px;margin-bottom:14px;box-shadow:var(--shadow)}
+.section h2{font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section h2::before{content:'';width:4px;height:16px;background:var(--accent);border-radius:2px}
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-right:6px}
+.tag.ok{background:var(--green-soft);color:var(--green)}
+.tag.warn{background:var(--orange-soft);color:var(--orange)}
+.tag.info{background:var(--accent-soft);color:var(--accent)}
+code{background:var(--accent-soft);padding:1px 6px;border-radius:5px;font-size:12.5px}
+.dim{font-size:12px;color:var(--fg3)}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+.data-table th{text-align:left;padding:9px 12px;background:var(--accent-soft);border-radius:8px;font-weight:600;font-size:12.5px}
+.data-table td{padding:8px 12px;border-bottom:1px solid #ececec}
+.data-table tr:last-child td{border-bottom:none}
+.q{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:12px}
+.q .qn{font-size:14px;font-weight:700;margin-bottom:6px}
+.q .ctx{font-size:12.5px;color:var(--fg2)}
+.prompt-box{background:#1d1d1f;color:#f5f5f7;padding:14px 16px;border-radius:12px;font-size:12.5px;line-height:1.6;font-family:"SF Mono",Consolas,monospace;white-space:pre-wrap;margin:10px 0}
+@media (max-width:640px){
+  .wrap{padding:24px 16px 60px}
+  .hero{padding:24px 20px;border-radius:16px}
+  .hero h1{font-size:21px}
+  .section{padding:16px 16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>#257 · 5 维对抗式审查</h1>
+  <div class="sub">训练容量/负荷趋势 · 计划复盘增强 · 3 场景交付 · 2026-08-11 14:40</div>
+</header>
+
+<div class="section">
+  <h2>📋 交付场景（3 个，同模板不同范围）</h2>
+  <table class="data-table">
+    <tr><th>场景</th><th>数据范围</th><th>关键内容</th></tr>
+    <tr><td>计划复盘（本周）</td><td>最近 7 天</td><td>周容量双柱 + 主项负荷折线 + 热力图 + 明细 + 复制</td></tr>
+    <tr><td>计划复盘（本月）</td><td>本月 1 日 ~ 今天</td><td>同上（本月窗口）</td></tr>
+    <tr><td>计划复盘（全部）</td><td>计划周期全部</td><td>同上（全部窗口，含高频动作）</td></tr>
+  </table>
+  <p class="dim">验收环境：临时 DB（8 周推拉腿计划 seed + 120 条实绩，完成率梯度 90/70/50/30%）</p>
+</div>
+
+<div class="section">
+  <h2>✅ 5 维审查结果</h2>
+
+  <div class="q">
+    <div class="qn">① 复制按钮契约 <span class="tag ok">通过</span></div>
+    <div class="ctx">
+      <strong>本次补齐的关键缺陷</strong>：原模板只有「复制摘要」单按钮，缺「复制 prompt」——已改为 <strong>复制 prompt / 复制数据 双 tab</strong>（segmented control 样式）+ 独立「复制」按钮。
+      <br>• 按钮文字「复制」恒定，点击后不变、不出现「已复制」✓
+      <br>• 反馈走独立 Toast（居家管家「知道了」面板样式，深色毛玻璃 + ✓知道了 按钮）✓
+      <br>• 复制 prompt = 与 HELP 零差异的自包含指令（空白 AI 可执行）✓
+      <br>• 复制数据 = 人类可读中文 + 无 JSON（含新增容量维度）✓
+      <br>• 实测：clipboard 权限授予后 Toast 正常弹出；prompt 复制内容逐字等于 scene_data 定稿 ✓
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qn">② 呈现数据 vs 设计契约 <span class="tag ok">通过</span></div>
+    <div class="ctx">
+      <strong>新增容量维度（本次核心）</strong>：周容量柱状「计划 vs 实做」双柱 + 主项动作负荷折线（TOP4 自动选择）+ 无实绩空态提示。
+      <br>• 数据验证：计划周容量恒定 19,110 kg×次（8 周循环计划天然水平线）vs 实做 19,110→12,740→12,740→6,370 衰减——「计划线 vs 实绩线」对比正是渐进超负荷信号 ✓
+      <br>• 主项 TOP4：腿举/杠铃卧推/站姿提踵/杠铃深蹲，计划与实绩自动对齐 ✓
+      <br>• 无实绩数据 → 只显示计划容量 + 「实做数据不足」提示 ✓
+      <br>• 既有维度保留：KPI 四卡（训练天数/平均完成率/异常天/实做组数）+ 热力图 + 每日明细 ✓
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qn">③ 375px 手机适配 <span class="tag ok">通过</span></div>
+    <div class="ctx">
+      Playwright DOM 实测：<strong>390px 与 320px 均 0 横向溢出</strong>、0 JS 报错。
+      <br>• SVG 图表 viewBox 640 缩放自适应，X 轴标签不重叠 ✓
+      <br>• 折线标签碰撞检测：首尾点标签错位展开，DOM 测量 0 重叠、0 越界 ✓
+      <br>• 顺路修复 3 个既有 bug：模板注入解包（原渲染实际是坏的）、热力图 1fr 撑破（390px 溢出 1170px）、明细表无横向滚动 ✓
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qn">④ 设计师风格 <span class="tag ok">通过</span></div>
+    <div class="ctx">
+      Apple 浅色风一致：浅灰底 + 白色大圆角卡片 + 弥散阴影 + 系统字体栈；图表用 iOS 系统色（蓝/绿/橙/紫），Y 轴刻度向上取整、Catmull-Rom 平滑曲线（与体重轨迹技术栈一致）。视觉模型终审：KPI 数值逻辑自洽（训练天数 16/28、平均完成率 69% 手工复算一致）、卡片层级清晰。
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qn">⑤ 体验/数据价值增强建议 <span class="tag warn">待你拍板</span></div>
+    <div class="ctx">
+      <strong>建议 1</strong>（推荐做）：容量图表下方加「对比上周」一句话结论——如「本周容量比上周 <strong>-50%</strong>，注意渐进超负荷中断」。现在只有周容量数字，用户要自己算趋势；一句话结论直接给信号。
+      <br><strong>建议 2</strong>（可选）：周容量柱状图 Y 轴加「计划水平线」虚线标注（8 周循环计划计划线恒定，用虚线高亮更直观）。
+      <br><strong>建议 3</strong>（可选）：主项负荷折线图例加「↑↓」箭头表示该动作容量环比变化。
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>📤 复制 prompt（与 HELP 零差异）</h2>
+  <div class="prompt-box">请你加载技能 卡路里,执行唤醒词「计划复盘（本周）」。
+
+我想复盘本周的训练:完成率、训练日数、消耗等关键数字,完成趋势,以及本周与上周的对比。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <div class="prompt-box">请你加载技能 卡路里,执行唤醒词「计划复盘（本月）」。
+
+我想复盘本月的训练:完成率、训练日数、消耗等关键数字,完成趋势,以及本月与上月的对比。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <div class="prompt-box">请你加载技能 卡路里,执行唤醒词「计划复盘（全部）」。
+
+我想复盘整个训练计划:总完成率,以及做得最多的动作(高频动作)排名。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。</div>
+  <p class="dim">注：以上 prompt 已注入各场景 HTML 的「复制 prompt」tab，一键复制即可。</p>
+</div>
+
+<footer style="text-align:center;color:var(--fg3);font-size:12px;padding-top:24px;border-top:1px solid var(--border);margin-top:32px">
+  #257 · 5 维对抗式审查 · 2026-08-11 · 全量 376 passed · 待 push 清单见 commit 阶段
+</footer>
+</div>
+</body>
+</html>

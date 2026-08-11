@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#257 事故复盘 · 第一性原理状态评估</title>
+<style>
+:root{
+  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+  --bg:#fafafa;--card:#fff;--border:#d2d2d7;
+  --accent:#0071e3;--accent-soft:#f5f5f7;
+  --green:#34c759;--green-soft:#E8F5E9;
+  --orange:#FF9500;--orange-soft:#FFF3E0;
+  --red:#FF3B30;--red-soft:#FFEBEE;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+.hero{background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);padding:32px 32px 28px;border-radius:20px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+.hero h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px}
+.hero .sub{font-size:14px;color:var(--fg2)}
+.section{background:var(--card);border-radius:16px;padding:22px 26px;margin-bottom:14px;box-shadow:var(--shadow)}
+.section h2{font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section h2::before{content:'';width:4px;height:16px;background:var(--accent);border-radius:2px}
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-right:6px}
+.tag.ok{background:var(--green-soft);color:var(--green)}
+.tag.warn{background:var(--orange-soft);color:var(--orange)}
+.tag.bad{background:var(--red-soft);color:var(--red)}
+.tag.info{background:var(--accent-soft);color:var(--accent)}
+code{background:var(--accent-soft);padding:1px 6px;border-radius:5px;font-size:12.5px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+.data-table th{text-align:left;padding:9px 12px;background:var(--accent-soft);border-radius:8px;font-weight:600;font-size:12.5px}
+.data-table td{padding:8px 12px;border-bottom:1px solid #ececec}
+.data-table tr:last-child td{border-bottom:none}
+.q{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:12px}
+.q .qn{font-size:14px;font-weight:700;margin-bottom:4px}
+.q .ctx{font-size:12.5px;color:var(--fg2)}
+.step{display:flex;gap:12px;margin:8px 0}
+.step .n{flex-shrink:0;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-top:2px}
+.step .c{font-size:13px;color:var(--fg2)}
+.step .c strong{color:var(--fg)}
+.strike{text-decoration:line-through;color:var(--fg3)}
+.arrow{font-size:12px;color:var(--accent);font-weight:600}
+@media (max-width:640px){
+  .wrap{padding:24px 16px 60px}
+  .hero{padding:24px 20px;border-radius:16px}
+  .hero h1{font-size:21px}
+  .section{padding:16px 16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>#257 事故复盘 · 第一性原理状态</h1>
+  <div class="sub">已恢复 ✓ · 剩余问题 · 当前进展 · 下一步 · 2026-08-11 12:20</div>
+</header>
+
+<div class="section">
+  <h2>✅ 数据恢复完成（已核实）</h2>
+  <table class="data-table">
+    <tr><th>表</th><th>生产库现状</th><th>恢复源</th><th>状态</th></tr>
+    <tr><td>exercise_log</td><td><strong>8,297 行</strong>（2021-03-10 ~ 2026-07-31）</td><td>8/10 18:40 备份</td><td><span class="tag ok">已恢复</span></td></tr>
+    <tr><td>workout_plans</td><td><strong>100 行</strong>（4 周计划·6天/周·270 组）</td><td>8/10 18:40 备份</td><td><span class="tag ok">已恢复</span></td></tr>
+    <tr><td>workout_plan_config</td><td><strong>1 行</strong>（4周训练计划 v14）</td><td>8/10 18:40 备份</td><td><span class="tag ok">已恢复</span></td></tr>
+    <tr><td>food_log / weight_log</td><td>704 / 126（未受影响）</td><td>—</td><td><span class="tag ok">未动</span></td></tr>
+  </table>
+  <p style="font-size:12.5px;color:var(--fg2)">⚠️ <strong>唯一待你确认</strong>：恢复点是 8/10 18:40 备份。备份中 exercise_log 最大日期为 7/31（8 月无运动记录）、计划 updated_at 为 8/9——推断 8/10 18:40 后无新写入。但请你回忆：<strong>8/10 晚 ~ 8/11 上午是否有新增训练/改计划？</strong> 若有，那些数据无法从备份恢复，需你补录。</p>
+</div>
+
+<div class="section">
+  <h2>🔍 第一性原理：现在有哪些问题？</h2>
+
+  <div class="q">
+    <div class="qn">问题 1 · 隔离体系系统性缺陷（根因，已根治）<span class="tag bad">已修复</span></div>
+    <div class="ctx">
+      <strong>事故链</strong>：你的机器有用户环境变量 <code>SKILLS_DB_PATH=D:\2Study\StudyNotes\.db</code>（生产库目录）→ conftest 的 <code>temp_db</code> 是 session 级<strong>非 autouse</strong>（只有测试显式请求才激活隔离）→ 我新写的测试没请求它 → 单独跑时 DELETE 直接落在生产库。
+      <br><br>
+      <strong>更深的坑</strong>：<code>analysis/_utils.py</code> / <code>plan_generator.py</code> 的 <code>DB_PATH</code> 是<strong>模块级常量</strong>，在 pytest collection 阶段就固化为生产路径（早于 conftest setenv）——即使隔离激活，分析函数仍读写生产库。
+      <br><br>
+      <span class="arrow">→ 根治</span>：两处 <code>_get_db()</code> 改为<strong>动态解析</strong>（与 render_workout_plan #6 模式一致）；新测试显式依赖 <code>temp_db</code>。全量 376 passed 验证。</div>
+  </div>
+
+  <div class="q">
+    <div class="qn">问题 2 · 同类未爆雷（已排雷）<span class="tag ok">已修复</span></div>
+    <div class="ctx">
+      <code>test_workout_plan_modes.py</code> 的 <code>seed_plan</code> 同样未请求 <code>temp_db</code> 且 DELETE <code>workout_plan_config/workout_plans</code>——<strong>单独跑会清空生产库计划数据</strong>，与本次事故完全同源。已加 <code>temp_db</code> 依赖修复。
+      <br><span class="arrow">→ 全仓库扫过</span>：其余含 DELETE 的测试文件（food_*/weight_*/goal_*）均已依赖 temp_db 或独立 tmp_db，无同类雷。
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qn">问题 3 · 备份体系脆弱（未解决，需要你处理）<span class="tag warn">待处理</span></div>
+    <div class="ctx">
+      backup cron 从 <strong>8/11 9:40 起持续失败</strong>（.feathers 里 20 分钟一条 <code>backup_abort</code>，报 <code>WinError 206 文件名或扩展名太长</code>）——最新可用备份停在 8/10 18:40。若本次事故发生在备份健全时，损失会小很多。
+      <br><span class="arrow">→ 建议</span>：这是你环境的定时备份脚本（feathersdata-git-sync-backup.py），文件名过长是 git add 路径超限——需要你或对应 agent 处理，不属本 issue 范围。
+    </div>
+  </div>
+
+  <div class="q">
+    <div class="qn">问题 4 · 我的流程教训（已沉淀）<span class="tag info">已入记忆</span></div>
+    <div class="ctx">
+      写库类测试必须先验证隔离生效（断言解析路径指向临时），不能默认安全；「跑 pytest 不设 SKILLS_DB_PATH」这条既有记忆的<strong>前提是依赖了 temp_db</strong>——单独跑新文件时这个前提不成立。教训已写入记忆，避免复发。
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>📍 #257 当前进展</h2>
+  <table class="data-table">
+    <tr><th>项</th><th>状态</th></tr>
+    <tr><td>数据层：周容量聚合（计划/实做 Σ kg×次数）+ 主项 TOP4 周序列 + 无实绩提示态</td><td><span class="tag ok">完成</span></td></tr>
+    <tr><td>视图层：周容量双柱 SVG + 主项负荷多线 SVG（Catmull-Rom + 标签碰撞避让 + 375/320px 0 溢出）</td><td><span class="tag ok">完成</span></td></tr>
+    <tr><td>顺路修复：复盘模板注入解包 bug（原渲染实际是坏的）+ 热力图/明细表移动端溢出 + NaN</td><td><span class="tag ok">完成</span></td></tr>
+    <tr><td>测试：6 项专属测试 + 隔离守卫 + 全量 376 passed</td><td><span class="tag ok">完成</span></td></tr>
+    <tr><td>DOM 验证：0 溢出 / 0 标签重叠 / 0 越界 / 0 JS 报错 / 图例 4 项</td><td><span class="tag ok">完成</span></td></tr>
+    <tr><td>5 维对抗式审查收尾 + media 交付验收</td><td><span class="tag warn">待做</span></td></tr>
+    <tr><td>commit + 待 push 清单</td><td><span class="tag warn">待做</span></td></tr>
+    <tr><td>结论表 + close #257</td><td><span class="tag warn">待做</span></td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>🧭 接下来做什么</h2>
+  <div class="step"><div class="n">1</div><div class="c"><strong>你确认</strong>：8/10 18:40 之后是否有新训练/计划改动？（有 → 你补录；无 → 恢复闭环）</div></div>
+  <div class="step"><div class="n">2</div><div class="c"><strong>交付 #257 验收</strong>：media 发复盘场景 HTML（本周/本月/全部 3 场景 + HELP prompt）→ 你逐页确认</div></div>
+  <div class="step"><div class="n">3</div><div class="c"><strong>commit</strong>：事故修复（源码根治 + 测试隔离）+ #257 功能 + 测试 → 列待 push 清单（你负责 push）</div></div>
+  <div class="step"><div class="n">4</div><div class="c"><strong>备份 cron</strong>：建议你另派 agent 修（WinError 206 文件名过长），不属本 issue</div></div>
+</div>
+
+<footer style="text-align:center;color:var(--fg3);font-size:12px;padding-top:24px;border-top:1px solid var(--border);margin-top:32px">
+  #257 · 事故复盘与状态评估 · 2026-08-11 12:20 · 事故现场快照保留: D:\2Study\StudyNotes\.db\calorie_data_accident_20260811_120727.db
+</footer>
+</div>
+</body>
+</html>

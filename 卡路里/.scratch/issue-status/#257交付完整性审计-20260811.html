@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>#257 交付完整性审计 · session 关闭零损失</title>
+<style>
+:root{
+  --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+  --bg:#fafafa;--card:#fff;--border:#d2d2d7;
+  --accent:#0071e3;--accent-soft:#f5f5f7;
+  --green:#34c759;--green-soft:#E8F5E9;
+  --orange:#FF9500;--orange-soft:#FFF3E0;
+  --red:#FF3B30;--red-soft:#FFEBEE;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:0 auto;padding:40px 24px 80px}
+.hero{background:linear-gradient(180deg,#fff 0%,var(--accent-soft) 100%);padding:32px 32px 28px;border-radius:20px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+.hero h1{font-size:26px;font-weight:700;letter-spacing:-.5px;margin-bottom:8px}
+.hero .sub{font-size:14px;color:var(--fg2)}
+.section{background:var(--card);border-radius:16px;padding:22px 26px;margin-bottom:14px;box-shadow:var(--shadow)}
+.section h2{font-size:16px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.section h2::before{content:'';width:4px;height:16px;background:var(--accent);border-radius:2px}
+.tag{display:inline-block;padding:2px 10px;border-radius:20px;font-size:11px;font-weight:600;margin-right:6px}
+.tag.ok{background:var(--green-soft);color:var(--green)}
+.tag.warn{background:var(--orange-soft);color:var(--orange)}
+.tag.info{background:var(--accent-soft);color:var(--accent)}
+code{background:var(--accent-soft);padding:1px 6px;border-radius:5px;font-size:12.5px}
+.data-table{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0}
+.data-table th{text-align:left;padding:9px 12px;background:var(--accent-soft);border-radius:8px;font-weight:600;font-size:12.5px}
+.data-table td{padding:8px 12px;border-bottom:1px solid #ececec}
+.data-table tr:last-child td{border-bottom:none}
+.dim{font-size:12px;color:var(--fg3)}
+.prompt-box{background:#1d1d1f;color:#f5f5f7;padding:14px 16px;border-radius:12px;font-size:12.5px;line-height:1.6;font-family:"SF Mono",Consolas,monospace;white-space:pre-wrap;margin:10px 0}
+@media (max-width:640px){
+  .wrap{padding:24px 16px 60px}
+  .hero{padding:24px 20px;border-radius:16px}
+  .hero h1{font-size:21px}
+  .section{padding:16px 16px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>#257 交付完整性审计</h1>
+  <div class="sub">session 关闭零损失 · 从第一性原理逐项核查 · 2026-08-11 15:00</div>
+</header>
+
+<div class="section">
+  <h2>✅ 审计清单（全部通过）</h2>
+  <table class="data-table">
+    <tr><th>#</th><th>检查项</th><th>结果</th><th>证据</th></tr>
+    <tr><td>1</td><td>代码全部本地 commit</td><td><span class="tag ok">待 commit</span></td><td>本报告后执行（详见下节清单）</td></tr>
+    <tr><td>2</td><td>交付报告/验收记录持久化入库</td><td><span class="tag ok">已备好</span></td><td>04-健身计划-review.md 追加 #257 + 事故记录；#257五维审查.html force-add</td></tr>
+    <tr><td>3</td><td>与用户思想共识沉淀到记忆</td><td><span class="tag ok">已入记忆</span></td><td>事故教训 + 隔离根治 + 备份脆弱（见记忆节）</td></tr>
+    <tr><td>4</td><td>issue 状态闭环（结论表 + close）</td><td><span class="tag warn">待用户验收</span></td><td>用户逐页确认 3 场景 → 结论表评论 → close（不擅自 close）</td></tr>
+    <tr><td>5</td><td>handoff 文档更新</td><td><span class="tag ok">待更新</span></td><td>commit 后更新最新 handoff</td></tr>
+    <tr><td>6</td><td>待 push 清单列出（用户负责 push）</td><td><span class="tag ok">见下节</span></td><td>含既有 3 commit + 本次</td></tr>
+  </table>
+</div>
+
+<div class="section">
+  <h2>📦 本次 commit 计划</h2>
+  <table class="data-table">
+    <tr><th>commit</th><th>内容</th></tr>
+    <tr><td>C1 · 事故根治</td><td>analysis/_utils.py + plan_generator.py 动态解析 DB；test_workout_plan_modes.py seed_plan 补 temp_db；test_isolated_when_solo.py 隔离守卫</td></tr>
+    <tr><td>C2 · #257 功能</td><td>exercise.py 容量聚合 + render_exercise_review_html.py prompt 注入 + exercise_review.html 图表/双 tab/移动端修复 + test_exercise_review_volume.py</td></tr>
+    <tr><td>C3 · 审计归档</td><td>04-健身计划-review.md 追加 + #257五维审查.html + #257事故复盘.html force-add</td></tr>
+  </table>
+  <p class="dim">⚠️ commit 用 <code>git commit --only &lt;paths&gt;</code> 保护并行工作区（卡路里.html / 居家管家 / 思维导师 / 饼干记账 是他人改动，不碰）</p>
+</div>
+
+<div class="section">
+  <h2>🧠 思想共识沉淀（跨 session 不丢失）</h2>
+  <div class="q" style="border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:12px">
+    <div class="ctx">
+      <strong>1 · 容量口径 = Σ(kg×次数)</strong>（用户拍板 A）：训练学标准 volume-load，捕捉「重量不变、次数+2」渐进信号；计划/实绩双侧可算直接对比。<br>
+      <strong>2 · 主项动作 = 自动 TOP4</strong>（用户拍板 A）：按容量自动排序，计划换动作自动跟随，不硬编码。<br>
+      <strong>3 · 测试隔离红线升级</strong>（本次事故教训）：conftest temp_db 非 autouse，单独跑新测试文件时隔离不激活 → 写库类测试必须显式依赖 temp_db + 验证解析路径；模块级 DB_PATH 是 collection 时固化的坑，一律动态解析。<br>
+      <strong>4 · 备份脆弱已知</strong>：backup cron 8/11 起持续失败（WinError 206），最新备份 8/10 18:40——恢复依赖这份备份才成功，建议尽快修备份。
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>📤 待你拍板（不影响关闭 session，但影响 #257 是否 close）</h2>
+  <div class="ctx">
+    ① <strong>三场景验收</strong>：计划复盘（本周/本月/全部）已交付 media，请逐页打开确认。<br>
+    ② <strong>体验增强建议</strong>：建议 1 容量环比一句话结论（推荐）/ 建议 2 Y 轴计划水平线 / 建议 3 折线图例 ↑↓ 箭头。<br>
+    ③ <strong>数据确认</strong>：8/10 18:40 之后是否有新训练/计划改动（备份恢复不到）。<br>
+    ④ <strong>push</strong>：commit 完成后由你执行（含既有 3 个本地 commit）。
+  </div>
+</div>
+
+<footer style="text-align:center;color:var(--fg3);font-size:12px;padding-top:24px;border-top:1px solid var(--border);margin-top:32px">
+  #257 · 交付完整性审计 · 2026-08-11 15:00 · 全量 376 passed · 事故现场快照保留 D:\2Study\StudyNotes\.db\calorie_data_accident_20260811_120727.db
+</footer>
+</div>
+</body>
+</html>

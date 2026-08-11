@@ -33,9 +33,38 @@
 
 验收 seed：8 周推拉腿计划（2026-07-20 起，周一 3 时段模拟：晨间有氧/推日/核心）+ 120 条动作实绩（完成率梯度 90/70/50/30%）。
 
-## 三、后续
+## 三、#257 训练容量/负荷趋势（复盘增强 · 2026-08-11）
 
-- #257 训练容量/负荷趋势（复盘增强 · 渐进超负荷核心信号）
+| 项 | 状态 | commit |
+|----|------|--------|
+| 数据层：周容量 Σ(kg×次数) 计划/实做 + 主项 TOP4 周序列 + 无实绩提示态 | ✅ | 待 commit |
+| 视图层：周容量双柱 SVG + 主项负荷多线 SVG（Catmull-Rom + 标签碰撞避让）| ✅ | 待 commit |
+| 顺路修复：模板注入解包 bug（原渲染实际是坏的）+ 热力图 1fr 撑破(390px 溢出 1170px) + 明细表无横向滚动 + NaN | ✅ | 待 commit |
+| 复制按钮契约：复制 prompt/复制数据 双 tab（与 HELP 零差异）+ Toast「知道了」面板 | ✅ | 待 commit |
+| 测试：test_exercise_review_volume.py 6 项 + 隔离守卫 test_isolated_when_solo.py | ✅ | 待 commit |
+| 5 维审查：①复制契约 ②数据契约 ③375px(390/320 0 溢出) ④Apple 风 ⑤增强建议(待用户拍板) | ✅ 交付 | 报告入库 |
+
+### #257 重大事故记录（2026-08-11 生产库数据被清空 → 已恢复）
+
+**事故**：新测试文件单独跑时，conftest 的 temp_db（session 级非 autouse）未被激活，SKILLS_DB_PATH 用户环境变量 = 生产库目录 `D:\2Study\StudyNotes\.db` → 测试 DELETE 直接清空生产库：
+- exercise_log 8297 行（2021-03-10 ~ 2026-07-31 真实运动记录）
+- workout_plans 100 行 + workout_plan_config 1 行（4周训练计划 v14）
+
+**恢复**（12:07）：从 `calorie_data.db.bak_del_20260810_194205`（8/10 18:40 备份）定向恢复三表，未整库覆盖（food_log 生产 704 vs 备份 1065 证明备份后有变动）；sqlite_sequence 修复；现场快照 `calorie_data_accident_20260811_120727.db` 保留。
+
+**根因**（比表面更深一层）：
+1. temp_db 非 autouse → 单独跑新测试文件时隔离不激活（直接事故）
+2. `analysis/_utils.py` + `plan_generator.py` 的模块级 `DB_PATH` 在 pytest collection 阶段固化生产路径（早于 conftest setenv）→ 即使隔离激活，分析函数仍读写生产库（全量跑 actual 全 0 的真相）
+
+**根治**：
+- 两处 `_get_db()` 改动态解析 find_db_path（与 render_workout_plan #6 模式一致）
+- 新测试显式依赖 temp_db + monkeypatch 模块 DB_PATH
+- test_workout_plan_modes.py seed_plan 补 temp_db 依赖（同类雷）
+- 全量 376 passed 验证
+
+## 四、后续
+
 - #258 周期剩余进度（概览增强 · 第 X/Y 周 + 剩余训练日）
-- #42 剩余 24 场景批量渲染验收
+- #42 剩余 24 场景批量渲染验收（定/改/落地/复盘/安全）
 - 遗留：#255 超周期循环语义（如需「超出周期」提示挂 #258 同源）；#256 动作别名表/单字噪音（观察真实使用）
+- 备份 cron 8/11 起持续失败（WinError 206 文件名过长）→ 建议另派 agent 处理

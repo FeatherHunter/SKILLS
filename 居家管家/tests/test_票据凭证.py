@@ -306,7 +306,8 @@ def test_cli_purchase_add_and_list_e2e(tmp_path, monkeypatch, capsys):
     assert main(["purchase", "add", "--item-id", "1", "--date", d(0),
                  "--price", "88", "--channel", "山姆"]) == 0
     out = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
-    assert out["scene_id"] == "SM6-1"
+    # #250: 登记购买记录 = SM6-5(旧 SM6-1 拆分为 5 场景)
+    assert out["scene_id"] == "SM6-5"
     assert main(["purchase", "list", "--output", str(tmp_path / "p.html")]) == 0
     html = (tmp_path / "p.html").read_text(encoding="utf-8")
     assert "<!--INJECT-DATA-->" not in html

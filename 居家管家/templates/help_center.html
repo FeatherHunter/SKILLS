@@ -281,7 +281,7 @@ footer{text-align:center;color:var(--fg3);font-size:11px;padding:20px 0 0;margin
 
   /* ===== 场景卡片(L3 复制按钮 + L4 详情复制按钮双放 · P1 裁决 #5) ===== */
   function buildSceneCard(s,q_){
-    var card=document.createElement('details');card.className='scene';card.id='s-'+s.scenario_id;
+    var card=document.createElement('details');card.className='scene';card.id='s-'+s.id;
     var head=document.createElement('summary');head.className='scene-head';
     head.innerHTML='<span class="scene-id">'+esc(s.id)+'</span>'
       +'<span class="chip">'+esc(s.wake_word)+'</span>'
@@ -396,14 +396,15 @@ footer{text-align:center;color:var(--fg3);font-size:11px;padding:20px 0 0;margin
 
   /* ===== 场景直达(#hash 导航 · 分享/收藏/回访) ===== */
   function openChain(el){
-    var n=el.parentNode;
+    var n=el;
     while(n&&n!==document.body){
       if(n.tagName==='DETAILS'){n.open=true}
       n=n.parentNode;
     }
   }
-  function goToScene(scenario_id){
-    var el=document.getElementById('s-'+scenario_id);
+  /* 场景卡片 id = s-{场景唯一 id}(#250 起,多场景共享 scenario_id → DOM id 必须唯一) */
+  function goToScene(scene_id){
+    var el=document.getElementById('s-'+scene_id);
     if(!el)return;
     openChain(el);
     el.scrollIntoView({behavior:'smooth',block:'start'});

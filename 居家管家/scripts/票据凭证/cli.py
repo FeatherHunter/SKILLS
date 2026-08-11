@@ -45,6 +45,20 @@ def _out_dir():
     return d
 
 
+def _scene_wake_word(scene_id):
+    """从场景清单查唤醒词(单一事实源 · #250/#253)
+
+    scene_id: 如 "SM6-2" → "查上月购买"
+    清单缺失/未命中 → 回退 scene_id 本身
+    """
+    from 票据凭证.payloads import _load_scenes
+    scenes = _load_scenes()
+    s = scenes.get(scene_id)
+    if s and s.get("wake_word"):
+        return s["wake_word"]
+    return scene_id
+
+
 def _auto_output(command_cn):
     from datetime import datetime
     stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -108,10 +122,12 @@ def _purchase_list(args):
     from 票据凭证.payloads import purchase_payload
     conn = get_conn()
     try:
-        payload = purchase_payload(conn, item_id=args.item_id, year=args.year, month=args.month)
+        payload = purchase_payload(conn, item_id=args.item_id, year=args.year, month=args.month,
+                                   scene=args.scene or "SM6-1")
     finally:
         conn.close()
-    return _emit("票据凭证/purchase_records.html", payload, "购买记录", args.output)
+    return _emit("票据凭证/purchase_records.html", payload, _scene_wake_word(args.scene or "SM6-1"),
+                 args.output)
 
 
 def _purchase_add(args):
@@ -128,7 +144,8 @@ def _purchase_add(args):
     except ValueError as e:
         _print_json({"status": "error", "message": str(e), "suggestion": "修正参数后重试"})
         return 1
-    _print_json(_receipt("SM6-1", "购买记录", f"item#{args.item_id}",
+    _scene = args.scene or "SM6-5"
+    _print_json(_receipt(_scene, _scene_wake_word(_scene), f"item#{args.item_id}",
                          {"id": pid, "item_id": args.item_id, "purchased_at": args.date,
                           "price": args.price}, "购买记录已登记"))
     return 0
@@ -138,10 +155,11 @@ def _purchase_stats(args):
     from 票据凭证.payloads import purchase_payload
     conn = get_conn()
     try:
-        payload = purchase_payload(conn, year=args.year)
+        payload = purchase_payload(conn, year=args.year, scene=args.scene or "SM6-3")
     finally:
         conn.close()
-    return _emit("票据凭证/purchase_records.html", payload, "购买记录", args.output)
+    return _emit("票据凭证/purchase_records.html", payload, _scene_wake_word(args.scene or "SM6-3"),
+                 args.output)
 
 
 # ── warranty ────────────────────────────────────────────────────────
@@ -150,10 +168,10 @@ def _warranty_list(args):
     from 票据凭证.payloads import warranty_payload
     conn = get_conn()
     try:
-        payload = warranty_payload(conn, status_filter=args.status)
+        payload = warranty_payload(conn, status_filter=args.status, scene=args.scene or "SM6-6")
     finally:
         conn.close()
-    return _emit("票据凭证/warranty.html", payload, "保修", args.output)
+    return _emit("票据凭证/warranty.html", payload, _scene_wake_word(args.scene or "SM6-6"), args.output)
 
 
 def _warranty_register(args):
@@ -168,7 +186,8 @@ def _warranty_register(args):
     except ValueError as e:
         _print_json({"status": "error", "message": str(e), "suggestion": "修正参数后重试"})
         return 1
-    _print_json(_receipt("SM6-2", "保修", f"item#{args.item_id} {args.kind}",
+    _scene = args.scene or ("SM6-9" if args.kind == "保养" else "SM6-7")
+    _print_json(_receipt(_scene, _scene_wake_word(_scene), f"item#{args.item_id} {args.kind}",
                          {"id": wid, "kind": args.kind, "start_date": args.start_date,
                           "duration_days": args.duration_days}, "保修/保养已登记"))
     return 0
@@ -185,7 +204,8 @@ def _warranty_repair(args):
     except ValueError as e:
         _print_json({"status": "error", "message": str(e), "suggestion": "修正参数后重试"})
         return 1
-    _print_json(_receipt("SM6-2", "保修", f"warranty#{args.warranty_id}",
+    _scene = args.scene or "SM6-8"
+    _print_json(_receipt(_scene, _scene_wake_word(_scene), f"warranty#{args.warranty_id}",
                          {"event_id": eid, "occurred_at": args.date, "cost": args.cost}, "维修记录已登记"))
     return 0
 
@@ -200,7 +220,8 @@ def _warranty_maintain(args):
     except ValueError as e:
         _print_json({"status": "error", "message": str(e), "suggestion": "修正参数后重试"})
         return 1
-    _print_json(_receipt("SM6-2", "保修", f"warranty#{args.warranty_id}",
+    _scene = args.scene or "SM6-10"
+    _print_json(_receipt(_scene, _scene_wake_word(_scene), f"warranty#{args.warranty_id}",
                          {"event_id": eid, "occurred_at": args.date}, "保养已执行, 下次保养日已刷新"))
     return 0
 
@@ -211,10 +232,11 @@ def _cert_list(args):
     from 票据凭证.payloads import certificates_payload
     conn = get_conn()
     try:
-        payload = certificates_payload(conn)
+        payload = certificates_payload(conn, scene=args.scene or "SM6-11")
     finally:
         conn.close()
-    return _emit("票据凭证/certificates.html", payload, "证件", args.output)
+    return _emit("票据凭证/certificates.html", payload, _scene_wake_word(args.scene or "SM6-11"),
+                 args.output)
 
 
 def _cert_add(args):
@@ -229,7 +251,8 @@ def _cert_add(args):
     except ValueError as e:
         _print_json({"status": "error", "message": str(e), "suggestion": "修正参数后重试"})
         return 1
-    _print_json(_receipt("SM6-3", "证件", args.type,
+    _scene = args.scene or "SM6-12"
+    _print_json(_receipt(_scene, _scene_wake_word(_scene), args.type,
                          {"id": cid, "cert_type": args.type, "expires_at": args.expires_at,
                           "number_masked": ops.mask_number(args.number or "")},
                          "证件已登记(号码脱敏存储)"))
@@ -240,8 +263,9 @@ def _cert_add(args):
 
 def _account_list(args):
     from 票据凭证.payloads import accounts_payload
-    payload = accounts_payload()
-    return _emit("票据凭证/accounts.html", payload, "账号", args.output)
+    payload = accounts_payload(scene=args.scene or "SM6-15")
+    return _emit("票据凭证/accounts.html", payload, _scene_wake_word(args.scene or "SM6-15"),
+                 args.output)
 
 
 def _account_add(args):
@@ -255,7 +279,8 @@ def _account_add(args):
     if not result.get("success"):
         _print_json({"status": "error", "message": result["message"], "suggestion": "检查主密钥/平台是否已存在"})
         return 1
-    _print_json(_receipt("SM6-4", "账号", args.platform,
+    _scene = args.scene or "SM6-16"
+    _print_json(_receipt(_scene, _scene_wake_word(_scene), args.platform,
                          {"id": result.get("id"), "platform": args.platform,
                           "username": args.user, "type": args.type or "其他"},
                          "账号已加密存储"))
@@ -270,8 +295,9 @@ def _account_show(args):
     if not result.get("success"):
         _print_json({"status": "error", "message": result["message"], "suggestion": "检查主密钥是否正确"})
         return 1
+    _scene = args.scene or "SM6-18"
     # 明文仅在 stdout 回显(经 AI 对话中转), 不进任何 HTML
-    _print_json(_receipt("SM6-4", "账号", args.platform,
+    _print_json(_receipt(_scene, _scene_wake_word(_scene), args.platform,
                          {"platform": result["platform"], "username": result["username"],
                           "password": result["password"]}, "密码已解密(敏感, 仅对话回显)"))
     return 0
@@ -284,7 +310,8 @@ def _account_update(args):
     if not result.get("success"):
         _print_json({"status": "error", "message": result["message"], "suggestion": "检查主密钥/平台是否存在"})
         return 1
-    _print_json(_receipt("SM6-4", "账号", args.platform,
+    _scene = args.scene or "SM6-17"
+    _print_json(_receipt(_scene, _scene_wake_word(_scene), args.platform,
                          {"platform": args.platform, "username": args.user,
                           "type": args.type},
                          "账号已更新(重新录入语义)"))
@@ -323,6 +350,7 @@ def main(argv=None):
     pl.add_argument("--year", type=int, default=None)
     pl.add_argument("--month", type=int, default=None)
     pl.add_argument("--output", default=None)
+    pl.add_argument("--scene", default=None, help="场景 id(如 SM6-2 查上月购买;单一事实源自清单)")
     pa = pp.add_parser("add", help="登记购买记录")
     pa.add_argument("--item-id", type=int, required=True)
     pa.add_argument("--date", required=True, help="YYYY-MM-DD")
@@ -332,9 +360,11 @@ def main(argv=None):
     pa.add_argument("--receipt-photo", default="")
     pa.add_argument("--return-window", type=int, default=None, help="退货窗口天数(默认7)")
     pa.add_argument("--note", default="")
+    pa.add_argument("--scene", default=None, help="场景 id(如 SM6-5 登记购买记录)")
     ps = pp.add_parser("stats", help="消费统计 HTML")
     ps.add_argument("--year", type=int, default=None)
     ps.add_argument("--output", default=None)
+    ps.add_argument("--scene", default=None, help="场景 id(如 SM6-3 查今年花费)")
 
     p_war = sub.add_parser("warranty", help="保修与保养")
     wp = p_war.add_subparsers(dest="sub", required=True)
@@ -342,6 +372,7 @@ def main(argv=None):
     wl.add_argument("--status", default=None,
                     choices=["在保", "即将到期", "已过", "到期未做", "全部"])
     wl.add_argument("--output", default=None)
+    wl.add_argument("--scene", default=None, help="场景 id(如 SM6-6 查保修状态)")
     wr = wp.add_parser("register", help="登记保修/保养")
     wr.add_argument("--item-id", type=int, required=True)
     wr.add_argument("--kind", required=True, choices=["保修", "保养"])
@@ -350,20 +381,24 @@ def main(argv=None):
     wr.add_argument("--last-done", default=None, help="保养: 上次保养日")
     wr.add_argument("--photo", default="", help="保修卡照片路径(票据归档)")
     wr.add_argument("--note", default="")
+    wr.add_argument("--scene", default=None, help="场景 id(SM6-7 登记保修 / SM6-9 设置保养周期)")
     wre = wp.add_parser("repair", help="记录维修")
     wre.add_argument("--warranty-id", type=int, required=True)
     wre.add_argument("--date", required=True)
     wre.add_argument("--cost", type=float, default=0)
     wre.add_argument("--note", default="")
+    wre.add_argument("--scene", default=None, help="场景 id(如 SM6-8 记录维修)")
     wm = wp.add_parser("maintain", help="执行保养")
     wm.add_argument("--warranty-id", type=int, required=True)
     wm.add_argument("--date", required=True)
     wm.add_argument("--note", default="")
+    wm.add_argument("--scene", default=None, help="场景 id(如 SM6-10 执行保养)")
 
     p_cert = sub.add_parser("cert", help="证件管理")
     cp = p_cert.add_subparsers(dest="sub", required=True)
     cl = cp.add_parser("list", help="证件清单 HTML")
     cl.add_argument("--output", default=None)
+    cl.add_argument("--scene", default=None, help="场景 id(如 SM6-11 查证件到期)")
     ca = cp.add_parser("add", help="登记证件")
     ca.add_argument("--type", required=True, choices=ops.CERT_TYPES)
     ca.add_argument("--holder", default="")
@@ -372,6 +407,7 @@ def main(argv=None):
     ca.add_argument("--expires-at", required=True)
     ca.add_argument("--photo", default="")
     ca.add_argument("--note", default="")
+    ca.add_argument("--scene", default=None, help="场景 id(SM6-12 登记 / SM6-13 归档 / SM6-14 更新)")
 
     p_acc = sub.add_parser("account", help="账号密码")
     ap = p_acc.add_subparsers(dest="sub", required=True)
@@ -379,6 +415,7 @@ def main(argv=None):
     ai.add_argument("--master-key", required=True)
     al = ap.add_parser("list", help="账号清单 HTML(全脱敏)")
     al.add_argument("--output", default=None)
+    al.add_argument("--scene", default=None, help="场景 id(如 SM6-15 查账号)")
     aa = ap.add_parser("add", help="存账号(加密)")
     aa.add_argument("--platform", required=True)
     aa.add_argument("--user", default="")
@@ -386,9 +423,11 @@ def main(argv=None):
     aa.add_argument("--master-key", required=True)
     aa.add_argument("--type", default="其他", choices=ops.ACCOUNT_TYPES)
     aa.add_argument("--note", default="")
+    aa.add_argument("--scene", default=None, help="场景 id(如 SM6-16 存账号)")
     ash = ap.add_parser("show", help="查看密码(敏感, 仅回显)")
     ash.add_argument("--platform", required=True)
     ash.add_argument("--master-key", required=True)
+    ash.add_argument("--scene", default=None, help="场景 id(如 SM6-18 看密码)")
     aup = ap.add_parser("update", help="改账号(重新录入语义)")
     aup.add_argument("--platform", required=True)
     aup.add_argument("--master-key", required=True)
@@ -396,6 +435,7 @@ def main(argv=None):
     aup.add_argument("--pass", dest="password", default=None)
     aup.add_argument("--type", default=None, choices=ops.ACCOUNT_TYPES)
     aup.add_argument("--note", default=None)
+    aup.add_argument("--scene", default=None, help="场景 id(如 SM6-17 改账号)")
     asm = ap.add_parser("set-master", help="改主密钥")
     asm.add_argument("--old", required=True)
     asm.add_argument("--new", required=True)

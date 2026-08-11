@@ -4,22 +4,56 @@
   - 复制数据 5 段: scene_id / command_cn / occurred_at / target / payload
   - 复制日志 6 段: 场景标识 / AI 思考链 / 数据结构 / CLI 调用链 / 时间戳+版本 / 异常
   - 敏感字段: 证件号只给脱敏值, 密码永不出现(敏感复制分离 = 结构保证)
+
+#250(2026-08-11)单一事实源改造:
+  scene_id / wake_word / title 从 references/scenarios.yaml 读取(场景清单 = 唯一事实源),
+  由 CLI 调用方传入具体场景 id(如 SM6-2 查上月购买), 渲染 meta 用该场景的信息。
+  静态 SCENE_META 已删除(与清单双源维护 = 漂移隐患;scene_meta 清单缺失时返回默认)。
 """
 from datetime import datetime
 from pathlib import Path
 
 from 票据凭证 import ops
 
-SCENE_META = {
-    "purchase_records": {"scene_id": "SM6-1", "command_cn": "购买记录", "wake_word": "购买记录",
-                         "title": "购买记录", "subtitle": "购买时间 / 价格 / 渠道 / 退货窗口 / 票据归档"},
-    "warranty": {"scene_id": "SM6-2", "command_cn": "保修", "wake_word": "保修",
-                 "title": "保修与保养", "subtitle": "在保 / 即将到期 / 维修记录 / 保养周期"},
-    "certificates": {"scene_id": "SM6-3", "command_cn": "证件", "wake_word": "证件",
-                     "title": "证件管理", "subtitle": "按到期排序 / 号码脱敏 / 照片归档"},
-    "account_manage": {"scene_id": "SM6-4", "command_cn": "账号", "wake_word": "账号",
-                       "title": "账号密码", "subtitle": "加密存储 / 密码脱敏 / 敏感复制分离"},
-}
+SKILL_DIR = Path(__file__).parent.parent.parent
+SCENARIOS_YAML = SKILL_DIR / "references" / "scenarios.yaml"
+
+
+def _load_scenes():
+    """从场景清单读取 receipt 域场景(唯一事实源 · 懒加载)"""
+    try:
+        import yaml
+    except ImportError:
+        return {}
+    if not SCENARIOS_YAML.exists():
+        return {}
+    data = yaml.safe_load(SCENARIOS_YAML.read_text(encoding="utf-8"))
+    out = {}
+    for s in (data.get("scenarios") or []):
+        if s.get("domain") == "receipt":
+            out[s.get("id")] = s
+    return out
+
+
+def scene_meta(scene_id):
+    """从场景清单取 receipt 场景的 meta(单一事实源 · #250)
+
+    scene_id: 场景资产 id(如 "SM6-2" 查上月购买)
+    返回 meta dict: scene_id / command_cn / wake_word / title / subtitle / scenario_title
+    """
+    scenes = _load_scenes()
+    s = scenes.get(scene_id)
+    if not s:
+        return {"scene_id": scene_id, "command_cn": scene_id, "wake_word": scene_id,
+                "title": scene_id, "subtitle": ""}
+    return {
+        "scene_id": scene_id,
+        "command_cn": s.get("wake_word", scene_id),
+        "wake_word": s.get("wake_word", ""),
+        "title": s.get("scenario_title", s.get("wake_word", "")),
+        "subtitle": s.get("result", ""),
+        "scenario_title": s.get("scenario_title", ""),
+    }
 
 VERSION = "2.0-SM6"
 
@@ -66,7 +100,7 @@ def _cli_chain(cmd, args_dict):
 
 # ── 购买记录 ────────────────────────────────────────────────────────
 
-def purchase_payload(conn, item_id=None, year=None, month=None):
+def purchase_payload(conn, item_id=None, year=None, month=None, scene="SM6-1"):
     rows = ops.purchase_list(conn, item_id=item_id, year=year, month=month)
     stats = ops.purchase_stats(conn, year=year)
     now_return = sum(1 for r in rows if r.get("return_days_left") is not None
@@ -76,7 +110,7 @@ def purchase_payload(conn, item_id=None, year=None, month=None):
     return {
         "status": "ok",
         "data": {
-            "meta": SCENE_META["purchase_records"],
+            "meta": scene_meta(scene),
             "occurred_at": _occurred_at(),
             "version": VERSION,
             "cli_chain": _cli_chain("purchase list", {"item-id": item_id, "year": year, "month": month}),
@@ -101,7 +135,7 @@ def purchase_payload(conn, item_id=None, year=None, month=None):
 
 # ── 保修与保养 ──────────────────────────────────────────────────────
 
-def warranty_payload(conn, status_filter=None):
+def warranty_payload(conn, status_filter=None, scene="SM6-6"):
     items = ops.warranty_list(conn, status_filter=status_filter)
     n_in = sum(1 for i in items if i["status"] == "在保")
     n_warn = sum(1 for i in items if i["status"] == "即将到期")
@@ -112,7 +146,7 @@ def warranty_payload(conn, status_filter=None):
     return {
         "status": "ok",
         "data": {
-            "meta": SCENE_META["warranty"],
+            "meta": scene_meta(scene),
             "occurred_at": _occurred_at(),
             "version": VERSION,
             "cli_chain": _cli_chain("warranty list", {"status": status_filter}),
@@ -135,7 +169,7 @@ def warranty_payload(conn, status_filter=None):
 
 # ── 证件 ────────────────────────────────────────────────────────────
 
-def certificates_payload(conn):
+def certificates_payload(conn, scene="SM6-11"):
     items = ops.cert_list(conn)
     n_warn = sum(1 for i in items if i["cert_status"] == "即将到期")
     n_over = sum(1 for i in items if i["cert_status"] == "已过期")
@@ -145,7 +179,7 @@ def certificates_payload(conn):
     return {
         "status": "ok",
         "data": {
-            "meta": SCENE_META["certificates"],
+            "meta": scene_meta(scene),
             "occurred_at": _occurred_at(),
             "version": VERSION,
             "cli_chain": _cli_chain("cert list", {}),
@@ -168,7 +202,7 @@ def certificates_payload(conn):
 
 # ── 账号密码 ────────────────────────────────────────────────────────
 
-def accounts_payload(conn=None):
+def accounts_payload(conn=None, scene="SM6-15"):
     rows = ops_account_list_masked_safe()
     by_type = {}
     for r in rows:
@@ -178,7 +212,7 @@ def accounts_payload(conn=None):
     return {
         "status": "ok",
         "data": {
-            "meta": SCENE_META["account_manage"],
+            "meta": scene_meta(scene),
             "occurred_at": _occurred_at(),
             "version": VERSION,
             "cli_chain": _cli_chain("account list", {}),

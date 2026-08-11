@@ -36,7 +36,7 @@ def merge_scenes(scenarios, domain, scenes):
     for s in scenarios["scenarios"]:
         if s.get("domain") == domain and s.get("id") in by_id:
             patch = by_id[s["id"]]
-            for k in ("wake_word", "scenario_title", "type", "status", "html", "prompt"):
+            for k in ("wake_word", "scenario_title", "scenario_id", "type", "status", "html", "prompt", "result"):
                 if k in patch:
                     s[k] = patch[k]
             updated.append(s["id"])

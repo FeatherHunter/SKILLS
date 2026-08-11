@@ -136,13 +136,18 @@ def test_help_html_init_banner_hidden_css():
 
 
 def test_help_html_deep_link():
-    """#hash 场景直达:展开祖先链 + 定位(体验增强 · 对抗式审查 #1)"""
+    """#hash 场景直达:展开祖先链 + 定位(体验增强 · 对抗式审查 #1)
+    #250 起: 场景卡片 id = s-{场景唯一 id}(多场景可共享 scenario_id,DOM id 必须唯一)
+    2026-08-11 修复: openChain 从目标元素本身开始(此前漏展开场景自身,仅展开祖先)"""
     h = HELP_HTML.read_text(encoding="utf-8")
     assert "function goToScene(" in h, "缺 goToScene 直达函数"
     assert "function openChain(" in h, "缺 openChain 祖先链展开"
     assert "location.hash" in h, "缺 hash 解析"
     assert "scrollIntoView" in h, "缺滚动定位"
-    assert "getElementById('s-'+scenario_id)" in h, "场景卡片 id 必须为 s-{scenario_id}"
+    assert "getElementById('s-'+scene_id)" in h, "场景卡片 id 必须为 s-{场景唯一 id}"
+    assert "card.id='s-'+s.id" in h, "卡片 id 必须用唯一场景 id(非 scenario_id,防重复 DOM id)"
+    # openChain 必须包含目标元素自身(2026-08-11 修复:此前 var n=el.parentNode 漏展开场景)
+    assert "var n=el;" in h, "openChain 必须从目标元素开始(展开场景自身+祖先链)"
 
 
 def test_help_html_search_shortcut():

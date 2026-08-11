@@ -1,98 +1,290 @@
-# SM6 票据凭证域场景资产(域内权威 · 合并器接入 references/scenarios.yaml)
-#
-# 位置: 居家管家/scenes/SM6.yaml(隔离契约: 每域只写自己的 scenes/SM{n}.yaml)
-# 合并器 = scripts/场景合并.py(公共层产物);改总账的唯一通道 = 合并器。
-# 本文件与 references/scenarios.yaml 同构(version/domain/scenes),字段契约一致。
-#
-# status 判定原则(07 §4/§6 五者对应):
-#   SKILL.md 唤醒词路由 + 场景资产 ✓ + prompt ✓ + 底层工作流 ✓ + HELP 映射 ✓
-#   → SM6 4 场景 CLI+模板已落地(scripts/票据凭证/ + templates/票据凭证/)+ SKILL.md 路由更新
-#   → status 全部转 ""(可用)
-#
-# 安全契约(08 敏感脱敏): 证件号/密码永不出现在 payload/HTML;复制数据默认不含敏感字段;
-#   密码查看/复制 = 独立敏感操作(经 AI 中转,主密钥验证)。
-version: "2.0"
-
+version: '2.0'
 domain: receipt
-
 scenes:
-  - id: "SM6-1"
-    domain: receipt
-    sub: 购买记录
-    wake_word: 购买记录
-    scenario_id: purchase_records
-    scenario_title: 购买记录(查询/统计/票据归档)
-    dimensions: {}
-    type: 查看+选择+回执
-    status: ""
-    prompt: |-
-      请加载「居家管家」技能,帮我查购买记录(唤醒词:购买记录):
-
-        物  品: _____________ (选填;不填按时间浏览)
-        时  间: _____________ (选填,如:上个月)
-    result: "单物品购买信息(日期/价格/渠道/退货窗口)+ 消费统计 + 票据归档。"
-    html:
-      template: 票据凭证/purchase_records.html
-      command_cn: 购买记录
-      data_source: receipt
-
-  - id: "SM6-2"
-    domain: receipt
-    sub: 保修与保养
-    wake_word: 保修
-    scenario_id: warranty
-    scenario_title: 保修与保养(登记/到期/维修记录)
-    dimensions: {}
-    type: 查看+选择+回执
-    status: ""
-    prompt: |-
-      请加载「居家管家」技能,帮我查保修与保养(唤醒词:保修):
-
-        物  品: _____________ (选填)
-    result: "保修状态(在保/已过/即将到期)+ 维修记录 + 保养周期。"
-    html:
-      template: 票据凭证/warranty.html
-      command_cn: 保修
-      data_source: receipt
-
-  - id: "SM6-3"
-    domain: receipt
-    sub: 证件管理
-    wake_word: 证件
-    scenario_id: certificates
-    scenario_title: 证件管理(登记/到期/归档)
-    dimensions: {}
-    type: 查看+选择+回执
-    status: ""
-    prompt: |-
-      请加载「居家管家」技能,帮我管理证件(唤醒词:证件):
-
-        操  作: _____________ (查看/登记/归档)
-        证  件: _____________ (选填,如:护照)
-    result: "证件清单(按到期排序)+ 登记(号码脱敏)+ 照片归档。"
-    html:
-      template: 票据凭证/certificates.html
-      command_cn: 证件
-      data_source: receipt
-
-  - id: "SM6-4"
-    domain: receipt
-    sub: 账号密码
-    wake_word: 账号
-    scenario_id: account_manage
-    scenario_title: 账号密码(加密存/查/改·脱敏)
-    dimensions: {}
-    type: 查看+选择+回执
-    status: ""
-    prompt: |-
-      请加载「居家管家」技能,帮我管理账号(唤醒词:账号):
-
-        操  作: _____________ (存/查/改)
-        平  台: _____________ (如:淘宝/微信)
-        用户名: _____________ (存/改时填)
-        主密钥: _____________ (验证用)
-    result: "账号清单(密码脱敏 ****)+ 加密存储/查看/修改,复制数据默认不含密码。"
-    html:
-      template: 票据凭证/accounts.html
-      command_cn: 账号
-      data_source: receipt
+- id: SM6-1
+  domain: receipt
+  sub: 购买记录
+  wake_word: 查购买记录
+  scenario_id: purchase_list_all
+  scenario_title: 查购买记录(全量/按物品/按时间)
+  dimensions: {}
+  type: 查看+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我查购买记录(唤醒词:查购买记录):\n\n  物  品: _____________ (选填,不填按时间浏览)\n\
+    \  时  间: _____________ (选填,如:上个月)"
+  result: 购买记录清单(日期/价格/渠道/退货窗口),可按物品或时间筛选。
+  html:
+    template: 票据凭证/purchase_records.html
+    command_cn: 查购买记录
+    data_source: receipt
+- id: SM6-2
+  domain: receipt
+  sub: 购买记录
+  wake_word: 查上月购买
+  scenario_id: purchase_last_month
+  scenario_title: 查上月购买(时间预填)
+  dimensions: {}
+  type: 查看+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我查上个月的购买记录(唤醒词:查上月购买):\n\n  月  份(预填上个月,可改): 2026-07"
+  result: 上月购买清单(日期/价格/渠道),时间预填零填写。
+  html:
+    template: 票据凭证/purchase_records.html
+    command_cn: 查上月购买
+    data_source: receipt
+- id: SM6-3
+  domain: receipt
+  sub: 购买记录
+  wake_word: 查今年花费
+  scenario_id: purchase_year_stats
+  scenario_title: 查今年花费(年度统计)
+  dimensions: {}
+  type: 查看+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我查今年的消费统计(唤醒词:查今年花费):\n\n  年  份(预填今年,可改): 2026"
+  result: 今年消费统计(按年/分类聚合,总花费)。
+  html:
+    template: 票据凭证/purchase_records.html
+    command_cn: 查今年花费
+    data_source: receipt
+- id: SM6-4
+  domain: receipt
+  sub: 购买记录
+  wake_word: 查退货窗口
+  scenario_id: purchase_return_window
+  scenario_title: 查退货窗口(物品必填)
+  dimensions: {}
+  type: 查看+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我查退货窗口(唤醒词:查退货窗口):\n\n  物  品: _____________"
+  result: 指定物品的购买信息 + 退货截止日(购买日 + 退货窗口天数)。
+  html:
+    template: 票据凭证/purchase_records.html
+    command_cn: 查退货窗口
+    data_source: receipt
+- id: SM6-5
+  domain: receipt
+  sub: 购买记录
+  wake_word: 登记购买记录
+  scenario_id: purchase_add
+  scenario_title: 登记购买记录(录入)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我登记一条购买记录(唤醒词:登记购买记录):\n\n  物  品: _____________\n  购买日期(YYYY-MM-DD):\
+    \ _____________\n  价  格(选填): _____________\n  渠  道(选填,如:京东): _____________\n \
+    \ 商家客服(选填): _____________\n  退货窗口(天,选填,默认 7): _____________\n  【票据照片即将发送:】"
+  result: 购买记录已登记(日期/价格/渠道/退货窗口)。
+  html:
+    template: 票据凭证/purchase_records.html
+    command_cn: 登记购买记录
+    data_source: receipt
+- id: SM6-6
+  domain: receipt
+  sub: 保修与保养
+  wake_word: 查保修状态
+  scenario_id: warranty_list
+  scenario_title: 查保修状态(在保/将到期/已过)
+  dimensions: {}
+  type: 查看+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我查保修状态(唤醒词:查保修状态):\n\n  状  态(选填,全部/在保/即将到期/已过): _____________"
+  result: 保修清单(在保/即将到期/已过状态徽章)。
+  html:
+    template: 票据凭证/warranty.html
+    command_cn: 查保修状态
+    data_source: receipt
+- id: SM6-7
+  domain: receipt
+  sub: 保修与保养
+  wake_word: 登记保修
+  scenario_id: warranty_register
+  scenario_title: 登记保修(录入保修期)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我登记保修(唤醒词:登记保修):\n\n  物  品: _____________\n  保修起始日(YYYY-MM-DD):\
+    \ _____________\n  保修时长(月): _____________\n  保修卡照片(选填,即将发送): _____________"
+  result: 保修已登记(起始日/时长/到期日自动计算)。
+  html:
+    template: 票据凭证/warranty.html
+    command_cn: 登记保修
+    data_source: receipt
+- id: SM6-8
+  domain: receipt
+  sub: 保修与保养
+  wake_word: 记录维修
+  scenario_id: warranty_repair
+  scenario_title: 记录维修(维修历史)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我记录一条维修(唤醒词:记录维修):\n\n  保修记录 ID: _____________\n  维修日期(YYYY-MM-DD):\
+    \ _____________\n  花费(选填): _____________\n  备  注(选填): _____________"
+  result: 维修记录已登记(费用/备注入服务事件)。
+  html:
+    template: 票据凭证/warranty.html
+    command_cn: 记录维修
+    data_source: receipt
+- id: SM6-9
+  domain: receipt
+  sub: 保修与保养
+  wake_word: 设置保养周期
+  scenario_id: warranty_maintain_cycle
+  scenario_title: 设置保养周期(定期保养)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我设置保养周期(唤醒词:设置保养周期):\n\n  物  品: _____________\n  周期(月): _____________\n\
+    \  上次保养日(选填,YYYY-MM-DD): _____________"
+  result: 保养周期已设置(下次保养日自动推算)。
+  html:
+    template: 票据凭证/warranty.html
+    command_cn: 设置保养周期
+    data_source: receipt
+- id: SM6-10
+  domain: receipt
+  sub: 保修与保养
+  wake_word: 执行保养
+  scenario_id: warranty_maintain_exec
+  scenario_title: 执行保养(刷新下次日)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我执行一次保养(唤醒词:执行保养):\n\n  保养记录 ID: _____________\n  执行日期(YYYY-MM-DD):\
+    \ _____________\n  备  注(选填): _____________"
+  result: 保养已执行(上次保养日刷新,下次日自动推算)。
+  html:
+    template: 票据凭证/warranty.html
+    command_cn: 执行保养
+    data_source: receipt
+- id: SM6-11
+  domain: receipt
+  sub: 证件管理
+  wake_word: 查证件到期
+  scenario_id: cert_list
+  scenario_title: 查证件到期(按到期排序)
+  dimensions: {}
+  type: 查看+回执
+  status: ''
+  prompt: '请加载「居家管家」技能,帮我查证件到期(唤醒词:查证件到期):'
+  result: 证件清单按到期日排序(号码脱敏 ****后4位),过期/即将到期高亮。
+  html:
+    template: 票据凭证/certificates.html
+    command_cn: 查证件到期
+    data_source: receipt
+- id: SM6-12
+  domain: receipt
+  sub: 证件管理
+  wake_word: 登记证件
+  scenario_id: cert_add
+  scenario_title: 登记证件(录入)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我登记一张证件(唤醒词:登记证件):\n\n  类  型(护照/身份证/驾照/签证/保险单/其他): _____________\n\
+    \  持有人(选填): _____________\n  号  码(选填,将脱敏显示): _____________\n  签发日(选填,YYYY-MM-DD):\
+    \ _____________\n  到期日(YYYY-MM-DD): _____________"
+  result: 证件已登记(号码脱敏存储,按到期排序)。
+  html:
+    template: 票据凭证/certificates.html
+    command_cn: 登记证件
+    data_source: receipt
+- id: SM6-13
+  domain: receipt
+  sub: 证件管理
+  wake_word: 证件归档
+  scenario_id: cert_archive
+  scenario_title: 证件归档(照片)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我归档一张证件照片(唤醒词:证件归档):\n\n  证  件(选填,如:护照): _____________\n \
+    \ 【证件照片即将发送:】"
+  result: 证件照片归档(与证件记录关联)。
+  html:
+    template: 票据凭证/certificates.html
+    command_cn: 证件归档
+    data_source: receipt
+- id: SM6-14
+  domain: receipt
+  sub: 证件管理
+  wake_word: 更新证件
+  scenario_id: cert_update
+  scenario_title: 更新证件(改到期/持有人/号码)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我更新证件(唤醒词:更新证件):\n\n  证件 ID: _____________\n  到期日(选填,YYYY-MM-DD):\
+    \ _____________\n  持有人(选填): _____________\n  号  码(选填,将脱敏显示): _____________\n \
+    \ 备  注(选填): _____________\n  (只填要改的,其余留空)"
+  result: 证件已更新(重登记语义,只改填写的字段)。
+  html:
+    template: 票据凭证/certificates.html
+    command_cn: 更新证件
+    data_source: receipt
+- id: SM6-15
+  domain: receipt
+  sub: 账号密码
+  wake_word: 查账号
+  scenario_id: account_list
+  scenario_title: 查账号(密码脱敏)
+  dimensions: {}
+  type: 查看+回执
+  status: ''
+  prompt: '请加载「居家管家」技能,帮我查账号(唤醒词:查账号):'
+  result: 账号清单(平台/用户名/类型,密码 ****** 脱敏)。
+  html:
+    template: 票据凭证/accounts.html
+    command_cn: 查账号
+    data_source: receipt
+- id: SM6-16
+  domain: receipt
+  sub: 账号密码
+  wake_word: 存账号
+  scenario_id: account_add
+  scenario_title: 存账号(加密存储)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我存一个账号(唤醒词:存账号):\n\n  平  台(如:淘宝/微信): _____________\n  用户名:\
+    \ _____________\n  密  码: _____________\n  类  型(购物/银行/社交/其他,选填): _____________\n\
+    \  主密钥: _____________ (验证用)"
+  result: 账号已加密存储(密码永不明文入库/展示)。
+  html:
+    template: 票据凭证/accounts.html
+    command_cn: 存账号
+    data_source: receipt
+- id: SM6-17
+  domain: receipt
+  sub: 账号密码
+  wake_word: 改账号
+  scenario_id: account_update
+  scenario_title: 改账号(更新录入)
+  dimensions: {}
+  type: 采集+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我改账号(唤醒词:改账号):\n\n  平  台: _____________\n  用户名(选填,改时填): _____________\n\
+    \  密  码(选填,改时填): _____________\n  类  型(选填): _____________\n  主密钥: _____________\
+    \ (验证用)\n  (只填要改的,其余留空)"
+  result: 账号已更新(重新录入语义)。
+  html:
+    template: 票据凭证/accounts.html
+    command_cn: 改账号
+    data_source: receipt
+- id: SM6-18
+  domain: receipt
+  sub: 账号密码
+  wake_word: 看密码
+  scenario_id: account_show
+  scenario_title: 看密码(敏感回显)
+  dimensions: {}
+  type: 查看+回执
+  status: ''
+  prompt: "请加载「居家管家」技能,帮我查看密码(唤醒词:看密码):\n\n  平  台: _____________\n  主密钥: _____________\
+    \ (验证用)"
+  result: 密码仅在本会话回显(敏感操作,永不进 HTML/复制数据)。
+  html:
+    template: 票据凭证/accounts.html
+    command_cn: 看密码
+    data_source: receipt

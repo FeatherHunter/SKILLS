@@ -258,8 +258,18 @@ def _build_day_data(conn, target_date):
     }
 
 
-def build_overview_data(conn):
-    """概览视图:KPI(总周数/完成率/训练日/动作数)+ 每周完成率列表"""
+def build_overview_data(conn, today=None):
+    """概览视图:KPI(总周数/完成率/训练日/动作数)+ 周期剩余进度(#258)+ 每周完成率列表
+
+    #258 周期剩余进度:按 config.start_date + total_weeks 计算
+      - current_week: 当前处于周期第几周(线性真实周次,循环计划第 5 次 = 第 5 周)
+      - remaining_weeks: 剩余完整周数(不含当前周)
+      - remaining_training_days: 剩余周数 × 每周训练日数(基于计划实际非休息日)
+      - period_status: active / unstarted / finished
+      - today 参数可注入(测试固定日期,参考 #249 参考实现模式)
+    """
+    if today is None:
+        today = date.today()
     config = _load_config(conn)
     if not config:
         return None
@@ -275,17 +285,88 @@ def build_overview_data(conn):
     total_sessions = c.fetchone()[0]
     c.execute("SELECT COUNT(*) FROM (SELECT json_extract(json_each.value, '$.name') FROM workout_plans, json_each(workout_plans.movements))")
     total_movements = c.fetchone()[0]
+    # ---- #258 周期剩余进度 ----
+    total_weeks = config['total_weeks']
+    start = date.fromisoformat(config['start_date']) if config['start_date'] else None
+    period = _period_progress(today, start, total_weeks, conn)
     return {
         'mode': 'overview',
         'config': config,
         'kpi': {
-            'total_weeks': config['total_weeks'],
+            'total_weeks': total_weeks,
             'overall_rate': overall_rate,
             'training_days': training_days,
             'total_sessions': total_sessions,
             'total_movements': total_movements,
+            # #258 新增
+            'current_week': period['current_week'],
+            'remaining_weeks': period['remaining_weeks'],
+            'remaining_training_days': period['remaining_training_days'],
+            'period_status': period['status'],
+            'period_start': config['start_date'],
+            'period_end': period['end_date'],
         },
         'weekly_rates': weekly_rates,
+    }
+
+
+def _period_progress(today, start, total_weeks, conn):
+    """周期剩余进度计算(线性真实周次,不取模)
+
+    status:
+      - unstarted: today < start_date
+      - finished:  已过 start_date + total_weeks×7 天
+      - active:    其余
+
+    remaining_training_days(2026-08-11 #258 用户拍板 B · 精确到天):
+      从「明天」起逐日数到周期结束,每天按循环周次映射回计划
+      (real_week → plan_week = ((real_week-1)%total_weeks)+1, 查该周该天是否非休息日)。
+      比「剩余完整周 × 每周训练日」更精确——用户改过某周训练结构时也能数对。
+    """
+    empty = {
+        'status': 'unstarted', 'current_week': 0, 'remaining_weeks': total_weeks,
+        'remaining_training_days': 0, 'end_date': '',
+    }
+    if not start or not total_weeks:
+        return empty
+    c = conn.cursor()
+    # 计划内全部非休息日 (week_number, day_of_week) 集合
+    c.execute('SELECT week_number, day_of_week FROM workout_plans WHERE is_rest_day=0')
+    train_days = {(r[0], r[1]) for r in c.fetchall()}
+    end_date = start + timedelta(days=total_weeks * 7 - 1)
+
+    def _count_remaining(from_day):
+        """from_day 起(含)到 end_date 之间的计划训练日数"""
+        count = 0
+        d = from_day
+        while d <= end_date:
+            real_week = ((d - start).days // 7) + 1
+            plan_week = ((real_week - 1) % total_weeks) + 1
+            if (plan_week, d.isoweekday()) in train_days:
+                count += 1
+            d += timedelta(days=1)
+        return count
+
+    if today < start:
+        return {
+            'status': 'unstarted', 'current_week': 0,
+            'remaining_weeks': total_weeks,
+            'remaining_training_days': _count_remaining(start),
+            'end_date': end_date.isoformat(),
+        }
+    real_week = ((today - start).days // 7) + 1
+    if real_week > total_weeks:
+        return {
+            'status': 'finished', 'current_week': total_weeks,
+            'remaining_weeks': 0, 'remaining_training_days': 0,
+            'end_date': end_date.isoformat(),
+        }
+    remaining_weeks = total_weeks - real_week
+    return {
+        'status': 'active', 'current_week': real_week,
+        'remaining_weeks': remaining_weeks,
+        'remaining_training_days': _count_remaining(today + timedelta(days=1)),
+        'end_date': end_date.isoformat(),
     }
 
 

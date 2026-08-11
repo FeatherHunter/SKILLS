@@ -616,7 +616,7 @@ DB 查找顺序(跨平台 · v2.4.19 修):
 | 看今天练什么 | 今日动作 + 实时完成进度(接 exercise_log) | `python scripts/render_workout_plan.py --mode today` |
 | 看某天练什么 | 指定日期训练内容(复用今日组装 · 支持休息日/未开始) | `python scripts/render_workout_plan.py --mode day --date <D>` |
 | 看某动作安排 | 按动作反查计划(位置/频率/下次练习日) | `python scripts/render_workout_plan.py --mode action --name <动作>` |
-| 看计划概览 | KPI(总周数/完成率/训练日/动作数)+ 每周完成率 | `python scripts/render_workout_plan.py --mode overview` |
+| 看计划概览 | KPI(总周数/完成率/训练日/动作数)+ 周期剩余进度(#258: 第 X/Y 周 + 剩余周数/训练日 + 结束态)+ 每周完成率 | `python scripts/render_workout_plan.py --mode overview` |
 | 看计划 vs 实际 | 完成度 + 偏差 + 动作级对比表 | `python scripts/render_workout_plan.py --mode vs --start <D1> --end <D2>` |
 | 改训练计划 | 改 config 字段(标题/总周数/开始日期/描述) | `python scripts/render_plan_receipt.py --live-plan-update --field <X> --value <Y> --chain "..."` |
 | 改某天训练 | 改某天时段/动作/组数 | `python scripts/render_plan_receipt.py --live-plan-update-day --week <W> --day <D> --session <S> --chain "..."` |

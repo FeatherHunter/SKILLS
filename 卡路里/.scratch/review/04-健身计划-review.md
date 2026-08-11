@@ -77,3 +77,19 @@
 - #42 剩余 24 场景批量渲染验收（定/改/落地/复盘/安全）
 - 遗留：#255 超周期循环语义（如需「超出周期」提示挂 #258 同源）；#256 动作别名表/单字噪音（观察真实使用）
 - 备份 cron 8/11 起持续失败（WinError 206 文件名过长）→ 建议另派 agent 处理
+
+### #258 周期剩余进度 闭环（2026-08-11 验收通过）
+
+**需求**：计划概览增强周期剩余进度——第 X/Y 周 + 剩余周数/训练日 + 结束态提示（功能域第一性原理审查缺口，不新增唤醒词）。
+
+**实现**：
+- `render_workout_plan.py`：build_overview_data 增 current_week/remaining_weeks/remaining_training_days/period_status/period_start/period_end；新增 `_period_progress`（三态 active/unstarted/finished，线性真实周次不取模）
+- **剩余训练日口径 = B（用户拍板 · 精确到天）**：从明天起逐日数到周期结束，循环周次映射查训练日集合——改过某周结构也能数对，比「完整周×每周天数」更精确
+- `workout_plan_view.html`：renderOverview 顶部周期进度条（第 X/Y 周 + 完成百分比，固定蓝色=时间维度）+ KPI 追加剩余周数/剩余训练日（7 卡）+ 三态文案（finished 琥珀警示「周期结束≠完成率达标」，修正绿色误读）；复制数据按钮同步周期进度行；375px `nth-child(odd):last-child` 通用通栏规则
+- 测试 `tests/test_overview_period.py` 7 项（active 第2周/末周/周中 + unstarted + finished + HTML 结构 + 结束态文案），显式依赖 temp_db；渲染级断言不锁状态值（避免时间炸弹）
+
+**对抗式审查修复 3 项**：①时间炸弹测试（周期结束日期后必挂 → 改结构断言）②SKILL.md 619 行速查表同步 ③CSS nth-child(7) 写死 → 通用规则
+
+**循环语义验证**：概览线性周次（生命周期）vs calc_plan_week 取模（内容循环）分层成立——重定计划 DELETE+INSERT 覆盖 config（plan_generator.py:192），start_date 单一事实源自动复位。
+
+**验收**：场景 HTML 三态实测（375/390/414 0 溢出 0 JS 错误）+ 5 维审查 + 对抗式审查报告入库；测试全量 381 passed + 20 xfailed。

@@ -86,6 +86,17 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
 .progress-fill.low{background:var(--amber)}
 .progress-fill.danger{background:var(--red)}
 
+/* PERIOD PROGRESS (#258) */
+.period-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:13px}
+.period-label{color:var(--ink2)}
+.period-label b{font-size:18px;color:var(--ink);font-weight:700}
+.period-status{font-size:12px;font-weight:600}
+.period-status.period-active{color:var(--blue)}
+.period-status.period-done{color:var(--amber)}
+.period-status.period-idle{color:var(--ink3)}
+.period-end-tip{font-size:12px;color:var(--ink3);margin-top:8px}
+.period-fill{background:var(--blue)}
+
 /* WEEKLY LIST (overview/completion) */
 .week-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--lineS)}
 .week-row:last-child{border-bottom:none}
@@ -111,7 +122,8 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
   td{padding:10px 4px;font-size:12px}
   td:first-child{min-width:120px}
   .kpi-grid{grid-template-columns:repeat(2,1fr)}
-  .kpi-card:nth-child(5){grid-column:span 2}
+  /* #258: 7 张 KPI 卡时最后一张通栏;奇数末位通用规则 */
+  .kpi-card:nth-child(odd):last-child{grid-column:span 2}
 }
 
 /* FOOTER + 复制按钮(2026-08-10 #42 全局双按钮规则) */
@@ -288,14 +300,38 @@ function renderOverview(data) {
   const container = document.getElementById('kpiContainer');
   if (data.mode !== 'overview') { container.innerHTML = ''; return; }
   const k = data.kpi || {};
+  let html = '';
+  /* #258 周期剩余进度条 */
+  if (k.period_status) {
+    const tw = k.total_weeks || 0;
+    const cw = Math.min(k.current_week ?? 0, tw);
+    const pct = tw ? Math.max(0, Math.min(Math.round(cw / tw * 100), 100)) : 0;
+    let statusText = '', statusCls = '';
+    if (k.period_status === 'finished') { statusText = '本周期已完成'; statusCls = 'period-done'; }
+    else if (k.period_status === 'unstarted') { statusText = '计划未开始'; statusCls = 'period-idle'; }
+    else { statusText = `剩余 ${k.remaining_weeks ?? 0} 周 · ${k.remaining_training_days ?? 0} 个训练日`; statusCls = 'period-active'; }
+    html += '<div class="review-section"><h2>🔄 周期进度</h2>';
+    html += `<div class="period-row"><span class="period-label">第 <b>${cw}</b> / ${tw} 周</span><span class="period-status ${statusCls}">${statusText}</span></div>`;
+    html += `<div class="progress"><div class="progress-fill period-fill" style="width:${pct}%"></div></div>`;
+    if (k.period_status === 'finished') {
+      html += `<p class="period-end-tip">⏳ ${tw} 周周期已到结束日期。周期结束不代表完成率达标——可以复制数据后重新制定新计划。</p>`;
+    } else if (k.period_status === 'unstarted' && k.period_start) {
+      html += `<p class="period-end-tip">📅 计划将于 ${escapeHTML(k.period_start)} 开始</p>`;
+    } else {
+      html += `<p class="period-end-tip">周期结束：${escapeHTML(k.period_end || '—')}</p>`;
+    }
+    html += '</div>';
+  }
   const cards = [
     ['总周数', k.total_weeks ?? '—', '周循环计划'],
+    ['剩余周数', k.remaining_weeks ?? '—', k.period_status === 'finished' ? '已到期' : '不含当前周'],
+    ['剩余训练日', k.remaining_training_days ?? '—', k.period_status === 'finished' ? '已到期' : '从明天起逐日数'],
     ['整体完成率', fmtRate(k.overall_rate), '计划 vs 实做'],
     ['训练日', k.training_days ?? '—', '计划内训练天数'],
     ['训练时段', k.total_sessions ?? '—', '全部 session 数'],
     ['动作总数', k.total_movements ?? '—', '计划内动作条目'],
   ];
-  let html = '<div class="kpi-grid">';
+  html += '<div class="kpi-grid">';
   cards.forEach(([label, value, sub]) => {
     html += `<div class="kpi-card"><div class="kpi-label">${label}</div><div class="kpi-value">${value}</div><div class="kpi-sub">${sub}</div></div>`;
   });
@@ -680,7 +716,12 @@ function bindDayTabs() {
       lines.push(`已完成: ${data.completion.done_sets || 0} 组 · 剩余: ${data.completion.remaining_sets || 0} 组`);
     }
     if (data.kpi) {
-      lines.push(`总周数: ${data.kpi.total_weeks ?? '—'} · 整体完成率: ${data.kpi.overall_rate ?? '—'}% · 训练日: ${data.kpi.training_days ?? '—'} · 动作数: ${data.kpi.total_movements ?? '—'}`);
+      const kp = data.kpi;
+      const statusTxt = kp.period_status === 'finished' ? '本周期已完成'
+        : kp.period_status === 'unstarted' ? '计划未开始'
+        : `第 ${kp.current_week ?? '—'}/${kp.total_weeks ?? '—'} 周 · 剩余 ${kp.remaining_weeks ?? 0} 周 · ${kp.remaining_training_days ?? 0} 个训练日`;
+      lines.push(`周期进度: ${statusTxt}`);
+      lines.push(`总周数: ${kp.total_weeks ?? '—'} · 整体完成率: ${kp.overall_rate ?? '—'}% · 训练日: ${kp.training_days ?? '—'} · 动作数: ${kp.total_movements ?? '—'}`);
     }
     if (data.movement_rows) {
       data.movement_rows.forEach(r => lines.push(`  ${r.movement}: 计划 ${r.plan_sets} · 实做 ${r.actual_sets} · 偏差 ${r.deviation_pct === null ? '—' : r.deviation_pct + '%'}`));

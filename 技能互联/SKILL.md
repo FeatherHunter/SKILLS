@@ -71,14 +71,14 @@ disable-model-invocation: true
 3. 校验器跑绿（`check_public_contract`，进 pytest）
 4. 技能提供方就绪；消费方开发见各技能 ticket
 
-## 开发状态（2026-08-11）
+## 开发状态（2026-08-12）
 
 - ✅ #272 契约规范 v1 定稿（closed）
 - ✅ #271 Base 骨架设计（closed · 本文件 = 骨架定稿）
-- ⏳ #273 校验器（01/02 已闭 → **可认领**）
+- ✅ #273 校验器（closed · check_public_contract.py 落地）
 - ✅ #274 作息管家试点（closed 2026-08-11 · Base 最小实现 + sleep 域 + CS-02 全链路）
-- ⏳ #275 组合表落库（frontier · 可认领）
-- ⏳ #276 互联总览（阻塞 03/04）
+- ✅ #275 联动组合表完整落库（closed 2026-08-12 · 36 场景定稿 `references/combos.yaml` v1.0 + 卡路里 HELP 技能协同 36 入口）
+- ⏳ #276 互联总览（frontier · 可认领）
 - ⏳ #277-#282 六技能消费方开发（#272 已闭 → 解锁，逐个 grilling）
 
 ## 决策地图

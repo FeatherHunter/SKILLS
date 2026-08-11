@@ -1,0 +1,417 @@
+version: '1.0'
+principle: 联动 = 唤醒词级组合。AI 分别查两个技能 → 对话层合并 → 出一个 HTML。不发明接口、不跨库直连。
+judge: 1) 交叉洞察（合并后产生单技能给不了的结论） 2) 场景真实（用户生活里真会问） 3) 数据可得（外部技能真实字段） 4) 不自动造值
+fields:
+- id
+- name
+- wake_word
+- external
+- external_ww
+- external_data
+- calorie_side
+- merge_logic
+- present
+- status
+- downgrade_note
+combo_count:
+  total: 36
+  保留: 30
+  降级: 6
+  新增候选: 0
+combos:
+- id: L1.1
+  name: 饮食支出
+  wake_word: 协同饼干记账（饮食支出）
+  external: 饼干记账
+  external_ww: 查分类（餐饮 · 本月）
+  external_data: 本月餐饮分类支出汇总 + 分类占比 + 日均
+  calorie_side: 卡路里「看饮食总览」本月摄入总热量/日均
+  merge_logic: 按同月对齐：餐饮支出总额 ↔ 摄入热量总额；算每千卡成本（元/千卡）；分类支出占比 vs 摄入分类占比
+  present: 本月支出 vs 摄入双卡 · 元/千卡性价比 · 分类对比表 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L1.2
+  name: 饮食预算
+  wake_word: 协同饼干记账（饮食预算）
+  external: 饼干记账
+  external_ww: 看预算（结果含各分类进度条 · 提取餐饮）
+  external_data: 本月餐饮预算额度 + 已支出 + 剩余 + 执行率
+  calorie_side: 卡路里「看营养目标进度」本月摄入 vs 目标偏差
+  merge_logic: 钱预算 ↔ 热量预算双维度：支出进度 vs 摄入进度；算「预算超支」与「摄入超支」的关联日
+  present: 双预算进度卡（钱 + 热量）· 超支风险提示 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L1.3
+  name: 高频食物成本
+  wake_word: 协同饼干记账（高频食物成本）
+  external: 饼干记账
+  external_ww: 搜备注（食物名关键词）
+  external_data: 按备注关键词近似聚合的高频消费（食物名 / 次数 / 金额）
+  calorie_side: 卡路里「看频繁吃榜」高频食物（名称 / 次数）
+  merge_logic: 备注关键词 ↔ 食物名 近似匹配：算出常吃食物的单次成本
+  present: 高频食物成本对照表（标注近似）· 一句话总结
+  status: 降级
+  downgrade_note: 饼干记账无食物名结构化字段（只有分类 + 备注文本），只能按备注关键词近似，结果需用户确认
+- id: L1.5
+  name: 按天支出
+  wake_word: 协同饼干记账（按天支出）
+  external: 饼干记账
+  external_ww: 查某天 / 看月度（餐饮分类）
+  external_data: 每日餐饮支出明细（按天对齐）
+  calorie_side: 卡路里「看某段时间饮食」每日摄入
+  merge_logic: 按天对齐支出与摄入：找「花钱多且吃得多」或「花钱少但吃得好」的日；日均对比
+  present: 日粒度支出 vs 摄入双轴图 · 异常日标注 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L1.6
+  name: 按餐别支出
+  wake_word: 协同饼干记账（按餐别支出）
+  external: 饼干记账
+  external_ww: 查分类（餐饮）+ 搜备注（时段近似）
+  external_data: 按时间段 / 备注近似的餐别支出（早 / 午 / 晚）
+  calorie_side: 卡路里「看全部餐别分布（最近 7 天）」餐别摄入
+  merge_logic: 卡路里餐别（早/午/晚）↔ 记账按时间段近似匹配：餐别支出 vs 餐别摄入
+  present: 餐别支出 vs 餐别摄入对照表（标注近似）· 一句话总结
+  status: 降级
+  downgrade_note: 记账无餐别字段，只能按备注 / 时间段近似，结果需用户确认
+- id: L2.1
+  name: 运动时间窗
+  wake_word: 联动作息管家（运动时间窗）
+  external: 作息管家
+  external_ww: 查作息范围（日期范围统计 · 结果含分类聚合，AI 提取运动）
+  external_data: 运动时段分布（作息分类聚合：何时在运动）
+  calorie_side: 卡路里「看运动类型分布」实际运动时间分布
+  merge_logic: 作息侧「计划的运动时段」vs 卡路里「实际的运动时段」；重叠度 + 最佳运动时间窗建议
+  present: 双时段分布对照 · 最佳运动时间窗建议 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L2.2
+  name: 作息异常影响
+  wake_word: 联动作息管家（作息异常影响）
+  external: 作息管家
+  external_ww: T5 异常检测
+  external_data: 作息异常日（熬夜 / 加班 / 睡眠不足等，默认 7 天窗口）
+  calorie_side: 卡路里「看体重曲线」异常日前后体重
+  merge_logic: 异常日标记 ↔ 体重变化：异常日 vs 正常日体重变化均值对比
+  present: 异常日时间线 + 体重变化对照 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L2.3
+  name: 运动时段 vs 饮食时段
+  wake_word: 联动作息管家（运动时段 vs 饮食时段）
+  external: 作息管家
+  external_ww: 查作息时间轴（运动 + 餐饮分类）
+  external_data: 每日运动时段 + 餐饮时段
+  calorie_side: 卡路里「看今日饮食」饮食记录时间
+  merge_logic: 运动结束时间 ↔ 下一餐时间：间隔分析（运动后多久吃饭）
+  present: 运动-用餐间隔分布 · 建议 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L2.4
+  name: 睡眠时长 vs 减重
+  wake_word: 联动作息管家（睡眠时长 vs 减重）
+  external: 作息管家
+  external_ww: 汇总作息（日期范围 · 结果含睡眠统计）/ 复盘区间（7 维趋势含睡眠）
+  external_data: 每日睡眠时长（睡眠分类聚合 · 主睡眠段）
+  calorie_side: 卡路里「看体重曲线」同期每日体重
+  merge_logic: 按天对齐睡眠时长与体重变化 → 睡眠分位分组（<6h/6-7h/7-8h/8-9h/>9h）对比各组体重变化均值；算相关性
+  present: 双轴折线（睡眠 vs 体重）· 分位分组体重变化表 · 相关系数 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L2.5
+  name: 早餐时间 vs 体重
+  wake_word: 联动作息管家（早餐时间 vs 体重）
+  external: 作息管家
+  external_ww: 查作息（餐饮分类 · 6-10 点时段近似）
+  external_data: 早餐时段（6-10 点用餐记录近似）开始时间
+  calorie_side: 卡路里「看早餐（最近 7 天）」+「看体重曲线」
+  merge_logic: 早餐时间早晚分组 ↔ 体重变化：早吃 vs 晚吃组的体重变化对比
+  present: 早餐时间分组 vs 体重变化表（标注近似）· 一句话总结
+  status: 降级
+  downgrade_note: 作息分类含「餐饮」但无「早餐」专门标签，只能按 6-10 点用餐记录近似
+- id: L2.6
+  name: 睡眠质量 vs 运动表现
+  wake_word: 联动作息管家（睡眠质量 vs 运动表现）
+  external: 作息管家
+  external_ww: 汇总作息（日期范围 · 结果含睡眠统计）/ 复盘区间（7 维趋势含睡眠）
+  external_data: 睡眠时长 / 异常日（无主观质量字段，用时长为代理）
+  calorie_side: 卡路里「看运动趋势」每日运动消耗
+  merge_logic: 睡眠分组（<6h / 6-8h / >8h）↔ 次日运动消耗均值对比
+  present: 睡眠分组 vs 运动消耗表 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L2.7
+  name: 加班日 vs 饮食失控
+  wake_word: 联动作息管家（加班日 vs 饮食失控）
+  external: 作息管家
+  external_ww: T5 异常检测 / 查作息（工作分类超时）
+  external_data: 加班日（工作时长 > 8h 近似）
+  calorie_side: 卡路里「看饮食总览」加班日 vs 普通日摄入
+  merge_logic: 加班日 ↔ 非加班日摄入对比：加班日是否吃更多 / 更不均衡
+  present: 加班 vs 普通日摄入对比卡 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L3.1
+  name: 食品库存
+  wake_word: 协同居家管家（食品库存）
+  external: 居家管家
+  external_ww: 囤货盘点 / 查物品（食品类）
+  external_data: 食品类库存（名称 / 数量 / 位置 / 阈值状态）
+  calorie_side: 卡路里「看食品库（去重）」已存食品
+  merge_logic: 库存食品 ↔ 卡路里食品库：家里有什么 vs 吃过的记录；找出缺口
+  present: 库存全景 + 食品库对照 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L3.2
+  name: 库存→饮食
+  wake_word: 协同居家管家（库存→饮食）
+  external: 居家管家 + 私家大厨
+  external_ww: 囤货盘点（居家）+ 筛选食材（大厨）
+  external_data: 库存食品清单 → 私家大厨按食材筛出能做的菜
+  calorie_side: 卡路里「看营养目标进度」营养缺口
+  merge_logic: 库存食材 → 可做菜 → 对齐营养缺口选菜（跨 3 技能 AI 编排）
+  present: 库存可用菜推荐（含营养缺口覆盖）· 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L3.3
+  name: 采购建议
+  wake_word: 协同居家管家（采购建议）
+  external: 居家管家
+  external_ww: 缺货检测 / 购物清单
+  external_data: 缺货清单（自动进购物清单）
+  calorie_side: 卡路里「看频繁吃榜」高频消耗食品
+  merge_logic: 缺货检测 + 高频消耗 → 采购优先级排序
+  present: 采购清单（缺货 + 高频）· 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L3.4
+  name: 饮食 vs 保质期
+  wake_word: 协同居家管家（饮食 vs 保质期）
+  external: 居家管家
+  external_ww: 查过期
+  external_data: 临期食品列表（食品名 / 剩余天数 / 位置）
+  calorie_side: 卡路里「看本周饮食」本周已吃 / 计划吃的食品
+  merge_logic: 临期食品 ∩ 本周饮食：哪些快过期且本周会吃（优先吃掉）；哪些快过期但没在计划里（建议加餐/换餐）
+  present: 临期食品优先级表（紧迫度 × 本周是否吃）· 消耗建议 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L3.5
+  name: 库存 vs 消耗速度
+  wake_word: 协同居家管家（库存 vs 消耗速度）
+  external: 居家管家
+  external_ww: 历史（数量变更轨迹）
+  external_data: 物品数量变更历史（消耗速度）
+  calorie_side: 卡路里「看频繁吃榜」消耗频率
+  merge_logic: 库存量 / 日均消耗 = 预计用完日；临期风险标注
+  present: 消耗速度表 + 预计用完日 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L3.6
+  name: 库存 vs 营养缺口
+  wake_word: 协同居家管家（库存 vs 营养缺口）
+  external: 居家管家
+  external_ww: 囤货盘点（数量参考）
+  external_data: 食品库存（数量，无营养字段）
+  calorie_side: 卡路里「看营养目标进度」营养缺口
+  merge_logic: 营养缺口（卡路里侧）↔ 库存数量参考（无法精确换算营养覆盖）
+  present: 营养缺口 + 库存覆盖参考（标注近似）· 一句话总结
+  status: 降级
+  downgrade_note: 居家食品库存无热量 / 蛋白字段，库存侧只做数量参考，营养缺口以卡路里侧为准
+- id: L4.1
+  name: 备忘录 vs 实际执行
+  wake_word: 协同备忘录（备忘录 vs 实际执行）
+  external: 备忘录
+  external_ww: 查心愿（带 due）/ 心愿排期
+  external_data: 运动 / 饮食类心愿清单（内容 + due 日期 + 完成状态）
+  calorie_side: 卡路里「看今日运动 / 看今日饮食」同期实际记录
+  merge_logic: 心愿内容 ↔ 实际记录按日期窗口对齐：说了要做 ↔ 真做了吗；算出完成率 + 未执行清单
+  present: 心愿 vs 实际对照表（说了/做了/没做）· 完成率 · 按周趋势 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L4.2
+  name: 目标关联
+  wake_word: 协同备忘录（目标关联）
+  external: 备忘录
+  external_ww: 查心愿
+  external_data: 心愿清单（无量化目标字段）
+  calorie_side: 卡路里「看目标完成度」正式目标完成情况（含缺口）
+  merge_logic: 心愿 ↔ 目标 语义对照（非等价）：心愿 vs 卡路里目标
+  present: 心愿 vs 目标对照表（标注语义差异）· 一句话总结
+  status: 降级
+  downgrade_note: 备忘录是「心愿」（无量化目标概念），与卡路里正式目标体系语义接近但非等价
+- id: L5.1
+  name: 食谱推荐
+  wake_word: 协同私家大厨（食谱推荐）
+  external: 私家大厨
+  external_ww: 搜索食谱（菜名/食材）+ 筛选菜系
+  external_data: 食谱列表（名称 / 营养 / 难度 / 时间）
+  calorie_side: 卡路里「看营养目标进度」当前目标 vs 缺口
+  merge_logic: 食谱营养 ↔ 营养缺口：推荐能补缺口的菜
+  present: 食谱推荐卡（含营养匹配度）· 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L5.2
+  name: 食材→食谱
+  wake_word: 协同私家大厨（食材→食谱）
+  external: 私家大厨 + 居家管家
+  external_ww: 筛选食材（大厨）+ 囤货盘点（居家）
+  external_data: 手头食材清单（居家库存）
+  calorie_side: 卡路里「看食品库（去重）」参考
+  merge_logic: 手头食材 → 私家大厨筛出能做的菜（跨 3 技能 AI 编排）
+  present: 手头食材能做什么菜 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L5.3
+  name: 饮食计划
+  wake_word: 协同私家大厨（饮食计划）
+  external: 私家大厨
+  external_ww: 搜索食谱（多菜选择）
+  external_data: 食谱营养表（选定的菜）
+  calorie_side: 卡路里「看营养目标进度」每日营养目标
+  merge_logic: 食谱 → 7 天计划：每日营养汇总 vs 目标偏差
+  present: 7 天饮食计划 + 营养偏差 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L5.4
+  name: 高蛋白食谱
+  wake_word: 协同私家大厨（高蛋白食谱）
+  external: 私家大厨
+  external_ww: 搜索食谱 + 查看营养（蛋白字段）
+  external_data: 食谱蛋白含量（查看营养的蛋白字段 · 私家大厨无「按蛋白筛选」维度，AI 读字段筛选）
+  calorie_side: 卡路里「看营养目标进度」蛋白目标（g/日）+ 今日已摄入蛋白
+  merge_logic: 食谱蛋白 ↔ 今日蛋白缺口：选蛋白能补缺口的菜；标注每道菜补缺口百分比
+  present: 高蛋白食谱 TOP（含蛋白 g + 补缺口%）· 缺口状态卡 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L5.5
+  name: 低卡食谱
+  wake_word: 协同私家大厨（低卡食谱）
+  external: 私家大厨
+  external_ww: 查看营养（热量字段）/ 搜索食谱
+  external_data: 食谱热量（每份 kcal）
+  calorie_side: 卡路里「看营养目标进度」热量目标 / 缺口
+  merge_logic: 食谱热量 ↔ 热量缺口：选低卡能补缺口的菜
+  present: 低卡食谱 TOP（含热量 + 补缺口%）· 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L5.6
+  name: 低碳水食谱
+  wake_word: 协同私家大厨（低碳水食谱）
+  external: 私家大厨
+  external_ww: 查看营养（碳水字段）/ 搜索食谱
+  external_data: 食谱碳水含量（每份 g）
+  calorie_side: 卡路里「看营养目标进度」碳水目标 / 缺口
+  merge_logic: 食谱碳水 ↔ 碳水缺口：选低碳水能补缺口的菜
+  present: 低碳水食谱 TOP（含碳水 + 补缺口%）· 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L5.7
+  name: 快手菜
+  wake_word: 协同私家大厨（快手菜）
+  external: 私家大厨
+  external_ww: 筛选时间（30 分钟内）
+  external_data: 快手菜（用时 ≤ 30 分钟）列表
+  calorie_side: 卡路里「看今日饮食」忙碌日场景
+  merge_logic: 快手菜 ↔ 忙碌日（没时间做饭的日子）推荐
+  present: 快手菜清单 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L5.8
+  name: 早餐食谱
+  wake_word: 协同私家大厨（早餐食谱）
+  external: 私家大厨
+  external_ww: 搜索食谱 + 查看营养（AI 按餐别字段筛选 · meal_type 早/中/晚）
+  external_data: 早餐类食谱（meal_type=早）
+  calorie_side: 卡路里「看早餐（最近 7 天）」近期早餐实际
+  merge_logic: 早餐食谱 ↔ 近期早餐实际：推荐换着吃 + 营养对比
+  present: 早餐食谱推荐（含营养）· 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L6.1
+  name: 跨技能汇总 dashboard
+  wake_word: 看跨技能汇总
+  external: 多技能（6 技能）
+  external_ww: 看月度（记账）/ 复盘区间（作息）/ 囤货盘点（居家）/ 查心愿（备忘）/ 搜索食谱（大厨）
+  external_data: 各技能核心 KPI（支出 / 睡眠 / 库存 / 心愿 / 食谱）
+  calorie_side: 卡路里「看健康报告(本月)」健康 KPI
+  merge_logic: 各技能数据汇总成 6 KPI 卡（AI 编排读-合并）
+  present: 跨技能 dashboard（6 KPI 卡）· 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L6.2
+  name: 跨技能趋势
+  wake_word: 看跨技能趋势
+  external: 多技能（6 技能）
+  external_ww: 看趋势（记账）/ 复盘区间（作息）/ 看体重曲线（卡路里）等
+  external_data: 多技能时间序列
+  calorie_side: 卡路里「看整体趋势(体重+摄入+运动)」
+  merge_logic: 多折线趋势 + 相关性（AI 编排）
+  present: 多趋势折线图 · 相关性 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L6.3
+  name: 跨技能对比
+  wake_word: 看跨技能对比
+  external: 多技能（6 技能）
+  external_ww: 看对比（记账）/ 对比两个月（作息）/ 对比体重（卡路里）等
+  external_data: 各技能两期数据
+  calorie_side: 卡路里「对比体重：本月 vs 上月」
+  merge_logic: 周 / 月对比 + 升降 TOP3（AI 编排）
+  present: 对比卡 + 升降 TOP3 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L6.4
+  name: 跨技能诊断
+  wake_word: 看跨技能诊断
+  external: 多技能（6 技能）
+  external_ww: T5 异常检测（作息）/ 看异常（记账）/ 诊断类（卡路里）等
+  external_data: 各技能异常信号
+  calorie_side: 卡路里「诊断饮食超标 / 诊断运动不足」等诊断场景
+  merge_logic: AI 综合洞察：合并各技能异常信号给出跨域诊断（本质 AI 分析）
+  present: 综合诊断报告 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L6.5
+  name: 跨技能预警
+  wake_word: 看跨技能预警
+  external: 多技能（6 技能）
+  external_ww: T5 异常检测（作息）/ 看异常（记账）/ 查过期（居家）/ 看缺口（卡路里）等
+  external_data: 各技能异常 / 风险汇总
+  calorie_side: 卡路里「看目标完成度」缺口预警
+  merge_logic: 异常合并呈现：按技能分组 + 优先级排序（AI 编排）
+  present: 预警清单（按技能分组）· 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: L6.6
+  name: 跨技能目标追踪
+  wake_word: 看跨技能目标追踪
+  external: 多技能（3 技能）
+  external_ww: 看目标（记账）/ 查心愿（备忘）
+  external_data: 有目标体系的技能数据（卡路里目标 / 记账目标 / 备忘录心愿）
+  calorie_side: 卡路里「看目标完成度」
+  merge_logic: 只追踪有目标体系的技能（卡路里 + 记账 + 备忘录心愿）；作息/居家/大厨无目标概念
+  present: 目标追踪表（3 技能）· 一句话总结
+  status: 降级
+  downgrade_note: 作息 / 居家 / 大厨无「目标」概念，只追踪有目标体系的技能（卡路里 / 记账 / 备忘录心愿）
+- id: CS-06
+  name: 睡眠不足 ↔ 摄入增加
+  wake_word: 联动作息管家（睡眠不足 vs 摄入）
+  external: 作息管家
+  external_ww: 复盘本周（睡眠维度）
+  external_data: 每日睡眠时长分组（充足 / 不足）
+  calorie_side: 卡路里「看饮食总览」日均摄入
+  merge_logic: 睡眠不足日 vs 睡眠充足日 的日均摄入对比
+  present: 两组日均摄入对比 · 差异 · 一句话总结
+  status: 保留
+  downgrade_note: ''
+- id: CS-07
+  name: 库存 ↔ 本周饮食闭环
+  wake_word: 协同居家管家（库存与饮食闭环）
+  external: 居家管家
+  external_ww: 囤货盘点 + 查过期
+  external_data: 库存食品 + 临期食品
+  calorie_side: 卡路里「看本周饮食」
+  merge_logic: 库存 → 本周饮食计划：先消耗临期，缺口食材进采购清单
+  present: 计划 vs 库存覆盖 · 临期优先 · 采购缺口 · 一句话总结
+  status: 保留
+  downgrade_note: 待居家管家接入技能互联后可执行（当前居家未接入 → AI 降级为对话式查或如实告知）

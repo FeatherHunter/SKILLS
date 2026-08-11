@@ -38,6 +38,9 @@ for path in $CHANGED; do
         私家大厨/*)
             NEED_TEST[私家大厨]=1
             ;;
+        图眼/*)
+            NEED_TEST[图眼]=1
+            ;;
     esac
 done
 

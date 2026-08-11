@@ -1,0 +1,7 @@
+# 临时产物 / 测试垃圾不进 git
+__pycache__/
+*.pyc
+.pytest_cache/
+.scratch/
+eye_tiles/
+*.b64

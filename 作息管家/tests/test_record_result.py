@@ -43,7 +43,7 @@ def _run_cli(args, db_path):
     env["SKILLS_DB_PATH"] = str(db_path)
     result = subprocess.run(
         [sys.executable, CLI] + args,
-        capture_output=True, text=True, env=env, timeout=30,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, timeout=30,
         cwd=str(SCRIPTS_DIR.parent),
     )
     out = result.stdout.strip()

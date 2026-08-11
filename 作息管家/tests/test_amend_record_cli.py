@@ -23,7 +23,7 @@ def _run(args, db_path):
     cwd = str(SCRIPTS_DIR.parent)
     result = subprocess.run(
         [sys.executable, CLI] + args,
-        capture_output=True, text=True, env=env, timeout=30, cwd=cwd,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, timeout=30, cwd=cwd,
     )
     out = result.stdout.strip()
     if not out:
@@ -217,7 +217,7 @@ def test_correct_command_registered(tmp_path):
     cwd = str(SCRIPTS_DIR.parent)
     r = subprocess.run(
         [sys.executable, CLI, "amend-record"],
-        capture_output=True, text=True, env=env, timeout=30, cwd=cwd,
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, timeout=30, cwd=cwd,
     )
     out = r.stdout
     assert "未知命令" not in out, f"amend-record 未注册到 main: {out[:200]}"

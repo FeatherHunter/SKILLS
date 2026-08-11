@@ -175,11 +175,11 @@ def test_replay_cli_granularity_day(tmp_path):
          "--duration-minutes", "60", "--activity", "测试", "--category", "工作.AI调优",
          "--source-contents", "原文", "--source-timestamps", "10:00",
          "--analysis-reasoning", "推理"],
-        capture_output=True, text=True, env=env, cwd=cwd)
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, cwd=cwd)
     r = subprocess.run(
         [sys.executable, str(SCRIPTS_DIR / "schedule_cli.py"), "render-replay",
          "2026-08-09", "2026-08-09", "--granularity", "day"],
-        capture_output=True, text=True, env=env, cwd=cwd, timeout=30)
+        capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, cwd=cwd, timeout=30)
     out = json.loads(r.stdout[r.stdout.find("{"):])
     assert out["status"] in ("ok", "incomplete"), f"render-replay 失败: {out.get('message')}"
     assert out["data"]["granularity"] == "day"

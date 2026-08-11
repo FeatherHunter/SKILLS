@@ -45,7 +45,7 @@ def _render(mode_cli, db_path):
     (db_dir / "schedule_html" / "record" / "detail").mkdir(parents=True, exist_ok=True)
     (db_dir / "schedule_html" / "record" / "day").mkdir(parents=True, exist_ok=True)
     r = subprocess.run([sys.executable, CLI] + mode_cli,
-                       capture_output=True, text=True, env=env, cwd=cwd, timeout=30)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, cwd=cwd, timeout=30)
     out = json.loads(r.stdout[r.stdout.find("{"):])
     return Path(out["data"]["file_path"])
 
@@ -139,7 +139,7 @@ def test_compare_hook_emoji(tmp_path):
     env["SKILLS_DB_PATH"] = str(db)
     f = subprocess.run([sys.executable, CLI,
                        "render-record-compare-months", "2026-07", "2026-08"],
-                      capture_output=True, text=True, env=env,
+                      capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
                       cwd=str(SCRIPTS_DIR.parent), timeout=30)
     out = json.loads(f.stdout[f.stdout.find("{"):])
     html = Path(out["data"]["file_path"]).read_text(encoding="utf-8")

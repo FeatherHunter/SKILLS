@@ -34,7 +34,7 @@ def _gen_html(extra_args=None, db_path=None):
     # 渲染
     args = extra_args or ["render-record-day", "2026-07-15"]
     r = subprocess.run([sys.executable, CLI] + args,
-                       capture_output=True, text=True, env=env, cwd=cwd, timeout=30)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, cwd=cwd, timeout=30)
     out = json.loads(r.stdout[r.stdout.find("{"):])
     return Path(out["data"]["file_path"])
 
@@ -141,7 +141,7 @@ def test_receipt_edit_also_single_file(tmp_path):
     # 再 render-record-receipt-edit
     r = subprocess.run([sys.executable, CLI, "render-record-receipt-edit", "1",
                         "--diff", '{"category":{"old":"工作.AI调优","new":"工作.开发"}}'],
-                       capture_output=True, text=True, env=env, cwd=cwd)
+                       capture_output=True, text=True, encoding="utf-8", errors="replace", env=env, cwd=cwd)
     out = json.loads(r.stdout[r.stdout.find("{"):])
     f = Path(out["data"]["file_path"])
     html = f.read_text(encoding="utf-8")

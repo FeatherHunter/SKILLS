@@ -1079,6 +1079,10 @@ def main():
                      'protein': 'protein', 'carbs': 'carbs', 'fat': 'fat',
                      'date': 'date', 'time': 'time', 'note': 'note'}
             data = build_live_diet_update_date(target_date, **{_FMAP[k]: v for k, v in kw.items() if k in _FMAP})
+            # issue #266 审查补漏(第一性原理审查发现):改某日饮食 → 目标日期
+            _ud = data.get('data', {}).get('new_record', {})
+            if _ud.get('date'):
+                file_suffix = str(_ud['date']).replace('-', '')
         elif args.live_diet_delete:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-diet-delete') + 1:]
@@ -1099,6 +1103,10 @@ def main():
                 print('❌ --live-diet-delete-meal 需要 <date> <餐别>', file=sys.stderr)
                 return 1
             data = build_live_diet_delete_meal(pos[0], pos[1])
+            # issue #266 审查补漏:删一餐 → 日期+餐别
+            _dm = data.get('data', {}).get('new_record', {})
+            if _dm.get('date'):
+                file_suffix = f"{str(_dm['date']).replace('-', '')}{_dm.get('餐别') or ''}"
         elif args.live_diet_delete_date:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-diet-delete-date') + 1:]
@@ -1107,6 +1115,10 @@ def main():
                 print('❌ --live-diet-delete-date 需要 <date>', file=sys.stderr)
                 return 1
             data = build_live_diet_delete_date(pos[0])
+            # issue #266 审查补漏:删某日饮食 → 目标日期
+            _dd = data.get('data', {}).get('new_record', {})
+            if _dd.get('date'):
+                file_suffix = str(_dd['date']).replace('-', '')
         elif args.live_diet_delete_range:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-diet-delete-range') + 1:]
@@ -1115,6 +1127,10 @@ def main():
                 print('❌ --live-diet-delete-range 需要 <start> <end>', file=sys.stderr)
                 return 1
             data = build_live_diet_delete_range(pos[0], pos[1])
+            # issue #266 审查补漏:批量删饮食 → 起止范围
+            _dr = data.get('data', {}).get('new_record', {})
+            if _dr.get('start') and _dr.get('end'):
+                file_suffix = f"{str(_dr['start']).replace('-', '')}至{str(_dr['end']).replace('-', '')}"
         elif args.live_water_add:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-water-add') + 1:]

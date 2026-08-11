@@ -186,31 +186,52 @@ def test_e2e_delete_filename_before_food(tmp_path):
     assert any('_清蒸鱼_' in n for n in names), names
 
 
-# ---------- 冲突兜底(同秒同名 → _2) ----------
+# ---------- 端到端:改/删按日期/餐别/范围(独立 DB · 第一性原理审查补漏 2026-08-12) ----------
 
-def test_e2e_batch_same_content_twice_conflict(tmp_path):
-    """同秒两次相同批量补记 → 第二个文件名 _2 后缀仍工作"""
-    db_dir, _ = _make_db(tmp_path)
-    p = _write_json(tmp_path, 'batch.json', [
-        {'food_name': '米饭', 'grams': 200, 'calories': 232, 'protein': 4.3},
-    ])
-    res1 = _run_render(db_dir, '--live-diet-batch', '--input', str(p))
-    assert res1.returncode == 0, res1.stderr
-    res2 = _run_render(db_dir, '--live-diet-batch', '--input', str(p))
-    assert res2.returncode == 0, res2.stderr
-    names = _html_names(db_dir, '批量补记饮食_回执_')
-    assert len(names) >= 2
-    assert any('_2.' in n for n in names), names
-
-
-def test_e2e_copy_same_source_twice_conflict(tmp_path):
-    """同秒两次复制同一源日期 → 第二个文件名 _2 后缀仍工作"""
+def test_e2e_update_date_filename_target_date(tmp_path):
+    """改某日饮食 → 改某日饮食_回执_20260810_<TS>.html(目标日期)"""
     db_dir, db_path = _make_db(tmp_path)
-    _seed_meal(db_path, food='鸡蛋', date='2026-08-11', time='08:00:00')
-    res1 = _run_render(db_dir, '--live-diet-copy', '--from', '2026-08-11')
-    assert res1.returncode == 0, res1.stderr
-    res2 = _run_render(db_dir, '--live-diet-copy', '--from', '2026-08-11')
-    assert res2.returncode == 0, res2.stderr
-    names = _html_names(db_dir, '复制昨日饮食_回执_')
-    assert len(names) >= 2
-    assert any('_2.' in n for n in names), names
+    _seed_meal(db_path, food='米饭', date='2026-08-10', time='12:00:00')
+    res = _run_render(db_dir, '--live-diet-update-date', '2026-08-10', '--grams', '150')
+    assert res.returncode == 0, res.stderr
+    names = _html_names(db_dir, '改某日饮食_回执_')
+    assert any('_20260810_' in n for n in names), names
+
+
+def test_e2e_delete_meal_filename_date_meal(tmp_path):
+    """删一餐 → 删一餐_回执_20260810早餐_<TS>.html(日期+餐别)"""
+    db_dir, db_path = _make_db(tmp_path)
+    _seed_meal(db_path, food='米饭', date='2026-08-10', time='08:00:00')
+    res = _run_render(db_dir, '--live-diet-delete-meal', '2026-08-10', '早餐')
+    assert res.returncode == 0, res.stderr
+    names = _html_names(db_dir, '删一餐_回执_')
+    assert any('_20260810早餐_' in n for n in names), names
+
+
+def test_e2e_delete_date_filename_target_date(tmp_path):
+    """删某日饮食 → 删某日饮食_回执_20260810_<TS>.html(目标日期)"""
+    db_dir, db_path = _make_db(tmp_path)
+    _seed_meal(db_path, food='米饭', date='2026-08-10', time='12:00:00')
+    res = _run_render(db_dir, '--live-diet-delete-date', '2026-08-10')
+    assert res.returncode == 0, res.stderr
+    names = _html_names(db_dir, '删某日饮食_回执_')
+    assert any('_20260810_' in n for n in names), names
+
+
+def test_e2e_delete_range_filename_span(tmp_path):
+    """批量删饮食 → 批量删饮食_回执_20260810至20260811_<TS>.html(起止范围)"""
+    db_dir, db_path = _make_db(tmp_path)
+    _seed_meal(db_path, food='米饭', date='2026-08-10', time='12:00:00')
+    _seed_meal(db_path, food='苹果', date='2026-08-11', time='12:00:00')
+    res = _run_render(db_dir, '--live-diet-delete-range', '2026-08-10', '2026-08-11')
+    assert res.returncode == 0, res.stderr
+    names = _html_names(db_dir, '批量删饮食_回执_')
+    assert any('_20260810至20260811_' in n for n in names), names
+
+
+# ---------- 冲突兜底说明 ----------
+# 同秒同名冲突 _2/_3 是 html_paths 纯函数层的职责,#49 已用
+# test_conflict_same_food_same_second 覆盖(写盘模拟)。端到端层不再重复测
+# 时序敏感场景:两次 CLI subprocess 在全量回归高负载下可能跨秒 → TS 不同,
+# 无 _2 后缀,测试偶发失败污染回归可信度(2026-08-12 实测)。本文件聚焦
+# 「suffix 内容标识正确传入」,冲突机制不在此重复验证。

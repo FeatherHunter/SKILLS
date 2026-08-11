@@ -421,6 +421,34 @@ def _weight_delete_receipt(op, record_id, snapshot, totals, summary, action_at, 
 
 # ==================== 饮食记录 live 模式(ticket #3 · 2026-08-02) ====================
 
+def _batch_content_suffix(input_path):
+    """批量补记 / 同餐合并 文件名内容标识:首食物+等N项(issue #266 拍板 Q1/Q5 · 2026-08-12)
+
+    规则(与 #49 的 suffix 语义一致,仅多食物场景):
+      - 取输入 JSON 首条非空 food_name + 条目总数 → 「米饭等3项」
+      - 拼接后由 html_paths._sanitize_filename_part 整体 sanitize + 截断 32(#266 Q3 拍板)
+      - 无有效首食物名 / 读取失败 → None(保持原文件名,不因标识失败而崩)
+
+    Args:
+        input_path: --input JSON 文件路径(与 build_live_diet_batch 同一份)
+
+    Returns:
+        str | None: 内容标识段(如 '米饭等3项');无有效内容时 None
+    """
+    try:
+        entries = json.loads(Path(input_path).read_text(encoding='utf-8'))
+        if not isinstance(entries, list) or not entries:
+            return None
+        first = next(
+            (str(e.get('food_name', '')).strip() for e in entries if str(e.get('food_name', '')).strip()),
+            None)
+        if not first:
+            return None
+        return f'{first}等{len(entries)}项'
+    except Exception:
+        return None
+
+
 def _diet_receipt(op: str, record_id, old_record: dict, new_record: dict,
                   entity_label: str, action_at: str, summary: str = '',
                   kpis: list | None = None, items: list | None = None) -> dict:
@@ -931,7 +959,12 @@ def main():
             active = flag_name
             break
     cmd_name, ot = _LIVE_NAMES.get(active, ('操作回执', None))
-    # issue #49 · 2026-08-11 拍板:记一餐回执文件名带食物名(仅 live_diet_add,其余保持原样)
+    # issue #49 · 2026-08-11 拍板:记一餐回执文件名带食物名
+    # issue #266 · 2026-08-12 拍板(全 A):批量补记/复制昨日/改/删/同餐合并 回执文件名同样带内容标识
+    #   - 批量补记/同餐合并:首食物+等N项(如 米饭等3项)
+    #   - 复制昨日饮食:源日期(YYYYMMDD,如 20260810)
+    #   - 改/删饮食记录:食物名(改后名/被删名)
+    #   - 兜底:拼接后走 _sanitize_filename_part 整体截断 32 + 同秒冲突 _N(与 #49 一致)
     file_suffix = None
 
     try:
@@ -977,13 +1010,21 @@ def main():
                                        meal=kw.get('meal'))
         elif args.live_diet_batch:
             data = build_live_diet_batch(args.input)
+            # issue #266 拍板 Q1A:首食物+等N项(如 米饭等3项);无有效首食物则保持原名
+            file_suffix = _batch_content_suffix(args.input) or file_suffix
         elif args.live_diet_batch_meal:
             if not args.input:
                 print('❌ --live-diet-batch-meal 需要 --input <json>', file=sys.stderr)
                 return 1
             data = build_live_diet_batch_meal(args.input)
+            # issue #266 拍板 Q5A:同餐合并与批量补记同规则(首食物+等N项)
+            file_suffix = _batch_content_suffix(args.input) or file_suffix
         elif args.live_diet_copy:
             data = build_live_diet_copy(args.from_date, args.to_date)
+            # issue #266 拍板 Q2A:带源日期(YYYYMMDD,从回执 new_record 取,避免重复算默认值)
+            _from = data.get('data', {}).get('new_record', {}).get('from')
+            if _from:
+                file_suffix = str(_from).replace('-', '')
         elif args.live_diet_update:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-diet-update') + 1:]
@@ -1009,6 +1050,10 @@ def main():
                      'protein': 'protein', 'carbs': 'carbs', 'fat': 'fat',
                      'date': 'date', 'time': 'time', 'note': 'note'}
             data = build_live_diet_update(entry_id, **{_FMAP[k]: v for k, v in kw.items() if k in _FMAP})
+            # issue #266 拍板 Q4A:改饮食记录 → 改后食物名
+            _after = data.get('data', {}).get('new_record', {})
+            if _after.get('food_name'):
+                file_suffix = str(_after['food_name'])
         elif args.live_diet_update_date:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-diet-update-date') + 1:]
@@ -1042,6 +1087,10 @@ def main():
                 print('❌ --live-diet-delete 需要 <id>', file=sys.stderr)
                 return 1
             data = build_live_diet_delete(entry_id)
+            # issue #266 拍板 Q4A:删饮食记录 → 被删食物名
+            _before = data.get('data', {}).get('old_record', {})
+            if _before.get('food_name'):
+                file_suffix = str(_before['food_name'])
         elif args.live_diet_delete_meal:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-diet-delete-meal') + 1:]

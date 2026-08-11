@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#244 implement 结论 · 修复已存在</title>
+<style>
+  :root {
+    --bg: #f5f5f7; --card: #ffffff; --text: #1d1d1f; --sub: #6e6e73;
+    --green: #34c759; --blue: #0071e3; --orange: #ff9500; --border: #e5e5ea;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.6; padding: 28px 16px 48px; max-width: 720px; margin: 0 auto;
+  }
+  .hero { text-align: center; padding: 12px 0 24px; }
+  .hero .tag {
+    display: inline-block; font-size: 12px; color: var(--orange);
+    background: rgba(255,149,0,0.10); border: 1px solid rgba(255,149,0,0.25);
+    padding: 3px 12px; border-radius: 999px; margin-bottom: 12px; letter-spacing: 0.5px;
+  }
+  .hero h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+  .hero p { color: var(--sub); font-size: 14px; margin-top: 8px; }
+  .card { background: var(--card); border-radius: 16px; padding: 22px 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .card h2 { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .card h2 .no { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; border-radius: 7px; background: var(--orange); color: #fff; font-size: 12px; padding: 0 6px; }
+  .badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 600; white-space: nowrap; }
+  .b-ok { background: rgba(52,199,89,0.12); color: #248a3d; }
+  .b-warn { background: rgba(255,149,0,0.14); color: #c77100; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; color: var(--sub); font-weight: 600; letter-spacing: 0.3px; }
+  .commit { background: var(--bg); border-radius: 12px; padding: 12px 14px; font-size: 12.5px; font-family: ui-monospace, "SF Mono", Consolas, monospace; margin-top: 8px; word-break: break-all; }
+  .opt { border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+  .opt .letter { flex: none; width: 22px; height: 22px; border-radius: 50%; background: rgba(0,113,227,0.10); color: var(--blue); font-weight: 700; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; margin-top: 1px; }
+  .opt .rec { color: var(--green); font-weight: 600; font-size: 12px; }
+  .footer { text-align: center; color: var(--sub); font-size: 12px; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <span class="tag">IMPLEMENT · 结论</span>
+  <h1>#244 修复已存在，无需重复实施</h1>
+  <p>2026-08-11 · 机制层验证通过，issue 卡在「真机目验」一环</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">1</span>核实结果</h2>
+  <ul class="plain" style="list-style:none;">
+    <li style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div class="t"><span class="badge b-ok">✅ 已落地</span> 修复在 commit 46eae24</div>
+      <div class="d" style="color:var(--sub);font-size:13px;margin-top:3px;">「HELP目录按钮点击变蓝修复 · 全局禁用默认点击高亮 + 三级summary自定义:active浅色反馈 + 新增回归测试」——含产物同步。</div>
+    </li>
+    <li style="padding:10px 0;border-bottom:1px solid var(--border);">
+      <div class="t"><span class="badge b-ok">✅ 回归测试在</span> test_help_html_no_default_tap_highlight</div>
+      <div class="d" style="color:var(--sub);font-size:13px;margin-top:3px;">断言「-webkit-tap-highlight-color:transparent」+「三级 summary :active 浅色反馈」，测试通过。</div>
+    </li>
+    <li style="padding:10px 0;">
+      <div class="t"><span class="badge b-warn">⏳ 卡在哪</span> issue 标注 ready-for-human，等真机目验</div>
+      <div class="d" style="color:var(--sub);font-size:13px;margin-top:3px;">commit 信息写明「机制层验证已做、视觉层真机目验待用户」——这就是 issue 还没 close 的原因。</div>
+    </li>
+  </ul>
+</div>
+
+<div class="card">
+  <h2><span class="no">2</span>本次机制层实测（Playwright）</h2>
+  <table>
+    <thead><tr><th>验证项</th><th>结果</th></tr></thead>
+    <tbody>
+      <tr><td>全局 tap-highlight（div 探测）</td><td><span class="badge b-ok">✅</span> rgba(0,0,0,0) 全透明</td></tr>
+      <tr><td>三级 summary tap-highlight</td><td><span class="badge b-ok">✅</span> module/sub-module/scene 全 transparent</td></tr>
+      <tr><td>桌面 / 移动端 375</td><td><span class="badge b-ok">✅</span> 均无默认蓝色高亮</td></tr>
+      <tr><td>回归测试</td><td><span class="badge b-ok">✅</span> 全量 396 passed（含 #244 回归保护）</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:13px;color:var(--sub);margin-top:10px;">浏览器默认点击高亮（-webkit-tap-highlight-color）已确认禁用——这就是「点击变蓝」的唯一来源，已消除。</p>
+</div>
+
+<div class="card">
+  <h2><span class="no">3</span>结论 + 待你拍板</h2>
+  <div class="opt"><span class="letter">A</span><div><span class="rec">真机目验后 close（推荐）</span>：你在手机/电脑打开 HELP 点击目录确认无蓝色闪层，确认后我 close #244。</div></div>
+  <div class="opt"><span class="letter">B</span><div>直接 close：#244 修复已落地 + 机制层验证通过 + 回归测试在，无需再验。<span class="why">按「拍板前不 close」纪律，一般等目验；但你若信任机制层证据可直接关。</span></div></div>
+</div>
+
+<div class="footer">Mavis · implement #244 · 核实为先：修复已存在，不重复造轮子（2026-08-11）</div>
+
+</body>
+</html>

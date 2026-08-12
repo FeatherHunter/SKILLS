@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>Session 关闭零损失审计 · 医药注册编排设计</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+    --bg:#f5f5f7;--card:#fff;--line:#e3e3e8;--soft:#f2f2f7;
+    --blue:#0071e3;--blue2:#0a63ce;--blue-soft:#e8f2ff;
+    --ok:#34c759;--ok-soft:#e7f8ee;
+    --warn:#ff9500;--warn-soft:#fff3e0;
+    --red:#ff3b30;--red-soft:#ffe5e3;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+  }
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased;padding:0 0 80px}
+  .wrap{max-width:880px;margin:0 auto;padding:0 16px}
+  header{background:linear-gradient(180deg,#fbfbfd,#f5f5f7);padding:34px 0 18px;border-bottom:1px solid var(--line)}
+  .kicker{font-size:11.5px;font-weight:700;color:var(--blue);letter-spacing:.04em;margin-bottom:8px}
+  h1{font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.25;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--fg2);line-height:1.6}
+  section{margin-top:24px}
+  .sec-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .sec-num{flex:0 0 auto;width:30px;height:30px;border-radius:10px;background:var(--blue);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .sec-head h2{font-size:17px;font-weight:800}
+  .sec-head .tag{font-size:10.5px;color:var(--fg3);background:var(--soft);border-radius:999px;padding:2px 9px;font-weight:600}
+  .sec-desc{font-size:12.5px;color:var(--fg2);margin-bottom:12px}
+
+  .verdict{display:flex;gap:12px;align-items:flex-start;background:linear-gradient(135deg,#eefaf1,#fff);border:1px solid #c9ecd2;border-radius:16px;padding:16px 18px;margin:16px 0;box-shadow:var(--shadow)}
+  .verdict .v-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--ok);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .verdict b{font-size:14px}
+  .verdict p{font-size:12.5px;color:var(--fg2);margin-top:3px}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .card h3{font-size:13.5px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .card h3 .dot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0}
+
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;background:var(--card);margin-bottom:10px}
+  table{border-collapse:collapse;width:100%;min-width:600px;font-size:12px}
+  th{background:var(--soft);color:var(--fg2);font-weight:700;text-align:left;padding:8px 10px;font-size:11px;border-bottom:1px solid var(--line)}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;line-height:1.55}
+  tr:last-child td{border-bottom:0}
+  td code,td .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:var(--soft);border-radius:5px;padding:1px 5px;color:var(--blue2)}
+
+  .badge{display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 8px;line-height:1.7;white-space:nowrap}
+  .b-ok{background:var(--ok-soft);color:#1a7a3a}
+  .b-warn{background:var(--warn-soft);color:#b25b00}
+  .b-red{background:var(--red-soft);color:#c0392b}
+  .b-blue{background:var(--blue-soft);color:var(--blue2)}
+  .b-gray{background:#e9e9ee;color:#666}
+
+  ul.clean{list-style:none}
+  ul.clean li{position:relative;padding:5px 0 5px 20px;font-size:12.5px;color:var(--fg2);line-height:1.6}
+  ul.clean li::before{content:"";position:absolute;left:6px;top:13px;width:6px;height:6px;border-radius:50%;background:var(--blue);opacity:.55}
+  ul.clean li b{color:var(--fg)}
+
+  .chain{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:8px 0}
+  .chain .node{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:5px 11px;font-size:11.5px;font-weight:700;box-shadow:none}
+  .chain .node.serial{background:var(--blue-soft);border-color:#cfe2ff;color:var(--blue2)}
+  .chain .node.bottle{background:var(--red-soft);border-color:#ffc7c2;color:#c0392b}
+  .chain .arr{color:var(--fg3);font-size:12px;font-weight:700}
+
+  .lane{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  .lane .col{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+  .lane .col h3{font-size:13px;font-weight:800;margin-bottom:8px}
+  .lane .col.par h3{color:#1a7a3a}
+  .lane .col.seq h3{color:#c0392b}
+  .lane ul{list-style:none}
+  .lane li{position:relative;padding:5px 0 5px 18px;font-size:12.5px;color:var(--fg2);line-height:1.6}
+  .lane li::before{content:"";position:absolute;left:3px;top:13px;width:6px;height:6px;border-radius:50%}
+  .lane .par li::before{background:var(--ok)}
+  .lane .seq li::before{background:var(--red)}
+  .lane li b{color:var(--fg)}
+
+  .err{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--red);border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:12.5px;line-height:1.6;color:var(--fg2)}
+  .err b{color:var(--fg)}
+
+  .todo-item{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.5px;line-height:1.55}
+  .todo-item:last-child{border-bottom:0}
+  .todo-item .st{flex:0 0 auto;width:22px;height:22px;border-radius:50%;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .todo-item .st.done{background:var(--ok-soft);color:#1a7a3a}
+  .todo-item .st.wait{background:var(--warn-soft);color:#b25b00}
+  .todo-item .tt{flex:1;min-width:0}
+  .todo-item .tt b{font-size:12.5px}
+  .todo-item .tt span{display:block;color:var(--fg3);font-size:11.5px}
+
+  @media(max-width:520px){
+    h1{font-size:21px}
+    .lane{grid-template-columns:1fr}
+    header{padding:26px 0 14px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">交付完整性审计 · 从第一性原理</div>
+    <h1>Session 关闭零损失审计 + 医药注册编排设计</h1>
+    <div class="sub">一：核对 #287 全链路是否满足「永久关闭 session 零损失」；二：医药国际注册任务的并行/串行编排设计</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ===== Part 1 完整性审计 ===== -->
+  <section>
+    <div class="sec-head"><div class="sec-num">1</div><h2>交付完整性审计 · 关闭零损失清单</h2><span class="tag">对照仓库交付保真规范</span></div>
+
+    <div class="verdict">
+      <div class="v-ic">✅</div>
+      <div>
+        <b>结论：本 session 可安全关闭，零损失。</b>
+        <p>审计发现 1 处未完成（交付物在 .scratch 被 gitignore 挡住）→ 已当场修复（归档 docs/reviews + commit）。其余全部闭环。</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot"></span>六项对照清单</h3>
+      <div class="todo-item">
+        <div class="st done">✓</div>
+        <div class="tt"><b>Issue 状态闭环</b><span>#287 closed（盘点结论评论 + 对抗式审查修正声明评论）；#288/#289/#290 open（3 张组件落地票，body 已含对抗式审查修正）；#260 map 更新（Decisions so far / Frontier / Not yet specified / 提交信息）</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st done">✓</div>
+        <div class="tt"><b>交付物持久化入库</b><span>盘点报告 v2（39KB）+ 对抗式审查（20KB）归档 <span class="mono">docs/reviews/</span>（git 可见）——修复了「.scratch 被 gitignore 挡住未入库」的漏洞；本地镜像 map.md 同步完成</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st done">✓</div>
+        <div class="tt"><b>代码 commit</b><span>本地 commit <span class="mono">16e3757</span>（只提交自己的 2 个归档文件，未碰并行 agent 的 4 个未暂存改动）</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st wait">⏳</div>
+        <div class="tt"><b>Push（用户负责）</b><span>待 push 1 个 commit：<span class="mono">16e3757</span> [公共组件] P2 组件盘点报告 v2 + 对抗式审查归档。按约定 push 由用户执行，此处只列清单</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st done">✓</div>
+        <div class="tt"><b>思想共识沉淀</b><span>对抗式审查 5 教训 → agent memory「盘点类任务第一性原理纪律」；「拆票前先交报告等验收 + 交付物不得只留 .scratch」→ agent memory「wayfinder 拆票流程」；用户既有偏好（HTML 交付/5 维审查）均在 user memory</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st done">✓</div>
+        <div class="tt"><b>Handoff 连续性</b><span>map #260 承载全部状态（Frontier=3 组件票、fog=6 技能重构票），新 session 打开 map 即接上，无需独立 handoff 文档</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot"></span>审计过程发现的真问题（已修复）</h3>
+      <div class="err"><b>交付物被 gitignore 挡住</b>：盘点报告 v1/v2、对抗式审查、验证脚本全部在 <span class="mono">.scratch/base-skill/</span>，而 <span class="mono">.gitignore:104</span> 忽略整个 .scratch/——若直接关 session，报告只在本地磁盘、push 不包含、换机器即丢失。已按仓库惯例归档 <span class="mono">docs/reviews/</span> 并 commit。</div>
+      <div class="err" style="border-left-color:var(--warn)"><b>并行 agent 未暂存改动</b>：备忘录.html / 思维导师×2 / 饼干记账.html 4 个他人改动在工作区——本次 commit 用 <span class="mono">--only</span> 只提交自己的文件，未触碰他人改动（符合仓库并行约定）。</div>
+    </div>
+  </section>
+
+  <!-- ===== Part 2 医学编排 ===== -->
+  <section>
+    <div class="sec-head"><div class="sec-num">2</div><h2>医药国际注册 · 并行/串行编排设计</h2><span class="tag">第一性原理 · 适用 6 方法论全场景</span></div>
+    <div class="sec-desc">判据先行：<b>可并行</b> = 无数据依赖 + 无共享可变状态 + 成果可独立验收，三条件同满足；<b>必须串行</b> = 数据流依赖 / 统一决策口径 / 外部实时依赖（只能等）/ 门禁关卡，任一命中。</div>
+
+    <div class="card">
+      <h3><span class="dot"></span>领域关键路径（最长串行链 · 时间主线）</h3>
+      <div class="chain">
+        <span class="node serial">原料药数据 3.2.S</span><span class="arr">→</span>
+        <span class="node serial">Module 3</span><span class="arr">→</span>
+        <span class="node serial">Module 2 综述</span><span class="arr">→</span>
+        <span class="node serial">核心 CTD 定稿</span><span class="arr">→</span>
+        <span class="node serial">合规校验（门禁）</span><span class="arr">→</span>
+        <span class="node serial">提交</span><span class="arr">→</span>
+        <span class="node serial">官方审评</span><span class="arr">→</span>
+        <span class="node serial">缺陷信</span><span class="arr">→</span>
+        <span class="node serial">回复</span><span class="arr">→</span>
+        <span class="node serial">批准</span>
+      </div>
+      <p style="font-size:12px;color:var(--fg2);margin:10px 0 4px">三条<b style="color:var(--red)">外部实时依赖</b>（真正的瓶颈 · 只能提前启动不能压缩）：</p>
+      <div class="chain">
+        <span class="node bottle">⏱ 稳定性数据 6/12/24 月</span>
+        <span class="node bottle">⏱ BE 试验（临床 6-12 月+）</span>
+        <span class="node bottle">⏱ 官方审评周期（6-24 月）</span>
+      </div>
+    </div>
+
+    <div class="lane">
+      <div class="col par">
+        <h3>🟢 可并行（建议立即开多条线）</h3>
+        <ul>
+          <li><b>多国法规调研</b>：单国调研互相独立（A 类唤醒词）——但「对比国家」必须等单国调研完成</li>
+          <li><b>稳定性试验方案 + 启动</b>：最长依赖最早启动，与一切并行（持续迭代法的核心价值）</li>
+          <li><b>BE 试验供应商筛选/伦理递交</b>：与资料编制并行推进</li>
+          <li><b>Module 3.2.S（原料药）‖ 3.2.P（成品）</b>：同属 Module 3 但内容独立</li>
+          <li><b>Module 4（非临床）‖ Module 5（临床）</b>：参比制剂/BE 数据就绪后并行</li>
+          <li><b>Module 1（行政信息）</b>：代理商确定后随时可做，与一切并行</li>
+          <li><b>多国差异化准备</b>：语言翻译/公证认证/各国格式——与核心编制并行</li>
+          <li><b>6 角色模拟分析</b>：多角色决策法的角色分析阶段并行，辩论回合串行</li>
+          <li><b>缺陷信按类别分派</b>：分类后不同类别并行回复（同一类别必须统一口径）</li>
+        </ul>
+      </div>
+      <div class="col seq">
+        <h3>🔴 必须串行（不可并行）</h3>
+        <ul>
+          <li><b>决策链</b>：调研 → 多国对比 → 选优先国家 → 注册策略 → 项目计划 → 拆任务排节点（不调研无法选国、不选国无法排计划——信息瀑布）</li>
+          <li><b>数据链</b>：原料药数据 → Module 3 → Module 2 综述（QOS 是 Module 3 的综述，数据未定综述必返工）→ 核心 CTD 定稿</li>
+          <li><b>门禁</b>：合规校验 → 提交（校验是关卡，不校验不能提交；申请人字段/文件格式/必填项/完整性/合规 5 检查按序过）</li>
+          <li><b>官方链</b>：提交 → 审评 → 缺陷信 → 回复 → 批准（不可跳过、官方流程不可并行）</li>
+          <li><b>缺陷回复内部</b>：先分析分类 → 定统一口径 → 再逐条回复 → 审核 → 提交（分析产出决定回复策略）</li>
+          <li><b>批量编制品质关卡</b>：流水线作业法各环节质检是关卡，不合格不流入下游</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h3><span class="dot"></span>六方法论 × 编排对照</h3>
+      <div class="tbl-wrap" style="margin-bottom:0">
+        <table>
+          <thead><tr><th>方法论</th><th>用途</th><th>并行点</th><th>串行点</th></tr></thead>
+          <tbody>
+            <tr><td><b>快速探索法</b></td><td>市场快速评估</td><td>多国评估同时跑</td><td>评估维度决策先定</td></tr>
+            <tr><td><b>规范注册法</b></td><td>单国全流程</td><td>Module 1/4/5 与 3 并行</td><td>数据→综述→提交→审评主线</td></tr>
+            <tr><td><b>流水线作业法</b></td><td>批量编制资料</td><td>S/P 流水线并行 + 多 Agent 分工</td><td>各环节品质关卡串行</td></tr>
+            <tr><td><b>持续迭代法</b></td><td>缺陷信回复</td><td>缺陷类别分派并行</td><td>分析→口径→回复→审核循环</td></tr>
+            <tr><td><b>项目管控法</b></td><td>多国长期项目</td><td>国与国审评互不阻塞</td><td>核心 CTD 定稿先于各国组装</td></tr>
+            <tr><td><b>多角色决策法</b></td><td>策略决策</td><td>6 角色独立分析</td><td>辩论回合、最终拍板串行</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot"></span>对抗式审查视角 · 4 个常见编排错误</h3>
+      <div class="err"><b>❌ 并行编制 Module 2 与 Module 3</b>：QOS 综述依赖 Module 3 数据，并行必返工——综述永远滞后于数据，先数据后综述。</div>
+      <div class="err"><b>❌ 等资料全齐才启动稳定性试验</b>：6/12/24 个月实时依赖是整个项目最长等待，晚启动 1 天 = 批准晚 1 天。第一性原理：最长依赖最早启动。</div>
+      <div class="err"><b>❌ 缺陷信逐条并行回复无统一口径</b>：同一条缺陷两种答复 = 审评官质疑一致性 → 先定口径再分派。</div>
+      <div class="err"><b>❌ 多国各自为政编核心 CTD</b>：一份核心资料定稿，各国只做差异化外壳（语言/公证/格式）——否则 3 倍工作量 + 3 倍漂移风险（与 #260 同源副本漂移同构）。</div>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot"></span>一句话编排口诀</h3>
+      <p style="font-size:13px;line-height:1.8;color:var(--fg2)"><b style="color:var(--blue2)">「调研选国先串行定方向，稳定性/BE 立刻启动别等；Module 1/4/5 与 3 并行，S/P 双线开工；综述等数据、校验是门禁；缺陷先定口径再分派；多国共享一份核心 CTD，只做差异化外壳。」</b></p>
+    </div>
+  </section>
+
+  <p style="text-align:center;font-size:10.5px;color:var(--fg3);margin-top:18px">2026-08-12 · Mavis · 审计对照交付保真规范 · 编排适用医药国际注册 6 方法论</p>
+</div>
+</body>
+</html>

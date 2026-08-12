@@ -1,0 +1,1408 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HELP 原型 · V4 三级目录版</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f2f2f7;--card:#fff;--line:#d1d1d6;--blue:#007aff;--blue2:#0a63ce;--soft:#f0f6ff;--ok:#34c759;--orange:#ff9500;--red:#ff3b30;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05)}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.5;-webkit-font-smoothing:antialiased;font-size:14px}
+  button{font-family:inherit}
+  .stage{min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:24px 16px 60px;background:var(--bg)}
+  .stage-title{color:#3a3a3c;font-size:15px;font-weight:700;text-align:center}
+  .stage-sub{color:#6e6e73;font-size:12px;text-align:center;margin:3px 0 14px}
+  .phone{width:680px;max-width:100%;height:auto;background:transparent;border-radius:0;border:0;overflow:visible;position:relative;box-shadow:none}
+  .screen{height:auto;overflow:visible;-webkit-overflow-scrolling:touch;background:transparent;scrollbar-width:none;overscroll-behavior-y:auto}
+  .screen::-webkit-scrollbar{display:none}
+  .notch{display:none}
+  .app{padding:12px 0 74px}
+  .app-inner{padding:0 6px}
+  .hero{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .h-left{flex:1;min-width:0}
+  .eyebrow{font-size:9px;color:var(--blue);font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+  h1{font-size:19px;line-height:1.15;letter-spacing:-.02em}
+  .lead{color:var(--fg2);font-size:11.5px}
+  .hero-steps{display:flex;align-items:center;gap:4px;flex-basis:100%;margin-top:6px}
+  .hero-steps .step{background:var(--soft);border:1px solid #d7e6ff;color:var(--blue2);font-weight:700;font-size:10.5px;padding:3px 10px;border-radius:999px;white-space:nowrap}
+  .hero-steps .arrow{color:var(--blue);font-weight:800;font-size:11px}
+  .h-badge{background:var(--soft);border:1px solid #d7e6ff;color:var(--blue2);font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;flex-shrink:0}
+  /* ===== D4 首次使用横幅（可配 · 未初始化时显示 · 可手动关闭）===== */
+  .init-banner{background:linear-gradient(135deg,#0a63ce,#007aff 55%,#34c759);color:#fff;border-radius:12px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:relative}
+  .init-banner .ib-text{flex:1;min-width:200px;padding-right:26px}
+  .init-banner .ib-title{font-size:14px;font-weight:800;margin-bottom:2px}
+  .init-banner .ib-sub{font-size:11.5px;opacity:.9;line-height:1.5}
+  .init-banner .copy-btn{background:#fff;color:var(--blue);min-height:30px;font-weight:700;border-radius:999px;padding:0 11px;font-size:11.5px;flex-shrink:0;margin-right:26px}
+  .init-banner .ib-close{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(255,255,255,.22);color:#fff;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0}
+  /* 初始化步骤卡（可选 · 技能传 steps 显示 · >4 步横向滑动）*/
+  .init-steps{display:flex;gap:6px;flex-basis:100%;margin-top:4px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+  .init-steps::-webkit-scrollbar{display:none}
+  .init-step{flex:0 0 calc(25% - 4.5px);background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);border-radius:10px;padding:7px 5px;text-align:center;min-width:0}
+  .init-step .s-n{width:20px;height:20px;border-radius:50%;background:#fff;color:var(--blue2);font-weight:800;font-size:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 4px}
+  .init-step .s-t{font-size:9.5px;font-weight:700;color:#fff;line-height:1.3;word-break:break-all}
+  .init-step .s-d{font-size:8px;color:rgba(255,255,255,.75);margin-top:1px;line-height:1.3;word-break:break-all}
+  /* ===== 关于 Tab（最后 · 域概览 + 联系作者 + 版本）===== */
+  .about-sec{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden}
+  .about-sec .as-head{padding:9px 12px;font-size:13px;font-weight:800;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:7px}
+  .about-sec .as-body{padding:4px 12px 8px}
+  .about-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .about-row:last-child{border-bottom:0}
+  .about-row .a-ico{width:30px;height:30px;border-radius:9px;background:var(--soft);color:var(--blue2);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+  .about-row .a-ico svg{width:17px;height:17px;display:block}
+  .about-row .a-t{flex:1;min-width:0}
+  .about-row .a-t b{font-size:12.5px;display:block}
+  .about-row .a-t span{font-size:10.5px;color:var(--fg3)}
+  .about-row .a-badge{font-size:9.5px;color:var(--fg3);background:var(--bg);border-radius:999px;padding:1px 8px;flex-shrink:0}
+  .about-row .a-link{color:var(--blue);font-size:10.5px;word-break:break-all}
+  .about-row .a-copy{min-height:28px;padding:0 10px;font-size:10.5px;border-radius:8px;flex-shrink:0}
+  /* ===== D4 联系作者（可配）===== */
+  .contact-box{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-top:10px;overflow:hidden}
+  .contact-box>summary{min-height:44px;padding:0 13px;cursor:pointer;font-size:13.5px;font-weight:700;list-style:none;display:flex;align-items:center;gap:8px;user-select:none}
+  .contact-box>summary::-webkit-details-marker{display:none}
+  .contact-box>summary::before{content:"▸";font-size:11px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+  .contact-box[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+  .contact-body{padding:4px 13px 12px}
+  .contact-item{display:flex;gap:10px;align-items:center;font-size:12.5px;color:var(--fg2);padding:7px 0;border-bottom:1px dashed var(--line)}
+  .contact-item:last-child{border-bottom:0}
+  .contact-item .k{font-weight:700;color:var(--fg);min-width:64px;flex-shrink:0}
+  .contact-item a{color:var(--blue);text-decoration:none;word-break:break-all}
+  .contact-copy{margin-top:10px}
+  .search-wrap{position:sticky;top:0;z-index:400;background:rgba(242,242,247,.92);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);padding:5px 0;margin-bottom:2px}
+  .search-box{position:relative}
+  .search-box input{width:100%;border:1px solid var(--line);border-radius:10px;padding:9px 34px 9px 34px;font-size:13.5px;background:#fff;outline:none}
+  .search-box input:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.13)}
+  .s-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--fg3);pointer-events:none}
+  .s-clear{position:absolute;right:9px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;border:0;background:var(--bg);color:var(--fg3);font-size:12px;cursor:pointer;display:none;align-items:center;justify-content:center;line-height:1}
+  .hitcount{font-size:11px;color:var(--fg2);margin-bottom:5px;text-align:center}
+  .search-empty{background:var(--card);border:1.5px dashed var(--line);border-radius:12px;padding:20px 12px;text-align:center;color:var(--fg3);font-size:12.5px}
+  .chip{display:inline-block;background:var(--soft);color:var(--blue2);padding:1px 7px;border-radius:999px;font-size:9.5px;font-weight:700;flex-shrink:0;line-height:1.55}
+  .type-badge{display:inline-block;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:700;flex-shrink:0;background:#e9e9ee;color:#666;line-height:1.55}
+  .t-view{background:#e8f2ff;color:#0a63ce}
+  .t-wizard{background:#e2f7f5;color:#00897b}
+  .t-collect{background:#e7f8ee;color:#1a7a3a}
+  .t-result{background:#e8f2ff;color:#0a63ce}
+  .t-batch{background:#f3e9fb;color:#8e3fc9}
+  .t-dev{background:#fff1e2;color:#b25b00}
+  .copy-btn{display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--blue);color:#fff;border-radius:8px;padding:0 9px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;min-height:36px;transition:background .12s}
+  .copy-btn:active{background:var(--blue2)}
+  .copy-btn.ghost{background:#fff;color:var(--blue);border:1px solid var(--blue)}
+  mark{background:#ffe08a;border-radius:3px;padding:0 1px;color:inherit}
+
+  /* ===== 横向滑动容器（ViewPager）===== */
+  .pages{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;scroll-behavior:smooth;align-items:flex-start}
+  .pages::-webkit-scrollbar{display:none}
+  .page{flex:0 0 100%;scroll-snap-align:start}
+
+  /* ===== 二级：子功能折叠组 ===== */
+  .page{display:flex;flex-direction:column}
+  .subgroup{background:var(--card);border:1px solid var(--line);border-radius:12px;margin-bottom:8px;overflow:hidden;display:flex;flex-direction:column}
+  .subgroup>summary{min-height:44px;padding:0 12px;display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;font-size:13.5px;font-weight:700;user-select:none;flex-shrink:0}
+  .subgroup>summary::-webkit-details-marker{display:none}
+  .subgroup>summary::before{content:"▸";font-size:11px;color:var(--fg3);transition:transform .15s;flex-shrink:0}
+  .subgroup[open]>summary::before{transform:rotate(90deg);color:var(--blue)}
+  .subgroup .sg-count{font-size:10px;color:var(--fg3);font-weight:600;margin-left:auto;background:var(--bg);border-radius:999px;padding:1px 8px}
+  .subgroup .sg-body{padding:7px 8px 9px;display:flex;flex-direction:column;flex:1;min-height:0}
+  .subgroup:not([open]) .sg-body{display:none}
+
+  /* ===== 三级：2 列场景卡片 ===== */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .mini{background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:9px;display:flex;flex-direction:column;gap:6px;cursor:pointer;box-shadow:none;transition:transform .08s;min-width:0;overflow:hidden}
+  .mini:active{transform:scale(.985);background:#eaeaef}
+  .mini .m-top{display:flex;align-items:center;justify-content:flex-end;gap:4px;min-height:18px;flex-wrap:wrap}
+  .mini .m-top .chip{max-width:65%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex-shrink:0;margin-right:auto}
+  .mini .m-top .type-badge{flex-shrink:0;white-space:nowrap}
+  .mini .m-bottom{display:flex;align-items:center;gap:8px;min-width:0}
+  .mini .m-name{flex:1;min-width:0;font-size:12.5px;font-weight:700;line-height:1.35;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;padding-left:7px}
+  .mini .copy-btn{min-height:26px;padding:0 9px;font-size:11px;border-radius:9px;flex-shrink:0}
+
+  /* ===== 底部 Tab（可横向滑动）===== */
+  .tab-bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--line);display:flex;z-index:600;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0));gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+  /* 宽屏: Tab 栏宽度对齐主体内容区（居中限宽, 不横跨全屏）; 手机端保持全宽（见 media query）*/
+  @media(min-width:501px){
+    .tab-bar{width:680px;max-width:100%;left:50%;transform:translateX(-50%);border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:0}
+  }
+  .tab-bar::-webkit-scrollbar{display:none}
+  .tab{flex:0 0 auto;min-width:66px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 10px 4px;cursor:pointer;font-size:10px;color:var(--fg3);font-weight:600;min-height:54px;justify-content:center;border:0;background:none;border-radius:14px;transition:background .08s,color .08s,box-shadow .08s;white-space:nowrap}
+  .tab .t-ico{width:22px;height:22px;display:flex;align-items:center;justify-content:center;line-height:1}
+  .tab .t-ico svg{width:20px;height:20px;display:block}
+  .tab .t-ico .t-emoji{font-size:16px;line-height:1}
+  .tab.active{background:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(0,122,255,.3)}
+  .tab.active .t-ico{transform:scale(1.05)}
+
+  /* ===== Sheet 弹层（高度自适应内容 · 不满屏不滚动）===== */
+  .sheet-mask{position:fixed;left:8px;right:8px;top:8px;bottom:8px;background:rgba(0,0,0,.45);opacity:0;pointer-events:none;transition:opacity .25s;z-index:900;border-radius:36px}
+  .sheet-mask.show{opacity:1;pointer-events:auto}
+  .sheet{position:fixed;left:8px;right:8px;bottom:8px;background:var(--card);border-radius:22px 22px 36px 36px;padding:10px 16px calc(8px + env(safe-area-inset-bottom,0));transform:translateY(105%);transition:transform .32s cubic-bezier(.32,.72,.24,1);z-index:901;max-height:82%;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.25)}
+  .sheet.show{transform:translateY(0)}
+  .sheet .grip{width:38px;height:4.5px;border-radius:999px;background:var(--line);margin:0 auto 12px;flex-shrink:0}
+  .sheet .s-scroll{overflow-y:auto;flex:1;min-height:0;scrollbar-width:none;padding-bottom:66px}
+  .sheet .s-scroll::-webkit-scrollbar{display:none}
+  .sheet .s-head{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:4px}
+  .sheet .s-title{font-size:17px;font-weight:700;flex-basis:100%;line-height:1.3}
+  .sheet .s-close{position:absolute;top:16px;right:16px;width:30px;height:30px;border-radius:50%;border:0;background:var(--bg);color:var(--fg3);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .sheet .prompt-box{background:#1d1d1d;color:#f5f5f7;border-radius:12px;padding:11px 13px;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace;font-size:12px;line-height:1.65;margin-top:9px;word-break:break-all}
+  .sheet .pform{margin-top:9px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:9px 10px}
+  .sheet .pfield{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+  .sheet .pfield:last-of-type{margin-bottom:0}
+  .sheet .pfield label{font-size:12px;color:var(--fg2);font-weight:600;flex-shrink:0;min-width:72px}
+  .sheet .pfield label em{color:var(--fg3);font-weight:400;font-size:9px}
+  .sheet .pfield input{flex:1;min-width:0;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:13px;background:#fff;outline:none;font-family:inherit;color:var(--fg)}
+  .sheet .pfield input:focus{border-color:var(--blue);box-shadow:0 0 0 2px rgba(0,122,255,.12)}
+  /* 未填时：灰淡背景 + 提示文字（placeholder 由技能方提供）*/
+  .sheet .pfield input:placeholder-shown{background:#f2f2f4;border-color:#e0e0e4;color:#8e8e93}
+  .sheet .pfield input:placeholder-shown:focus{background:#fff;border-color:var(--blue)}
+  .sheet .pprev{margin-top:9px;background:#1d1d1d;color:#f5f5f7;border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.65;word-break:break-all;white-space:pre-wrap;font-family:ui-monospace,Menlo,monospace}
+  .sheet .pprev .pv-label{font-size:9px;color:#8e8e93;display:block;letter-spacing:.05em;margin-bottom:4px}
+  .sheet .s-actions{position:absolute;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));display:flex;gap:8px;flex-shrink:0}
+  .sheet .s-actions .copy-btn{flex:1;min-height:48px;font-size:13px;font-weight:600;border-radius:12px;background:var(--blue);color:#fff;border:0;box-shadow:none}
+  @media(max-width:500px){
+    body{background:var(--bg)}
+    .stage{padding:0;background:var(--bg)}
+    .stage-title,.stage-sub{display:none}
+    .phone{width:100%;height:100vh;border:0;border-radius:0;max-height:none;background:var(--bg);overflow:hidden}
+    .screen{height:100%;overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);overscroll-behavior-y:contain}
+    .notch{display:none}
+    .sheet-mask{left:0;right:0;top:0;bottom:0;border-radius:0}
+    .sheet{left:0;right:0;bottom:0;border-radius:22px 22px 0 0}
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="stage-title">📱 HELP 原型 · V4 三级目录版（B1-B4 拍板全落地）</div>
+  <div class="stage-sub">Tab→子功能折叠→场景卡 · 参数=prompt+key:value · 复制不自动关 · 无参数显prompt · 手机打开全屏真机</div>
+
+  <div class="phone"><div class="notch"></div><div class="screen" id="screen"></div></div>
+
+  <div class="sheet-mask" id="sheetMask"></div>
+  <div class="sheet" id="sheet">
+    <div class="grip"></div>
+    <button class="s-close" id="sheetClose">✕</button>
+    <div class="s-scroll">
+      <div class="s-head" id="shHead"></div>
+      <div id="shBody"></div>
+    </div>
+    <div class="s-actions">
+      <button class="copy-btn" id="shCopy">复制</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" style="display:none"></div>
+</div>
+
+<!-- 公共组件注入管线 -->
+<script id="help-data" type="application/json">{"skill_name": "作息管家", "title": "能力速查台", "subtitle": "作息记录与日程计划管理 · 85 场景 · 全部能力一览", "init_banner": {"title": "🚀 第一次用作息管家?", "subtitle": "自动检测环境、初始化数据库,全程零决策,一次成功。", "button_text": "📋 复制", "prompt": "请你加载「作息管家」技能,帮我初始化(唤醒词:首次使用)。", "closable": true, "steps": [{"title": "检测环境", "desc": "检查依赖"}, {"title": "安装依赖", "desc": "自动安装"}, {"title": "建数据库", "desc": "自动创建"}, {"title": "初始化", "desc": "写入配置"}, {"title": "校验", "desc": "自检通过"}, {"title": "生成报告", "desc": "初始化报告"}, {"title": "完成", "desc": "准备就绪"}]}, "meta_blocks": [{"id": "usage_rules", "title": "使用须知 · Prompt 规则", "html": "<p><b>禁止<\/b>在 prompt 中出现: 脚本路径 / 模板路径 / 数据库字段名 / 错误码。<\/p><p><b>必须<\/b>用自然语言描述意图 + 预期结果。<\/p>"}, {"id": "ai_verify", "title": "AI 验证协议（⚠️ 第 7 条）", "html": "<p>执行任何写操作前,AI 必须回读本次将写入的关键字段,与用户确认后再落库;完成后给 1 句话总结。<\/p>"}], "groups": [{"id": "record", "icon": "write", "label": "记作息", "subgroups": [{"id": "record_single", "label": "单条记录", "scenes": [{"id": "record_add_single", "title": "添加单条作息记录", "wake_word": "#0 记作息", "status": "", "prompt_template": "请你加载「作息管家」技能,帮我记录作息(唤醒词:记作息)。\n\n我想记录今天这段时间做了什么。如果信息不全,问我补齐。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "editable_fields": [{"name": "activity", "label": "活动", "value": "", "hint": "如: 写了 AI 调优代码", "required": true}, {"name": "start", "label": "开始时间", "value": "", "hint": "如: 14:00", "required": true}, {"name": "end", "label": "结束时间", "value": "", "hint": "如: 15:00", "required": true}, {"name": "category", "label": "分类", "value": "", "hint": "选填,如: 工作/学习/创作", "required": false}], "types": ["采集"]}, {"id": "record_add_sleep", "title": "记录睡眠（含确认表单）", "wake_word": "#0 记作息", "status": "", "prompt_template": "请你加载「作息管家」技能,帮我记录睡眠(唤醒词:记作息)。\n\n记录我的睡眠起止时间。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "editable_fields": [{"name": "bedtime", "label": "入睡时间", "value": "", "hint": "如: 23:00", "required": true}, {"name": "wakeup", "label": "起床时间", "value": "", "hint": "如: 07:00", "required": true}, {"name": "quality", "label": "睡眠质量", "value": "", "hint": "好/一般/差", "required": false}], "types": [{"text": "过程", "bg": "#e2f7f5", "fg": "#00897b"}, "结果"]}, {"id": "record_add_illegal_category", "title": "分类不在白名单", "wake_word": "#0 记作息", "status": "【待开发】", "prompt_template": "请你加载「作息管家」技能,帮我记录作息(唤醒词:记作息)。\n\n我要用的分类不在白名单里,请你走「提议新增分类」流程。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "types": ["校验"]}]}, {"id": "record_batch", "label": "批量导入", "scenes": [{"id": "record_add_json", "title": "JSON 批量添加", "wake_word": "#0 记作息", "status": "", "prompt_template": "请你加载「作息管家」技能,帮我批量导入作息(唤醒词:记作息)。\n\n我有一个 JSON 数据文件要批量写入,逐条校验,单条失败不打断。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "editable_fields": [{"name": "file", "label": "文件路径", "value": "", "hint": "如: D:/data.json", "required": true}, {"name": "date", "label": "目标日期", "value": "", "hint": "缺省取当日", "required": false}], "types": ["批量"]}]}]}, {"id": "plan", "icon": "calendar", "label": "计划", "subgroups": [{"id": "plan_make", "label": "制定与调整", "scenes": [{"id": "plan_tomorrow", "title": "制定次日计划", "wake_word": "#17 商量计划", "status": "", "prompt_template": "请你加载「作息管家」技能,帮我商量计划(唤醒词:商量计划)。\n\n基于我的历史作息习惯,生成明天的分段计划。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "editable_fields": [{"name": "date", "label": "目标日期", "value": "", "hint": "默认明天,如: 2026-08-13", "required": false}], "types": ["向导", "结果"]}, {"id": "plan_adjust", "title": "调整后再生成", "wake_word": "#17 商量计划", "status": "", "prompt_template": "请你加载「作息管家」技能,帮我商量计划(唤醒词:商量计划)。\n\n我已看过计划,要调整其中一段,然后重新生成。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "editable_fields": [{"name": "change", "label": "调整内容", "value": "", "hint": "如: 第 2 段改成 19:00 开始", "required": true}], "types": ["向导", {"text": "确认", "bg": "#fff1e2", "fg": "#b25b00"}, "结果"]}]}]}, {"id": "review", "icon": "chart", "label": "复盘", "subgroups": [{"id": "review_granularity", "label": "粒度复盘", "scenes": [{"id": "rp_day", "title": "复盘今日", "wake_word": "复盘今日", "status": "", "prompt_template": "请你加载「作息管家」技能,帮我复盘今天(唤醒词:复盘今日)。\n\n今天结束前,对照计划看实际做了什么,给我健康分。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "types": ["结果"]}, {"id": "rp_week", "title": "复盘本周", "wake_word": "复盘本周", "status": "", "prompt_template": "请你加载「作息管家」技能,帮我复盘本周(唤醒词:复盘本周)。\n\n看这一周 7 维趋势和热力图,给我健康分均值。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "types": ["结果"]}]}]}, {"id": "other", "icon": "grid", "label": "其他", "subgroups": [{"id": "other_overview", "label": "总览与初始化", "scenes": [{"id": "week_view", "title": "周视图", "wake_word": "周视图", "status": "", "prompt_template": "请你加载「作息管家」技能,帮我看周视图(唤醒词:周视图)。\n\n看这一周 7×24 全分类热力图总览。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "types": ["结果"]}, {"id": "first_use", "title": "首次使用", "wake_word": "首次使用", "status": "", "prompt_template": "请你加载「作息管家」技能,帮我初始化(唤醒词:首次使用)。\n\n我是第一次使用,帮我走完初始化工作流。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。", "types": ["向导"]}]}]}], "contact": {"items": [{"label": "GitHub", "value": "github.com/FeatherHunter/SKILLS", "url": true}, {"label": "Issues", "value": "github.com/FeatherHunter/SKILLS/issues", "url": true}], "copy_all": true}, "version": "1.2.0", "recommendations": [{"name": "卡路里", "desc": "记录饮食、体重、运动,营养分析与趋势追踪。", "wake": "卡路里HELP"}, {"name": "居家管家", "desc": "家庭物品全生命周期管理:录入、查询、保养提醒。", "wake": "居家管家"}, {"name": "饼干记账", "desc": "收支记账、预算目标、账单分析与报销退款。", "wake": "饼干记账"}]}</script>
+<script>
+/* Base Skill 控件库 v1.2（唯一真相源 · 跨技能 · 领域无关）
+ * 契约: docs/component-contract.md v1.2
+ * v1.2 核心（#269 试点用户拍板）:
+ *  - snapshot 结构化接口: buildDataText/buildLogText 领域无关（title/summary/sections）
+ *  - toast 通用提示控件: 4 形态（徽章/操作/计数/留空）+ 队列 + 图标库 + 多操作 + 富详情 + 无障碍
+ *  - 复制按钮控件化: 复制数据/日志 = Base 控件;预览/格式选择/脱敏/导出
+ *  - 新控件 P0+P1: formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt
+ *  - 结构校验违规直接报错（硬拦截）
+ * 注入点: SHARED-HELPERS 占位符（由 injector.py 替换本文件）
+ * 修改必须走公共层 ISSUE（总纲 09）+ CHANGELOG（见 docs/component-contract.md §8）
+ */
+
+/* ── P0 守卫组 ── */
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function arr(v){return Array.isArray(v)?v:[];}
+function val(v){return v===null||v===undefined||v===''?'<span style="color:var(--fg3)">未填写</span>':esc(v);}
+function yes(v){return v?'<span class="ok">通过</span>':'<span class="bad">未通过</span>';}
+function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};return{ok:true};}
+function _fbCopy(s){var ok=false;try{var t=document.createElement('textarea');t.value=s;t.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';document.body.appendChild(t);t.focus();t.select();ok=document.execCommand('copy');document.body.removeChild(t);}catch(e){ok=false;}return ok;}
+
+/* ── 复制动作 v2（不改按钮文字 + toast 反馈）── */
+function copyText(s, opts){
+  opts = opts || {};
+  if(!s) return;
+  function ok(){ if(!opts.silent) toast('已复制','粘贴给 AI'); }
+  function fail(){ if(!opts.silent) toast('复制失败','长按选择文本手动复制',{badge:{text:'失败',type:'danger'}}); }
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    try{
+      var pr=navigator.clipboard.writeText(s);
+      if(pr&&pr.then){pr.then(function(){ok();}).catch(function(){_fbCopy(s)?ok():fail();});}
+      else{ok();}
+    }catch(e){_fbCopy(s)?ok():fail();}
+  }else{_fbCopy(s)?ok():fail();}
+}
+
+/* ── toast 通用提示控件 v1.2 ──
+ * toast(msg, detail?, options?)
+ * options: { icon, badge:{text,type}, actions:[{label,onClick}], count, lines:[], code, timeout }
+ * 向后兼容: toast(msg, detail) = 等价 v1.1
+ * 队列管理: 连续触发排队显示, 不叠加
+ */
+(function(){
+  var queue = [];
+  var showing = false;
+  var styleInjected = false;
+  var ICONS = { copy:'📋', ok:'✅', warn:'⚠️', danger:'❌', info:'💡' };
+  var CSS = '.hm-toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:480px;min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;pointer-events:none;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1);z-index:9999}.hm-toast.show{opacity:1;transform:translateX(-50%) scale(1);pointer-events:auto}.hm-toast-icon{font-size:20px;line-height:1;padding-top:1px;flex-shrink:0}.hm-toast-body{flex:1;min-width:0}.hm-toast-title-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.hm-toast-title{font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px}.hm-toast-detail{font-size:11px;line-height:1.5;color:#c8c8cc}.hm-toast-lines{font-size:11px;line-height:1.55;color:#c8c8cc}.hm-toast-code{background:rgba(0,0,0,.32);border-radius:8px;padding:8px 10px;font-size:10.5px;line-height:1.5;color:#aeb0b8;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;margin-top:6px;max-height:140px;overflow:auto}.hm-toast-chip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;letter-spacing:.02em;flex-shrink:0}.hm-toast-chip.ok{background:rgba(52,199,89,.18);color:#4dd96b}.hm-toast-chip.warn{background:rgba(255,149,0,.18);color:#ffb340}.hm-toast-chip.danger{background:rgba(255,59,48,.18);color:#ff6961}.hm-toast-chip.gray{background:rgba(255,255,255,.12);color:#c8c8cc}.hm-toast-count{font-size:10px;font-weight:700;color:#c8c8cc;background:rgba(255,255,255,.08);padding:2px 8px;border-radius:6px;font-variant-numeric:tabular-nums;flex-shrink:0}.hm-toast-act{font-size:11px;font-weight:600;color:#4dd96b;border:none;background:none;cursor:pointer;padding:2px 4px;flex-shrink:0;font-family:inherit}.hm-toast-act:active{opacity:.7}.hm-toast-close{background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;font-family:inherit;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0}.hm-toast-close:active{background:rgba(255,255,255,.2)}@media(max-width:820px){.hm-toast{left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom,0));transform:translateX(0) scale(.95);max-width:none;min-width:0}.hm-toast.show{transform:translateX(0) scale(1)}}';
+
+  function ensureStyle(){
+    if(styleInjected) return;
+    styleInjected = true;
+    var st = document.createElement('style');
+    st.id = 'hm-toast-style';
+    st.textContent = CSS;
+    document.head.appendChild(st);
+  }
+
+  function dismiss(t, timer){
+    clearTimeout(timer);
+    t.classList.remove('show');
+    setTimeout(function(){
+      if(!t.isConnected) return;  // 已被 flush/外部移除 → 不重置状态（防旧定时器误触发）
+      t.remove();
+      showing = false;
+      if(queue.length) showNext();
+    }, 250);
+  }
+
+  function showNext(){
+    if(showing || !queue.length) return;
+    showing = true;
+    var item = queue.shift();
+    ensureStyle();
+    var msg = item.msg, detail = item.detail, opts = item.opts;
+    var t = document.createElement('div');
+    t.className = 'hm-toast';
+    t.setAttribute('role','status');
+    t.setAttribute('aria-live','polite');
+    var icon = ICONS[opts.icon] || opts.icon || '📋';
+    var titleRow = '<span class="hm-toast-title">'+esc(msg)+'</span>';
+    if(opts.badge){
+      var b = opts.badge;
+      var btype = ['ok','warn','danger'].indexOf(b.type)>=0 ? b.type : 'ok';
+      titleRow += '<span class="hm-toast-chip '+btype+'">'+esc(b.text)+'</span>';
+    }
+    if(opts.count){
+      titleRow += '<span class="hm-toast-count">'+esc(opts.count)+'</span>';
+    }
+    if(opts.actions && opts.actions.length){
+      opts.actions.slice(0,2).forEach(function(a){
+        titleRow += '<button class="hm-toast-act" data-act="'+esc(a.label)+'">'+esc(a.label)+'</button>';
+      });
+    }
+    var bodyHtml = '<div class="hm-toast-title-row">'+titleRow+'</div>';
+    if(detail){
+      bodyHtml += '<div class="hm-toast-detail">'+esc(detail)+'</div>';
+    }
+    if(opts.lines && opts.lines.length){
+      bodyHtml += '<div class="hm-toast-lines">'+opts.lines.map(function(l){return esc(l);}).join('<br>')+'</div>';
+    }
+    if(opts.code){
+      bodyHtml += '<div class="hm-toast-code">'+esc(opts.code)+'</div>';
+    }
+    t.innerHTML = '<div class="hm-toast-icon">'+icon+'</div><div class="hm-toast-body">'+bodyHtml+'</div><button class="hm-toast-close">✓ 知道了</button>';
+    document.body.appendChild(t);
+    if(opts.actions && opts.actions.length){
+      var actBtns = t.querySelectorAll('.hm-toast-act');
+      opts.actions.slice(0,2).forEach(function(a, i){
+        actBtns[i].addEventListener('click', function(){
+          var f = a.onClick;
+          dismiss(t, timer);
+          if(f) setTimeout(f, 0);
+        });
+      });
+    }
+    t.querySelector('.hm-toast-close').addEventListener('click', function(){ dismiss(t, timer); });
+    var timer = setTimeout(function(){ dismiss(t, timer); }, opts.timeout || 4500);
+    requestAnimationFrame(function(){ t.classList.add('show'); });
+  }
+
+  window.toast = function(msg, detail, options){
+    options = options || {};
+    queue.push({ msg: msg, detail: detail || '', opts: options });
+    showNext();
+  };
+  /* 队列清空（技能页面销毁/测试用）：清空排队 + 移除当前显示 */
+  window.__hmToastFlush = function(){
+    queue.length = 0;
+    document.querySelectorAll('.hm-toast').forEach(function(t){ t.remove(); });
+    showing = false;
+  };
+})();
+
+/* ── snapshot 结构校验（违规直接报错）── */
+function _validateSnapshot(s){
+  if(!s || typeof s !== 'object'){
+    throw new Error('snapshot 违规: scene.snapshot 必须是对象');
+  }
+  if(typeof s.title !== 'string' || !s.title.trim()){
+    throw new Error('snapshot 违规: title 必须是非空字符串');
+  }
+  if(!Array.isArray(s.summary)){
+    throw new Error('snapshot 违规: summary 必须是数组');
+  }
+  if(!Array.isArray(s.sections)){
+    throw new Error('snapshot 违规: sections 必须是数组');
+  }
+  s.sections.forEach(function(sec, i){
+    if(!sec || typeof sec !== 'object' || typeof sec.heading !== 'string' || !Array.isArray(sec.rows)){
+      throw new Error('snapshot 违规: sections['+i+'] 必须含 heading(字符串) + rows(数组)');
+    }
+  });
+  return true;
+}
+
+/* 行渲染: 支持字符串 或 {text, sensitive}（脱敏）*/
+function _rowText(r){
+  if(r && typeof r === 'object' && !Array.isArray(r)){
+    if(r.sensitive) return '****（敏感字段已脱敏）';
+    return String(r.text ?? '');
+  }
+  return String(r ?? '');
+}
+
+/* ── buildDataText v1.2（snapshot 结构化 · 领域无关 · format 支持）──
+ * buildDataText(p, format?)  format: 'text'(默认) | 'json' | 'csv'
+ */
+function buildDataText(p, format){
+  var d = p && p.data || {};
+  var me = d.meta || {};
+  var s = d.scene || {};
+  var snap = s.snapshot;
+  _validateSnapshot(snap);
+  format = format || 'text';
+
+  if(format === 'json'){
+    return JSON.stringify(snap, null, 2);
+  }
+  if(format === 'csv'){
+    var out = [];
+    out.push(snap.title);
+    out.push(snap.summary.map(_rowText).join('; '));
+    snap.sections.forEach(function(sec){
+      out.push('[' + sec.heading + ']');
+      sec.rows.forEach(function(r){ out.push(_rowText(r)); });
+    });
+    return out.join('\n');
+  }
+
+  var L = ['【'+(me.skill_name||me.command_cn||'')+' · '+(me.command_cn||'')+'】'];
+  L.push('场景: '+(me.command_cn||'')+(s.scene_id?('('+s.scene_id+')'):'')+(me.wake_word?(' · 唤醒词「'+me.wake_word+'」'):''));
+  L.push('时间: '+(me.occurred_at||''));
+  if(snap.summary.length){
+    snap.summary.forEach(function(x){ L.push(_rowText(x)); });
+  }
+  snap.sections.forEach(function(sec){
+    if(!sec.rows.length) return;
+    L.push('▍'+sec.heading);
+    sec.rows.forEach(function(r){ L.push('  · '+_rowText(r)); });
+  });
+  return L.join('\n');
+}
+
+/* ── buildLogText v1.2（6 段日志 · format 支持）── */
+function buildLogText(p, format){
+  var d = p && p.data || {};
+  var me = d.meta || {};
+  var s = d.scene || {};
+  var cl = d.copy_log || s.copy_log || {};
+  format = format || 'text';
+
+  var L = ['① 场景标识'];
+  L.push('  命  令: '+(me.command_cn||''));
+  L.push('  唤醒词: '+(me.wake_word||'(未知)'));
+  L.push('  场景名: '+(me.command_cn||'')+(s.scene_id?('('+s.scene_id+')'):''));
+  L.push('');
+  L.push('② AI 思考链');
+  L.push('  '+(cl.thinking||'(本地渲染 · 无 AI 链)'));
+  L.push('');
+  L.push('③ 底层数据结构');
+  L.push('  '+(cl.data_structure||'(只读查询)'));
+  L.push('');
+  L.push('④ 调用链');
+  L.push('  '+(cl.call_chain||'(未知)'));
+  L.push('');
+  L.push('⑤ 时间戳 + 版本');
+  L.push('  本地时间: '+(cl.timestamp||me.occurred_at||'(未知)'));
+  L.push('  版  本: '+(me.skill_version||'(未知)'));
+  L.push('');
+  L.push('⑥ 异常信息');
+  L.push('  '+(cl.exception||'无'));
+  return L.join('\n');
+}
+
+/* ── metaHeader / remindersBlock（v1.1 保留）── */
+function metaHeader(p, m){var me=p.data.meta||{};var stage=m&&m.stage?('<span class="stage">'+esc(m.stage)+'</span>'):'';return '<header class="hero"><div class="eyebrow" style="color:#8e8e93;font-size:11px;font-weight:600">'+esc(me.command_cn||'')+' · '+esc(me.occurred_at||'')+'</div><h1>'+esc(m&&m.title||me.command_cn||'')+'</h1>'+(m&&m.lead?'<p class="lead">'+esc(m.lead)+'</p>':'')+stage+'</header>';}
+function remindersBlock(p){var rs=arr(p.data.reminders);if(!rs.length)return '';return '<section class="remind"><h2>顺路提醒</h2>'+rs.map(r=>'<div class="remind-item '+(r.type==='warn'?'warn':r.type==='danger'?'bad':'')+'">'+esc(r.text)+'</div>').join('')+'</section>';}
+
+/* ── actionBar v1.2（场景按钮 + 复制数据/日志 ghost）──
+ * actionBar(p, extra?, opts?)  opts: { preview, formatMenu, download }
+ */
+function actionBar(p, extra, opts){
+  window.__hmPayload = p;
+  opts = opts || {};
+  var btns = arr(extra || []);
+  var sb = opts.noSb ? [] : arr(p && p.data && p.data.scene && p.data.scene.buttons || []);
+  var html = '<div class="hm-actions">';
+  btns.concat(sb).forEach(function(b){
+    html += '<button class="copy '+(b.kind||'')+'" onclick="copyText(this.dataset.t)" data-t="'+esc(b.text).replace(/"/g,'&quot;')+'">'+esc(b.label)+'</button>';
+  });
+  html += '<button class="copy ghost" onclick="'+(opts.preview?'window.__hmCopyData(true)':'copyText(buildDataText(window.__hmPayload))')+'">复制数据</button>';
+  html += '<button class="copy ghost" onclick="'+(opts.preview?'window.__hmCopyLog(true)':'copyText(buildLogText(window.__hmPayload))')+'">复制日志</button>';
+  html += '</div>';
+  if(opts.preview){
+    html += '<div class="hm-preview-overlay" id="hm-preview" style="display:none">'
+      + '<div class="hm-preview-panel"><div class="hm-preview-head"><span id="hm-preview-title">复制预览</span>'
+      + '<button class="hm-preview-close" onclick="document.getElementById(\'hm-preview\').style.display=\'none\'">✕</button></div>'
+      + '<pre class="hm-preview-body" id="hm-preview-body"></pre>'
+      + '<div class="hm-preview-actions"><button class="copy primary" id="hm-preview-confirm">复制</button>'
+      + '<button class="copy" onclick="document.getElementById(\'hm-preview\').style.display=\'none\'">取消</button></div>'
+      + '</div></div>';
+  }
+  return html;
+}
+
+/* 复制预览面板（actionBar preview 模式） */
+function _showCopyPreview(kind){
+  var p = window.__hmPayload;
+  var body = document.getElementById('hm-preview-body');
+  var title = document.getElementById('hm-preview-title');
+  if(!body) return;
+  var text = kind === 'log' ? buildLogText(p) : buildDataText(p);
+  title.textContent = kind === 'log' ? '复制日志 · 预览' : '复制数据 · 预览';
+  body.textContent = text;
+  document.getElementById('hm-preview').style.display = 'flex';
+  document.getElementById('hm-preview-confirm').onclick = function(){
+    copyText(text);
+    document.getElementById('hm-preview').style.display = 'none';
+  };
+}
+window.__hmCopyData = function(){ _showCopyPreview('data'); };
+window.__hmCopyLog = function(){ _showCopyPreview('log'); };
+
+/* ── formPrompt（P0 · 用户填参数表单 + 实时预览 + 空值拦截）──
+ * formPrompt(fields, template) → HTML 字符串
+ * fields: [{ key, label, type:'text'|'number'|'select', options?, default?, placeholder? }]
+ * template: 含 {key} 占位符的 prompt 模板
+ */
+function formPrompt(fields, template){
+  fields = arr(fields);
+  var uid = 'fp' + Math.random().toString(36).slice(2,7);
+  var html = '<div class="fp" id="'+uid+'">';
+  fields.forEach(function(f, i){
+    var fid = uid + '-f' + i;
+    html += '<div class="fp-field"><label class="fp-label">'+esc(f.label)+'</label>';
+    if(f.type === 'select'){
+      html += '<select class="fp-input" id="'+fid+'" data-key="'+esc(f.key)+'">';
+      arr(f.options).forEach(function(o){
+        var sel = (String(o.value ?? o) === String(f.default ?? '')) ? ' selected' : '';
+        html += '<option value="'+esc(o.value ?? o)+'"'+sel+'>'+esc(o.label ?? o)+'</option>';
+      });
+      html += '</select>';
+    } else {
+      html += '<input class="fp-input" id="'+fid+'" type="'+(f.type==='number'?'number':'text')+'" data-key="'+esc(f.key)+'" value="'+esc(f.default ?? '')+'" placeholder="'+esc(f.placeholder ?? '')+'">';
+    }
+    html += '</div>';
+  });
+  html += '<div class="fp-preview"><div class="fp-preview-label">Prompt 预览</div><pre class="fp-preview-body" id="'+uid+'-preview"></pre></div>';
+  html += '<div class="fp-actions"><button class="copy primary" id="'+uid+'-btn">复制 prompt</button></div>';
+  html += '</div>';
+
+  function renderPreview(){
+    var vals = {};
+    fields.forEach(function(f, i){
+      var el = document.getElementById(uid + '-f' + i);
+      vals[f.key] = el ? el.value : '';
+    });
+    var text = String(template || '').replace(/\{(\w+)\}/g, function(_, k){ return vals[k] ?? ''; });
+    document.getElementById(uid + '-preview').textContent = text;
+    var btn = document.getElementById(uid + '-btn');
+    var emptyRequired = fields.some(function(f){ return f.required && !vals[f.key]; });
+    if(emptyRequired){
+      btn.disabled = true;
+      btn.textContent = '请填写必填项';
+    } else {
+      btn.disabled = false;
+      btn.textContent = '复制 prompt';
+    }
+  }
+
+  setTimeout(function(){
+    fields.forEach(function(f, i){
+      var el = document.getElementById(uid + '-f' + i);
+      if(el){
+        el.addEventListener('input', renderPreview);
+        el.addEventListener('change', renderPreview);
+      }
+    });
+    document.getElementById(uid + '-btn').addEventListener('click', function(){
+      if(this.disabled) { toast('请先填写','必填字段未填写',{badge:{text:'提示',type:'warn'}}); return; }
+      var text = document.getElementById(uid + '-preview').textContent;
+      copyText(text);
+    });
+    renderPreview();
+  }, 0);
+
+  return html;
+}
+
+/* ── selectList（P0 · 勾选列表 + 批量操作 + 计数联动）──
+ * selectList(items, batchActions?, opts?)
+ * items: [{ id, title, sub?, group? }]
+ * batchActions: [{ label, kind:'ok'|'danger', onClick(ids) }]
+ */
+function selectList(items, batchActions, opts){
+  items = arr(items);
+  batchActions = arr(batchActions);
+  opts = opts || {};
+  var uid = 'sl' + Math.random().toString(36).slice(2,7);
+  var groups = {};
+  items.forEach(function(it){
+    var g = it.group || '';
+    (groups[g] = groups[g] || []).push(it);
+  });
+  var groupNames = Object.keys(groups);
+  var html = '<div class="sl" id="'+uid+'">';
+  if(batchActions.length){
+    html += '<div class="sl-batchbar" id="'+uid+'-batch">';
+    batchActions.forEach(function(a){
+      html += '<button class="copy '+(a.kind==='danger'?'red':'primary')+'" data-batch="'+esc(a.label)+'">'+esc(a.label)+'</button>';
+    });
+    html += '<span class="sl-count" id="'+uid+'-count">已选 0/'+items.length+'</span>';
+    html += '</div>';
+  }
+  groupNames.forEach(function(g){
+    var gItems = groups[g];
+    html += '<div class="sl-group"><div class="sl-group-head">'+esc(g||'全部');
+    html += ' <span class="sl-group-count">本组已选 0/'+gItems.length+'</span></div>';
+    html += '<div class="sl-group-items">';
+    gItems.forEach(function(it, idx){
+      html += '<label class="sl-item"><input type="checkbox" data-id="'+esc(it.id)+'" data-g="'+esc(g)+'">'
+        + '<span class="sl-item-body"><span class="sl-item-title">'+esc(it.title)+'</span>'
+        + (it.sub?'<span class="sl-item-sub">'+esc(it.sub)+'</span>':'')
+        + '</span></label>';
+    });
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  setTimeout(function(){
+    var root = document.getElementById(uid);
+    var checkboxes = root.querySelectorAll('input[type="checkbox"]');
+    var globalCount = document.getElementById(uid + '-count');
+    function update(){
+      var total = checkboxes.length;
+      var checked = root.querySelectorAll('input[type="checkbox"]:checked').length;
+      if(globalCount) globalCount.textContent = '已选 '+checked+'/'+total;
+      root.querySelectorAll('.sl-group').forEach(function(gEl){
+        var boxes = gEl.querySelectorAll('input[type="checkbox"]');
+        var c = gEl.querySelectorAll('input[type="checkbox"]:checked').length;
+        var lbl = gEl.querySelector('.sl-group-count');
+        if(lbl) lbl.textContent = '本组已选 '+c+'/'+boxes.length;
+      });
+      return checked;
+    }
+    checkboxes.forEach(function(cb){
+      cb.addEventListener('change', update);
+    });
+    root.querySelectorAll('[data-batch]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var ids = root.querySelectorAll('input[type="checkbox"]:checked');
+        if(!ids.length){ toast('请先勾选','勾选要处理的条目',{badge:{text:'提示',type:'warn'}}); return; }
+        var idList = Array.prototype.map.call(ids, function(x){ return x.getAttribute('data-id'); });
+        var a = batchActions.filter(function(x){ return x.label === btn.getAttribute('data-batch'); })[0];
+        if(a && a.onClick) a.onClick(idList);
+      });
+    });
+    update();
+  }, 0);
+
+  return html;
+}
+
+/* ── confirm（P0 · 危险操作二次确认）──
+ * confirm({ title, detail?, danger?, onOk })
+ */
+function confirm(cfg){
+  cfg = cfg || {};
+  var overlay = document.createElement('div');
+  overlay.className = 'hm-confirm-overlay';
+  overlay.innerHTML = '<div class="hm-confirm-panel">'
+    + '<div class="hm-confirm-title">'+(cfg.danger?'⚠️ ':'')+esc(cfg.title||'确认操作')+'</div>'
+    + (cfg.detail?'<div class="hm-confirm-detail">'+esc(cfg.detail)+'</div>':'')
+    + '<div class="hm-confirm-actions">'
+    + '<button class="copy '+(cfg.danger?'red':'primary')+'" data-c="1">'+(cfg.danger?'确认删除':'确认')+'</button>'
+    + '<button class="copy" data-c="0">取消</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('[data-c="1"]').addEventListener('click', function(){
+    overlay.remove();
+    if(cfg.onOk) cfg.onOk();
+  });
+  overlay.querySelector('[data-c="0"]').addEventListener('click', function(){ overlay.remove(); });
+  overlay.addEventListener('click', function(e){
+    if(e.target === overlay) overlay.remove();
+  });
+}
+
+/* ── foldBox（P1 · 折叠区）── */
+function foldBox(title, contentHtml){
+  return '<details class="hm-fold"><summary>'+esc(title)+'</summary><div class="hm-fold-body">'+(contentHtml||'')+'</div></details>';
+}
+
+/* ── statusBadge（P1 · 状态徽章）──
+ * statusBadge(status, text?)
+ *   status: 'ok'|'warn'|'danger'|'empty'（非法值降级 'empty', 防无样式徽章）
+ *   text:   自定义文案（缺省用语义默认: 成功/警告/失败/无数据）
+ * 安全: status 白名单后直拼 class（无注入面）; text 经 esc
+ */
+var STATUS_BADGE_MAP = { ok:'成功', warn:'警告', danger:'失败', empty:'无数据' };
+function statusBadge(status, text){
+  status = STATUS_BADGE_MAP[status] ? status : 'empty';  // 非法/未知值降级 empty
+  var txt = (text === null || text === undefined || text === '') ? STATUS_BADGE_MAP[status] : String(text);
+  return '<span class="hm-status '+status+'">'+esc(txt)+'</span>';
+}
+
+/* ── emptyState（P1 · 空状态）──
+ * emptyState({icon?, text, hint?, action?})
+ *   icon:   emoji/文本图标（esc）
+ *   text:   主文案（缺省 '暂无数据', esc）
+ *   hint:   次要提示（esc）
+ *   action: 操作区 HTML —— 受信 HTML 透传（调用方负责其内容安全, 通常为按钮;
+ *           如含用户数据必须先 esc）。其余字段一律 esc, 防 XSS。
+ */
+function emptyState(cfg){
+  cfg = cfg || {};
+  return '<div class="hm-empty">'
+    + (cfg.icon?'<div class="hm-empty-icon">'+esc(cfg.icon)+'</div>':'')
+    + '<div class="hm-empty-text">'+esc(cfg.text||'暂无数据')+'</div>'
+    + (cfg.hint?'<div class="hm-empty-hint">'+esc(cfg.hint)+'</div>':'')
+    + (cfg.action?('<div class="hm-empty-action">'+cfg.action+'</div>'):'')
+    + '</div>';
+}
+
+/* ── errorReceipt（P1 · 错误回执 · 08 规范 §6.1 三层反馈）──
+ * errorReceipt({message, retryPrompt?, data?, log?, payload?})
+ *   message:     错误描述（esc, 缺省 '操作失败'）
+ *   retryPrompt: 修正重试按钮文案（有则渲染「修正重试」按钮, 复制该 prompt）
+ *   data:        复制数据按钮内容（字符串直传; 或省略时从 payload 生成）
+ *   log:         复制日志按钮内容（字符串直传; 或省略时从 payload 生成）
+ *   payload:     数据信封 {status, data:{meta, scene}} —— 显式传入, 优先于全局
+ *   __hmPayload: 兼容全局兜底（actionBar 已设置; 显式 payload 优先）
+ * 布局: 修正重试 primary 独立一行 + 复制数据/日志 ghost 一行 2 个（08 规范奇数按钮）
+ * 安全: message/data/log 经 esc + data-t 中转（onclick 仅 copyText(this.dataset.t), 零注入面）
+ */
+function errorReceipt(cfg){
+  cfg = cfg || {};
+  var payload = cfg.payload || window.__hmPayload || null;
+  var dataText = cfg.data != null ? String(cfg.data) : '';
+  var logText = cfg.log != null ? String(cfg.log) : '';
+  // 有效数据源 = payload 含 scene.snapshot（残缺 payload 视为无数据, 不生成垃圾复制内容）
+  var pValid = !!(payload && payload.data && payload.data.scene && payload.data.scene.snapshot);
+  if(!dataText && pValid){
+    try { dataText = buildDataText(payload); } catch(e){ dataText = ''; }  // 数据不完整 → 不渲染复制数据按钮（错误回执容错）
+  }
+  if(!logText && pValid){
+    try { logText = buildLogText(payload); } catch(e){ logText = ''; }     // 同上
+  }
+  var html = '<div class="hm-error">'
+    + '<div class="hm-error-title">❌ '+esc(cfg.message||'操作失败')+'</div>';
+  if(cfg.retryPrompt){
+    html += '<div class="hm-actions"><button class="copy primary wide" onclick="copyText(this.dataset.t)" data-t="'+esc(cfg.retryPrompt).replace(/"/g,'&quot;')+'">修正重试</button></div>';
+  }
+  var btns = '';
+  if(dataText) btns += '<button class="copy ghost" onclick="copyText(this.dataset.t)" data-t="'+esc(dataText).replace(/"/g,'&quot;')+'">复制数据</button>';
+  if(logText) btns += '<button class="copy ghost" onclick="copyText(this.dataset.t)" data-t="'+esc(logText).replace(/"/g,'&quot;')+'">复制日志</button>';
+  if(btns) html += '<div class="hm-actions">'+btns+'</div>';
+  return html + '</div>';
+}
+</script>
+<style>
+/* Base Skill token A 组 + 控件样式 v1.2（唯一真相源 · 跨技能 · 领域无关）
+ * 来源: 居家管家模板 :root token（对齐 #248/08-HTML交互规范.md 按钮规范）
+ * v1.2: 新增新控件样式（formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt/复制预览面板）
+ * 注入点: 由 injector.py 的 SHARED-CSS 占位符注入（模板声明点, 勿含闭合标签字样）
+ */
+
+/* ── token A 组（12 变量, 与组件契约 §6.4 一致）── */
+:root {
+  --fg: #1d1d1f;          /* 主文字 */
+  --fg2: #6e6e73;         /* 次级文字 */
+  --fg3: #86868b;         /* 弱化文字/占位 */
+  --bg: #f5f5f7;          /* 页面底色 */
+  --card: #ffffff;        /* 卡片底 */
+  --line: #d2d2d7;        /* 分隔线 */
+  --blue: #007aff;        /* 主色（场景按钮） */
+  --blue2: #0a63ce;       /* 主色深（按压态/链接） */
+  --soft: #f5f8ff;        /* 浅蓝底（stage 徽章） */
+  --ok: #34c759;          /* 成功/通过 */
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 36px rgba(0,0,0,.06);
+}
+
+/* ── 复制按钮基础（对齐 08 规范: ≤3 色按功能区分）── */
+button.copy {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  border: none;
+  background: var(--line);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0;
+  font-size: 13.5px;
+  min-height: 44px;
+  min-width: 0;
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-family: inherit;
+}
+button.copy:focus { outline: none; }
+button.copy:active { filter: brightness(.93); }
+button.copy:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 主场景按钮（蓝实心, 单色系） */
+button.copy.primary {
+  background: var(--blue);
+  color: #fff;
+}
+button.copy.primary:active { background: var(--blue2); }
+
+/* 危险/破坏性操作（红实心） */
+button.copy.red {
+  background: #ff3b30;
+  color: #fff;
+}
+button.copy.red:active { background: #c0392b; }
+
+/* ghost: 复制数据/复制日志 = 白底 + 主色描边 + 主色文字胶囊（独立一行） */
+button.copy.ghost {
+  background: var(--card);
+  color: var(--blue);
+  border: 1.5px solid var(--blue);
+  min-height: 48px;
+}
+
+/* ── actionBar 网格（偶数一行 2 个; 奇数时重要按钮单独一行由模板控制 wide）── */
+.hm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+.hm-actions .copy.wide {
+  grid-column: 1 / -1;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+}
+
+/* 成功/失败徽章（yes 函数用） */
+.ok { color: var(--ok); font-weight: 700; }
+.bad { color: #ff3b30; font-weight: 700; }
+
+/* ── formPrompt（参数表单）── */
+.fp { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin: 12px 0; }
+.fp-field { margin-bottom: 12px; }
+.fp-label { display: block; font-size: 12px; font-weight: 700; color: var(--fg2); margin-bottom: 6px; letter-spacing: .02em; }
+.fp-input {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}
+.fp-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+.fp-preview { background: #fafbfc; border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; margin: 10px 0; }
+.fp-preview-label { font-size: 10.5px; font-weight: 700; color: var(--fg3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.fp-preview-body {
+  font-size: 12px;
+  color: var(--fg2);
+  font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.fp-actions { margin-top: 12px; }
+
+/* ── selectList（勾选列表 + 批量操作）── */
+.sl { margin: 12px 0; }
+.sl-batchbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.sl-count { font-size: 12px; font-weight: 600; color: var(--fg2); margin-left: auto; white-space: nowrap; }
+.sl-group { margin-bottom: 14px; }
+.sl-group-head { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; margin-bottom: 8px; }
+.sl-group-count { font-size: 11px; font-weight: 600; color: var(--fg3); }
+.sl-group-items { display: flex; flex-direction: column; gap: 6px; }
+.sl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color .15s, background .15s;
+}
+.sl-item:hover { border-color: var(--blue); background: #fff; }
+.sl-item input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+.sl-item-body { flex: 1; min-width: 0; }
+.sl-item-title { display: block; font-size: 13.5px; font-weight: 600; color: var(--fg); line-height: 1.5; word-break: break-word; }
+.sl-item-sub { display: block; font-size: 12px; color: var(--fg3); margin-top: 2px; line-height: 1.5; word-break: break-word; }
+
+/* ── confirm 对话框 ── */
+.hm-confirm-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: hmFade .18s ease-out;
+}
+@keyframes hmFade { from { opacity: 0; } to { opacity: 1; } }
+.hm-confirm-panel {
+  background: var(--card);
+  border-radius: 20px;
+  max-width: 420px;
+  width: 100%;
+  padding: 24px 26px;
+  box-shadow: var(--shadow);
+  animation: hmPop .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes hmPop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.hm-confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.hm-confirm-detail { font-size: 13.5px; color: var(--fg2); line-height: 1.65; margin-bottom: 16px; }
+.hm-confirm-actions { display: flex; gap: 10px; }
+.hm-confirm-actions .copy { flex: 1; }
+
+/* ── foldBox 折叠区 ── */
+.hm-fold {
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  font-size: 13px;
+}
+.hm-fold summary { cursor: pointer; font-weight: 600; color: var(--blue2); outline: none; font-size: 13px; user-select: none; }
+.hm-fold summary::marker { color: var(--blue); }
+.hm-fold[open] summary { margin-bottom: 10px; }
+.hm-fold-body { font-size: 12.5px; line-height: 1.6; color: var(--fg2); }
+
+/* ── statusBadge 状态徽章 ── */
+.hm-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  width: fit-content;
+}
+.hm-status.ok { background: #e6f7ec; color: #1f8c3d; }
+.hm-status.warn { background: #fff5e0; color: #a25b00; }
+.hm-status.danger { background: #fff0ee; color: #a83228; }
+.hm-status.empty { background: #f0f0f3; color: #6e6e73; }
+
+/* ── emptyState 空状态 ── */
+.hm-empty {
+  background: #fafbfc;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 26px 20px;
+  text-align: center;
+  color: var(--fg2);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+.hm-empty-icon { font-size: 32px; margin-bottom: 8px; }
+.hm-empty-text { font-weight: 600; color: var(--fg); }
+.hm-empty-hint { font-size: 12.5px; color: var(--fg3); margin-top: 4px; }
+.hm-empty-action { margin-top: 14px; }
+
+/* ── errorReceipt 错误回执 ── */
+.hm-error {
+  background: #fff0ee;
+  border: 1.5px solid #ffc4c0;
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin: 12px 0;
+}
+.hm-error-title { font-size: 15px; font-weight: 700; color: #a83228; margin-bottom: 14px; }
+/* errorReceipt 内按钮布局: 第一个 .hm-actions（修正重试）贴标题; 后续 .hm-actions（复制数据/日志）与上方保持间距, 防贴死（#290 修复） */
+.hm-error .hm-actions { margin-top: 0; }
+.hm-error .hm-actions + .hm-actions { margin-top: 14px; }
+@media (max-width: 820px) {
+  .hm-error { padding: 16px 14px; }
+  .hm-error-title { margin-bottom: 12px; }
+}
+
+/* ── 复制预览面板（actionBar preview）── */
+.hm-preview-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10001;
+  padding: 16px;
+}
+.hm-preview-panel {
+  background: var(--card);
+  border-radius: 16px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.hm-preview-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px; font-weight: 700;
+}
+.hm-preview-close { border: none; background: none; font-size: 15px; color: var(--fg3); cursor: pointer; padding: 4px; }
+.hm-preview-body {
+  flex: 1;
+  overflow: auto;
+  padding: 14px 18px;
+  font-size: 12px;
+  line-height: 1.65;
+  font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  color: var(--fg2);
+  margin: 0;
+}
+.hm-preview-actions { display: flex; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line); }
+.hm-preview-actions .copy { flex: 1; }
+
+/* 手机适配: 单列网格保持按钮不换行 */
+@media (max-width: 820px) {
+  .hm-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hm-actions .copy.wide { grid-column: 1 / -1; }
+  .hm-actions .copy { min-height: 46px; }
+  .sl-batchbar { flex-direction: column; align-items: stretch; }
+  .sl-count { margin-left: 0; }
+  .hm-confirm-panel { padding: 20px 18px; }
+}
+</style>
+
+<script>
+/* ===== 技能身份与数据（scene-data 契约 v1 · 全外部注入）===== */
+var HELP = JSON.parse(document.getElementById('help-data').textContent);
+var SKILL_NAME = HELP.skill_name || '';
+var TITLE = HELP.title || '能力速查台';
+var SUBTITLE = HELP.subtitle || '';
+var META_BLOCKS = HELP.meta_blocks || [];
+var INIT_BANNER = HELP.init_banner || null;
+var CONTACT = HELP.contact || null;
+var SKILL_VERSION = HELP.version || '';
+var ABOUT_EXTRA = {};
+var RECOMMENDATIONS = HELP.recommendations || [];
+
+/* 契约 v1 (groups[{id,icon,label,subgroups[{id,label,scenes[]}]}])
+   -> 原型内部结构 (key/icon/name + subgroups[{name,scenes}]) */
+function normalizeScenes(scenes){
+  return (scenes || []).map(function(s){
+    return {
+      id: s.id,
+      name: s.title,
+      chip: s.wake_word,
+      types: (s.types && s.types.length ? s.types : []),
+      dev: (s.status === '【待开发】'),
+      prompt: s.prompt_template,
+      params: (s.editable_fields || []).map(function(f){
+        return { key: f.name, label: f.label, value: f.value || '', req: !!f.required, hint: f.hint || '' };
+      })
+    };
+  });
+}
+var GROUPS = (HELP.groups || []).map(function(g){
+  return {
+    key: g.id, icon: g.icon || 'grid', name: g.label,
+    subgroups: (g.subgroups || []).map(function(sg){
+      return { name: sg.label, scenes: normalizeScenes(sg.scenes) };
+    })
+  };
+});
+
+/* ===== 扁平化索引（原型逻辑 · 渲染/卡片/搜索依赖）===== */
+var ALL = [];
+var SCENE = {};
+GROUPS.forEach(function(g){
+  g.subgroups.forEach(function(sg){
+    sg.scenes.forEach(function(s){
+      s.g = g.name; s.gkey = g.key; s.gico = g.icon; s.sg = sg.name;
+      ALL.push(s); SCENE[s.id] = s;
+    });
+  });
+});
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+/* 类型徽章: types 数组元素可为字符串(默认配色)或 {text,bg,fg}(调用者自定义颜色, 缺省走默认) */
+var TYPE_DEFAULT = {
+  '采集':  {bg:'#e7f8ee', fg:'#1a7a3a'},
+  '查看':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '结果':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '向导':  {bg:'#e2f7f5', fg:'#00897b'},
+  '批量':  {bg:'#f3e9fb', fg:'#8e3fc9'},
+  '校验':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '选择':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '过程':  {bg:'#e2f7f5', fg:'#00897b'},
+  '回执':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '录入':  {bg:'#e7f8ee', fg:'#1a7a3a'}
+};
+function typeBadgeHTML(t){
+  var text, bg, fg;
+  if (t && typeof t === 'object') {
+    text = t.text;
+    var d = TYPE_DEFAULT[text] || TYPE_DEFAULT['查看'];
+    bg = t.bg || d.bg;
+    fg = t.fg || d.fg;
+  } else {
+    text = t;
+    var d2 = TYPE_DEFAULT[text] || TYPE_DEFAULT['查看'];
+    bg = d2.bg; fg = d2.fg;
+  }
+  return '<span class="type-badge" style="background:' + esc(bg) + ';color:' + esc(fg) + '">' + esc(text) + '</span>';
+}
+function chipHTML(s){
+  var h = '<span class="chip">' + esc(s.chip) + '</span>';
+  if (s.dev) h += '<span class="type-badge t-dev">待开发</span>';
+  (s.types || []).forEach(function(t){ h += typeBadgeHTML(t); });
+  return h;
+}
+
+/* ===== SVG 图标库 ===== */
+var SVG_ICONS = {
+  write:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.8 2.8 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+  calendar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+  grid:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+  target:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
+  rocket:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09Z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2Z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>'
+};
+function tabIconHTML(g){
+  var svg = SVG_ICONS[g.icon];
+  if (svg) return '<span class="t-ico">' + svg + '</span>';
+  return '<span class="t-ico"><span class="t-emoji">' + esc(g.icon) + '</span></span>';
+}
+
+/* ===== 参数机制：prompt + 末尾每行「key: value」===== */
+function readParams(id){
+  var fm = document.querySelector('.pform[data-pid="' + id + '"]');
+  var v = {};
+  if (fm) fm.querySelectorAll('input[data-p]').forEach(function(inp){ v[inp.dataset.p] = inp.value; });
+  return v;
+}
+function buildPrompt(s, v){
+  v = v || {};
+  var lines = [s.prompt];
+  var paramLines = [];
+  (s.params || []).forEach(function(p){
+    var val = (v[p.key] != null ? v[p.key] : '').trim();
+    if (val) paramLines.push(p.label + ': ' + val);
+  });
+  if (paramLines.length) lines.push(''); /* 空行分隔 */
+  lines = lines.concat(paramLines);
+  return lines.join('\n');
+}
+function getMissing(s, v){
+  return (s.params || []).filter(function(p){ return p.req && !(v[p.key] || '').trim(); }).map(function(p){ return p.label; });
+}
+
+/* ===== 渲染主页面 ===== */
+var screen = document.getElementById('screen');
+var h = '<div class="app"><div class="app-inner">' +
+  '<header class="hero"><div class="h-left"><div class="eyebrow">' + esc(SKILL_NAME) + '</div><h1>' + esc(TITLE) + '</h1><div class="lead">' + ALL.length + ' 场景 · 点卡片看详情</div></div><span class="h-badge">' + ALL.length + ' 场景</span>' +
+  '<div class="hero-steps"><span class="step">🔍 找场景</span><span class="arrow">→</span><span class="step">📋 复制 prompt</span><span class="arrow">→</span><span class="step">💬 发给 AI</span></div>' +
+  '</header>' +
+  (INIT_BANNER && !INIT_BANNER.hidden ? '<div class="init-banner" id="initBanner"><div class="ib-text"><div class="ib-title">' + esc(INIT_BANNER.title) + '</div><div class="ib-sub">' + esc(INIT_BANNER.subtitle) + '</div></div><button class="copy-btn" data-c="' + esc(INIT_BANNER.prompt) + '">' + esc(INIT_BANNER.button_text) + '</button>' + (INIT_BANNER.closable === false ? '' : '<button class="ib-close" id="initClose" aria-label="关闭">✕</button>') +
+    (INIT_BANNER.steps && INIT_BANNER.steps.length ? '<div class="init-steps">' + INIT_BANNER.steps.map(function(st, i){ return '<div class="init-step"><div class="s-n">' + (i+1) + '</div><div class="s-t">' + esc(st.title) + '</div>' + (st.desc ? '<div class="s-d">' + esc(st.desc) + '</div>' : '') + '</div>'; }).join('') + '</div>' : '') +
+    '</div>' : '') +
+  '<div class="search-wrap"><div class="search-box"><span class="s-icon">🔍</span><input id="sB" type="search" placeholder="搜索全部场景" autocomplete="off"><button class="s-clear" id="sClear">✕</button></div></div>' +
+  '<div class="hitcount" id="hitC" hidden></div><div class="search-empty" id="emptyC" hidden>没有找到相关场景,换个词试试～</div>' +
+  '<div class="pages" id="pages">';
+GROUPS.forEach(function(g){
+  h += '<div class="page" data-page="' + g.key + '">';
+  g.subgroups.forEach(function(sg){
+    h += '<details class="subgroup" open><summary>' + sg.name + '<span class="sg-count">' + sg.scenes.length + '</span></summary><div class="sg-body"><div class="grid">';
+    sg.scenes.forEach(function(s){
+      h += '<div class="mini" data-key="' + s.id + '">' +
+        '<div class="m-top">' + chipHTML(s) + '</div>' +
+        '<div class="m-bottom">' +
+        '<div class="m-name">' + esc(s.name) + '</div>' +
+        '<button class="copy-btn" data-c="' + esc(buildPrompt(s, {})) + '">复制</button>' +
+        '</div>' +
+        '</div>';
+    });
+    h += '</div></div></details>';
+  });
+  h += '</div>';
+});
+/* ===== 关于 Tab（最后 · 联系作者 + 版本 + 其他技能 · 拼在 pages 容器内）===== */
+h += '<div class="page" data-page="about">';
+/* ① 联系作者（第一位）*/
+if (CONTACT && CONTACT.items && CONTACT.items.length) {
+  h += '<div class="about-sec"><div class="as-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> 联系作者</div><div class="as-body">';
+  CONTACT.items.forEach(function(it){
+    if (it.url && String(it.value).indexOf('http') === 0) {
+      h += '<div class="about-row"><span class="a-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><div class="a-t"><b>' + esc(it.label) + '</b><a class="a-link" href="' + esc(it.value) + '" target="_blank" rel="noopener">' + esc(it.value) + '</a></div></div>';
+    } else {
+      h += '<div class="about-row"><span class="a-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg></span><div class="a-t"><b>' + esc(it.label) + '</b><span>' + esc(it.value) + '</span></div></div>';
+    }
+  });
+  if (CONTACT.copy_all) {
+    var contactTxt = CONTACT.items.map(function(it){ return it.label + ': ' + it.value; }).join('\n');
+    h += '<div class="about-row"><span class="a-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span><div class="a-t"><b>一键复制</b><span>全部联系信息</span></div><button class="copy-btn a-copy" data-c="' + esc(contactTxt) + '">复制</button></div>';
+  }
+  h += '</div></div>';
+}
+/* ② 版本（第二位）*/
+h += '<div class="about-sec"><div class="as-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg> 版本</div><div class="as-body"><div class="about-row"><span class="a-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><div class="a-t"><b>' + esc(SKILL_NAME) + '</b><span>v' + esc(SKILL_VERSION) + ' · HELP 模板 v4</span></div></div></div></div>';
+/* ③ 其他技能（第三位 · SVG 图标）*/
+if (RECOMMENDATIONS && RECOMMENDATIONS.length) {
+  h += '<div class="about-sec"><div class="as-head"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;flex-shrink:0"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.4 1 2.3h6c0-.9.4-1.8 1-2.3A7 7 0 0 0 12 2z"/></svg> 其他技能</div><div class="as-body">';
+  RECOMMENDATIONS.forEach(function(r){
+    h += '<div class="about-row"><span class="a-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span><div class="a-t"><b>' + esc(r.name) + '</b><span>' + esc(r.desc) + '</span></div>' + (r.wake ? '<span class="a-badge">' + esc(r.wake) + '</span>' : '') + '</div>';
+  });
+  h += '</div></div>';
+}
+h += '</div>';  /* 关闭 about page */
+h += '</div></div>';  /* 关闭 pages + app-inner */
+h += '<div class="tab-bar" id="tabBar">';
+GROUPS.forEach(function(g, i){
+  h += '<button class="tab' + (i===0?' active':'') + '" data-nav="' + g.key + '">' + tabIconHTML(g) + g.name + '</button>';
+});
+h += '<button class="tab" data-nav="about"><span class="t-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>关于</button>';
+h += '</div></div>';
+screen.innerHTML = h;
+
+/* 初始化横幅手动关闭（✕）*/
+var initClose = document.getElementById('initClose');
+if (initClose) initClose.addEventListener('click', function(){
+  var b = document.getElementById('initBanner');
+  if (b) b.style.display = 'none';
+});
+/* ===== 自然滚动: 内容跟手, 搜索栏 sticky 吸顶(CSS) =====
+   旧版两段式 transform 抵消导致: 吸顶前内容不跟手、短页(关于)滚不到吸顶 → 全部移除 */
+/* 页面高度 = 内容自然高度（不撑高）: 内容短则页面短, 滑到底即停, 不出灰色空白
+   （原实现 pg.style.minHeight = screen.clientHeight 把短页撑到一屏高,
+     内容下方露出透明 page 背景 → 灰色底被顶上来;#289 用户验收拍板）*/
+
+/* ===== 滑动切页（ViewPager）===== */
+var pages = document.getElementById('pages');
+var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+var screen = document.querySelector('.screen');
+/* ③ 容器高度锁定: 用内容实际全高(而非首屏高), 防空白可滑也防内容被截断 */
+function lockPagesHeight(idx){
+  if (idx === undefined) idx = Math.min(curIndex(), pages.children.length - 1);
+  var pg = pages.children[idx];
+  if (!pg) return;
+  pages.style.height = pg.scrollHeight + 'px';
+}
+function curIndex(){ return Math.round(pages.scrollLeft / pages.clientWidth); }
+function syncTab(){
+  var i = Math.min(curIndex(), tabs.length - 1);
+  tabs.forEach(function(t, j){ t.classList.toggle('active', j === i); });
+}
+pages.addEventListener('scroll', function(){
+  clearTimeout(syncTab._t);
+  syncTab._t = setTimeout(function(){
+    if (Date.now() < syncTab._lockUntil) return;  /* 点击后的滚动动画期不覆盖 active */
+    syncTab();
+    lockPagesHeight();  /* 横向滑动结束也校准高度 */
+  }, 15);
+}, {passive:true});
+tabs.forEach(function(t){
+  t.addEventListener('click', function(){
+    var i = tabs.indexOf(t);
+    tabs.forEach(function(x, j){ x.classList.toggle('active', j === i); });
+    syncTab._lockUntil = Date.now() + 900;  /* 锁 ~0.9s: 覆盖点击动画期即可, 缩短滑动跟手延迟 */
+    /* 切换立即: ① 归零纵向滚动(防旧位置灰色遮挡) ② 立即锁定新页高度(防内容截断/滑不动) */
+    /* 手机端: .screen 是滚动容器, scrollTop=0 = 回到内容顶部（页面不跳）;
+       宽屏: .screen overflow:visible, 真正滚动的是 window —— 定位到 pages 容器顶部(搜索栏处), 不跳整页最上层 */
+    if (screen.scrollTop !== undefined && screen.clientHeight > 0 && screen.scrollHeight > screen.clientHeight) {
+      screen.scrollTop = 0;
+    } else {
+      var pagesTop = pages.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop || 0);
+      window.scrollTo(0, Math.max(0, pagesTop - 8));
+    }
+    pages.style.scrollSnapType = 'none';
+    pages.scrollTo({left: i * pages.clientWidth, behavior:'smooth'});
+    lockPagesHeight(i);  /* 直接传目标索引, 不等动画 */
+    /* 点击的 Tab 尽可能居中显示(首尾贴边) */
+    centerTab(t);
+    setTimeout(function(){
+      pages.style.scrollSnapType = '';
+      syncTab._lockUntil = 0;  /* 动画结束立即解锁, 之后滑动变色实时跟手 */
+      lockPagesHeight(i);  /* 动画结束后再校准一次 */
+    }, 900);
+  });
+});
+/* ===== Tab 条: 点击的 Tab 居中显示 ===== */
+function centerTab(tab){
+  var bar = document.getElementById('tabBar');
+  var max = bar.scrollWidth - bar.clientWidth;
+  var target = tab.offsetLeft + tab.offsetWidth / 2 - bar.clientWidth / 2;
+  target = Math.max(0, Math.min(target, max));
+  bar.scrollTo({left: target, behavior: 'smooth'});
+}
+
+/* ===== Sheet 弹层（B3: 复制不自动关 · B4: 无参数显 prompt）===== */
+var mask = document.getElementById('sheetMask');
+var sheet = document.getElementById('sheet');
+var shHead = document.getElementById('shHead');
+var shBody = document.getElementById('shBody');
+var shCopy = document.getElementById('shCopy');
+var curScene = null;
+
+function openSheet(s){
+  curScene = s;
+  shHead.innerHTML = '<span class="s-title">' + esc(s.name) + '</span>' + chipHTML(s);
+  var form = '';
+  var hasParams = s.params && s.params.length;
+  if (hasParams) {
+    form = '<div class="pform" data-pid="' + s.id + '">';
+    s.params.forEach(function(p){
+      form += '<div class="pfield"><label>' + esc(p.label) + (p.req ? '' : '<em>选填</em>') + '</label>' +
+        '<input data-p="' + esc(p.key) + '" value="' + esc(p.value || '') + '" placeholder="' + esc(p.hint || '') + '"></div>';
+    });
+    form += '</div>';
+  }
+  /* 预览：prompt + 末尾 key:value（有参数时实时重组）*/
+  var prev = '<div class="pprev"><span class="pv-label">Prompt 预览</span><span data-prev>' + esc(buildPrompt(s, {})) + '</span></div>';
+  shBody.innerHTML = form + prev;
+  shCopy.dataset.pid = s.id;
+  shCopy.dataset.c = buildPrompt(s, {});
+  /* 参数化实时预览 */
+  var fm = sheet.querySelector('.pform');
+  if (fm) fm.addEventListener('input', function(){
+    var pv = sheet.querySelector('[data-prev]');
+    if (pv) pv.textContent = buildPrompt(s, readParams(s.id));
+  });
+  mask.classList.add('show');
+  sheet.classList.add('show');
+  sheet.querySelector('.s-scroll').scrollTop = 0;
+}
+function closeSheet(){
+  mask.classList.remove('show');
+  sheet.classList.remove('show');
+}
+mask.addEventListener('click', closeSheet);
+document.getElementById('sheetClose').addEventListener('click', closeSheet);
+
+/* ===== 卡片交互 ===== */
+screen.addEventListener('click', function(e){
+  var mini = e.target.closest('.mini');
+  if (mini) {
+    if (e.target.closest('[data-c]')) return;
+    openSheet(SCENE[mini.dataset.key]);
+  }
+});
+
+/* ===== Toast（公共组件）===== */
+function showToast(){
+  toast('已复制', '粘贴给 AI,技能会自动执行,完成后你会拿到结果 HTML。', {icon:'copy'});
+}
+function toastMsg(msg){
+  toast('请先填写: ' + msg, '填写完整后再复制 prompt', {icon:'warn', badge:{text:'未完成', type:'warn'}});
+}
+function doCopy(text){
+  var ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch(e){}
+  document.body.removeChild(ta);
+}
+
+/* ===== 全局复制（含参数校验）===== */
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-c]');
+  if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  var s = SCENE[b.dataset.pid || (b.closest('.mini') ? b.closest('.mini').dataset.key : '')];
+  var text = b.dataset.c;
+  if (s && s.params && s.params.length) {
+    var v = readParams(s.id);
+    var miss = getMissing(s, v);
+    if (miss.length) { toastMsg(miss.join('、')); return; }
+    text = buildPrompt(s, v);
+  }
+  doCopy(text);
+  showToast();
+  /* B3: 复制后不自动关弹窗 */
+});
+
+/* ===== 搜索（全局跨 Tab + 自动跳转 + 高亮）===== */
+var sB = document.getElementById('sB');
+var sClear = document.getElementById('sClear');
+var lastQuery = '';
+function doSearch(){
+  var q = sB.value.trim().toLowerCase();
+  sClear.style.display = q ? 'flex' : 'none';
+  if (!q) {
+    var cur = curIndex();
+    Array.prototype.forEach.call(pages.children, function(pg, i){
+      pg.querySelectorAll('.mini').forEach(function(m){
+        m.style.display = '';
+        m.querySelector('.m-name').innerHTML = esc(SCENE[m.dataset.key].name);
+      });
+      pg.querySelectorAll('.subgroup').forEach(function(sg){ sg.style.display = ''; });
+    });
+    if (lastQuery) pages.scrollTo({left: cur * pages.clientWidth, behavior:'smooth'});
+    lastQuery = '';
+    document.getElementById('hitC').hidden = true;
+    document.getElementById('emptyC').hidden = true;
+    return;
+  }
+  lastQuery = q;
+  var total = 0, firstHitPage = -1;
+  Array.prototype.forEach.call(pages.children, function(pg, i){
+    var pageHit = 0;
+    pg.querySelectorAll('.mini').forEach(function(m){
+      var show = m.textContent.toLowerCase().indexOf(q) > -1;
+      m.style.display = show ? '' : 'none';
+      if (show) pageHit++;
+      var orig = SCENE[m.dataset.key].name;
+      var i2 = orig.toLowerCase().indexOf(q);
+      if (q && i2 >= 0) m.querySelector('.m-name').innerHTML = esc(orig.slice(0,i2)) + '<mark>' + esc(orig.slice(i2,i2+q.length)) + '</mark>' + esc(orig.slice(i2+q.length));
+      else m.querySelector('.m-name').innerHTML = esc(orig);
+    });
+    /* 子功能组：无命中则隐藏 */
+    pg.querySelectorAll('.subgroup').forEach(function(sg){
+      var vis = sg.querySelectorAll('.mini:not([style*="none"])').length > 0;
+      sg.style.display = vis ? '' : 'none';
+      if (q && vis) sg.open = true;
+    });
+    total += pageHit;
+    if (pageHit > 0 && firstHitPage === -1) firstHitPage = i;
+  });
+  if (firstHitPage >= 0 && firstHitPage !== curIndex()) {
+    pages.scrollTo({left: firstHitPage * pages.clientWidth, behavior:'smooth'});
+  }
+  document.getElementById('hitC').hidden = false;
+  document.getElementById('hitC').textContent = '匹配 ' + total + ' 个场景';
+  document.getElementById('emptyC').hidden = total > 0;
+}
+sB.addEventListener('input', doSearch);
+sClear.addEventListener('click', function(){ sB.value = ''; doSearch(); sB.focus(); });
+/* 初始锁定 + 子功能组折叠/展开时高度校准 */
+lockPagesHeight();
+document.addEventListener('click', function(e){
+  var sg = e.target.closest('.subgroup > summary');
+  if (sg) setTimeout(lockPagesHeight, 60);  /* details 切换后重算 */
+});
+</script>
+</body>
+</html>

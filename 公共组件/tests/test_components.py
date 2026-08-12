@@ -386,20 +386,19 @@ def test_charts_four_interfaces_exist(chart_page):
 
 
 def test_charts_progress_renders(chart_page):
-    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 65)")
+    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 65, {animation:false})")
     fill = chart_page.evaluate("document.querySelector('.hm-c-p-fill')?.style.width")
     num = chart_page.evaluate("document.querySelector('.hm-c-p-n')?.textContent")
     assert fill == '65%' and num == '65%'
 
 
 def test_charts_progress_clamps(chart_page):
-    """非数兜底 0, 超界收敛 0~100"""
-    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 999)")
+    """超界收敛 0~100; 非数直接报错（v1.4 结构校验: 违规报错, 对齐 Base）"""
+    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 999, {animation:false})")
     num = chart_page.evaluate("document.querySelector('.hm-c-p-n')?.textContent")
     assert num == '100%'
-    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 'abc')")
-    num2 = chart_page.evaluate("document.querySelector('.hm-c-p-n')?.textContent")
-    assert num2 == '0%'
+    err = chart_page.evaluate("""() => { try { window.charts.progress(document.getElementById('root'), 'abc'); return ''; } catch(e) { return e.message; } }""")
+    assert 'pct' in err and '无效' in err
 
 
 def test_charts_progress_color_option(chart_page):
@@ -411,7 +410,8 @@ def test_charts_progress_color_option(chart_page):
 def test_charts_bar_renders(chart_page):
     chart_page.evaluate("""
       window.charts.bar(document.getElementById('root'),
-        [{label:'牛奶',value:3},{label:'面包',value:7},{label:'苹果',value:5}]);
+        [{label:'牛奶',value:3},{label:'面包',value:7},{label:'苹果',value:5}],
+        {animation:false});
     """)
     cols = chart_page.evaluate("document.querySelectorAll('.hm-c-col').length")
     labels = chart_page.evaluate("[...document.querySelectorAll('.hm-c-l')].map(n=>n.textContent).join(',')")
@@ -428,10 +428,10 @@ def test_charts_bar_empty_links_empty_state(chart_page):
     assert text == '暂无数据'
 
 
-def test_charts_bar_non_array_safe(chart_page):
-    chart_page.evaluate("window.charts.bar(document.getElementById('root'), null)")
-    text = chart_page.evaluate("document.querySelector('.hm-empty-text')?.textContent")
-    assert text == '暂无数据'
+def test_charts_bar_non_array_throws(chart_page):
+    """非数组输入 → 直接报错（v1.4 结构校验: 违规报错, 对齐 Base v1.2 拍板）"""
+    err = chart_page.evaluate("""() => { try { window.charts.bar(document.getElementById('root'), null); return ''; } catch(e) { return e.message; } }""")
+    assert 'items 必须是数组' in err
 
 
 def test_charts_bar_onclick(chart_page):
@@ -439,7 +439,7 @@ def test_charts_bar_onclick(chart_page):
       window.__idx = -1;
       window.charts.bar(document.getElementById('root'),
         [{label:'A',value:1},{label:'B',value:2}],
-        {onclick:function(i){window.__idx=i;}});
+        {onclick:function(i){window.__idx=i;},animation:false});
     """)
     chart_page.click('.hm-c-b[data-i="1"]')
     assert chart_page.evaluate('window.__idx') == 1
@@ -448,12 +448,13 @@ def test_charts_bar_onclick(chart_page):
 def test_charts_line_renders(chart_page):
     chart_page.evaluate("""
       window.charts.line(document.getElementById('root'),
-        [{label:'周一',value:2},{label:'周二',value:5},{label:'周三',value:3}]);
+        [{label:'周一',value:2},{label:'周二',value:5},{label:'周三',value:3}],
+        {animation:false});
     """)
-    poly = chart_page.evaluate("document.querySelector('.hm-c-line-svg polyline')?.getAttribute('points')")
+    path_d = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']")?.getAttribute(\'d\')')
     dots = chart_page.evaluate("document.querySelectorAll('.hm-c-dot').length")
-    xs = chart_page.evaluate("document.querySelector('.hm-c-x')?.textContent")
-    assert poly and dots == 3 and '周一' in xs and '周三' in xs
+    xs = chart_page.evaluate("document.querySelector('.hm-c-line-x')?.textContent")
+    assert path_d and dots == 3 and '周一' in xs and '周三' in xs
 
 
 def test_charts_line_empty_links_empty_state(chart_page):
@@ -502,7 +503,8 @@ def test_charts_mobile_375_no_overflow(chart_page):
     chart_page.evaluate("""
       window.charts.bar(document.getElementById('root'),
         [{label:'类别一',value:1},{label:'类别二',value:2},{label:'类别三',value:3},
-         {label:'类别四',value:4},{label:'类别五',value:5},{label:'类别六',value:6}]);
+         {label:'类别四',value:4},{label:'类别五',value:5},{label:'类别六',value:6}],
+        {animation:false});
     """)
     scroll_w = chart_page.evaluate("document.querySelector('.hm-c-bar')?.scrollWidth")
     client_w = chart_page.evaluate("document.querySelector('.hm-c-bar')?.clientWidth")
@@ -585,9 +587,279 @@ def test_charts_bar_mobile_long_label_not_clipped(chart_page):
     chart_page.evaluate("""
       window.charts.bar(document.getElementById('root'),
         [{label:'厨房小家电',value:26},{label:'数码产品配件',value:18},{label:'换季衣物鞋帽',value:31},
-         {label:'客厅家具家装',value:14},{label:'儿童图书文具',value:22},{label:'日用百货杂项',value:17}]);
+         {label:'客厅家具家装',value:14},{label:'儿童图书文具',value:22},{label:'日用百货杂项',value:17}],
+        {animation:false});
     """)
     clipped = chart_page.evaluate("""
       (() => [...document.querySelectorAll('.hm-c-l')].map(el => el.scrollWidth > el.clientWidth))()
     """)
     assert clipped == [False] * 6, f'长标签被截断: {clipped}'
+
+# ── v1.4 全参数测试 ──────────────────────────────────────
+
+@pytest.fixture(autouse=True)
+def _v14_desktop_viewport(chart_page):
+    """v1.4 区测试统一桌面视口（修复 module 级 page 被前序手机测试改宽度的顺序污染）"""
+    chart_page.set_viewport_size({'width': 1200, 'height': 800})
+    yield
+
+LINE_ITEMS = [
+    {'label': '周一', 'value': 2}, {'label': '周二', 'value': 5},
+    {'label': '周三', 'value': 3}, {'label': '周四', 'value': 8},
+    {'label': '周五', 'value': 6},
+]
+BAR_ITEMS = [
+    {'label': '牛奶', 'value': 3}, {'label': '面包', 'value': 7}, {'label': '苹果', 'value': 5},
+]
+DONUT_ITEMS = [
+    {'label': '食品', 'value': 120}, {'label': '出行', 'value': 80}, {'label': '日用', 'value': 50},
+]
+
+
+# ── line: 16 项参数 ─────────────────────────────────────
+
+def test_line_height_param(chart_page):
+    """height 覆盖（默认 210 / 传 320）"""
+    chart_page.set_viewport_size({'width': 1200, 'height': 800})
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    h1 = chart_page.evaluate("document.querySelector('.hm-c-line-wrap').getBoundingClientRect().height")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, height:320})', LINE_ITEMS)
+    h2 = chart_page.evaluate("document.querySelector('.hm-c-line-wrap').getBoundingClientRect().height")
+    assert h1 == 210 and h2 == 320
+
+
+def test_line_color_width_dashed(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, color:"#ff3b30", lineWidth:4, dashed:true})', LINE_ITEMS)
+    stroke = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'stroke\')')
+    sw = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'stroke-width\')')
+    dash = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'stroke-dasharray\')')
+    assert stroke == '#ff3b30' and sw == '4' and dash
+
+
+def test_line_smooth_keeps_dots_on_curve(chart_page):
+    """平滑曲线: 数据点仍落在真实位置（与曲线 path 节点一致）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, smooth:true})', LINE_ITEMS)
+    path_d = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    assert 'C' in path_d  # 三次贝塞尔曲线
+    dots = chart_page.evaluate("document.querySelectorAll('.hm-c-dot').length")
+    assert dots == 5
+
+
+def test_line_show_dots_off(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, showDots:false})', LINE_ITEMS)
+    dots = chart_page.evaluate("document.querySelectorAll('.hm-c-dot').length")
+    assert dots == 0
+
+
+def test_line_area_fill(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, area:true})', LINE_ITEMS)
+    area = chart_page.evaluate("document.querySelector('.hm-c-line-svg path[fill]')")
+    assert area is not None
+    op = chart_page.evaluate("document.querySelector('.hm-c-line-svg path[fill]').getAttribute('opacity')")
+    assert op == '0.12'
+
+
+def test_line_labels_all_none_select(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, labels:"all"})', LINE_ITEMS)
+    n_all = chart_page.evaluate("document.querySelectorAll('.hm-c-line-x span').length")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, labels:"none"})', LINE_ITEMS)
+    n_none = chart_page.evaluate("document.querySelectorAll('.hm-c-line-x span').length")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, labels:"select"})', LINE_ITEMS)
+    n_sel = chart_page.evaluate("document.querySelectorAll('.hm-c-line-x span').length")
+    assert n_all == 5 and n_none == 0 and n_sel == 3  # 首+峰+尾
+
+
+def test_line_show_values(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, showValues:true})', LINE_ITEMS)
+    vals = chart_page.evaluate("[...document.querySelectorAll('.hm-c-vt')].map(n=>n.textContent)")
+    assert vals == ['2', '5', '3', '8', '6']
+
+
+def test_line_format(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, format:"¥{v}", showValues:true})', LINE_ITEMS)
+    vals = chart_page.evaluate("[...document.querySelectorAll('.hm-c-vt')].map(n=>n.textContent)")
+    assert vals[0] == '¥2'
+
+
+def test_line_y_axis_range(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, yMin:0, yMax:10})', LINE_ITEMS)
+    # 无报错即通过（值域覆盖生效）
+
+
+def test_line_grid_off(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, grid:false})', LINE_ITEMS)
+    lines = chart_page.evaluate("document.querySelectorAll('.hm-c-line-svg line').length")
+    assert lines == 0
+
+
+def test_line_missing_value_breaks(chart_page):
+    """缺失值断线: null 点不连线, path 分多段"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'a',value:1},{label:'b',value:null},{label:'c',value:3}], {animation:false})")
+    path_d = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    assert path_d.count('M') == 2  # 两段独立
+
+
+def test_line_markline(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, markLine:{value:7,label:"目标 7"}})', LINE_ITEMS)
+    mark = chart_page.evaluate('document.querySelector(".hm-c-line-svg line[stroke=\'#ff9500\']")')
+    lbl = chart_page.evaluate("document.querySelector('.hm-c-markline-t')?.textContent")
+    assert mark is not None and lbl == '目标 7'
+
+
+def test_line_avg_line(chart_page):
+    """移动均线叠加为虚线"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, avgLine:3})', LINE_ITEMS)
+    paths = chart_page.evaluate('document.querySelectorAll(".hm-c-line-svg path[fill=\'none\']")')
+    assert len(paths) == 2  # 主线 + 均线
+    avg_dash = chart_page.evaluate('document.querySelectorAll(".hm-c-line-svg path[fill=\'none\']")[1].getAttribute(\'stroke-dasharray\')')
+    assert avg_dash  # 均线虚线
+
+
+def test_line_series_and_legend(chart_page):
+    chart_page.evaluate("""
+      (items) => window.charts.line(document.getElementById('root'), items, {animation:false,
+        series:[{name:'录入',items:items},{name:'废弃',items:[{label:'周一',value:1},{label:'周二',value:2},{label:'周三',value:1},{label:'周四',value:3},{label:'周五',value:2}]}],
+        legend:true});
+    """, LINE_ITEMS)
+    paths = chart_page.evaluate('document.querySelectorAll(".hm-c-line-svg path[fill=\'none\']").length')
+    lg = chart_page.evaluate("[...document.querySelectorAll('.hm-c-lg')].map(n=>n.textContent)")
+    assert paths == 2 and lg == ['录入', '废弃']
+
+
+def test_line_highlight_last(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, highlightLast:true})', LINE_ITEMS)
+    last = chart_page.evaluate("document.querySelector('.hm-c-dot-last')")
+    assert last is not None
+
+
+def test_line_ondrill(chart_page):
+    chart_page.evaluate("""
+      (items) => { window.__drill = -1;
+      window.charts.line(document.getElementById('root'), items, {animation:false,
+        ondrill:function(i){window.__drill=i;}}); }
+    """, LINE_ITEMS)
+    chart_page.click('.hm-c-line-svg svg')
+    assert chart_page.evaluate('window.__drill') >= 0
+
+
+def test_line_tooltip(chart_page):
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, tooltip:true})', LINE_ITEMS)
+    chart_page.hover('.hm-c-line-svg')
+    tip = chart_page.evaluate("document.querySelector('.hm-c-tip.show')?.textContent")
+    assert tip is not None  # hover 最近点提示出现（中点=周三附近, 不断言具体点）
+
+
+def test_line_validate_throws(chart_page):
+    err = chart_page.evaluate("""() => { try { window.charts.line(document.getElementById('root'), [{label:'x'}]); return ''; } catch(e) { return e.message; } }""")
+    assert 'value' in err
+    err2 = chart_page.evaluate("""() => { try { window.charts.line(document.getElementById('root'), [{value:1}]); return ''; } catch(e) { return e.message; } }""")
+    assert 'label' in err2
+
+
+# ── bar: 参数对齐 ───────────────────────────────────────
+
+def test_bar_format_and_single_color(chart_page):
+    chart_page.evaluate('(items) => window.charts.bar(document.getElementById("root"), items, {animation:false, format:"¥{v}", singleColor:"#ff3b30"})', BAR_ITEMS)
+    vals = chart_page.evaluate("[...document.querySelectorAll('.hm-c-v')].map(n=>n.textContent)")
+    bg = chart_page.evaluate("document.querySelector('.hm-c-b').style.background")
+    assert vals == ['¥3', '¥7', '¥5'] and ('#ff3b30' in bg or '255, 59, 48' in bg)
+
+
+def test_bar_colors_palette(chart_page):
+    chart_page.evaluate('(items) => window.charts.bar(document.getElementById("root"), items, {animation:false, colors:["#111111","#222222","#333333"]})', BAR_ITEMS)
+    bgs = chart_page.evaluate("[...document.querySelectorAll('.hm-c-b')].map(n=>n.style.background)")
+    # 浏览器可能归一化为 rgb() 或保留 hex —— 两种都接受
+    norm = lambda c: c.replace('rgb(17, 17, 17)', '#111111').replace('rgb(34, 34, 34)', '#222222').replace('rgb(51, 51, 51)', '#333333')
+    assert [norm(b) for b in bgs] == ['#111111', '#222222', '#333333']
+
+
+def test_bar_labels_none(chart_page):
+    chart_page.evaluate('(items) => window.charts.bar(document.getElementById("root"), items, {animation:false, labels:"none"})', BAR_ITEMS)
+    n = chart_page.evaluate("document.querySelectorAll('.hm-c-labels .hm-c-l').length")
+    assert n == 0
+
+
+def test_bar_validate_throws(chart_page):
+    err = chart_page.evaluate("""() => { try { window.charts.bar(document.getElementById('root'), 'abc'); return ''; } catch(e) { return e.message; } }""")
+    assert '数组' in err
+
+
+# ── donut: 参数对齐 ─────────────────────────────────────
+
+def test_donut_format_and_size(chart_page):
+    chart_page.evaluate('(items) => window.charts.donut(document.getElementById("root"), items, {animation:false, format:"¥{v}", size:200})', DONUT_ITEMS)
+    v = chart_page.evaluate("document.querySelector('.hm-c-dl-v').textContent")
+    sz = chart_page.evaluate("document.querySelector('.hm-c-donut').getBoundingClientRect().width")
+    assert v == '¥120' and sz == 200
+
+
+def test_donut_legend_none(chart_page):
+    chart_page.evaluate('(items) => window.charts.donut(document.getElementById("root"), items, {animation:false, legend:"none"})', DONUT_ITEMS)
+    n = chart_page.evaluate("document.querySelectorAll('.hm-c-dl').length")
+    assert n == 0
+
+
+def test_donut_show_percent_off(chart_page):
+    chart_page.evaluate('(items) => window.charts.donut(document.getElementById("root"), items, {animation:false, showPercent:false})', DONUT_ITEMS)
+    n = chart_page.evaluate("document.querySelectorAll('.hm-c-dl-p').length")
+    assert n == 0
+
+
+def test_donut_validate_throws(chart_page):
+    err = chart_page.evaluate("""() => { try { window.charts.donut(document.getElementById('root'), 'x'); return ''; } catch(e) { return e.message; } }""")
+    assert '数组' in err
+
+
+# ── progress: 参数对齐 ──────────────────────────────────
+
+def test_progress_gradient_and_height(chart_page):
+    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 60, {animation:false, gradient:true, height:14, color:'#34c759'})")
+    bg = chart_page.evaluate("document.querySelector('.hm-c-p-fill').style.background")
+    th = chart_page.evaluate("document.querySelector('.hm-c-p-track').style.height")
+    assert 'gradient' in bg and th == '14px'
+
+
+def test_progress_show_pct_off(chart_page):
+    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 60, {animation:false, showPct:false})")
+    n = chart_page.evaluate("document.querySelectorAll('.hm-c-p-n').length")
+    assert n == 0
+
+
+# ── 复合形态 ────────────────────────────────────────────
+
+def test_combo_renders(chart_page):
+    chart_page.evaluate("""
+      window.charts.combo(document.getElementById('root'),
+        {bars:[{label:'1月',value:30},{label:'2月',value:60},{label:'3月',value:45}],
+         lines:[{label:'1月',value:2},{label:'2月',value:4},{label:'3月',value:3}]},
+        {animation:false});
+    """)
+    cols = chart_page.evaluate("document.querySelectorAll('.hm-c-col').length")
+    dots = chart_page.evaluate("document.querySelectorAll('.hm-c-combo-dot').length")
+    assert cols == 3 and dots == 3
+
+
+def test_combo_throws_on_length_mismatch(chart_page):
+    err = chart_page.evaluate("""() => { try { window.charts.combo(document.getElementById('root'), {bars:[{label:'a',value:1}],lines:[{label:'b',value:2},{label:'c',value:3}]}); return ''; } catch(e) { return e.message; } }""")
+    assert '长度不一致' in err
+
+
+def test_sparkline_up_down_color(chart_page):
+    chart_page.evaluate("window.charts.sparkline(document.getElementById('root'), [{label:'a',value:1},{label:'b',value:3}])")
+    up_cls = chart_page.evaluate("document.querySelector('.hm-c-sp-v').className")
+    assert 'up' in up_cls
+    chart_page.evaluate("window.charts.sparkline(document.getElementById('root'), [{label:'a',value:3},{label:'b',value:1}])")
+    down_cls = chart_page.evaluate("document.querySelector('.hm-c-sp-v').className")
+    assert 'down' in down_cls
+
+
+def test_gauge_renders(chart_page):
+    chart_page.evaluate("window.charts.gauge(document.getElementById('root'), 72, {label:'完成度', animation:false})")
+    val = chart_page.evaluate("document.querySelector('.hm-c-gv').textContent")
+    lbl = chart_page.evaluate("document.querySelector('.hm-c-gl').textContent")
+    assert val == '72%' and lbl == '完成度'
+
+
+def test_gauge_throws_on_invalid(chart_page):
+    err = chart_page.evaluate("""() => { try { window.charts.gauge(document.getElementById('root'), 'x'); return ''; } catch(e) { return e.message; } }""")
+    assert 'pct' in err

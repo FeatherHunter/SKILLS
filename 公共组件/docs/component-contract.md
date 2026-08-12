@@ -1,6 +1,6 @@
-# Base 组件契约 v1.3
+# Base 组件契约 v1.6
 
-> 来源：v1.2（#269 作息管家试点 Grill 收口）+ **#288 P2 图表组件落地**（2026-08-12：CHARTS-HELPERS 正式版，新增 assets/charts.js 四接口）
+> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）
 > 本契约是 Base Skill 组件的**冻结接口**，修改必须走公共层 ISSUE（总纲 09 §92）+ 遵循 §8 版本机制。
 
 ## 0. 版本记录
@@ -12,6 +12,7 @@
 | v1.2 | 2026-08-11 | **#269 试点用户拍板全量落地**：①buildDataText/buildLogText 重构为**领域无关 snapshot 结构化接口**（title/summary/sections，零居家管家字段绑定）②toast 升级**通用提示控件**（4 形态：徽章/操作/计数/留空 + 队列 + 图标库 + 多操作 + 富详情 + 无障碍）③复制按钮控件化（预览/格式选择/脱敏/导出）④新控件 P0+P1（formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt）⑤injector 加 **SHARED-CSS 注入**（修 v1.1 只注入 JS 缺口）⑥结构校验违规**直接报错**（硬拦截） |
 | v1.3 | 2026-08-12 | **#288 P2 图表组件落地**：新增 `assets/charts.js`（`charts.bar/line/donut/progress` 四接口，纯 CSS+SVG 无外部依赖，数据空→emptyState 联动）；`<!--CHARTS-HELPERS-->` 从「第二版预留」转**正式版**；注入器 `--charts` 参数正式化；SHARED_JS 全家桶处置清单（Base 等价物走 Base / 图表走 charts.js / 居家特定留技能侧） |
 | v1.4 | 2026-08-12 | **#290 P2 状态层落地（加固）**：三控件（statusBadge/emptyState/errorReceipt）从「零消费方定义」加固为**对外可靠接口**——①errorReceipt 去掉 `window.__hmPayload` 强依赖（新增显式 `payload` 参数优先、`data/log` 字符串直传兜底）②errorReceipt 复制按钮改为渲染期生成文本存 `data-t`（onclick 仅 `copyText(this.dataset.t)`，零注入面；点击不再实时调 buildDataText）③errorReceipt 补 `.hm-actions` 网格布局（修正重试 primary wide 独立一行 + 复制数据/日志 ghost 一行 2 个，08 规范奇数按钮）④payload 无 snapshot 时容错（不渲染复制按钮，控件不崩）⑤statusBadge 非法 status 白名单降级 `empty`（防无样式徽章）⑥emptyState/statusBadge/errorReceipt 全部文本字段 esc 防 XSS，action 明示「受信 HTML 透传」。守卫测试 +9（边界/XSS/容错/布局） |
+| v1.6 | 2026-08-12 | **图表全参数化（方向 A 定稿）**：charts.js 四形态全参数化（line 16 项 / bar 7 / donut 6 / progress 4）+ 复合形态（combo 柱线组合 / sparkline 迷你趋势 / gauge 仪表盘）+ 结构校验违规报错（对齐 v1.2）+ 坐标唯一性（容器零 padding）+ 双端自适应（≤720px 独立 UI）+ 全部动画。守卫测试 141/141。**注意：v1.6 与 #289/#290 并发推进，版本号按落地顺序递增** |
 
 ## 1. 目录结构
 
@@ -23,7 +24,7 @@
   assets/
     base.js                # P0+P1+P1.5 JS（唯一真相源）
     base.css               # token A 组 + 全部控件样式（唯一真相源）
-    charts.js              # 图表组件（v1.3 新增 · bar/line/donut/progress）
+    charts.js              # 图表组件（v1.3 新增 · v1.6 全参数化 · 七接口）
   injector.py              # 注入器（CLI + 硬拦截 + payload/CSS/图表注入 + 结构校验）
   docs/
     component-contract.md  # 本契约
@@ -171,24 +172,48 @@ actionBar(p, extra?, opts?) → HTML
 - v1.2 新增控件样式：toast 徽章/操作/计数、formPrompt 表单、selectList 勾选、confirm 对话框、foldBox、statusBadge、emptyState、errorReceipt
 - 全部样式唯一真相源在 base.css；技能零样式副本
 
-### 6.5 图表组件（v1.3 · CHARTS-HELPERS）
+### 6.5 图表组件（v1.6 · CHARTS-HELPERS · 全参数化）
 
 ```js
 charts.bar(el, items[, opt])        // 柱状图
 charts.line(el, items[, opt])       // 折线图
-charts.donut(el, items[, opt])      // 环形图（v1.3 新增形态）
+charts.donut(el, items[, opt])      // 环形图
 charts.progress(el, pct[, opt])     // 进度条
+charts.combo(el, {bars, lines}, opt) // 柱线组合（v1.6 新增）
+charts.sparkline(el, items[, opt])  // 迷你趋势卡（v1.6 新增）
+charts.gauge(el, pct[, opt])        // 仪表盘（v1.6 新增）
 ```
 
-- **数据形状（统一）**：`items: [{label, value, color?}]`；value 非数兜底 0
-- **空态联动（硬行为）**：items 非数组/空数组 → 渲染 emptyState（`window.emptyState` 存在则用之，否则内联兜底 `.hm-c-empty`）；donut 合计为零同样走空态
-- **输入容错**：progress pct 非数 → 0，超界收敛 0~100
-- **语义色**：默认 `var(--blue,#007aff)`（token A 组带 fallback）；bar/donut 支持逐项 `color` 覆盖；donut 无覆盖时走内置 10 色 Apple 语义色板（#007aff/#34c759/#ff9500/#ff3b30/#af52de/#5ac8fa/#ffcc00/#8e8e93/#ff2d55/#00c7be）
-- **交互**：bar `opt.onclick(i)` 点击柱子回调；line `opt.ondrill(i)` 点击钻取回调；donut `opt.centerLabel/centerValue` 中心文案（centerValue 缺省=合计）、`opt.legend===false` 隐藏图例
-- **自包含**：charts.js 本地 esc 兜底（`window.esc` 不存在时用内联转义），**可独立注入不依赖 base.js**；样式自注入（`hm-charts-style`），不依赖模板级 CSS
-- **约束**：纯 CSS+SVG 无外部依赖 · 手机 375px 适配（柱高 130px/环形 130px，柱状图容器内横向滚动不撑破视口）
-- **白名单例外**：卡路里 `weight_volatility_v2` canvas（特殊交互）留技能自营，走公共层 ISSUE 审批
-- **来源**：bar/line/progress 从居家管家 CHARTS_JS 零行为变更提取（接口兼容，试点模板同调用可跑）；donut 从饼干记账 donutSVG 重构为数据驱动
+- **数据形状（统一）**：`items: [{label, value, color?}]`；**value 显式 null = 缺失断点（仅 line 支持，线段断开）**；其余非数字 → 结构校验报错
+- **结构校验（v1.6 硬行为）**：items 非数组 / 元素缺 label / value 非法 → **直接抛错**（对齐 Base v1.2「违规报错」）；空数组 → emptyState 联动（合法场景）
+- **空态联动**：空数组 → `emptyState`（存在则用之，否则内联兜底）；donut 合计为零同样走空态
+- **全参数（不传 = 默认）**：
+
+| 接口 | 参数 |
+|---|---|
+| `line` | `height/compact/width` · `color/lineWidth/dashed` · `smooth`（Catmull-Rom，点在线）· `showDots/dotSize/dotStyle` · `area/areaOpacity` · `labels('edge'/'all'/'none'/'select')` · `showValues/labelRotate` · `yMin/yMax/grid` · `format` · `tooltip` · `markLine{value,label}` · `markPoint` · `step` · `animation` · `series[{name,items,color,dashed,smooth,area}]` · `avgLine(n)` · `legend` · `highlightLast` · `onclick/ondrill` · `emptyText` |
+| `bar` | `format` · `colors/singleColor` · `height/compact` · `labels('all'/'none'/'select')` · `showValues` · `yMin/yMax/grid` · `tooltip/animation` · `onclick` |
+| `donut` | `format` · `colors` · `size/ringWidth` · `legend('right'/'bottom'/'none')` · `showPercent` · `centerLabel/centerValue` · `animation` |
+| `progress` | `color/gradient` · `height(轨道px)` · `showPct` · `animation`（pct 非数报错，超界收敛 0~100） |
+| `combo` | `{bars:[{label,value}], lines:[{label,value}]}`（同长同 label）· `barColor/lineColor` · `format` · `height` · `legend` · `animation` · `onclick` |
+| `sparkline` | `color/width/height` · `showValue` · `format`（涨绿跌红） |
+| `gauge` | `label/color/size` · `format` · `animation`（pct 非数报错） |
+
+- **坐标唯一性（v1.6 修复的根因）**：容器**零 padding**，留白进 SVG viewBox——数据点 overlay 与折线共享同一坐标系，物理对齐（实测误差 <0.2px）；`vector-effect="non-scaling-stroke"` 防拉伸线宽变形
+- **双端自适应（≤720px）**：柱标签两行、图例下沉（donut）、折线高度 150、数据点 8px——手机独立 UI
+- **语义色**：默认 token A 组（`var(--blue,#007aff)` 带 fallback）；donut 内置 10 色 Apple 语义色板；series 逐条取色板
+- **自包含**：本地 esc 兜底，可独立注入；样式自注入（`hm-charts-style`）
+- **白名单例外**：卡路里 `weight_volatility_v2` canvas 留技能自营，走公共层 ISSUE 审批
+
+### 6.6 复合形态（v1.6 新增）
+
+「无法统一的」不是形态参数，而是**组合**——新形态独立成组件，共享同一 token/空态/双端规则：
+
+| 组件 | 用途 | H3 场景 |
+|---|---|---|
+| `combo` | 柱=量 + 线=趋势/目标 | 每日摄入(柱)+累计趋势(线)、每周录入(柱)+均线(线) |
+| `sparkline` | 迷你趋势卡（无坐标轴 + 首尾值 + 涨绿跌红） | 概览页每个分类一个小趋势 |
+| `gauge` | 弧形进度 + 目标刻度 | 单指标达成（今日目标 80%） |
 
 ## 7. 注入器接口（v1.3）
 

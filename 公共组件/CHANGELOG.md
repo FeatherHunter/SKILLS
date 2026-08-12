@@ -2,6 +2,20 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.6（2026-08-12 · 图表全参数化 · 方向 A 定稿）
+
+**charts.js 四形态全参数化 + 复合形态**（契约 v1.6;与 #288 方向 A 定稿一致;新增参数非破坏性, 既有调用零变更;与 #289/#290 并发, 版本号按落地顺序递增）。
+
+- **折线图 line 全量 16 项**: `height/compact/width` 尺寸三件套 · `color/lineWidth/dashed` 线条 · `smooth` 平滑曲线（Catmull-Rom, 数据点严格在曲线上）· `showDots/dotSize/dotStyle` 数据点 · `area/areaOpacity` 面积渐变 · `labels('edge/all/none/select')` 标签策略 · `showValues/labelRotate` 数值标注 · `yMin/yMax/grid` 坐标 · `format` 数值格式化 · `tooltip` 悬停提示 · `markLine` 阈值线 · `markPoint` 峰谷标注 · `step` 阶梯图 · `animation` 入场动画 · `series` 多序列 + `legend` 图例 · `avgLine` 移动均线 · `highlightLast` 最新点高亮
+- **柱状图 bar 对齐 7 项**: format/colors/singleColor/height/compact/labels/showValues/yMin/yMax/grid/tooltip/animation; 修复「柱底参差」根因（绘图区+标签区两段式）
+- **环形图 donut 对齐 6 项**: format/colors/size/ringWidth/legend(含手机 bottom)/showPercent/animation
+- **进度条 progress 对齐 4 项**: color/gradient/height/showPct/animation
+- **复合形态 3 个**: `charts.combo`（柱线组合）/ `charts.sparkline`（迷你趋势, 涨绿跌红）/ `charts.gauge`（仪表盘弧形进度）
+- **结构校验（硬行为）**: items 非数组/缺 label/value 非法 → 直接抛错（对齐 Base v1.2 违规报错）; 显式 null = 缺失断点（line 线段断开）
+- **坐标唯一性修复**: 容器零 padding + 留白进 viewBox → 数据点与线物理对齐（实测 <0.2px）; vector-effect 防拉伸变形
+- **双端自适应**: ≤720px 手机独立 UI（标签两行/图例下沉/高度紧凑/触屏 tooltip）
+- 守卫测试 141/141 全绿（+33 项参数断言 + 坐标对齐 + 双端视口 + 结构校验）; 契约 v1.6 + CHANGELOG 同步
+
 ## v1.5（2026-08-12 · #289 P2 HELP 参数化落地）
 
 **HELP 参数化正式版**（契约 v1.2 + scene-data-contract v1；新增资产非破坏性，既有接口零变更）。

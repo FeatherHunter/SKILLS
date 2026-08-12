@@ -7,12 +7,14 @@
     "subtitle": "自动检测环境、初始化数据库,全程零决策,一次成功。",
     "button_text": "📋 复制",
     "prompt": "请你加载「作息管家」技能,帮我初始化(唤醒词:首次使用)。",
+    "closable": true,
     "steps": [
       { "title": "检测环境", "desc": "检查依赖" },
       { "title": "安装依赖", "desc": "自动安装" },
       { "title": "建数据库", "desc": "自动创建" },
       { "title": "初始化", "desc": "写入配置" },
       { "title": "校验", "desc": "自检通过" },
+      { "title": "生成报告", "desc": "初始化报告" },
       { "title": "完成", "desc": "准备就绪" }
     ]
   },
@@ -31,7 +33,7 @@
   "groups": [
     {
       "id": "record",
-      "icon": "✍️",
+      "icon": "write",
       "label": "记作息",
       "subgroups": [
         {
@@ -97,7 +99,7 @@
     },
     {
       "id": "plan",
-      "icon": "🗓️",
+      "icon": "calendar",
       "label": "计划",
       "subgroups": [
         {
@@ -132,7 +134,7 @@
     },
     {
       "id": "review",
-      "icon": "📊",
+      "icon": "chart",
       "label": "复盘",
       "subgroups": [
         {
@@ -161,7 +163,7 @@
     },
     {
       "id": "other",
-      "icon": "🏠",
+      "icon": "grid",
       "label": "其他",
       "subgroups": [
         {

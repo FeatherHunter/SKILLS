@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>P2 组件盘点报告 v2 · 场景数据/图表/状态层（对抗式审查修订版）</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+    --bg:#f5f5f7;--card:#fff;--line:#e3e3e8;--soft:#f2f2f7;
+    --blue:#0071e3;--blue2:#0a63ce;--blue-soft:#e8f2ff;
+    --ok:#34c759;--ok-soft:#e7f8ee;
+    --warn:#ff9500;--warn-soft:#fff3e0;
+    --red:#ff3b30;--red-soft:#ffe5e3;
+    --purple:#8e3fc9;--purple-soft:#f3e9fb;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--fg);line-height:1.6;
+    -webkit-font-smoothing:antialiased;padding:0 0 80px;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:0 16px}
+
+  /* ===== 头部 ===== */
+  header{background:linear-gradient(180deg,#fbfbfd,#f5f5f7);padding:36px 0 20px;border-bottom:1px solid var(--line)}
+  .kicker{font-size:11.5px;font-weight:700;color:var(--blue);letter-spacing:.04em;margin-bottom:8px}
+  h1{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.25;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--fg2);line-height:1.6}
+  .meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  .chip{display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:11px;color:var(--fg2);font-weight:600}
+  .chip b{color:var(--fg)}
+  .chip.blue{background:var(--blue-soft);border-color:#cfe2ff;color:var(--blue2)}
+
+  /* ===== 概览 ===== */
+  .ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:16px 0 8px}
+  .ov-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 12px;box-shadow:var(--shadow);text-align:center}
+  .ov-card .n{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+  .ov-card .n small{font-size:13px;font-weight:700;color:var(--fg3)}
+  .ov-card .l{font-size:11px;color:var(--fg2);font-weight:600;margin-top:2px}
+  .ov-card.wide{grid-column:span 3}
+
+  /* ===== 章节 ===== */
+  section{margin-top:22px}
+  .sec-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .sec-num{flex:0 0 auto;width:30px;height:30px;border-radius:10px;background:var(--blue);color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .sec-head h2{font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .sec-head .tag{font-size:10.5px;color:var(--fg3);background:var(--soft);border-radius:999px;padding:2px 9px;font-weight:600}
+  .sec-desc{font-size:12.5px;color:var(--fg2);margin-bottom:12px;line-height:1.6}
+
+  /* ===== 卡片 ===== */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 14px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .card h3{font-size:13.5px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .card h3 .dot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0}
+  .card p{font-size:12.5px;color:var(--fg2);line-height:1.65}
+
+  /* ===== 表格 ===== */
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+  table{border-collapse:collapse;width:100%;min-width:640px;font-size:12px}
+  th{background:var(--soft);color:var(--fg2);font-weight:700;text-align:left;padding:8px 10px;font-size:11px;white-space:nowrap;border-bottom:1px solid var(--line)}
+  td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--fg);line-height:1.5}
+  tr:last-child td{border-bottom:0}
+  td code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;background:var(--soft);border-radius:5px;padding:1px 5px;color:var(--blue2)}
+  td .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px}
+  .nowrap{white-space:nowrap}
+
+  /* ===== 徽章 ===== */
+  .badge{display:inline-flex;align-items:center;gap:3px;font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 8px;line-height:1.7;white-space:nowrap}
+  .b-ok{background:var(--ok-soft);color:#1a7a3a}
+  .b-warn{background:var(--warn-soft);color:#b25b00}
+  .b-red{background:var(--red-soft);color:#c0392b}
+  .b-blue{background:var(--blue-soft);color:var(--blue2)}
+  .b-purple{background:var(--purple-soft);color:var(--purple)}
+  .b-gray{background:#e9e9ee;color:#666}
+
+  /* ===== 列表 ===== */
+  ul.clean{list-style:none}
+  ul.clean li{position:relative;padding:5px 0 5px 20px;font-size:12.5px;color:var(--fg2);line-height:1.6}
+  ul.clean li::before{content:"";position:absolute;left:6px;top:13px;width:6px;height:6px;border-radius:50%;background:var(--blue);opacity:.55}
+  ul.clean li b{color:var(--fg)}
+  ul.clean li .hl{color:var(--blue2);font-weight:700}
+
+  /* ===== 复制按钮 ===== */
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 12px}
+  .copy-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border:0;background:var(--blue);color:#fff;border-radius:999px;padding:0 16px;font-size:12.5px;font-weight:700;cursor:pointer;min-height:40px;white-space:nowrap;transition:background .12s;box-shadow:0 2px 8px rgba(0,113,227,.25)}
+  .copy-btn:active{background:var(--blue2)}
+  .copy-btn.ghost{background:#fff;color:var(--blue);border:1px solid var(--blue);box-shadow:none}
+
+  /* ===== 代码块 ===== */
+  pre{background:#1d1d1f;color:#f5f5f7;border-radius:12px;padding:12px 14px;font-size:11px;line-height:1.6;overflow-x:auto;-webkit-overflow-scrolling:touch;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre}
+  pre .k{color:#7dd3fc}
+  pre .s{color:#a7f3d0}
+  pre .c{color:#8e8e93}
+  pre .n{color:#fbbf24}
+
+  /* ===== 发现条 ===== */
+  .find{display:flex;gap:9px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--warn);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;line-height:1.6;color:var(--fg2)}
+  .find .f-ic{flex-shrink:0}
+  .find b{color:var(--fg)}
+
+  /* ===== 补全清单 ===== */
+  .todo-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line);font-size:12.5px;line-height:1.55}
+  .todo-item:last-child{border-bottom:0}
+  .todo-item .st{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--warn-soft);color:#b25b00;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .todo-item .st.done{background:var(--ok-soft);color:#1a7a3a}
+  .todo-item .tt{flex:1;min-width:0}
+  .todo-item .tt b{font-size:12.5px}
+  .todo-item .tt span{display:block;color:var(--fg3);font-size:11.5px}
+
+  /* ===== 底部下一步 ===== */
+  .next{background:linear-gradient(135deg,#0a63ce,#007aff 55%,#0a84ff);border-radius:16px;padding:18px 16px;color:#fff;margin-top:24px;box-shadow:0 6px 24px rgba(10,99,206,.3)}
+  .next h2{font-size:16px;font-weight:800;margin-bottom:4px}
+  .next p{font-size:12.5px;opacity:.92;line-height:1.6;margin-bottom:10px}
+  .next .steps{display:flex;flex-direction:column;gap:6px}
+  .next .step{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:10px;padding:7px 11px;font-size:12px;font-weight:600}
+  .next .step .no{flex:0 0 auto;width:19px;height:19px;border-radius:50%;background:#fff;color:var(--blue2);font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);opacity:0;pointer-events:none;transition:all .25s;z-index:999;max-width:calc(100vw - 40px)}
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+  #toast .t-inner{background:rgba(28,28,30,.92);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);color:#fff;border-radius:14px;padding:12px 18px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:9px;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+  #toast .t-ic{font-size:16px}
+  #toast .t-ok{background:var(--ok);border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+
+  /* 手机适配 */
+  @media(max-width:520px){
+    h1{font-size:22px}
+    .ov-grid{grid-template-columns:1fr 1fr}
+    .ov-card.wide{grid-column:span 2}
+    header{padding:26px 0 16px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">BASE SKILL · P2 组件盘点</div>
+    <h1>场景数据 / 图表 / 状态层 现状全景</h1>
+    <div class="sub">6 主力技能只读盘点 · 为 3 张组件落地票（图表 / HELP / 状态层）提供事实基础 · <b style="color:var(--blue2)">v2 = 对抗式审查修订版</b></div>
+    <div class="meta-row">
+      <span class="chip">票 <b>#287</b> · wayfinder:task</span>
+      <span class="chip">挂 <b>#260</b> Base Skill map</span>
+      <span class="chip blue">只读盘点 · 零改动</span>
+      <span class="chip">2026-08-12</span>
+      <span class="chip" style="background:var(--red-soft);border-color:#ffc7c2;color:#c0392b">v1 已修订（5 处实证修正）</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ===== 概览 ===== -->
+  <div class="ov-grid">
+    <div class="ov-card"><div class="n">6<small> 技能</small></div><div class="l">盘点范围</div></div>
+    <div class="ov-card"><div class="n">736</div><div class="l">场景总数（量级参考）</div></div>
+    <div class="ov-card"><div class="n">~218</div><div class="l">HTML 模板（含残留）</div></div>
+    <div class="ov-card wide" style="text-align:left;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+      <span style="font-size:12px;font-weight:700;color:var(--fg2);margin-right:2px">各技能场景数（口径不一，仅量级）：</span>
+      <span class="badge b-blue">卡路里 436~449（运行时/开发期双口径）</span>
+      <span class="badge b-purple">作息管家 85</span>
+      <span class="badge b-ok">居家管家 73</span>
+      <span class="badge b-warn">饼干记账 71</span>
+      <span class="badge b-gray">私家大厨 33</span>
+      <span class="badge b-red">备忘录 30</span>
+    </div>
+    <div class="ov-card wide" style="text-align:left;font-size:11px;color:var(--fg3)">
+      ⚠️ 计数口径声明：卡路里 = 运行时权威源 _triggers.py 436（TRIGGER 条数）/ 开发期 scene_data JSON 449（含技能协同 36），HELP 渲染为<b style="color:var(--fg2)">双源合并</b>（见 Part 1）；私家大厨/饼干/作息 = 合并总账数；备忘录 = 唯一事实源数。跨源加总仅作量级参考。
+    </div>
+  </div>
+
+  <!-- ===== Part 1 scene_data ===== -->
+  <section id="p1">
+    <div class="sec-head">
+      <div class="sec-num">1</div>
+      <h2>scene_data 结构全景</h2>
+      <span class="tag">位置 / 格式 / 组织模式 / 字段</span>
+    </div>
+    <div class="sec-desc">help-template-contract §6 明文前置的盘点项：确认 6 技能场景数据的物理分布与结构差异，判断统一 scenes 结构是否可行。计数口径见概览声明。</div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>技能</th><th>文件位置</th><th>格式</th><th>组织模式</th><th>场景数</th><th>字段体系</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>卡路里</b></td>
+            <td><span class="mono">.scratch/scene_data/NN-分类.json</span> ×11 + <span class="mono">scripts/_triggers.py</span></td>
+            <td>JSON + Python</td>
+            <td><b>双源合并</b>：开发期分类 JSON（13 字段新格式）优先覆盖 + <span class="mono">_triggers.py</span>（TRIGGERS 列表）补齐旧分类——render_help_center.py 合并渲染</td>
+            <td>436 / 449</td>
+            <td>13 字段 scene schema（<span class="mono">key/name/wake_word/category/subfunction/output_type/html_template/data_source/prompt_template/user_intent/data_fields/depends_on_external/order</span>）；双源同 wake_word 411 条、prompt 冲突仅 1 条、仅单源 59 条</td>
+          </tr>
+          <tr>
+            <td><b>居家管家</b></td>
+            <td><span class="mono">scenes/SM*.yaml</span> ×6 + <span class="mono">references/scenarios.yaml</span></td>
+            <td>YAML</td>
+            <td>域分文件 → 合并器 <span class="mono">scripts/场景合并.py</span> → 总账</td>
+            <td>73</td>
+            <td><span class="mono">domains[] + scenarios[]</span>（id/domain/sub/wake_word/scenario_id/scenario_title/dimensions/type/status/prompt/html{template,command_cn,data_source}）</td>
+          </tr>
+          <tr>
+            <td><b>私家大厨</b></td>
+            <td><span class="mono">scenes/*.yaml</span> ×10 + <span class="mono">references/scenarios.yaml</span></td>
+            <td>YAML</td>
+            <td>域分文件 → 合并器 → 总账</td>
+            <td>33</td>
+            <td><span class="mono">meta + scenarios[]</span>（同居家管家字段 + variants）；独有 meta/prompt_rules/status_legend/methodology/boundary_templates/aliases</td>
+          </tr>
+          <tr>
+            <td><b>饼干记账</b></td>
+            <td><span class="mono">scenes/*.yaml</span> ×7 + <span class="mono">references/scenarios.yaml</span> + <span class="mono">.json</span></td>
+            <td>YAML + JSON</td>
+            <td>域分文件（<b>三层嵌套</b>）→ 总账</td>
+            <td>71</td>
+            <td><span class="mono">scenes[].subs[].wake_words[].scenes[]</span>（id/scenario_id/scenario_title/type/status/prompt/result/html）；顶层 help_wake_words</td>
+          </tr>
+          <tr>
+            <td><b>备忘录</b></td>
+            <td><span class="mono">references/scenarios.yaml</span></td>
+            <td>YAML</td>
+            <td><b>单文件自权威</b>（无分文件）</td>
+            <td>30</td>
+            <td><span class="mono">categories[] + scenarios[]</span>（wake_word/scenario_id/scenario_title/type/dimensions/prompt/status/result/category/subfunction/dependencies）；无 order（组内序=书写序）</td>
+          </tr>
+          <tr>
+            <td><b>作息管家</b></td>
+            <td><span class="mono">scenarios/*.yaml</span> ×6 + <span class="mono">references/scenarios.yaml</span></td>
+            <td>YAML</td>
+            <td>域分文件 → <span class="mono">update_scenarios.py</span> → 总账</td>
+            <td>85</td>
+            <td><span class="mono">scenarios[] 平铺</span>（wake_word/scenario_id/scenario_title/dimensions/prompt/status/result）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h3><span class="dot"></span>关键差异（统一前的障碍点）</h3>
+      <ul class="clean">
+        <li><b>数据源 3 类 4 种模式</b>：单文件自权威（备忘录）/ 分文件+合并器→总账（居家·大厨·饼干·作息）/ <b>双源合并渲染</b>（卡路里：scene_data JSON 优先 + _triggers.py 补齐，同 wake_word 411 条、prompt 冲突仅 1 条、仅单源 59 条）——统一需要先定义「谁是渲染唯一入口」</li>
+        <li><b>分组层级不一致</b>：一级（备忘录·作息）/ 二级 category+subfunction 或 domain+sub（卡路里·居家·大厨）/ <b>三级</b> subs→wake_words→scenes（饼干记账）——HELP 分组导航需要统一层数</li>
+        <li><b>字段命名漂移</b>：<span class="mono">scenario_id</span> vs <span class="mono">id</span> vs <span class="mono">key</span>；<span class="mono">prompt</span> vs <span class="mono">prompt_template</span>；HTML 映射 <span class="mono">html_template</span>（顶层）vs <span class="mono">html.template</span>（嵌套）</li>
+        <li><b>status 语义 5 技能一致</b>（''=可用 / 【待开发】=禁用），卡路里无 status 字段</li>
+        <li><b>卡路里独有</b> data_fields / depends_on_external / order；其余技能有 dimensions（采集维度）——卡路里用 fill_hints</li>
+        <li><b>私家大厨独有全局元信息</b>（prompt_rules/methodology/boundary_templates）——HELP 渲染需要这些支撑</li>
+        <li><b>居家管家 SM4/SM7/SM9</b> 无 scenes 分文件（9 域只有 6 个文件），总账却含其场景——域分文件覆盖不完整</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot"></span>统一 scene_data 结构草案（对齐 help-template-contract §3）</h3>
+      <p style="margin-bottom:10px">统一结构 = 渲染器只认这一种输入；各技能数据经归一化层转换（源字段 → 统一字段），转换层放 Base。</p>
+      <div class="btn-row">
+        <button class="copy-btn" onclick="cp(this,'sceneDraft')">📋 复制统一结构草案</button>
+      </div>
+      <pre id="sceneDraft"><span class="c"># 统一 scene_data 结构 v1（Base 渲染器输入契约）</span>
+{
+  <span class="k">"skill_name"</span>: <span class="s">"技能中文名"</span>,          <span class="c">// 必填 · 标题/文件名</span>
+  <span class="k">"title"</span>: <span class="s">"能力速查台"</span>,             <span class="c">// 必填 · 页面大标题</span>
+  <span class="k">"subtitle"</span>: <span class="s">"一句话说明"</span>,          <span class="c">// 可选</span>
+  <span class="k">"groups"</span>: [                      <span class="c">// 分组导航 · 层级统一为 2 级（category→subfunction）</span>
+    { <span class="k">"id"</span>: <span class="s">"diet"</span>, <span class="k">"label"</span>: <span class="s">"饮食"</span>, <span class="k">"count"</span>: 69 }
+  ],
+  <span class="k">"scenes"</span>: [                     <span class="c">// 场景卡片 · 归一化后</span>
+    {
+      <span class="k">"id"</span>: <span class="s">"diet_add_meal"</span>,         <span class="c">// 源: key / id / scenario_id</span>
+      <span class="k">"category"</span>: <span class="s">"diet"</span>,          <span class="c">// 源: category+subfunction / domain+sub / subs.name</span>
+      <span class="k">"title"</span>: <span class="s">"记一餐"</span>,            <span class="c">// 源: name / scenario_title</span>
+      <span class="k">"wake_word"</span>: <span class="s">"记一餐"</span>,       <span class="c">// 全部技能一致</span>
+      <span class="k">"prompt_template"</span>: <span class="s">"…"</span>,    <span class="c">// 源: prompt / prompt_template · 定稿零差异</span>
+      <span class="k">"status"</span>: <span class="s">""</span>,                <span class="c">// ''可用 / 【待开发】禁用 · 卡路里补默认''</span>
+      <span class="k">"editable_fields"</span>: []         <span class="c">// 可选 · 源: fill_hints / dimensions（参数化场景）</span>
+    }
+  ]
+}</pre>
+    </div>
+
+    <div class="card">
+      <h3><span class="dot"></span>归一化映射表（源字段 → 统一字段）</h3>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>统一字段</th><th>卡路里</th><th>居家管家</th><th>私家大厨</th><th>饼干记账</th><th>备忘录</th><th>作息管家</th></tr></thead>
+          <tbody>
+            <tr><td><b>id</b></td><td><span class="mono">key</span></td><td><span class="mono">id</span></td><td><span class="mono">id</span></td><td><span class="mono">id</span></td><td><span class="mono">scenario_id</span></td><td><span class="mono">scenario_id</span></td></tr>
+            <tr><td><b>category 分组</b></td><td><span class="mono">category+subfunction</span></td><td><span class="mono">domain+sub</span></td><td><span class="mono">domain+sub</span></td><td><span class="mono">subs[].name</span></td><td><span class="mono">category</span></td><td><b>无分组</b>·需补一级</td></tr>
+            <tr><td><b>title</b></td><td><span class="mono">name</span></td><td><span class="mono">scenario_title</span></td><td><span class="mono">scenario_title</span></td><td><span class="mono">scenario_title</span></td><td><span class="mono">scenario_title</span></td><td><span class="mono">scenario_title</span></td></tr>
+            <tr><td><b>wake_word</b></td><td colspan="6" style="text-align:center;color:var(--ok)">6 技能字段名完全一致 ✓</td></tr>
+            <tr><td><b>prompt_template</b></td><td><span class="mono">prompt_template</span></td><td><span class="mono">prompt</span></td><td><span class="mono">prompt</span></td><td><span class="mono">prompt</span></td><td><span class="mono">prompt</span></td><td><span class="mono">prompt</span></td></tr>
+            <tr><td><b>status</b></td><td><b>无</b>·补默认''</td><td colspan="5" style="text-align:center;color:var(--ok)">5 技能一致（''/【待开发】）✓</td></tr>
+            <tr><td><b>editable_fields</b></td><td><span class="mono">fill_hints</span></td><td>prompt 内参数</td><td>prompt 内参数</td><td>prompt 内参数</td><td><span class="mono">dimensions</span></td><td><span class="mono">dimensions</span></td></tr>
+            <tr><td><b>html_template</b></td><td><span class="mono">html_template</span></td><td><span class="mono">html.template</span></td><td><span class="mono">html.template</span></td><td><span class="mono">html.template</span></td><td>无</td><td>无</td></tr>
+            <tr><td><b>data_source</b></td><td><span class="mono">data_source</span></td><td><span class="mono">html.data_source</span></td><td><span class="mono">html.data_source</span></td><td><span class="mono">html.data_source</span></td><td>无</td><td>无</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="find" style="margin-top:10px">
+        <span class="f-ic">⚠️</span>
+        <div><b>结论：统一可行，需归一化层。</b>核心字段（wake_word/title/prompt/status）6 技能高度同构，差异集中在「分组层级」和「id 命名」——统一结构 v1 采用 2 级分组（category→subfunction），饼干记账 3 层嵌套展平、作息管家补一级分组、卡路里补 status。归一化层放 Base（每技能一份映射配置），技能数据文件零改动。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Part 2 图表 ===== -->
+  <section id="p2">
+    <div class="sec-head">
+      <div class="sec-num">2</div>
+      <h2>图表现状</h2>
+      <span class="tag">实现方式 / 依赖 / 收敛点</span>
+    </div>
+    <div class="sec-desc">6 技能图表实现方式全景——T3 结论「图表 4 种」的实证验证。分类口径：<b>共享组件 / 内联静态 / 动态生成 / 纯 CSS</b> 4 类 + 无图表（饼干模板串与作息 JS 拼接同属「动态生成」）。svc 出现数 ≠ 图表数（已抽样区分图表/图标）。</div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>技能</th><th>实现方式</th><th>详情</th><th>依赖</th><th>覆盖</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>居家管家</b></td>
+            <td><span class="badge b-ok">共享组件</span> <span class="mono">CHARTS_JS</span></td>
+            <td><span class="mono">scripts/render/_shared.py</span> 内嵌 · 柱状/折线/进度 · 手机适配 · 纯 CSS+SVG 单文件自包含 · 样式内联</td>
+            <td>无外部依赖</td>
+            <td>stats 域为主（overview/inventory_stat 等）</td>
+          </tr>
+          <tr>
+            <td><b>卡路里</b></td>
+            <td><span class="badge b-warn">内联静态 SVG</span></td>
+            <td>25 模板含 <span class="mono">&lt;svg&gt;</span>（抽样区分：<b>图表 20</b> / 图标·装饰 5）+ <span class="mono">weight_volatility_v2</span> canvas 1 处；无统一图表库，各模板自画</td>
+            <td>无（cropperjs 为图片裁剪非图表）</td>
+            <td>分析/体重/运动/主页 20 图表模板</td>
+          </tr>
+          <tr>
+            <td><b>作息管家</b></td>
+            <td><span class="badge b-blue">JS 拼接 CSS 条 + 后端 SVG</span></td>
+            <td><span class="mono">_record_engine.js</span> <span class="mono">div.bar&gt;bar-fill</span> 占比条 + 后端生成 <span class="mono">radar_svg</span> 注入 + schedule_replay SVG 时间轴</td>
+            <td>无 · 已接 Base 管线</td>
+            <td>record/plan/replay 结果页</td>
+          </tr>
+          <tr>
+            <td><b>私家大厨</b></td>
+            <td><span class="badge b-gray">纯 CSS 进度条</span></td>
+            <td>实测 0 svg / 0 canvas：cooking_mode + shopping_view 纯 CSS progress 条（cook-progress-bar）+ emoji 状态标记</td>
+            <td>无</td>
+            <td>做菜/采购页</td>
+          </tr>
+          <tr>
+            <td><b>备忘录</b></td>
+            <td><span class="badge b-gray">无图表</span></td>
+            <td>0 匹配 svg/canvas/chart——纯列表/表单页</td>
+            <td>—</td>
+            <td>—</td>
+          </tr>
+          <tr>
+            <td><b>饼干记账</b></td>
+            <td><span class="badge b-purple">JS 模板字符串生成 SVG</span></td>
+            <td><span class="mono">分析/analysis_view.html</span> 18 处：donut 环形 + 折线 + 柱状自写（模板字符串拼 SVG）</td>
+            <td>无</td>
+            <td>分析视图</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h3><span class="dot"></span>图表组件接口草案（CHARTS-HELPERS v1 · 占位符正式版）</h3>
+      <p style="margin-bottom:10px">4 种形态收敛为统一 JS 接口。单一真相源 = <span class="mono">公共组件/assets/charts.js</span>（从居家管家 CHARTS_JS 提取为起点，形态兼容卡路里/饼干记账），经 <span class="mono">&lt;!--CHARTS-HELPERS--&gt;</span> 注入（component-contract §3 已预留 0 或 1）。</p>
+      <div class="btn-row">
+        <button class="copy-btn" onclick="cp(this,'chartDraft')">📋 复制图表接口草案</button>
+      </div>
+      <pre id="chartDraft"><span class="c"># CHARTS-HELPERS v1 接口草案（收敛 4 形态）</span>
+<span class="k">charts</span> = window.__charts  <span class="c">// 命名空间</span>
+
+<span class="k">charts.bar</span>(el, data, opts?)      <span class="c">// 柱状 · 居家管家已有 · 数据 [{label,value,sub?}]</span>
+<span class="k">charts.line</span>(el, series, opts?)   <span class="c">// 折线 · 饼干记账 analysis_view 形态 · series [{name,points:[{x,y}]}]</span>
+<span class="k">charts.donut</span>(el, segments, opts?) <span class="c">// 环形 · 饼干记账 donut 形态 · segments [{label,value,color?}]</span>
+<span class="k">charts.progress</span>(el, pct, opts?)  <span class="c">// 进度条 · 居家/作息 bar-fill 形态 · pct 0-100</span>
+
+<span class="c">// 统一约束</span>
+<span class="c">// · 纯 CSS+SVG 无外部依赖 · 手机 375px 适配 · 语义色走 token A 组</span>
+<span class="c">// · 输入校验：数据空 → 渲染 emptyState（与状态层联动）</span>
+<span class="c">// · 数据驱动渲染：技能侧不再手写 SVG 模板字符串</span>
+
+<span class="c">// 白名单例外</span>
+<span class="c">// · weight_volatility_v2 canvas（波动图特殊交互）留技能自营，走公共层 ISSUE 审批</span></pre>
+    </div>
+
+    <div class="find">
+      <span class="f-ic">💡</span>
+      <div><b>收敛优先级建议：bar + progress 先行</b>（居家管家 CHARTS_JS 实测含 <span style="font-family:monospace">window.charts = {progress/bar/line}</span>，可直接提取），line/donut 第二波（饼干记账自写形态需重构为数据驱动）。卡路里 20 个图表模板是最大工作量面——建议组件票落地后按「高频模板优先」逐模板迁移。</div>
+    </div>
+  </section>
+
+  <!-- ===== Part 3 状态层 ===== -->
+  <section id="p3">
+    <div class="sec-head">
+      <div class="sec-num">3</div>
+      <h2>状态层现状</h2>
+      <span class="tag">statusBadge / emptyState / errorReceipt</span>
+    </div>
+    <div class="sec-desc">Base v1.2 已定义 3 个状态控件（<span class="mono">base.js:455/462/473</span>）——盘点发现 <b>全仓库零消费方</b>，6 技能全部自研。</div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>技能</th><th>statusBadge 状态徽章</th><th>emptyState 空状态</th><th>errorReceipt 错误回执</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>卡路里</b></td>
+            <td>自研内联（help_center 待开发徽章）</td>
+            <td>自研内联 · 34 模板（量级）</td>
+            <td><span class="badge b-blue">独立模板</span> <span class="mono">templates/error_receipt.html</span> + <span class="mono">render_error_receipt.py</span>（08 规范 §6.1 三层反馈）——<b>唯一独立错误回执模板</b></td>
+          </tr>
+          <tr>
+            <td><b>居家管家</b></td>
+            <td>自研内联（各模板状态标签）</td>
+            <td>自研 <span class="mono">.empty</span> 类（「还没有物品 📦」+ 下一步按钮）</td>
+            <td><span class="badge b-red">5 个 error.html</span> 域级<b>同构重复</b>（位置/快递购物/物品/穿搭/联动，md5 全不同=样式家族相同、独立实现）+ 开始使用/error_receipt.html——<b>#286 同类痛点</b></td>
+          </tr>
+          <tr>
+            <td><b>私家大厨</b></td>
+            <td>自研内联</td>
+            <td>自研内联 · 20 模板（量级）</td>
+            <td>自研内联</td>
+          </tr>
+          <tr>
+            <td><b>饼干记账</b></td>
+            <td>自研内联</td>
+            <td>自研内联 · 16 模板（量级）</td>
+            <td>自研内联</td>
+          </tr>
+          <tr>
+            <td><b>备忘录</b></td>
+            <td>自研内联</td>
+            <td>自研内联 · 7 模板（量级）</td>
+            <td>自研内联</td>
+          </tr>
+          <tr>
+            <td><b>作息管家</b></td>
+            <td>自研 <span class="mono">sc-status pending</span>（help_center 待开发徽章，<b>非 Base 控件</b>）</td>
+            <td>自研内联</td>
+            <td>engine 自研 <span class="mono">.error</span> 块（❌ 数据解析失败/加载失败/未知 mode）</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h3><span class="dot"></span>状态层补全清单（组件落地票范围）</h3>
+      <div class="todo-item">
+        <div class="st">1</div>
+        <div class="tt"><b>emptyState 全技能统一 → Base</b><span>卡路里 34 模板 / 居家 36 文件 / 大厨 20 / 饼干 16 / 备忘录 7 / 作息 engine——「暂无数据」形态收敛为 <span class="mono">emptyState({icon,text,hint,action})</span></span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st">2</div>
+        <div class="tt"><b>居家管家 6 个错误页收敛 → Base errorReceipt</b><span>5 个域级 error.html + 开始使用/error_receipt.html → 1 个 Base 控件（#286 已另开治理票）</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st">3</div>
+        <div class="tt"><b>卡路里 error_receipt.html → Base errorReceipt</b><span>保留 08 规范 §6.1 三层反馈语义，迁移为 Base 控件调用（错误描述+修正重试+复制数据/日志）</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st">4</div>
+        <div class="tt"><b>作息管家 engine 型 .error → Base errorReceipt</b><span>engine 模板的挑战：错误块在 <span class="mono">_record_engine.js</span> 动态拼接，需在 Base 控件渲染路径上打通 JS 调用</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st">5</div>
+        <div class="tt"><b>statusBadge 待开发徽章统一 → Base</b><span>作息 help_center <span class="mono">sc-status</span> 是最近邻；卡路里 help_center 待开发徽章同类——HELP 参数化时一并统一</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st done">✓</div>
+        <div class="tt"><b>Base 控件已就绪（零成本起点）</b><span><span class="mono">base.js:455 statusBadge / 462 emptyState / 473 errorReceipt</span> 已定义——补全票 = 迁移消费方，不写新控件</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Part 4 页面清单 ===== -->
+  <section id="p4">
+    <div class="sec-head">
+      <div class="sec-num">4</div>
+      <h2>6 技能 HTML 页面清单</h2>
+      <span class="tag">决定 6 张技能重构优化票的验收范围</span>
+    </div>
+    <div class="sec-desc">各技能除 HELP 外的全部 HTML 模板 + Base 注入管线接入现状（迁移起点）。</div>
+
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>技能</th><th>模板总数</th><th>HELP 页面</th><th>SHARED-HELPERS</th><th>INJECT-DATA</th><th>Base 管线状态</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><b>卡路里</b></td>
+            <td>73 业务（76 文件，4 非交付残留）</td>
+            <td><span class="mono">help_center.html</span></td>
+            <td>1 / 73</td><td>72 / 73</td>
+            <td><span class="badge b-red">未接 Base</span> 自研注入（仅 INJECT-DATA）</td>
+          </tr>
+          <tr>
+            <td><b>居家管家</b></td>
+            <td>67</td>
+            <td><span class="mono">help_center.html</span></td>
+            <td>67 / 67</td><td>67 / 67</td>
+            <td><span class="badge b-warn">同名异源</span> SHARED-HELPERS 占位符 = 自研 <span class="mono">SHARED_JS</span>（非 Base）</td>
+          </tr>
+          <tr>
+            <td><b>私家大厨</b></td>
+            <td>20</td>
+            <td><span class="mono">help.html</span></td>
+            <td>0 / 20</td><td>19 / 20</td>
+            <td><span class="badge b-warn">自研 INJECT-08</span> 08 规范体系占位符（全套）· 非 Base</td>
+          </tr>
+          <tr>
+            <td><b>饼干记账</b></td>
+            <td>25</td>
+            <td><span class="mono">help.html</span></td>
+            <td>1 / 25</td><td>13 / 25</td>
+            <td><span class="badge b-red">未接</span> 自研注入（覆盖不完整）</td>
+          </tr>
+          <tr>
+            <td><b>备忘录</b></td>
+            <td>7</td>
+            <td><span class="mono">memo_help.html</span></td>
+            <td>0 / 7</td><td>1 / 7</td>
+            <td><span class="badge b-warn">自研 INJECT-SHARED</span> 第三方 clipboard.js 体系 6/7（T3 #263 记载的 3 套机制之一）· 非 Base</td>
+          </tr>
+          <tr>
+            <td><b>作息管家</b></td>
+            <td>20</td>
+            <td><span class="mono">help_center.html</span></td>
+            <td>19 / 20</td><td>20 / 20</td>
+            <td><span class="badge b-ok">已接 ✅</span> #269 试点 · 唯一真实接 Base</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card" style="margin-top:10px">
+      <h3><span class="dot"></span>页面清单要点</h3>
+      <ul class="clean">
+        <li><b>作息管家</b>是唯一真实接 Base 管线的技能（19/20 模板）——其余 5 技能为 6 张重构票主战场</li>
+        <li><b>注入机制共 3 套占位符体系</b>（T3 #263 记载，本次实证确认）：<span class="mono">SHARED-HELPERS</span>（居家自研 SHARED_JS / 作息真 Base）/ <span class="mono">INJECT-SHARED</span>（备忘录 clipboard.js）/ <span class="mono">INJECT-08</span>（私家大厨 08 规范体系）——接 Base 时全部收敛为 Base 占位符</li>
+        <li><b>居家管家占位符同名异源</b>：<span class="mono">&lt;!--SHARED-HELPERS--&gt;</span> 名字与 Base 相同但内容是自研 <span class="mono">SHARED_JS</span>（含 toast/copyText/buildDataText 等 Base 等价物全家桶）——接 Base 时需先迁移防「假接入」</li>
+        <li><b>HELP 文件名 3 种</b>：<span class="mono">help_center.html</span>（卡/居/作）· <span class="mono">help.html</span>（大厨/饼干）· <span class="mono">memo_help.html</span>（备忘录）——HELP 参数化后统一输出命名 <span class="mono">help_&lt;skill&gt;.html</span></li>
+        <li><b>作息管家 6 个 schedule_record_*（约 1KB）</b>：engine 型模板骨架（内容在外部 _record_engine.js），<b>已接 Base 管线</b>（SHARED-HELPERS + SHARED-CSS + INJECT-DATA）——非跳转壳</li>
+        <li><b>居家管家 5 个域级 error.html</b> 同构重复 + 开始使用/error_receipt.html = 状态层收敛最大目标面</li>
+        <li><b>卡路里 73 业务模板</b>为最大模板库（76 文件含 .bak/临时样例/设计审查报告 4 个非交付残留），迁移工作量最大——建议按波次横切（参考 #265 T5 渐进策略）</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== 下一步 ===== -->
+  <div class="next">
+    <h2>下一步 · 3 张组件落地票</h2>
+    <p>盘点结论已就绪：统一结构可行（归一化层放 Base）、图表 4 形态收敛 1 接口、状态层 3 控件零消费方待迁移。按用户拍板票结构开出：</p>
+    <div class="steps">
+      <div class="step"><span class="no">1</span>图表组件落地票 · CHARTS-HELPERS v1（bar/progress 先行）</div>
+      <div class="step"><span class="no">2</span>HELP 参数化落地票 · 统一 scene_data 结构 + 归一化层 + 模板入库</div>
+      <div class="step"><span class="no">3</span>状态层落地票 · emptyState/errorReceipt/statusBadge 全技能迁移</div>
+      <div class="step"><span class="no">4</span>组件落地后 → 6 张技能重构优化票（每技能 1 票 · 挂 #260）</div>
+    </div>
+  </div>
+
+  <p style="text-align:center;font-size:10.5px;color:var(--fg3);margin-top:16px">P2 盘点报告 v2（对抗式审查修订版）· 2026-08-12 · Mavis · v1 修正 5 处实证错误（卡路里双口径/占位符三套机制/engine 骨架/同构重复/计数口径）</p>
+</div>
+
+<div id="toast"><div class="t-inner"><span class="t-ic">📋</span><span class="t-txt">已复制</span></div></div>
+
+<script>
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function toast(msg,detail){var t=document.getElementById('toast');t.querySelector('.t-txt').textContent=msg;t.classList.add('show');clearTimeout(window.__tt);window.__tt=setTimeout(function(){t.classList.remove('show')},2200)}
+function copyText(s,btn){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(function(){toast('已复制')},function(){fb(s)})}else{fb(s)}}
+function fb(s){var ta=document.createElement('textarea');ta.value=s;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('已复制')}catch(e){toast('复制失败,长按选择文本手动复制')}document.body.removeChild(ta)}
+function cp(btn,id){var el=document.getElementById(id);copyText(el.innerText,btn)}
+</script>
+</body>
+</html>

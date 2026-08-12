@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<title>对抗式审查 · P2 盘点过程与结论</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
+    --bg:#f5f5f7;--card:#fff;--line:#e3e3e8;--soft:#f2f2f7;
+    --blue:#0071e3;--blue2:#0a63ce;--blue-soft:#e8f2ff;
+    --ok:#34c759;--ok-soft:#e7f8ee;
+    --warn:#ff9500;--warn-soft:#fff3e0;
+    --red:#ff3b30;--red-soft:#ffe5e3;
+    --shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);
+  }
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--fg);line-height:1.65;
+    -webkit-font-smoothing:antialiased;padding:0 0 80px;
+  }
+  .wrap{max-width:860px;margin:0 auto;padding:0 16px}
+
+  header{background:linear-gradient(180deg,#fbfbfd,#f5f5f7);padding:36px 0 20px;border-bottom:1px solid var(--line)}
+  .kicker{font-size:11.5px;font-weight:700;color:var(--red);letter-spacing:.04em;margin-bottom:8px}
+  h1{font-size:25px;font-weight:800;letter-spacing:-.02em;line-height:1.25;margin-bottom:6px}
+  .sub{font-size:13px;color:var(--fg2);line-height:1.6}
+  .meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  .chip{display:inline-flex;align-items:center;gap:5px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:11px;color:var(--fg2);font-weight:600}
+  .chip b{color:var(--fg)}
+  .chip.red{background:var(--red-soft);border-color:#ffc7c2;color:#c0392b}
+
+  /* 结论条 */
+  .verdict{display:flex;gap:12px;align-items:flex-start;background:linear-gradient(135deg,#fff5f5,#fff);border:1px solid #ffd6d6;border-radius:16px;padding:16px 18px;margin:18px 0;box-shadow:var(--shadow)}
+  .verdict .v-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--red);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px}
+  .verdict b{font-size:14px}
+  .verdict p{font-size:12.5px;color:var(--fg2);margin-top:3px}
+
+  section{margin-top:26px}
+  .sec-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .sec-num{flex:0 0 auto;width:30px;height:30px;border-radius:10px;background:#1d1d1f;color:#fff;font-size:14px;font-weight:800;display:flex;align-items:center;justify-content:center}
+  .sec-head h2{font-size:17px;font-weight:800;letter-spacing:-.01em}
+  .sec-head .tag{font-size:10.5px;color:var(--fg3);background:var(--soft);border-radius:999px;padding:2px 9px;font-weight:600}
+  .sec-desc{font-size:12.5px;color:var(--fg2);margin-bottom:12px}
+
+  /* 审查条目 */
+  .item{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .item .i-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+  .item .i-head b{font-size:13.5px}
+  .sev{font-size:10.5px;font-weight:800;border-radius:999px;padding:1px 9px;line-height:1.7}
+  .sev.high{background:var(--red-soft);color:#c0392b}
+  .sev.mid{background:var(--warn-soft);color:#b25b00}
+  .sev.low{background:#e9e9ee;color:#666}
+  .claim,.fact,.fix{font-size:12.5px;padding:8px 12px;border-radius:10px;margin:6px 0;line-height:1.6}
+  .claim{background:var(--soft);color:var(--fg2)}
+  .claim b{color:var(--fg)}
+  .fact{background:var(--ok-soft);color:#1a5c2e}
+  .fact.wrong{background:var(--red-soft);color:#8f2b20}
+  .fact.wrong b{color:#6e1d14}
+  .fact b{color:#125426}
+  .fix{background:var(--blue-soft);color:#0a4a8a}
+  .fix b{color:#073a6d}
+
+  /* 站得住/要修正 */
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .col{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+  .col h3{font-size:13px;font-weight:800;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+  .col ul{list-style:none}
+  .col li{position:relative;padding:5px 0 5px 18px;font-size:12.5px;color:var(--fg2);line-height:1.6}
+  .col li::before{content:"";position:absolute;left:3px;top:12px;width:6px;height:6px;border-radius:50%}
+  .col.hold li::before{background:var(--ok)}
+  .col.fix li::before{background:var(--red)}
+  .col li b{color:var(--fg)}
+
+  /* 修正清单 */
+  .todo-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px dashed var(--line);font-size:12.5px;line-height:1.55}
+  .todo-item:last-child{border-bottom:0}
+  .todo-item .st{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--red-soft);color:#c0392b;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .todo-item .tt{flex:1;min-width:0}
+  .todo-item .tt b{font-size:12.5px}
+  .todo-item .tt span{display:block;color:var(--fg3);font-size:11.5px}
+
+  .note{font-size:11.5px;color:var(--fg3);background:var(--soft);border-radius:10px;padding:8px 12px;margin-top:10px;line-height:1.6}
+
+  @media(max-width:520px){
+    h1{font-size:21px}
+    .two-col{grid-template-columns:1fr}
+    header{padding:26px 0 16px}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="kicker">对抗式审查 · 从第一性原理出发</div>
+    <h1>P2 盘点 · 过程与结论审查</h1>
+    <div class="sub">审查对象 = #287 盘点票的调查过程与全部结论 · 方法 = 7 项实证复核 + 目的达成度检验</div>
+    <div class="meta-row">
+      <span class="chip">票 <b>#287</b> · 已闭环</span>
+      <span class="chip">报告 <b>P2盘点报告_v1</b></span>
+      <span class="chip red">5 处实质修正 · 3 处需补验证</span>
+      <span class="chip">2026-08-12 18:30</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="verdict">
+    <div class="v-ic">⚖️</div>
+    <div>
+      <b>总评：方向正确、结论过半站得住，但过程有 5 个实质方法漏洞，2 条报告结论被实证推翻，3 张组件票的 body 含需修正的断言。</b>
+      <p>「统一可行」的骨架结论成立（核心字段同构有样本支撑），但支撑它的几个关键数字和「未接管线」断言经不起复核；统一结构草案存在概念混淆和覆盖盲区。所幸均为只读盘点，修正成本低——不需要返工，只需修订结论 + 补票 body。</p>
+    </div>
+  </div>
+
+  <!-- ===== A 过程审查 ===== -->
+  <section>
+    <div class="sec-head"><div class="sec-num">A</div><h2>过程审查 · 5 个方法漏洞</h2><span class="tag">原断言 → 实证 → 严重度</span></div>
+    <div class="sec-desc">每个漏洞都做了实证复核（7 项验证全部实跑），区分「实证推翻」「推断越界」「口径失真」。</div>
+
+    <div class="item">
+      <div class="i-head"><b>1 · 权威源未确认就下结论：卡路里场景数 449 = 开发期 JSON，非运行时</b><span class="sev high">高 · 实证推翻</span></div>
+      <div class="claim"><b>报告原断言：</b>「卡路里 449 场景 · <span style="font-family:monospace">_triggers.py</span> 为运行时权威源」</div>
+      <div class="fact wrong"><b>实证结果：</b><span style="font-family:monospace">_triggers.py</span> 实际 <b>436 条 TRIGGER</b>（含「复盘 9」分类）；scene_data JSON 449（含「技能协同 36」）；<span style="font-family:monospace">render_help_center.py</span> 是<b>双源合并</b>（scene_data 优先覆盖，_triggers 补齐旧分类）——「单一权威源」表述错误，449 只是开发期数据。</div>
+      <div class="fix"><b>修正：</b>改口为「开发期 449 / 运行时 436 / 双源合并渲染，分类体系两套（复盘 vs 技能协同）」。影响：#289 归一化层必须处理双源合并逻辑。</div>
+    </div>
+
+    <div class="item">
+      <div class="i-head"><b>2 · 占位符只查一种：漏了 INJECT-SHARED / INJECT-08 两套管线</b><span class="sev high">高 · 实证推翻</span></div>
+      <div class="claim"><b>报告原断言：</b>「备忘录 0/7 未接（几乎无管线）」「私家大厨 0/20 未接」</div>
+      <div class="fact wrong"><b>实证结果：</b>备忘录 7 模板中 <b>6 个用 INJECT-SHARED</b>（第三方 clipboard.js 体系，T3 #263 记载的 3 套机制之一）；私家大厨全套用 <b>INJECT-08</b>（08 规范时代占位符）+ INJECT-DATA——两技能都有自研注入管线，只是名字不是 SHARED-HELPERS。</div>
+      <div class="fix"><b>修正：</b>Base 管线盘点应覆盖全部 3 套占位符体系（SHARED-HELPERS / INJECT-SHARED / INJECT-08），T3 #263 已有记载却被我漏掉——盘点的第一步本该是读 T3 结论，我跳过了。</div>
+    </div>
+
+    <div class="item">
+      <div class="i-head"><b>3 · 未看内容就断言：「1110B 跳转壳」是编造的细节</b><span class="sev high">高 · 实证推翻</span></div>
+      <div class="claim"><b>报告原断言：</b>「作息管家 6 个 1110B 占位模板（schedule_record_*）是重定向页（约 1KB 跳转壳）」</div>
+      <div class="fact wrong"><b>实证结果：</b>这些是<b>已接 Base 管线的 engine 型模板骨架</b>（hero + root + _record_engine.js + SHARED-HELPERS + SHARED-CSS + INJECT-DATA），1110 字节只因内容全在外部 JS。它们不是占位壳，且属于「已接 Base」的 19 个——我既描述错了性质，也漏掉了「作息管家 engine 模板已接 Base」这个本应强调的事实。</div>
+      <div class="fix"><b>修正：</b>删除「跳转壳」表述；页面清单补注「6 个 engine 骨架模板已接 Base 管线（#269 试点实际覆盖 19/20 含 engine）」。教训：1KB 小文件可能是骨架而非壳，看内容再下结论。</div>
+    </div>
+
+    <div class="item">
+      <div class="i-head"><b>4 · 推断越界当实证：「5 个 error.html 复制粘贴」</b><span class="sev mid">中 · 部分实证</span></div>
+      <div class="claim"><b>报告原断言：</b>「居家管家 5 个域级 error.html 按域复制粘贴（#286 同类痛点）」</div>
+      <div class="fact"><b>实证结果：</b>5 个文件 md5 全不同（3410~8231 字节）——<b>不是逐字节复制</b>，是「同构重复」：样式家族相同（同款 hero/fail/kv/actions），但各自独立实现、参数内容不同。这是 T3「同源副本漂移」的又一实例，但不是「复制粘贴」。</div>
+      <div class="fix"><b>修正：</b>改口为「同构重复（样式家族相同、独立实现、参数各异）」——收敛价值不变（6 个错误页 → 1 个 Base 控件），但表述要准确。</div>
+    </div>
+
+    <div class="item">
+      <div class="i-head"><b>5 · 代理指标失真：svc 计数当图表量、error 正则混义、模板数口径污染</b><span class="sev mid">中 · 口径失真</span></div>
+      <div class="claim"><b>报告原断言：</b>「卡路里 27 模板 35 处 svg」「私家大厨 320 处 empty/error」「模板总数 76/67/20/25/7/20」</div>
+      <div class="fact"><b>实证结果：</b>① <span style="font-family:monospace">&lt;svg&gt;</span> 出现 ≠ 图表（可能是图标/装饰），35 处中有多少是真正图表未逐验——卡路里图表量可能被高估；② empty|暂无|error 正则混义（error 会匹配 JS 错误处理/变量名），320/186/134 等绝对数不可信，只能当相对量级；③ 卡路里 76 含 .bak/临时样例/设计审查报告，非交付页面。</div>
+      <div class="fix"><b>修正：</b>数字降级为「量级估计」，标注口径；页面清单剔除开发残留。第一性原理：盘点的目的是「判断能否收敛」，不是数数——计数应服务于形态判断。</div>
+    </div>
+  </section>
+
+  <!-- ===== B 结论审查 ===== -->
+  <section>
+    <div class="sec-head"><div class="sec-num">B</div><h2>结论审查 · 站得住 vs 要修正</h2><span class="tag">逐条核验</span></div>
+    <div class="sec-desc">对报告 4 大结论逐条检验证据强度——区分「实证支撑」「样本支撑」「需补验证」。</div>
+    <div class="two-col">
+      <div class="col hold">
+        <h3>✅ 站得住（实证或强样本支撑）</h3>
+        <ul>
+          <li><b>统一可行、核心字段同构</b>：wake_word/title/prompt/status 6 技能字段名一致（多个样本确认），归一化方向与 help-template-contract §3 契约一致</li>
+          <li><b>状态层 Base 控件已就绪</b>：实测 errorReceipt 含 retryPrompt 复制 + 复制数据 + 复制日志（ghost 按钮），08 规范 §6 语义完整——「纯迁移」成立</li>
+          <li><b>图表以居家 CHARTS_JS 为起点</b>：实测 <span style="font-family:monospace">window.charts = {progress/bar/line}</span> 接口真实存在</li>
+          <li><b>仅作息管家真接 Base</b>：19/20 含 engine 模板，其余 5 技能均非 Base 管线</li>
+        </ul>
+      </div>
+      <div class="col fix">
+        <h3>❌ 要修正（实证推翻或证据不足）</h3>
+        <ul>
+          <li><b>卡路里「449 / 单一权威源」</b>：→ 436/449 双口径 + 双源合并（见 A1）</li>
+          <li><b>「备忘录/私家大厨未接管线」</b>：→ 各自有 INJECT-SHARED / INJECT-08 自研管线（见 A2）</li>
+          <li><b>「1110B 跳转壳」</b>：→ engine 型骨架且已接 Base（见 A3）</li>
+          <li><b>「5 error.html 复制粘贴」</b>：→ 同构重复非复制（见 A4）</li>
+          <li><b>「741 场景 / ~215 模板」</b>：口径不一（开发期/运行时/含残留混加），只宜作量级参考</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== C 草案盲区 ===== -->
+  <section>
+    <div class="sec-head"><div class="sec-num">C</div><h2>草案盲区 · 从第一性原理出发</h2><span class="tag">盘点目的 = 支撑参数化 HELP 落地</span></div>
+    <div class="sec-desc">第一性原理问题：统一 scene_data 草案是否覆盖了「参数化 HELP」的全部输入？答案：没有，4 个盲区。</div>
+
+    <div class="item">
+      <div class="i-head"><b>盲区 1 · 非场景元信息无承载</b><span class="sev high">高</span></div>
+      <div class="claim"><b>草案只有 groups + scenes</b>——但各技能 HELP 有大量「非场景内容」：私家大厨 prompt_rules（禁写 CLI/模板路径/数据库字段）+ methodology（rule_1~5）+ status_legend、备忘录 dependencies（初始化场景）、卡路里 AI 验证协议（§⚠️ 第 7 条）。<b>这些才是参数化 HELP 的真正难点</b>——场景列表只是数据搬移，技能特有规则怎么注入模板没设计。</div>
+      <div class="fix"><b>修正：</b>#289 票 body 补「非场景元信息承载」为必做项；草案 v2 加 <span style="font-family:monospace">meta_blocks</span>（技能特有 HTML/规则段，Base 原样透传）。</div>
+    </div>
+
+    <div class="item">
+      <div class="i-head"><b>盲区 2 · editable_fields 概念混淆</b><span class="sev mid">中</span></div>
+      <div class="claim"><b>草案把三个不同语义并成一个字段：</b>fill_hints（AI 视角提示用户补字段的占位符）、dimensions（数据维度约束，如「activity: 任意活动」）、prompt 内参数（复制 prompt 里的 ________ 填空）——三者来源、用途、渲染方式都不同，归一化为 editable_fields 会丢语义。</div>
+      <div class="fix"><b>修正：</b>#289 拆「可编辑字段来源三选一映射」的 grilling 问题，不直接合并。</div>
+    </div>
+
+    <div class="item">
+      <div class="i-head"><b>盲区 3 · 图表分类粒度自相矛盾</b><span class="sev low">低</span></div>
+      <div class="claim">报告标题说「4 种形态」，表格列了 6 行（共享/内联/JS条/模板串/CSS进度/无）——「形态」粒度不一致，容易误导后续 #288 的范围判断。</div>
+      <div class="fix"><b>修正：</b>明确「4 种实现形态 + 1 种无图表」的分法（共享组件 / 内联静态 / 动态生成 / 纯 CSS），饼干记账模板串与作息 JS 拼接同属「动态生成」。</div>
+    </div>
+
+    <div class="item">
+      <div class="i-head"><b>盲区 4 · 归一化层位置是设计决策，盘点结论越权拍板</b><span class="sev low">低</span></div>
+      <div class="claim">「归一化层放 Base、每技能一份映射配置」——方向是 T4「Base 管渲染」的合理延伸，但「放 Base 内」vs「技能侧转换脚本」vs「注入期转换」是 3 个可选项，属于 #289 的 grilling 范畴，不该在盘点结论里直接定。</div>
+      <div class="fix"><b>修正：</b>#289 票 body 把「归一化层放 Base」改为待 grill 决策项（给出 3 方案 + 我推荐 Base 内配置的理由）。</div>
+    </div>
+  </section>
+
+  <!-- ===== D 流程审查 ===== -->
+  <section>
+    <div class="sec-head"><div class="sec-num">D</div><h2>流程审查 · 开票先于验收</h2><span class="tag">wayfinder 纪律</span></div>
+    <div class="item">
+      <div class="i-head"><b>3 张组件票在用户验收盘点前开出</b><span class="sev mid">中</span></div>
+      <div class="claim">#288/#289/#290 的 body 全部基于盘点结论（含上述错误断言：如 #289 引「卡路里 449」「备忘录未接」）——如果用户对盘点有异议，票 body 要返工。wayfinder 流程本可「先交报告 → 用户拍板 → 再拆票」。</div>
+      <div class="fact"><b>缓解因素：</b>3 张票均为「落地实施」类，body 里的数字错误不影响实施方向（接口/范围正确）；且盘点票是 task(AFK)，用户验收点在组件票交付时。但「先验收再拆票」仍是更稳的次序。</div>
+      <div class="fix"><b>修正：</b>本轮审查后修订 3 张票 body（同步修正断言）；后续拆票类操作默认「报告 → 用户确认 → 开票」。</div>
+    </div>
+  </section>
+
+  <!-- ===== E 修正清单 ===== -->
+  <section>
+    <div class="sec-head"><div class="sec-num">E</div><h2>修正清单</h2><span class="tag">待用户拍板</span></div>
+    <div class="sec-desc">以下修正均为只读文档/票 body 修订，不改任何技能代码——等用户确认后执行。</div>
+    <div class="item" style="padding:6px 16px">
+      <div class="todo-item">
+        <div class="st">1</div>
+        <div class="tt"><b>修订盘点报告 → v2</b><span>改卡路里 436/449 双口径 + 双源合并；删「跳转壳」改「engine 骨架已接 Base」；补备忘录 INJECT-SHARED / 私家大厨 INJECT-08 管线；「复制粘贴」→「同构重复」；数字标注口径；图表 4 形态重划</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st">2</div>
+        <div class="tt"><b>修订 #289（HELP 票）body</b><span>补「非场景元信息承载」必做项；editable_fields 三语义辨析转 grilling；归一化层 3 方案改为待决策（附推荐）</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st">3</div>
+        <div class="tt"><b>修订 #288（图表票）body</b><span>补「CHARTS_JS 所在 SHARED_JS 是全家桶（含 toast/copyText/buildDataText），迁移时整体退役处理」——图表票范围含居家 SHARED_JS 处置</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st">4</div>
+        <div class="tt"><b>修订 #290（状态层票）body</b><span>「居家 5 error.html」表述改同构重复；补「作息管家 engine 模板已接 Base，error 迁移是纯替换」</span></div>
+      </div>
+      <div class="todo-item">
+        <div class="st">5</div>
+        <div class="tt"><b>补验证（3 项 · 低成本）</b><span>① 卡路里 svg 中「真图表 vs 图标」抽样区分（定图表量）；② 私家大厨 cooking_mode 54KB 是否含其他可视化（排除漏检）；③ 卡路里双源合并的同 wake_word 冲突数量（估归一化层工作量）</span></div>
+      </div>
+    </div>
+    <div class="note">审查纪律复盘：盘点类任务的第一性原理 = ①先读既有结论（T3 #263 三套占位符机制已记载，我漏读）②代理指标必须标注失真风险 ③1KB 小文件/重复文件必须看内容再下结论 ④计数口径必须声明。已沉淀待入记忆。</div>
+  </section>
+
+  <p style="text-align:center;font-size:10.5px;color:var(--fg3);margin-top:18px">对抗式审查 v1 · 2026-08-12 · Mavis · 7 项实证全部实跑 · 零修改技能代码</p>
+</div>
+</body>
+</html>

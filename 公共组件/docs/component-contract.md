@@ -1,6 +1,6 @@
-# Base 组件契约 v1.2
+# Base 组件契约 v1.3
 
-> 来源：v1.1（#264 T4 定稿 + #268 入库）+ **#269 作息管家试点 Grill 收口**（2026-08-11 用户拍板：snapshot 结构化接口 / toast 通用提示化 / 复制按钮控件化 / 结构校验违规报错 / 新控件 P0+P1 / CSS 注入管线）
+> 来源：v1.2（#269 作息管家试点 Grill 收口）+ **#288 P2 图表组件落地**（2026-08-12：CHARTS-HELPERS 正式版，新增 assets/charts.js 四接口）
 > 本契约是 Base Skill 组件的**冻结接口**，修改必须走公共层 ISSUE（总纲 09 §92）+ 遵循 §8 版本机制。
 
 ## 0. 版本记录
@@ -10,6 +10,7 @@
 | v1.0 | 2026-08-11 | 初稿（P0 签名/P1 契约/占位符/注入器接口） |
 | v1.1 | 2026-08-11 | 对抗式审查 6 条修正（唯一真相源/payload 信封/豁免通道/版本机制/P0P1 分界/结构校验）+ 信封加 `meta.skill_name` |
 | v1.2 | 2026-08-11 | **#269 试点用户拍板全量落地**：①buildDataText/buildLogText 重构为**领域无关 snapshot 结构化接口**（title/summary/sections，零居家管家字段绑定）②toast 升级**通用提示控件**（4 形态：徽章/操作/计数/留空 + 队列 + 图标库 + 多操作 + 富详情 + 无障碍）③复制按钮控件化（预览/格式选择/脱敏/导出）④新控件 P0+P1（formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt）⑤injector 加 **SHARED-CSS 注入**（修 v1.1 只注入 JS 缺口）⑥结构校验违规**直接报错**（硬拦截） |
+| v1.3 | 2026-08-12 | **#288 P2 图表组件落地**：新增 `assets/charts.js`（`charts.bar/line/donut/progress` 四接口，纯 CSS+SVG 无外部依赖，数据空→emptyState 联动）；`<!--CHARTS-HELPERS-->` 从「第二版预留」转**正式版**；注入器 `--charts` 参数正式化；SHARED_JS 全家桶处置清单（Base 等价物走 Base / 图表走 charts.js / 居家特定留技能侧） |
 
 ## 1. 目录结构
 
@@ -21,7 +22,8 @@
   assets/
     base.js                # P0+P1+P1.5 JS（唯一真相源）
     base.css               # token A 组 + 全部控件样式（唯一真相源）
-  injector.py              # 注入器（CLI + 硬拦截 + payload/CSS 注入 + 结构校验）
+    charts.js              # 图表组件（v1.3 新增 · bar/line/donut/progress）
+  injector.py              # 注入器（CLI + 硬拦截 + payload/CSS/图表注入 + 结构校验）
   docs/
     component-contract.md  # 本契约
     help-template-contract.md  # 参数化 HELP 模板契约
@@ -29,9 +31,10 @@
 
 ## 2. 唯一真相源声明
 
-- **Base `assets/` 是公共组件的唯一真相源**——所有技能的公共 JS/CSS 一律以 Base 为准
+- **Base `assets/` 是公共组件的唯一真相源**——所有技能的公共 JS/CSS/图表一律以 Base 为准
 - 各技能原实现（居家管家 `scripts/render/_shared.py`、饼干记账 `scripts/_shared_js.py`、备忘录 `script/_shared/clipboard.js`、各技能内联实现）在**对应技能迁移完成后退役**
 - **迁移完成前**：公共组件的任何修改只允许发生在 Base，技能内文件只读（防止同源双写漂移）
+- **SHARED_JS 全家桶处置（#288 核对结论）**：居家管家 `_shared.py` SHARED_JS 中 Base 已有等价物（esc/toast/copyText/buildDataText/buildLogText/actionBar 等）走 Base、图表（bar/line/progress）走 charts.js、metaHeader/remindersBlock 居家特定留技能侧——居家迁移完成后 SHARED_JS 整体退役
 - **v1.2 领域无关声明**：Base 组件接口**不绑定任何技能领域**（不认 item/items/groups 等居家管家字段）——技能把领域数据组织成通用结构（snapshot），Base 只渲染通用结构。未来居家管家重构时，它的复制按钮作废，改按 v1.2 接口传参（用户 2026-08-11 拍板，高于一切）
 
 ## 3. 占位符标准
@@ -41,7 +44,7 @@
 | `<!--INJECT-DATA-->` | **必须恰好 1** | 数据注入点（payload JSON） |
 | `<!--SHARED-HELPERS-->` | **必须恰好 1**（硬拦截） | 公共 JS 注入点（base.js） |
 | `<!--SHARED-CSS-->` | **必须恰好 1**（v1.2 新增，硬拦截） | 公共 CSS 注入点（base.css） |
-| `<!--CHARTS-HELPERS-->` | 0 或 1 | 图表组件（第二版） |
+| `<!--CHARTS-HELPERS-->` | 0 或 1（v1.3 正式版） | 图表组件注入点（charts.js，`--charts` 参数） |
 
 **硬拦截语义**：INJECT-DATA 缺失/重复、SHARED-HELPERS 缺失/重复、SHARED-CSS 缺失/重复 → 渲染失败报错（防漂移机制）。
 
@@ -167,7 +170,26 @@ actionBar(p, extra?, opts?) → HTML
 - v1.2 新增控件样式：toast 徽章/操作/计数、formPrompt 表单、selectList 勾选、confirm 对话框、foldBox、statusBadge、emptyState、errorReceipt
 - 全部样式唯一真相源在 base.css；技能零样式副本
 
-## 7. 注入器接口（v1.2）
+### 6.5 图表组件（v1.3 · CHARTS-HELPERS）
+
+```js
+charts.bar(el, items[, opt])        // 柱状图
+charts.line(el, items[, opt])       // 折线图
+charts.donut(el, items[, opt])      // 环形图（v1.3 新增形态）
+charts.progress(el, pct[, opt])     // 进度条
+```
+
+- **数据形状（统一）**：`items: [{label, value, color?}]`；value 非数兜底 0
+- **空态联动（硬行为）**：items 非数组/空数组 → 渲染 emptyState（`window.emptyState` 存在则用之，否则内联兜底 `.hm-c-empty`）；donut 合计为零同样走空态
+- **输入容错**：progress pct 非数 → 0，超界收敛 0~100
+- **语义色**：默认 `var(--blue,#007aff)`（token A 组带 fallback）；bar/donut 支持逐项 `color` 覆盖；donut 无覆盖时走内置 10 色 Apple 语义色板（#007aff/#34c759/#ff9500/#ff3b30/#af52de/#5ac8fa/#ffcc00/#8e8e93/#ff2d55/#00c7be）
+- **交互**：bar `opt.onclick(i)` 点击柱子回调；line `opt.ondrill(i)` 点击钻取回调；donut `opt.centerLabel/centerValue` 中心文案（centerValue 缺省=合计）、`opt.legend===false` 隐藏图例
+- **自包含**：charts.js 本地 esc 兜底（`window.esc` 不存在时用内联转义），**可独立注入不依赖 base.js**；样式自注入（`hm-charts-style`），不依赖模板级 CSS
+- **约束**：纯 CSS+SVG 无外部依赖 · 手机 375px 适配（柱高 130px/环形 130px，柱状图容器内横向滚动不撑破视口）
+- **白名单例外**：卡路里 `weight_volatility_v2` canvas（特殊交互）留技能自营，走公共层 ISSUE 审批
+- **来源**：bar/line/progress 从居家管家 CHARTS_JS 零行为变更提取（接口兼容，试点模板同调用可跑）；donut 从饼干记账 donutSVG 重构为数据驱动
+
+## 7. 注入器接口（v1.3）
 
 ```bash
 python injector.py <模板.html> --payload <数据.json> [--output <输出.html>] [--js <资产.js>] [--css <资产.css>] [--charts <图表.js>] [--strict-payload]
@@ -176,16 +198,18 @@ python injector.py <模板.html> --payload <数据.json> [--output <输出.html>
 - 校验：INJECT-DATA 恰 1 / SHARED-HELPERS 恰 1 / **SHARED-CSS 恰 1**（v1.2 新增）/ CHARTS ≤1
 - 注入顺序：SHARED(JS) → SHARED-CSS → CHARTS → DATA
 - `--css`：base.css 注入点（缺省 = assets/base.css）；NO-SHARED 豁免时 CSS 同样豁免
+- `--charts`（v1.3 正式化）：charts.js 注入点（缺省 = 不注入）；模板含 `<!--CHARTS-HELPERS-->` 时替换为资产内容
 - payload：json 合法性必校验；`--strict-payload` 时按 §4 信封结构校验
 - 输出：写文件 + 打印结果 JSON（status ok/error）
 
 ## 8. 版本与变更机制
 
-- Base 资产带版本号（当前 v1.2），变更记入 `CHANGELOG.md`
+- Base 资产带版本号（当前 v1.3），变更记入 `CHANGELOG.md`
 - **签名变更 = 破坏性变更**：必须全技能同步 + 一次性完成 + 变更记录；不允许「新签名 + 旧签名并存」跨版本漂移
 - 非破坏性变更（内部实现/样式细节）：可独立发布，CHANGELOG 记录
 - 任何变更先开公共层 ISSUE（总纲 09 §92），review 后实施
 - v1.2 破坏性变更说明：buildDataText/buildLogText 从「居家管家字段绑定」重构为「snapshot 通用结构」——**当前零消费方**（作息管家是第一个），重构零成本；未来居家管家迁移按 v1.2 接口传参
+- v1.3 非破坏性说明：新增 charts.js 资产（新增接口，既有接口零变更）——居家管家/饼干记账图表迁移属于 6 张技能重构票，迁移完成前技能内图表实现冻结
 
 ## 9. 与既有规范的关系
 

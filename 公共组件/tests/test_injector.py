@@ -121,6 +121,39 @@ def test_duplicate_charts_blocked():
     assert err is not None and 'CHARTS-HELPERS' in err and '2 次' in err
 
 
+# ── charts 注入（v1.3 · CHARTS-HELPERS 0 或 1）─────────────
+
+def _tpl_with_charts():
+    return TEMPLATE_OK.replace(SHARED, SHARED + CHARTS)
+
+
+def test_charts_injected_when_placeholder_present():
+    """模板含 CHARTS-HELPERS → charts 资产注入; 占位符替换干净"""
+    src = _tpl_with_charts()
+    html, err = inject(src, VALID_PAYLOAD, js_asset=_js(), css_asset=_css(),
+                       charts_asset='function charts(){}')
+    assert err is None
+    assert CHARTS not in html
+    assert 'function charts(){}' in html
+    assert 'function esc(' in html  # base.js 照常注入
+
+
+def test_charts_absent_no_injection():
+    """模板无 CHARTS-HELPERS → 不注入 charts, 不报错"""
+    html, err = inject(TEMPLATE_OK, VALID_PAYLOAD, js_asset=_js(), css_asset=_css(),
+                       charts_asset='function charts(){}')
+    assert err is None
+    assert 'function charts(){}' not in html
+
+
+def test_charts_zero_placeholder_ok():
+    """占位符 0 个 + 传了 charts 资产 → 正常（不注入）"""
+    html, err = inject(TEMPLATE_OK, VALID_PAYLOAD, js_asset=_js(), css_asset=_css(),
+                       charts_asset=None)
+    assert err is None
+    assert CHARTS not in html
+
+
 # ── 豁免通道 ──────────────────────────────────────────────
 
 def test_no_shared_exempt_ok():
@@ -230,3 +263,28 @@ def test_cli_end_to_end(tmp_path):
         capture_output=True, text=True, encoding='utf-8', timeout=30)
     assert r3.returncode == 1
     assert 'command_cn' in json.loads(r3.stdout)['message']
+
+
+def test_cli_charts_end_to_end(tmp_path):
+    """CLI --charts 全链路: 模板含 CHARTS-HELPERS → charts.js 真实资产注入"""
+    charts_asset = (INJECTOR_DIR / 'assets' / 'charts.js').read_text(encoding='utf-8')
+    tpl = tmp_path / 'tpl_charts.html'
+    tpl.write_text(_tpl_with_charts(), encoding='utf-8')
+    payload = tmp_path / 'p.json'
+    payload.write_text(json.dumps(VALID_PAYLOAD, ensure_ascii=False), encoding='utf-8')
+    out = tmp_path / 'out.html'
+
+    r = subprocess.run(
+        [sys.executable, str(INJECTOR_DIR / 'injector.py'), str(tpl),
+         '--payload', str(payload), '--output', str(out),
+         '--charts', str(INJECTOR_DIR / 'assets' / 'charts.js'),
+         '--strict-payload'],
+        capture_output=True, text=True, encoding='utf-8', timeout=30)
+    assert r.returncode == 0, r.stdout + r.stderr
+    result = json.loads(r.stdout)
+    assert result['status'] == 'ok'
+    html = out.read_text(encoding='utf-8')
+    assert CHARTS not in html  # 占位符替换干净
+    assert 'window.charts={' in html  # charts.js 已注入
+    assert 'donut' in html and 'progress' in html and 'bar' in html and 'line' in html
+    assert 'function esc(' in html  # base.js 照常注入

@@ -18,6 +18,7 @@ BASE_DIR = pathlib.Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 BASE_JS = (BASE_DIR / 'assets' / 'base.js').read_text(encoding='utf-8')
+CHARTS_JS = (BASE_DIR / 'assets' / 'charts.js').read_text(encoding='utf-8')
 
 
 def _has_playwright():
@@ -285,3 +286,162 @@ def test_error_receipt(page):
     page.evaluate("window.__hmPayload=" + json.dumps(VALID_PAYLOAD, ensure_ascii=False) + "; document.getElementById('root').innerHTML = window.errorReceipt({message:'写入失败',retryPrompt:'请重试'})")
     assert page.evaluate("document.querySelector('.hm-error-title')?.textContent") == '❌ 写入失败'
     assert page.evaluate("document.querySelectorAll('.hm-error .copy').length") >= 3  # 修正重试 + 复制数据 + 复制日志
+
+
+# ── 图表组件（v1.3 · CHARTS-HELPERS）────────────────────────
+
+@pytest.fixture(scope='module')
+def chart_page(page):
+    """复用 page fixture 的同一浏览器上下文（避免嵌套 sync_playwright）;
+    set_content 加载 base.js + charts.js（注入顺序: SHARED JS → CSS → CHARTS → DATA）"""
+    page.set_content(
+        f'<html><body><div id="root"></div>'
+        f'<script>{BASE_JS}</script><script>{CHARTS_JS}</script></body></html>')
+    return page
+
+
+def test_charts_four_interfaces_exist(chart_page):
+    """四接口必须全部可用（v1.3 验收标准: 柱状/折线/环形/进度）"""
+    names = chart_page.evaluate(
+        '["bar","line","donut","progress"].filter(k => typeof window.charts[k] !== "function")')
+    assert names == [], f'缺少接口: {names}'
+
+
+def test_charts_progress_renders(chart_page):
+    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 65)")
+    fill = chart_page.evaluate("document.querySelector('.hm-c-p-fill')?.style.width")
+    num = chart_page.evaluate("document.querySelector('.hm-c-p-n')?.textContent")
+    assert fill == '65%' and num == '65%'
+
+
+def test_charts_progress_clamps(chart_page):
+    """非数兜底 0, 超界收敛 0~100"""
+    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 999)")
+    num = chart_page.evaluate("document.querySelector('.hm-c-p-n')?.textContent")
+    assert num == '100%'
+    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 'abc')")
+    num2 = chart_page.evaluate("document.querySelector('.hm-c-p-n')?.textContent")
+    assert num2 == '0%'
+
+
+def test_charts_progress_color_option(chart_page):
+    chart_page.evaluate("window.charts.progress(document.getElementById('root'), 30, {color:'var(--ok,#34c759)'})")
+    bg = chart_page.evaluate("document.querySelector('.hm-c-p-fill')?.style.background")
+    assert '34c759' in bg
+
+
+def test_charts_bar_renders(chart_page):
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'牛奶',value:3},{label:'面包',value:7},{label:'苹果',value:5}]);
+    """)
+    cols = chart_page.evaluate("document.querySelectorAll('.hm-c-col').length")
+    labels = chart_page.evaluate("[...document.querySelectorAll('.hm-c-l')].map(n=>n.textContent).join(',')")
+    assert cols == 3 and labels == '牛奶,面包,苹果'
+    # 高度按值比例: 面包(7) 柱子最高
+    h = chart_page.evaluate("[...document.querySelectorAll('.hm-c-b')].map(n=>parseFloat(n.style.height))")
+    assert h[1] == max(h)
+
+
+def test_charts_bar_empty_links_empty_state(chart_page):
+    """数据空 → emptyState 联动（base.js 的 emptyState 存在时用之）"""
+    chart_page.evaluate("window.charts.bar(document.getElementById('root'), [])")
+    text = chart_page.evaluate("document.querySelector('.hm-empty-text')?.textContent")
+    assert text == '暂无数据'
+
+
+def test_charts_bar_non_array_safe(chart_page):
+    chart_page.evaluate("window.charts.bar(document.getElementById('root'), null)")
+    text = chart_page.evaluate("document.querySelector('.hm-empty-text')?.textContent")
+    assert text == '暂无数据'
+
+
+def test_charts_bar_onclick(chart_page):
+    chart_page.evaluate("""
+      window.__idx = -1;
+      window.charts.bar(document.getElementById('root'),
+        [{label:'A',value:1},{label:'B',value:2}],
+        {onclick:function(i){window.__idx=i;}});
+    """)
+    chart_page.click('.hm-c-b[data-i="1"]')
+    assert chart_page.evaluate('window.__idx') == 1
+
+
+def test_charts_line_renders(chart_page):
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'),
+        [{label:'周一',value:2},{label:'周二',value:5},{label:'周三',value:3}]);
+    """)
+    poly = chart_page.evaluate("document.querySelector('.hm-c-line-svg polyline')?.getAttribute('points')")
+    dots = chart_page.evaluate("document.querySelectorAll('.hm-c-dot').length")
+    xs = chart_page.evaluate("document.querySelector('.hm-c-x')?.textContent")
+    assert poly and dots == 3 and '周一' in xs and '周三' in xs
+
+
+def test_charts_line_empty_links_empty_state(chart_page):
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [])")
+    text = chart_page.evaluate("document.querySelector('.hm-empty-text')?.textContent")
+    assert text == '暂无数据'
+
+
+def test_charts_donut_renders(chart_page):
+    chart_page.evaluate("""
+      window.charts.donut(document.getElementById('root'),
+        [{label:'食品',value:120},{label:'出行',value:80},{label:'日用',value:50}],
+        {centerLabel:'总支出'});
+    """)
+    segs = chart_page.evaluate("document.querySelectorAll('.hm-c-donut svg circle').length")
+    legend = chart_page.evaluate("document.querySelectorAll('.hm-c-dl').length")
+    center = chart_page.evaluate("document.querySelector('.hm-c-donut svg text')?.textContent")
+    # 1 底环 + 3 段 = 4 个 circle; 图例 3 行; 中心文案存在
+    assert segs == 4 and legend == 3 and center == '总支出'
+
+
+def test_charts_donut_percent_sum_100(chart_page):
+    chart_page.evaluate("""
+      window.charts.donut(document.getElementById('root'),
+        [{label:'A',value:25},{label:'B',value:75}]);
+    """)
+    pcts = chart_page.evaluate("[...document.querySelectorAll('.hm-c-dl-p')].map(n=>parseInt(n.textContent))")
+    assert sum(pcts) == 100
+
+
+def test_charts_donut_empty_links_empty_state(chart_page):
+    chart_page.evaluate("window.charts.donut(document.getElementById('root'), [])")
+    text = chart_page.evaluate("document.querySelector('.hm-empty-text')?.textContent")
+    assert text == '暂无数据'
+
+
+def test_charts_donut_zero_total_links_empty_state(chart_page):
+    chart_page.evaluate("window.charts.donut(document.getElementById('root'), [{label:'A',value:0}])")
+    text = chart_page.evaluate("document.querySelector('.hm-empty-text')?.textContent")
+    assert text == '暂无数据'
+
+
+def test_charts_mobile_375_no_overflow(chart_page):
+    """手机 375px: 柱状图不横向撑破视口（.hm-c-bar 内部滚动）"""
+    chart_page.set_viewport_size({'width': 375, 'height': 700})
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'类别一',value:1},{label:'类别二',value:2},{label:'类别三',value:3},
+         {label:'类别四',value:4},{label:'类别五',value:5},{label:'类别六',value:6}]);
+    """)
+    scroll_w = chart_page.evaluate("document.querySelector('.hm-c-bar')?.scrollWidth")
+    client_w = chart_page.evaluate("document.querySelector('.hm-c-bar')?.clientWidth")
+    assert scroll_w is not None and scroll_w >= client_w  # 可横向滚动, 不硬撑
+    # 页面本身不出现水平溢出滚动条
+    body_overflow = chart_page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth")
+    assert body_overflow is False
+
+
+def test_charts_standalone_without_base_js(chart_page):
+    """charts.js 可独立注入（不依赖 base.js）: 空态用内联兜底而非 emptyState
+    （删除 base.js 残留全局 + 重新执行 charts.js → 验证自包含: 本地 esc + 内联空态）"""
+    chart_page.evaluate("""
+      window.emptyState = undefined; window.esc = undefined;
+      delete window.__chartsLoaded; delete window.charts;
+    """)
+    chart_page.evaluate(CHARTS_JS)
+    chart_page.evaluate("window.charts.bar(document.getElementById('root'), [])")
+    text = chart_page.evaluate("document.querySelector('.hm-c-empty')?.textContent")
+    assert text == '📊 暂无数据'

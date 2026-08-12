@@ -839,6 +839,28 @@ def test_combo_renders(chart_page):
     assert cols == 3 and dots == 3
 
 
+def test_combo_line_dot_on_bar_top(chart_page):
+    """combo 线点精确落在柱顶（回归: v1.6 初版双坐标系错位 → 共享 Y 轴 + v 绝对定位修复）"""
+    chart_page.set_viewport_size({'width': 1200, 'height': 800})
+    chart_page.evaluate("""
+      window.charts.combo(document.getElementById('root'),
+        {bars:[{label:'1月',value:30},{label:'2月',value:60},{label:'3月',value:45},{label:'4月',value:80},{label:'5月',value:55}],
+         lines:[{label:'1月',value:12},{label:'2月',value:22},{label:'3月',value:16},{label:'4月',value:30},{label:'5月',value:20}]},
+        {animation:false});
+    """)
+    errs = chart_page.evaluate("""
+      (() => {
+        const dots = [...document.querySelectorAll('.hm-c-combo-dot')];
+        const bars = [...document.querySelectorAll('.hm-c-b')];
+        return dots.map((d, i) => {
+          const dr = d.getBoundingClientRect(), br = bars[i].getBoundingClientRect();
+          return Math.abs((dr.y + dr.height/2) - br.y);
+        });
+      })()
+    """)
+    assert all(e < 1.5 for e in errs), f'combo 线点未落柱顶: {errs}'
+
+
 def test_combo_throws_on_length_mismatch(chart_page):
     err = chart_page.evaluate("""() => { try { window.charts.combo(document.getElementById('root'), {bars:[{label:'a',value:1}],lines:[{label:'b',value:2},{label:'c',value:3}]}); return ''; } catch(e) { return e.message; } }""")
     assert '长度不一致' in err

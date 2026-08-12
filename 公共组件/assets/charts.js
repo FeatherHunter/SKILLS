@@ -56,6 +56,9 @@ if(!document.getElementById(_styleId)){
   +'.hm-c-bar .hm-c-b:hover{filter:brightness(.9)}'
   +'.hm-c-bar .hm-c-labels{display:flex;gap:8px;margin-top:6px}'
   +'.hm-c-bar .hm-c-l{flex:1;text-align:center;font-size:10.5px;color:var(--fg2,#6e6e73);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}'
+  /* combo 专用: v 绝对定位在柱顶上方（bottom 跟随柱高, 不占位 → 线点精确落柱顶） */
+  +'.hm-c-col-combo{position:relative}'
+  +'.hm-c-col-combo .hm-c-v-combo{position:absolute;left:50%;transform:translateX(-50%) translateY(-4px);white-space:nowrap;font-size:10px;color:var(--fg3,#86868b)}'
   /* line: 容器零 padding（坐标唯一性）; 高度由 --c-h 控制 */
   +'.hm-c-line-wrap{position:relative;height:var(--c-h,210px)}'
   +'.hm-c-line-svg{position:relative;width:100%;height:100%}'
@@ -419,22 +422,37 @@ window.charts={
     var hStyle=opt.height?('style="--c-h:'+opt.height+'px"'):'';
     var maxB=Math.max.apply(null,bars.length?bars.map(function(b){return _num(b.value);}):[1]);
     var maxL=Math.max.apply(null,lines.length?lines.map(function(l){return _num(l.value);}):[1]);
-    /* 绘图区: flex 两段式（与 bar 同结构）, 线用 SVG 叠加层 */
+    /* 坐标唯一性（v1.6 修复）: 柱与线共享同一 Y 轴归一化 → 线点 = 柱顶位置（趋势线连柱顶语义）
+     * maxV = 所有柱值+线值的最大值; y2:true 时线独立归一化（双轴场景） */
+    var maxV=Math.max(maxB,maxL);
+    var barMax=opt.y2?maxB:maxV;
+    var lineMax=opt.y2?maxL:maxV;
+    /* 绘图区: flex 两段式（与 bar 同结构）, 线用 SVG 叠加层
+     * v 绝对定位在柱顶上方（bottom = barH% + 12px 等效）, 不占位 → 线点 top=100-barH% 精确落柱顶; 柱高 cap 80% 给 v 留顶 */
     var cols='';
     for(var i=0;i<n;i++){
-      var barH=bars.length?Math.max(3,Math.round(_num(bars[i].value)/maxB*100)):0;
-      cols+='<div class="hm-c-col" data-i="'+i+'">'
-        +(bars.length?'<div class="hm-c-v">'+_esc(_fmt(bars[i].value,opt.format))+'</div>':'')
+      var barH=bars.length?Math.min(80,Math.max(3,Math.round(_num(bars[i].value)/barMax*100))):0;
+      cols+='<div class="hm-c-col hm-c-col-combo" data-i="'+i+'">'
+        +(bars.length?'<div class="hm-c-v hm-c-v-combo" style="bottom:'+barH+'%">'+_esc(_fmt(bars[i].value,opt.format))+'</div>':'')
         +(bars.length?'<div class="hm-c-b" data-i="'+i+'" style="height:'+(opt.animation?0:barH)+'%;background:'+opt.barColor+';max-width:22px"></div>':'')
         +'</div>';
     }
-    var linePts=lines.map(function(l,i){var x=_P+(_W-2*_P)*i/(Math.max(1,n-1));var y=_H-_P-_num(l.value)/maxL*(_H-2*_P);return [x,y];});
-    var poly=linePts.map(function(p){return p[0].toFixed(1)+','+p[1].toFixed(1);}).join(' ');
-    /* 线点 overlay: 相对绘图区（与 line 相同坐标系） */
-    var lineDots=linePts.map(function(p,i){
-      var lx=(p[0]/_W*100).toFixed(2),ty=(p[1]/_H*100).toFixed(2);
-      return '<i class="hm-c-dot hm-c-combo-dot" data-i="'+i+'" style="left:'+lx+'%;top:'+ty+'%;border-color:'+opt.lineColor+'"></i>';
-    }).join('');
+    /* polyline: 连每个柱顶（viewBox y = _H*(1-barH/100), 与柱子 height% 视觉一致） */
+    var polyPts=[];
+    for(var pi=0;pi<n;pi++){
+      var pbH=bars.length?Math.min(80,Math.max(3,Math.round(_num(bars[pi].value)/barMax*100))):(lines.length?Math.round(_num(lines[pi].value)/lineMax*100):0);
+      var px=_P+(_W-2*_P)*pi/(Math.max(1,n-1));
+      var py=_H*(1-pbH/100);
+      polyPts.push(px.toFixed(1)+','+py.toFixed(1));
+    }
+    var poly=polyPts.join(' ');
+    /* 线点 overlay: 精确定位在柱顶（top = 100 - barH%, left = 50% 柱中心）
+     * —— 与 .hm-c-b 的 height% 同基准, 物理对齐（不再经 viewBox 换算） */
+    var lineDots='';
+    for(var di=0;di<n;di++){
+      var dotH=bars.length?Math.min(80,Math.max(3,Math.round(_num(bars[di].value)/barMax*100))):(lines.length?Math.round(_num(lines[di].value)/lineMax*100):0);
+      lineDots+='<i class="hm-c-dot hm-c-combo-dot" data-i="'+di+'" style="left:50%;top:'+(100-dotH)+'%;margin-left:-4.5px;margin-top:-4.5px;border-color:'+opt.lineColor+'"></i>';
+    }
     var labels='';for(var j=0;j<n;j++){labels+='<div class="hm-c-l">'+_esc((bars[j]||lines[j]).label)+'</div>';}
     var legend='';
     if(opt.legend){legend='<div class="hm-c-legend"><span class="hm-c-lg"><span class="hm-c-lg-dot" style="background:'+opt.barColor+';width:9px;height:9px;border-radius:2px"></span>量</span><span class="hm-c-lg"><span class="hm-c-lg-dot" style="background:'+opt.lineColor+';height:3px"></span>趋势</span></div>';}
@@ -444,7 +462,7 @@ window.charts={
       +(lines.length?'<polyline points="'+poly+'" fill="none" stroke="'+opt.lineColor+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="vector-effect:non-scaling-stroke"/>':'')
       +'</svg>'+lineDots+'</div>'
       +'<div class="hm-c-labels">'+labels+'</div></div>';
-    if(opt.animation){requestAnimationFrame(function(){requestAnimationFrame(function(){el.querySelectorAll('.hm-c-b').forEach(function(b,i){b.style.height=Math.max(3,Math.round(_num(bars[i].value)/maxB*100))+'%';});});});}
+    if(opt.animation){requestAnimationFrame(function(){requestAnimationFrame(function(){el.querySelectorAll('.hm-c-b').forEach(function(b,i){b.style.height=Math.min(80,Math.max(3,Math.round(_num(bars[i].value)/barMax*100)))+'%';});});});}
     if(opt.onclick){el.querySelectorAll('.hm-c-b,.hm-c-col').forEach(function(n){n.onclick=function(){opt.onclick(Number(n.getAttribute('data-i')));};});}
   },
 

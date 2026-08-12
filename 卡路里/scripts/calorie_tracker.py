@@ -267,7 +267,7 @@ def main():
             # v2.4.8:不传 --output,由 render 走 html_path() 新规范(中文 + 时间戳)
             # 默认 list 是"查今天吃" → 生成 HTML;render 失败 fallback 纯文本
             render_proc = subprocess.run(
-                [sys.executable, 'scripts/render_today_meals.py'],
+                [sys.executable, str(Path(__file__).resolve().parent / 'render_today_meals.py')],
                 capture_output=True, text=True, encoding='utf-8', timeout=15,
             )
             tmp = _parse_render_path(render_proc.stdout) if render_proc.returncode == 0 else None
@@ -284,7 +284,7 @@ def main():
             # v2.4.6:接通 render_today_diet.py(查今日摘要)
             # v2.4.8:不传 --output,由 render 走 html_path() 新规范
             render_proc = subprocess.run(
-                [sys.executable, 'scripts/render_today_diet.py'],
+                [sys.executable, str(Path(__file__).resolve().parent / 'render_today_diet.py')],
                 capture_output=True, text=True, encoding='utf-8', timeout=15,
             )
             tmp = _parse_render_path(render_proc.stdout) if render_proc.returncode == 0 else None
@@ -510,7 +510,7 @@ def main():
                     print(f"Error: 未知参数 '{arg}'", file=sys.stderr)
                     sys.exit(2)
             render_proc = subprocess.run(
-                [sys.executable, 'scripts/render_weight_history.py', '--days', str(days)],
+                [sys.executable, str(Path(__file__).resolve().parent / 'render_weight_history.py'), '--days', str(days)],
                 capture_output=True, text=True, encoding='utf-8', timeout=15,
             )
             tmp = _parse_render_path(render_proc.stdout) if render_proc.returncode == 0 else None

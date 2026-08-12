@@ -103,7 +103,7 @@ def test_food_search_html_has_cards_and_data(temp_db, tmp_path):
     subprocess.run(
         [sys.executable, str(RENDER), "--query", "牛肉", "--output", str(out)],
         cwd=SKILL_DIR, capture_output=True, text=True, timeout=30,
-        env={**os.environ}, check=True,
+        env={**os.environ}, check=True, encoding="utf-8", errors="replace",
     )
     html = out.read_text(encoding="utf-8")
 

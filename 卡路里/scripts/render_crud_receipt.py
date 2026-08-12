@@ -24,7 +24,7 @@
   --live-weight-update            实读 DB:改体重记录(--id 或 --date,写库 + 回执一体 · ticket #4)
   --live-weight-delete            实读 DB:删体重记录(--id/--date/--start --end,写库 + 回执一体 · ticket #4)
 """
-import argparse, json, sys
+import argparse, json, re, sys
 from datetime import date, datetime
 from pathlib import Path
 
@@ -1139,6 +1139,10 @@ def main():
                 print('❌ --live-water-add 需要 <ml>', file=sys.stderr)
                 return 1
             data = build_live_water_add(pos[0], target_date=args.date)
+            # issue #284 拍板 Q1A:带本次毫升 → 记喝水_回执_500ml_<TS>.html
+            _wm = data.get('data', {}).get('new_record', {})
+            if _wm.get('ml') is not None:
+                file_suffix = f"{_wm['ml']}ml"
         elif args.live_product_add:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-product-add') + 1:]
@@ -1151,6 +1155,10 @@ def main():
                                           float(pos[5]) or None, float(pos[6]), float(pos[7]) or None,
                                           float(pos[8]) or None, float(pos[9]),
                                           pos[10] if len(pos) > 10 else '')
+            # issue #284 拍板 Q2A:带食品名 → 存食品_回执_香蕉_<TS>.html
+            _pa = data.get('data', {}).get('new_record', {})
+            if _pa.get('product_name'):
+                file_suffix = str(_pa['product_name'])
         elif args.live_product_update:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-product-update') + 1:]
@@ -1179,6 +1187,16 @@ def main():
                 print('❌ --live-product-update 需要 <id> + 至少 1 个字段', file=sys.stderr)
                 return 1
             data = build_live_product_update(pid, **kw)
+            # issue #284 拍板 Q2A:总是带食品名 —— 改名带改后名;只改营养字段带原名
+            # (回执 new_record 只含被改字段,原名从 summary「已更新「X」」兜底 · 2026-08-12)
+            _pu = data.get('data', {})
+            _pn = _pu.get('new_record', {}).get('product_name')
+            if not _pn:
+                _m = re.search(r'「(.+?)」', _pu.get('summary', ''))
+                if _m:
+                    _pn = _m.group(1)
+            if _pn:
+                file_suffix = str(_pn)
         elif args.live_product_deprecate:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-product-deprecate') + 1:]
@@ -1187,6 +1205,10 @@ def main():
                 print('❌ --live-product-deprecate 需要 <id>', file=sys.stderr)
                 return 1
             data = build_live_product_deprecate(pos[0])
+            # issue #284 拍板 Q2A:带食品名 → 下架食品_回执_香蕉_<TS>.html
+            _pd = data.get('data', {}).get('new_record', {})
+            if _pd.get('product_name'):
+                file_suffix = str(_pd['product_name'])
         elif args.live_weight_update:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-weight-update') + 1:]
@@ -1203,13 +1225,18 @@ def main():
                 print('❌ --live-weight-update 需要 <id> 或 <date>', file=sys.stderr)
                 return 1
             target = pos[0]
-            try:
-                w_id = int(target)
-                data = build_live_weight_update(target_id=w_id, weight_kg=kw.get('weight'),
+            # 2026-08-12 #284 顺手修:isdigit 精确判定 id/日期 —— 原 try/except ValueError 会把
+            # 「更新失败」等业务异常误吞成「日期路径」(无身高无法重算 BMI 时实测误走 · 渲染报错错位)
+            if target.isdigit():
+                data = build_live_weight_update(target_id=int(target), weight_kg=kw.get('weight'),
                                                 note=kw.get('note'))
-            except ValueError:
+            else:
                 data = build_live_weight_update(target_date=target, weight_kg=kw.get('weight'),
                                                 note=kw.get('note'))
+            # issue #284 拍板 Q3A:带日期(YYYYMMDD,与删某日/批量删体重统一日期维度)
+            _wu = data.get('data', {}).get('new_record', {})
+            if _wu.get('date'):
+                file_suffix = str(_wu['date']).replace('-', '')
         elif args.live_weight_delete:
             import sys as _sys
             rest = _sys.argv[_sys.argv.index('--live-weight-delete') + 1:]
@@ -1247,11 +1274,27 @@ def main():
                     target = pos[0]
                     try:
                         data = build_live_weight_delete(target_id=int(target))
+                        cmd_name = '删体重记录'
                     except ValueError:
                         data = build_live_weight_delete(target_date=target)
+                        cmd_name = '删某日体重'  # 顺手修:#43 R5 场景名按删除方式区分,pos 裸日期漏设
             else:
                 print('❌ --live-weight-delete 需要 <id|date|start end>', file=sys.stderr)
                 return 1
+            # issue #284 拍板 Q3A:统一日期维度 —— id 带记录日期 / date 带目标日期 / range 带起止
+            _wd = data.get('data', {}).get('old_record', {})
+            if cmd_name == '删体重记录':
+                if _wd.get('date'):
+                    file_suffix = str(_wd['date']).replace('-', '')
+            elif cmd_name == '删某日体重':
+                _dt = kw.get('date') or pos[0]
+                file_suffix = str(_dt).replace('-', '')
+            elif cmd_name == '批量删体重':
+                if 'start' in kw and 'end' in kw:
+                    _st, _ed = kw['start'], kw['end']
+                else:
+                    _st, _ed = pos[0], pos[1]
+                file_suffix = f"{str(_st).replace('-', '')}至{str(_ed).replace('-', '')}"
         else:
             data = build_live_profile_update(list(zip(fields, values)))
         # AI 思考链注入 meta(复制日志带出 · 2026-08-02)

@@ -203,6 +203,40 @@ def test_e2e_weight_delete_range_filename_span(tmp_path):
     assert any('_20260809至20260812_' in n for n in names), names
 
 
+# ---------- 端到端:体重删除 · pos 裸位置参数形式(#284 顺手修 cmd_name 路径的测试覆盖) ----------
+
+def test_e2e_weight_delete_by_pos_id_filename_date(tmp_path):
+    """删体重记录 · pos 裸数字 id → 删体重记录_回执_20260812_<TS>.html"""
+    db_dir, db_path = _make_db(tmp_path)
+    wid = _seed_weight(db_path, date='2026-08-12', weight_kg=68.5)
+    res = _run_render(db_dir, '--live-weight-delete', str(wid))
+    assert res.returncode == 0, res.stderr
+    names = _html_names(db_dir, '删体重记录_回执_')
+    assert any('_20260812_' in n for n in names), names
+
+
+def test_e2e_weight_delete_by_pos_date_filename_date(tmp_path):
+    """删某日体重 · pos 裸日期 → 删某日体重_回执_20260812_<TS>.html
+    (2026-08-12 顺手修:pos 裸日期原 cmd_name 漏设,会错名成「删体重记录」)"""
+    db_dir, db_path = _make_db(tmp_path)
+    _seed_weight(db_path, date='2026-08-12', weight_kg=68.5)
+    res = _run_render(db_dir, '--live-weight-delete', '2026-08-12')
+    assert res.returncode == 0, res.stderr
+    names = _html_names(db_dir, '删某日体重_回执_')
+    assert any('_20260812_' in n for n in names), names
+
+
+def test_e2e_weight_delete_by_pos_range_filename_span(tmp_path):
+    """批量删体重 · pos 裸起止 → 批量删体重_回执_20260809至20260812_<TS>.html"""
+    db_dir, db_path = _make_db(tmp_path)
+    _seed_weight(db_path, date='2026-08-09', weight_kg=69.0)
+    _seed_weight(db_path, date='2026-08-12', weight_kg=68.5)
+    res = _run_render(db_dir, '--live-weight-delete', '2026-08-09', '2026-08-12')
+    assert res.returncode == 0, res.stderr
+    names = _html_names(db_dir, '批量删体重_回执_')
+    assert any('_20260809至20260812_' in n for n in names), names
+
+
 # ---------- 冲突兜底说明 ----------
 # 同秒同名冲突 _2/_3 是 html_paths 纯函数层职责(#49 已覆盖),端到端不重复测
 # 时序敏感场景两次 subprocess 可能跨秒 → TS 不同 → 无 _2,测试偶发失败污染回归

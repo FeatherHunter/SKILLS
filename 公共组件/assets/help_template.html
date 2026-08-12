@@ -117,6 +117,10 @@
 
   /* ===== 底部 Tab（可横向滑动）===== */
   .tab-bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-top:1px solid var(--line);display:flex;z-index:600;padding:6px 8px calc(6px + env(safe-area-inset-bottom,0));gap:6px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+  /* 宽屏: Tab 栏宽度对齐主体内容区（居中限宽, 不横跨全屏）; 手机端保持全宽（见 media query）*/
+  @media(min-width:501px){
+    .tab-bar{width:680px;max-width:100%;left:50%;transform:translateX(-50%);border-left:1px solid var(--line);border-right:1px solid var(--line);border-radius:0}
+  }
   .tab-bar::-webkit-scrollbar{display:none}
   .tab{flex:0 0 auto;min-width:66px;display:flex;flex-direction:column;align-items:center;gap:3px;padding:5px 10px 4px;cursor:pointer;font-size:10px;color:var(--fg3);font-weight:600;min-height:54px;justify-content:center;border:0;background:none;border-radius:14px;transition:background .08s,color .08s,box-shadow .08s;white-space:nowrap}
   .tab .t-ico{width:22px;height:22px;display:flex;align-items:center;justify-content:center;line-height:1}
@@ -365,8 +369,9 @@ if (initClose) initClose.addEventListener('click', function(){
 });
 /* ===== 自然滚动: 内容跟手, 搜索栏 sticky 吸顶(CSS) =====
    旧版两段式 transform 抵消导致: 吸顶前内容不跟手、短页(关于)滚不到吸顶 → 全部移除 */
-/* 内容不满一屏的页(如关于页)给最小高度, 保证能滚到搜索栏吸顶 */
-document.querySelectorAll('.page').forEach(function(pg){ pg.style.minHeight = screen.clientHeight + 'px'; });
+/* 页面高度 = 内容自然高度（不撑高）: 内容短则页面短, 滑到底即停, 不出灰色空白
+   （原实现 pg.style.minHeight = screen.clientHeight 把短页撑到一屏高,
+     内容下方露出透明 page 背景 → 灰色底被顶上来;#289 用户验收拍板）*/
 
 /* ===== 滑动切页（ViewPager）===== */
 var pages = document.getElementById('pages');

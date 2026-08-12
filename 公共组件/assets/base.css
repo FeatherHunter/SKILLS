@@ -219,7 +219,13 @@ button.copy.ghost {
   margin: 12px 0;
 }
 .hm-error-title { font-size: 15px; font-weight: 700; color: #a83228; margin-bottom: 14px; }
+/* errorReceipt 内按钮布局: 第一个 .hm-actions（修正重试）贴标题; 后续 .hm-actions（复制数据/日志）与上方保持间距, 防贴死（#290 修复） */
 .hm-error .hm-actions { margin-top: 0; }
+.hm-error .hm-actions + .hm-actions { margin-top: 14px; }
+@media (max-width: 820px) {
+  .hm-error { padding: 16px 14px; }
+  .hm-error-title { margin-bottom: 12px; }
+}
 
 /* ── 复制预览面板（actionBar preview）── */
 .hm-preview-overlay {

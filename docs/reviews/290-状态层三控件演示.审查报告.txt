@@ -1,0 +1,6 @@
+URL: file:///D:/2Study/StudyNotes/SKILLS/docs/reviews/290-%E7%8A%B6%E6%80%81%E5%B1%82%E4%B8%89%E6%8E%A7%E4%BB%B6%E6%BC%94%E7%A4%BA.html
+双窗口已打开:窗口 1 = 电脑 1280x900 · 窗口 2 = 手机 390x844(触屏)
+审完关闭两个窗口即自动结束,报告写入 D:\2Study\StudyNotes\SKILLS\docs\reviews\290-状态层三控件演示.审查报告.txt
+---- 最终测量报告 ----
+无 JS 报错 / console 错误
+结论: PASS(无横向溢出,无 JS 报错)

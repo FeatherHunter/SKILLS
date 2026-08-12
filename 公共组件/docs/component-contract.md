@@ -11,6 +11,7 @@
 | v1.1 | 2026-08-11 | 对抗式审查 6 条修正（唯一真相源/payload 信封/豁免通道/版本机制/P0P1 分界/结构校验）+ 信封加 `meta.skill_name` |
 | v1.2 | 2026-08-11 | **#269 试点用户拍板全量落地**：①buildDataText/buildLogText 重构为**领域无关 snapshot 结构化接口**（title/summary/sections，零居家管家字段绑定）②toast 升级**通用提示控件**（4 形态：徽章/操作/计数/留空 + 队列 + 图标库 + 多操作 + 富详情 + 无障碍）③复制按钮控件化（预览/格式选择/脱敏/导出）④新控件 P0+P1（formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt）⑤injector 加 **SHARED-CSS 注入**（修 v1.1 只注入 JS 缺口）⑥结构校验违规**直接报错**（硬拦截） |
 | v1.3 | 2026-08-12 | **#288 P2 图表组件落地**：新增 `assets/charts.js`（`charts.bar/line/donut/progress` 四接口，纯 CSS+SVG 无外部依赖，数据空→emptyState 联动）；`<!--CHARTS-HELPERS-->` 从「第二版预留」转**正式版**；注入器 `--charts` 参数正式化；SHARED_JS 全家桶处置清单（Base 等价物走 Base / 图表走 charts.js / 居家特定留技能侧） |
+| v1.4 | 2026-08-12 | **#290 P2 状态层落地（加固）**：三控件（statusBadge/emptyState/errorReceipt）从「零消费方定义」加固为**对外可靠接口**——①errorReceipt 去掉 `window.__hmPayload` 强依赖（新增显式 `payload` 参数优先、`data/log` 字符串直传兜底）②errorReceipt 复制按钮改为渲染期生成文本存 `data-t`（onclick 仅 `copyText(this.dataset.t)`，零注入面；点击不再实时调 buildDataText）③errorReceipt 补 `.hm-actions` 网格布局（修正重试 primary wide 独立一行 + 复制数据/日志 ghost 一行 2 个，08 规范奇数按钮）④payload 无 snapshot 时容错（不渲染复制按钮，控件不崩）⑤statusBadge 非法 status 白名单降级 `empty`（防无样式徽章）⑥emptyState/statusBadge/errorReceipt 全部文本字段 esc 防 XSS，action 明示「受信 HTML 透传」。守卫测试 +9（边界/XSS/容错/布局） |
 
 ## 1. 目录结构
 
@@ -160,9 +161,9 @@ actionBar(p, extra?, opts?) → HTML
 | `selectList(items, batchActions?, opts?)` | items[] → HTML | **P0**：勾选列表+批量操作+「本组已选 x/y」计数联动（2026-08-11 手机端拍板：文本不省略/批量进内容区/计数联动/激活色随语义）。支持单选行操作+全选 |
 | `confirm({title, detail?, danger?, onOk})` | 配置→对话框 | **P0**：危险操作二次确认。danger=true 红按钮+警示文案；点确认→onOk()，取消/遮罩→关闭 |
 | `foldBox(title, contentHtml)` | 字符串→HTML | **P1**：折叠区（查看详情/原始数据），默认折叠，展开动画统一 |
-| `statusBadge(status, text?)` | 'ok'\|'warn'\|'danger'\|'empty'→HTML | **P1**：状态徽章（语义色统一） |
-| `emptyState({icon?, text, hint?, action?})` | 配置→HTML | **P1**：空状态（图示+文案+下一步建议） |
-| `errorReceipt({message, retryPrompt?, data?, log?})` | 配置→HTML | **P1**：错误回执（08 规范 §6：错误描述+修正重试+复制数据/日志） |
+| `statusBadge(status, text?)` | 'ok'\|'warn'\|'danger'\|'empty'→HTML | **P1**：状态徽章（语义色统一）。**v1.4 加固**：非法/未知 status 值白名单降级 `empty`（防无样式徽章）；text 缺省用语义默认（成功/警告/失败/无数据）；text 经 esc 防 XSS | 
+| `emptyState({icon?, text, hint?, action?})` | 配置→HTML | **P1**：空状态（图示+文案+下一步建议）。**v1.4 加固**：icon/text/hint 一律 esc 防 XSS；`action` = **受信 HTML 透传**（调用方负责其内容安全，通常放按钮；如含用户数据必须先在调用方 esc） |
+| `errorReceipt({message, retryPrompt?, data?, log?, payload?})` | 配置→HTML | **P1**：错误回执（08 规范 §6.1：错误描述+修正重试+复制数据/日志）。**v1.4 加固**：①`payload` = 数据信封（显式传入优先；兼容 `window.__hmPayload` 全局兜底）②`data`/`log` = 复制按钮内容字符串直传（显式优先，缺省从 payload 生成）③复制按钮渲染期生成文本存 `data-t`，onclick 仅 `copyText(this.dataset.t)`——**不依赖点击时环境，零注入面** ④payload 缺 `scene.snapshot` 时容错：不渲染复制数据/日志按钮，控件不抛错 ⑤布局：修正重试 primary wide 独立一行 + 复制数据/日志 ghost 一行 2 个（08 规范奇数按钮） |
 
 ### 6.4 样式 token A 组 + 控件样式（base.css）
 

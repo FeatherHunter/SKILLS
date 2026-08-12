@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>#290 状态层落地 · 交付验收</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --fg: #1d1d1f; --fg2: #6e6e73; --fg3: #86868b;
+    --bg: #f5f5f7; --card: #fff; --line: #e3e3e8;
+    --blue: #0071e3; --blue-soft: #e3f0ff;
+    --red: #ff3b30; --red-soft: #ffe5e3;
+    --green: #34c759; --green-soft: #e8f9ec;
+    --orange: #ff9500; --orange-soft: #fff4e5;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.06);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    line-height: 1.65; color: var(--fg); background: var(--bg);
+    max-width: 800px; margin: 0 auto; padding: 32px 18px 64px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .eyebrow { color: var(--blue); font-size: 12px; font-weight: 700; letter-spacing: .08em; margin-bottom: 8px; }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -.02em; line-height: 1.3; margin-bottom: 6px; }
+  .lead { color: var(--fg2); font-size: 14px; margin-bottom: 22px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+    padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow);
+  }
+  .card h2 { font-size: 16px; font-weight: 700; margin-bottom: 10px; }
+  .card p, .card li { font-size: 14px; }
+  .card ul { padding-left: 18px; margin: 6px 0; }
+  .card li { margin: 5px 0; }
+  .code {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12.5px;
+    background: #f2f2f7; border-radius: 6px; padding: 1px 6px; color: #444;
+  }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 10px; border-radius: 999px; margin-right: 6px; }
+  .badge.green { color: var(--green); background: var(--green-soft); }
+  .badge.red { color: var(--red); background: var(--red-soft); }
+  .badge.orange { color: var(--orange); background: var(--orange-soft); }
+  .badge.blue { color: var(--blue); background: var(--blue-soft); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 8px 0; }
+  th { text-align: left; font-size: 12px; color: var(--fg3); font-weight: 600; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px; border-bottom: 1px solid #f0f0f2; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .ok { color: var(--green); font-weight: 600; }
+  .warn { color: var(--orange); font-weight: 600; }
+  .demo-box {
+    border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+    margin: 8px 0; background: #fafbfc;
+  }
+  .demo-box .demo-label { font-size: 11px; color: var(--fg3); font-weight: 700; margin-bottom: 8px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; padding: 10px 16px; border: none; border-radius: 999px;
+    font-size: 13.5px; font-weight: 700; cursor: pointer; white-space: nowrap;
+    background: var(--line); color: var(--fg); text-decoration: none;
+  }
+  .btn.primary { background: var(--blue); color: #fff; }
+  .btn.ghost { background: #fff; color: var(--blue); border: 1.5px solid var(--blue); }
+  .btn.wide { grid-column: 1 / -1; }
+  .hm-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .footer { color: var(--fg3); font-size: 12px; text-align: center; margin-top: 24px; }
+  @media (max-width: 560px) {
+    body { padding: 24px 12px 48px; }
+    h1 { font-size: 22px; }
+    .card { padding: 15px 14px; }
+    table { font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="eyebrow">WAYFINDER #260 · P2 状态层落地</div>
+<h1>#290 交付验收 · 三控件加固到万无一失</h1>
+<p class="lead">statusBadge / emptyState / errorReceipt · v1.4 · 签名全兼容 · 守卫测试 +9 · 真机验证 8 项 + 手机三档全 PASS</p>
+
+<div class="card">
+  <h2>🎯 拍板范围（2026-08-12 你已确认）</h2>
+  <p>不试点迁移，把 Base 三控件<b>开发到万无一失</b>：对外接口没 BUG，其他技能重构时直接用一定 OK。</p>
+  <div class="demo-box">
+    <div class="demo-label">交付后控件长这样（真实渲染）</div>
+    <div class="row">
+      <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;background:#e6f7ec;color:#1f8c3d">成功</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;background:#fff5e0;color:#a25b00">警告</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;background:#fff0ee;color:#a83228">失败</span>
+      <span style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;background:#f0f0f3;color:#6e6e73">无数据</span>
+    </div>
+    <div style="margin-top:10px;background:#fafbfc;border:1px dashed #d2d2d7;border-radius:12px;padding:18px 14px;text-align:center;color:#6e6e73;font-size:13px">
+      📭<br><b style="color:#1d1d1f">本周还没有运动记录</b><br><span style="font-size:12px">说「记运动」开始你的第一条记录</span>
+    </div>
+    <div class="hm-actions" style="margin-top:10px">
+      <button class="btn primary wide" style="width:100%">修正重试</button>
+      <button class="btn ghost" style="width:100%">复制数据</button>
+      <button class="btn ghost" style="width:100%">复制日志</button>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🔍 对抗式审查 · 发现并修复 6 个 BUG 面</h2>
+  <table>
+    <tr><th>#</th><th>问题（原实现）</th><th>修复（v1.4）</th></tr>
+    <tr><td>1</td><td><b class="warn">强依赖 <span class="code">window.__hmPayload</span></b>：复制数据/日志点击时实时调 <span class="code">buildDataText(window.__hmPayload)</span>，全局变量不存在即 JS 报错。卡路里注入 <span class="code">__DATA__</span>、居家注入 <span class="code">&lt;script id="payload"&gt;</span>——重构票迁移必踩坑</td><td>新增显式 <span class="code">payload</span> 参数优先 + <span class="code">data/log</span> 字符串直传兜底 + 全局兼容。渲染期生成文本存 <span class="code">data-t</span>，onclick 仅 <span class="code">copyText(this.dataset.t)</span>，点击零环境依赖</td></tr>
+    <tr><td>2</td><td>复制按钮 onclick 内联调用表达式，<b>点击时才执行</b>，错误在点击时爆炸</td><td>改为渲染期算好文本，onclick 只读 data-t——不依赖点击时环境，零注入面</td></tr>
+    <tr><td>3</td><td>三按钮<b>无 <span class="code">.hm-actions</span> 网格容器</b>，堆在标题下不成布局（08 规范：偶数一行 2 个）</td><td>补容器：修正重试 primary wide 独立一行 + 复制数据/日志 ghost 一行 2 个</td></tr>
+    <tr><td>4</td><td>payload 缺 <span class="code">scene.snapshot</span> 时 <span class="code">buildDataText</span> 抛异常——<b>错误回执常在数据残缺时出现，控件自己崩</b></td><td>try/catch 容错：残缺 payload 视为无数据，不渲染复制按钮，控件不崩</td></tr>
+    <tr><td>5</td><td><span class="code">statusBadge('info')</span> 输出 <span class="code">class="hm-status info"</span> <b>无样式徽章</b>（静默渲染）</td><td>白名单 4 值，非法值降级 <span class="code">empty</span>，永远有语义样式</td></tr>
+    <tr><td>6</td><td><span class="code">emptyState</span> 的 <span class="code">action</span> 字段 HTML 透传<b>无契约声明</b>（XSS 责任不清）</td><td>契约 §6.3 明示：action = 受信 HTML 透传（调用方负责内容安全），icon/text/hint 一律 esc</td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>✅ 验证矩阵（工具 + 人眼双轨）</h2>
+  <table>
+    <tr><th>验证项</th><th>方式</th><th>结果</th></tr>
+    <tr><td>三控件 15 项测试（原 6 + 新 9）</td><td>pytest + Playwright</td><td><span class="ok">15/15 PASS</span>（含非法值降级/XSS/无 payload 容错/布局/字符串直传）</td></tr>
+    <tr><td>全量回归（不含 #289 半成品）</td><td>pytest test_components + injector + scene_data</td><td><span class="ok">90/90 PASS</span>（#288 图表 20+ 测试未破坏）</td></tr>
+    <tr><td>复制交互端到端</td><td>Playwright 点击</td><td><span class="ok">toast「已复制」出现 + 按钮文字恒定</span>（#123 契约 v2）</td></tr>
+    <tr><td>按钮布局</td><td>DOM 测量</td><td><span class="ok">修正重试 wide 独立行 vs 复制数据/日志一行 2 个</span></td></tr>
+    <tr><td>手机三档 390/360/320</td><td>Playwright 视口测量</td><td><span class="ok">按钮 0 换行 / 0 水平溢出 / 核心文本 0 省略</span></td></tr>
+    <tr><td>浏览器真机三态</td><td>内置浏览器 + 注入管线</td><td><span class="ok">正常/空/错误三态渲染正确</span></td></tr>
+  </table>
+</div>
+
+<div class="card">
+  <h2>📦 交付物</h2>
+  <table>
+    <tr><th>文件</th><th>变更</th></tr>
+    <tr><td><span class="code">公共组件/assets/base.js</span></td><td>三控件加固（+61 行）——签名零变更，只加固内部</td></tr>
+    <tr><td><span class="code">公共组件/tests/test_components.py</span></td><td>三控件测试 6 → 15 项（+9 边界/XSS/容错/布局）</td></tr>
+    <tr><td><span class="code">公共组件/docs/component-contract.md</span></td><td>版本记录 v1.4 + §6.3 三控件边界行为明示</td></tr>
+    <tr><td><span class="code">公共组件/CHANGELOG.md</span></td><td>v1.4 变更记录</td></tr>
+  </table>
+  <p class="muted" style="font-size:12.5px;color:var(--fg3);margin-top:8px">验证脚本：<span class="code">.scratch/base-skill/verify_290_controls.py</span>（8 项）+ <span class="code">verify_290_mobile.py</span>（手机三档）；演示页：<span class="code">.scratch/base-skill/290三控件演示_注入.html</span>（37KB，含注入管线产物）</p>
+</div>
+
+<div class="card">
+  <h2>🚀 重构票接入预告（#290 交付后重构票直接用）</h2>
+  <p>6 张技能重构票接入三控件时，<b>零学习成本</b>——新签名是防御式设计的：</p>
+  <ul>
+    <li><b>卡路里 error_receipt</b>（08 §6.1 三层反馈基准）：<span class="code">errorReceipt({message, retryPrompt, data, log, payload})</span>——data/log 字符串直传覆盖「复制现场数据」需求，无需再依赖技能自己的注入变量名</li>
+    <li><b>居家 6 错误页</b>：传 <span class="code">payload</span> 信封即自动生成复制数据/日志；数据残缺也只会优雅降级，不会白屏</li>
+    <li><b>作息 engine 型 .error</b>：JS 动态拼接改调 <span class="code">errorReceipt()</span>，返回 HTML 字符串直接 innerHTML，与现有 engine 模式天然兼容</li>
+    <li><b>HELP 待开发徽章</b>（#289 联动）：<span class="code">statusBadge('warn','待开发')</span> 或 <span class="code">statusBadge('empty','待开发')</span> 语义任选</li>
+  </ul>
+</div>
+
+<div class="footer">#290 交付验收 · 2026-08-12 · Mavis · 已认领 + 已完成，待你验收拍板后 close</div>
+
+</body>
+</html>

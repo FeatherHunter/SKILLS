@@ -1,4 +1,333 @@
-/* Base Skill 控件库 v1.2（唯一真相源 · 跨技能 · 领域无关）
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>#290 状态层三控件演示</title>
+<style>/* Base Skill token A 组 + 控件样式 v1.2（唯一真相源 · 跨技能 · 领域无关）
+ * 来源: 居家管家模板 :root token（对齐 #248/08-HTML交互规范.md 按钮规范）
+ * v1.2: 新增新控件样式（formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt/复制预览面板）
+ * 注入点: 由 injector.py 的 SHARED-CSS 占位符注入（模板声明点, 勿含闭合标签字样）
+ */
+
+/* ── token A 组（12 变量, 与组件契约 §6.4 一致）── */
+:root {
+  --fg: #1d1d1f;          /* 主文字 */
+  --fg2: #6e6e73;         /* 次级文字 */
+  --fg3: #86868b;         /* 弱化文字/占位 */
+  --bg: #f5f5f7;          /* 页面底色 */
+  --card: #ffffff;        /* 卡片底 */
+  --line: #d2d2d7;        /* 分隔线 */
+  --blue: #007aff;        /* 主色（场景按钮） */
+  --blue2: #0a63ce;       /* 主色深（按压态/链接） */
+  --soft: #f5f8ff;        /* 浅蓝底（stage 徽章） */
+  --ok: #34c759;          /* 成功/通过 */
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 36px rgba(0,0,0,.06);
+}
+
+/* ── 复制按钮基础（对齐 08 规范: ≤3 色按功能区分）── */
+button.copy {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  border: none;
+  background: var(--line);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0;
+  font-size: 13.5px;
+  min-height: 44px;
+  min-width: 0;
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-family: inherit;
+}
+button.copy:focus { outline: none; }
+button.copy:active { filter: brightness(.93); }
+button.copy:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 主场景按钮（蓝实心, 单色系） */
+button.copy.primary {
+  background: var(--blue);
+  color: #fff;
+}
+button.copy.primary:active { background: var(--blue2); }
+
+/* 危险/破坏性操作（红实心） */
+button.copy.red {
+  background: #ff3b30;
+  color: #fff;
+}
+button.copy.red:active { background: #c0392b; }
+
+/* ghost: 复制数据/复制日志 = 白底 + 主色描边 + 主色文字胶囊（独立一行） */
+button.copy.ghost {
+  background: var(--card);
+  color: var(--blue);
+  border: 1.5px solid var(--blue);
+  min-height: 48px;
+}
+
+/* ── actionBar 网格（偶数一行 2 个; 奇数时重要按钮单独一行由模板控制 wide）── */
+.hm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+.hm-actions .copy.wide {
+  grid-column: 1 / -1;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+}
+
+/* 成功/失败徽章（yes 函数用） */
+.ok { color: var(--ok); font-weight: 700; }
+.bad { color: #ff3b30; font-weight: 700; }
+
+/* ── formPrompt（参数表单）── */
+.fp { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin: 12px 0; }
+.fp-field { margin-bottom: 12px; }
+.fp-label { display: block; font-size: 12px; font-weight: 700; color: var(--fg2); margin-bottom: 6px; letter-spacing: .02em; }
+.fp-input {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}
+.fp-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+.fp-preview { background: #fafbfc; border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; margin: 10px 0; }
+.fp-preview-label { font-size: 10.5px; font-weight: 700; color: var(--fg3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.fp-preview-body {
+  font-size: 12px;
+  color: var(--fg2);
+  font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.fp-actions { margin-top: 12px; }
+
+/* ── selectList（勾选列表 + 批量操作）── */
+.sl { margin: 12px 0; }
+.sl-batchbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.sl-count { font-size: 12px; font-weight: 600; color: var(--fg2); margin-left: auto; white-space: nowrap; }
+.sl-group { margin-bottom: 14px; }
+.sl-group-head { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; margin-bottom: 8px; }
+.sl-group-count { font-size: 11px; font-weight: 600; color: var(--fg3); }
+.sl-group-items { display: flex; flex-direction: column; gap: 6px; }
+.sl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color .15s, background .15s;
+}
+.sl-item:hover { border-color: var(--blue); background: #fff; }
+.sl-item input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+.sl-item-body { flex: 1; min-width: 0; }
+.sl-item-title { display: block; font-size: 13.5px; font-weight: 600; color: var(--fg); line-height: 1.5; word-break: break-word; }
+.sl-item-sub { display: block; font-size: 12px; color: var(--fg3); margin-top: 2px; line-height: 1.5; word-break: break-word; }
+
+/* ── confirm 对话框 ── */
+.hm-confirm-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: hmFade .18s ease-out;
+}
+@keyframes hmFade { from { opacity: 0; } to { opacity: 1; } }
+.hm-confirm-panel {
+  background: var(--card);
+  border-radius: 20px;
+  max-width: 420px;
+  width: 100%;
+  padding: 24px 26px;
+  box-shadow: var(--shadow);
+  animation: hmPop .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes hmPop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.hm-confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.hm-confirm-detail { font-size: 13.5px; color: var(--fg2); line-height: 1.65; margin-bottom: 16px; }
+.hm-confirm-actions { display: flex; gap: 10px; }
+.hm-confirm-actions .copy { flex: 1; }
+
+/* ── foldBox 折叠区 ── */
+.hm-fold {
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  font-size: 13px;
+}
+.hm-fold summary { cursor: pointer; font-weight: 600; color: var(--blue2); outline: none; font-size: 13px; user-select: none; }
+.hm-fold summary::marker { color: var(--blue); }
+.hm-fold[open] summary { margin-bottom: 10px; }
+.hm-fold-body { font-size: 12.5px; line-height: 1.6; color: var(--fg2); }
+
+/* ── statusBadge 状态徽章 ── */
+.hm-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  width: fit-content;
+}
+.hm-status.ok { background: #e6f7ec; color: #1f8c3d; }
+.hm-status.warn { background: #fff5e0; color: #a25b00; }
+.hm-status.danger { background: #fff0ee; color: #a83228; }
+.hm-status.empty { background: #f0f0f3; color: #6e6e73; }
+
+/* ── emptyState 空状态 ── */
+.hm-empty {
+  background: #fafbfc;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 26px 20px;
+  text-align: center;
+  color: var(--fg2);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+.hm-empty-icon { font-size: 32px; margin-bottom: 8px; }
+.hm-empty-text { font-weight: 600; color: var(--fg); }
+.hm-empty-hint { font-size: 12.5px; color: var(--fg3); margin-top: 4px; }
+.hm-empty-action { margin-top: 14px; }
+
+/* ── errorReceipt 错误回执 ── */
+.hm-error {
+  background: #fff0ee;
+  border: 1.5px solid #ffc4c0;
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin: 12px 0;
+}
+.hm-error-title { font-size: 15px; font-weight: 700; color: #a83228; margin-bottom: 14px; }
+/* errorReceipt 内按钮布局: 第一个 .hm-actions（修正重试）贴标题; 后续 .hm-actions（复制数据/日志）与上方保持间距, 防贴死（#290 修复） */
+.hm-error .hm-actions { margin-top: 0; }
+.hm-error .hm-actions + .hm-actions { margin-top: 14px; }
+@media (max-width: 820px) {
+  .hm-error { padding: 16px 14px; }
+  .hm-error-title { margin-bottom: 12px; }
+}
+
+/* ── 复制预览面板（actionBar preview）── */
+.hm-preview-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10001;
+  padding: 16px;
+}
+.hm-preview-panel {
+  background: var(--card);
+  border-radius: 16px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.hm-preview-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px; font-weight: 700;
+}
+.hm-preview-close { border: none; background: none; font-size: 15px; color: var(--fg3); cursor: pointer; padding: 4px; }
+.hm-preview-body {
+  flex: 1;
+  overflow: auto;
+  padding: 14px 18px;
+  font-size: 12px;
+  line-height: 1.65;
+  font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  color: var(--fg2);
+  margin: 0;
+}
+.hm-preview-actions { display: flex; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line); }
+.hm-preview-actions .copy { flex: 1; }
+
+/* 手机适配: 单列网格保持按钮不换行 */
+@media (max-width: 820px) {
+  .hm-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hm-actions .copy.wide { grid-column: 1 / -1; }
+  .hm-actions .copy { min-height: 46px; }
+  .sl-batchbar { flex-direction: column; align-items: stretch; }
+  .sl-count { margin-left: 0; }
+  .hm-confirm-panel { padding: 20px 18px; }
+}</style>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f5f7; color: #1d1d1f; max-width: 760px; margin: 0 auto; padding: 24px 16px 60px; -webkit-font-smoothing: antialiased; }
+  h1 { font-size: 22px; font-weight: 700; margin: 8px 0 4px; }
+  .sub { color: #6e6e73; font-size: 13px; margin-bottom: 20px; }
+  .card { background: #fff; border: 1px solid #e3e3e8; border-radius: 16px; padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.05); }
+  .card h2 { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: #6e6e73; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .row > * { margin: 2px; }
+  .footer { color: #86868b; font-size: 12px; text-align: center; margin-top: 24px; }
+</style>
+</head>
+<body>
+
+<h1>#290 状态层三控件 · 加固演示</h1>
+<div class="sub">statusBadge / emptyState / errorReceipt · v1.4 · 签名全兼容, 边界全加固</div>
+
+<div class="card">
+  <h2>① statusBadge · 四种合法态 + 非法值降级</h2>
+  <div class="row">
+    <span id="sb-ok"></span>
+    <span id="sb-warn"></span>
+    <span id="sb-danger"></span>
+    <span id="sb-empty"></span>
+    <span id="sb-invalid"></span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>② emptyState · 完整态 + 缺省态 + XSS 防御</h2>
+  <div id="es-full"></div>
+  <div id="es-default" style="margin-top:12px"></div>
+</div>
+
+<div class="card">
+  <h2>③ errorReceipt · 三层反馈（错误描述 + 修正重试 + 复制数据/日志）</h2>
+  <div id="er-full"></div>
+</div>
+
+<div class="card">
+  <h2>④ errorReceipt · 无 payload 容错（数据残缺 → 只显示描述 + 修正重试）</h2>
+  <div id="er-min"></div>
+</div>
+
+<script>/* Base Skill 控件库 v1.2（唯一真相源 · 跨技能 · 领域无关）
  * 契约: docs/component-contract.md v1.2
  * v1.2 核心（#269 试点用户拍板）:
  *  - snapshot 结构化接口: buildDataText/buildLogText 领域无关（title/summary/sections）
@@ -516,4 +845,58 @@ function errorReceipt(cfg){
   if(logText) btns += '<button class="copy ghost" onclick="copyText(this.dataset.t)" data-t="'+esc(logText).replace(/"/g,'&quot;')+'">复制日志</button>';
   if(btns) html += '<div class="hm-actions">'+btns+'</div>';
   return html + '</div>';
-}
+}</script>
+<script id="payload" type="application/json">{"status": "ok", "data": {"meta": {"skill_name": "演示", "command_cn": "状态层演示", "occurred_at": "2026-08-12 20:00"}, "scene": {"scene_id": "demo", "snapshot": {"title": "演示", "summary": [], "sections": []}}}}</script>
+<script>
+(function(){
+  // ① statusBadge
+  document.getElementById('sb-ok').innerHTML = statusBadge('ok');
+  document.getElementById('sb-warn').innerHTML = statusBadge('warn');
+  document.getElementById('sb-danger').innerHTML = statusBadge('danger');
+  document.getElementById('sb-empty').innerHTML = statusBadge('empty');
+  document.getElementById('sb-invalid').innerHTML = statusBadge('info') + ' <span class="hm-empty-hint">← 非法值 info 降级 empty</span>';
+
+  // ② emptyState
+  document.getElementById('es-full').innerHTML = emptyState({
+    icon: '📭',
+    text: '本周还没有运动记录',
+    hint: '说「记运动」开始你的第一条记录',
+    action: '<button class="copy primary" onclick="toast(\'去记录\',\'演示页按钮\')">去记录</button>',
+  });
+  document.getElementById('es-default').innerHTML = emptyState({});
+
+  // ③ errorReceipt 完整态（显式 payload）
+  document.getElementById('er-full').innerHTML = errorReceipt({
+    message: '补记体脂失败：该日期已有记录 (18.5%)',
+    retryPrompt: '请加载「卡路里」技能,帮我补记体脂(唤醒词:补记体脂):\n  日期: 2026-07-20\n  体脂率: 18.0%',
+    payload: {
+      status: 'ok',
+      data: {
+        meta: { skill_name: '卡路里', command_cn: '补记体脂', wake_word: '补记体脂', occurred_at: '2026-08-12 20:00', skill_version: 'v1.4' },
+        scene: {
+          scene_id: 'error-receipt',
+          snapshot: {
+            title: '补记体脂 · 失败回执',
+            summary: ['操作: 补记体脂 2026-07-20', '原因: 同日重复写入需确认覆盖'],
+            sections: [
+              { heading: '现场数据', rows: ['日期: 2026-07-20', '新值: 18.0%', '已有: 18.5%'] },
+            ],
+          },
+          copy_log: { thinking: '写库前校验冲突', data_structure: 'body_fat_log · 1 行', call_chain: 'calorie_cli.py 补记体脂 → 校验 → 冲突', timestamp: '2026-08-12 20:00', exception: '无' },
+        },
+      },
+    },
+  });
+
+  // ④ errorReceipt 无 payload（数据残缺容错）
+  document.getElementById('er-min').innerHTML = errorReceipt({
+    message: '数据解析失败：响应格式异常',
+    retryPrompt: '请加载「居家管家」技能,帮我重新执行刚才的操作(唤醒词:查物品):\n  物品名: ______',
+  });
+})();
+</script>
+
+<div class="footer">#290 状态层加固演示 · 2026-08-12 · Mavis · 注入管线: 公共组件 injector.py（SHARED-CSS + SHARED-HELPERS）</div>
+
+</body>
+</html>

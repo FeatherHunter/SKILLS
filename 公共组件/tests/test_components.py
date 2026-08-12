@@ -275,6 +275,22 @@ def test_status_badge(page):
     assert ok == '完成' and 'ok' in ok_cls and danger == '失败'
 
 
+def test_status_badge_invalid_value_fallback(page):
+    """非法 status 值降级 empty（防无样式徽章, #290 加固）"""
+    page.evaluate("document.getElementById('root').innerHTML = window.statusBadge('info','自定义') + window.statusBadge('unknown')")
+    cls = page.evaluate("document.querySelectorAll('.hm-status')[0]?.className")
+    txt = page.evaluate("document.querySelectorAll('.hm-status')[1]?.textContent")
+    assert 'empty' in cls and txt == '无数据'  # 非法值 → empty 样式 + 默认文案
+
+
+def test_status_badge_esc_anti_xss(page):
+    """statusBadge text 转义, 防 XSS（#290 加固）"""
+    page.evaluate("document.getElementById('root').innerHTML = window.statusBadge('warn','<img src=x onerror=alert(1)>')")
+    img = page.evaluate("document.querySelector('.hm-status img') !== null")
+    raw = page.evaluate("document.getElementById('root').innerHTML")
+    assert img is False and '&lt;img' in raw and '<img src' not in raw
+
+
 def test_empty_state(page):
     page.evaluate("document.getElementById('root').innerHTML = window.emptyState({icon:'📭',text:'今天没有记录',hint:'说「记作息」开始记录'})")
     assert page.evaluate("document.querySelector('.hm-empty-text')?.textContent") == '今天没有记录'
@@ -282,10 +298,72 @@ def test_empty_state(page):
     assert page.evaluate("document.querySelector('.hm-empty-icon')?.textContent") == '📭'
 
 
+def test_empty_state_defaults(page):
+    """emptyState 缺省 text 与 action 透传（#290 加固: action 受信 HTML, text 默认文案）"""
+    page.evaluate("document.getElementById('root').innerHTML = window.emptyState({})")
+    assert page.evaluate("document.querySelector('.hm-empty-text')?.textContent") == '暂无数据'
+    page.evaluate("document.getElementById('root').innerHTML = window.emptyState({action:'<button class=\"copy\" onclick=\"window.__tap=1\">去记录</button>'})")
+    btn = page.evaluate("document.querySelector('.hm-empty-action .copy')?.textContent")
+    page.click('.hm-empty-action .copy')
+    assert btn == '去记录' and page.evaluate('window.__tap') == 1
+
+
+def test_empty_state_esc_anti_xss(page):
+    """emptyState icon/text/hint 转义防 XSS; action 受信 HTML 透传（契约明示）"""
+    page.evaluate("document.getElementById('root').innerHTML = window.emptyState({text:'<img src=x onerror=alert(1)>',hint:'<script>1</script>'})")
+    img = page.evaluate("document.querySelector('.hm-empty img') !== null")
+    hint_script = page.evaluate("document.querySelector('.hm-empty-hint script') !== null")
+    assert img is False and hint_script is False
+
+
 def test_error_receipt(page):
-    page.evaluate("window.__hmPayload=" + json.dumps(VALID_PAYLOAD, ensure_ascii=False) + "; document.getElementById('root').innerHTML = window.errorReceipt({message:'写入失败',retryPrompt:'请重试'})")
+    """errorReceipt: message + retryPrompt + 显式 payload → 三按钮（08 §6.1 三层反馈）"""
+    page.evaluate(
+        "document.getElementById('root').innerHTML = window.errorReceipt({message:'写入失败',retryPrompt:'请重试',payload:" +
+        json.dumps(VALID_PAYLOAD, ensure_ascii=False) + "})")
     assert page.evaluate("document.querySelector('.hm-error-title')?.textContent") == '❌ 写入失败'
-    assert page.evaluate("document.querySelectorAll('.hm-error .copy').length") >= 3  # 修正重试 + 复制数据 + 复制日志
+    btns = page.evaluate("[...document.querySelectorAll('.hm-error .copy')].map(n=>n.textContent)")
+    assert '修正重试' in btns and '复制数据' in btns and '复制日志' in btns
+    # 按钮布局: 修正重试 wide 独立一行, 复制数据/日志一行（.hm-actions 网格）
+    retry_cls = page.evaluate("document.querySelector('.hm-error .copy.primary')?.className")
+    actions = page.evaluate("document.querySelectorAll('.hm-error .hm-actions').length")
+    assert 'wide' in retry_cls and actions >= 1
+
+
+def test_error_receipt_data_log_strings(page):
+    """errorReceipt data/log 字符串直传, 不依赖全局 payload（#290 修复: 去掉 __hmPayload 强依赖）"""
+    page.evaluate("window.__hmPayload = undefined")  # 清掉可能的全局残留, 验证不依赖
+    page.evaluate("document.getElementById('root').innerHTML = window.errorReceipt({message:'失败',data:'现场数据',log:'故障链'})")
+    data_btn = page.evaluate("document.querySelector('.hm-error .copy.ghost[data-t=\"现场数据\"]') !== null")
+    log_btn = page.evaluate("document.querySelector('.hm-error .copy.ghost[data-t=\"故障链\"]') !== null")
+    assert data_btn and log_btn
+
+
+def test_error_receipt_no_payload_graceful(page):
+    """errorReceipt 无 payload 无 data/log: 只渲染 message + 修正重试, 复制按钮不出现（不崩）"""
+    page.evaluate("window.__hmPayload = undefined")
+    page.evaluate("document.getElementById('root').innerHTML = window.errorReceipt({message:'失败',retryPrompt:'重试'})")
+    btns = page.evaluate("[...document.querySelectorAll('.hm-error .copy')].map(n=>n.textContent)")
+    assert btns == ['修正重试']  # 无数据可复制 → 不渲染复制数据/日志
+
+
+def test_error_receipt_incomplete_payload_no_crash(page):
+    """errorReceipt payload 结构不完整（缺 snapshot）: 复制按钮不渲染, 控件不抛错（#290 容错）"""
+    bad = {'status': 'ok', 'data': {'meta': {}, 'scene': {'scene_id': 'x'}}}  # 无 snapshot
+    page.evaluate(
+        "document.getElementById('root').innerHTML = window.errorReceipt({message:'失败',payload:" +
+        json.dumps(bad, ensure_ascii=False) + "})")
+    btns = page.evaluate("[...document.querySelectorAll('.hm-error .copy')].map(n=>n.textContent)")
+    assert '复制数据' not in btns and '复制日志' not in btns
+    assert page.evaluate("document.querySelector('.hm-error-title')?.textContent") == '❌ 失败'
+
+
+def test_error_receipt_esc_anti_xss(page):
+    """errorReceipt message/data/log 转义防 XSS（#290 加固: 零注入面）"""
+    page.evaluate("document.getElementById('root').innerHTML = window.errorReceipt({message:'<img src=x onerror=alert(1)>',data:'<script>1</script>'})")
+    img = page.evaluate("document.querySelector('.hm-error-title img') !== null")
+    script = page.evaluate("document.querySelector('.hm-error script') !== null")
+    assert img is False and script is False
 
 
 # ── 图表组件（v1.3 · CHARTS-HELPERS）────────────────────────

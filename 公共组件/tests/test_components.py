@@ -445,3 +445,71 @@ def test_charts_standalone_without_base_js(chart_page):
     chart_page.evaluate("window.charts.bar(document.getElementById('root'), [])")
     text = chart_page.evaluate("document.querySelector('.hm-c-empty')?.textContent")
     assert text == '📊 暂无数据'
+
+
+# ── 图表视觉回归守卫（#288 验收抓 bug: donut 图例色点重叠）─────────────────
+
+def test_charts_donut_legend_dot_not_overlapping_name(chart_page):
+    """donut 图例色点与名称不得重叠（回归: v1.3 初版复用 .hm-c-dot 类 → 绝对定位拉出文档流叠到名称上）"""
+    chart_page.evaluate("""
+      window.charts.donut(document.getElementById('root'),
+        [{label:'食品',value:120},{label:'出行',value:80},{label:'日用',value:50}]);
+    """)
+    rows = chart_page.evaluate("""
+      (() => [...document.querySelectorAll('.hm-c-dl')].map(r => {
+        const dot = r.querySelector('.hm-c-dl-dot');
+        const name = r.querySelector('.hm-c-dl-n');
+        if (!dot || !name) return {err: 'missing'};
+        const dr = dot.getBoundingClientRect();
+        const nr = name.getBoundingClientRect();
+        return { overlapX: dr.x + dr.width > nr.x + 1, vGap: Math.round(nr.y - dr.y) };
+      }))()
+    """)
+    assert len(rows) == 3
+    for r in rows:
+        assert 'err' not in r, r
+        assert r['overlapX'] is False, f'色点与名称重叠: {r}'
+        # 色点与名称垂直对齐（同一行, 高度差 < 色点高度）
+        assert abs(r['vGap']) < 12, f'色点与名称错行: {r}'
+
+
+def test_charts_donut_legend_dot_uses_own_class(chart_page):
+    """donut 图例色点用独立类 .hm-c-dl-dot（不得复用折线图 .hm-c-dot 的绝对定位类）"""
+    # line 渲染到 #cLine, donut 渲染到 #cDon —— 独立容器防互相覆盖
+    chart_page.evaluate("""
+      document.getElementById('root').innerHTML = '<div id="cLine"></div><div id="cDon"></div>';
+      window.charts.line(document.getElementById('cLine'),
+        [{label:'A',value:1},{label:'B',value:2},{label:'C',value:3}]);
+      window.charts.donut(document.getElementById('cDon'),
+        [{label:'食品',value:120},{label:'出行',value:80}]);
+    """)
+    line_dot_pos = chart_page.evaluate("""
+      (() => {
+        const el = document.querySelector('.hm-c-dot');
+        return el ? getComputedStyle(el).position : 'n/a';
+      })()
+    """)
+    don_dot_pos = chart_page.evaluate("""
+      (() => {
+        const el = document.querySelector('.hm-c-dl-dot');
+        return el ? getComputedStyle(el).position : 'n/a';
+      })()
+    """)
+    has_dl = chart_page.evaluate("document.querySelector('.hm-c-dl-dot') !== null")
+    assert has_dl is True
+    assert line_dot_pos == 'absolute'
+    assert don_dot_pos in ('static', 'relative'), f'图例色点不应绝对定位: {don_dot_pos}'
+
+
+def test_charts_bar_mobile_long_label_not_clipped(chart_page):
+    """手机 375px: bar 长标签(6 字)完整显示, 不省略号截断（回归: 56px max-width 截断）"""
+    chart_page.set_viewport_size({'width': 375, 'height': 700})
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'厨房小家电',value:26},{label:'数码产品配件',value:18},{label:'换季衣物鞋帽',value:31},
+         {label:'客厅家具家装',value:14},{label:'儿童图书文具',value:22},{label:'日用百货杂项',value:17}]);
+    """)
+    clipped = chart_page.evaluate("""
+      (() => [...document.querySelectorAll('.hm-c-l')].map(el => el.scrollWidth > el.clientWidth))()
+    """)
+    assert clipped == [False] * 6, f'长标签被截断: {clipped}'

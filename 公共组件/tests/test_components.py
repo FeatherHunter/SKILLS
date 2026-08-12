@@ -840,7 +840,7 @@ def test_combo_renders(chart_page):
 
 
 def test_combo_line_dot_on_bar_top(chart_page):
-    """combo 线点精确落在柱顶（回归: v1.6 初版双坐标系错位 → 共享 Y 轴 + v 绝对定位修复）"""
+    """combo 线点精确落在柱顶 + 分散在各柱列（回归: v1.6 初版双坐标系错位 + 点 left:50% 相对 plot 导致水平堆叠）"""
     chart_page.set_viewport_size({'width': 1200, 'height': 800})
     chart_page.evaluate("""
       window.charts.combo(document.getElementById('root'),
@@ -848,17 +848,23 @@ def test_combo_line_dot_on_bar_top(chart_page):
          lines:[{label:'1月',value:12},{label:'2月',value:22},{label:'3月',value:16},{label:'4月',value:30},{label:'5月',value:20}]},
         {animation:false});
     """)
-    errs = chart_page.evaluate("""
+    res = chart_page.evaluate("""
       (() => {
         const dots = [...document.querySelectorAll('.hm-c-combo-dot')];
         const bars = [...document.querySelectorAll('.hm-c-b')];
-        return dots.map((d, i) => {
+        const errs = dots.map((d, i) => {
           const dr = d.getBoundingClientRect(), br = bars[i].getBoundingClientRect();
           return Math.abs((dr.y + dr.height/2) - br.y);
         });
+        const xs = dots.map(d => d.getBoundingClientRect().x);
+        const xDup = xs.length - new Set(xs.map(x => Math.round(x))).size;
+        const xSpread = Math.max(...xs) - Math.min(...xs);
+        return { errs, xDup, xSpread };
       })()
     """)
-    assert all(e < 1.5 for e in errs), f'combo 线点未落柱顶: {errs}'
+    assert all(e < 1.5 for e in res['errs']), f'combo 线点未落柱顶: {res["errs"]}'
+    assert res['xDup'] == 0, f'combo 线点水平堆叠 {res["xDup"]} 个'
+    assert res['xSpread'] > 50, 'combo 线点未分散各柱列'
 
 
 def test_combo_throws_on_length_mismatch(chart_page):

@@ -428,13 +428,16 @@ window.charts={
     var barMax=opt.y2?maxB:maxV;
     var lineMax=opt.y2?maxL:maxV;
     /* 绘图区: flex 两段式（与 bar 同结构）, 线用 SVG 叠加层
-     * v 绝对定位在柱顶上方（bottom = barH% + 12px 等效）, 不占位 → 线点 top=100-barH% 精确落柱顶; 柱高 cap 80% 给 v 留顶 */
+     * v 绝对定位在柱顶上方（bottom = barH%）, 不占位 → 柱高% 相对 col 全高
+     * 线点放 col 内部（col 为 position:relative）→ left:50% 相对柱列宽 → 每点精确落在各自柱顶中心 */
     var cols='';
     for(var i=0;i<n;i++){
       var barH=bars.length?Math.min(80,Math.max(3,Math.round(_num(bars[i].value)/barMax*100))):0;
+      var dotH=lines.length?Math.min(80,Math.max(3,Math.round((bars.length?_num(bars[i].value):_num(lines[i].value))/barMax*100))):0;
       cols+='<div class="hm-c-col hm-c-col-combo" data-i="'+i+'">'
         +(bars.length?'<div class="hm-c-v hm-c-v-combo" style="bottom:'+barH+'%">'+_esc(_fmt(bars[i].value,opt.format))+'</div>':'')
         +(bars.length?'<div class="hm-c-b" data-i="'+i+'" style="height:'+(opt.animation?0:barH)+'%;background:'+opt.barColor+';max-width:22px"></div>':'')
+        +(lines.length?'<i class="hm-c-dot hm-c-combo-dot" data-i="'+i+'" style="left:50%;top:'+(100-dotH)+'%;border-color:'+opt.lineColor+'"></i>':'')
         +'</div>';
     }
     /* polyline: 连每个柱顶（viewBox y = _H*(1-barH/100), 与柱子 height% 视觉一致） */
@@ -446,13 +449,6 @@ window.charts={
       polyPts.push(px.toFixed(1)+','+py.toFixed(1));
     }
     var poly=polyPts.join(' ');
-    /* 线点 overlay: 精确定位在柱顶（top = 100 - barH%, left = 50% 柱中心）
-     * —— 与 .hm-c-b 的 height% 同基准, 物理对齐（不再经 viewBox 换算） */
-    var lineDots='';
-    for(var di=0;di<n;di++){
-      var dotH=bars.length?Math.min(80,Math.max(3,Math.round(_num(bars[di].value)/barMax*100))):(lines.length?Math.round(_num(lines[di].value)/lineMax*100):0);
-      lineDots+='<i class="hm-c-dot hm-c-combo-dot" data-i="'+di+'" style="left:50%;top:'+(100-dotH)+'%;margin-left:-4.5px;margin-top:-4.5px;border-color:'+opt.lineColor+'"></i>';
-    }
     var labels='';for(var j=0;j<n;j++){labels+='<div class="hm-c-l">'+_esc((bars[j]||lines[j]).label)+'</div>';}
     var legend='';
     if(opt.legend){legend='<div class="hm-c-legend"><span class="hm-c-lg"><span class="hm-c-lg-dot" style="background:'+opt.barColor+';width:9px;height:9px;border-radius:2px"></span>量</span><span class="hm-c-lg"><span class="hm-c-lg-dot" style="background:'+opt.lineColor+';height:3px"></span>趋势</span></div>';}
@@ -460,7 +456,7 @@ window.charts={
       +'<div class="hm-c-plot" style="position:relative">'+cols
       +'<svg class="hm-c-combo-svg" viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none" style="position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none">'
       +(lines.length?'<polyline points="'+poly+'" fill="none" stroke="'+opt.lineColor+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" style="vector-effect:non-scaling-stroke"/>':'')
-      +'</svg>'+lineDots+'</div>'
+      +'</svg></div>'
       +'<div class="hm-c-labels">'+labels+'</div></div>';
     if(opt.animation){requestAnimationFrame(function(){requestAnimationFrame(function(){el.querySelectorAll('.hm-c-b').forEach(function(b,i){b.style.height=Math.min(80,Math.max(3,Math.round(_num(bars[i].value)/barMax*100)))+'%';});});});}
     if(opt.onclick){el.querySelectorAll('.hm-c-b,.hm-c-col').forEach(function(n){n.onclick=function(){opt.onclick(Number(n.getAttribute('data-i')));};});}

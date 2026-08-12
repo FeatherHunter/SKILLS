@@ -440,11 +440,11 @@ window.charts={
         +(lines.length?'<i class="hm-c-dot hm-c-combo-dot" data-i="'+i+'" style="left:50%;top:'+(100-dotH)+'%;border-color:'+opt.lineColor+'"></i>':'')
         +'</div>';
     }
-    /* polyline: 连每个柱顶（viewBox y = _H*(1-barH/100), 与柱子 height% 视觉一致） */
+    /* polyline 初值: 近似柱中心（渲染后按 DOM 实际 col 中心校准, 见下方 _calib） */
     var polyPts=[];
     for(var pi=0;pi<n;pi++){
       var pbH=bars.length?Math.min(80,Math.max(3,Math.round(_num(bars[pi].value)/barMax*100))):(lines.length?Math.round(_num(lines[pi].value)/lineMax*100):0);
-      var px=_P+(_W-2*_P)*pi/(Math.max(1,n-1));
+      var px=(pi+0.5)/n*_W;
       var py=_H*(1-pbH/100);
       polyPts.push(px.toFixed(1)+','+py.toFixed(1));
     }
@@ -459,6 +459,23 @@ window.charts={
       +'</svg></div>'
       +'<div class="hm-c-labels">'+labels+'</div></div>';
     if(opt.animation){requestAnimationFrame(function(){requestAnimationFrame(function(){el.querySelectorAll('.hm-c-b').forEach(function(b,i){b.style.height=Math.min(80,Math.max(3,Math.round(_num(bars[i].value)/barMax*100)))+'%';});});});}
+    /* 校准: polyline 节点 x 精确对齐各 col 实际中心（flex gap 偏移修正, 零偏差） */
+    var calib=function(){
+      var plot=el.querySelector('.hm-c-plot');var poly=el.querySelector('polyline');
+      if(!plot||!poly)return;
+      var pw=plot.getBoundingClientRect().width||1;
+      var cols=el.querySelectorAll('.hm-c-col-combo');
+      var pts=poly.getAttribute('points').split(' ');
+      var newPts=pts.map(function(pt,i){
+        var xy=pt.split(',');
+        var col=cols[i];if(!col)return pt;
+        var cr=col.getBoundingClientRect();
+        var x=(cr.x+cr.width/2-plot.getBoundingClientRect().x)/pw*_W;
+        return x.toFixed(1)+','+xy[1];
+      });
+      poly.setAttribute('points',newPts.join(' '));
+    };
+    calib();
     if(opt.onclick){el.querySelectorAll('.hm-c-b,.hm-c-col').forEach(function(n){n.onclick=function(){opt.onclick(Number(n.getAttribute('data-i')));};});}
   },
 

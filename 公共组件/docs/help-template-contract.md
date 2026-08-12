@@ -17,7 +17,7 @@
 公共组件/assets/help_template.html（Base 资产，单一真相源）
 ├── <head>  ────────── 注入: 页面标题（skill_name + title）
 ├── 顶部标题区 ──────── 注入: skill_name / title / subtitle / init_banner（可选）
-├── meta_blocks 区 ─── 注入: 技能特有元信息透传块（可选）
+├── meta_blocks 数据 ─── 注入: 技能特有元信息透传字段（可选 · 页面不渲染展示）
 ├── 搜索区 ─────────── 内置（跨 Tab 全局搜索 + 高亮）
 ├── 内容目录区 ──────── 注入: groups（分组 Tab → 子功能折叠 → 场景卡）
 ├── Sheet 弹层 ─────── 参数表单（editable_fields）+ Prompt 实时预览 + 复制
@@ -33,7 +33,7 @@
 | `title` | string | 页面大标题（如 能力速查台） | ✅ | 顶部标题区 |
 | `subtitle` | string | 副标题/一句话说明 | 可选 | 顶部标题区 |
 | `init_banner` | object | 首次使用横幅（title/subtitle/button_text/prompt/steps） | 可选 | 顶部横幅（未设置不渲染） |
-| `meta_blocks` | array | 技能特有元信息 `[{id, title, html}]` | 可选 | 折叠区（原样透传） |
+| `meta_blocks` | array | 技能特有元信息 `[{id, title, html}]` | 可选 | 透传字段（页面不渲染 · 展示归技能重构票） |
 | `groups` | array | 2 级分组 `[{id, icon, label, subgroups:[{id, label, scenes[]}]}]` | ✅ | Tab + 子功能折叠 + 场景卡 |
 | `contact` | object | 联系作者（items + copy_all） | 可选 | 关于 Tab |
 | `version` | string | 技能版本号 | 可选 | 关于 Tab |

@@ -25,7 +25,7 @@
 - **归一化层实体取消（用户拍板核心思想）**: Base 零翻译、零适配;技能侧重构数据文件对齐契约（「技能侧零改动」红线作废）
 - **injector `--help-template` 模式**: `validate_help_data` 契约校验（必填/分组/场景/id 唯一/status 二态）+ 文件名 sanitize（缺省 `help_<技能名>.html` + `..` 穿越拒绝）
 - **editable_fields 管线**: 统一 `{name,label,value,hint,required}` → Sheet 参数表单 + Prompt 实时预览 + 空值拦截（复制按钮契约 v2 #123）
-- **meta_blocks 设计**: 技能特有元信息（大厨 prompt_rules/methodology、备忘录 dependencies、卡路里 AI 验证协议）→ Base 原样透传折叠区
+- **meta_blocks 设计**: 技能特有元信息（大厨 prompt_rules/methodology、备忘录 dependencies、卡路里 AI 验证协议）→ Base 原样透传（数据字段 · 页面不渲染展示 · 对齐 V4.16 定稿）
 - 契约 v1.2 + CHANGELOG 同步;守卫测试 +33（契约 schema 15 + help 模板 18）→ 108/108 全绿
 - 示例: `docs/examples/help_example_data.json`（覆盖 meta_blocks/init_banner/待开发/可编辑字段全特性）;浏览器实测 Sheet 参数表单 + 实时预览通过
 

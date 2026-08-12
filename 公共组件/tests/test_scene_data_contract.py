@@ -64,7 +64,7 @@ VALID_DATA = {
                             'id': 'record_add_single',
                             'title': '添加单条作息记录',
                             'wake_word': '#0 记作息',
-                            'type': '采集',
+                            'types': ['采集', {'text': '过程', 'bg': '#e2f7f5', 'fg': '#00897b'}],
                             'status': '',
                             'prompt_template': '请帮我记一条作息:今天 14:00-15:00 写了 AI 调优代码',
                             'editable_fields': [
@@ -76,7 +76,7 @@ VALID_DATA = {
                             'id': 'record_add_json',
                             'title': '通过 JSON 文件批量添加',
                             'wake_word': '#0 记作息',
-                            'type': '采集',
+                            'types': ['采集'],
                             'status': '【待开发】',
                             'prompt_template': '请帮我批量导入这些作息数据(从 JSON 文件)',
                         },
@@ -97,7 +97,7 @@ VALID_DATA = {
                             'id': 'query_today_summary',
                             'title': '看今日总结',
                             'wake_word': '#4 今天总结',
-                            'type': '查看',
+                            'types': ['查看', '结果'],
                             'status': '',
                             'prompt_template': '请帮我看看今天的总结',
                         },
@@ -187,6 +187,30 @@ class TestSceneRules:
         data['groups'][0]['subgroups'][0]['scenes'] = []
         with pytest.raises(Exception):
             validate_via_schema(data)
+
+    def test_types_object_missing_text(self):
+        data = json.loads(json.dumps(VALID_DATA))
+        data['groups'][0]['subgroups'][0]['scenes'][0]['types'] = [{'bg': '#fff'}]
+        with pytest.raises(Exception):
+            validate_via_schema(data)
+
+    def test_types_element_illegal(self):
+        data = json.loads(json.dumps(VALID_DATA))
+        data['groups'][0]['subgroups'][0]['scenes'][0]['types'] = [123]
+        with pytest.raises(Exception):
+            validate_via_schema(data)
+
+    def test_types_empty_string_rejected(self):
+        data = json.loads(json.dumps(VALID_DATA))
+        data['groups'][0]['subgroups'][0]['scenes'][0]['types'] = ['']
+        with pytest.raises(Exception):
+            validate_via_schema(data)
+
+    def test_types_custom_color_valid(self):
+        data = json.loads(json.dumps(VALID_DATA))
+        data['groups'][0]['subgroups'][0]['scenes'][0]['types'] = [
+            {'text': '过程', 'bg': '#e2f7f5', 'fg': '#00897b'}]
+        validate_via_schema(data)
 
 
 class TestIdRules:

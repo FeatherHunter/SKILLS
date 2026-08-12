@@ -67,7 +67,25 @@
         "id": { "type": "string", "minLength": 1, "description": "场景唯一标识（对齐 scenario_id/id/key）" },
         "title": { "type": "string", "minLength": 1 },
         "wake_word": { "type": "string", "minLength": 1, "description": "唤醒词（卡片 chip）" },
-        "type": { "type": "string", "description": "场景类型徽章（采集/查看/校验/回执…）" },
+        "types": {
+          "type": "array",
+          "description": "场景类型徽章数组（1~N 个; 元素 = 字符串用默认配色, 或对象自定义文字+颜色）",
+          "items": {
+            "anyOf": [
+              { "type": "string", "minLength": 1 },
+              {
+                "type": "object",
+                "required": ["text"],
+                "additionalProperties": false,
+                "properties": {
+                  "text": { "type": "string", "minLength": 1, "description": "徽章文字" },
+                  "bg": { "type": "string", "description": "背景色（缺省 = 该文字默认配色）" },
+                  "fg": { "type": "string", "description": "文字色（缺省 = 该文字默认配色）" }
+                }
+              }
+            ]
+          }
+        },
         "status": { "enum": ["", "【待开发】"], "description": "'' 可用 / 【待开发】禁用" },
         "prompt_template": { "type": "string", "minLength": 1, "description": "复制 prompt 全文，与技能 scene_data 定稿零差异" },
         "editable_fields": {

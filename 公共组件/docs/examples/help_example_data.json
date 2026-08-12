@@ -9,13 +9,34 @@
     "prompt": "请你加载「作息管家」技能,帮我初始化(唤醒词:首次使用)。",
     "closable": true,
     "steps": [
-      { "title": "检测环境", "desc": "检查依赖" },
-      { "title": "安装依赖", "desc": "自动安装" },
-      { "title": "建数据库", "desc": "自动创建" },
-      { "title": "初始化", "desc": "写入配置" },
-      { "title": "校验", "desc": "自检通过" },
-      { "title": "生成报告", "desc": "初始化报告" },
-      { "title": "完成", "desc": "准备就绪" }
+      {
+        "title": "检测环境",
+        "desc": "检查依赖"
+      },
+      {
+        "title": "安装依赖",
+        "desc": "自动安装"
+      },
+      {
+        "title": "建数据库",
+        "desc": "自动创建"
+      },
+      {
+        "title": "初始化",
+        "desc": "写入配置"
+      },
+      {
+        "title": "校验",
+        "desc": "自检通过"
+      },
+      {
+        "title": "生成报告",
+        "desc": "初始化报告"
+      },
+      {
+        "title": "完成",
+        "desc": "准备就绪"
+      }
     ]
   },
   "meta_blocks": [
@@ -44,36 +65,89 @@
               "id": "record_add_single",
               "title": "添加单条作息记录",
               "wake_word": "#0 记作息",
-              "type": "采集",
               "status": "",
               "prompt_template": "请你加载「作息管家」技能,帮我记录作息(唤醒词:记作息)。\n\n我想记录今天这段时间做了什么。如果信息不全,问我补齐。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
               "editable_fields": [
-                { "name": "activity", "label": "活动", "value": "", "hint": "如: 写了 AI 调优代码", "required": true },
-                { "name": "start", "label": "开始时间", "value": "", "hint": "如: 14:00", "required": true },
-                { "name": "end", "label": "结束时间", "value": "", "hint": "如: 15:00", "required": true },
-                { "name": "category", "label": "分类", "value": "", "hint": "选填,如: 工作/学习/创作", "required": false }
+                {
+                  "name": "activity",
+                  "label": "活动",
+                  "value": "",
+                  "hint": "如: 写了 AI 调优代码",
+                  "required": true
+                },
+                {
+                  "name": "start",
+                  "label": "开始时间",
+                  "value": "",
+                  "hint": "如: 14:00",
+                  "required": true
+                },
+                {
+                  "name": "end",
+                  "label": "结束时间",
+                  "value": "",
+                  "hint": "如: 15:00",
+                  "required": true
+                },
+                {
+                  "name": "category",
+                  "label": "分类",
+                  "value": "",
+                  "hint": "选填,如: 工作/学习/创作",
+                  "required": false
+                }
+              ],
+              "types": [
+                "采集"
               ]
             },
             {
               "id": "record_add_sleep",
-              "title": "记录睡眠",
+              "title": "记录睡眠（含确认表单）",
               "wake_word": "#0 记作息",
-              "type": "采集",
               "status": "",
               "prompt_template": "请你加载「作息管家」技能,帮我记录睡眠(唤醒词:记作息)。\n\n记录我的睡眠起止时间。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
               "editable_fields": [
-                { "name": "bedtime", "label": "入睡时间", "value": "", "hint": "如: 23:00", "required": true },
-                { "name": "wakeup", "label": "起床时间", "value": "", "hint": "如: 07:00", "required": true },
-                { "name": "quality", "label": "睡眠质量", "value": "", "hint": "好/一般/差", "required": false }
+                {
+                  "name": "bedtime",
+                  "label": "入睡时间",
+                  "value": "",
+                  "hint": "如: 23:00",
+                  "required": true
+                },
+                {
+                  "name": "wakeup",
+                  "label": "起床时间",
+                  "value": "",
+                  "hint": "如: 07:00",
+                  "required": true
+                },
+                {
+                  "name": "quality",
+                  "label": "睡眠质量",
+                  "value": "",
+                  "hint": "好/一般/差",
+                  "required": false
+                }
+              ],
+              "types": [
+                {
+                  "text": "过程",
+                  "bg": "#e2f7f5",
+                  "fg": "#00897b"
+                },
+                "结果"
               ]
             },
             {
               "id": "record_add_illegal_category",
               "title": "分类不在白名单",
               "wake_word": "#0 记作息",
-              "type": "校验",
               "status": "【待开发】",
-              "prompt_template": "请你加载「作息管家」技能,帮我记录作息(唤醒词:记作息)。\n\n我要用的分类不在白名单里,请你走「提议新增分类」流程。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。"
+              "prompt_template": "请你加载「作息管家」技能,帮我记录作息(唤醒词:记作息)。\n\n我要用的分类不在白名单里,请你走「提议新增分类」流程。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
+              "types": [
+                "校验"
+              ]
             }
           ]
         },
@@ -85,12 +159,26 @@
               "id": "record_add_json",
               "title": "JSON 批量添加",
               "wake_word": "#0 记作息",
-              "type": "批量",
               "status": "",
               "prompt_template": "请你加载「作息管家」技能,帮我批量导入作息(唤醒词:记作息)。\n\n我有一个 JSON 数据文件要批量写入,逐条校验,单条失败不打断。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
               "editable_fields": [
-                { "name": "file", "label": "文件路径", "value": "", "hint": "如: D:/data.json", "required": true },
-                { "name": "date", "label": "目标日期", "value": "", "hint": "缺省取当日", "required": false }
+                {
+                  "name": "file",
+                  "label": "文件路径",
+                  "value": "",
+                  "hint": "如: D:/data.json",
+                  "required": true
+                },
+                {
+                  "name": "date",
+                  "label": "目标日期",
+                  "value": "",
+                  "hint": "缺省取当日",
+                  "required": false
+                }
+              ],
+              "types": [
+                "批量"
               ]
             }
           ]
@@ -110,22 +198,45 @@
               "id": "plan_tomorrow",
               "title": "制定次日计划",
               "wake_word": "#17 商量计划",
-              "type": "向导",
               "status": "",
               "prompt_template": "请你加载「作息管家」技能,帮我商量计划(唤醒词:商量计划)。\n\n基于我的历史作息习惯,生成明天的分段计划。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
               "editable_fields": [
-                { "name": "date", "label": "目标日期", "value": "", "hint": "默认明天,如: 2026-08-13", "required": false }
+                {
+                  "name": "date",
+                  "label": "目标日期",
+                  "value": "",
+                  "hint": "默认明天,如: 2026-08-13",
+                  "required": false
+                }
+              ],
+              "types": [
+                "向导",
+                "结果"
               ]
             },
             {
               "id": "plan_adjust",
               "title": "调整后再生成",
               "wake_word": "#17 商量计划",
-              "type": "向导",
               "status": "",
               "prompt_template": "请你加载「作息管家」技能,帮我商量计划(唤醒词:商量计划)。\n\n我已看过计划,要调整其中一段,然后重新生成。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
               "editable_fields": [
-                { "name": "change", "label": "调整内容", "value": "", "hint": "如: 第 2 段改成 19:00 开始", "required": true }
+                {
+                  "name": "change",
+                  "label": "调整内容",
+                  "value": "",
+                  "hint": "如: 第 2 段改成 19:00 开始",
+                  "required": true
+                }
+              ],
+              "types": [
+                "向导",
+                {
+                  "text": "确认",
+                  "bg": "#fff1e2",
+                  "fg": "#b25b00"
+                },
+                "结果"
               ]
             }
           ]
@@ -145,17 +256,21 @@
               "id": "rp_day",
               "title": "复盘今日",
               "wake_word": "复盘今日",
-              "type": "结果",
               "status": "",
-              "prompt_template": "请你加载「作息管家」技能,帮我复盘今天(唤醒词:复盘今日)。\n\n今天结束前,对照计划看实际做了什么,给我健康分。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。"
+              "prompt_template": "请你加载「作息管家」技能,帮我复盘今天(唤醒词:复盘今日)。\n\n今天结束前,对照计划看实际做了什么,给我健康分。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
+              "types": [
+                "结果"
+              ]
             },
             {
               "id": "rp_week",
               "title": "复盘本周",
               "wake_word": "复盘本周",
-              "type": "结果",
               "status": "",
-              "prompt_template": "请你加载「作息管家」技能,帮我复盘本周(唤醒词:复盘本周)。\n\n看这一周 7 维趋势和热力图,给我健康分均值。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。"
+              "prompt_template": "请你加载「作息管家」技能,帮我复盘本周(唤醒词:复盘本周)。\n\n看这一周 7 维趋势和热力图,给我健康分均值。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
+              "types": [
+                "结果"
+              ]
             }
           ]
         }
@@ -174,17 +289,21 @@
               "id": "week_view",
               "title": "周视图",
               "wake_word": "周视图",
-              "type": "结果",
               "status": "",
-              "prompt_template": "请你加载「作息管家」技能,帮我看周视图(唤醒词:周视图)。\n\n看这一周 7×24 全分类热力图总览。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。"
+              "prompt_template": "请你加载「作息管家」技能,帮我看周视图(唤醒词:周视图)。\n\n看这一周 7×24 全分类热力图总览。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
+              "types": [
+                "结果"
+              ]
             },
             {
               "id": "first_use",
               "title": "首次使用",
               "wake_word": "首次使用",
-              "type": "向导",
               "status": "",
-              "prompt_template": "请你加载「作息管家」技能,帮我初始化(唤醒词:首次使用)。\n\n我是第一次使用,帮我走完初始化工作流。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。"
+              "prompt_template": "请你加载「作息管家」技能,帮我初始化(唤醒词:首次使用)。\n\n我是第一次使用,帮我走完初始化工作流。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。",
+              "types": [
+                "向导"
+              ]
             }
           ]
         }
@@ -193,15 +312,35 @@
   ],
   "contact": {
     "items": [
-      { "label": "GitHub", "value": "github.com/FeatherHunter/SKILLS", "url": true },
-      { "label": "Issues", "value": "github.com/FeatherHunter/SKILLS/issues", "url": true }
+      {
+        "label": "GitHub",
+        "value": "github.com/FeatherHunter/SKILLS",
+        "url": true
+      },
+      {
+        "label": "Issues",
+        "value": "github.com/FeatherHunter/SKILLS/issues",
+        "url": true
+      }
     ],
     "copy_all": true
   },
   "version": "1.2.0",
   "recommendations": [
-    { "name": "卡路里", "desc": "记录饮食、体重、运动,营养分析与趋势追踪。", "wake": "卡路里HELP" },
-    { "name": "居家管家", "desc": "家庭物品全生命周期管理:录入、查询、保养提醒。", "wake": "居家管家" },
-    { "name": "饼干记账", "desc": "收支记账、预算目标、账单分析与报销退款。", "wake": "饼干记账" }
+    {
+      "name": "卡路里",
+      "desc": "记录饮食、体重、运动,营养分析与趋势追踪。",
+      "wake": "卡路里HELP"
+    },
+    {
+      "name": "居家管家",
+      "desc": "家庭物品全生命周期管理:录入、查询、保养提醒。",
+      "wake": "居家管家"
+    },
+    {
+      "name": "饼干记账",
+      "desc": "收支记账、预算目标、账单分析与报销退款。",
+      "wake": "饼干记账"
+    }
   ]
 }

@@ -16,7 +16,7 @@
   .screen{height:auto;overflow:visible;-webkit-overflow-scrolling:touch;background:transparent;scrollbar-width:none;overscroll-behavior-y:auto}
   .screen::-webkit-scrollbar{display:none}
   .notch{display:none}
-  .app{padding:12px 0 110px;min-height:100%}
+  .app{padding:12px 0 74px}
   .app-inner{padding:0 6px}
   .hero{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
   .h-left{flex:1;min-width:0}
@@ -215,15 +215,13 @@ var RECOMMENDATIONS = HELP.recommendations || [];
 
 /* 契约 v1 (groups[{id,icon,label,subgroups[{id,label,scenes[]}]}])
    -> 原型内部结构 (key/icon/name + subgroups[{name,scenes}]) */
-var TYPE_CLASS = { '采集':'t-collect', '查看':'t-view', '结果':'t-result', '向导':'t-wizard', '批量':'t-batch', '校验':'t-view', '选择':'t-view' };
 function normalizeScenes(scenes){
   return (scenes || []).map(function(s){
     return {
       id: s.id,
       name: s.title,
       chip: s.wake_word,
-      type: s.type || '',
-      t: TYPE_CLASS[s.type] || 't-view',
+      types: (s.types && s.types.length ? s.types : []),
       dev: (s.status === '【待开发】'),
       prompt: s.prompt_template,
       params: (s.editable_fields || []).map(function(f){
@@ -254,7 +252,39 @@ GROUPS.forEach(function(g){
 });
 
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
-function chipHTML(s){ return '<span class="chip">' + esc(s.chip) + '</span><span class="type-badge ' + (s.dev ? 't-dev' : s.t) + '">' + esc(s.dev ? '待开发' : s.type) + '</span>'; }
+/* 类型徽章: types 数组元素可为字符串(默认配色)或 {text,bg,fg}(调用者自定义颜色, 缺省走默认) */
+var TYPE_DEFAULT = {
+  '采集':  {bg:'#e7f8ee', fg:'#1a7a3a'},
+  '查看':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '结果':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '向导':  {bg:'#e2f7f5', fg:'#00897b'},
+  '批量':  {bg:'#f3e9fb', fg:'#8e3fc9'},
+  '校验':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '选择':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '过程':  {bg:'#e2f7f5', fg:'#00897b'},
+  '回执':  {bg:'#e8f2ff', fg:'#0a63ce'},
+  '录入':  {bg:'#e7f8ee', fg:'#1a7a3a'}
+};
+function typeBadgeHTML(t){
+  var text, bg, fg;
+  if (t && typeof t === 'object') {
+    text = t.text;
+    var d = TYPE_DEFAULT[text] || TYPE_DEFAULT['查看'];
+    bg = t.bg || d.bg;
+    fg = t.fg || d.fg;
+  } else {
+    text = t;
+    var d2 = TYPE_DEFAULT[text] || TYPE_DEFAULT['查看'];
+    bg = d2.bg; fg = d2.fg;
+  }
+  return '<span class="type-badge" style="background:' + esc(bg) + ';color:' + esc(fg) + '">' + esc(text) + '</span>';
+}
+function chipHTML(s){
+  var h = '<span class="chip">' + esc(s.chip) + '</span>';
+  if (s.dev) h += '<span class="type-badge t-dev">待开发</span>';
+  (s.types || []).forEach(function(t){ h += typeBadgeHTML(t); });
+  return h;
+}
 
 /* ===== SVG 图标库 ===== */
 var SVG_ICONS = {

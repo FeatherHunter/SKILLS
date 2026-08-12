@@ -48,7 +48,9 @@ VALID_HELP = {
                     'scenes': [
                         {
                             'id': 'record_add_single', 'title': '添加单条作息记录',
-                            'wake_word': '#0 记作息', 'type': '采集', 'status': '',
+                            'wake_word': '#0 记作息',
+                            'types': ['采集', {'text': '过程', 'bg': '#e2f7f5', 'fg': '#00897b'}],
+                            'status': '',
                             'prompt_template': '请帮我记一条作息:今天 14:00-15:00 写了 AI 调优代码',
                             'editable_fields': [
                                 {'name': 'activity', 'label': '活动', 'value': '',
@@ -57,7 +59,7 @@ VALID_HELP = {
                         },
                         {
                             'id': 'record_add_json', 'title': '通过 JSON 文件批量添加',
-                            'wake_word': '#0 记作息', 'type': '采集', 'status': '【待开发】',
+                            'wake_word': '#0 记作息', 'types': ['采集'], 'status': '【待开发】',
                             'prompt_template': '请帮我批量导入这些作息数据(从 JSON 文件)',
                         },
                     ],
@@ -197,6 +199,7 @@ class TestRenderEndToEnd:
         assert '作息管家' in html            # skill_name
         assert '添加单条作息记录' in html     # scene title
         assert '请帮我记一条作息' in html     # prompt
+        assert '"types"' in html             # types 数组注入（多标签契约）
         assert INJECT not in html            # 占位符 0 残留
         assert SHARED not in html
         assert SHARED_CSS not in html

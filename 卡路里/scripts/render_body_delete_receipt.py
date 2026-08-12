@@ -174,7 +174,16 @@ def main():
         return 1
 
     html = render_html(data)
-    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, spec['scene'], 'receipt')
+    # issue #286 · 2026-08-12 拍板(全 A):删体脂/删围度回执文件名带记录日期(YYYYMMDD)
+    #   对齐 #284 Q3A 体重系列日期维度;提取失败 → None 保持原文件名,不因标识失败而崩
+    file_suffix = None
+    try:
+        _items = data['data'].get('items') or []
+        if _items and _items[0].get('date'):
+            file_suffix = str(_items[0]['date']).replace('-', '')
+    except Exception:
+        file_suffix = None
+    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, spec['scene'], 'receipt', suffix=file_suffix)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     print(f'✅ {out_path}')

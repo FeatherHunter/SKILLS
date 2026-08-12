@@ -239,8 +239,26 @@ def main():
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
+    # issue #286 · 2026-08-12 拍板(全 A):记体重回执文件名带体重值(扫一眼知道记了多少)
+    #   - 记体重/含备注/补录:体重值(如 70.5kg,format 'g' 去尾零)
+    #   - 批量补录体重:首条体重+等N项(对齐 #266 Q1A 批量语义)
+    #   提取失败 → None 保持原文件名,不因标识失败而崩
+    file_suffix = None
+    try:
+        if args.live:
+            _nr = data.get('summary', {}).get('new_record', {})
+            if _nr.get('weight_kg') is not None:
+                file_suffix = f"{format(float(_nr['weight_kg']), 'g')}kg"
+        elif args.live_batch:
+            _lines = [json.loads(line)
+                      for line in Path(args.input).read_text(encoding='utf-8').splitlines()
+                      if line.strip()]
+            if _lines and _lines[0].get('kg') is not None:
+                file_suffix = f"{format(float(_lines[0]['kg']), 'g')}kg等{len(_lines)}项"
+    except Exception:
+        file_suffix = None
     if args.live or args.live_batch:
-        out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, cmd_name, 'receipt')
+        out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, cmd_name, 'receipt', suffix=file_suffix)
     else:
         out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'体重记录回执_{input_path.stem}')
     out_path.parent.mkdir(parents=True, exist_ok=True)

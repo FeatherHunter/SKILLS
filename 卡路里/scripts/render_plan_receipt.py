@@ -467,8 +467,43 @@ def main():
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
+    # issue #286 · 2026-08-12 拍板(全 A):计划系列按场景语义各带各的(对齐 #284 Q2A 语义)
+    #   - 定/复制/改/撤销计划:计划名(长名由 sanitize 截断 32 兜底)
+    #   - 定休息日/改某天/删某天:第N周周X;加动作/改动作:动作名(改后名)
+    #   - 定一周:第N周;同步/拉训记:日期(YYYYMMDD)
+    #   提取失败 → None 保持原文件名,不因标识失败而崩(对齐 #266/#284 兜底)
+    file_suffix = None
+    try:
+        _nr = data['data'].get('new_record') or {}
+        _or = data['data'].get('old_record') or {}
+        if key in ('plan_set', 'plan_copy', 'plan_update'):
+            if _nr.get('title'):
+                file_suffix = str(_nr['title'])
+        elif key == 'plan_rest':
+            if args.week is not None and args.day is not None:
+                file_suffix = f"第{args.week}周周{args.day}"
+        elif key == 'plan_add':
+            if _nr.get('name'):
+                file_suffix = str(_nr['name'])
+        elif key == 'plan_set_week':
+            if args.week is not None:
+                file_suffix = f"第{args.week}周"
+        elif key in ('plan_update_day', 'plan_delete_day'):
+            if args.week is not None and args.day is not None:
+                file_suffix = f"第{args.week}周周{args.day}"
+        elif key == 'plan_update_movement':
+            if args.new_name:
+                file_suffix = str(args.new_name)  # 改后动作名(对齐 #284 Q2A 改名带改后名)
+        elif key == 'plan_delete':
+            if _or.get('title'):
+                file_suffix = str(_or['title'])
+        elif key in ('plan_sync', 'plan_backfill'):
+            if args.date:
+                file_suffix = str(args.date).replace('-', '')
+    except Exception:
+        file_suffix = None
     scene_name = SCENE[key]
-    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene_name, 'receipt')
+    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene_name, 'receipt', suffix=file_suffix)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     s = data['data'].get('summary', '')

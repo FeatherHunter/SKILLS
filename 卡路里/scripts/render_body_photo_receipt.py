@@ -327,7 +327,42 @@ def main():
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, cmd_name, 'receipt')
+    # issue #286 · 2026-08-12 拍板(全 A):身材照系列按场景语义各带各的(对齐 #284 Q2A)
+    #   - 存照片:标签(批量:首标签+等N项);删身材照:照片日期(YYYYMMDD)
+    #   - 改照片标签:改后全标签;加/删照片标签:实际新增/移除的标签
+    #   提取失败(如加标签全重复)→ None 保持原文件名,不因标识失败而崩
+    file_suffix = None
+    try:
+        _d = data['data']
+        if args.live_add:
+            tags = (args.tag or '').strip()
+            if tags:
+                first = tags.split(',')[0].strip()
+                n = len(args.live_add)
+                file_suffix = f"{first}等{n}项" if n > 1 else first
+        elif args.live_delete:
+            _items = _d.get('items') or []
+            if _items and _items[0].get('date'):
+                file_suffix = str(_items[0]['date']).replace('-', '')
+        elif args.live_tag_set:
+            _after = (_d.get('tag_diff') or {}).get('after') or []
+            if _after:
+                file_suffix = '、'.join(str(t) for t in _after)
+        elif args.live_tag_add:
+            _td = _d.get('tag_diff') or {}
+            _before, _after = (_td.get('before') or []), (_td.get('after') or [])
+            _added = [str(t) for t in _after if t not in _before]
+            if _added:
+                file_suffix = '、'.join(_added)
+        elif args.live_tag_remove:
+            _td = _d.get('tag_diff') or {}
+            _before, _after = (_td.get('before') or []), (_td.get('after') or [])
+            _removed = [str(t) for t in _before if t not in _after]
+            if _removed:
+                file_suffix = '、'.join(_removed)
+    except Exception:
+        file_suffix = None
+    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, cmd_name, 'receipt', suffix=file_suffix)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     print(f'✅ {out_path}')

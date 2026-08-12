@@ -407,7 +407,45 @@ def main():
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
 
-    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene, 'receipt')
+    # issue #286 · 2026-08-12 拍板(全 A):回执文件名带内容标识(对齐 #266/#284 语义)
+    #   - 记运动/力量/日常/补记:运动名;批量补记:首类型+等N项;复制昨日:源日期
+    #   - 改运动记录:改后运动名(只改其他字段 = 原名);改某日:日期
+    #   - 删运动记录:被删运动名;删某日:日期;批量删:起止范围
+    #   提取失败 → None 保持原文件名,不因标识失败而崩(对齐 #266/#284 兜底)
+    file_suffix = None
+    try:
+        _nr = data['data'].get('new_record') or {}
+        _or = data['data'].get('old_record') or {}
+        if mode in ('add', 'add_strength', 'add_daily', 'backfill'):
+            if _nr.get('exercise_type'):
+                file_suffix = str(_nr['exercise_type'])
+        elif mode == 'batch_add':
+            lines = [l.strip() for l in (args.items or '').split(';') if l.strip()]
+            if lines:
+                parts = lines[0].split()
+                if len(parts) >= 2:
+                    file_suffix = f"{parts[1]}等{len(lines)}项"
+        elif mode == 'copy':
+            if _nr.get('source_date'):
+                file_suffix = str(_nr['source_date']).replace('-', '')
+        elif mode == 'update':
+            file_suffix = str(_nr.get('exercise_type') or _or.get('exercise_type') or '')
+        elif mode == 'update_day':
+            if _nr.get('date'):
+                file_suffix = str(_nr['date']).replace('-', '')
+        elif mode == 'delete':
+            if _or.get('exercise_type'):
+                file_suffix = str(_or['exercise_type'])
+        elif mode == 'delete_day':
+            if _nr.get('date'):
+                file_suffix = str(_nr['date']).replace('-', '')
+        elif mode == 'delete_range':
+            if _nr.get('start_date') and _nr.get('end_date'):
+                file_suffix = (f"{str(_nr['start_date']).replace('-', '')}"
+                               f"至{str(_nr['end_date']).replace('-', '')}")
+    except Exception:
+        file_suffix = None
+    out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene, 'receipt', suffix=file_suffix)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding='utf-8')
     d = data['data']

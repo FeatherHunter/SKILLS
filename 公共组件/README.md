@@ -13,9 +13,30 @@
 | 复制按钮/复制数据/日志 | 见 §4 |
 | 新控件（formPrompt/selectList/confirm 等） | 见 §4.2 |
 | toast 通用提示 | 见 §4.3 |
+| **参数化 HELP（v1.5 新增）** | **见 §4.4** |
 | 验收清单模板 | 见 §5 |
 | 版本变更 | `CHANGELOG.md` |
 | 冻结接口定义 | `docs/component-contract.md` |
+
+## 4.4 参数化 HELP（v1.5 · #289）
+
+**一句话**: 技能把场景数据重构为统一契约（`docs/scene-data-contract.md` v1）→ 调 Base 渲染 → 得到 HELP 页。Base 零翻译、零适配（用户拍板核心思想: Help HTML 对外参数定死, 适配是技能自己的事）。
+
+**契约**: `docs/scene-data-contract.md`（人读版）+ `docs/scene_data.schema.json`（机读版）; 模板 = `assets/help_template.html`; 注入器 = `injector.py --help-template`。
+
+**技能接入 4 步**（6 张技能重构优化票执行依据）:
+
+1. **对齐数据结构**: 把技能 scene_data 重构为契约 v1（2 级分组 groups→subgroups→scenes;字段 id/title/wake_word/type/status/prompt_template/editable_fields）——数据文件可以直接改, 这是重构的一部分
+2. **技能特有内容进 meta_blocks**: prompt_rules/methodology/status_legend/dependencies/AI 验证协议等技能特有 HTML 段, 放顶层 `meta_blocks` 原样透传（Base 只透传不解析）
+3. **渲染**: `python 公共组件/injector.py 公共组件/assets/help_template.html --payload <对齐后数据>.json --help-template --output <输出>/help_<技能名>.html`
+4. **验收**: 与 V4.16 原型视觉一致（用户验收）+ 复制 prompt 正确（参数表单/空值拦截/toast）+ 手机三档视口 0 溢出
+
+**提示**:
+- 文件名缺省 `help_<技能名>.html`, 显式 `--output` 文件名部分 sanitize（含 `..` 拒绝）
+- `status:【待开发】` 渲染待开发徽章（协同 #290 statusBadge）; `editable_fields` 走契约 v2 参数表单（实时预览 + 空值拦截）
+- 示例数据: `docs/examples/help_example_data.json`（覆盖全部特性）——新技能对齐时可参照
+- 原技能 HELP 渲染器（如作息 help_render.py / 卡路里 render_help_center.py）在技能重构票中退役或改调 Base
+
 
 ## 1. 接 Base 管线（6 步 · 从作息管家试点提炼）
 

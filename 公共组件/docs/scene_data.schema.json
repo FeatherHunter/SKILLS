@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://skills.featherhunter.dev/公共组件/docs/scene_data.schema.json",
+  "title": "统一 scene_data 契约 v1",
+  "description": "技能侧场景数据对齐本 schema 后喂给公共组件 help_template.html 渲染 HELP 页。机读编译版；人读版 = 同目录 scene-data-contract.md，两处修改必须同步。",
+  "type": "object",
+  "required": ["skill_name", "title", "groups"],
+  "additionalProperties": false,
+  "properties": {
+    "skill_name": { "type": "string", "minLength": 1, "description": "技能中文名" },
+    "title": { "type": "string", "minLength": 1, "description": "页面大标题（如 能力速查台）" },
+    "subtitle": { "type": "string", "description": "副标题/一句话说明（可选）" },
+    "meta_blocks": {
+      "type": "array",
+      "description": "技能特有元信息透传块（Base 原样透传，不进通用 scenes）",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "html"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "title": { "type": "string", "minLength": 1 },
+          "html": { "type": "string", "minLength": 1, "description": "技能方提供的 HTML 原文，Base 原样透传" }
+        }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "minItems": 1,
+      "description": "2 级分组（category → subfunction）",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "subgroups"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "icon": { "type": "string", "description": "一级分组图标（emoji）" },
+          "label": { "type": "string", "minLength": 1 },
+          "subgroups": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["id", "label", "scenes"],
+              "additionalProperties": false,
+              "properties": {
+                "id": { "type": "string", "minLength": 1 },
+                "label": { "type": "string", "minLength": 1 },
+                "scenes": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": { "$ref": "#/definitions/scene" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "scene": {
+      "type": "object",
+      "required": ["id", "title", "wake_word", "status", "prompt_template"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "description": "场景唯一标识（对齐 scenario_id/id/key）" },
+        "title": { "type": "string", "minLength": 1 },
+        "wake_word": { "type": "string", "minLength": 1, "description": "唤醒词（卡片 chip）" },
+        "type": { "type": "string", "description": "场景类型徽章（采集/查看/校验/回执…）" },
+        "status": { "enum": ["", "【待开发】"], "description": "'' 可用 / 【待开发】禁用" },
+        "prompt_template": { "type": "string", "minLength": 1, "description": "复制 prompt 全文，与技能 scene_data 定稿零差异" },
+        "editable_fields": {
+          "type": "array",
+          "description": "参数化表单字段（复制按钮契约 v2）",
+          "items": {
+            "type": "object",
+            "required": ["name", "label", "value"],
+            "additionalProperties": false,
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "label": { "type": "string", "minLength": 1 },
+              "value": { "type": "string", "description": "推荐值/默认值（可为空）" },
+              "hint": { "type": "string", "description": "输入提示（placeholder）" },
+              "required": { "type": "boolean", "default": false, "description": "必填标记（空值拦截）" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

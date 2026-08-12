@@ -123,16 +123,86 @@ def inject(template_text, payload, js_asset=None, css_asset=None, charts_asset=N
     return html, None
 
 
+# ── HELP 参数化模式（scene-data 契约 · 见 docs/scene-data-contract.md）──
+_HELP_REQUIRED_TOP = ('skill_name', 'title', 'groups')
+
+# 文件名 sanitize（help-template-contract §4）: 只允许安全字符 + 结尾 .html
+import re as _re
+_HELP_FILENAME_RE = _re.compile(r'^[a-zA-Z0-9_\-\u4e00-\u9fa5]+\.html$')
+
+
+def validate_help_data(data):
+    """scene-data 契约 v1 校验。返回 (ok, msg)。"""
+    if not isinstance(data, dict):
+        return False, 'HELP 数据必须是 JSON 对象'
+    missing = [k for k in _HELP_REQUIRED_TOP if not data.get(k)]
+    if missing:
+        return False, f'HELP 数据缺必填字段: {", ".join(missing)}（scene-data-contract §1）'
+    groups = data.get('groups')
+    if not isinstance(groups, list) or not groups:
+        return False, 'groups 必须是非空数组'
+    seen = set()
+    for gi, g in enumerate(groups):
+        if not isinstance(g, dict) or not g.get('id') or not g.get('label'):
+            return False, f'groups[{gi}] 缺 id/label'
+        if g['id'] in seen:
+            return False, f'分组 id 重复: {g["id"]}'
+        seen.add(g['id'])
+        sgs = g.get('subgroups')
+        if not isinstance(sgs, list) or not sgs:
+            return False, f'groups[{gi}] ({g["id"]}) 缺 subgroups（非空数组）'
+        for si, sg in enumerate(sgs):
+            if not isinstance(sg, dict) or not sg.get('label'):
+                return False, f'groups[{gi}].subgroups[{si}] 缺 label'
+            scenes = sg.get('scenes')
+            if not isinstance(scenes, list) or not scenes:
+                return False, f'groups[{gi}].subgroups[{si}] ({sg.get("label")}) 缺 scenes（非空数组）'
+            for sci, s in enumerate(scenes):
+                if not isinstance(s, dict):
+                    return False, f'groups[{gi}].subgroups[{si}].scenes[{sci}] 必须是对象'
+                for f in ('id', 'title', 'wake_word', 'prompt_template'):
+                    if not s.get(f):
+                        return False, (f'场景 {s.get("id", "?")} 缺字段: {f}'
+                                       f'（scene-data-contract §3）')
+                # status 允许空串（'' = 可用），单独校验二态
+                if s.get('status') not in ('', '【待开发】'):
+                    return False, f'场景 {s.get("id")} status 非法: {s.get("status")}（只允许 "" / 【待开发】）'
+                if s['id'] in seen:
+                    return False, f'场景 id 重复: {s["id"]}'
+                seen.add(s['id'])
+                efs = s.get('editable_fields')
+                if efs is not None:
+                    if not isinstance(efs, list):
+                        return False, f'场景 {s.get("id")} editable_fields 必须是数组'
+                    for ef in efs:
+                        if not isinstance(ef, dict) or not ef.get('name') or not ef.get('label'):
+                            return False, f'场景 {s.get("id")} editable_fields 条目缺 name/label'
+    return True, ''
+
+
+def sanitize_help_filename(skill_name):
+    """skill_name → 安全文件名（help_<skill_name>.html）"""
+    name = skill_name.strip()
+    if not name:
+        return None, 'skill_name 为空，无法生成文件名'
+    candidate = f'help_{name}.html'
+    if not _HELP_FILENAME_RE.match(candidate):
+        return None, f'文件名包含不安全字符: {candidate}（只允许字母数字下划线中文连字符）'
+    return candidate, None
+
+
 def main():
-    ap = argparse.ArgumentParser(description='Base 注入器 v1.2')
+    ap = argparse.ArgumentParser(description='Base 注入器 v1.2 · HELP 参数化 v1')
     ap.add_argument('template', help='模板 HTML 路径')
-    ap.add_argument('--payload', required=True, help='payload JSON 文件路径')
-    ap.add_argument('--output', help='输出 HTML 路径（缺省 = 模板同目录 out/<原名>）')
+    ap.add_argument('--payload', required=True, help='payload JSON 文件路径（普通模式 = 信封；--help-template = scene-data 契约）')
+    ap.add_argument('--output', help='输出 HTML 路径（缺省 = 模板同目录 out/<原名>；--help-template 缺省 = out/help_<技能名>.html）')
     ap.add_argument('--js', default=None, help='公共 JS 资产路径（缺省 = assets/base.js）')
     ap.add_argument('--css', default=None, help='公共 CSS 资产路径（缺省 = assets/base.css）')
     ap.add_argument('--charts', default=None, help='图表资产路径（可选）')
     ap.add_argument('--strict-payload', action='store_true',
                     help='payload 信封结构校验（契约 §4 必填字段）')
+    ap.add_argument('--help-template', action='store_true',
+                    help='HELP 参数化模式：payload 按 scene-data 契约 v1 校验 + 文件名 sanitize')
     args = ap.parse_args()
 
     template_path = pathlib.Path(args.template)
@@ -167,7 +237,55 @@ def main():
         print(json.dumps({'status': 'error', 'message': charts_err}, ensure_ascii=False))
         return 1
 
-    html, err = inject(template_path.read_text(encoding='utf-8'), payload,
+    template_text = template_path.read_text(encoding='utf-8')
+
+    # ── HELP 参数化模式：契约校验 + 文件名 sanitize + 注入 ──
+    if args.help_template:
+        ok, msg = validate_help_data(payload)
+        if not ok:
+            print(json.dumps({'status': 'error',
+                              'data': {'payload': str(payload_path)},
+                              'message': f'HELP 数据校验失败: {msg}'}, ensure_ascii=False))
+            return 1
+        # 文件名 sanitize（help-template-contract §4）: 路径允许，防穿越 + 文件名部分必须安全
+        if args.output:
+            out_arg = pathlib.Path(args.output)
+            if '..' in out_arg.parts:
+                print(json.dumps({'status': 'error',
+                                  'data': {'output': str(out_arg)},
+                                  'message': f'输出路径含 .. 穿越: {out_arg}（拒绝）'},
+                                 ensure_ascii=False))
+                return 1
+            if not _HELP_FILENAME_RE.match(out_arg.name):
+                print(json.dumps({'status': 'error',
+                                  'data': {'output': str(out_arg)},
+                                  'message': f'输出文件名不安全: {out_arg.name}'
+                                             f'（只允许 [a-zA-Z0-9_-中文]+.html）'},
+                                 ensure_ascii=False))
+                return 1
+            out = out_arg
+        else:
+            fname, ferr = sanitize_help_filename(payload.get('skill_name', ''))
+            if ferr:
+                print(json.dumps({'status': 'error', 'message': ferr}, ensure_ascii=False))
+                return 1
+            out = template_path.parent / 'out' / fname
+        html, err = inject(template_text, payload, js_asset=js_asset, css_asset=css_asset,
+                           charts_asset=charts_asset, strict=False)
+        if err:
+            print(json.dumps({'status': 'error',
+                              'data': {'template': str(template_path)},
+                              'message': err}, ensure_ascii=False))
+            return 1
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(html, encoding='utf-8')
+        print(json.dumps({'status': 'ok',
+                          'data': {'output': str(out), 'template': str(template_path)},
+                          'message': f'HELP HTML 已生成: {out.name}（{len(html)} bytes）'},
+                         ensure_ascii=False))
+        return 0
+
+    html, err = inject(template_text, payload,
                        js_asset=js_asset, css_asset=css_asset, charts_asset=charts_asset,
                        strict=args.strict_payload)
     if err:

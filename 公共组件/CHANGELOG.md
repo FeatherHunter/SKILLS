@@ -2,6 +2,31 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.5（2026-08-12 · #289 P2 HELP 参数化落地）
+
+**HELP 参数化正式版**（契约 v1.2 + scene-data-contract v1；新增资产非破坏性，既有接口零变更）。
+
+- **新资产 `assets/help_template.html`（单一真相源）**: V4.16 原型（用户 2026-08-12 认可）收敛为 Base 参数化模板——去手机壳真机全屏、数据全外部注入（`<!--INJECT-DATA-->` 注入 scene-data 契约 JSON）、复制/toast 走 Base 控件、statusBadge 协同 #290
+- **新契约 `docs/scene-data-contract.md` + `docs/scene_data.schema.json`（v1）**: 2 级分组（category→subfunction）scenes 契约 + meta_blocks 透传块 + editable_fields 表单字段;机读 schema 守卫测试
+- **归一化层实体取消（用户拍板核心思想）**: Base 零翻译、零适配;技能侧重构数据文件对齐契约（「技能侧零改动」红线作废）
+- **injector `--help-template` 模式**: `validate_help_data` 契约校验（必填/分组/场景/id 唯一/status 二态）+ 文件名 sanitize（缺省 `help_<技能名>.html` + `..` 穿越拒绝）
+- **editable_fields 管线**: 统一 `{name,label,value,hint,required}` → Sheet 参数表单 + Prompt 实时预览 + 空值拦截（复制按钮契约 v2 #123）
+- **meta_blocks 设计**: 技能特有元信息（大厨 prompt_rules/methodology、备忘录 dependencies、卡路里 AI 验证协议）→ Base 原样透传折叠区
+- 契约 v1.2 + CHANGELOG 同步;守卫测试 +33（契约 schema 15 + help 模板 18）→ 108/108 全绿
+- 示例: `docs/examples/help_example_data.json`（覆盖 meta_blocks/init_banner/待开发/可编辑字段全特性）;浏览器实测 Sheet 参数表单 + 实时预览通过
+
+## v1.4（2026-08-12 · #290 P2 状态层落地）
+
+**状态层三控件加固**（statusBadge/emptyState/errorReceipt 从「定义」到「对外可靠」; 非破坏性, 签名全部向后兼容）。
+
+- **errorReceipt 去 `window.__hmPayload` 强依赖**: 新增显式 `payload` 参数（优先）+ `data`/`log` 字符串直传（显式优先, 缺省从 payload 生成）+ 兼容全局兜底——**重构票迁移时不再依赖技能侧注入变量名**（卡路里 `__DATA__`/居家 `<script id="payload">` 都接得住）
+- **复制按钮零注入面**: 渲染期生成复制文本存 `data-t`, onclick 仅 `copyText(this.dataset.t)`（原实现在点击时实时调 `buildDataText(window.__hmPayload)`, payload 缺失即 JS 报错）
+- **错误回执容错**: payload 缺 `scene.snapshot` → 不渲染复制数据/日志按钮, 控件不抛错（错误场景数据常残缺, 不能让控件崩）
+- **按钮布局对齐 08 规范**: 修正重试 primary wide 独立一行 + 复制数据/日志 ghost 一行 2 个（补 `.hm-actions` 网格容器, 原实现按钮无容器堆叠）
+- **statusBadge 白名单降级**: 非法/未知 status 值降级 `empty`（原实现输出无样式徽章）
+- **XSS 面收口**: 三控件全部文本字段经 `esc`; emptyState `action` 明示「受信 HTML 透传, 调用方负责内容安全」（契约 §6.3 明示）
+- 契约 v1.4 + CHANGELOG 同步; 守卫测试 +9（非法值降级/XSS 转义/无 payload 容错/按钮布局/字符串直传）→ 15 项三控件测试全绿
+
 ## v1.3（2026-08-12 · #288 P2 图表组件落地）
 
 **图表组件 CHARTS-HELPERS 正式版**（契约 v1.3, 与 #287 P2 盘点 + #288 落地一致;新增资产非破坏性, 既有接口零变更）。

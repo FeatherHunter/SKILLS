@@ -56,21 +56,20 @@ REVIEW_SCENES = ['计划复盘（本周）', '计划复盘（本月）', '计划
 
 
 def load_scene_prompt(scene: str) -> dict:
-    """从 scene_data 读场景 prompt_template(与 HELP 复制按钮零差异)
+    """从 _triggers.py(唯一权威)读场景 prompt_template(与 HELP 复制按钮零差异)
+
+    #316 归一化: .scratch/scene_data/*.json 已转只读归档(2026-08-13 起不再消费),
+    场景数据统一读运行时 SoT(scripts/_triggers.py)。
 
     返回 {scene_name, prompt_template, related_scenes:[{name,prompt},...]}
     related_scenes = 同组其余复盘场景(供「计划复盘本月」等扩展按钮)。
     """
-    scene_file = SKILL_DIR / '.scratch' / 'scene_data' / '05-健身计划.json'
+    sys.path.insert(0, str(SCRIPT_DIR))
+    from _triggers import TRIGGERS
     prompts = {}
-    if scene_file.exists():
-        try:
-            scenes = json.loads(scene_file.read_text(encoding='utf-8'))
-            for s in scenes:
-                if isinstance(s, dict) and s.get('name') in REVIEW_SCENES:
-                    prompts[s['name']] = s.get('prompt_template', '')
-        except Exception:
-            pass
+    for t in TRIGGERS:
+        if t.get('wake_word') in REVIEW_SCENES:
+            prompts[t['wake_word']] = t.get('prompt_template', '')
     related = [
         {'name': n, 'prompt': prompts.get(n, '')}
         for n in REVIEW_SCENES

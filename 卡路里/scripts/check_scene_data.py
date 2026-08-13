@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""check_scene_data.py — 卡路里 v1.0 场景元数据校验器
+"""check_scene_data.py — 卡路里 v1.0 场景元数据校验器(只读归档校验 · #316)
+
+⚠️ 2026-08-13 起 .scratch/scene_data/*.json 为**只读归档**(#316 Base 重构 task ④):
+   `_triggers.py` 是唯一权威(运行时 SoT), 本脚本不再守护生产渲染链,
+   仅用于归档数据完整性校验(证据链复核)。
 
 按 .scratch/scene_data/schema.json 校验 .scratch/scene_data/*.json
 每个场景文件,输出可读报告。

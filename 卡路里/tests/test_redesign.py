@@ -209,52 +209,67 @@ class TestTodayWaterRenders:
         (SKILL_DIR / f"_test_water_{fixture_name}.html").unlink(missing_ok=True)
 
 
-# ============= ticket 07 · HELP HTML ergonomics =============
+# ============= ticket 07 · HELP HTML ergonomics(#316 起基于 Base 参数化 HELP) =============
 
 class TestHelpCenterErgonomics:
-    """ticket 07 · HELP HTML ergonomics"""
-    def test_help_center_copy_main_btn_visible(self):
-        """summary 层有 .copy-btn.copy-main"""
-        # 不真跑 render_help_center(无 mock),只验证模板包含 .copy-btn.copy-main 类
-        tpl = (SKILL_DIR / 'templates' / 'help_center.html').read_text(encoding='utf-8')
-        assert '.copy-btn.copy-main' in tpl, 'help_center.html 缺 .copy-btn.copy-main CSS'
-        assert 'copyMainPrompt' in tpl, 'help_center.html 缺 copyMainPrompt JS 函数'
+    """ticket 07 · HELP HTML ergonomics
 
-    def test_help_center_hero_font_upscaled(self):
-        """h1/stats/sub 字号上调"""
-        tpl = (SKILL_DIR / 'templates' / 'help_center.html').read_text(encoding='utf-8')
-        # 至少 h1 含 220% 或 36px 或类似放大值
-        assert ('220%' in tpl or '36px' in tpl or 'calc(28px' in tpl), 'h1 字号未上调'
+    2026-08-13 · #316: 自研 help_center.html 退役, HELP = Base 参数化 help_template
+    (scene-data 契约 v1 · _triggers.py 唯一权威)。
+    """
+    def _render(self, tmp_path):
+        import os
+        env = os.environ.copy()
+        env["SKILLS_DB_PATH"] = str(tmp_path)
+        r = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "render_help_center.py"), "--no-mirror"],
+            cwd=SKILL_DIR, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=60, env=env,
+        )
+        assert r.returncode == 0, f"render_help_center 失败: {r.stderr}"
+        out = list((tmp_path / "calorie_html").glob("卡路里_HELP_*.html"))
+        assert out, "未产出 卡路里_HELP_<TS>.html"
+        return out[-1].read_text(encoding="utf-8")
 
-    def test_help_center_issue245_regressions(self):
-        """#245 六轮 UI 修复的防回归(用户逐项拍板 · 2026-08-10)
+    def test_help_center_uses_base_template(self, tmp_path):
+        """HELP 走 Base 参数化模板:help-data 契约注入 + base.js + 复制按钮 + 搜索"""
+        html = self._render(tmp_path)
+        m = re.search(r'<script id="help-data"[^>]*>(.*?)</script>', html, re.DOTALL)
+        assert m, "缺 help-data 注入(scene-data 契约)"
+        data = json.loads(m.group(1).replace('<\\/', '</'))
+        assert data["skill_name"] == "卡路里"
+        assert data["title"] == "唤醒词速查台"
+        total = sum(len(sg["scenes"]) for g in data["groups"] for sg in g["subgroups"])
+        assert total == 436, f"场景数应为 436(_triggers 全量), 实际 {total}"
+        assert len(data["groups"]) == 10, "技能协同 36 条不迁入 → 10 分类"
+        # Base 资产已注入 + 复制/搜索可用
+        assert "function copyText" in html, "缺 base.js copyText"
+        assert "copy-btn" in html, "缺复制按钮样式(copy-btn)"
+        assert "搜索" in html or "search" in html, "缺搜索功能"
 
-        1. hero 卡纯白(去灰底渐变)
-        2. 三级目录无 hover 淡蓝点击特效(真凶:summary:hover var(--soft))
-        3. 二级目录默认折叠(sub-block 无 open 硬编码)
-        4. 搜索反馈仅搜索时显示(hitCount 元素存在 + searchCount/dataSource 已退役)
-        """
-        tpl = (SKILL_DIR / 'templates' / 'help_center.html').read_text(encoding='utf-8')
+    def test_help_center_legacy_design_retired(self):
+        """#316: 自研 help_center.html 已退役, 渲染不依赖它"""
+        assert not (TEMPLATES_DIR / 'help_center.html').exists(), \
+            'templates/help_center.html 应已退役删除(#316)'
+        renderer = (SCRIPTS_DIR / 'render_help_center.py').read_text(encoding='utf-8')
+        assert 'help_center.html' not in renderer, 'render_help_center 仍引用旧模板'
 
-        # 1. hero 白底(用户:去掉灰色背景)
-        hero_rule = re.search(r'\.hero\s*\{[^}]*\}', tpl)
-        assert hero_rule and '#fff' in hero_rule.group(0), \
-            'hero 背景非纯白(#245 修复被移除?)'
-        assert 'linear-gradient' not in hero_rule.group(0), \
-            'hero 灰白渐变回归(#245 修复被移除?)'
-
-        # 2. 三级 summary 无 hover 淡蓝(用户:点击不要淡蓝特效)
-        assert 'summary:hover' not in tpl, \
-            '三级目录 hover 淡蓝回归(#245 修复被移除?)'
-
-        # 3. 二级目录默认折叠(用户:全 HTML 默认全折叠)
-        assert 'class="sub-block" data-sub="${escapeHTML(subName)}" open>' not in tpl, \
-            'sub-block 默认展开回归(#245 修复被移除?)'
-
-        # 4. 搜索反馈仅搜索时显示 + 内部源信息已退役(ADR-0008)
-        assert 'id="hitCount"' in tpl, '搜索反馈胶囊元素缺失(hitCount)'
-        assert 'searchCount' not in tpl, '旧 searchCount 元素回归'
-        assert 'dataSource' not in tpl, '内部 dataSource 信息回归(违 ADR-0008)'
+    def test_help_center_gap_disposal(self, tmp_path):
+        """#316 缺口处置: 技能协同 36 不迁入; legacy 23 保留(分析/既有唤醒词 22 + 饮食/既有唤醒词 1)"""
+        html = self._render(tmp_path)
+        m = re.search(r'<script id="help-data"[^>]*>(.*?)</script>', html, re.DOTALL)
+        data = json.loads(m.group(1).replace('<\\/', '</'))
+        wakes = {s["wake_word"] for g in data["groups"]
+                 for sg in g["subgroups"] for s in sg["scenes"]}
+        for w in ['协同饼干记账（饮食支出）', '联动作息管家（运动时间窗）', '看跨技能汇总']:
+            assert w not in wakes, f"技能协同 {w} 不应在运行时 HELP"
+        for w in ['查高热量榜', '复盘', '开启定时复盘', '看「有备注」的饮食记录']:
+            assert w in wakes, f"legacy {w} 应保留在 HELP"
+        analysis = next(g for g in data["groups"] if g["id"] == "analysis")
+        legacy_sub = next((sg for sg in analysis["subgroups"] if sg["label"] == "既有唤醒词"), None)
+        assert legacy_sub is not None, "分析 组缺 既有唤醒词 子功能"
+        assert len(legacy_sub["scenes"]) == 22, \
+            f"分析/既有唤醒词 应为 22(查榜 13 + 复盘 9), 实际 {len(legacy_sub['scenes'])}"
 
     def test_triggers_have_fill_hints_field(self):
         """每个 TRIGGER 都有 fill_hints 字段(默认空 list)
@@ -395,7 +410,7 @@ class TestCrossPagePromptConsistency:
         2026-08-01 重构:不再对比用户数据目录(外部状态——别的 session 渲染
         HELP 会让代码没变的 commit 挂掉),改为自渲染:
         1. tmp_path 设 SKILLS_DB_PATH
-        2. render_help_center.py --runtime(纯净 _triggers SoT,无 scene_data merge)
+        2. render_help_center.py 自渲染(_triggers 唯一权威 · #316 归一化, 无 --runtime 参数)
         3. check_prompt_soak tier 1 读 tmp 渲染产物 -> 与 _triggers 对比
         守护对象 = render 管线不篡改 prompt(纯逻辑不变量),不受开发期
         scene_data 覆盖 / 外部渲染影响 -> commit 不再被设计期过渡态阻塞。
@@ -404,9 +419,9 @@ class TestCrossPagePromptConsistency:
         env = os.environ.copy()
         env.pop("SKILLS_DB_PATH", None)
         env["SKILLS_DB_PATH"] = str(tmp_path)
-        # 自渲染:--runtime 纯净 SoT;--no-mirror 不写仓库根 mirror(避免污染工作区)
+        # 自渲染:--no-mirror 不写仓库根 mirror(避免污染工作区)
         r = subprocess.run(
-            [sys.executable, str(SCRIPTS_DIR / 'render_help_center.py'), '--runtime', '--no-mirror'],
+            [sys.executable, str(SCRIPTS_DIR / 'render_help_center.py'), '--no-mirror'],
             cwd=SKILL_DIR, capture_output=True, text=True,
             encoding='utf-8', errors='replace', timeout=60,
             env=env,

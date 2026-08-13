@@ -275,8 +275,8 @@ def _all_l1() -> list:
 def _ledger_options() -> list:
     """账本候选(goals.json ledgers 键 · T4 #308 契约 · 供 smartSelect 消费)
 
-    返回 [{"name", "disabled"}, ...];缺键/空文件/损坏 → 空数组(组件降级普通输入)。
-    只读,不写 goals.json。
+    返回 [{"name", "disabled"}, ...];缺键/空文件/损坏/键型非法 → 空数组
+    (组件降级普通输入)。只读,不写 goals.json。
     """
     from db import _find_db_path, DB_FILENAME
     p = _find_db_path(SKILL_DIR, DB_FILENAME).parent / "goals.json"
@@ -288,8 +288,11 @@ def _ledger_options() -> list:
         return []
     if not isinstance(data, dict):
         return []
+    ledgers = data.get("ledgers", [])
+    if not isinstance(ledgers, list):
+        return []
     return [{"name": str(l.get("name") or ""), "disabled": bool(l.get("disabled"))}
-            for l in data.get("ledgers", [])
+            for l in ledgers
             if str(l.get("name") or "").strip()]
 
 

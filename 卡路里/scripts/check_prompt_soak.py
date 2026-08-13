@@ -6,7 +6,8 @@ ticket 15 · D7 spec · 2026-07-29
 守护同一 wake_word 在多个 presentation surface 上的 prompt 文本字面一致:
   1. _triggers.py 的 main_prompt.text(SoT 源头)
   2. render_home.py quick_actions[i].prompt(主页 dashboard 快捷命令)
-  3. render_help_center.py 渲染的 __DATA__.triggers[*].main_prompt.text(HELP HTML)
+  3. render_help_center.py 渲染的 help-data payload(HELP HTML · scene-data 契约 v1:
+     groups[].subgroups[].scenes[].prompt_template · #316 归一化)
 
 任一不一致 → exit 1 + 报具体 wake_word + 两端 diff。
 
@@ -90,27 +91,24 @@ def check_help_center_payload() -> list[str]:
         ]
     latest = help_htmls[0]
     text = latest.read_text(encoding='utf-8')
-    m = re.search(r'<script>\s*window\.__DATA__\s*=\s*(\{.*?\});?\s*</script>', text, re.DOTALL)
+    # v4.0 · #316: 参数化 HELP 走 Base help_template, payload 注入点 = <script id="help-data">
+    m = re.search(r'<script id="help-data"[^>]*>(.*?)</script>', text, re.DOTALL)
     if not m:
-        return [f'⚠ {latest.name} 缺 __DATA__ 注入,无法校验']
+        return [f'⚠ {latest.name} 缺 help-data 注入,无法校验']
     try:
         payload = json.loads(m.group(1).replace('<\\/', '</'))
     except json.JSONDecodeError as e:
         return [f'⚠ {latest.name} JSON parse fail: {e}']
 
     rendered = {}
-    # v3.0+ · 读 scenes 字段(新 4 层架构用 scenes,旧 3 层用 triggers)
-    for s in payload.get('data', {}).get('scenes', []):
-        w = s.get('wake_word')
-        if not w: continue
-        # 新 schema 字段是 prompt_template;旧 schema 字段是 prompt(融合模式兜底)
-        rendered[w] = s.get('prompt_template') or s.get('prompt') or ''
-    # 兼容老的 triggers 字段(check_decision_matrix 旧版仍使用)
-    for t in payload.get('data', {}).get('triggers', []):
-        w = t.get('wake_word')
-        if not w: continue
-        if w not in rendered:  # 不覆盖 scenes 已有
-            rendered[w] = (t.get('main_prompt') or {}).get('text', '')
+    # scene-data 契约 v1 · scenes 在 groups[].subgroups[].scenes[](prompt_template)
+    for g in payload.get('groups', []):
+        for sg in g.get('subgroups', []):
+            for s in sg.get('scenes', []):
+                w = s.get('wake_word')
+                if not w:
+                    continue
+                rendered[w] = s.get('prompt_template') or ''
     wake_to_prompt = {t['wake_word']: t['main_prompt']['text'] for t in TRIGGERS}
     issues = []
     for wake, src in wake_to_prompt.items():

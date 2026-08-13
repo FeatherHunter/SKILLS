@@ -39,6 +39,11 @@ reconfigure_utf8()
 
 GOALS_FILENAME = "goals.json"
 
+# 规则约定账本(系统按名字写入,不可手动入键/改名,否则历史与新写入分叉)
+RESERVED_LEDGERS = ("转账", "借贷")
+# 写入默认账本(write CLI --ledger 默认「生活」· 存量行为零变化 → 不可被改名弃用)
+DEFAULT_LEDGER = "生活"
+
 
 # ── goals.json 读写(账本表 · 顶层 "ledgers" 键 · 与账户/目标域键隔离)───────────
 
@@ -71,8 +76,13 @@ def _save_goals(data: dict) -> None:
 
 
 def _ledgers() -> list:
-    """账本表(ledgers 键 · 缺键读作空数组 · T4 契约)"""
-    return _load_goals().get("ledgers", [])
+    """账本表(ledgers 键 · 缺键读作空数组 · T4 契约)
+
+    键型防御:键存在但非列表(dict/str 等) → 读作空数组,不崩溃不吐垃圾
+    (渲染器侧同口径;损坏文件仍报错,拒绝覆盖写坏的数据)。
+    """
+    ledgers = _load_goals().get("ledgers", [])
+    return ledgers if isinstance(ledgers, list) else []
 
 
 def _save_ledgers(ledgers: list) -> None:
@@ -93,6 +103,8 @@ def cmd_add(args):
         raise ValueError("账本名不能为空(新增账本需要 --name)")
     if len(name) > 30:
         raise ValueError(f"账本名过长({len(name)} 字,最多 30 字)")
+    if name in RESERVED_LEDGERS:
+        raise ValueError(f"账本「{name}」为规则约定账本(由转账/借贷流程固定),不可手动新增")
     for l in _ledgers():
         if l["name"] == name:
             raise ValueError(f"账本「{name}」已存在(重复新增需用户确认)")
@@ -156,6 +168,10 @@ def cmd_update(args):
             raise ValueError(f"新账本名过长({len(new_name)} 字,最多 30 字)")
         if new_name == name:
             raise ValueError("新账本名与原名相同,无需修改")
+        if name in RESERVED_LEDGERS or new_name in RESERVED_LEDGERS:
+            raise ValueError("「转账/借贷」为规则约定账本(由转账/借贷流程固定),不可改名或改名为之")
+        if name == DEFAULT_LEDGER:
+            raise ValueError("「生活」为写入默认账本(write CLI 默认),改名会使默认写入与历史记录分叉;如需使用新名,先调整写入默认")
         if _find_ledger(ledgers, new_name) is not None:
             raise ValueError(f"账本「{new_name}」已存在,不能改名为重名")
         # 账本表改名

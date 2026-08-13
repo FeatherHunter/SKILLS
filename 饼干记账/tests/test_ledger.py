@@ -123,6 +123,20 @@ class TestAddLedger:
         assert data["status"] == "error"
         assert "过长" in data["message"]
 
+    def test_add_reserved_ledger_rejected(self, tmp_db_dir):
+        """规则约定账本(转账/借贷)不可手动新增(T4:不入键)"""
+        for name in ("转账", "借贷"):
+            data = _run_cli(tmp_db_dir, "add", "--name", name)
+            assert data["status"] == "error"
+            assert "规则约定" in data["message"]
+        assert _goals(tmp_db_dir) == {}
+
+    def test_add_default_ledger_allowed(self, tmp_db_dir):
+        """「生活」允许显式新增(键=用户显式管理 · T4 不种子≠禁止添加)"""
+        data = _run_cli(tmp_db_dir, "add", "--name", "生活")
+        assert data["status"] == "ok"
+        assert _goals(tmp_db_dir)["ledgers"][0]["name"] == "生活"
+
 
 # ── 账本清单 ─────────────────────────────────────────────────────────────────
 
@@ -148,6 +162,24 @@ class TestListLedgers:
         data = _run_cli(tmp_db_dir, "list")
         assert data["status"] == "ok"
         assert data["data"]["ledgers"] == []
+
+    def test_list_non_list_key(self, tmp_db_dir):
+        """键型非法(dict) → 读作空数组(不崩溃不吐垃圾)"""
+        (tmp_db_dir / "goals.json").write_text(
+            json.dumps({"ledgers": {"旅行": 1}}, ensure_ascii=False), encoding="utf-8")
+        data = _run_cli(tmp_db_dir, "list")
+        assert data["status"] == "ok"
+        assert data["data"]["count"] == 0
+        assert data["data"]["ledgers"] == []
+
+    def test_add_self_heals_non_list_key(self, tmp_db_dir):
+        """键型非法时 add 自愈:重建为合法列表(垃圾键型本无合法读法)"""
+        (tmp_db_dir / "goals.json").write_text(
+            json.dumps({"ledgers": {"旅行": 1}}, ensure_ascii=False), encoding="utf-8")
+        _run_cli(tmp_db_dir, "add", "--name", "旅行")
+        assert _goals(tmp_db_dir)["ledgers"] == [
+            {"name": "旅行", "disabled": False, "created_at": _goals(tmp_db_dir)["ledgers"][0]["created_at"]},
+        ]
 
 
 # ── 改账本(改名 / 停用 / 启用) ────────────────────────────────────────────────
@@ -216,6 +248,41 @@ class TestUpdateLedger:
         l = _goals(tmp_db_dir)["ledgers"][0]
         assert l["name"] == "旅游" and l["disabled"] is True
 
+    def test_rename_default_ledger_rejected(self, tmp_db_dir):
+        """「生活」为写入默认账本,改名会使默认写入与历史分叉 → 拒绝"""
+        (tmp_db_dir / "goals.json").write_text(
+            json.dumps({"ledgers": [{"name": "生活", "disabled": False}]}, ensure_ascii=False),
+            encoding="utf-8")
+        data = _run_cli(tmp_db_dir, "update", "--name", "生活", "--new-name", "日常")
+        assert data["status"] == "error"
+        assert "默认" in data["message"]
+        assert _goals(tmp_db_dir)["ledgers"][0]["name"] == "生活"
+
+    def test_rename_to_reserved_rejected(self, tmp_db_dir):
+        """改名为规则约定账本(转账/借贷)→ 拒绝"""
+        _run_cli(tmp_db_dir, "add", "--name", "旅行")
+        for target in ("转账", "借贷"):
+            data = _run_cli(tmp_db_dir, "update", "--name", "旅行", "--new-name", target)
+            assert data["status"] == "error"
+            assert "规则约定" in data["message"]
+
+    def test_rename_from_hand_added_reserved_rejected(self, tmp_db_dir):
+        """手工写入键的保留名账本不可改名(防历史与新写入分叉)"""
+        (tmp_db_dir / "goals.json").write_text(
+            json.dumps({"ledgers": [{"name": "借贷", "disabled": False}]}, ensure_ascii=False),
+            encoding="utf-8")
+        _insert(tmp_db_dir, "借贷/借出", -500.0, "2026-08-01 12:00:00", "#借出", "微信", "借贷")
+        data = _run_cli(tmp_db_dir, "update", "--name", "借贷", "--new-name", "出行")
+        assert data["status"] == "error"
+        assert "规则约定" in data["message"]
+        from db import init_db
+        conn = init_db()
+        try:
+            rows = _ledger_names(conn)
+            assert rows == [("借贷", None)]
+        finally:
+            conn.close()
+
 
 # ── 渲染器读取(供 T6 smartSelect 消费) ────────────────────────────────────────
 
@@ -263,4 +330,20 @@ class TestRendererReadsLedgers:
         (tmp_db_dir / "goals.json").write_text("{not json", encoding="utf-8")
         import render_write as rw
         payload = rw.build_payload("expense", {"amount": "35"}, "", "", [])
+        assert payload["data"]["form"]["selector"]["ledger"]["options"] == []
+
+    def test_render_write_ignores_non_list_key(self, tmp_db_dir):
+        """ledgers 键型非法(dict)→ 空数组(不崩溃,组件降级)"""
+        (tmp_db_dir / "goals.json").write_text(
+            json.dumps({"ledgers": {"旅行": 1}}, ensure_ascii=False), encoding="utf-8")
+        import render_write as rw
+        payload = rw.build_payload("expense", {"amount": "35"}, "", "", [])
+        assert payload["data"]["form"]["selector"]["ledger"]["options"] == []
+
+    def test_link_form_ignores_non_list_key(self, tmp_db_dir):
+        """link 联动表单对键型非法同样降级为空数组"""
+        (tmp_db_dir / "goals.json").write_text(
+            json.dumps({"ledgers": {"旅行": 1}}, ensure_ascii=False), encoding="utf-8")
+        from link.cli import build_form_payload
+        payload = build_form_payload("purchase", {"amount": "199", "item": "空气炸锅"}, "", "")
         assert payload["data"]["form"]["selector"]["ledger"]["options"] == []

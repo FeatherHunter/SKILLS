@@ -216,7 +216,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.19", "requires": { "p
 | `templates/contraindication_report.html` | 扫禁忌 | `scan_contraindications.py --format json` | `scripts/render_contraindication.py` |
 | `templates/process_progress.html` | 落地训练 / 落地到本周末 / 落地到本月底(4 步流程进度 · 2026-08-02 ticket #6) | 流程结构化 JSON(tests/fixtures/mock/mock_process_progress.json 演示) | `scripts/render_process_progress.py --input <json>` |
 | `templates/home_dashboard.html` | 看今日主页 / 看今日饮食概览 / 看今日运动概览 / 看今日体重概览 / 看今日目标进度 / 看本周主页 / 看本月主页 / 看连续记录天数 / 看今日热量预算(主页 9 场景 · 2026-08-02 ticket #2) | `analysis.dashboard(as_dict=True)` + 今日检测 + section/period 聚合 | `scripts/render_home.py [--section diet\|exercise\|weight\|goals\|streak\|budget] [--period week\|month] --chain <思考链>` |
-| `templates/help_center.html` | 卡路里HELP(唤醒词速查台·80 词·109 prompt·3 层折叠 + 搜索 + 一键复制) | `_triggers.py` 静态表 | `scripts/render_help_center.py` |
+| `-`(自研模板已退役 #316) | 卡路里HELP(唤醒词速查台 · `_triggers.py` 唯一权威 → scene-data 契约 v1 → `公共组件/assets/help_template.html` 注入) | `_triggers.py` 运行时 SoT | `scripts/render_help_center.py` |
 
 **强制规则**:表中"强制 trigger"列出的所有 trigger 词命中后,**AI 必须** invoke 对应 HTML(渲染 → 打开),**严禁文字答**。
 

@@ -1,49 +1,44 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""render_help_center.py — 卡路里唤醒词速查台 HTML 渲染器(v3.0)
+"""render_help_center.py — 卡路里唤醒词速查台 HTML 渲染器(v4.0 · Base 参数化 HELP)
 
 对应 SKILL.md 唤醒词: 卡路里HELP
 
-设计(v3.0 · 2026-07-31 · Phase 1 基础设施):
-- 数据源:scripts/_triggers.py(运行时 SoT)+ .scratch/scene_data/*.json(开发期)
-- 2 层折叠:L1 分类 + L2 子功能 → 平铺场景(无变体)
-- 3 种 output_type: process / result / receipt
-- 占位符唯一:<!--INJECT-DATA--> 恰好 1 次
-- 结果型 · 原则 10 出口设计:每个场景 1 个 [📋 复制 prompt] 按钮
+设计(v4.0 · 2026-08-13 · #316 Base 重构 task ④):
+- 数据源: scripts/_triggers.py **唯一权威**(运行时 SoT · #291 grilling Q4 拍板)
+- 开发期 .scratch/scene_data/*.json 已转只读归档(2026-08-13 起不再消费, 不物理删除)
+- 转换层: _triggers → scene-data 契约 v1(groups→subgroups→scenes · 公共组件/docs/scene-data-contract.md)
+- 渲染: 公共组件/injector.py 注入 assets/help_template.html(Base 零翻译零适配 · 契约校验硬拦截)
+- 文件契约保留(统一规则③): 卡路里_HELP_<TS>.html(calorie_html/)+ 根镜像 卡路里.html(ADR-0001)
 
-数据流(任务 2):
-  1. 读 .scratch/scene_data/*.json(开发期,优先,新 13 字段 schema)
-  2. 读 scripts/_triggers.py(运行时 SoT,补齐其他分类的 80 唤醒词)
-  3. 合并:同 wake_word 用 scene_data 覆盖(用户确认过的优先)
-  4. 注入到 templates/help_center.html,输出 卡路里_HELP_<TS>.html
-  5. ADR-0001 镜像到 <skill_dir>/卡路里.html
+缺口处置(#316 用户拍板 2026-08-13):
+- 36 条 11-技能协同(JSON 独有)不迁入运行时: 归档 + 归属 #270 技能互联消费方票
+- 23 条 legacy(_triggers 独有: 查榜 13 / 复盘 9 / 有备注 1)全部保留, 归 分析/既有唤醒词
 
 用法:
-    python scripts/render_help_center.py              # 默认:triggers + scene_data 合并
-    python scripts/render_help_center.py --dev        # 只读 scene_data(开发期)
-    python scripts/render_help_center.py --runtime    # 只读 _triggers.py(运行时,纯净 SoT)
+    python scripts/render_help_center.py              # 默认: _triggers 唯一权威渲染 + 根镜像
     python scripts/render_help_center.py --output <p> # 显式覆盖输出
     python scripts/render_help_center.py --no-mirror  # 跳过 ADR-0001 根镜像
 """
 import argparse
+import importlib.util
 import json
 import shutil
 import sys
 from datetime import datetime
 from pathlib import Path
 
-SCRIPT_DIR  = Path(__file__).resolve().parent
-SKILL_DIR   = SCRIPT_DIR.parent
-TEMPLATE    = SKILL_DIR / 'templates' / 'help_center.html'
-SCENE_DIR   = SKILL_DIR / '.scratch' / 'scene_data'
+SCRIPT_DIR = Path(__file__).resolve().parent
+SKILL_DIR = SCRIPT_DIR.parent
+BASE_SKILL_DIR = SKILL_DIR.parent / '公共组件'
+HELP_TEMPLATE = BASE_SKILL_DIR / 'assets' / 'help_template.html'
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path                          # noqa: E402
-from _triggers import CATEGORIES as TRIG_CATEGORIES, TRIGGERS  # noqa: E402
+from _triggers import TRIGGERS                            # noqa: E402
 
 
-# === 11 分类(新结构,Phase 2 将按此重组) ===
-# icon / name / key / subfunction 折叠提示默认开
+# === 11 分类(展示序;技能协同无运行时 trigger, 不生成分组) ===
 CATEGORIES_V3 = [
     ('🏠', '主页',       'home'),
     ('🍚', '饮食',       'diet'),
@@ -53,224 +48,164 @@ CATEGORIES_V3 = [
     ('🎯', '目标管理',   'goal'),
     ('🧬', '身体细节',   'body_detail'),
     ('📸', '身材照片',   'body_photo'),
-    ('⚙️', '基础信息',   'profile'),   # 2026-08-09 issue #47:🛠(U+1F6E0 ZWJ 组合)换 ⚙️,与其他单字符 emoji 宽度一致
+    ('⚙️', '基础信息',   'profile'),
     ('📊', '分析',       'analysis'),
-    ('🔗', '技能协同',   'cross_skill'),
 ]
 
-# === 旧 → 新 category 映射(Phase 2 期间双轨运行) ===
-# 旧 trigger.category → 新 cat.key
-CATEGORY_LEGACY_MAP = {
-    '主页':      'home',
-    '饮食记录':  'diet',     # 饮食记录 + 食品库 → 饮食
-    '食品库':    'diet',
-    '体重':      'weight',
-    '运动':      'exercise',
-    '健身计划':  'workout',
-    '分析':      'analysis',
-    '综合':      'profile',  # 设营养/查营养/查健康/查卡路里/设置档案/查档案 → 基础信息(临时)
-    '复盘':      'analysis', # 复盘 → 分析(临时)
-    '身体成分':  'body_detail',
-    '围度':      'body_detail',
-    '身材照片':  'body_photo',
-}
-
-# 旧 category → 新展示名(用于老 trigger 在新模板里的归类)
+# legacy category → 展示名(23 条 v2 时代触发词归入 v3 分类)
 CATEGORY_LEGACY_NAME = {
-    '主页':      '主页',
-    '饮食记录':  '饮食',
-    '食品库':    '饮食',
-    '体重':      '体重',
-    '运动':      '运动',
-    '健身计划':  '健身计划',
-    '分析':      '分析',
-    '综合':      '基础信息',
-    '复盘':      '分析',
-    '身体成分':  '身体细节',
-    '围度':      '身体细节',
-    '身材照片':  '身材照片',
+    '复盘': '分析',
 }
 
-# 旧 category → 默认 subfunction(把旧 trigger 装进"既有用法"子功能组)
-SUBFUNC_LEGACY = {
-    '主页':      '既有唤醒词',
-    '饮食记录':  '既有唤醒词',
-    '食品库':    '既有唤醒词',
-    '体重':      '既有唤醒词',
-    '运动':      '既有唤醒词',
-    '健身计划':  '既有唤醒词',
-    '分析':      '既有唤醒词',
-    '综合':      '既有唤醒词',
-    '复盘':      '既有唤醒词',
-    '身体成分':  '既有唤醒词',
-    '围度':      '既有唤醒词',
-    '身材照片':  '既有唤醒词',
-}
-
-# 分类 → 子功能显式顺序(2026-08-02 用户拍板:基础信息 = 设置资料 → 看档案 → 改档案)
-# 中文字典序不可靠(改<看<设),按此表排序;未列出的子功能按插入序(字典序兜底)
+# 分类 → 子功能显式顺序(2026-08-02 用户拍板);未列出的子功能按首次出现序, 既有唤醒词恒最后
 SUBFUNC_ORDER = {
     '基础信息': ['设置资料', '看档案', '改资料'],
-    # 目标管理:领域闭环 定 → 看 → 改(2026-08-02 对齐 #8 ③)
     '目标管理': ['定目标', '看目标', '改目标'],
-    # 身体细节:记 → 看 → 比 → 删(2026-08-02 · ticket #9)
     '身体细节': ['记身体细节', '看身体细节', '比身体细节', '删身体细节'],
-    # 运动:记 → 改 → 看 → 分析 → 复盘(2026-08-02 · ticket #5)
     '运动': ['记运动', '改运动', '看运动', '运动分析', '运动复盘'],
-    # 身材照片:存 → 看 → 比 → 管(2026-08-02 · ticket #10)
     '身材照片': ['存身材照', '看身材照', '比身材照', '管身材照'],
-    # 饮食:记 → 改 → 看 → 查 → 营养 → 排行 → 复盘 → 餐别(2026-08-02 · ticket #3)
     '饮食': ['记饮食', '改饮食', '看饮食', '查食品', '看营养', '看排行', '饮食复盘', '餐别分布'],
-    # 健身计划:定 → 看 → 改 → 落地 → 复盘 → 检查(2026-08-02 · ticket #6 用户拍板)
     '健身计划': ['定训练计划', '看训练计划', '改训练计划', '落地训练', '计划复盘', '安全检查'],
 }
 
+OUTPUT_TYPE_LABELS = {
+    'process': '过程',
+    'result':  '结果',
+    'receipt': '回执',
+}
 
-def _trig_to_scene(t: dict) -> dict:
-    """把旧 TRIGGERS 格式转 v3 scene 格式(去变体,平铺)
 
-    Phase 2 新增:若 trigger 已是新 13 字段 scene 格式(含 output_type / prompt_template),
-    直接透传(不再走 legacy 转换),保证 --runtime 模式与 scene_data 等价。
+def _base_injector():
+    """懒加载 Base 注入器(公共组件/injector.py), importlib 按文件路径加载防撞名。"""
+    injector_path = BASE_SKILL_DIR / 'injector.py'
+    if not injector_path.exists():
+        raise RuntimeError('Base Skill 资产缺失: 找不到 公共组件/injector.py')
+    spec = importlib.util.spec_from_file_location('base_injector', injector_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _base_assets():
+    assets = BASE_SKILL_DIR / 'assets'
+    js = (assets / 'base.js').read_text(encoding='utf-8').strip()
+    css = (assets / 'base.css').read_text(encoding='utf-8').strip()
+    return js, css
+
+
+def build_contract() -> dict:
+    """转换层: _triggers.py(唯一权威) → scene-data 契约 v1。
+
+    映射:
+      - 新 13 字段 scene: key→id / name→title / wake_word / output_type→types(过程/结果/回执) / prompt_template
+      - legacy(v2 时代 23 条): 归 分析/既有唤醒词, types 不标(未分类), prompt = main_prompt.text
+      - 子功能顺序: SUBFUNC_ORDER 优先 → 首次出现序 → 「既有唤醒词」恒最后
+      - 11-技能协同无运行时 trigger, 不生成分组(36 条已归档, 归属 #270)
     """
-    if 'output_type' in t and 'prompt_template' in t:
-        scene = dict(t)
-        scene.setdefault('_legacy', False)
-        return scene
+    legacy_name = CATEGORY_LEGACY_NAME
 
-    legacy_cat = t.get('category', '')
-    main = t.get('main_prompt', {}) or {}
-    return {
-        'key':                 f'legacy_{t.get("wake_word", "")}',
-        'name':                t.get('wake_word', ''),
-        'wake_word':           t.get('wake_word', ''),
-        'category':            CATEGORY_LEGACY_NAME.get(legacy_cat, legacy_cat),
-        'subfunction':         SUBFUNC_LEGACY.get(legacy_cat, '既有唤醒词'),
-        'output_type':         'result',
-        'html_template':       '',
-        'data_source':         main.get('cli', '') or '',
-        'prompt_template':     main.get('text', ''),
-        'user_intent':         t.get('desc', ''),
-        'data_fields':         [],
-        'depends_on_external': False,
-        'order':               0,
-        '_legacy':             True,    # 内部标记
-    }
+    def _is_new(t: dict) -> bool:
+        return 'output_type' in t and 'prompt_template' in t
 
+    # 组装 scene 列表: 新格式在前(保持 _triggers 设计序), legacy 后置
+    new_scenes = [t for t in TRIGGERS if _is_new(t)]
+    legacy_scenes = [t for t in TRIGGERS if not _is_new(t)]
 
-def load_scene_data_files() -> list[dict]:
-    """读 .scratch/scene_data/*.json(开发期,新 13 字段 schema)"""
-    if not SCENE_DIR.exists():
-        return []
-    scenes = []
-    for f in sorted(SCENE_DIR.glob('*.json')):
-        if f.name == 'schema.json':
-            continue
-        try:
-            data = json.loads(f.read_text(encoding='utf-8'))
-        except json.JSONDecodeError as e:
-            print(f'⚠️ scene_data 文件 {f.name} JSON 解析失败: {e}', file=sys.stderr)
-            continue
-        items = data if isinstance(data, list) else [data]
-        for s in items:
-            s['_from'] = f.name
-            scenes.append(s)
-    return scenes
+    groups = []
+    group_index = {}
+    for icon, name, key in CATEGORIES_V3:
+        g = {'id': key, 'icon': icon, 'label': name, 'subgroups': []}
+        groups.append(g)
+        group_index[name] = g
 
-
-def load_triggers() -> list[dict]:
-    """读 _triggers.py(运行时 SoT)"""
-    return [_trig_to_scene(t) for t in TRIGGERS]
-
-
-def merge_scenes(scene_data: list[dict], triggers: list[dict]) -> list[dict]:
-    """合并策略:
-       - scene_data 优先(用户确认过的新 schema)
-       - triggers 补齐(老 wake_word 全部留下,标记 _legacy)
-       - 合并键 = (wake_word, key):同唤醒词但不同场景(如 记身材照 × 3)
-         各自独立成卡(2026-08-02 · ticket #10);同键时 scene_data 覆盖 triggers
-    """
-    def _key(s):
-        return (s.get('wake_word', ''), s.get('key', s.get('name', '')))
-    by_key = {}
-    # 先放 triggers(老)
-    for t in triggers:
-        by_key[_key(t)] = t
-    # 再覆盖 scene_data(新)
-    for s in scene_data:
-        s['_legacy'] = False
-        by_key[_key(s)] = s
-    return list(by_key.values())
-
-
-def build_data(mode: str = 'merged') -> dict:
-    """组装速查台数据契约
-    Args:
-        mode: 'dev' 只读 scene_data;'runtime' 只读 _triggers;'merged' 两者合并
-    """
-    scene_data = load_scene_data_files() if mode in ('dev', 'merged') else []
-    triggers   = load_triggers()           if mode in ('runtime', 'merged') else []
-
-    if mode == 'dev':
-        scenes = scene_data
-        source = 'dev(scene_data)'
-    elif mode == 'runtime':
-        scenes = triggers
-        source = 'runtime(_triggers.py)'
-    else:
-        scenes = merge_scenes(scene_data, triggers)
-        source = 'merged(scene_data + _triggers.py)'
-
-    # 按 (category, subfunction, order) 排序
-    # subfunction 用显式顺序表(SUBFUNC_ORDER)替代中文字典序(2026-08-02)
-    def _sub_key(s):
-        order_list = SUBFUNC_ORDER.get(s.get('category', ''), [])
-        sub = s.get('subfunction', '')
+    def _sub_key(cat_name: str, sub: str):
+        order_list = SUBFUNC_ORDER.get(cat_name, [])
         if sub in order_list:
-            return (order_list.index(sub), sub)
-        return (len(order_list), sub)  # 未配置的子功能排在表后,字典序兜底
+            return (0, order_list.index(sub), sub)
+        if sub == '既有唤醒词':
+            return (2, 0, sub)
+        return (1, 0, sub)  # 未配置子功能按首次出现序(在 _scenes 内稳定排序)
 
-    scenes.sort(key=lambda s: (
-        s.get('category', '~'),
-        *_sub_key(s),
-        s.get('order', 9999),
-        s.get('name', ''),
+    def _push(scene: dict, cat_name: str, sub: str):
+        g = group_index.get(cat_name)
+        if g is None:
+            return
+        sg = next((x for x in g['subgroups'] if x['label'] == sub), None)
+        if sg is None:
+            sg = {'id': f"{g['id']}_{len(g['subgroups']) + 1}", 'label': sub, 'scenes': []}
+            g['subgroups'].append(sg)
+        sg['scenes'].append(scene)
+
+    # 新格式: 按 (子功能键, order, name) 稳定排序
+    new_sorted = sorted(new_scenes, key=lambda t: (
+        _sub_key(t.get('category', ''), t.get('subfunction', '')),
+        t.get('order', 9999),
+        t.get('name', ''),
     ))
+    for t in new_sorted:
+        cat = t.get('category', '')
+        sub = t.get('subfunction') or '既有唤醒词'
+        scene = {
+            'id': t.get('key') or t.get('wake_word', ''),
+            'title': t.get('name') or t.get('wake_word', ''),
+            'wake_word': t.get('wake_word', ''),
+            'status': '',
+            'prompt_template': t.get('prompt_template', ''),
+        }
+        ot = OUTPUT_TYPE_LABELS.get(t.get('output_type', ''))
+        if ot:
+            scene['types'] = [ot]
+        _push(scene, cat, sub)
 
-    by_category: dict[str, int] = {}
-    for s in scenes:
-        by_category[s.get('category', '?')] = by_category.get(s.get('category', '?'), 0) + 1
+    # legacy: 归 分析/既有唤醒词(名称映射), 按 wake_word 排序
+    legacy_sorted = sorted(legacy_scenes, key=lambda t: t.get('wake_word', ''))
+    for t in legacy_sorted:
+        cat = legacy_name.get(t.get('category', ''), t.get('category', '分析'))
+        scene = {
+            'id': f"legacy_{t.get('wake_word', '')}",
+            'title': t.get('wake_word', ''),
+            'wake_word': t.get('wake_word', ''),
+            'status': '',
+            'prompt_template': (t.get('main_prompt') or {}).get('text', ''),
+        }
+        _push(scene, cat, '既有唤醒词')
 
+    # 子功能最终排序(空组不生成)
+    result_groups = []
+    for g in groups:
+        if not g['subgroups']:
+            continue
+        g['subgroups'].sort(key=lambda sg: _sub_key(g['label'], sg['label']))
+        result_groups.append(g)
+
+    total = sum(len(sg['scenes']) for g in result_groups for sg in g['subgroups'])
+    now = datetime.now().strftime('%Y-%m-%d %H:%M')
     return {
-        'status': 'ok',
-        'meta':   {
-            'source':      source,
-            'mode':        mode,
-            'rendered_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'scene_data_count':  len(scene_data),
-            'triggers_count':    len(triggers),
+        'skill_name': '卡路里',
+        'title': '唤醒词速查台',
+        'subtitle': f'{len(result_groups)} 分类 · {total} 场景 · 更新于 {now}',
+        'contact': {
+            'items': [
+                {'label': 'GitHub', 'value': 'https://github.com/FeatherHunter/SKILLS'},
+                {'label': 'Issues', 'value': 'https://github.com/FeatherHunter/SKILLS/issues'},
+            ],
         },
-        'data': {
-            'summary': {
-                'total_categories': len(by_category),
-                'total_scenes':     len(scenes),
-                'total_prompts':    len(scenes),   # 1 prompt / scene(无变体)
-                'by_category':      by_category,
-            },
-            'categories': [{'icon': ic, 'name': nm, 'key': ky} for ic, nm, ky in CATEGORIES_V3],
-            'scenes':     scenes,
-        },
-        'message': f'已加载 {len(scenes)} 场景 / {len(by_category)} 分类 · 数据源:{source}',
+        'groups': result_groups,
     }
 
 
-def render_html(data: dict) -> str:
-    template = TEMPLATE.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符 <!--INJECT-DATA-->')
-
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    inject  = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace('<!--INJECT-DATA-->', inject, 1)
+def render_html(contract: dict) -> str:
+    """Base help_template 注入: 契约校验(硬拦截) + 3 占位符注入。"""
+    template = HELP_TEMPLATE.read_text(encoding='utf-8')
+    mod = _base_injector()
+    ok, msg = mod.validate_help_data(contract)
+    if not ok:
+        raise ValueError(f'HELP 数据校验失败: {msg}')
+    js, css = _base_assets()
+    html, err = mod.inject(template, contract, js_asset=js, css_asset=css, strict=False)
+    if err:
+        raise RuntimeError(f'Base 注入失败: {err}')
+    return html
 
 
 def mirror_to_root(help_html_path: Path, skill_dir: Path) -> Path | None:
@@ -300,24 +235,14 @@ def mirror_to_root(help_html_path: Path, skill_dir: Path) -> Path | None:
 
 
 def main():
-    p = argparse.ArgumentParser(description='渲染卡路里唤醒词速查台 HTML (v3.0)')
-    g = p.add_mutually_exclusive_group()
-    g.add_argument('--dev',     action='store_true', help='只读 .scratch/scene_data/*.json')
-    g.add_argument('--runtime', action='store_true', help='只读 _triggers.py(纯净 SoT)')
-    p.add_argument('--output',   help='输出文件路径(默认走 html_path 新规范)')
+    p = argparse.ArgumentParser(description='渲染卡路里唤醒词速查台 HTML (v4.0 · Base 参数化 HELP)')
+    p.add_argument('--output', help='输出文件路径(默认走 html_path 新规范)')
     p.add_argument('--no-mirror', action='store_true', help='跳过 ADR-0001 根镜像')
     args = p.parse_args()
 
-    if args.dev:
-        mode = 'dev'
-    elif args.runtime:
-        mode = 'runtime'
-    else:
-        mode = 'merged'
-
     try:
-        data  = build_data(mode=mode)
-        html  = render_html(data)
+        contract = build_contract()
+        html = render_html(contract)
     except Exception as e:
         print(f'❌ 渲染失败: {e}', file=sys.stderr)
         return 1
@@ -331,10 +256,9 @@ def main():
         if mirror:
             print(f'   镜像 → {mirror}')
 
-    sm = data['data']['summary']
+    total = sum(len(sg['scenes']) for g in contract['groups'] for sg in g['subgroups'])
     print(f'✅ {out_path}')
-    print(f'   模式: {mode} · {sm["total_scenes"]} 场景 / {sm["total_categories"]} 分类')
-    print(f'   数据源: {data["meta"]["source"]}')
+    print(f'   模式: _triggers.py 唯一权威 · {total} 场景 / {len(contract["groups"])} 分类')
     return 0
 
 

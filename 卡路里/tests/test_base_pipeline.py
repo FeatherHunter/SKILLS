@@ -70,6 +70,49 @@ class TestPlaceholders:
         assert "help_center.html" not in BUSINESS_TEMPLATES
 
 
+# ── 8. HELP: scene-data 契约 v1 转换层 + Base 参数化渲染(#316 task ④) ─────────
+
+class TestHelpParameterized:
+    """#316 · HELP 归一化: _triggers.py 唯一权威 → 契约 v1 → Base help_template"""
+
+    def test_build_contract_passes_validation(self):
+        from render_help_center import build_contract, _base_injector
+        contract = build_contract()
+        mod = _base_injector()
+        ok, msg = mod.validate_help_data(contract)
+        assert ok, f"转换层产物未过 scene-data 契约 v1: {msg}"
+        assert contract["skill_name"] == "卡路里"
+        assert len(contract["groups"]) == 10, "技能协同 36 条不迁入 → 10 分组"
+        total = sum(len(sg["scenes"]) for g in contract["groups"] for sg in g["subgroups"])
+        assert total == 436, f"场景数零丢失(_triggers 436 全进), 实际 {total}"
+        ids = [s["id"] for g in contract["groups"]
+               for sg in g["subgroups"] for s in sg["scenes"]]
+        assert len(ids) == len(set(ids)), "场景 id 重复"
+
+    def test_help_center_template_retired(self):
+        """自研 help_center.html 已退役(#316); 渲染走 Base help_template"""
+        assert not (TEMPLATES_DIR / "help_center.html").exists(), \
+            "templates/help_center.html 应已退役删除(#316)"
+
+    def test_render_help_timestamp_copy_no_residual(self, tmp_path):
+        """时间戳副本产出 + 占位符 0 残留 + Base 资产注入(DB 隔离)"""
+        env = os.environ.copy()
+        env["SKILLS_DB_PATH"] = str(tmp_path)
+        r = subprocess.run(
+            [sys.executable, str(SCRIPTS_DIR / "render_help_center.py"), "--no-mirror"],
+            cwd=SKILL_DIR, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", timeout=90, env=env,
+        )
+        assert r.returncode == 0, f"render_help_center 失败: {r.stderr}"
+        out = list((tmp_path / "calorie_html").glob("卡路里_HELP_*.html"))
+        assert out, "时间戳副本必写"
+        h = out[-1].read_text(encoding="utf-8")
+        for ph in PLACEHOLDERS:
+            assert ph not in h, f"HELP 注入后仍有占位符残留: {ph}"
+        assert "function copyText" in h, "HELP 产物缺 base.js"
+        assert 'id="help-data"' in h, "HELP 产物缺 scene-data 契约注入点"
+
+
 # ── 2. 注入后:占位符 0 残留(渲染脚本全链路输出真实页面) ──────────────────────
 
 class TestInjectionNoResidual:

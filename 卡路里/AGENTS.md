@@ -14,10 +14,11 @@ Issues 以本地 markdown 文件形式存放在 `.scratch/<feature>/` 目录下�
 
 单一上下文(single-context)布局。详见 `docs/agents/domain.md`。
 
-### SoT 链(ADR-0001 · 2026-07-29)
+### SoT 链(ADR-0001 · 2026-07-29 · #316 归一化 2026-08-13)
 
 - `卡路里.html`(根目录)= `render_help_center.py` 自动产出的最新 HELP render,**不是 SKILL.md 镜像**。
-- SoT 链:`scripts/_triggers.py`(data)+ `templates/help_center.html`(presentation)→ `calorie_html/卡路里_HELP_<TS>.html`(artifact)→ `卡路里.html`(根 mirror)。
+- SoT 链:`scripts/_triggers.py`(data · **唯一权威**)+ `公共组件/assets/help_template.html`(presentation · Base 参数化 HELP)→ `calorie_html/卡路里_HELP_<TS>.html`(artifact)→ `卡路里.html`(根 mirror)。
+- 开发期 `.scratch/scene_data/*.json` 已转**只读归档**(2026-08-13 · #316),不再消费、不物理删除;证据链 = `docs/scene-prompts/NN-分类.md`(git 提交)+ `docs/scene-data-normalization-2026-08-13.md`。
 - 旧 101KB SKILL.md 镜像契约退役(详见 `docs/adr/0001-help-html-as-root-mirror.md`)。
 
 ### ⚠️ v1.0 场景重构期(2026-08-01 起 · 必读)

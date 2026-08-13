@@ -2,6 +2,16 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## 规划中（2026-08-13 · smartSelect 选择器组件立项登记）
+
+**smartSelect = 字段级「复用优先·新建其次」选择器组件**（公共层 ISSUE #320，挂 wayfinder #305；实施 = #312，落地后补版本号与细节）。
+
+- **定位**: 字段级组件（一页 N 实例）· 零领域词全参数化 · `smartSelect(el, config)` 一行接入；首个使用域 = 饼干记账（采集表单 expense_form + 联动 2 表单，根治 #298）
+- **行为契约**: chips 平铺候选 + 顶部「已选卡片」（来源徽章）；初始选中 = AI 推断 > 历史预填 > 空，无推断默认「AI 推荐新建」；绝不静默填错；新建落位候选区；停用划线置灰；主题色默认账本藏蓝 #123A63
+- **数据契约**: `form.selector.<fieldKey>` 嵌套对象 + source 白名单（inferred/recommended_new/existing/history/custom/empty）；回填 = input.value + dataset.source/new + onchange；prompt 由上层 buildPrompt 自拼（组件零 prompt 知识）
+- **守卫**: 结构校验违规直接报错；类名全 `ss-` 命名空间（封装纪律，防宿主同名类冲突）
+- 契约草案: `饼干记账/.scratch/selector-proto/contract.md`（v1 · #307 形态定稿 + #309 契约决议）
+
 ## v1.6（2026-08-12 · 图表全参数化 · 方向 A 定稿）
 
 **charts.js 四形态全参数化 + 复合形态**（契约 v1.6;与 #288 方向 A 定稿一致;新增参数非破坏性, 既有调用零变更;与 #289/#290 并发, 版本号按落地顺序递增）。

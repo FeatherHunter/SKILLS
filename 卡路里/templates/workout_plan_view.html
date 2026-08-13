@@ -670,14 +670,17 @@ function bindDayTabs() {
 
 /* ====== 主入口 ====== */
 (function() {
-  const DATA = (typeof window.__P__ === 'object' && window.__P__ !== null)
-    ? ((window.__P__ && typeof window.__P__ === 'object' && window.__P__.data) ? window.__P__.data : window.__P__) : null;
-  if (!DATA) {
+  const P = (typeof window.__P__ === 'object' && window.__P__ !== null) ? window.__P__ : null;
+  if (!P) {
     document.getElementById('planSubtitle').textContent = '❌ 数据加载失败';
     return;
   }
-
-  const { status, data, message } = DATA;
+  /* #321: window.__P__ = Base 注入信封 {status,data,message}(#314 契约),必须从信封解构 status;
+     裸数据形态(无 status 字段)兜底视为 ok —— 修 #314 Base 化后 __P__.data 预取致 status 恒 undefined */
+  const isEnvelope = (typeof P.status === 'string' && P.data && typeof P.data === 'object');
+  const status = isEnvelope ? P.status : 'ok';
+  const data = isEnvelope ? P.data : P;
+  const message = isEnvelope ? P.message : undefined;
   if (status !== 'ok' && status !== 'warn') {
     document.getElementById('planSubtitle').textContent = '⚠️ ' + (message || '数据错误');
     return;

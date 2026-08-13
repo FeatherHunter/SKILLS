@@ -385,6 +385,28 @@ def test_copy_text_empty_string_noop(page):
     assert page.evaluate("document.querySelectorAll('.hm-toast').length") == 0
 
 
+def test_copy_text_clipboard_promise_path(page):
+    """navigator.clipboard Promise 路径（主路径）: resolve → onOk; reject+兜底失败 → onFail
+    （前 7 项走 _fbCopy 兜底路径; 本项钉死 clipboard 主路径, 两路径共享 ok()/fail() 须行为一致）"""
+    _clear_toasts(page)
+    page.evaluate("""
+      Object.defineProperty(navigator, 'clipboard', {value: {writeText: function(){ return Promise.resolve(); }}, configurable: true});
+      window.__ok = 0; window.__fail = 0;
+      window.copyText('abc',{onOk:function(){window.__ok=1;},onFail:function(){window.__fail=1;}});
+    """)
+    page.wait_for_timeout(120)
+    assert page.evaluate('window.__ok') == 1 and page.evaluate('window.__fail') == 0
+    _clear_toasts(page)
+    _stub_exec_command(page, False)
+    page.evaluate("""
+      Object.defineProperty(navigator, 'clipboard', {value: {writeText: function(){ return Promise.reject(new Error('denied')); }}, configurable: true});
+      window.__ok = 0; window.__fail = 0;
+      window.copyText('abc',{onOk:function(){window.__ok=1;},onFail:function(){window.__fail=1;}});
+    """)
+    page.wait_for_timeout(120)
+    assert page.evaluate('window.__ok') == 0 and page.evaluate('window.__fail') == 1
+
+
 # ── 新控件 ────────────────────────────────────────────────
 
 def test_form_prompt_preview_and_blank_block(page):

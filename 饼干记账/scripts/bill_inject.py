@@ -91,6 +91,7 @@ def cli_path(query_type: str) -> Path:
     return _SCRIPT_DIR / QUERY_DOMAIN.get(query_type, "query") / "cli.py"
 
 # 分析域 25 场景 → 模板(单模板多渲染器 · 隔离契约 templates/分析/)
+# breakdown 属查询域(query_view 有完整 renderBreakdown 渲染器;2026-08-13 #300 验收修复:移出分析域回落 query_view)
 ANALYSIS_TYPES = {
     "monthly", "yearly", "overview", "week",
     "category", "account", "ledger", "structure",
@@ -99,7 +100,6 @@ ANALYSIS_TYPES = {
     "top", "top_freq", "distribution",
     "stats", "activity", "insight", "anomaly",
     "debt_summary", "reimburse_summary", "installment_summary", "refund_summary",
-    "breakdown",
 }
 
 

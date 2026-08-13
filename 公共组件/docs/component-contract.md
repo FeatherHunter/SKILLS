@@ -1,6 +1,6 @@
-# Base 组件契约 v1.9
+# Base 组件契约 v1.10
 
-> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）+ **v1.9 selectList 行内控件**（2026-08-13 · #327）
+> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）+ **v1.9 selectList 行内控件**（2026-08-13 · #327）+ **v1.10 copyText 反馈钩子**（2026-08-13 · #328）
 > 本契约是 Base Skill 组件的**冻结接口**，修改必须走公共层 ISSUE（总纲 09 §92）+ 遵循 §8 版本机制。
 
 ## 0. 版本记录
@@ -14,6 +14,7 @@
 | v1.4 | 2026-08-12 | **#290 P2 状态层落地（加固）**：三控件（statusBadge/emptyState/errorReceipt）从「零消费方定义」加固为**对外可靠接口**——①errorReceipt 去掉 `window.__hmPayload` 强依赖（新增显式 `payload` 参数优先、`data/log` 字符串直传兜底）②errorReceipt 复制按钮改为渲染期生成文本存 `data-t`（onclick 仅 `copyText(this.dataset.t)`，零注入面；点击不再实时调 buildDataText）③errorReceipt 补 `.hm-actions` 网格布局（修正重试 primary wide 独立一行 + 复制数据/日志 ghost 一行 2 个，08 规范奇数按钮）④payload 无 snapshot 时容错（不渲染复制按钮，控件不崩）⑤statusBadge 非法 status 白名单降级 `empty`（防无样式徽章）⑥emptyState/statusBadge/errorReceipt 全部文本字段 esc 防 XSS，action 明示「受信 HTML 透传」。守卫测试 +9（边界/XSS/容错/布局） |
 | v1.6 | 2026-08-12 | **图表全参数化（方向 A 定稿）**：charts.js 四形态全参数化（line 16 项 / bar 7 / donut 6 / progress 4）+ 复合形态（combo 柱线组合 / sparkline 迷你趋势 / gauge 仪表盘）+ 结构校验违规报错（对齐 v1.2）+ 坐标唯一性（容器零 padding）+ 双端自适应（≤720px 独立 UI）+ 全部动画。守卫测试 141/141。**注意：v1.6 与 #289/#290 并发推进，版本号按落地顺序递增** |
 | v1.9 | 2026-08-13 | **#327 selectList 行内控件**（非破坏性 · 签名零变更）：①items[].widget 新可选字段（date/text/select，行内控件与勾选/批量/计数共存）②批量回调第二参 `onClick(ids, values)` = 勾选条目行内值（只读勾选，未填 → null）③读取接口选定形态 = `opts.onSubmit(selectedIds, values)`（全部行内值，含未勾选条目）④计数联动隔离（控件值变化不干扰）⑤行内值渲染一律 esc 零注入面。守卫测试 +11 → 162/162 全绿。详见 §6.7 |
+| v1.10 | 2026-08-13 | **#328 copyText 反馈钩子**（非破坏性 · 签名零变更）：①`opts.toast = {ok:{msg,detail,icon?}, fail:{msg,detail,icon?}}` 自定义成功/失败 toast 文案（只覆盖提供字段，缺省回落默认，对齐 08 规范「文案由技能自设计」）②`opts.onOk`/`opts.onFail` 回调（成功/最终失败必触发，互斥；`silent` 时不弹 toast 仍触发）③未传新选项行为与 v1.9 逐字一致。守卫测试 +7 → 169/169 全绿。详见 §6.8 |
 
 ## 1. 目录结构
 
@@ -95,7 +96,7 @@
 | `yes(v)` | 布尔→徽章 | 通过/未通过 |
 | `validate(p)` | payload→{ok,msg} | 数据守门（status==='ok' + data 是对象） |
 | `_fbCopy(s)` | 字符串→bool | execCommand fallback（内部） |
-| `copyText(s, opts?)` | 字符串→void | v2 语义：clipboard + fallback + 双 toast，**不改按钮文字**；opts.silent 可静默 |
+| `copyText(s, opts?)` | 字符串→void | v2 语义：clipboard + fallback + 双 toast，**不改按钮文字**；opts.silent 可静默。**v1.10（#328）**：opts.toast 自定义文案 + onOk/onFail 回调 —— 详见 §6.8 |
 | `toast(msg, detail?, options?)` | 字符串→void | **通用提示控件**（v1.2 增强，见 §5.1） |
 
 ### 5.1 toast 通用提示控件（v1.8 堆叠模式 · #304 · 向后兼容）
@@ -147,7 +148,7 @@ snapshot = {
 ### 6.2 复制按钮控件（v1.2 增强）
 
 ```js
-copyText(s, opts?)          // opts.silent 静默复制（不弹 toast）
+copyText(s, opts?)          // opts.silent 静默复制（不弹 toast）; v1.10: opts.toast 文案 + onOk/onFail（见 §6.8）
 actionBar(p, extra?, opts?) → HTML
 ```
 
@@ -256,6 +257,28 @@ selectList(items, batchActions?, {
 
 **样式**：`.sl-widget*` 走 token A 组（base.css v1.9），技能零样式副本。
 
+### 6.8 copyText 反馈钩子（v1.10 · #328）
+
+**一句话**：`copyText` 支持自定义成功/失败 toast 文案与回调钩子，对齐 08 规范「文案由各技能按场景自设计」（2026-08-13 修订）。**非破坏性**：未传新选项时行为与 v1.9 逐字一致（守卫测试断言 toast 文案）。
+
+```js
+copyText(s, {
+  silent: true,                          // v1.1 既有: 不弹 toast
+  toast: {                               // v1.10 新增: 自定义反馈文案（缺省回落默认）
+    ok:   { msg: '已存剪贴板', detail: '发给 AI 执行', icon: '🎉' },
+    fail: { msg: '复制失败啦', detail: '请长按手动复制', icon: '😭' }
+  },
+  onOk:   function(){},                  // v1.10 新增: 复制成功（主路径或兜底）触发
+  onFail: function(){},                  // v1.10 新增: 最终失败（剪贴板不可用且兜底失败）触发
+})
+```
+
+- **文案覆盖规则**：`toast.ok/fail` 只覆盖提供的字段（`msg`/`detail`/`icon`），未提供字段回落默认——ok 默认 `已复制/粘贴给 AI`（无图标），fail 默认 `复制失败/长按选择文本手动复制` + `badge:{text:'失败',type:'danger'}`（失败徽章恒在，不可移除）
+- **回调语义**：`onOk` 在复制成功（`navigator.clipboard` 主路径或 `_fbCopy` 兜底）必触发；`onFail` 在最终失败必触发；两者互斥
+- **silent 组合**：`silent:true` 时不弹 toast，但回调仍触发（08 规范定制文案场景的标准做法：silent + 自定义乐观 toast + onFail 纠错）
+- **空串**：`copyText('')` 直接 return，无 toast 无回调（既有语义）
+- **安全**：文案经 `toast` 内部 `esc` 转义（既有）
+
 ## 7. 注入器接口（v1.3）
 
 ```bash
@@ -271,7 +294,7 @@ python injector.py <模板.html> --payload <数据.json> [--output <输出.html>
 
 ## 8. 版本与变更机制
 
-- Base 资产带版本号（当前 v1.9），变更记入 `CHANGELOG.md`
+- Base 资产带版本号（当前 v1.10），变更记入 `CHANGELOG.md`
 - **签名变更 = 破坏性变更**：必须全技能同步 + 一次性完成 + 变更记录；不允许「新签名 + 旧签名并存」跨版本漂移
 - 非破坏性变更（内部实现/样式细节）：可独立发布，CHANGELOG 记录
 - 任何变更先开公共层 ISSUE（总纲 09 §92），review 后实施

@@ -6,6 +6,7 @@
 - buildDataText: text/json/csv 三种 format; 脱敏行; 头部/摘要/分节输出
 - buildLogText: 6 段结构; 缺省字段兜底
 - toast 增强: 徽章/操作/计数/队列/向后兼容
+- copyText 反馈钩子（v1.10 · #328）: toast 文案配置 + onOk/onFail 回调
 - 新控件: formPrompt（预览+空值拦截）/ selectList（计数联动 + v1.9 行内控件）/ confirm / foldBox / statusBadge / emptyState / errorReceipt
 """
 import json
@@ -277,6 +278,111 @@ def test_toast_aria(page):
     role = page.evaluate("document.querySelector('.hm-toast')?.getAttribute('role')")
     aria = page.evaluate("document.querySelector('.hm-toast')?.getAttribute('aria-live')")
     assert role == 'status' and aria == 'polite'
+
+
+# ── copyText 反馈钩子（v1.10 · #328）────────────────────────
+
+def _stub_exec_command(page, ok):
+    """钉死 document.execCommand 返回值, 让 copyText 走 _fbCopy 兜底路径（Playwright 无 clipboard, 确定性成败）"""
+    page.evaluate("document.execCommand = function(){ return %s; }" % ('true' if ok else 'false'))
+
+
+def test_copy_text_default_toast_regression(page):
+    """无新选项: 成功/失败 toast 与 v1.9 逐字一致（向后兼容回归）"""
+    _clear_toasts(page)
+    _stub_exec_command(page, True)
+    page.evaluate("window.copyText('abc')")
+    page.wait_for_timeout(80)
+    title = page.evaluate("document.querySelector('.hm-toast .hm-toast-title')?.textContent")
+    detail = page.evaluate("document.querySelector('.hm-toast .hm-toast-detail')?.textContent")
+    assert title == '已复制' and detail == '粘贴给 AI'
+    _clear_toasts(page)
+    _stub_exec_command(page, False)
+    page.evaluate("window.copyText('abc')")
+    page.wait_for_timeout(80)
+    title = page.evaluate("document.querySelector('.hm-toast .hm-toast-title')?.textContent")
+    detail = page.evaluate("document.querySelector('.hm-toast .hm-toast-detail')?.textContent")
+    chip = page.evaluate("document.querySelector('.hm-toast-chip')?.textContent")
+    assert title == '复制失败' and detail == '长按选择文本手动复制' and chip == '失败'
+
+
+def test_copy_text_custom_toast_texts(page):
+    """opts.toast 自定义文案: 成功/失败分别用自定义 msg+detail"""
+    _clear_toasts(page)
+    _stub_exec_command(page, True)
+    page.evaluate("window.copyText('abc',{toast:{ok:{msg:'已存剪贴板',detail:'发给 AI 执行'},fail:{msg:'复制失败啦',detail:'请长按手动复制'}}})")
+    page.wait_for_timeout(80)
+    title = page.evaluate("document.querySelector('.hm-toast .hm-toast-title')?.textContent")
+    detail = page.evaluate("document.querySelector('.hm-toast .hm-toast-detail')?.textContent")
+    assert title == '已存剪贴板' and detail == '发给 AI 执行'
+    _clear_toasts(page)
+    _stub_exec_command(page, False)
+    page.evaluate("window.copyText('abc',{toast:{ok:{msg:'已存剪贴板',detail:'发给 AI 执行'},fail:{msg:'复制失败啦',detail:'请长按手动复制'}}})")
+    page.wait_for_timeout(80)
+    title = page.evaluate("document.querySelector('.hm-toast .hm-toast-title')?.textContent")
+    detail = page.evaluate("document.querySelector('.hm-toast .hm-toast-detail')?.textContent")
+    assert title == '复制失败啦' and detail == '请长按手动复制'
+
+
+def test_copy_text_toast_partial_override(page):
+    """只覆盖部分字段: 缺省回落默认（msg 自定义 + detail 缺省）"""
+    _clear_toasts(page)
+    _stub_exec_command(page, True)
+    page.evaluate("window.copyText('abc',{toast:{ok:{msg:'已复制!'}}})")
+    page.wait_for_timeout(80)
+    title = page.evaluate("document.querySelector('.hm-toast .hm-toast-title')?.textContent")
+    detail = page.evaluate("document.querySelector('.hm-toast .hm-toast-detail')?.textContent")
+    assert title == '已复制!' and detail == '粘贴给 AI'
+
+
+def test_copy_text_icon_override(page):
+    """opts.toast 图标覆盖: 成功/失败 toast 图标换自定义 emoji"""
+    _clear_toasts(page)
+    _stub_exec_command(page, True)
+    page.evaluate("window.copyText('abc',{toast:{ok:{icon:'🎉'},fail:{icon:'😭'}}})")
+    page.wait_for_timeout(80)
+    icon = page.evaluate("document.querySelector('.hm-toast-icon')?.textContent")
+    assert icon == '🎉'
+    _clear_toasts(page)
+    _stub_exec_command(page, False)
+    page.evaluate("window.copyText('abc',{toast:{ok:{icon:'🎉'},fail:{icon:'😭'}}})")
+    page.wait_for_timeout(80)
+    icon = page.evaluate("document.querySelector('.hm-toast-icon')?.textContent")
+    assert icon == '😭'
+
+
+def test_copy_text_on_ok_on_fail_callbacks(page):
+    """onOk 成功触发 / onFail 最终失败触发, 互斥"""
+    _clear_toasts(page)
+    _stub_exec_command(page, True)
+    page.evaluate("window.__ok = 0; window.__fail = 0; window.copyText('abc',{onOk:function(){window.__ok=1;},onFail:function(){window.__fail=1;}})")
+    page.wait_for_timeout(80)
+    assert page.evaluate('window.__ok') == 1 and page.evaluate('window.__fail') == 0
+    _clear_toasts(page)
+    _stub_exec_command(page, False)
+    page.evaluate("window.__ok = 0; window.__fail = 0; window.copyText('abc',{onOk:function(){window.__ok=1;},onFail:function(){window.__fail=1;}})")
+    page.wait_for_timeout(80)
+    assert page.evaluate('window.__ok') == 0 and page.evaluate('window.__fail') == 1
+
+
+def test_copy_text_silent_keeps_callbacks(page):
+    """silent + 钩子组合: 不弹 toast 仍触发回调（08 规范定制文案场景）"""
+    _clear_toasts(page)
+    _stub_exec_command(page, True)
+    page.evaluate("window.__ok = 0; window.copyText('abc',{silent:true,onOk:function(){window.__ok=1;}})")
+    page.wait_for_timeout(80)
+    assert page.evaluate('window.__ok') == 1
+    assert page.evaluate("document.querySelectorAll('.hm-toast').length") == 0
+
+
+def test_copy_text_empty_string_noop(page):
+    """空串复制: 直接 return, 无 toast 无回调"""
+    _clear_toasts(page)
+    _stub_exec_command(page, True)
+    page.evaluate("window.__ok = 0; window.copyText('',{onOk:function(){window.__ok=1;}})")
+    page.wait_for_timeout(80)
+    assert page.evaluate('window.__ok') == 0
+    assert page.evaluate("document.querySelectorAll('.hm-toast').length") == 0
 
 
 # ── 新控件 ────────────────────────────────────────────────

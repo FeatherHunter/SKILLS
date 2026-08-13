@@ -18,12 +18,37 @@ function yes(v){return v?'<span class="ok">通过</span>':'<span class="bad">未
 function validate(p){if(!p||typeof p!=='object')return{ok:false,msg:'数据未注入'};if(p.status!=='ok')return{ok:false,msg:p.message||'数据状态非 ok'};if(!p.data||typeof p.data!=='object')return{ok:false,msg:'data 缺失'};return{ok:true};}
 function _fbCopy(s){var ok=false;try{var t=document.createElement('textarea');t.value=s;t.style.cssText='position:fixed;left:-9999px;top:0;opacity:0';document.body.appendChild(t);t.focus();t.select();ok=document.execCommand('copy');document.body.removeChild(t);}catch(e){ok=false;}return ok;}
 
-/* ── 复制动作 v2（不改按钮文字 + toast 反馈）── */
+/* ── 复制动作 v2（不改按钮文字 + toast 反馈 · v1.10 #328 文案钩子）──
+ * copyText(s, opts?)
+ * opts: { silent, toast:{ok:{msg,detail,icon?}, fail:{msg,detail,icon?}}, onOk, onFail }
+ *  - toast 文案配置: 只覆盖提供的字段, 缺省回落默认文案（08 规范: 文案由技能按场景自设计）
+ *  - onOk/onFail 回调: 成功/最终失败必触发; silent 时不弹 toast 仍触发回调
+ *  - 未传新选项: 行为与 v1.9 逐字一致（向后兼容）
+ */
 function copyText(s, opts){
   opts = opts || {};
   if(!s) return;
-  function ok(){ if(!opts.silent) toast('已复制','粘贴给 AI'); }
-  function fail(){ if(!opts.silent) toast('复制失败','长按选择文本手动复制',{badge:{text:'失败',type:'danger'}}); }
+  var t = opts.toast || {}, okCfg = t.ok || {}, failCfg = t.fail || {};
+  var okMsg = okCfg.msg !== undefined ? okCfg.msg : '已复制';
+  var okDetail = okCfg.detail !== undefined ? okCfg.detail : '粘贴给 AI';
+  var failMsg = failCfg.msg !== undefined ? failCfg.msg : '复制失败';
+  var failDetail = failCfg.detail !== undefined ? failCfg.detail : '长按选择文本手动复制';
+  function ok(){
+    if(opts.onOk) opts.onOk();
+    if(!opts.silent){
+      var o = {};
+      if(okCfg.icon) o.icon = okCfg.icon;
+      toast(okMsg, okDetail, Object.keys(o).length ? o : undefined);
+    }
+  }
+  function fail(){
+    if(opts.onFail) opts.onFail();
+    if(!opts.silent){
+      var o = {badge:{text:'失败',type:'danger'}};
+      if(failCfg.icon) o.icon = failCfg.icon;
+      toast(failMsg, failDetail, o);
+    }
+  }
   if(navigator.clipboard&&navigator.clipboard.writeText){
     try{
       var pr=navigator.clipboard.writeText(s);

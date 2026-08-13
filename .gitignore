@@ -30,6 +30,9 @@
 __pycache__/
 *.pyc
 
+# Node (sandcastle 等 npm 依赖由 package-lock.json 复现,不入库)
+node_modules/
+
 # 临时备份文件（带时间戳的 .bak/.zip,不入版本控制）
 *.bak.*
 *.bak[0-9]

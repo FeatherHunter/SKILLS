@@ -147,10 +147,12 @@
     const norm = (vals, get) => {
       if (!vals.length) return null;
       const mn = Math.min(...vals), mx = Math.max(...vals);
+      // #317 验收修复: 数据恒定(mx==mn)时归一化给 50(居中水平线), 否则全 0 贴底视觉"线消失"
       const range = (mx - mn) || 1;
+      const flat = mx === mn;
       return line.map(p => {
         const v = get(p);
-        return { label: p.date.slice(5), value: (v === null || v === undefined) ? null : (v - mn) / range * 100 };
+        return { label: p.date.slice(5), value: (v === null || v === undefined) ? null : (flat ? 50 : (v - mn) / range * 100) };
       });
     };
     const aItems = norm(aVals, p => p.a);

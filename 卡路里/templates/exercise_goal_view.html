@@ -107,10 +107,10 @@ document.getElementById('emptyBox').innerHTML = window.emptyState({text: '⚠ ' 
   document.getElementById('content').style.display = 'block';
   const pct = Math.min(d.pct, 100);
   // #317 迁 Base charts.donut 单段(进度环);中心值 + 完成度文案保留
+  // #317 验收修复: 中心文字由 HTML .ring-center 覆盖层显示(组件 centerValue 会双重显示 + format 叠出 "%%"; 未传 centerValue 默认 total 也会显示)
   window.charts.donut(document.getElementById('ringBar'),
     [{ label: '完成度', value: pct, color: d.achieved ? '#34c759' : '#0071e3' }],
-    { size: 220, ringWidth: 16, legend: 'none', showPercent: false,
-      centerLabel: '完成度', centerValue: d.pct + '%', format: v => v + '%' });
+    { size: 220, ringWidth: 16, legend: 'none', showPercent: false, centerLabel: '', centerValue: '' });
   document.getElementById('ringPct').textContent = d.pct + '%';
   const verdict = document.getElementById('verdict');
   verdict.textContent = d.verdict;

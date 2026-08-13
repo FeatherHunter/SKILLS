@@ -152,12 +152,14 @@
       const vals = s.map(p => p[f.field]).filter(v => v !== null && v !== undefined);
       if (vals.length < 2) return null;
       const mn = Math.min(...vals), mx = Math.max(...vals);
+      // #317 验收修复: 数据恒定(mx==mn)时归一化给 50(居中水平线), 否则全 0 贴底视觉"线消失"
       const range = (mx - mn) || 1;
+      const flat = mx === mn;
       return {
         name: f.name, color: f.color,
         items: s.map(p => ({
           label: p.date.slice(5),
-          value: (p[f.field] === null || p[f.field] === undefined) ? null : (p[f.field] - mn) / range * 100,
+          value: (p[f.field] === null || p[f.field] === undefined) ? null : (flat ? 50 : (p[f.field] - mn) / range * 100),
         })),
       };
     }).filter(Boolean);

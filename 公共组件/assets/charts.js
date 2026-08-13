@@ -59,9 +59,9 @@ if(!document.getElementById(_styleId)){
   /* combo 专用: v 绝对定位在柱顶上方（bottom 跟随柱高, 不占位 → 线点精确落柱顶） */
   +'.hm-c-col-combo{position:relative}'
   +'.hm-c-col-combo .hm-c-v-combo{position:absolute;left:50%;transform:translateX(-50%) translateY(-4px);white-space:nowrap;font-size:10px;color:var(--fg3,#86868b)}'
-  /* line: 容器零 padding（坐标唯一性）; 高度由 --c-h 控制 */
-  +'.hm-c-line-wrap{position:relative;height:var(--c-h,210px)}'
-  +'.hm-c-line-svg{position:relative;width:100%;height:100%}'
+  /* line: 容器零 padding（坐标唯一性）; 高度由 --c-h 控制; flex 纵向 = svg 占满剩余, x 标签行固定底部不溢出(#317 验收) */
+  +'.hm-c-line-wrap{position:relative;height:var(--c-h,210px);display:flex;flex-direction:column}'
+  +'.hm-c-line-svg{position:relative;width:100%;flex:1;min-height:0}'
   +'.hm-c-line-svg svg{width:100%;height:100%;display:block;overflow:visible}'
   +'.hm-c-line-svg polyline,.hm-c-line-svg path,.hm-c-line-svg line{vector-effect:non-scaling-stroke}'
   +'.hm-c-dot{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--card,#fff);border:2px solid var(--blue,#007aff);pointer-events:none;box-sizing:border-box}'
@@ -382,7 +382,10 @@ window.charts={
     var total=0;items.forEach(function(it){total+=_num(it.value);});
     if(!total){_empty(el,'合计为零, 无环形数据');return;}
     var palette=opt.colors||_PALETTE;
-    var r=52,cx=60,cy=60,c=2*Math.PI*r;
+    /* #317 验收修复: r 随 ringWidth 自适应(固定 r=52 时 ringWidth>16 外缘超出 viewBox 被 svg 裁切成"方框圆环")
+     * 约束: 外缘 = r + ringWidth/2 ≤ 58(留 2 边距), 即 r = 60 - ringWidth/2 - 2 */
+    var cx=60,cy=60;
+    var r=Math.max(20,60-opt.ringWidth/2-2),c=2*Math.PI*r;
     var acc=0,segments='';
     items.forEach(function(it,i){
       var pct=_num(it.value)/total,dash=pct*c;

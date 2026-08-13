@@ -114,10 +114,12 @@
     const vals = wk.map(p => p[field]).filter(v => v !== null && v !== undefined);
     if (vals.length === 0) return null;
     const mn = Math.min(...vals), mx = Math.max(...vals);
+    // #317 验收修复: 数据恒定(mx==mn)时归一化给 50(居中水平线), 否则全 0 贴底视觉"线消失"
     const range = (mx - mn) || 1;
+    const flat = mx === mn;
     return wk.map(p => ({
       label: (p.date || '').slice(5),
-      value: (p[field] === null || p[field] === undefined) ? null : (p[field] - mn) / range * 100,
+      value: (p[field] === null || p[field] === undefined) ? null : (flat ? 50 : (p[field] - mn) / range * 100),
     }));
   };
   const seriesDefs = [

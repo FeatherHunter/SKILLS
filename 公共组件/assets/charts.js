@@ -386,7 +386,7 @@ window.charts={
     var acc=0,segments='';
     items.forEach(function(it,i){
       var pct=_num(it.value)/total,dash=pct*c;
-      segments+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+(it.color||palette[i%palette.length])+'" stroke-width="'+opt.ringWidth+'" stroke-dasharray="'+(opt.animation?0:dash)+' '+(c-dash)+'" stroke-dashoffset="'+(-acc)+'" transform="rotate(-90 '+cx+' '+cy+')"/>';
+      segments+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+(it.color||palette[i%palette.length])+'" stroke-width="'+opt.ringWidth+'" stroke-dasharray="'+(opt.animation?0:dash)+' '+(c-dash)+'" stroke-dashoffset="'+(-acc)+'" data-dash="'+dash+'" transform="rotate(-90 '+cx+' '+cy+'"/>';
       acc+=dash;
     });
     var centerLabel=opt.centerLabel!=null?_esc(opt.centerLabel):'';
@@ -402,7 +402,8 @@ window.charts={
     if(opt.animation){
       var rings=el.querySelectorAll('.hm-c-donut svg circle[stroke-dashoffset]');
       rings.forEach(function(cr){
-        var target=cr.getAttribute('stroke-dasharray').split(' ')[0];
+        /* #302 修复:动画目标从 data-dash 取(初始 dasharray 首项恒为 0, 直接 split 会把所有段目标设成 0 = 完整圆覆盖, 显示为最后一段颜色) */
+        var target=cr.getAttribute('data-dash')||cr.getAttribute('stroke-dasharray').split(' ')[0];
         (function(c,t){requestAnimationFrame(function(){requestAnimationFrame(function(){c.style.transition='stroke-dasharray 0.8s cubic-bezier(.22,1,.36,1)';c.setAttribute('stroke-dasharray',t);});});})(cr,target);
       });
     }

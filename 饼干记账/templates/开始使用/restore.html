@@ -100,16 +100,6 @@
     });
     return;
   }
-  // ── #300 Base 统一:复制数据/复制日志 = Base actionBar ──
-  if (window.actionBar) {
-    var abZoneX = document.getElementById('actionbar-zone');
-    if (abZoneX) abZoneX.innerHTML = window.actionBar((payload.data && payload.data.scene) ? payload : {
-      status: 'error', message: payload.message || '数据未注入',
-      data: { meta: { command_cn: '操作失败', occurred_at: '' },
-              scene: { snapshot: { title: '操作失败', summary: [payload.message || '数据未注入'], sections: [] } } },
-    });
-  }
-
   if (payload.status === 'error') {
     document.getElementById('app').innerHTML = window.errorReceipt({
       message: payload.message || '未知错误',
@@ -119,6 +109,17 @@
     });
     return;
   }
+
+  // ── #300 Base 统一:复制数据/复制日志 = Base actionBar(正常路径;错误/空态由 errorReceipt 自带复制按钮,#301 防双份) ──
+  if (window.actionBar) {
+    var abZoneX = document.getElementById('actionbar-zone');
+    if (abZoneX) abZoneX.innerHTML = window.actionBar((payload.data && payload.data.scene) ? payload : {
+      status: 'error', message: payload.message || '数据未注入',
+      data: { meta: { command_cn: '操作失败', occurred_at: '' },
+              scene: { snapshot: { title: '操作失败', summary: [payload.message || '数据未注入'], sections: [] } } },
+    });
+  }
+
   var d = payload.data || {};
   var meta = d.meta || {};
   var sel = d.selected || {};

@@ -1,4 +1,350 @@
-/* Base Skill 控件库 v1.2（唯一真相源 · 跨技能 · 领域无关）
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>toast 堆叠模式 v1.8 · #304 验收演示</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{max-width:100%;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f5f7;color:#1d1d1f;line-height:1.7;-webkit-font-smoothing:antialiased;padding:28px 16px 80px}
+.page-head{max-width:960px;margin:0 auto 14px;text-align:center}
+.page-head h1{font-size:23px;letter-spacing:-.02em}
+.page-head .sub{color:#6e6e73;font-size:13px;margin-top:4px}
+.controls{display:flex;gap:8px;justify-content:center;margin:14px auto 22px;flex-wrap:wrap;max-width:960px}
+.seg{display:flex;gap:4px;background:#fff;border-radius:999px;padding:4px;box-shadow:0 1px 2px rgba(0,0,0,.04);align-items:center;flex-wrap:wrap}
+.seg button{border:none;background:none;border-radius:999px;padding:8px 14px;font-size:12.5px;font-weight:700;cursor:pointer;color:#6e6e73;font-family:inherit;min-height:38px;white-space:nowrap}
+.seg button:active{background:#eef2f7}
+#root{max-width:960px;margin:0 auto}
+.card{background:#fff;border-radius:18px;padding:18px 20px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
+.c-title{font-size:15px;font-weight:700;margin-bottom:2px}
+.c-sub{font-size:11.5px;color:#86868b;margin-bottom:8px}
+.c-note{font-size:12px;color:#6e6e73;background:#fafbfc;border:1px solid #f0f0f3;border-radius:10px;padding:8px 12px;margin-top:8px}
+@media(max-width:720px){
+  body{padding:20px 12px 70px;background:#f2f2f5}
+  .page-head h1{font-size:19px}
+  .seg button{flex:1;padding:9px 6px;font-size:11.5px}
+}
+</style>
+<style>/* Base Skill token A 组 + 控件样式 v1.7（唯一真相源 · 跨技能 · 领域无关）
+ * 来源: 居家管家模板 :root token（对齐 #248/08-HTML交互规范.md 按钮规范）
+ * v1.2: 新增新控件样式（formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt/复制预览面板）
+ * v1.7: .hm-actions 自约束 max-width 520px 居中（#322 · 修复复制按钮被容器拉伸成半屏宽, 胶囊语义恢复）
+ * 注入点: 由 injector.py 的 SHARED-CSS 占位符注入（模板声明点, 勿含闭合标签字样）
+ */
+
+/* ── token A 组（12 变量, 与组件契约 §6.4 一致）── */
+:root {
+  --fg: #1d1d1f;          /* 主文字 */
+  --fg2: #6e6e73;         /* 次级文字 */
+  --fg3: #86868b;         /* 弱化文字/占位 */
+  --bg: #f5f5f7;          /* 页面底色 */
+  --card: #ffffff;        /* 卡片底 */
+  --line: #d2d2d7;        /* 分隔线 */
+  --blue: #007aff;        /* 主色（场景按钮） */
+  --blue2: #0a63ce;       /* 主色深（按压态/链接） */
+  --soft: #f5f8ff;        /* 浅蓝底（stage 徽章） */
+  --ok: #34c759;          /* 成功/通过 */
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 12px 36px rgba(0,0,0,.06);
+}
+
+/* ── 复制按钮基础（对齐 08 规范: ≤3 色按功能区分）── */
+button.copy {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+  border: none;
+  background: var(--line);
+  color: var(--fg);
+  border-radius: 999px;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  margin: 0;
+  font-size: 13.5px;
+  min-height: 44px;
+  min-width: 0;
+  flex: 1 1 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-family: inherit;
+}
+button.copy:focus { outline: none; }
+button.copy:active { filter: brightness(.93); }
+button.copy:disabled { opacity: .45; cursor: not-allowed; }
+
+/* 主场景按钮（蓝实心, 单色系） */
+button.copy.primary {
+  background: var(--blue);
+  color: #fff;
+}
+button.copy.primary:active { background: var(--blue2); }
+
+/* 危险/破坏性操作（红实心） */
+button.copy.red {
+  background: #ff3b30;
+  color: #fff;
+}
+button.copy.red:active { background: #c0392b; }
+
+/* ghost: 复制数据/复制日志 = 白底 + 主色描边 + 主色文字胶囊（独立一行） */
+button.copy.ghost {
+  background: var(--card);
+  color: var(--blue);
+  border: 1.5px solid var(--blue);
+  min-height: 48px;
+}
+
+/* ── actionBar 网格（偶数一行 2 个; 奇数时重要按钮单独一行由模板控制 wide）── */
+.hm-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+  /* v1.7 #322: 胶囊按钮自约束宽度——避免被全宽容器拉伸成半屏宽块（跨技能一致） */
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+.hm-actions .copy.wide {
+  grid-column: 1 / -1;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+}
+
+/* 成功/失败徽章（yes 函数用） */
+.ok { color: var(--ok); font-weight: 700; }
+.bad { color: #ff3b30; font-weight: 700; }
+
+/* ── formPrompt（参数表单）── */
+.fp { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin: 12px 0; }
+.fp-field { margin-bottom: 12px; }
+.fp-label { display: block; font-size: 12px; font-weight: 700; color: var(--fg2); margin-bottom: 6px; letter-spacing: .02em; }
+.fp-input {
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}
+.fp-input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(0,122,255,.12); }
+.fp-preview { background: #fafbfc; border: 1px dashed var(--line); border-radius: 10px; padding: 10px 14px; margin: 10px 0; }
+.fp-preview-label { font-size: 10.5px; font-weight: 700; color: var(--fg3); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px; }
+.fp-preview-body {
+  font-size: 12px;
+  color: var(--fg2);
+  font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.fp-actions { margin-top: 12px; }
+
+/* ── selectList（勾选列表 + 批量操作）── */
+.sl { margin: 12px 0; }
+.sl-batchbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.sl-count { font-size: 12px; font-weight: 600; color: var(--fg2); margin-left: auto; white-space: nowrap; }
+.sl-group { margin-bottom: 14px; }
+.sl-group-head { display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; margin-bottom: 8px; }
+.sl-group-count { font-size: 11px; font-weight: 600; color: var(--fg3); }
+.sl-group-items { display: flex; flex-direction: column; gap: 6px; }
+.sl-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color .15s, background .15s;
+}
+.sl-item:hover { border-color: var(--blue); background: #fff; }
+.sl-item input[type="checkbox"] { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--blue); flex-shrink: 0; }
+.sl-item-body { flex: 1; min-width: 0; }
+.sl-item-title { display: block; font-size: 13.5px; font-weight: 600; color: var(--fg); line-height: 1.5; word-break: break-word; }
+.sl-item-sub { display: block; font-size: 12px; color: var(--fg3); margin-top: 2px; line-height: 1.5; word-break: break-word; }
+
+/* ── confirm 对话框 ── */
+.hm-confirm-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000;
+  padding: 20px;
+  animation: hmFade .18s ease-out;
+}
+@keyframes hmFade { from { opacity: 0; } to { opacity: 1; } }
+.hm-confirm-panel {
+  background: var(--card);
+  border-radius: 20px;
+  max-width: 420px;
+  width: 100%;
+  padding: 24px 26px;
+  box-shadow: var(--shadow);
+  animation: hmPop .22s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes hmPop { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.hm-confirm-title { font-size: 17px; font-weight: 700; margin-bottom: 8px; }
+.hm-confirm-detail { font-size: 13.5px; color: var(--fg2); line-height: 1.65; margin-bottom: 16px; }
+.hm-confirm-actions { display: flex; gap: 10px; }
+.hm-confirm-actions .copy { flex: 1; }
+
+/* ── foldBox 折叠区 ── */
+.hm-fold {
+  background: #fafbfc;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin: 10px 0;
+  font-size: 13px;
+}
+.hm-fold summary { cursor: pointer; font-weight: 600; color: var(--blue2); outline: none; font-size: 13px; user-select: none; }
+.hm-fold summary::marker { color: var(--blue); }
+.hm-fold[open] summary { margin-bottom: 10px; }
+.hm-fold-body { font-size: 12.5px; line-height: 1.6; color: var(--fg2); }
+
+/* ── statusBadge 状态徽章 ── */
+.hm-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+  width: fit-content;
+}
+.hm-status.ok { background: #e6f7ec; color: #1f8c3d; }
+.hm-status.warn { background: #fff5e0; color: #a25b00; }
+.hm-status.danger { background: #fff0ee; color: #a83228; }
+.hm-status.empty { background: #f0f0f3; color: #6e6e73; }
+
+/* ── emptyState 空状态 ── */
+.hm-empty {
+  background: #fafbfc;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  padding: 26px 20px;
+  text-align: center;
+  color: var(--fg2);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+.hm-empty-icon { font-size: 32px; margin-bottom: 8px; }
+.hm-empty-text { font-weight: 600; color: var(--fg); }
+.hm-empty-hint { font-size: 12.5px; color: var(--fg3); margin-top: 4px; }
+.hm-empty-action { margin-top: 14px; }
+
+/* ── errorReceipt 错误回执 ── */
+.hm-error {
+  background: #fff0ee;
+  border: 1.5px solid #ffc4c0;
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin: 12px 0;
+}
+.hm-error-title { font-size: 15px; font-weight: 700; color: #a83228; margin-bottom: 14px; }
+/* errorReceipt 内按钮布局: 第一个 .hm-actions（修正重试）贴标题; 后续 .hm-actions（复制数据/日志）与上方保持间距, 防贴死（#290 修复） */
+.hm-error .hm-actions { margin-top: 0; }
+.hm-error .hm-actions + .hm-actions { margin-top: 14px; }
+@media (max-width: 820px) {
+  .hm-error { padding: 16px 14px; }
+  .hm-error-title { margin-bottom: 12px; }
+}
+
+/* ── 复制预览面板（actionBar preview）── */
+.hm-preview-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10001;
+  padding: 16px;
+}
+.hm-preview-panel {
+  background: var(--card);
+  border-radius: 16px;
+  max-width: 560px;
+  width: 100%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.hm-preview-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px; font-weight: 700;
+}
+.hm-preview-close { border: none; background: none; font-size: 15px; color: var(--fg3); cursor: pointer; padding: 4px; }
+.hm-preview-body {
+  flex: 1;
+  overflow: auto;
+  padding: 14px 18px;
+  font-size: 12px;
+  line-height: 1.65;
+  font-family: ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  color: var(--fg2);
+  margin: 0;
+}
+.hm-preview-actions { display: flex; gap: 10px; padding: 12px 18px; border-top: 1px solid var(--line); }
+.hm-preview-actions .copy { flex: 1; }
+
+/* 手机适配: 单列网格保持按钮不换行 */
+@media (max-width: 820px) {
+  .hm-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hm-actions .copy.wide { grid-column: 1 / -1; }
+  .hm-actions .copy { min-height: 46px; }
+  .sl-batchbar { flex-direction: column; align-items: stretch; }
+  .sl-count { margin-left: 0; }
+  .hm-confirm-panel { padding: 20px 18px; }
+}</style>
+</head>
+<body>
+
+<div class="page-head">
+<h1>🍞 toast 堆叠模式 v1.8 · #304 验收演示</h1>
+<div class="sub">队列 → 堆叠 · 同屏最多 N 条（默认 5 · 可配）· 老上旧下 · 超 N 挤最旧 · 手机自动收窄 3</div>
+</div>
+
+<div class="controls">
+<div class="seg">
+<button data-act="two">连发 2 条</button>
+<button data-act="six">连发 6 条（N=5 挤最旧）</button>
+<button data-act="twoopt">maxStack=2 连发 3</button>
+<button data-act="rich">富详情 1 条</button>
+<button data-act="mixed">单条消失互不影响</button>
+<button data-act="flush">清空栈</button>
+</div>
+</div>
+
+<div id="root">
+<div class="card">
+<div class="c-title">怎么验</div>
+<div class="c-sub">Base toast 是公共组件，本页直接注入真实 base.js（SHARED-HELPERS 管线）</div>
+<div class="c-note">1️⃣ 点「连发 6 条」：底部同时出现 5 条，最旧一条被挤掉（A 不见，B~F 老上旧下堆叠，新 F 贴底）。<br>
+2️⃣ 点「maxStack=2 连发 3」：同屏只留 2 条，最旧的被挤掉。<br>
+3️⃣ 点「富详情」：徽章/计数/操作按钮/多行详情同屏一条正常展示。<br>
+4️⃣ 「单条消失」：短的先消失，长的不受影响（独立计时）。<br>
+5️⃣ <b>手机/DevTools 切 ≤820px 宽（如 390px）</b>：连发 6 条只堆 3 条，全宽贴底。<br>
+6️⃣ 每条自动 4.5s 消失 / 点「✓ 知道了」立即关。</div>
+</div>
+</div>
+
+<script id="payload" type="application/json">{"status": "ok", "data": {"meta": {"command_cn": "toast 堆叠验收", "occurred_at": "2026-08-13T00:00:00"}, "scene": {"snapshot": {"title": "toast 堆叠验收", "summary": ["队列 → 堆叠"], "sections": []}}}}</script><script>/* Base Skill 控件库 v1.2（唯一真相源 · 跨技能 · 领域无关）
  * 契约: docs/component-contract.md v1.2
  * v1.2 核心（#269 试点用户拍板）:
  *  - snapshot 结构化接口: buildDataText/buildLogText 领域无关（title/summary/sections）
@@ -553,4 +899,41 @@ function errorReceipt(cfg){
   if(logText) btns += '<button class="copy ghost" onclick="copyText(this.dataset.t)" data-t="'+esc(logText).replace(/"/g,'&quot;')+'">复制日志</button>';
   if(btns) html += '<div class="hm-actions">'+btns+'</div>';
   return html + '</div>';
-}
+}</script>
+<script>
+var acts = {
+  two: function(){
+    window.toast('已复制','粘贴给 AI');
+    window.toast('已记录','累计 8h30m',{icon:'ok'});
+  },
+  six: function(){
+    ['A','B','C','D','E','F'].forEach(function(t){
+      window.toast('第 '+t+' 条','队列第 '+t+' 条 · 12s 后自动消失',{icon:'info',timeout:12000});
+    });
+  },
+  twoopt: function(){
+    ['A','B','C'].forEach(function(t){
+      window.toast('第 '+t+' 条','maxStack=2 · 12s 后自动消失',{icon:'info',timeout:12000,maxStack:2});
+    });
+  },
+  rich: function(){
+    window.toast('已修改','详情：物品「牛奶」已从 客厅 移到 厨房',{
+      icon:'ok', badge:{text:'成功',type:'ok'}, count:'2 条',
+      actions:[{label:'撤销',onClick:function(){window.toast('已撤销','上一步操作已回滚',{icon:'warn',badge:{text:'提示',type:'warn'}});}}],
+      lines:['行 1：位置 客厅 → 厨房','行 2：数量 2 盒'], timeout:12000
+    });
+  },
+  mixed: function(){
+    window.toast('短提示','0.8s 后消失',{timeout:800});
+    window.toast('长提示','12s 后消失',{icon:'ok',timeout:12000});
+  },
+  flush: function(){
+    window.__hmToastFlush();
+  }
+};
+document.querySelectorAll('[data-act]').forEach(function(b){
+  b.addEventListener('click', function(){ acts[b.getAttribute('data-act')](); });
+});
+</script>
+</body>
+</html>

@@ -190,18 +190,84 @@ def test_toast_action(page):
     assert page.evaluate('window.__clicked') is True
 
 
-def test_toast_queue(page):
+def _stack_titles(page):
+    return page.evaluate("Array.from(document.querySelectorAll('#hm-toast-stack .hm-toast .hm-toast-title')).map(e => e.textContent)")
+
+
+def test_toast_stack(page):
     _clear_toasts(page)
     page.evaluate("""
-      window.toast('A','',{timeout:300});
-      window.toast('B','',{timeout:300});
+      window.toast('A','',{timeout:5000});
+      window.toast('B','',{timeout:5000});
     """)
     page.wait_for_timeout(80)
     count = page.evaluate("document.querySelectorAll('.hm-toast').length")
-    assert count == 1  # 队列: 同一时刻最多 1 个
+    assert count == 2  # 堆叠: 同屏最多 N 条（N=5）同时可见
+    titles = _stack_titles(page)
+    assert titles == ['A', 'B']  # 老上旧下: A 在上（先入栈）, B 在下
+
+
+def test_toast_stack_evict_oldest(page):
+    _clear_toasts(page)
+    page.evaluate("""
+      ['A','B','C','D','E','F'].forEach(function(t){
+        window.toast(t,'',{timeout:5000});
+      });
+    """)
+    page.wait_for_timeout(80)
+    titles = _stack_titles(page)
+    assert len(titles) == 5  # 默认 N=5, 超 N 挤掉最旧
+    assert 'A' not in titles
+    assert titles == ['B', 'C', 'D', 'E', 'F']  # FIFO: B 成为最旧, 在顶部
+
+
+def test_toast_stack_max_stack_opt(page):
+    _clear_toasts(page)
+    page.evaluate("""
+      ['A','B','C'].forEach(function(t){
+        window.toast(t,'',{timeout:5000,maxStack:2});
+      });
+    """)
+    page.wait_for_timeout(80)
+    titles = _stack_titles(page)
+    assert titles == ['B', 'C']  # opts.maxStack=2: A 被挤掉, B 上 C 下
+
+
+def test_toast_stack_mobile_cap(page):
+    _clear_toasts(page)
+    page.set_viewport_size({'width': 390, 'height': 844})
+    page.evaluate("""
+      ['A','B','C','D'].forEach(function(t){
+        window.toast(t,'',{timeout:5000});
+      });
+    """)
+    page.wait_for_timeout(80)
+    titles = _stack_titles(page)
+    assert len(titles) == 3  # ≤820px 视口上限收窄为 3
+    assert titles == ['B', 'C', 'D']  # 仍挤最旧
+
+
+def test_toast_stack_dismiss_reflow(page):
+    _clear_toasts(page)
+    page.evaluate("""
+      window.toast('A','',{timeout:300});
+      window.toast('B','',{timeout:5000});
+    """)
     page.wait_for_timeout(700)
-    title = page.evaluate("document.querySelector('.hm-toast .hm-toast-title')?.textContent")
-    assert title == 'B'  # 队列: A 消失后 B 显示
+    titles = _stack_titles(page)
+    assert titles == ['B']  # A 到时消失, B 独立计时不受影响
+
+
+def test_toast_flush_clears_stack(page):
+    _clear_toasts(page)
+    page.evaluate("""
+      window.toast('A','',{timeout:5000});
+      window.toast('B','',{timeout:5000});
+      window.__hmToastFlush();
+    """)
+    page.wait_for_timeout(80)
+    count = page.evaluate("document.querySelectorAll('.hm-toast').length")
+    assert count == 0
 
 
 def test_toast_aria(page):

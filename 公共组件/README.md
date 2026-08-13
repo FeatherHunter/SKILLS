@@ -139,7 +139,7 @@
 | `emptyState({icon?, text, hint?, action?})` | 配置 → HTML | 空状态友好提示 |
 | `errorReceipt({message, retryPrompt?, data?, log?})` | 配置 → HTML | 错误回执（修正重试 + 复制数据/日志） |
 
-## 4.3 toast 通用提示控件（v1.2 增强 · 向后兼容）
+## 4.3 toast 通用提示控件（v1.8 堆叠模式 · #304 · 向后兼容）
 
 ```js
 toast(msg, detail?, {
@@ -149,12 +149,14 @@ toast(msg, detail?, {
   count: '5 条',                                         // 轻量计数
   lines: ['多行'],                                       // 富详情多行
   code: '堆栈',                                          // 富详情代码块
-  timeout: 4500,
+  timeout: 4500,                                         // 自动消失时长（默认 4500）
+  maxStack: 5,                                           // 堆叠上限（默认 5; 栈容量 = 栈内各 toast maxStack 最大值）
 })
 ```
 
 - `toast(msg, detail)` 不带 options = 完全等价 v1.1（调用方零改动）
-- 队列管理（连续触发不叠加）+ 无障碍 aria + 样式 Base 管（技能零样式副本）
+- 堆叠模式（v1.8 · #304）: 同屏最多 N 条同时可见（N 默认 5）; 老上旧下（新 toast 贴底出现, 旧的向上顶, 间距 8px）; 超 N 挤掉最旧（FIFO）; ≤820px 视口上限自动收窄为 3
+- 无障碍 aria + 样式 Base 管（技能零样式副本）
 - 复制类操作反馈统一 toast（「已复制 · 粘贴给 AI」/「复制失败 · 长按选择文本手动复制」）
 
 ## 5. 验收清单模板（每技能迁移后）

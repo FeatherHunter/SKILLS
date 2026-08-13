@@ -317,12 +317,7 @@ body{
 }
 .log-row .cal-intake{color:var(--accent)}
 .log-row .cal-burn{color:var(--green)}
-.log-empty{
-  text-align:center;
-  padding:20px;
-  color:var(--ink3);
-  font-size:13px;
-}
+
 .log-section{margin-bottom:16px}
 .log-section:last-child{margin-bottom:0}
 .log-section-title{
@@ -859,25 +854,10 @@ function renderSection(view, date) {
   }
 }
 
-function statusBadge(num, denom, reverse) {
-  if (num == null) return ['ok', '—'];
-  const p = pct(num, denom);
-  if (p == null) return ['ok', '—'];
-  if (reverse) {
-    if (p >= 90 && p <= 110) return ['good', `${p}%`];
-    if (p < 70 || p > 130) return ['bad', `${p}%`];
-    return ['warn', `${p}%`];
-  } else {
-    if (p >= 70) return ['good', `${p}%`];
-    if (p >= 40) return ['warn', `${p}%`];
-    return ['bad', `${p}%`];
-  }
-}
 
 function render() {
   if (!DATA || DATA.status !== 'ok') {
-    document.querySelector('.hero h1').textContent = '数据加载失败';
-    document.querySelector('.hero .sub').textContent = (DATA && DATA.message) || 'window.__P__ 缺失';
+    document.body.innerHTML = window.errorReceipt({message: (DATA && DATA.message) || '数据未注入或状态非 ok'});
     return;
   }
 
@@ -1025,7 +1005,7 @@ function render() {
       </div>
     `).join('') + '</div>';
   } else {
-    foodLog.innerHTML = '<div class="log-empty">暂无饮食记录</div>';
+    foodLog.innerHTML = window.emptyState({text: '暂无饮食记录'});
   }
 
   // RECENT LOGS — Exercise
@@ -1039,7 +1019,7 @@ function render() {
       </div>
     `).join('') + '</div>';
   } else {
-    exerciseLog.innerHTML = '<div class="log-empty">暂无运动记录</div>';
+    exerciseLog.innerHTML = window.emptyState({text: '暂无运动记录'});
   }
 }
 

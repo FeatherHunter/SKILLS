@@ -377,9 +377,9 @@ function renderHeader() {
   const pill = document.getElementById('statusPill');
   const {filled, total, missing} = validateRequired();
   if (missing.length === 0) {
-    pill.innerHTML = '<span class="pill good">必填字段已完整 · 可采纳或修改</span>';
+    pill.innerHTML = window.statusBadge('ok', '必填字段已完整 · 可采纳或修改');
   } else {
-    pill.innerHTML = `<span class="pill warn">${missing.length} 个必填未填: ${missing.join(', ')}</span>`;
+    pill.innerHTML = window.statusBadge('warn', `${missing.length} 个必填未填: ${missing.join(', ')}`);
   }
 }
 
@@ -460,9 +460,9 @@ function onFieldChange() {
   const pill = document.getElementById('statusPill');
   const {missing} = validateRequired();
   if (missing.length === 0) {
-    pill.innerHTML = '<span class="pill good">必填字段已完整 · 可采纳或修改</span>';
+    pill.innerHTML = window.statusBadge('ok', '必填字段已完整 · 可采纳或修改');
   } else {
-    pill.innerHTML = `<span class="pill warn">${missing.length} 个必填未填: ${missing.join(', ')}</span>`;
+    pill.innerHTML = window.statusBadge('warn', `${missing.length} 个必填未填: ${missing.join(', ')}`);
   }
 }
 
@@ -593,8 +593,7 @@ let toastTimer = null;
 
 function render() {
   if (!DATA) {
-    document.getElementById('title').textContent = '❌ 数据加载失败';
-    document.getElementById('subtitle').textContent = 'window.__P__ 缺失';
+    document.body.innerHTML = window.errorReceipt({message: '数据加载失败', data: 'window.__P__ 缺失'});
     return;
   }
   renderHeader();

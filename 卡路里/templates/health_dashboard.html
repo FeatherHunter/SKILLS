@@ -219,14 +219,13 @@ function getBadge(ratio, goodRange=[0.9, 1.1]) {
 
 function render() {
   if (!DATA) {
-    document.getElementById('title').textContent = '❌ 数据加载失败';
-    document.getElementById('subtitle').textContent = 'window.__P__ 未注入';
+    document.body.innerHTML = window.errorReceipt({message: '数据加载失败', data: 'window.__P__ 未注入'});
     return;
   }
 
   const { status, data, message } = DATA;
   if (status !== 'ok' && status !== 'warn') {
-    document.getElementById('title').textContent = '⚠️ ' + (message || '数据错误');
+    document.body.innerHTML = window.errorReceipt({message: message || '数据错误'});
     return;
   }
 

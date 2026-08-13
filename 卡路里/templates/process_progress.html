@@ -315,7 +315,7 @@ function trimTime(s) {
 
 function render() {
   if (!DATA) {
-    document.getElementById('title').textContent = '❌ 数据加载失败';
+    document.body.innerHTML = window.errorReceipt({message: '数据加载失败'});
     return;
   }
 
@@ -328,14 +328,14 @@ function render() {
   const pills = document.getElementById('pills');
   pills.innerHTML = '';
   if (SUMMARY.failed_steps > 0) {
-    pills.innerHTML += `<span class="pill failed">⚠️ ${SUMMARY.failed_steps} 步失败</span>`;
+    pills.innerHTML += window.statusBadge('danger', `⚠️ ${SUMMARY.failed_steps} 步失败`);
   }
   if (SUMMARY.completed_steps > 0) {
-    pills.innerHTML += `<span class="pill done">✓ ${SUMMARY.completed_steps} 步完成</span>`;
+    pills.innerHTML += window.statusBadge('ok', `✓ ${SUMMARY.completed_steps} 步完成`);
   }
   if (SUMMARY.total_steps - SUMMARY.completed_steps - SUMMARY.failed_steps > 0) {
     const pending = SUMMARY.total_steps - SUMMARY.completed_steps - SUMMARY.failed_steps;
-    pills.innerHTML += `<span class="pill pending">○ ${pending} 步待办</span>`;
+    pills.innerHTML += window.statusBadge('warn', `○ ${pending} 步待办`);
   }
 
   // PROGRESS BAR

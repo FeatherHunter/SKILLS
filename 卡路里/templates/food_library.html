@@ -100,6 +100,7 @@
 <script>
 (function() {
   const DATA = window.__P__ || { data: { items: [], total_count: 0, page_size: 50 } };
+  if (!window.__P__ || window.__P__.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   const allItems = DATA.data.items || [];
   const totalCount = DATA.data.total_count || allItems.length;
   const pageSize = DATA.data.page_size || 50;

@@ -19,11 +19,11 @@
          -webkit-font-smoothing:antialiased; }
   h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
   .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
-  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
-  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
-  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
-  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
-  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+
+
+
+
+
   .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
   .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
   .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:6px; }
@@ -119,7 +119,7 @@
 (function(){
   const D = window.__P__;
   if (!D || D.status !== 'ok') {
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'});
     return;
   }
   const { summary, series, target, meta } = D.data;
@@ -128,9 +128,9 @@
     `${meta.start} ~ ${meta.end} · 共 ${series.length} 天 · ${meta.weekday_count} 工作日 / ${meta.weekend_count} 周末`;
   document.getElementById('sub').innerHTML =
     `查热量缺口 · ${meta.start} → ${meta.end} · ` +
-    (summary.trend === 'loss' ? '<span class="pill pill-good">↓ 减重方向 ✓</span>'
-     : summary.trend === 'gain' ? '<span class="pill pill-bad">↑ 增重方向</span>'
-     : '<span class="pill pill-info">→ 持平</span>');
+    (summary.trend === 'loss' ? window.statusBadge('ok', '↓ 减重方向 ✓')
+     : summary.trend === 'gain' ? window.statusBadge('danger', '↑ 增重方向')
+     : window.statusBadge('ok', '→ 持平'));
 
   // 4 KPI
   document.getElementById('kIntake').textContent = summary.avg_intake.toLocaleString();
@@ -172,10 +172,10 @@
     const targetDef = target.weekly_deficit_per_day;
     const cls = p.deficit > 0 ? 'deficit-pos' : p.deficit < 0 ? 'deficit-neg' : 'deficit-zero';
     const status = p.deficit >= targetDef
-      ? '<span class="pill pill-good">✓ 达标</span>'
+      ? window.statusBadge('ok', '✓ 达标')
       : p.deficit > 0
-        ? '<span class="pill pill-warn">⚠ 偏低</span>'
-        : '<span class="pill pill-bad">✗ 超量</span>';
+        ? window.statusBadge('warn', '⚠ 偏低')
+        : window.statusBadge('danger', '✗ 超量');
     tb.insertAdjacentHTML('beforeend',
       `<tr><td>${p.date}</td>` +
       `<td class="num" style="color:var(--intake)">${p.intake.toLocaleString()}</td>` +

@@ -391,6 +391,7 @@
 
   // ---------- 注入数据(从 __DATA__ 渲染,放在本 IIFE 之前确保 window.__P__ 已注入) ----------
   const DATA = (typeof window.__P__ === 'object' && window.__P__) || null;
+  if (!DATA || DATA.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   // (key, summary_id, label, input_id)
   const CALIPER_FIELDS = [
     ['recent_caliper_chest_mm',       'rcChest',       '胸',       'caliper-chest'],

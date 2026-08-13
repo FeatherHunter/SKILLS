@@ -103,7 +103,10 @@
 <script>
 (function(){
   const D = window.__P__;
-  if (!D || D.status !== 'ok') return;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'});
+    return;
+  }
   const { fields, defaults, meta } = D.data;
   document.getElementById('copyPromptBtn').onclick = function() {
     const text = document.getElementById('promptBox').textContent;

@@ -366,6 +366,7 @@ ${note ? `- 备注:${note}` : ''}`;
 
   // ---------- 08 规范:复制数据(5 段)/复制日志(6 段) ----------
   const DATA = (typeof window.__P__ === 'object' && window.__P__) || null;
+  if (!DATA || DATA.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   const META = (DATA && DATA.data && DATA.data.meta) || {};
   function payloadData() {
     return {

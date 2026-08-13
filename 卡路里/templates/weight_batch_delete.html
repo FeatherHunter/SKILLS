@@ -84,6 +84,7 @@ td.kg{font-weight:700;font-feature-settings:"tnum"}
 
 <script>
 const DATA = window.__P__ && window.__P__.data || {};
+  if (!window.__P__ || window.__P__.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); throw new Error('payload-not-ok'); }
 const d = DATA;
 document.getElementById('metaLine').textContent = (d.meta && d.meta.action_at || '') + ' · ' + (d.meta && d.meta.entity_type || '');
 document.getElementById('summaryLine').textContent = '💬 ' + (d.summary || '');

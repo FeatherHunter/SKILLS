@@ -105,7 +105,10 @@
   // v2.3.4(2026-07-25 fix):<img id="mainPhoto"> 已在 Python 渲染时填好 base64 src
   // JS 只负责元数据填充和交互,不重设 src
   const D = window.__P__;
-  if (!D || D.status !== 'ok') return;
+  if (!D || D.status !== 'ok') {
+    document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'});
+    return;
+  }
   const { photo_meta: photo, prev_id, next_id } = D.data;
 
   document.getElementById('metaLeft').textContent = `生成于 ${D.data.fetched_at || new Date().toISOString()}`;

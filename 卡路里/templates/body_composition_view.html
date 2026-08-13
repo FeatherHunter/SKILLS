@@ -203,6 +203,7 @@
 
 <script>
 const DATA = (typeof window.__P__ === 'object' && window.__P__) || null;
+  if (!DATA || DATA.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); throw new Error('payload-not-ok'); }
 const D = DATA && DATA.data || {};
 const META = D.meta || {};
 const SRC_LABELS = D.source_labels || {};
@@ -351,7 +352,7 @@ if (D.mode === 'list') {
       document.getElementById('curNote').textContent = '';
     }
     if (!rows.length) {
-      wrap.innerHTML = '<div class="empty">暂无记录<br><span class="go">→ 记体脂:皮褶钳或外部测量,第一条就是基线</span></div>';
+      wrap.innerHTML = window.emptyState({icon: '📏', text: '暂无记录', hint: '→ 记体脂:皮褶钳或外部测量,第一条就是基线'});
       return;
     }
     let html = '<table><thead><tr><th>日期</th><th>体脂率</th><th>来源</th><th>Δ 较上次</th><th>备注</th></tr></thead><tbody>';
@@ -419,7 +420,7 @@ if (D.mode === 'trend') {
   function renderSource(s) {
     const rows = (D.series[s] || []);
     if (!rows.length) {
-      chart.innerHTML = '<div class="empty">该来源暂无趋势数据</div>';
+      chart.innerHTML = window.emptyState({text: '该来源暂无趋势数据'});
       document.getElementById('trendNote').textContent = '';
       anchorCard.style.display = 'none';
       kpiHtml({delta: null, avg: null, min: null, max: null}, {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});

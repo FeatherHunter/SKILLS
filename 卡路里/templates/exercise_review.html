@@ -138,11 +138,7 @@ tbody tr:hover td{background:var(--accent-soft)}
 .chart-legend .item{display:flex;align-items:center;gap:5px}
 .legend-line{width:16px;height:3px;border-radius:2px}
 .legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-.empty-tip{
-  background:var(--orange-soft);color:var(--orange);
-  font-size:12.5px;font-weight:600;
-  padding:10px 14px;border-radius:10px;margin-top:8px;
-}
+
 .copy-section h3{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--fg2)}
 .copy-actions{display:flex;gap:10px;margin-bottom:10px}
 .copy-actions .btn{flex:1;justify-content:center;padding:9px 0}
@@ -333,7 +329,7 @@ function renderVolume(volume) {
     },
     { height: 248, y2: false, barColor: 'var(--green)', lineColor: 'var(--accent)', tooltip: true });
   if (!volume.has_actual) {
-    note.innerHTML = '<div class="empty-tip">⚠️ 实做数据不足：当前范围无带重量实绩，仅显示计划容量</div>';
+    note.innerHTML = window.emptyState({text: '⚠️ 实做数据不足：当前范围无带重量实绩，仅显示计划容量'});
   } else {
     const last = weeks[weeks.length - 1];
     const pct = last.plan > 0 ? Math.round((last.actual / last.plan) * 100) : 0;
@@ -395,13 +391,13 @@ function renderMovements(volume) {
   if (volume.has_actual) {
     note.innerHTML = '实线 = 每周实做负荷 · 浅色虚线 = 计划目标 · 圆点数值 = 该周 Σ(kg×次数)';
   } else {
-    note.innerHTML = '<div class="empty-tip">⚠️ 实做数据不足：当前范围无带重量实绩，仅显示计划参考线</div>';
+    note.innerHTML = window.emptyState({text: '⚠️ 实做数据不足：当前范围无带重量实绩，仅显示计划参考线'});
   }
 }
 
 function render() {
   if (!DATA) {
-    document.querySelector('.hero h1').textContent = '❌ 数据加载失败';
+    document.body.innerHTML = window.errorReceipt({message: '数据加载失败'});
     return;
   }
 

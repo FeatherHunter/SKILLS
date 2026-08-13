@@ -75,6 +75,7 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;borde
 <script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 <script>
 const DATA=(()=>{if(typeof window.__P__!=='object'||window.__P__===null)return null;return window.__P__})();
+  if (!DATA || DATA.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); throw new Error('payload-not-ok'); }
 const D=DATA&&DATA.data?DATA.data:{};
 document.getElementById('title').textContent=D.title||'体重目标';
 document.getElementById('subtitle').textContent=D.subtitle||'';

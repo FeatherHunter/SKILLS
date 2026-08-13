@@ -35,8 +35,7 @@
   .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
   .summary-card { background:var(--soft); border-radius:14px; padding:16px 20px;
                   font-size:15px; color:var(--fg); margin-bottom:16px; }
-  .empty-card { background:var(--card); border:1px dashed var(--border); border-radius:16px;
-                padding:40px 24px; text-align:center; color:var(--fg2); font-size:14px; }
+  
   .footer { margin-top:24px; padding:16px 18px; background:var(--soft); border-radius:12px;
             display:flex; justify-content:flex-end; align-items:center; }
   .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px;
@@ -62,7 +61,7 @@
 <h1 id="h1Title">🎯 运动目标达成</h1>
 <p class="sub" id="subTitle">--</p>
 
-<div id="emptyState" class="empty-card" style="display:none">--</div>
+<div id="emptyBox" style="display:none"></div>
 
 <div id="content" style="display:none">
   <div class="ring-card">
@@ -93,15 +92,15 @@
 <script>
 (function(){
   const D = window.__P__;
-  if (!D || D.status !== 'ok') { document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>'; return; }
+  if (!D || D.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   const d = D.data;
   document.getElementById('metaLeft').textContent = d.meta.today;
   document.getElementById('subTitle').textContent =
     d.period === 'week' ? '本周目标达成(周目标 = 每日目标 × 7)' : '今日目标达成';
 
   if (d.goal == null) {
-    document.getElementById('emptyState').style.display = 'block';
-    document.getElementById('emptyState').textContent = '⚠ ' + d.summary;
+document.getElementById('emptyBox').innerHTML = window.emptyState({text: '⚠ ' + d.summary});
+    document.getElementById('emptyBox').style.display = 'block';
     return;
   }
 

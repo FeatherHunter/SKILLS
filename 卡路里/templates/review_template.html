@@ -255,14 +255,13 @@ function pctColorSoft(pct) {
 
 function render() {
   if (!DATA) {
-    document.getElementById('hero-title').textContent = '❌ 数据加载失败';
-    document.getElementById('date-range').textContent = 'window.__P__ 未注入或格式错误';
+    document.body.innerHTML = window.errorReceipt({message: '数据加载失败', data: 'window.__P__ 未注入或格式错误'});
     return;
   }
 
   const { status, data: e, message } = DATA;
   if (status !== 'ok' && status !== 'warn') {
-    document.getElementById('hero-title').textContent = '⚠️ ' + message;
+    document.body.innerHTML = window.errorReceipt({message: message || '数据错误'});
     return;
   }
 

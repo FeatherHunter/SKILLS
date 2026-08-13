@@ -114,6 +114,7 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 <script>
 const DATA=(()=>{if(typeof window.__P__!=='object'||window.__P__===null)return null;return window.__P__})();
+  if (!DATA || DATA.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); throw new Error('payload-not-ok'); }
 const META=(DATA&&DATA.data&&DATA.data.meta)||{};
 const PAGE_TITLE=DATA&&DATA.data&&DATA.data.page_title?DATA.data.page_title:'营养目标';
 const CURRENT=DATA&&DATA.data&&DATA.data.current_goal?DATA.data.current_goal:{};

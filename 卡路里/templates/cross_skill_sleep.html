@@ -164,12 +164,12 @@
   catch(e){ err = e.message; }
 
   if (err) {
-    document.body.insertAdjacentHTML("afterbegin", '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据解析失败: ' + esc(err) + '</div>');
+    document.body.innerHTML = window.errorReceipt({message: '数据解析失败: ' + err});
     return;
   }
   if (payload.status !== "ok" || !payload.data) {
     var msg = payload.message || payload.error || "未知错误";
-    document.body.insertAdjacentHTML("afterbegin", '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据加载失败: ' + esc(msg) + '</div>');
+    document.body.innerHTML = window.errorReceipt({message: '数据加载失败: ' + msg});
     return;
   }
 
@@ -208,7 +208,7 @@
   function renderChart(){
     var box = document.getElementById("chart");
     if (!series.length) {
-      box.innerHTML = '<div class="empty">📭 窗口内没有「同一天既有睡眠又有体重」的数据。<br>多记录几天，或扩大时间窗口再试。</div>';
+      box.innerHTML = window.emptyState({icon: '📭', text: '窗口内没有「同一天既有睡眠又有体重」的数据。', hint: '多记录几天，或扩大时间窗口再试。'});
       return;
     }
     // #317 迁 Base charts.line 双序列: 左轴睡眠(分钟)/右轴体重(kg) 独立刻度无接口
@@ -244,7 +244,7 @@
     var box = document.getElementById("group-table");
     var groups = cs.groups || [];
     if (!groups.length) {
-      box.innerHTML = '<div class="empty">暂无分组数据。</div>';
+      box.innerHTML = window.emptyState({text: '暂无分组数据。'});
       return;
     }
     var rows = groups.map(function(g){

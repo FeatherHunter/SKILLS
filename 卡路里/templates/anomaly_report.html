@@ -17,11 +17,11 @@
          max-width:920px; margin:0 auto; padding:56px 24px 80px; -webkit-font-smoothing:antialiased; }
   h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
   .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
-  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
-  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
-  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
-  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
-  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+
+
+
+
+
   .finding { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 20px; margin-bottom:12px; }
   .finding h3 { font-size:15px; font-weight:600; margin-bottom:6px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
   .finding .evidence { font-size:13px; color:var(--fg2); background:var(--soft); border-radius:8px; padding:8px 12px; margin-bottom:8px; }
@@ -74,6 +74,7 @@
 <script>
 (function(){
   const D = ((window.__P__ && typeof window.__P__ === 'object' && window.__P__.data) ? window.__P__.data : window.__P__);
+  if (!window.__P__ || window.__P__.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   document.getElementById('metaLeft').textContent = `${D.start || '--'} ~ ${D.end || '--'} · 共 ${D.days || 0} 天`;
   document.getElementById('title').textContent = D.title || '诊断';
   document.getElementById('sub').textContent = `窗口:${D.window || '自定义'} · 规则引擎取证`;

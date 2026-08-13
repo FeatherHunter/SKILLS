@@ -96,10 +96,9 @@ td.num{font-variant-numeric:tabular-nums;text-align:right;font-weight:600}
   const tb = document.getElementById('tableBody');
   (d.items || []).forEach(it => {
     const st = it.status;
-    const pill = st === '写入' ? 'pill-good' : st === '跳过' ? 'pill-warn' : 'pill-bad';
     tb.insertAdjacentHTML('beforeend',
       `<tr><td>${it.date}</td><td class="num">${it.kg} kg</td>` +
-      `<td><span class="pill ${pill}">${st}</span></td>` +
+      `<td>${st === '写入' ? window.statusBadge('ok', st) : st === '跳过' ? window.statusBadge('warn', st) : window.statusBadge('danger', st)}</td>` +
       `<td class="reason">${it.reason || ''}</td></tr>`);
   });
   if (d.summary) {

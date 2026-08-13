@@ -221,6 +221,7 @@
 
 <script>
 const DATA = (typeof window.__P__ === 'object' && window.__P__) || null;
+  if (!DATA || DATA.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); throw new Error('payload-not-ok'); }
 const D = DATA && DATA.data || {};
 const META = D.meta || {};
 
@@ -371,7 +372,7 @@ if (D.mode === 'list') {
     const activeCol = D.filter.active && D.metric_cli[D.filter.active];
     const rows = D.rows.filter(r => !activeCol || r[activeCol] != null);
     if (!rows.length) {
-      wrap.innerHTML = '<div class="empty">暂无记录<br><span class="go">→ 记围度:量了哪项填哪项,第一条就是基线</span></div>';
+      wrap.innerHTML = window.emptyState({icon: '📐', text: '暂无记录', hint: '→ 记围度:量了哪项填哪项,第一条就是基线'});
       return;
     }
     // 桌面:宽表(横向滚动容器)
@@ -485,7 +486,7 @@ if (D.mode === 'trend') {
       const map = {};
       selected.forEach(cli => { if (D.series[cli]) map[D.series[cli].label] = D.series[cli]; });
       if (selected.size < 2) {
-        chart.innerHTML = '<div class="empty">叠加模式请至少选 2 个部位</div>';
+        chart.innerHTML = window.emptyState({text: '叠加模式请至少选 2 个部位'});
         anchorCard.style.display = 'none';
         kpiHtml({delta: null, avg: null, min: null, max: null}, {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
         return;
@@ -500,7 +501,7 @@ if (D.mode === 'trend') {
     const s = D.series[cli] || {label: '', rows: []};
     const rows = s.rows || [];
     if (!rows.length) {
-      chart.innerHTML = '<div class="empty">该部位暂无趋势数据</div>';
+      chart.innerHTML = window.emptyState({text: '该部位暂无趋势数据'});
       document.getElementById('trendNote').textContent = '';
       anchorCard.style.display = 'none';
       kpiHtml({delta: null, avg: null, min: null, max: null}, {delta:'tDelta', avg:'tAvg', min:'tMin', max:'tMax'});
@@ -520,8 +521,8 @@ if (D.mode === 'compare') {
   document.getElementById('listMode').style.display = 'none';
   document.getElementById('compareMode').style.display = '';
   const wrap = document.getElementById('compareWrap');
-  if (D.error) { wrap.innerHTML = `<div class="empty">${esc(D.error)}</div>`; }
-  else if (!D.deltas || !D.deltas.length) { wrap.innerHTML = '<div class="empty">两个日期无共同可对比部位</div>'; }
+  if (D.error) { wrap.innerHTML = window.emptyState({text: esc(D.error)}); }
+  else if (!D.deltas || !D.deltas.length) { wrap.innerHTML = window.emptyState({text: '两个日期无共同可对比部位'}); }
   else {
     const top = D.deltas[0];
     let html = `<div class="compare-summary"><div class="cs-big">最大变化 <strong>${esc(top.label)}</strong> <span class="delta ${deltaClass(top.delta)}">${deltaSign(top.delta)}cm</span></div><div class="cs-sub">共 ${D.n_compared} 项可对比 · ${esc(D.date1)} → ${esc(D.date2)}</div></div>`;

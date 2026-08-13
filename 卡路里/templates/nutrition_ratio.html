@@ -20,11 +20,11 @@
          -webkit-font-smoothing:antialiased; }
   h1 { font-size:28px; font-weight:700; letter-spacing:-.02em; margin-bottom:4px; }
   .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
-  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
-  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
-  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
-  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
-  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
+
+
+
+
+
   .kpi-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
   .kpi { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px 18px; }
   .kpi .label { font-size:12px; color:var(--fg2); margin-bottom:4px; }
@@ -136,16 +136,16 @@ let toastTimer = null;
 (function(){
   const D = window.__P__;
   if (!D || D.status !== 'ok') {
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'});
     return;
   }
   const { summary, target, range, meta } = D.data;
 
   document.getElementById('metaLeft').textContent =
     `${meta.start} ~ ${meta.end} · 共 ${meta.days} 天 · 总摄入 ${summary.total_calorie.toLocaleString()} 卡`;
-  const status = summary.balance === 'good' ? '<span class="pill pill-good">✓ 均衡</span>'
-              : summary.balance === 'warn' ? '<span class="pill pill-warn">⚠ 失衡</span>'
-              : '<span class="pill pill-bad">✗ 严重失衡</span>';
+  const status = summary.balance === 'good' ? window.statusBadge('ok', '✓ 均衡')
+              : summary.balance === 'warn' ? window.statusBadge('warn', '⚠ 失衡')
+              : window.statusBadge('danger', '✗ 严重失衡');
   document.getElementById('sub').innerHTML = `查营养配比 · ${meta.start} → ${meta.end} · 3 维宏量营养素 ${status}`;
 
   // 3 KPI
@@ -209,10 +209,10 @@ let toastTimer = null;
     else { gapStr = '✓'; gapCls = 'var(--good)'; }
     const inRange = it.pct >= r.min && it.pct <= r.max;
     const status = inRange
-      ? '<span class="pill pill-good">✓ 在范围内</span>'
+      ? window.statusBadge('ok', '✓ 在范围内')
       : it.pct < r.min
-        ? '<span class="pill pill-warn">↓ 偏低</span>'
-        : '<span class="pill pill-bad">↑ 偏高</span>';
+        ? window.statusBadge('warn', '↓ 偏低')
+        : window.statusBadge('danger', '↑ 偏高');
     tb.insertAdjacentHTML('beforeend',
       `<tr><td><strong>${it.name}</strong></td>` +
       `<td class="num">${it.g}g <span style="color:var(--fg3);font-weight:400">(${it.pct}%)</span></td>` +

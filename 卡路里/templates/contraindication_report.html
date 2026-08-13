@@ -396,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function render() {
   if (!DATA) {
-    document.getElementById('title').textContent = '❌ 数据加载失败';
+    document.body.innerHTML = window.errorReceipt({message: '数据加载失败'});
     return;
   }
 

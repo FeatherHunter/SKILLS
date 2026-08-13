@@ -134,9 +134,13 @@ def _prefill(records: list, fields: dict, category_hint: str, note_hint: str) ->
         return fields, None
 
     filled = dict(fields)
-    filled.setdefault("account", target.get("account") or "")
-    filled.setdefault("ledger", target.get("ledger") or "")
-    filled.setdefault("currency", target.get("currency") or "人民币")
+    # 注: CLI 构造的 fields 恒含空串键, setdefault 永不生效 → 用「空则补」语义(#312 修正)
+    if not filled.get("account"):
+        filled["account"] = target.get("account") or ""
+    if not filled.get("ledger"):
+        filled["ledger"] = target.get("ledger") or ""
+    if not filled.get("currency"):
+        filled["currency"] = target.get("currency") or "人民币"
     if not filled.get("note") and target.get("note"):
         filled["note"] = target["note"]
     src = f"根据 {str(target.get('time'))[:10]} 的{target.get('category')}记录预填"
@@ -186,6 +190,13 @@ def build_form_payload(scene_key: str, fields: dict, category_hint: str, note_hi
     filled, prefill_src = _prefill(records, fields, category_hint, note_hint)
     category_suggs = _category_suggestions(records, category_hint)
 
+    # #312 T6: 三字段 selector 块(账户=accounts 键 · 分类=历史+L1 · 账本=ledgers 键)
+    selector = build_selector(fields, records, sources, category_suggs)
+    # 场景默认分类兜底(AI 未给分类且无建议时): 买东西→居家/家电 · 吃饭→餐饮(标「已有」)
+    if (not str(fields.get("category") or "").strip() and not category_suggs
+            and scene.get("default_category")):
+        selector["category"]["initial"] = {"name": scene["default_category"], "source": "existing"}
+
     amount = None
     try:
         amount = float(filled.get("amount")) if filled.get("amount") not in (None, "") else None
@@ -217,8 +228,7 @@ def build_form_payload(scene_key: str, fields: dict, category_hint: str, note_hi
             "category_suggestions": category_suggs,
             "categories_history": _extract_categories(records),
             "categories_all": _all_l1(),
-            # #312 T6: 三字段 selector 块(账户=accounts 键 · 分类=历史+L1 · 账本=ledgers 键)
-            "selector": build_selector(fields, records, sources, category_suggs),
+            "selector": selector,
         },
     }
     # #300 统一信封

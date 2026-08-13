@@ -116,8 +116,9 @@ class TestPayload:
         text = raw.decode("utf-8-sig")
         assert "id=\"copyPromptBtn\"" in text          # 复制确认 prompt
         assert "id=\"fAmount\"" in text                # 金额输入
-        assert "category_suggestions" in text          # 分类推荐
-        assert "AI 推荐的已有分类" in text             # 已有标记
+        assert "category_suggestions" in text          # 分类推荐(payload 数据)
+        assert "window.smartSelect" in text            # #312: 三字段走 Base smartSelect 组件
+        assert "id=\"fCategory\"" in text and "id=\"fAccount\"" in text and "id=\"fLedger\"" in text
         assert "actionbar-zone" in text and "window.actionBar" in text  # Base actionBar(#300)
         assert "<!--SHARED-HELPERS-->" in text          # Base 管线占位符(渲染时注入 base.js)
         assert '"snapshot"' in text                      # 信封 scene.snapshot(人类可读快照)

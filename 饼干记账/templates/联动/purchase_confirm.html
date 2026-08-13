@@ -25,23 +25,7 @@
   .prefix .cur { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--fg3); font-size:15px; font-weight:600; }
   .hint { font-size:11.5px; color:var(--fg3); margin-top:4px; }
 
-  /* 分类选择器 */
-  .sugg { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
-  .sugg-btn { border:1.5px solid var(--line); background:#fff; border-radius:999px; padding:6px 13px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:all .15s; display:flex; align-items:center; gap:6px; }
-  .sugg-btn .tag { font-size:10px; font-weight:700; padding:1px 6px; border-radius:999px; }
-  .tag-exist { background:#e7f8ee; color:#1a7a3a; }
-  .tag-new { background:#fff1e2; color:#c2540a; }
-  .sugg-btn:hover { border-color:var(--blue); }
-  .sugg-btn.sel { border-color:var(--blue); background:var(--soft); }
-  .cat-row { display:flex; gap:8px; margin-top:8px; }
-  .cat-row select { flex:1; }
-  .cat-row .btn { flex-shrink:0; }
-  .btn { display:inline-flex; align-items:center; justify-content:center; gap:5px; border:0; background:var(--blue); color:#fff; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
-  .btn:hover { background:var(--blue2); }
-  .btn.ghost { background:#fff; color:var(--fg); border:1px solid var(--line); }
-  .btn.ghost:hover { background:var(--bg); }
-  .new-cat { margin-top:8px; display:none; }
-  .new-cat.show { display:block; }
+  /* 账户/分类/账本选择器 = Base smartSelect 组件(.ss-* 样式由 SHARED-CSS 注入, 技能零样式副本) */
   .dup-warn { background:#fff7e8; border:1px solid #ffe3b3; border-radius:12px; padding:11px 14px; font-size:13px; color:#8a5a00; margin-bottom:12px; display:flex; gap:8px; align-items:flex-start; }
   .dup-warn b { color:#b25b00; }
   .prefill { background:var(--soft); border:1px solid #d7e6ff; border-radius:12px; padding:10px 14px; font-size:12.5px; color:var(--blue2); margin-bottom:12px; }
@@ -88,20 +72,12 @@
       <div class="hint">这个会带给居家管家,作为「录物品」的内容</div>
 
       <label class="field">分类</label>
-      <div class="sugg" id="suggBox"></div>
-      <div class="cat-row">
-        <select id="fCategorySelect"><option value="">选择已有分类…</option></select>
-        <button class="btn ghost" id="newCatBtn">+ 新建</button>
-      </div>
-      <div class="new-cat" id="newCatBox">
-        <input type="text" id="fNewCat" placeholder="输入新分类名(如:健身 / 宠物/猫粮)">
-        <div class="hint" id="newCatHint"></div>
-      </div>
+      <input type="text" id="fCategory" hidden placeholder="输入或选择分类">
 
       <label class="field">账户</label>
-      <input type="text" id="fAccount" placeholder="如:支付宝 / 微信(选填)">
+      <input type="text" id="fAccount" hidden placeholder="如:支付宝 / 微信(选填)">
       <label class="field">账本</label>
-      <input type="text" id="fLedger" placeholder="如:生活 / 旅行(选填)">
+      <input type="text" id="fLedger" hidden placeholder="如:生活 / 旅行(选填)">
       <label class="field">时间</label>
       <input type="text" id="fTime" placeholder="默认现在;补记写「昨天」或日期">
       <label class="field">备注</label>
@@ -178,8 +154,7 @@
 
   // ── 填值 ──
   var elAmount = document.getElementById('fAmount');
-  var elCat = document.getElementById('fCategorySelect');
-  var elNewCat = document.getElementById('fNewCat');
+  var elCategory = document.getElementById('fCategory');
   var elAccount = document.getElementById('fAccount');
   var elLedger = document.getElementById('fLedger');
   var elTime = document.getElementById('fTime');
@@ -187,79 +162,47 @@
   var elCurrency = document.getElementById('fCurrency');
   elAmount.value = fields.amount || '';
   keyInput.value = fields[form.key_field || 'item'] || '';
+  elCategory.value = fields.category || '';
   elAccount.value = fields.account || '';
   elLedger.value = fields.ledger || '';
   elTime.value = fields.time || '';
   elNote.value = fields.note || '';
   elCurrency.value = fields.currency || '人民币';
 
-  var curCat = '';
-  function setCat(c) {
-    curCat = c || '';
-    elCat.value = c || '';
-    elNewCat.value = '';
-    document.getElementById('newCatBox').classList.remove('show');
-    var btns = document.querySelectorAll('.sugg-btn');
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].classList.toggle('sel', btns[i].getAttribute('data-cat') === c);
-    }
-  }
-
-  // ── 分类推荐区 ──
-  var suggs = form.category_suggestions || [];
-  var suggBox = document.getElementById('suggBox');
-  if (suggs.length) {
-    suggBox.innerHTML = suggs.map(function (s) {
-      var tagCls = s.kind === 'new' ? 'tag-new' : 'tag-exist';
-      var tagTxt = s.kind === 'new' ? '推荐新建分类' : 'AI 推荐的已有分类';
-      return '<button class="sugg-btn" data-cat="' + esc(s.name) + '" data-kind="' + esc(s.kind) + '">' +
-        esc(s.name) + '<span class="tag ' + tagCls + '">' + tagTxt + '</span></button>';
-    }).join('');
-    var btns = suggBox.querySelectorAll('.sugg-btn');
-    for (var i = 0; i < btns.length; i++) {
-      btns[i].onclick = function () { setCat(this.getAttribute('data-cat')); };
-    }
-  } else {
-    suggBox.innerHTML = '<div class="hint">说出分类后,AI 会在这里推荐</div>';
-  }
-
-  // ── 下拉(历史分类 + L1) ──
-  var catOptions = (form.categories_history || []).concat(form.categories_all || []);
-  var seen = {};
-  catOptions = catOptions.filter(function (c) { if (!c || seen[c]) return false; seen[c] = true; return true; });
-  elCat.innerHTML = '<option value="">选择已有分类…</option>' + catOptions.map(function (c) {
-    return '<option value="' + esc(c) + '">' + esc(c) + '</option>';
-  }).join('');
-  elCat.onchange = function () { if (this.value) setCat(this.value); };
-
-  // ── 新建分类(相似校验提示) ──
-  document.getElementById('newCatBtn').onclick = function () {
-    document.getElementById('newCatBox').classList.toggle('show');
+  // ── 分类/账户/账本 = Base smartSelect 组件(#312 T6 · 契约 公共组件 §6.9) ──
+  // 数据来自 payload form.selector.<fieldKey>(渲染器构建, 含场景默认分类); 组件把选中值
+  // 写回隐藏 input, buildPrompt 照旧读 input.value(回填协议), 历史预填 = input.value 通道
+  var SS_TEXTS = {
+    candTitle: '候选(点击更换 · 输入过滤)',
+    search: '输入过滤候选',
+    newPlaceholder: '输入新名称',
+    newButton: '＋ 新建',
+    emptyButton: '留空(不填)',
+    badgeInferred: 'AI 推断',
+    badgeRecommendedNew: 'AI 推荐·新建',
+    badgeExisting: '已有',
+    badgeHistory: '历史',
+    badgeCustom: '自定义',
+    cardSrc: {
+      inferred: 'AI 推断 · 识别到相关信息',
+      recommended_new: 'AI 推荐新建 · 提交时创建',
+      existing: '从已有项中选',
+      history: '沿用历史记录',
+      custom: '自定义新建 · 提交时创建',
+      empty: '不填该字段',
+    },
   };
-  elNewCat.oninput = function () {
-    var v = this.value.trim();
-    var hint = document.getElementById('newCatHint');
-    if (!v) { hint.textContent = ''; return; }
-    var similar = catOptions.filter(function (c) { return c === v || c.startsWith(v + '/') || v.startsWith(c + '/'); });
-    if (similar.length) {
-      hint.textContent = '已有相似分类「' + similar[0] + '」,是否使用已有的?(点上方推荐或下拉选择)';
-      hint.style.color = '#b25b00';
-    } else {
-      hint.textContent = '新分类将作为「' + v + '」入库(需 L1 在白名单)';
-      hint.style.color = '';
-    }
-    curCat = v;
-  };
-  elNewCat.onfocus = function () { curCat = this.value.trim(); };
-
-  // 默认分类(如:居家/家电 · 餐饮):未选任何分类时按场景默认
-  function ensureDefaultCat() {
-    var def = form.default_category || '';
-    if (!curCat && !elCat.value && !elNewCat.value && def) {
-      setCat(def);
-      suggBox.insertAdjacentHTML('beforeend', '<div class="hint" style="width:100%">默认分类:' + esc(def) + '(可改)</div>');
-    }
+  var selectorBlock = form.selector || {};
+  function mountSelector(id, key) {
+    var el = document.getElementById(id);
+    var cfg = selectorBlock[key];
+    if (!el || !cfg || typeof window.smartSelect !== 'function') return;
+    cfg.texts = SS_TEXTS;
+    window.smartSelect(el, cfg);
   }
+  mountSelector('fCategory', 'category');
+  mountSelector('fAccount', 'account');
+  mountSelector('fLedger', 'ledger');
 
   // ── 确认 prompt 生成(yaml 骨架:金额 → 物品/吃了 → 分类 → 标准字段) ──
   function fmtField(k, v, hint) { return '  ' + k + ': ' + (v || '__' + (hint || '') + '__'); }
@@ -268,10 +211,9 @@
     var lines = [];
     lines.push('请加载「饼干记账」技能,帮我' + ACTION + '(唤醒词:' + WAKE + '):');
     lines.push('');
-    var cat = curCat || elCat.value;
     lines.push(fmtField('金\u2003额', elAmount.value));
     lines.push(fmtField(keyLabel, keyInput.value));
-    lines.push(fmtField('分\u2003类', cat, '选填'));
+    lines.push(fmtField('分\u2003类', elCategory.value, '选填'));
     lines.push(fmtField('备\u2003注', elNote.value, '选填'));
     lines.push(fmtField('时\u2003间', elTime.value, '默认现在'));
     lines.push(fmtField('账\u2003户', elAccount.value, '选填'));
@@ -291,11 +233,6 @@
     var abZone = document.getElementById('actionbar-zone');
     if (abZone) abZone.innerHTML = window.actionBar(abPayload);
   }
-
-  // 初始:AI 首选分类 / 场景默认分类
-  if (suggs.length && fields.category) setCat(fields.category);
-  else if (suggs.length) setCat(suggs[0].name);
-  else ensureDefaultCat();
 })();
 </script>
 </body>

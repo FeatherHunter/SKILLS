@@ -98,9 +98,13 @@ def _prefill(records: list, fields: dict, category_hint: str, note_hint: str) ->
         return fields, None
 
     filled = dict(fields)
-    filled.setdefault("account", target.get("account") or "")
-    filled.setdefault("ledger", target.get("ledger") or "")
-    filled.setdefault("currency", target.get("currency") or "人民币")
+    # 注: CLI 构造的 fields 恒含空串键, setdefault 永不生效 → 用「空则补」语义(#312 修正)
+    if not filled.get("account"):
+        filled["account"] = target.get("account") or ""
+    if not filled.get("ledger"):
+        filled["ledger"] = target.get("ledger") or ""
+    if not filled.get("currency"):
+        filled["currency"] = target.get("currency") or "人民币"
     if not filled.get("note") and target.get("note"):
         filled["note"] = target["note"]
     src = f"根据 {str(target.get('time'))[:10]} 的{target.get('category')}记录预填"

@@ -293,3 +293,20 @@ class TestCliE2E:
                                ["expense", "--amount", "35", "--account-source", "guessed",
                                 "--out", str(out)])
         assert result.returncode != 0
+
+    def test_cli_history_prefill_fills_account_ledger(self, tmp_db_dir):
+        """CLI 路径历史预填修复（#312）: fields 恒含空串键时预填仍生效（原 setdefault 永不生效 bug）"""
+        _insert(tmp_db_dir, "餐饮/外卖/午餐", -35, "2026-08-01 12:00", account="微信", ledger="旅行")
+        out = tmp_db_dir / "expense_prefill.html"
+        result = _run_renderer(tmp_db_dir, "render_write.py",
+                               ["expense", "--amount", "35", "--category", "餐饮/外卖/午餐",
+                                "--out", str(out)])
+        assert result.returncode == 0, result.stderr
+        payload = _payload_from_html(out.read_text(encoding="utf-8-sig"))
+        f = payload["data"]["form"]
+        assert f["fields"]["account"] == "微信"
+        assert f["fields"]["ledger"] == "旅行"
+        assert f["prefill_source"] and "预填" in f["prefill_source"]
+        # 历史预填不进 selector(AI 键), 走 input.value 通道
+        assert "initial" not in f["selector"]["account"]
+        assert "inferred" not in f["selector"]["account"]

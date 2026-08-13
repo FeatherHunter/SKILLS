@@ -676,8 +676,9 @@ function bindDayTabs() {
     return;
   }
   /* #321: window.__P__ = Base 注入信封 {status,data,message}(#314 契约),必须从信封解构 status;
-     裸数据形态(无 status 字段)兜底视为 ok —— 修 #314 Base 化后 __P__.data 预取致 status 恒 undefined */
-  const isEnvelope = (typeof P.status === 'string' && P.data && typeof P.data === 'object');
+     信封判据 = status 字段(data 可能为 null 的错误信封;裸数据形态兜底视为 ok)
+     —— 修 #314 Base 化后 __P__.data 预取致 status 恒 undefined */
+  const isEnvelope = (typeof P.status === 'string');
   const status = isEnvelope ? P.status : 'ok';
   const data = isEnvelope ? P.data : P;
   const message = isEnvelope ? P.message : undefined;

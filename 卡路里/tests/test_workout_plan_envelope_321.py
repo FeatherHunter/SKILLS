@@ -48,6 +48,22 @@ def test_status_reads_from_envelope():
     )
 
 
+def test_envelope_judge_not_depend_on_data():
+    """信封判据必须是 status 字段, 不得依赖 P.data 存在性
+
+    边界: 错误信封 {status:'error', data:null} 若以 P.data 存在性判信封,
+    会被误判为裸数据 → status 兜底 ok → 拿信封当数据渲染垃圾页面(对抗审查实测复现)。
+    """
+    js = _main_entry_js()
+    m = re.search(r"const isEnvelope = ([^;]+);", js)
+    assert m, "缺 isEnvelope 判定"
+    judge = m.group(1)
+    assert "P.status" in judge, f"信封判据不含 status: {judge}"
+    assert "P.data" not in judge, (
+        f"信封判据依赖 P.data 存在性(error+data=null 信封会被误判): {judge}"
+    )
+
+
 def test_injected_payload_is_envelope():
     """渲染器注入契约: <!--INJECT-DATA--> 处注入完整信封(渲染器侧)"""
     import sys

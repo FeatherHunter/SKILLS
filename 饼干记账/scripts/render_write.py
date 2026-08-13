@@ -181,6 +181,9 @@ def build_payload(form_type: str, fields: dict, category_hint: str, note_hint: s
             "category_suggestions": _category_suggestions(records, category_hint, form_type),
             "categories_history": _extract_categories(records),
             "categories_all": _all_l1(),
+            "selector": {
+                "ledger": {"options": _ledger_options()},
+            },
         },
     }
     # #300 统一信封:表单数据组织进 scene.snapshot(复制数据【场景名 · 数据快照】)
@@ -267,6 +270,27 @@ def build_batch_payload(items: list, ledger: str, records: list) -> dict:
 def _all_l1() -> list:
     from validators import ALL_L1
     return sorted(ALL_L1)
+
+
+def _ledger_options() -> list:
+    """账本候选(goals.json ledgers 键 · T4 #308 契约 · 供 smartSelect 消费)
+
+    返回 [{"name", "disabled"}, ...];缺键/空文件/损坏 → 空数组(组件降级普通输入)。
+    只读,不写 goals.json。
+    """
+    from db import _find_db_path, DB_FILENAME
+    p = _find_db_path(SKILL_DIR, DB_FILENAME).parent / "goals.json"
+    if not p.exists():
+        return []
+    try:
+        data = json.loads(p.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    if not isinstance(data, dict):
+        return []
+    return [{"name": str(l.get("name") or ""), "disabled": bool(l.get("disabled"))}
+            for l in data.get("ledgers", [])
+            if str(l.get("name") or "").strip()]
 
 
 def default_output_path(command_name: str) -> Path:

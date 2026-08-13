@@ -185,7 +185,7 @@
 <div class="copy-zone">
   <div class="copy-text">
     <h3>📤 复制 4 部分 prompt 给 AI</h3>
-    <p class="copy-desc">点击右侧按钮复制指令 → 粘贴给 AI → AI 调 <code>upsert-plan-events</code> 写库。多轮调整:改候选后再次生成本页面,直到满意再写库。</p>
+    <p class="copy-desc">点击右侧按钮复制指令 → 粘贴给 AI → AI 按商量计划流程写库。多轮调整:改候选后再次生成本页面,直到满意再写库。</p>
     <div class="copy-preview" id="copy-preview">加载中…</div>
   </div>
   <button class="copy-btn" id="copy-btn">复制 4 部分 prompt</button>
@@ -224,7 +224,7 @@
   <ol class="steps">
     <li><b>查看时间轴与历史贴合提示</b>:绿色贴合段 = 与近期作息一致,黄/橙偏离段 = 与历史习惯不同(可能是刻意安排或风险项)。</li>
     <li><b>调整候选计划</b>:直接跟 AI 说「把 X 段改成 Y」→ AI 更新候选 → 再次生成本页面(同秒多版自动编号 _2/_3,互不覆盖)。</li>
-    <li><b>满意后复制 4 部分 prompt</b>(顶部按钮)粘贴给 AI → AI 调 <code>upsert-plan-events &lt;日期&gt; --json @plan.json</code> 写库。</li>
+    <li><b>满意后复制 4 部分 prompt</b>(顶部按钮)粘贴给 AI → AI 按商量计划流程写库。</li>
     <li><b>AI 询问飞书同步</b>[Y/n]:同意 → 飞书日历出现;不同意 → 仅本地写入。写库后可再生成一版核对最终计划。</li>
   </ol>
 </section>

@@ -285,9 +285,11 @@ def _build_scene(check: dict) -> dict:
                  {"title": "初始化报告", "status": "pending"}, {"title": "完成", "status": "pending"}]
         next_act = {
             "label": "开始初始化(复制指令给 AI)",
-            "prompt": (f"作息管家首次使用: 数据路径已确认 {check['db_dir']}(默认即确认;想自定义目录请先设置 "
-                       f"SKILLS_DB_PATH 环境变量再执行)。请执行: python scripts/schedule_cli.py init 建库(幂等,"
-                       f"已建自动跳过),完成后用 schedule_cli.py status 确认,再重新生成首次使用报告。"),
+            "prompt": (f"① 技能与唤醒词: 作息管家 · 「初始化数据库」\n\n"
+                       f"② 参数:\n  - 数据路径: {check['db_dir']}"
+                       f"(默认即确认;想自定义目录请先设置 SKILLS_DB_PATH 环境变量再执行)\n\n"
+                       f"③ 执行: 按「初始化数据库」流程执行(幂等,已建自动跳过),完成后确认状态,"
+                       f"再重新生成首次使用报告"),
         }
     else:
         stage = "already"

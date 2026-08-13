@@ -31,11 +31,11 @@ def test_copy_prompt_parts_map_exists():
     assert expected_modes.issubset(set(parts.keys())), (
         f"_COPY_PROMPT_PARTS 缺 mode,实际 keys: {set(parts.keys())}"
     )
-    # 每个 mode 含 scene/expect/source 3 个字段(替代三平行 dict)
+    # 每个 mode 含 wake/params/exec 3 个字段(2026-08-13 拍板:技能+唤醒词+参数)
     for mode, part in parts.items():
-        assert "scene" in part, f"{mode}: 缺 scene 字段"
-        assert "expect" in part, f"{mode}: 缺 expect 字段"
-        assert "source" in part, f"{mode}: 缺 source 字段"
+        assert "wake" in part, f"{mode}: 缺 wake 字段"
+        assert "params" in part, f"{mode}: 缺 params 字段"
+        assert "exec" in part, f"{mode}: 缺 exec 字段"
 
 
 def test_copy_prompt_context_dataclass_exists():
@@ -68,10 +68,9 @@ def test_build_record_copy_prompt_accepts_context():
         extra_data={"health": {"score": 85, "label": "充足"}},
     )
     prompt = _render._build_record_copy_prompt(ctx)
-    assert "① 场景" in prompt
-    assert "② 数据" in prompt
-    assert "③ 期望" in prompt
-    assert "④ 来源" in prompt
+    assert "① 技能与唤醒词" in prompt
+    assert "② 参数" in prompt
+    assert "③ 执行" in prompt
     assert "2026-07-15" in prompt
     assert "工作.AI调优" in prompt
 
@@ -127,7 +126,7 @@ def test_meta_no_longer_polluted_with_date_for_copy_prompt():
 
     # copy_prompt 仍存在(行为不变)
     assert "copy_prompt" in payload["data"]
-    assert "① 场景" in payload["data"]["copy_prompt"]
+    assert "① 技能与唤醒词" in payload["data"]["copy_prompt"]
 
 
 def test_behavior_unchanged_all_6_modes():
@@ -152,7 +151,6 @@ def test_behavior_unchanged_all_6_modes():
     for mode, payload in cases:
         assert payload["status"] == "ok", f"{mode} 渲染失败: {payload.get('message')}"
         cp = payload["data"].get("copy_prompt", "")
-        assert "① 场景" in cp, f"{mode}: 缺 ① 场景"
-        assert "② 数据" in cp, f"{mode}: 缺 ② 数据"
-        assert "③ 期望" in cp, f"{mode}: 缺 ③ 期望"
-        assert "④ 来源" in cp, f"{mode}: 缺 ④ 来源"
+        assert "① 技能与唤醒词" in cp, f"{mode}: 缺 ① 技能与唤醒词"
+        assert "② 参数" in cp, f"{mode}: 缺 ② 参数"
+        assert "③ 执行" in cp, f"{mode}: 缺 ③ 执行"

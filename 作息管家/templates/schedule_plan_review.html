@@ -146,7 +146,7 @@
     <span class="badge-type">过程型</span>
   </div>
   <h1 id="page-title">2026-07-20 · 复盘报告</h1>
-  <p class="lead" id="page-subtitle">逐条回顾当日计划 → 标记状态 → 写复盘原因 → 完成所有项后 → 复制 4 部分 prompt 给 AI 落地。本 HTML 是单工设备,写库由 AI 调 update-event 完成。</p>
+  <p class="lead" id="page-subtitle">逐条回顾当日计划 → 标记状态 → 写复盘原因 → 完成所有项后 → 复制 4 部分 prompt 给 AI 落地。本页面只读,写库由 AI 按复盘流程完成。</p>
   <div class="meta">
     <span>📅 <b id="meta-date">2026-07-20</b></span>
     <span>🕐 生成于 <b id="meta-generated">2026-07-24</b></span>
@@ -168,7 +168,7 @@
     <li><b>逐条标记状态</b> 上方每条事件选 1 个状态;超时/部分/未完成/不可抗力 4 类必填完成原因。</li>
     <li><b>观察底部 status bar</b> 状态徽章实时变化(灰 → 橙 → 绿),复制按钮随时可点(部分完成也可让 AI 接管)。</li>
     <li><b>复制 4 部分 prompt</b> 点击 status bar 的复制按钮。复制内容自动包含你刚才的所有标记 + 原因。</li>
-    <li><b>粘贴给 AI</b> 在对话窗口。AI 收到指令后会批量调 <code>schedule_cli.py update-event &lt;id&gt; --completion X --completion-note "Y"</code>,完成后 AI 给你返回复盘小结。</li>
+    <li><b>粘贴给 AI</b> 在对话窗口。AI 收到指令后会逐条写入你标记的状态和原因,完成后给你返回复盘小结。</li>
   </ol>
 </section>
 
@@ -331,52 +331,31 @@
     var reviewed = marked.length;
     var total = events.length;
     var pct = total > 0 ? Math.round(reviewed / total * 100) : 0;
-    lines.push("① 场景: 我和 AI 一起复盘 " + (meta.date || "") + " 的当日计划(" + total + " 段事件,已标记 " + reviewed + "/" + total + " = " + pct + "%)");
+    lines.push("① 技能与唤醒词: 作息管家 · 「复盘」");
     lines.push("");
-    lines.push("② 数据(我已标记的复盘):");
+    lines.push("② 参数:");
+    lines.push("  - 日期: " + (meta.date || "") + " · 计划 " + total + " 段事件 · 已标记 " + reviewed + "/" + total + " = " + pct + "%");
+    lines.push("  - 已标记复盘:");
     if (marked.length === 0) {
-      lines.push("(尚未标记任何事件,所有项默认按\"未完成\"处理)");
+      lines.push("    (尚未标记任何事件)");
     } else {
       marked.forEach(function(m){
-        lines.push("  - id=" + m.id + " " + m.time_start + "–" + m.time_end + " 「" + m.title + "」");
-        lines.push("    status: " + m.status);
+        lines.push("    - id=" + m.id + " " + m.time_start + "–" + m.time_end + " 「" + m.title + "」");
+        lines.push("      status: " + m.status);
         if (m.completion_note) {
-          lines.push("    completion_note: " + m.completion_note);
+          lines.push("      completion_note: " + m.completion_note);
         }
       });
     }
     if (unmarked.length > 0) {
-      lines.push("");
-      lines.push("⚠ 未标记的事件(默认按\"未完成\"处理,如有特殊原因请指明):");
+      lines.push("  - 未标记事件(默认按「未完成」处理,如有特殊原因请先与我确认):");
       unmarked.forEach(function(u){
-        lines.push("  - id=" + u.id + " " + u.time_start + "–" + u.time_end + " 「" + u.title + "」");
+        lines.push("    - id=" + u.id + " " + u.time_start + "–" + u.time_end + " 「" + u.title + "」");
       });
     }
     lines.push("");
-    lines.push("③ 期望: 请按上面的标记逐条执行 schedule_cli.py update-event 命令:");
-    if (marked.length === 0) {
-      lines.push("(无已标记项,无需 update-event)");
-    } else {
-      marked.forEach(function(m){
-        var noteArg = m.completion_note ? ' --completion-note "' + m.completion_note.replace(/"/g, '\\"') + '"' : "";
-        lines.push("  schedule_cli.py update-event " + m.id + " --completion " + m.status + noteArg);
-      });
-    }
-    if (unmarked.length > 0) {
-      lines.push("");
-      lines.push("未标记项如需默认按未完成处理:");
-      unmarked.forEach(function(u){
-        lines.push("  schedule_cli.py update-event " + u.id + " --completion 未完成");
-      });
-    }
+    lines.push("③ 执行: 按「复盘」流程把上面标记的状态逐条写入对应事件(含完成原因)");
     lines.push("");
-    lines.push("完成后给我返回复盘小结:");
-    lines.push("  - 完成率(已完成 / 总数)");
-    lines.push("  - 各类占比(已完成 / 已完成超时 / 部分完成 / 未完成 / 不可抗力)");
-    lines.push("  - 1-2 句今日总结");
-    lines.push("");
-    lines.push("④ 来源: review_" + (meta.date || "DATE") + ".html 生成于 " + generatedAt + ",数据来自 schedule_plans WHERE date=" + (meta.date || "DATE"));
-
     return lines.join("\n");
   }
 

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 schedule_html_render.py — 日程计划查询的 HTML 渲染器（2026-07-23 新增）
 
@@ -783,48 +783,38 @@ class CopyPromptContext:
     window_days: int = 7
 
 
-# 6 个 record mode × {scene, expect, source} 三个字符串模板(B3 单 map 替代三平行 dict)
-# 加新 mode:只需在此加一个 entry,函数体不动
+# 6 个 record mode × {wake, params, exec}(2026-08-13 用户拍板:prompt = 技能 + 唤醒词 + 参数)
+# 唤醒词取自 SKILL.md 触发词速查表 / 中文 command 命名(ADR-0002 Q5),AI 凭唤醒词定位流程
 _COPY_PROMPT_PARTS = {
     "record-day": {
-        "scene":  "查看了 {date} 单日作息报告(共 {n_records} 条记录,总时长 {total_dur})",
-        "expect": "基于今日数据,可调 schedule_cli.py render-record-day {date} 重渲,"
-                  "或调 render-plans-review 复盘今日 plan 执行情况",
-        "source": "record_day.html 生成于 {generated_at},数据来自 schedule_records WHERE date={date}",
+        "wake": "查作息",
+        "params": "日期: {date} · 记录 {n_records} 条 · 总时长 {total_dur}",
+        "exec": "按「查作息」流程处理后续请求",
     },
     "record-range": {
-        "scene":  "查看了 {range_start} 至 {range_end} 区间作息报告"
-                  "(共 {n_records} 条记录,总时长 {total_dur})",
-        "expect": "可对区间内某天做单日深挖(render-record-day),"
-                  "或对比另一段时段(render-record-compare)",
-        "source": "record_range.html 生成于 {generated_at},数据来自 schedule_records "
-                  "WHERE date BETWEEN {range_start} AND {range_end}",
+        "wake": "查作息区间",
+        "params": "区间: {range_start} ~ {range_end} · 记录 {n_records} 条 · 总时长 {total_dur}",
+        "exec": "按「查作息区间」流程处理后续请求",
     },
     "record-compare": {
-        "scene":  "对比查看了 {label_a}({range_start}) vs {label_b}({range_end}) 两段作息",
-        "expect": "可深挖差异最大的类别(render-record-category-range),"
-                  "或对其中一段做异常检测(render-record-anomaly)",
-        "source": "record_compare.html 生成于 {generated_at},数据来自两段 schedule_records 区间",
+        "wake": "查作息对比",
+        "params": "对比: {label_a}({range_start}) vs {label_b}({range_end})",
+        "exec": "按「查作息对比」流程处理后续请求",
     },
     "record-category": {
-        "scene":  "深挖了类别「{category_name}」在 {range_start} 至 {range_end} 的分布",
-        "expect": "可深挖另一类别做对比,或对该类别做单日时间块分析",
-        "source": "record_category.html 生成于 {generated_at},"
-                  "数据来自 schedule_records WHERE category LIKE '{category_name}%'",
+        "wake": "查作息类别",
+        "params": "类别: {category_name} · 区间: {range_start} ~ {range_end}",
+        "exec": "按「查作息类别」流程处理后续请求",
     },
     "record-anomaly": {
-        "scene":  "查看了最近 {window_days} 天作息异常检测"
-                  "({n_anomalies} 项异常)",
-        "expect": "针对红色异常,可调 amend-record 修正历史记录,"
-                  "或调 render-plans-preview 规划调整方案",
-        "source": "record_anomaly.html 生成于 {generated_at},"
-                  "数据来自最近 {window_days} 天 schedule_records",
+        "wake": "查作息异常",
+        "params": "窗口: 最近 {window_days} 天 · 异常 {n_anomalies} 项",
+        "exec": "按「查作息异常」流程处理后续请求",
     },
     "record-detail": {
-        "scene":  "查看了 {date} 作息详情(全 11 字段溯源,{n_records} 条记录)",
-        "expect": "可调 amend-record <id> 修正某条记录,"
-                  "或调 render-record-day 生成单日报告",
-        "source": "record_detail.html 生成于 {generated_at},数据来自 schedule_records WHERE date={date}",
+        "wake": "查作息详情",
+        "params": "日期: {date} · 记录 {n_records} 条",
+        "exec": "按「查作息详情」流程处理后续请求",
     },
 }
 
@@ -838,11 +828,10 @@ def _build_record_copy_prompt(ctx_or_mode, meta=None, records=None,
       2. 旧签名: _build_record_copy_prompt(mode, meta, records, summary_items, extra_data)
          (deprecated · 由 render_record_* 调用方迁移到 CopyPromptContext)
 
-    4 部分结构(原则 10):
-      ① 场景: 用户在 HTML 中做了什么
-      ② 数据: 用户看到的最终数据(分类摘要 / 时长 / 健康分 / 关键事件)
-      ③ 期望: AI 应执行什么 CLI 操作
-      ④ 来源: HTML 数据来自哪个 CLI + 时间
+    3 部分结构(2026-08-13 用户拍板):
+      ① 技能与唤醒词: AI 定位流程的入口(SKILL.md 触发词速查表)
+      ② 参数: 用户看到的最终数据(分类摘要 / 时长 / 健康分 / 关键事件)
+      ③ 执行: 按「唤醒词」流程执行(不写死脚本调用,不承诺输出)
     """
     # === 签名分发(向后兼容) ===
     # 新签名:CopyPromptContext dataclass
@@ -872,9 +861,9 @@ def _build_record_copy_prompt(ctx_or_mode, meta=None, records=None,
 
     generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     parts = _COPY_PROMPT_PARTS.get(ctx.mode, {
-        "scene": "查看了作息报告({mode})".format(mode=ctx.mode),
-        "expect": "根据报告内容决定后续 CLI 操作",
-        "source": f"生成于 {generated_at}",
+        "wake": ctx.mode,
+        "params": "模式: {mode}".format(mode=ctx.mode),
+        "exec": "按对应流程处理后续请求",
     })
 
     # === 字段填充 ===
@@ -891,11 +880,11 @@ def _build_record_copy_prompt(ctx_or_mode, meta=None, records=None,
         "total_dur":    _fmt_dur(ctx.total_minutes),
         "generated_at": generated_at,
     }
-    scene  = parts["scene"].format(**fill)
-    expect = parts["expect"]
-    source = parts["source"].format(**fill)
+    wake   = parts["wake"]
+    params = parts["params"].format(**fill)
+    exec_  = parts["exec"]
 
-    # === ② 数据:分类摘要 top 3 + 健康分(如有) + 异常计数 ===
+    # === ② 参数:分类摘要 top 3 + 健康分(如有) + 异常计数 ===
     cat_lines = ""
     if ctx.summary_items:
         top3 = ctx.summary_items[:3]
@@ -914,10 +903,10 @@ def _build_record_copy_prompt(ctx_or_mode, meta=None, records=None,
         anomaly_line = f"\n异常: 🔴 {red} 严重 · 🟡 {yellow} 警告"
 
     return (
-        f"① 场景: {scene}\n\n"
-        f"② 数据:{health_line}{anomaly_line}\n{cat_lines}\n\n"
-        f"③ 期望: {expect}\n\n"
-        f"④ 来源: {source}"
+        f"① 技能与唤醒词: 作息管家 · 「{wake}」\n\n"
+        f"② 参数:\n"
+        f"  - {params}{health_line}{anomaly_line}\n{cat_lines}\n\n"
+        f"③ 执行: {exec_}"
     )
 
 
@@ -934,13 +923,12 @@ def _build_list_events_copy_prompt(date: str, plan_events: list) -> str:
     )
     more = f"\n  ...(共 {len(plan_events)} 段,只显示前 8 段)" if len(plan_events) > 8 else ""
     return (
-        f"① 场景: 查看了 {date} 的日程计划({len(plan_events)} 段事件,"
-        f"{active_count} 段活跃,覆盖 {coverage_hours:.1f}h)\n\n"
-        f"② 数据:\n{events_preview}{more}\n\n"
-        f"③ 期望: 可调 render-plans-review {date} 复盘,或调 update-event <id> --completion 标记完成,"
-        f"或调 render-plans-preview {date} 重新规划\n\n"
-        f"④ 来源: list_events.html 生成于 {generated_at},"
-        f"数据来自 schedule_plans WHERE date={date} AND is_active=1"
+        f"① 技能与唤醒词: 作息管家 · 「查日程 / 看日程」\n\n"
+        f"② 参数:\n"
+        f"  - 日期: {date} · {len(plan_events)} 段事件"
+        f"({active_count} 段活跃 · 覆盖 {coverage_hours:.1f}h)\n"
+        f"{events_preview}{more}\n\n"
+        f"③ 执行: 按「查日程」流程处理后续请求"
     )
 
 
@@ -1106,11 +1094,16 @@ def render_plans_preview(date: str, plan_events: list, locked_events: list = Non
                 ls, le = to_min(lk["time_start"]), to_min(lk["time_end"])
             except (KeyError, ValueError):
                 continue
-            if cs < le and ls < ce:  # 时间区间相交
+            if cs < le and ls < ce:  # 时间区间相交 → 记录重叠明细
+                os_, oe = max(cs, ls), min(ce, le)
                 conflicts.append({
                     "time_range": cand["time_start"] + "–" + cand["time_end"],
                     "candidate": cand.get("title", "—"),
+                    "candidate_time": cand["time_start"] + "–" + cand["time_end"],
                     "locked": lk.get("title", "—"),
+                    "locked_time": lk["time_start"] + "–" + lk["time_end"],
+                    "overlap": f"{os_ // 60:02d}:{os_ % 60:02d}–{oe // 60:02d}:{oe % 60:02d}",
+                    "overlap_minutes": oe - os_,
                     "candidate_idx": i,
                 })
 
@@ -1122,29 +1115,29 @@ def render_plans_preview(date: str, plan_events: list, locked_events: list = Non
     else:
         status = "ok"
 
-    # 4 部分 prompt(手册§原则10)
+    # 复制 prompt: 技能 + 唤醒词 + 参数(2026-08-13 用户拍板 · 不写死脚本调用/不承诺输出)
     plan_json_str = json.dumps(plan_events, ensure_ascii=False, indent=2)
-    locked_summary = ""
-    if locked_events:
-        locked_summary = "\n⑤ 已锁定事件(写库时锁定时段,会被保护):\n" + \
-            "\n".join([f"  - {e['time_start']}–{e['time_end']} {e.get('title','—')}" for e in locked_events]) + "\n"
+    plan_json_indented = "\n".join("    " + l if l.strip() else l for l in plan_json_str.split("\n"))
+    locked_lines = "\n".join(
+        [f"    - {e['time_start']}–{e['time_end']} {e.get('title','—')}" for e in locked_events]) \
+        if locked_events else "    (无)"
+    conflict_lines = "\n".join(
+        [f"    - 「{c['candidate']}」({c['candidate_time']})与「{c['locked']}」({c['locked_time']})"
+         f"重叠 {c['overlap']} · {c['overlap_minutes']} 分钟" for c in conflicts]) \
+        if conflicts else "    (无)"
 
-    conflicts_summary = ""
-    if conflicts:
-        conflicts_summary = "\n⚠ 检测到 " + str(len(conflicts)) + " 处候选与已锁定事件时间冲突:\n" + \
-            "\n".join([f"  - {c['time_range']}: 候选「{c['candidate']}」与已锁定「{c['locked']}」重叠" for c in conflicts]) + \
-            "\n请调整候选事件时段或更新已锁定事件后重新预览。\n"
-
-    copy_prompt = f"""① 场景: 我和 AI 多轮对话生成了 {date} 的候选计划({len(plan_events)} 段事件覆盖 24h {coverage_pct}%)。{('有 ' + str(len(conflicts)) + ' 处冲突需调整') if conflicts else '无冲突'}
-
-② 数据(候选 24h 时间块):
-{plan_json_str}{locked_summary}{conflicts_summary}
-③ 期望: 请执行 schedule_cli.py upsert-plan-events {date} --json @plan.json 写库;询问飞书同步(Y/n)
-  - 无冲突时直接采纳
-  - 有冲突时先与用户讨论调整再写
-
-④ 来源: plan_preview.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},数据来自多轮对话
-"""
+    copy_prompt = (
+        f"① 技能与唤醒词: 作息管家 · 「商量计划」\n\n"
+        f"② 参数:\n"
+        f"  - 日期: {date}\n"
+        f"  - 候选事件({len(plan_events)} 段 · 24h 覆盖 {coverage_pct}%):\n"
+        f"{plan_json_indented}\n"
+        f"  - 已锁定事件({len(locked_events)} 段 · 写库时保留保护):\n"
+        f"{locked_lines}\n"
+        f"  - 冲突({len(conflicts)} 处):\n"
+        f"{conflict_lines}\n"
+        f"③ 执行: 按「商量计划」流程把候选事件写入 {date} 的计划,写库后询问是否同步飞书"
+    )
 
     payload = {
         "meta": {
@@ -1319,34 +1312,24 @@ def render_receipt(record_id: int) -> dict:
         "created_at": record.get("created_at"),
     }, ensure_ascii=False, indent=2)
 
-    # 3 种"复制动作"prompt(2026-07-24 设计改进:取消独立"复制今日进度"按钮,
-    # §1 三个操作按钮 = 3 种具体 prompt。每个按钮 = 用户决策 + AI 指令合一。)
-    base_prompt = f"""① 场景: 我刚记录了一条作息(id={record_id} · {record.get('date')} {record.get('time_start')}–{record.get('time_end')} {category})
-
-② 数据(今日进度):
-  - 今日已记录 {today_count} 条,总时长 {today_mins} 分钟({today_mins // 60}h{today_mins % 60}m)
+    # 3 种"复制动作"prompt(2026-08-13 拍板:技能+唤醒词+参数;按钮 = 唤醒词选择)
+    params_block = f"""② 参数:
+  - 日期: {record.get('date')} · 时段: {record.get('time_start')}–{record.get('time_end')} · 分类: {category}
+  - 今日已记录 {today_count} 条 · 总时长 {today_mins} 分钟({today_mins // 60}h{today_mins % 60}m)
   - 本周累计 {week_count} 条(最近 7 天)
-  - 在「{category}」分类中,本条排第 {category_rank} / 共 {category_total} 条
-  - 刚记录:
+  - 本条在「{category}」分类中排第 {category_rank} / 共 {category_total} 条
+  - 刚写入(id={record_id}):
 {record_json}
-
-④ 来源: receipt_id{record_id}_{date}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},新记录 id={record_id}
 """
 
-    prompt_continue = base_prompt + """
-③ 期望: 用户即将告诉你"我刚才在做 X"。
-请调 schedule_cli.py add 写库 + 调 render-receipt <新 id> 生成下一份回执。
-不要做其他事,等用户输入。"""
+    prompt_continue = "① 技能与唤醒词: 作息管家 · 「记作息」\n\n" + params_block + """
+③ 执行: 按「记作息」流程等待用户下一条告知并写入"""
 
-    prompt_overview = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-record-day {record.get('date')} 生成今日报告 HTML,
-让我扫读全部记录(包含今日所有作息 + 24h 时间轴 + 分类进度)。
-不要做复盘,纯展示。"""
+    prompt_overview = "① 技能与唤醒词: 作息管家 · 「查作息」\n\n" + params_block + f"""
+③ 执行: 按「查作息」流程生成 {record.get('date')} 的今日报告"""
 
-    prompt_review = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-plans-review {record.get('date')} 生成复盘报告 HTML,
-让我逐条标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)" + 写完成原因。
-完成后给我返回复盘小结(完成率 + 各类占比 + 1-2 句今日总结)。"""
+    prompt_review = "① 技能与唤醒词: 作息管家 · 「复盘」\n\n" + params_block + f"""
+③ 执行: 按「复盘」流程生成 {record.get('date')} 的复盘报告"""
 
     payload = {
         "meta": {
@@ -1467,31 +1450,22 @@ def _build_record_result_prompts(record, record_id, today_count, today_mins,
     指令指向三件套新链路:add 自动渲染 / render-record-result <新 id>。
     """
     date = record.get("date")
-    base_prompt = f"""① 场景: 我刚记录了一条作息(id={record_id} · {date} {record.get('time_start')}–{record.get('time_end')} {category})
-
-② 数据(今日进度):
-  - 今日已记录 {today_count} 条,总时长 {today_mins} 分钟({today_mins // 60}h{today_mins % 60}m)
+    params_block = f"""② 参数:
+  - 日期: {date} · 时段: {record.get('time_start')}–{record.get('time_end')} · 分类: {category}
+  - 今日已记录 {today_count} 条 · 总时长 {today_mins} 分钟({today_mins // 60}h{today_mins % 60}m)
   - 本周累计 {week_count} 条(最近 7 天)
-  - 在「{category}」分类中,本条排第 {category_rank} / 共 {category_total} 条
-  - 刚记录:
+  - 本条在「{category}」分类中排第 {category_rank} / 共 {category_total} 条
+  - 刚写入(id={record_id}):
 {record_json}
-
-④ 来源: 记作息结果 id={record_id} 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
 """
-    prompt_continue = base_prompt + """
-③ 期望: 用户即将告诉你"我刚才在做 X"。
-请调 schedule_cli.py add 写库(add 会自动生成三件套结果 HTML,无需再调 render 命令)。
-不要做其他事,等用户输入。"""
+    prompt_continue = "① 技能与唤醒词: 作息管家 · 「记作息」\n\n" + params_block + """
+③ 执行: 按「记作息」流程等待用户下一条告知并写入"""
 
-    prompt_overview = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-record-day {date} 生成今日报告 HTML,
-让我扫读全部记录(包含今日所有作息 + 24h 时间轴 + 分类进度)。
-不要做复盘,纯展示。"""
+    prompt_overview = "① 技能与唤醒词: 作息管家 · 「查作息」\n\n" + params_block + f"""
+③ 执行: 按「查作息」流程生成 {date} 的今日报告"""
 
-    prompt_review = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-plans-review {date} 生成复盘报告 HTML,
-让我逐条标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)" + 写完成原因。
-完成后给我返回复盘小结(完成率 + 各类占比 + 1-2 句今日总结)。"""
+    prompt_review = "① 技能与唤醒词: 作息管家 · 「复盘」\n\n" + params_block + f"""
+③ 执行: 按「复盘」流程生成 {date} 的复盘报告"""
 
     return {
         "continue": prompt_continue,  # §1 按钮 1:继续记
@@ -1773,42 +1747,28 @@ def render_record_receipt_edit(record_id: int, diff: dict = None) -> dict:
         "edit_count": edit_count,
     }, ensure_ascii=False, indent=2)
 
-    # 3 操作按钮 prompt(蓝调回执版,2026-07-24 设计:强调"已纠正"+ diff 让用户审计)
-    base_prompt = f"""① 场景: 我刚纠正了一条作息(id={record_id} · {record.get('date')} {record.get('time_start')}–{record.get('time_end')} {category})
-本次纠正了 {diff_count} 个字段(edit_count={edit_count})。
-
-② 数据(纠正后状态):
-  - 今日已记录 {today_count} 条,总时长 {today_mins} 分钟({today_mins // 60}h{today_mins % 60}m)
+    # 3 操作按钮 prompt(蓝调回执版 · 2026-08-13 拍板:技能+唤醒词+参数)
+    params_block = f"""② 参数:
+  - 日期: {record.get('date')} · 时段: {record.get('time_start')}–{record.get('time_end')} · 分类: {category}
+  - 本次纠正 {diff_count} 个字段(edit_count={edit_count})
+  - 今日已记录 {today_count} 条 · 总时长 {today_mins} 分钟({today_mins // 60}h{today_mins % 60}m)
   - 本周累计 {week_count} 条(最近 7 天)
   - 纠正后记录(已含 updated_at + edit_count):
 {record_json}
 """
-
     if diff_count > 0:
-        base_prompt += f"""
-②.5 纠正 diff({diff_count} 个字段):
-"""
+        params_block += f"  - 纠正 diff({diff_count} 个字段):\n"
         for d in diff_lines:
-            base_prompt += f"  - {d['field']}: {d['old']!r} → {d['new']!r}\n"
+            params_block += f"    - {d['field']}: {d['old']!r} → {d['new']!r}\n"
 
-    base_prompt += f"""
-④ 来源: record_receipt_edit_id{record_id}_{date}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},record_id={record_id},edit_count={edit_count}
-"""
+    prompt_continue = "① 技能与唤醒词: 作息管家 · 「修正作息」\n\n" + params_block + """
+③ 执行: 按「修正作息」流程等待用户下一条告知并写入(或继续修正其他记录)"""
 
-    prompt_continue = base_prompt + """
-③ 期望: 用户即将告诉你"我接下来在做 X"(可能是继续记下一条,或接着纠正另一条)。
-请调 schedule_cli.py add 写库 + 调 render-record-receipt <新 id> 生成回执;或调 amend-record <其他 id> 继续修正。
-不要做其他事,等用户输入。"""
+    prompt_overview = "① 技能与唤醒词: 作息管家 · 「查作息」\n\n" + params_block + f"""
+③ 执行: 按「查作息」流程生成 {record.get('date')} 的今日报告"""
 
-    prompt_overview = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-record-day {record.get('date')} 生成今日报告 HTML,
-让我扫读全部记录(包含今日所有作息 + 24h 时间轴 + 分类进度)。
-纯展示,不做复盘。"""
-
-    prompt_review = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-plans-review {record.get('date')} 生成复盘报告 HTML,
-让我逐条标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)" + 写完成原因。
-完成后给我返回复盘小结(完成率 + 各类占比 + 1-2 句今日总结)。"""
+    prompt_review = "① 技能与唤醒词: 作息管家 · 「复盘」\n\n" + params_block + f"""
+③ 执行: 按「复盘」流程生成 {record.get('date')} 的复盘报告"""
 
     payload = {
         "meta": {
@@ -1919,18 +1879,14 @@ def _build_plan_json(plan):
 
 
 def _build_plan_receipt_base_prompt(plan_id, plan, stats, plan_json, action_verb_zh, action_label_zh, file_action):
-    """render_plan_receipt 4 款公共 base_prompt 构造"""
+    """render_plan_receipt 4 款公共「② 参数」构造(2026-08-13 拍板:技能+唤醒词+参数)"""
     date = plan.get("date", "")
-    return f"""① 场景: 我刚"{action_verb_zh}"了一条计划(id={plan_id} · {date} {plan.get("time_start")}–{plan.get("time_end")} {plan.get("title")})
-
-② 数据(今日计划概况):
-  - 今日共 {stats["today_count"]} 条计划(完成 {stats["completed_count"]} 条,完成率 {stats["completion_rate"]}%)
-  - 飞书已同步 {stats["feishu_synced"]} 条
-  - 24h 覆盖率 {stats["coverage_hours"]} 小时
+    return f"""② 参数:
+  - 计划 id={plan_id} · {date} {plan.get("time_start")}–{plan.get("time_end")} {plan.get("title")}
+  - 今日计划 {stats["today_count"]} 条(完成 {stats["completed_count"]} 条 · 完成率 {stats["completion_rate"]}%)
+  - 飞书已同步 {stats["feishu_synced"]} 条 · 24h 覆盖 {stats["coverage_hours"]} 小时
   - 刚"{action_label_zh}":
 {plan_json}
-
-④ 来源: plan_receipt_{file_action}_id{plan_id}_{date}.html 生成于 {datetime.now().strftime("%Y-%m-%d %H:%M:%S")},操作 action={file_action}
 """
 
 
@@ -1953,20 +1909,14 @@ def render_plan_receipt(plan_id: int, action: str = "update") -> dict:
     action_verb_zh = "修改" if action == "update" else "软删"
     base_prompt = _build_plan_receipt_base_prompt(plan_id, plan, stats, plan_json, action_verb_zh, action_verb_zh, action)
 
-    prompt_adjust = base_prompt + f"""
-③ 期望: 用户即将告诉你修改内容(改时间/改标题/补备注/改分类)。
-请调 schedule_cli.py update-event {plan_id} <字段> <值> 写库。
-不要做其他事,等用户输入。"""
+    prompt_adjust = "① 技能与唤醒词: 作息管家 · 「改计划」\n\n" + base_prompt + """
+③ 执行: 按「改计划」流程等待用户告知修改内容并写入"""
 
-    prompt_overview = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-list-events {date} 生成今日所有计划 HTML,
-让我扫读今日全部计划(包含所有状态 + 飞书同步状态)。
-不要做复盘,纯展示。"""
+    prompt_overview = "① 技能与唤醒词: 作息管家 · 「查日程 / 看日程」\n\n" + base_prompt + f"""
+③ 执行: 按「查日程」流程生成 {date} 的今日计划总览"""
 
-    prompt_review = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-plans-review {date} 生成复盘报告 HTML,
-让我逐条标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)" + 写完成原因。
-完成后给我返回复盘小结(完成率 + 各类占比 + 1-2 句今日总结)。"""
+    prompt_review = "① 技能与唤醒词: 作息管家 · 「复盘」\n\n" + base_prompt + f"""
+③ 执行: 按「复盘」流程生成 {date} 的复盘报告"""
 
     payload = {
         "meta": {
@@ -2022,20 +1972,14 @@ def render_plan_receipt_add(plan_id: int) -> dict:
     plan_json = _build_plan_json(plan)
     base_prompt = _build_plan_receipt_base_prompt(plan_id, plan, stats, plan_json, "补", "补", "add")
 
-    prompt_continue = base_prompt + """
-③ 期望: 用户即将告诉你"继续补下一条"。
-请调 schedule_cli.py ensure-plan-event <新日期> <新时段> --title "..." --category "..." 写库。
-不要做其他事,等用户输入。"""
+    prompt_continue = "① 技能与唤醒词: 作息管家 · 「补计划」\n\n" + base_prompt + """
+③ 执行: 按「补计划」流程等待用户告知下一条并写入"""
 
-    prompt_overview = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-list-events {date} 生成今日所有计划 HTML,
-让我扫读今日全部计划(包含所有状态 + 飞书同步状态)。
-不要做复盘,纯展示。"""
+    prompt_overview = "① 技能与唤醒词: 作息管家 · 「查日程 / 看日程」\n\n" + base_prompt + f"""
+③ 执行: 按「查日程」流程生成 {date} 的今日计划总览"""
 
-    prompt_review = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-plans-review {date} 生成复盘报告 HTML,
-让我逐条标"已完成 / 已完成(超时) / 部分完成 / 未完成 / 未完成(不可抗力)" + 写完成原因。
-完成后给我返回复盘小结(完成率 + 各类占比 + 1-2 句今日总结)。"""
+    prompt_review = "① 技能与唤醒词: 作息管家 · 「复盘」\n\n" + base_prompt + f"""
+③ 执行: 按「复盘」流程生成 {date} 的复盘报告"""
 
     payload = {
         "meta": {
@@ -2087,20 +2031,14 @@ def render_plan_receipt_write(plan_id: int) -> dict:
     plan_json = _build_plan_json(plan)
     base_prompt = _build_plan_receipt_base_prompt(plan_id, plan, stats, plan_json, "写摘要", "写摘要", "write")
 
-    prompt_continue = base_prompt + """
-③ 期望: 用户即将告诉你"继续写另一条摘要"。
-请调 schedule_cli.py update-event <新 id> --completion X --completion-note "Y"。
-不要做其他事,等用户输入。"""
+    prompt_continue = "① 技能与唤醒词: 作息管家 · 「复盘」\n\n" + base_prompt + """
+③ 执行: 按「复盘」流程等待用户告知下一事件状态并写入"""
 
-    prompt_overview = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-plans-review {date} 生成复盘报告 HTML,
-让我扫读所有事件(已标完成 + 未完成),继续标剩余事件。
-不要做其他事,纯展示 + 让我标。"""
+    prompt_overview = "① 技能与唤醒词: 作息管家 · 「复盘」\n\n" + base_prompt + f"""
+③ 执行: 按「复盘」流程生成 {date} 的复盘报告(已标完成事件)"""
 
-    prompt_look_all = base_prompt + f"""
-③ 期望: 请调 schedule_cli.py render-list-events {date} 生成今日所有计划 HTML,
-让我扫读今日全部计划(包含所有状态 + 飞书同步状态)。
-不要做复盘,纯展示。"""
+    prompt_look_all = "① 技能与唤醒词: 作息管家 · 「查日程 / 看日程」\n\n" + base_prompt + f"""
+③ 执行: 按「查日程」流程生成 {date} 的今日计划总览"""
 
     payload = {
         "meta": {
@@ -3101,9 +3039,10 @@ def render_replay(start: str, end: str, ai_engine: str = "mock",
         plan_guide = {
             "hint": "今天还没有日程计划,无法做计划 vs 实际对照。",
             "prompt": (
-                f"请帮我把今天的计划补齐:调 schedule_cli.py 用商量计划流程"
-                f"(ensure-plan-event 或 upsert-plan-events)先制定今天剩余时段的日程,"
-                f"然后再调 render-replay {start} {end} --granularity day 重新复盘。"
+                f"① 技能与唤醒词: 作息管家 · 「商量计划」\n"
+                f"② 参数:\n  - 日期: 今天 · 当前无日程计划\n"
+                f"③ 执行: 按「商量计划」流程先制定今天剩余时段的日程,"
+                f"然后重新生成 {start} 至 {end} 的单日粒度复盘"
             ),
         }
 
@@ -3287,21 +3226,14 @@ def _build_replay_copy_prompt(start: str, end: str, total_records: int,
     """
     completion_rate = (completed_events / total_events * 100) if total_events else 0.0
     gran_cn = {"day": "今日", "week": "本周", "month": "本月", "range": "区间"}.get(granularity, "区间")
-    if granularity == "day":
-        scene = f"复盘今日 {start}"
-    elif granularity in ("week", "month"):
-        scene = f"复盘{gran_cn} {start} ~ {end}"
-    else:
-        scene = f"复盘区间 {start} ~ {end}"
     return (
-        f"① 场景: {scene}({gran_cn}粒度 · 一体模板)\n"
-        f"② 数据: {total_records} 条记录,总时长 {total_minutes} 分钟,"
-        f"计划完成 {completed_events}/{total_events} ({completion_rate:.1f}%)\n"
-        f"③ 期望: 基于以上复盘数据给我总结 + 建议;如果今天/明天还没有计划,"
-        f"请引导我调商量计划(ensure-plan-event / upsert-plan-events)制定下一天日程,形成"
-        f"「复盘 → 制定明日计划」衔接闭环\n"
-        f"④ 来源: schedule_replay.html 生成于 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')},"
-        f"数据源 schedule_records + schedule_plans"
+        f"① 技能与唤醒词: 作息管家 · 「复盘」\n\n"
+        f"② 参数:\n"
+        f"  - 区间: {start} ~ {end}({gran_cn}粒度) · 记录 {total_records} 条 · 总时长 {total_minutes} 分钟\n"
+        f"  - 计划完成 {completed_events}/{total_events} ({completion_rate:.1f}%)\n\n"
+        f"③ 执行: 按「复盘」流程执行;如果今天/明天还没有计划,"
+        f"引导我按「商量计划」流程制定下一天日程,形成"
+        f"「复盘 → 制定明日计划」衔接闭环"
     )
 
 

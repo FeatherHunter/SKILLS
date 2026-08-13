@@ -145,9 +145,9 @@ def test_replay_html_copy_prompt_button(replay_html_file):
     # 复制按钮元素
     assert "copy-prompt-btn" in html or "复制 prompt" in html, \
         "缺复制 prompt 按钮"
-    # 4 部分结构(① ② ③ ④ 或 ① ② ③ ④)
-    for marker in ("①", "②", "③", "④"):
-        assert marker in html, f"copy_prompt 缺第{marker}部分(4 部分结构)"
+    # 3 部分结构(① 技能与唤醒词 / ② 参数 / ③ 执行)
+    for marker in ("①", "②", "③"):
+        assert marker in html, f"copy_prompt 缺第{marker}部分(3 部分结构)"
 
 
 def test_replay_html_4_segments(replay_html_file):

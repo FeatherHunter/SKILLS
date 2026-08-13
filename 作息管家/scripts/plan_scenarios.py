@@ -181,8 +181,8 @@ def _build_copy_prompt(date_str, plan_events, locked, fits, conflicts,
     plan_json_str = json.dumps(plan_events, ensure_ascii=False, indent=2)
     locked_summary = ""
     if locked:
-        locked_summary = "\n⑤ 已锁定事件(写库时锁定时段,会被保护):\n" + \
-            "\n".join(f"  - {e['time_start']}–{e['time_end']} {e.get('title','—')}"
+        locked_summary = "\n  - 已锁定事件(" + str(len(locked)) + " 段 · 写库时保留保护):\n" + \
+            "\n".join(f"    - {e['time_start']}–{e['time_end']} {e.get('title','—')}"
                       for e in locked) + "\n"
     fit_summary = ""
     if fits:
@@ -190,28 +190,24 @@ def _build_copy_prompt(date_str, plan_events, locked, fits, conflicts,
         for f in fits:
             mark = {"match": "✅贴合", "drift": "⚠️偏离", "none": "➖无参考"}[f["fit"]]
             lines.append(
-                f"  - {f['time_start']}–{f['time_end']} {f.get('title','—')}"
+                f"    - {f['time_start']}–{f['time_end']} {f.get('title','—')}"
                 f" [{f.get('category') or '未分类'}] {mark} {f['hint']}")
-        fit_summary = "\n⑥ 历史贴合提示(过去 " + str(history_days) + " 天作息习惯):\n" + \
+        fit_summary = "\n  - 历史贴合提示(过去 " + str(history_days) + " 天作息习惯):\n" + \
             "\n".join(lines) + "\n"
     conflicts_summary = ""
     if conflicts:
-        conflicts_summary = "\n⚠ 检测到 " + str(len(conflicts)) + " 处候选与已锁定事件时间冲突:\n" + \
-            "\n".join(f"  - {c['time_range']}: 候选「{c['candidate']}」与已锁定「{c['locked']}」重叠"
-                      for c in conflicts) + "\n请调整候选事件时段或更新已锁定事件后重新生成。\n"
+        conflicts_summary = "\n  - 冲突(" + str(len(conflicts)) + " 处):\n" + \
+            "\n".join(f"    - 「{c['candidate']}」({c['candidate_time']})与「{c['locked']}」({c['locked_time']})"
+                      f"重叠 {c['overlap']} · {c['overlap_minutes']} 分钟"
+                      for c in conflicts) + "\n"
 
     rate_txt = f"贴合率 {rate}%" if rate is not None else "该窗口无历史作息记录(全新参考)"
-    return (f"① 场景: 我和 AI 多轮对话生成了 {date_str} 的次日计划"
-            f"({len(plan_events)} 段事件覆盖 24h)。{rate_txt}\n"
-            f"\n"
-            f"② 数据(候选 24h 时间块):\n"
+    return (f"① 技能与唤醒词: 作息管家 · 「商量计划」\n\n"
+            f"② 参数:\n"
+            f"  - 日期: {date_str} · 候选事件({len(plan_events)} 段 · 24h 覆盖) · {rate_txt}\n"
+            f"  - 候选事件 JSON:\n"
             f"{plan_json_str}{locked_summary}{fit_summary}{conflicts_summary}"
-            f"③ 期望: 请执行 schedule_cli.py upsert-plan-events {date_str} --json @plan.json 写库;询问飞书同步(Y/n)\n"
-            f"  - 无冲突时直接采纳\n"
-            f"  - 有冲突时先与用户讨论调整再写\n"
-            f"\n"
-            f"④ 来源: plan_result.html 生成于 {now_str},"
-            f"数据来自多轮对话 + 历史作息({history_days} 天)")
+            f"③ 执行: 按「商量计划」流程把候选事件写入 {date_str} 的计划,写库后询问是否同步飞书\n")
 
 
 def cmd_plan_result(args):
@@ -315,10 +311,15 @@ def cmd_plan_result(args):
             except (KeyError, ValueError):
                 continue
             if cs < le and ls < ce:
+                os_, oe = max(cs, ls), min(ce, le)
                 conflicts.append({
                     "time_range": cand["time_start"] + "–" + cand["time_end"],
                     "candidate": cand.get("title", "—"),
+                    "candidate_time": cand["time_start"] + "–" + cand["time_end"],
                     "locked": lk.get("title", "—"),
+                    "locked_time": lk["time_start"] + "–" + lk["time_end"],
+                    "overlap": f"{os_ // 60:02d}:{os_ % 60:02d}–{oe // 60:02d}:{oe % 60:02d}",
+                    "overlap_minutes": oe - os_,
                 })
 
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -384,7 +385,7 @@ def cmd_plan_result(args):
         "call_chain": [
             "python scripts/plan_scenarios.py(域模块 · T1 通道自动发现)",
             f"plan-result {date_str} --json @plan.json --history-days {history_days}",
-            "写库由 AI 执行: schedule_cli.py upsert-plan-events(复制 prompt ③)",
+            "写库由 AI 按商量计划流程执行(见复制 prompt ③)",
         ],
         "timestamp": now_str,
         "errors": [],

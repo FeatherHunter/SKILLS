@@ -20,6 +20,8 @@ import re
 import sys
 from pathlib import Path
 
+import pytest
+
 SCRIPTS_DIR = Path(__file__).parent.parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
@@ -68,11 +70,11 @@ def _payload_has_copy_prompt(payload):
     if "copy_prompt" in data and data["copy_prompt"]:
         return True, "copy_prompt"
     if "prompts" in data and data["prompts"]:
-        # 验证至少 1 个 prompt 含 4 部分 marker
+        # 验证至少 1 个 prompt 含 3 部分 marker(① 技能与唤醒词 / ② 参数 / ③ 执行)
         for key, p in data["prompts"].items():
-            if "①" in p or "① 场景" in p:
+            if "① 技能与唤醒词" in p:
                 return True, f"prompts[{key}]"
-        return False, "prompts 字段无 4 部分标记"
+        return False, "prompts 字段无 3 部分标记"
     # 例外:plan_review 的 prompt 是客户端 JS 动态拼接的,payload 不带
     mode = data.get("meta", {}).get("mode", "")
     if mode == "plan-review":
@@ -99,10 +101,10 @@ def test_record_receipt_has_copy_prompt():
     assert "continue" in prompts
     assert "overview" in prompts
     assert "review" in prompts
-    # 至少 1 款含 4 部分 marker(① 场景 / ② 数据 / ③ 期望 / ④ 来源)
+    # 至少 1 款含 3 部分 marker(① 技能与唤醒词 / ② 参数 / ③ 执行)
     all_prompts_text = " ".join(prompts.values())
-    assert "①" in all_prompts_text or "① 场景" in all_prompts_text, "prompts 应含 ① 场景 marker"
-    assert "④" in all_prompts_text or "④ 来源" in all_prompts_text, "prompts 应含 ④ 来源 marker"
+    assert "① 技能与唤醒词" in all_prompts_text, "prompts 应含 ① 技能与唤醒词 marker"
+    assert "③ 执行" in all_prompts_text, "prompts 应含 ③ 执行 marker"
 
 
 # ===== Issue 09:14 模板补复制 prompt(Q6 核心)=====
@@ -273,6 +275,91 @@ def test_all_14_render_payloads_have_copy_prompt():
         if not ok:
             failures.append(f"{name}: {where}")
     assert not failures, "缺复制 prompt 的模板:\n  " + "\n  ".join(failures)
+
+
+# ===== #324 用户拍板:copy prompt 禁止硬编码脚本调用 =====
+
+# 一旦脚本/命令名重构,硬编码的指令必然指向不存在的调用 → prompt 必须只描述意图
+BANNED_CMD_TOKENS = [
+    "schedule_cli.py", "schedule_cli ", "python scripts/",
+    "render-record-day", "render-record-range", "render-record-compare",
+    "render-record-category", "render-record-anomaly", "render-records-detail",
+    "render-plans-review", "render-list-events", "render-plans-preview",
+    "render-replay", "render-receipt", "render-record-result",
+    "update-event", "ensure-plan-event", "upsert-plan-events", "amend-record",
+]
+
+
+def _collect_prompt_texts(payload):
+    """收集 payload 中所有会被复制给 AI 的 prompt 字符串"""
+    d = payload.get("data") or {}
+    out = []
+    cp = d.get("copy_prompt")
+    if isinstance(cp, str):
+        out.append(cp)
+    for k, v in (d.get("prompts") or {}).items():
+        if isinstance(v, str):
+            out.append(v)
+    gd = d.get("granularity_data") or {}
+    pg = gd.get("plan_guide") or {}
+    if pg.get("prompt"):
+        out.append(pg["prompt"])
+    return out
+
+
+def test_no_hardcoded_cli_in_any_copy_prompt():
+    """#324 用户拍板: 任何 HTML 复制的 prompt 禁止写死脚本/命令调用"""
+    _seed_day("2026-07-15", count=3)
+    _seed_day("2026-07-16", count=2)
+    _seed_plan_day("2026-07-15")
+    plans = _db.list_plan_events("2026-07-15", include_inactive=True)
+    plan_id = plans[0]["id"]
+    rid = _db.add_record_full(
+        date="2026-07-15", time_start="14:00", time_end="15:00", duration_minutes=60,
+        activity="测试", category="工作.AI调优",
+        source_contents="x", source_timestamps="14:00", analysis_reasoning="y",
+    )
+    payloads = [
+        ("record_day", _render.render_record_day("2026-07-15")),
+        ("record_range", _render.render_record_range("2026-07-15", "2026-07-16")),
+        ("record_compare", _render.render_record_compare(
+            "A", "2026-07-15", "2026-07-15", "B", "2026-07-16", "2026-07-16")),
+        ("record_category", _render.render_record_category("工作", "2026-07-15", "2026-07-15")),
+        ("record_anomaly", _render.render_record_anomaly(window_days=3)),
+        ("record_detail", _render.render_records_detail("2026-07-15")),
+        ("list_events", _render.render_list_events("2026-07-15")),
+        ("plan_preview", _render.render_plans_preview("2026-07-15", plan_events=plans)),
+        ("plan_review", _render.render_plans_review("2026-07-15")),
+        ("plan_receipt", _render.render_plan_receipt(plan_id, action="update")),
+        ("plan_receipt_add", _render.render_plan_receipt_add(plan_id)),
+        ("plan_receipt_write", _render.render_plan_receipt_write(plan_id)),
+        ("record_receipt", _render.render_receipt(rid)),
+        ("record_receipt_edit", _render.render_record_receipt_edit(rid, diff={})),
+    ]
+    bad = []
+    for name, payload in payloads:
+        for text in _collect_prompt_texts(payload):
+            for tok in BANNED_CMD_TOKENS:
+                if tok in text:
+                    bad.append(f"{name}: 含硬编码 '{tok}' → {text[:120]!r}")
+                    break
+    assert not bad, "copy prompt 硬编码脚本调用:\n  " + "\n  ".join(bad)
+    # 格式锁(2026-08-13 用户拍板): prompt = ① 技能与唤醒词 + ② 参数 + ③ 执行
+    fmt_bad = []
+    for name, payload in payloads:
+        for text in _collect_prompt_texts(payload):
+            if "① 技能与唤醒词" not in text:
+                fmt_bad.append(f"{name}: 缺 ① 技能与唤醒词")
+            if "③ 执行" not in text:
+                fmt_bad.append(f"{name}: 缺 ③ 执行")
+    assert not fmt_bad, "copy prompt 格式违规:\n  " + "\n  ".join(fmt_bad)
+
+
+@pytest.mark.parametrize("tpl", ["schedule_plan_review.html", "plan_result.html"])
+def test_prompt_builder_templates_no_hardcoded_cli(tpl):
+    """模板内联构建 copy prompt 的 JS/文案禁止硬编码脚本调用(#324 用户拍板)"""
+    c = (Path(__file__).parent.parent / "templates" / tpl).read_text(encoding="utf-8")
+    assert "schedule_cli.py" not in c, f"{tpl}: 模板内硬编码脚本调用"
 
 
 # ===== 渲染后 HTML 含复制按钮 marker(模板 + 共享引擎分发)=====

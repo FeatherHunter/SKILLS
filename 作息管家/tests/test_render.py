@@ -171,7 +171,7 @@ def test_plan_receipt_three_modes_consistency():
         # 每款至少有一个操作 prompt
         first_key = next(iter(prompts.keys()))
         first_prompt = prompts[first_key]
-        assert "① 场景" in first_prompt or "①" in first_prompt or len(first_prompt) > 50
+        assert "① 技能与唤醒词" in first_prompt or "①" in first_prompt or len(first_prompt) > 50
         # 至少含 id=plan_id 标识
         all_text = " ".join(prompts.values())
         assert f"id={plan_id}" in all_text
@@ -233,11 +233,9 @@ def test_helpers_directly():
 
     base = _build_plan_receipt_base_prompt(target["id"], target, stats, plan_json,
                                           "测试动作", "测试动作", "test")
-    assert "① 场景" in base
+    assert "② 参数" in base
     assert "测试动作" in base
-    assert "② 数据" in base
     assert f"id={target['id']}" in base
-    assert "④ 来源" in base
 
 
 # ---- 复盘 start-end (跨域 dual-domain · Phase E) ----

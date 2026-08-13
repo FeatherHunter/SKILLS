@@ -72,8 +72,8 @@ def test_replay_day_missing_plan_guide():
     gd = result["data"]["granularity_data"]
     assert gd["plan_guide"] is not None
     assert "还没有日程计划" in gd["plan_guide"]["hint"] or gd["plan_guide"]["hint"]
-    assert "ensure-plan-event" in gd["plan_guide"]["prompt"]
-    assert "granularity day" in gd["plan_guide"]["prompt"]
+    assert "商量计划" in gd["plan_guide"]["prompt"]
+    assert "单日粒度" in gd["plan_guide"]["prompt"]
 
 
 # ---- week 粒度 ----

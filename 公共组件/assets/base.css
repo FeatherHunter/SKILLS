@@ -1,8 +1,9 @@
-/* Base Skill token A 组 + 控件样式 v1.9（唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill token A 组 + 控件样式 v1.11（唯一真相源 · 跨技能 · 领域无关）
  * 来源: 居家管家模板 :root token（对齐 #248/08-HTML交互规范.md 按钮规范）
  * v1.2: 新增新控件样式（formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt/复制预览面板）
  * v1.7: .hm-actions 自约束 max-width 520px 居中（#322 · 修复复制按钮被容器拉伸成半屏宽, 胶囊语义恢复）
  * v1.9: selectList 行内控件样式（.sl-widget* · #327 · 样式走 token A 组）
+ * v1.11: smartSelect 选择器组件样式（.ss-* · #312 · 主题色经 .ss-root 内联 CSS 变量覆盖, 缺省账本藏蓝）
  * 注入点: 由 injector.py 的 SHARED-CSS 占位符注入（模板声明点, 勿含闭合标签字样）
  */
 
@@ -303,4 +304,168 @@ button.copy.ghost {
   .sl-batchbar { flex-direction: column; align-items: stretch; }
   .sl-count { margin-left: 0; }
   .hm-confirm-panel { padding: 20px 18px; }
+}
+
+/* ── smartSelect 选择器组件（v1.11 · #312 · 复用优先·新建其次）──
+ * 类名全 ss- 命名空间（封装纪律, 防宿主同名类冲突）; 主题色 = .ss-root 内联 CSS 变量,
+ * 缺省账本藏蓝 #123A63（deep #0B1F3B / soft #E9F0F7）, 每实例可独立覆盖
+ */
+.ss-root {
+  --ss-brand: #123a63;
+  --ss-brand-soft: #e9f0f7;
+  --ss-on-brand: #ffffff;
+  --ss-deep: #0b1f3b;
+  margin-top: 6px;
+}
+.ss-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--ss-brand);
+  background: var(--ss-brand-soft);
+}
+.ss-card .ss-ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ss-brand);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ss-card .ss-ic svg { width: 18px; height: 18px; }
+.ss-body { flex: 1; min-width: 0; }
+.ss-nm { font-size: 16px; font-weight: 700; color: var(--fg); word-break: break-word; }
+.ss-src { font-size: 11px; color: var(--fg3); margin-top: 2px; }
+.ss-card.ss-card-empty { border: 2px dashed var(--line); background: transparent; }
+.ss-card.ss-card-empty .ss-ic { background: transparent; border: 2px solid var(--fg3); }
+.ss-card.ss-card-empty .ss-nm { color: var(--fg3); }
+.ss-badge {
+  display: inline-block;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.ss-badge-ai { background: var(--ss-brand-soft); color: var(--ss-brand); }
+.ss-badge-new { background: #fff8c5; color: #9a6700; }
+.ss-badge-plain { background: #eef; color: var(--fg3); }
+.ss-title { font-size: 11px; color: var(--fg3); margin: 10px 0 6px; }
+.ss-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 40px;
+}
+.ss-search:focus { outline: none; border-color: var(--ss-brand); box-shadow: 0 0 0 3px rgba(18, 58, 99, .12); }
+.ss-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ss-chip {
+  padding: 6px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  font-size: 13px;
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  color: var(--fg);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.ss-chip:hover { border-color: var(--ss-brand); }
+.ss-chip.ss-chip-sel {
+  background: var(--ss-brand);
+  border-color: var(--ss-brand);
+  color: var(--ss-on-brand);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
+}
+.ss-chip.ss-chip-sel .ss-badge-ai { background: rgba(255, 255, 255, .2); color: #fff; }
+.ss-chip.ss-chip-sel .ss-badge-new { background: rgba(255, 255, 255, .25); color: #ffe9a8; }
+.ss-chip.ss-chip-sel .ss-badge-plain { background: rgba(255, 255, 255, .18); color: #fff; }
+.ss-chip.ss-chip-dis {
+  color: var(--fg3);
+  text-decoration: line-through;
+  cursor: not-allowed;
+  background: var(--bg);
+  border-color: var(--line);
+}
+.ss-new { display: flex; gap: 8px; margin-top: 10px; }
+.ss-new input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 40px;
+}
+.ss-new input:focus { outline: none; border-color: var(--ss-brand); }
+.ss-new button {
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  min-height: 40px;
+}
+.ss-new button:hover { border-color: var(--ss-brand); color: var(--ss-brand); }
+.ss-hint { margin-top: 6px; font-size: 12px; color: #b25b00; display: none; }
+.ss-empty {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg3);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  min-height: 36px;
+}
+.ss-empty:hover { border-color: var(--ss-brand); color: var(--ss-brand); }
+/* 降级模式（options 空数组等 → 普通输入） */
+.ss-plain {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}
+.ss-plain:focus { outline: none; border-color: var(--ss-brand); box-shadow: 0 0 0 3px rgba(18, 58, 99, .12); }
+@media (max-width: 820px) {
+  .ss-new { flex-direction: column; align-items: stretch; }
+  .ss-new button { min-height: 44px; }
+  .ss-chip { min-height: 38px; }
 }

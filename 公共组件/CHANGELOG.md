@@ -2,6 +2,26 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.12（2026-08-13 · 图表两处视觉 bug 修复 · #317 验收）
+
+**charts.js 两处视觉缺陷修复**（非破坏性 · 签名零变更 · 纯内部实现/样式）。
+
+- **donut 粗环裁切**：固定 `r=52` 仅支持 `ringWidth ≤ 16`；`ringWidth 22/24/26` 时圆环外缘超出 svg viewBox 半宽被裁切成"方框圆环"。修复：`r = max(20, 60 - ringWidth/2 - 2)` 随 ringWidth 自适应（外缘恒 ≤ 58 留 2 边距）。**向后兼容**：ringWidth ≤16 时 r 从 52 → 50（外缘从 60 → 58，视觉基本一致，环略微内收 2px）
+- **line x 标签溢出**：`.hm-c-line-wrap` 高度固定 `--c-h`，svg `height:100%` 占满后 x 标签行溢出 wrap 底部，与下方内容（note/表格）重叠。修复：wrap 改 `display:flex;flex-direction:column`，svg `flex:1`，x 标签行自然落在 wrap 内底部。**向后兼容**：无 x 标签（labels:'none'）时 svg 仍占满；有标签时 svg 高度 = `--c-h` 减标签行，总高度不变
+- 守卫测试 +3（donut ringWidth 26 外缘 < 半宽 / line x 标签不溢出 wrap / donut 中心文字可显式关闭）→ 公共组件全量 172/172 全绿
+
+## v1.11（2026-08-13 · smartSelect 选择器组件 · #312 · 公共层立项 #320）
+
+**smartSelect = 字段级「复用优先·新建其次」选择器组件**（非破坏性 · 新增全局函数 + 新增样式 · 既有接口零变更; 首个使用域 = 饼干记账, 根治 #298）。
+
+- **定位**: 字段级组件（一页 N 实例, 每字段一容器一 config 一隐藏 input, 互不干扰）· 零领域词全参数化 · `smartSelect(el, config)` 一行接入; 与 copyText/actionBar 同级入 base.js/base.css（注入走 SHARED-HELPERS/SHARED-CSS 管线, 注入器零改动）
+- **行为契约**（#307 形态定稿）: chips 平铺候选 + 顶部「已选卡片」（SVG ✓ + 来源徽章）; 初始选中优先级 = **AI 推断 > 历史预填 > AI 推荐新建 > 空**（initial 缺省时组件自推; 无推断时默认选中「AI 推荐新建」）; 用户可改选已有/自定义新建/留空; **绝不静默填错**; 新建落位候选区 chip、重名自动选中已有; 相似提示组件内置; 停用划线置灰不可点; 搜索过滤候选; 主题色默认账本藏蓝 #123A63（CSS 变量每实例可覆盖）
+- **数据契约**（#309 契约草案）: config 与 `form.selector.<fieldKey>` 对齐（snake_case）——`options(含 disabled) / inferred / recommended_new / initial{name,source}`; source 白名单 `inferred|recommended_new|existing|history|custom|empty` 违规直接报错; options 缺省空数组且无推断/推荐/initial → **降级普通输入**（T4 决议）
+- **回填协议**（组件→上层）: `input.value` + `dataset.source` + `dataset.new('1'=新建)` + change 事件（bubbles）; `smartSelect(el).getState()/getValue()` 可选; **prompt 由上层 buildPrompt 自拼（组件零 prompt 知识）**
+- **守卫**（契约 §6）: 结构校验违规直接报错（对齐 Base v1.2）; 类名全 `ss-` 命名空间（封装纪律, #309 用户实测揪出裸类名 `.plain` 冲突 bug 的教训）; 全部动态文本 esc 零注入面; chips 用 `<button type="button">`（无障碍 + 键盘可用）
+- 契约 §6.3 条目更新 + 新增 §6.9 + CHANGELOG 同步; 守卫测试 +29（渲染/优先级推导/回填协议/停用/新建/重名/相似提示/留空/降级/校验报错/封装纪律反例/XSS/多实例/搜索过滤/主题覆盖/getState）→ 全量全绿
+- 验收页: `docs/reviews/smartSelect验收.html`（#298 美团场景 + 三字段 + 降级 + 主题切换 + 回填仪表）
+
 ## v1.10（2026-08-13 · copyText 反馈钩子 · #328）
 
 **copyText 自定义反馈文案 + 回调钩子**（非破坏性 · 签名零变更 · 新增可选能力; 对齐 08 规范「文案由各技能按场景自设计」2026-08-13 修订, 备忘录 6 模板手搓 silent 包装退役的前置 Base 能力）。
@@ -31,16 +51,6 @@
 - `test_render_default_filename_by_skill` 改为在 pytest `tmp_path` 内复制模板副本后执行无 `--output` 调用,断言缺省产物落在临时 `out/help_<技能名>.html`（保留缺省文件名契约,不再向仓库目录落盘）
 - `.gitignore` 新增 `公共组件/assets/out/`（injector 缺省输出目录兜底,防 untracked 残留）
 - 回归:公共组件全量 151/151 全绿;测试后 `git status` 零残留
-
-## 规划中（2026-08-13 · smartSelect 选择器组件立项登记）
-
-**smartSelect = 字段级「复用优先·新建其次」选择器组件**（公共层 ISSUE #320，挂 wayfinder #305；实施 = #312，落地后补版本号与细节）。
-
-- **定位**: 字段级组件（一页 N 实例）· 零领域词全参数化 · `smartSelect(el, config)` 一行接入；首个使用域 = 饼干记账（采集表单 expense_form + 联动 2 表单，根治 #298）
-- **行为契约**: chips 平铺候选 + 顶部「已选卡片」（来源徽章）；初始选中 = AI 推断 > 历史预填 > 空，无推断默认「AI 推荐新建」；绝不静默填错；新建落位候选区；停用划线置灰；主题色默认账本藏蓝 #123A63
-- **数据契约**: `form.selector.<fieldKey>` 嵌套对象 + source 白名单（inferred/recommended_new/existing/history/custom/empty）；回填 = input.value + dataset.source/new + onchange；prompt 由上层 buildPrompt 自拼（组件零 prompt 知识）
-- **守卫**: 结构校验违规直接报错；类名全 `ss-` 命名空间（封装纪律，防宿主同名类冲突）
-- 契约草案: `饼干记账/.scratch/selector-proto/contract.md`（v1 · #307 形态定稿 + #309 契约决议）
 
 ## v1.8（2026-08-13 · toast 队列改堆叠模式 · #304）
 

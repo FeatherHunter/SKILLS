@@ -927,6 +927,7 @@ def test_charts_standalone_without_base_js(chart_page):
     """charts.js 可独立注入（不依赖 base.js）: 空态用内联兜底而非 emptyState
     （删除 base.js 残留全局 + 重新执行 charts.js → 验证自包含: 本地 esc + 内联空态）"""
     chart_page.evaluate("""
+      window.__savedEsc = window.esc;
       window.emptyState = undefined; window.esc = undefined;
       delete window.__chartsLoaded; delete window.charts;
     """)
@@ -934,6 +935,8 @@ def test_charts_standalone_without_base_js(chart_page):
     chart_page.evaluate("window.charts.bar(document.getElementById('root'), [])")
     text = chart_page.evaluate("document.querySelector('.hm-c-empty')?.textContent")
     assert text == '📊 暂无数据'
+    # 测试卫生: 恢复被清空的全局 esc（chart_page 与 page 同浏览器上下文, 防污染后续用例, #312 追加）
+    chart_page.evaluate("window.esc = window.__savedEsc; delete window.__savedEsc;")
 
 
 # ── 图表视觉回归守卫（#288 验收抓 bug: donut 图例色点重叠）─────────────────
@@ -1003,6 +1006,58 @@ def test_charts_bar_mobile_long_label_not_clipped(chart_page):
       (() => [...document.querySelectorAll('.hm-c-l')].map(el => el.scrollWidth > el.clientWidth))()
     """)
     assert clipped == [False] * 6, f'长标签被截断: {clipped}'
+
+
+def test_charts_donut_thick_ring_not_clipped(chart_page):
+    """donut ringWidth > 16 圆环不被 svg 视口裁切（回归 #317 验收: 固定 r=52 时 ringWidth 26 外缘超 viewBox 呈"方框圆环"）"""
+    chart_page.evaluate("""
+      window.charts.donut(document.getElementById('root'),
+        [{label:'A',value:60},{label:'B',value:40}],
+        {size:220, ringWidth:26, legend:'none', animation:false});
+    """)
+    clip = chart_page.evaluate("""
+      (() => {
+        const svg = document.querySelector('.hm-c-donut svg');
+        const r = svg.getBoundingClientRect();
+        const c = svg.querySelector('circle[stroke-dashoffset]');
+        const outer = (parseFloat(c.getAttribute('r')) + parseFloat(c.getAttribute('stroke-width')) / 2) * (r.width / 120);
+        return { outerPx: outer, halfPx: r.width / 2 };
+      })()
+    """)
+    assert clip['outerPx'] < clip['halfPx'], f'圆环外缘({clip["outerPx"]:.1f}px)超出视口半宽({clip["halfPx"]:.1f}px)被裁切'
+
+
+def test_charts_line_xlabels_not_overflow_wrap(chart_page):
+    """line x 轴标签行不溢出 wrap 底部（回归 #317 验收: svg height:100% + x 标签行在 wrap 外 → 与下方内容重叠）"""
+    chart_page.evaluate("""
+      document.getElementById('root').innerHTML = '<div style="height:300px"></div>';
+      window.charts.line(document.getElementById('root'),
+        [{label:'周一',value:2},{label:'周二',value:5},{label:'周三',value:3},{label:'周四',value:4}],
+        {height:220, labels:'all', animation:false});
+    """)
+    overflow = chart_page.evaluate("""
+      (() => {
+        const wrap = document.querySelector('.hm-c-line-wrap');
+        const xl = wrap.querySelector('.hm-c-line-x');
+        const wr = wrap.getBoundingClientRect();
+        const xr = xl.getBoundingClientRect();
+        return { xlBottom: xr.bottom, wrapBottom: wr.bottom };
+      })()
+    """)
+    assert overflow['xlBottom'] <= overflow['wrapBottom'] + 1, \
+        f'x 标签底部({overflow["xlBottom"]:.1f})超出 wrap 底部({overflow["wrapBottom"]:.1f})'
+
+
+def test_charts_donut_center_text_can_be_empty(chart_page):
+    """donut 中心文字可显式关闭（centerLabel/centerValue 传空串 → 不渲染 svg text; #317 验收: 技能用 HTML 覆盖层显示中心）"""
+    chart_page.evaluate("""
+      window.charts.donut(document.getElementById('root'),
+        [{label:'完成度',value:100}],
+        {centerLabel:'', centerValue:'', animation:false});
+    """)
+    texts = chart_page.evaluate("[...document.querySelectorAll('.hm-c-donut svg text')].map(t => t.textContent)")
+    assert texts == [], f'中心文字未关闭: {texts}'
+
 
 # ── v1.4 全参数测试 ──────────────────────────────────────
 
@@ -1300,3 +1355,263 @@ def test_gauge_renders(chart_page):
 def test_gauge_throws_on_invalid(chart_page):
     err = chart_page.evaluate("""() => { try { window.charts.gauge(document.getElementById('root'), 'x'); return ''; } catch(e) { return e.message; } }""")
     assert 'pct' in err
+
+
+# ── smartSelect 选择器组件（v1.11 · #312 · 复用优先·新建其次）────────────────────
+
+BASE_SS_CFG = {
+    'options': [
+        {'name': '美团', 'disabled': False},
+        {'name': '微信', 'disabled': False},
+        {'name': '支付宝', 'disabled': True},
+    ],
+    'inferred': '美团',
+    'recommended_new': '美团月付',
+}
+
+
+def _mount_ss(page, cfg, value=''):
+    """root 内建一个 input 并挂 smartSelect 实例（window.__ss 保存句柄）"""
+    page.evaluate("""(o) => {
+      document.getElementById('root').innerHTML = '<input id="ss-inp">';
+      var el = document.getElementById('ss-inp');
+      if (o.value) el.value = o.value;
+      window.__ss = window.smartSelect(el, o.cfg);
+    }""", {'cfg': cfg, 'value': value})
+
+
+def test_smart_select_renders_card_and_chips(page):
+    """基本渲染: 已选卡片(AI 推断) + 候选 chips(含停用/推荐新建) + 隐藏 input"""
+    _mount_ss(page, BASE_SS_CFG)
+    nm = page.evaluate("document.querySelector('.ss-nm').textContent")
+    src = page.evaluate("document.querySelector('.ss-src').textContent")
+    badge = page.evaluate("document.querySelector('.ss-card .ss-badge').textContent")
+    chips = page.evaluate("[...document.querySelectorAll('.ss-chip')].map(x => x.textContent)")
+    assert nm == '美团' and badge == 'AI 推断'
+    assert src == 'AI 推断 · 识别到相关信息'
+    assert any('微信' in c for c in chips)
+    assert any('支付宝' in c and '停用' in c for c in chips)
+    assert any('AI 推荐·新建' in c for c in chips)
+    disp = page.evaluate("getComputedStyle(document.getElementById('ss-inp')).display")
+    assert disp == 'none'
+
+
+def test_smart_select_priority_inferred_over_history(page):
+    """优先级: AI 推断 > 历史预填(input.value)"""
+    _mount_ss(page, BASE_SS_CFG, value='微信')
+    nm = page.evaluate("document.querySelector('.ss-nm').textContent")
+    src = page.evaluate("document.querySelector('.ss-src').textContent")
+    assert nm == '美团' and 'AI 推断' in src
+
+
+def test_smart_select_priority_history_over_recommended(page):
+    """优先级: 历史预填 > AI 推荐新建（无推断时）"""
+    _mount_ss(page, {'options': [{'name': '生活'}, {'name': '旅行'}], 'recommended_new': '家庭'}, value='旅行')
+    nm = page.evaluate("document.querySelector('.ss-nm').textContent")
+    badge = page.evaluate("document.querySelector('.ss-card .ss-badge').textContent")
+    assert nm == '旅行' and badge == '历史'
+
+
+def test_smart_select_default_recommended_new(page):
+    """无推断无历史 → 默认选中 AI 推荐新建"""
+    _mount_ss(page, {'options': [{'name': '生活'}], 'recommended_new': '家庭'})
+    nm = page.evaluate("document.querySelector('.ss-nm').textContent")
+    badge = page.evaluate("document.querySelector('.ss-card .ss-badge').textContent")
+    val = page.evaluate("document.getElementById('ss-inp').value")
+    isnew = page.evaluate("document.getElementById('ss-inp').dataset.new")
+    assert nm == '家庭' and badge == 'AI 推荐·新建'
+    assert val == '家庭' and isnew == '1'
+
+
+def test_smart_select_initial_explicit_wins(page):
+    """显式 initial 优先于一切推导"""
+    _mount_ss(page, dict(BASE_SS_CFG, initial={'name': '现金', 'source': 'existing'}))
+    nm = page.evaluate("document.querySelector('.ss-nm').textContent")
+    src = page.evaluate("document.getElementById('ss-inp').dataset.source")
+    assert nm == '现金' and src == 'existing'
+
+
+def test_smart_select_writeback_protocol(page):
+    """回填协议: input.value + dataset.source + dataset.new + change 事件"""
+    _mount_ss(page, BASE_SS_CFG)
+    page.evaluate("window.__changes = 0; document.getElementById('ss-inp').addEventListener('change', () => window.__changes++);")
+    page.locator('.ss-chip', has_text='微信').click()
+    st = page.evaluate("""() => {
+      const el = document.getElementById('ss-inp');
+      return { v: el.value, src: el.dataset.source, isNew: el.dataset.new, changes: window.__changes };
+    }""")
+    assert st == {'v': '微信', 'src': 'existing', 'isNew': '0', 'changes': 1}
+
+
+def test_smart_select_click_switches_card(page):
+    """点击候选 chip → 卡片与选中态更新"""
+    _mount_ss(page, BASE_SS_CFG)
+    page.locator('.ss-chip', has_text='微信').click()
+    nm = page.evaluate("document.querySelector('.ss-nm').textContent")
+    sel = page.evaluate("[...document.querySelectorAll('.ss-chip.ss-chip-sel')].map(x => x.textContent)")
+    assert nm == '微信' and any('微信' in s for s in sel)
+
+
+def test_smart_select_disabled_chip_inert(page):
+    """停用态: 划线置灰 + 不可点"""
+    _mount_ss(page, BASE_SS_CFG)
+    dis = page.locator('.ss-chip.ss-chip-dis')
+    assert dis.count() == 1 and '支付宝' in dis.first.text_content()
+    assert dis.first.is_disabled()
+    page.evaluate("document.querySelector('.ss-chip.ss-chip-dis').click()")  # disabled button 点击是 no-op
+    assert page.evaluate("document.getElementById('ss-inp').value") == '美团'
+
+
+def test_smart_select_custom_new(page):
+    """自定义新建: 加入候选区 chip + 选中 + 回填 source=custom/new=1"""
+    _mount_ss(page, BASE_SS_CFG)
+    page.fill('.ss-new input', '美团月付卡')
+    page.click('.ss-new button')
+    st = page.evaluate("""() => {
+      const el = document.getElementById('ss-inp');
+      const chip = [...document.querySelectorAll('.ss-chip')].find(x => x.textContent.includes('美团月付卡'));
+      return { v: el.value, src: el.dataset.source, isNew: el.dataset.new,
+               chip: !!chip, badge: chip ? chip.querySelector('.ss-badge').textContent : '' };
+    }""")
+    assert st['v'] == '美团月付卡' and st['src'] == 'custom' and st['isNew'] == '1'
+    assert st['chip'] and st['badge'] == '自定义'
+
+
+def test_smart_select_duplicate_new_selects_existing(page):
+    """重名自动选中已有项（source=existing, new=0）"""
+    _mount_ss(page, BASE_SS_CFG)
+    page.fill('.ss-new input', '美团')
+    page.press('.ss-new input', 'Enter')
+    st = page.evaluate("""() => {
+      const el = document.getElementById('ss-inp');
+      return { v: el.value, src: el.dataset.source, isNew: el.dataset.new };
+    }""")
+    assert st == {'v': '美团', 'src': 'existing', 'isNew': '0'}
+
+
+def test_smart_select_similar_hint(page):
+    """相似提示: 输入与已有项部分匹配 → 内置提示"""
+    _mount_ss(page, BASE_SS_CFG)
+    page.fill('.ss-new input', '微')
+    hint = page.evaluate("document.querySelector('.ss-hint').textContent")
+    vis = page.evaluate("document.querySelector('.ss-hint').style.display")
+    assert '微信' in hint and vis != 'none'
+
+
+def test_smart_select_empty_button(page):
+    """留空按钮: 卡片空态 + 回填空 + source=empty"""
+    _mount_ss(page, BASE_SS_CFG)
+    page.click('.ss-empty')
+    st = page.evaluate("""() => {
+      const el = document.getElementById('ss-inp');
+      return { v: el.value, src: el.dataset.source, isNew: el.dataset.new,
+               emptyCard: !!document.querySelector('.ss-card.ss-card-empty') };
+    }""")
+    assert st == {'v': '', 'src': 'empty', 'isNew': '0', 'emptyCard': True}
+
+
+def test_smart_select_requires_input_element(page):
+    """inputEl 必须是 <input> 元素"""
+    err = page.evaluate("""() => { try { window.smartSelect(document.createElement('div'), {options:[{name:'a'}]}); return ''; } catch(e) { return e.message; } }""")
+    assert 'inputEl 必须是' in err
+
+
+@pytest.mark.parametrize('cfg,err_frag', [
+    (None, 'config 必须是对象'),
+    ({'options': 'x'}, 'options 必须是数组'),
+    ({'options': [{'name': ''}]}, 'name'),
+    ({'options': [{'name': 'a', 'disabled': 'x'}]}, 'disabled 必须是布尔'),
+    ({'inferred': 5}, 'inferred 必须是字符串'),
+    ({'recommended_new': {}}, 'recommended_new 必须是字符串'),
+    ({'initial': {'name': 'a', 'source': 'bad'}}, 'source'),
+    ({'initial': {'source': 'existing'}}, 'name'),
+    ({'texts': 'x'}, 'texts 必须是对象'),
+])
+def test_smart_select_validation_throws(page, cfg, err_frag):
+    """结构校验违规直接报错（对齐 Base v1.2「违规直接报错」）"""
+    err = page.evaluate("""(cfg) => { try { window.smartSelect(document.createElement('input'), cfg); return ''; } catch(e) { return e.message; } }""", cfg)
+    assert err and 'smartSelect 违规' in err and err_frag in err
+
+
+def test_smart_select_empty_options_degrades_plain_input(page):
+    """降级: 无选项/无推断/无推荐/无 initial → 普通输入（T4 决议）"""
+    _mount_ss(page, {})
+    vis = page.evaluate("getComputedStyle(document.getElementById('ss-inp')).display")
+    cls = page.evaluate("document.getElementById('ss-inp').className")
+    assert vis != 'none' and 'ss-plain' in cls
+    page.fill('#ss-inp', '旅行')
+    st = page.evaluate("""() => {
+      const el = document.getElementById('ss-inp');
+      return { src: el.dataset.source, isNew: el.dataset.new };
+    }""")
+    assert st == {'src': 'custom', 'isNew': '1'}
+
+
+def test_smart_select_host_bare_class_no_collision(page):
+    """封装纪律: 宿主同名裸类规则不命中组件（.plain 冲突 bug 回归守卫）"""
+    page.evaluate("""() => {
+      const st = document.createElement('style');
+      st.id = 'hostcss';
+      st.textContent = '.plain{width:100%!important;color:red!important} .ai{color:red!important} .sel{outline:5px solid red} .dis{opacity:0!important}';
+      document.head.appendChild(st);
+    }""")
+    try:
+        _mount_ss(page, BASE_SS_CFG)
+        tokens = page.evaluate("""[...new Set([...document.querySelectorAll('.ss-root *')].flatMap(x => [...x.classList]))]""")
+        assert all(t.startswith('ss-') for t in tokens), f'组件类名混入裸类: {tokens}'
+        color = page.evaluate("getComputedStyle(document.querySelector('.ss-card .ss-badge-ai')).color")
+        assert color != 'rgb(255, 0, 0)'  # 宿主 .plain 未命中徽章
+    finally:
+        page.evaluate("document.getElementById('hostcss').remove()")
+
+
+def test_smart_select_esc_anti_xss(page):
+    """全部动态文本 esc, 零注入面"""
+    _mount_ss(page, {'options': [{'name': '<img src=x onerror=alert(1)>'}], 'inferred': '<img src=x onerror=alert(2)>'})
+    img = page.evaluate("document.querySelector('.ss-root img') !== null")
+    raw = page.evaluate("document.getElementById('root').innerHTML")
+    assert img is False
+    assert '&lt;img' in raw and '<img src' not in raw
+
+
+def test_smart_select_multi_instance_independent(page):
+    """一页 N 实例互不干扰"""
+    page.evaluate("""() => {
+      document.getElementById('root').innerHTML = '<input id="a"><input id="b">';
+      window.smartSelect(document.getElementById('a'), {options:[{name:'甲'},{name:'乙'}], inferred:'甲'});
+      window.smartSelect(document.getElementById('b'), {options:[{name:'丙'},{name:'丁'}], inferred:'丙'});
+    }""")
+    assert page.evaluate("document.querySelectorAll('.ss-root').length") == 2
+    page.locator('.ss-root').first.locator('.ss-chip', has_text='乙').click()
+    a = page.evaluate("document.getElementById('a').value")
+    b = page.evaluate("document.getElementById('b').value")
+    assert a == '乙' and b == '丙'
+
+
+def test_smart_select_search_filter(page):
+    """搜索过滤候选（按名称过滤, 不命中徽章文案）"""
+    _mount_ss(page, BASE_SS_CFG)
+    page.fill('.ss-search', '微信')
+    st = page.evaluate("""() => {
+      const chips = [...document.querySelectorAll('.ss-chip[data-n]')];
+      const mt = chips.find(x => x.getAttribute('data-n') === '美团');
+      const wx = chips.find(x => x.getAttribute('data-n') === '微信');
+      return { mt: mt ? mt.style.display : 'missing', wx: wx ? wx.style.display : 'missing' };
+    }""")
+    assert st == {'mt': 'none', 'wx': ''}
+
+
+def test_smart_select_theme_override(page):
+    """主题覆盖: CSS 变量落在 .ss-root（每实例独立）"""
+    _mount_ss(page, dict(BASE_SS_CFG, theme={'brand': '#123456'}))
+    var = page.evaluate("document.querySelector('.ss-root').style.getPropertyValue('--ss-brand')")
+    assert var == '#123456'
+
+
+def test_smart_select_get_state(page):
+    """getState/getValue 反映当前选中"""
+    _mount_ss(page, BASE_SS_CFG)
+    assert page.evaluate("window.__ss.getState()") == {'name': '美团', 'mode': 'inferred'}
+    assert page.evaluate("window.__ss.getValue()") == '美团'
+    page.locator('.ss-chip', has_text='微信').click()
+    assert page.evaluate("window.__ss.getState()") == {'name': '微信', 'mode': 'existing'}

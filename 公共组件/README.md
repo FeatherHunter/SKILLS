@@ -133,6 +133,7 @@
 |---|---|---|
 | `formPrompt(fields, template)` | 字段定义 + prompt 模板 → HTML | 用户填参数表单 + 实时预览 + 空值拦截（#122 拍板: 页内表单, 禁系统弹窗） |
 | `selectList(items, batchActions?, opts?)` | 条目 + 批量操作 → HTML | 勾选列表 + 批量操作 + 「本组已选 x/y」计数联动 |
+| `smartSelect(inputEl, config)` | `<input>` + config → {getState, getValue} | **字段级「复用优先·新建其次」选择器**（v1.11 · #312）: 账户/分类/账本/运动类型等字段通用; 已选卡片 + 候选 chips + 新建/留空/停用/相似提示; 回填 input.value+dataset.source/new; 结构校验违规直接报错。详见契约 §6.9 |
 | `confirm({title, detail?, danger?, onOk})` | 配置 → 对话框 | 危险操作二次确认（danger 红按钮） |
 | `foldBox(title, contentHtml)` | 标题 + 内容 → HTML | 折叠区（查看详情/原始数据） |
 | `statusBadge(status, text?)` | ok/warn/danger/empty → HTML | 状态徽章 |

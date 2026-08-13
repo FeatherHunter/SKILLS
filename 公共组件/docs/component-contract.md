@@ -1,6 +1,6 @@
-# Base 组件契约 v1.10
+# Base 组件契约 v1.11
 
-> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）+ **v1.9 selectList 行内控件**（2026-08-13 · #327）+ **v1.10 copyText 反馈钩子**（2026-08-13 · #328）
+> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）+ **v1.9 selectList 行内控件**（2026-08-13 · #327）+ **v1.10 copyText 反馈钩子**（2026-08-13 · #328）+ **v1.11 smartSelect 选择器组件**（2026-08-13 · #312 · 立项 #320）
 > 本契约是 Base Skill 组件的**冻结接口**，修改必须走公共层 ISSUE（总纲 09 §92）+ 遵循 §8 版本机制。
 
 ## 0. 版本记录
@@ -15,6 +15,7 @@
 | v1.6 | 2026-08-12 | **图表全参数化（方向 A 定稿）**：charts.js 四形态全参数化（line 16 项 / bar 7 / donut 6 / progress 4）+ 复合形态（combo 柱线组合 / sparkline 迷你趋势 / gauge 仪表盘）+ 结构校验违规报错（对齐 v1.2）+ 坐标唯一性（容器零 padding）+ 双端自适应（≤720px 独立 UI）+ 全部动画。守卫测试 141/141。**注意：v1.6 与 #289/#290 并发推进，版本号按落地顺序递增** |
 | v1.9 | 2026-08-13 | **#327 selectList 行内控件**（非破坏性 · 签名零变更）：①items[].widget 新可选字段（date/text/select，行内控件与勾选/批量/计数共存）②批量回调第二参 `onClick(ids, values)` = 勾选条目行内值（只读勾选，未填 → null）③读取接口选定形态 = `opts.onSubmit(selectedIds, values)`（全部行内值，含未勾选条目）④计数联动隔离（控件值变化不干扰）⑤行内值渲染一律 esc 零注入面。守卫测试 +11 → 162/162 全绿。详见 §6.7 |
 | v1.10 | 2026-08-13 | **#328 copyText 反馈钩子**（非破坏性 · 签名零变更）：①`opts.toast = {ok:{msg,detail,icon?}, fail:{msg,detail,icon?}}` 自定义成功/失败 toast 文案（只覆盖提供字段，缺省回落默认，对齐 08 规范「文案由技能自设计」）②`opts.onOk`/`opts.onFail` 回调（成功/最终失败必触发，互斥；`silent` 时不弹 toast 仍触发）③未传新选项行为与 v1.9 逐字一致。守卫测试 +7 → 169/169 全绿。详见 §6.8 |
+| v1.11 | 2026-08-13 | **#312 smartSelect 选择器组件**（非破坏性 · 新增全局函数 + 新增样式 · 既有接口零变更；立项 #320）：①字段级「复用优先·新建其次」选择器，`smartSelect(el, config)` 一行接入，一页 N 实例互不干扰 ②config 与 `form.selector.<fieldKey>` 对齐（options/inferred/recommended_new/initial{name,source}），零领域词全参数化（texts/theme 外部注入）③初始选中推导 = initial > AI 推断 > 历史预填 > AI 推荐新建 > 空 ④回填协议 input.value + dataset.source + dataset.new + change 事件，prompt 上层自拼 ⑤结构校验违规直接报错 + source 白名单 + 类名全 ss- 命名空间 ⑥options 空数组且无推断/推荐 → 降级普通输入 ⑦全部动态文本 esc 零注入面。守卫测试 +29 → 全量全绿。详见 §6.9 |
 
 ## 1. 目录结构
 
@@ -168,6 +169,7 @@ actionBar(p, extra?, opts?) → HTML
 | `statusBadge(status, text?)` | 'ok'\|'warn'\|'danger'\|'empty'→HTML | **P1**：状态徽章（语义色统一）。**v1.4 加固**：非法/未知 status 值白名单降级 `empty`（防无样式徽章）；text 缺省用语义默认（成功/警告/失败/无数据）；text 经 esc 防 XSS | 
 | `emptyState({icon?, text, hint?, action?})` | 配置→HTML | **P1**：空状态（图示+文案+下一步建议）。**v1.4 加固**：icon/text/hint 一律 esc 防 XSS；`action` = **受信 HTML 透传**（调用方负责其内容安全，通常放按钮；如含用户数据必须先在调用方 esc） |
 | `errorReceipt({message, retryPrompt?, data?, log?, payload?})` | 配置→HTML | **P1**：错误回执（08 规范 §6.1：错误描述+修正重试+复制数据/日志）。**v1.4 加固**：①`payload` = 数据信封（显式传入优先；兼容 `window.__hmPayload` 全局兜底）②`data`/`log` = 复制按钮内容字符串直传（显式优先，缺省从 payload 生成）③复制按钮渲染期生成文本存 `data-t`，onclick 仅 `copyText(this.dataset.t)`——**不依赖点击时环境，零注入面** ④payload 缺 `scene.snapshot` 时容错：不渲染复制数据/日志按钮，控件不抛错 ⑤布局：修正重试 primary wide 独立一行 + 复制数据/日志 ghost 一行 2 个（08 规范奇数按钮） |
+| `smartSelect(inputEl, config)` | `<input>` + config → {getState, getValue} | **P1.5（v1.11 · #312）**：字段级「复用优先·新建其次」选择器（账户/分类/账本/运动类型等任何此类字段通用）。详见 §6.9 |
 
 ### 6.4 样式 token A 组 + 控件样式（base.css）
 
@@ -278,6 +280,47 @@ copyText(s, {
 - **silent 组合**：`silent:true` 时不弹 toast，但回调仍触发（08 规范定制文案场景的标准做法：silent + 自定义乐观 toast + onFail 纠错）
 - **空串**：`copyText('')` 直接 return，无 toast 无回调（既有语义）
 - **安全**：文案经 `toast` 内部 `esc` 转义（既有）
+
+### 6.9 smartSelect 选择器组件（v1.11 · #312 · 立项 #320）
+
+**一句话**：字段级「复用优先·新建其次」选择器——优先复用已有项，其次新建；AI 推断 / AI 推荐新建辅助决策；组件零领域词，label/选项/徽章文案/来源说明/prompt 拼装全部由外部 config 注入。与 copyText/actionBar 同级 Base 组件，注入走 SHARED-HELPERS / SHARED-CSS 管线（入 base.js / base.css，注入器零改动）。**非破坏性**：新增全局函数 + 新增样式，既有接口零变更。
+
+```js
+smartSelect(inputEl, config) → { getState, getValue }
+```
+
+- **config（snake_case，与数据契约 `form.selector.<fieldKey>` 对齐）**：
+
+```json
+{
+  "options": [{"name": "美团", "disabled": false}, {"name": "支付宝", "disabled": true}],
+  "inferred": "美团",
+  "recommended_new": "美团月付",
+  "initial": {"name": "美团", "source": "inferred"},
+  "texts": { "candTitle": "...", "search": "...", "newPlaceholder": "...", "newButton": "＋ 新建",
+             "emptyButton": "留空(不填)",
+             "badgeInferred": "AI 推断", "badgeRecommendedNew": "AI 推荐·新建",
+             "badgeExisting": "已有", "badgeHistory": "历史", "badgeCustom": "自定义",
+             "cardSrc": { "inferred": "...", "recommended_new": "...", "existing": "...",
+                          "history": "...", "custom": "...", "empty": "..." } },
+  "theme": { "brand": "#123a63", "brandSoft": "#e9f0f7", "onBrand": "#ffffff", "deep": "#0b1f3b" }
+}
+```
+
+- **行为契约**（#307 形态定稿）：chips 平铺候选 + 顶部「已选卡片」（SVG ✓ 圆形图标 + 来源徽章）；初始选中优先级 = **AI 推断 > 历史预填 > AI 推荐新建 > 空**（`initial` 缺省时组件自行推导；无推断时默认选中「AI 推荐新建」项）；用户可改选已有 / 自定义新建 / 留空；**绝不静默填错**；新建值以 chip 加入候选区（「自定义」徽章 + 选中态），重名自动选中已有项；相似提示组件内置；停用态划线置灰不可点；搜索过滤候选；主题色默认账本藏蓝 `#123A63`（CSS 变量每实例可覆盖）
+- **降级**：`options` 缺省空数组 **且** 无 `inferred` / `recommended_new` / `initial` → 组件降级为普通输入（T4 决议：键空 → options 空数组 → 降级），输入值回填 `source=custom` / 空 `source=empty`
+- **回填协议**（组件→上层，**prompt 由上层 buildPrompt 自拼，组件零 prompt 知识**）：
+
+| 通道 | 值 |
+|---|---|
+| `input.value` | 最终选中值（留空 = 空串） |
+| `input.dataset.source` | 来源（白名单） |
+| `input.dataset.new` | `'1'` = 选了新建（recommended_new/custom） |
+| 事件 | `change`（bubbles）每次选中触发；`smartSelect(el).getState()/getValue()` 可选 |
+
+- **source 白名单**：`inferred | recommended_new | existing | history | custom | empty`（违规直接报错）
+- **守卫**：结构校验违规直接报错（对齐 Base v1.2 原则）——config 非对象 / options 非数组 / option 缺 name / disabled 非布尔 / inferred、recommended_new 非字符串 / initial 缺 name 或 source 不在白名单 / inputEl 非 `<input>` → `throw new Error('smartSelect 违规: …')`；类名全 `ss-` 命名空间（**封装纪律**，禁止裸类名 plain/ai/new/sel/dis/ic/nm/src/empty 等——宿主同名规则会命中组件，实证 bug：宿主 `.plain{width:100%}` 命中徽章类把已选卡片文本区挤成 1 字宽）；全部动态文本经 `esc` 零注入面；候选 chip 用 `<button type="button">`（无障碍 + 键盘可用）
+- **样式**：`.ss-*` 走 base.css（token A 组 + 主题 CSS 变量），技能零样式副本；手机 ≤820px 独立适配（新建行纵向、触控高度）
 
 ## 7. 注入器接口（v1.3）
 

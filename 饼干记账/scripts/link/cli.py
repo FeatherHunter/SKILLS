@@ -38,6 +38,9 @@ from html_paths import html_path  # noqa: E402
 # #300 Base 管线共享层:统一信封 + Base 注入器 + utf-8-sig BOM
 from _base_render import envelope, inject_base, write_html  # noqa: E402
 
+# #312 T6 smartSelect 三字段 selector 块(账户/分类/账本 · 契约 公共组件 §6.9)
+from _selector import build_selector  # noqa: E402
+
 SKILL_DIR = _SCRIPTS.parent
 TEMPLATE_DIR = SKILL_DIR / "templates" / "联动"
 SKILL_VERSION = "2.0"
@@ -170,38 +173,18 @@ def _all_l1() -> list:
     return sorted(ALL_L1)
 
 
-def _ledger_options() -> list:
-    """账本候选(goals.json ledgers 键 · T4 #308 契约 · 供 smartSelect 消费)
-
-    返回 [{"name", "disabled"}, ...];缺键/空文件/损坏/键型非法 → 空数组
-    (组件降级普通输入)。只读,不写 goals.json。
-    """
-    from db import _find_db_path, DB_FILENAME
-    p = _find_db_path(SKILL_DIR, DB_FILENAME).parent / "goals.json"
-    if not p.exists():
-        return []
-    try:
-        data = json.loads(p.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return []
-    if not isinstance(data, dict):
-        return []
-    ledgers = data.get("ledgers", [])
-    if not isinstance(ledgers, list):
-        return []
-    return [{"name": str(l.get("name") or ""), "disabled": bool(l.get("disabled"))}
-            for l in ledgers
-            if str(l.get("name") or "").strip()]
-
-
 def build_form_payload(scene_key: str, fields: dict, category_hint: str, note_hint: str,
-                       records: list = None) -> dict:
-    """构建联动采集表单 payload(买东西联动/吃饭联动)"""
+                       records: list = None, sources: dict = None) -> dict:
+    """构建联动采集表单 payload(买东西联动/吃饭联动)
+
+    sources: {field: source}（CLI --<field>-source · 契约 §4）; 缺省 None = 不显式预置
+    """
     scene = SCENES[scene_key]
     records = records if records is not None else _load_history()
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     filled, prefill_src = _prefill(records, fields, category_hint, note_hint)
+    category_suggs = _category_suggestions(records, category_hint)
 
     amount = None
     try:
@@ -231,12 +214,11 @@ def build_form_payload(scene_key: str, fields: dict, category_hint: str, note_hi
             "key_placeholder": scene["key_placeholder"],
             "prefill_source": prefill_src,
             "duplicate_hint": dup_hint,
-            "category_suggestions": _category_suggestions(records, category_hint),
+            "category_suggestions": category_suggs,
             "categories_history": _extract_categories(records),
             "categories_all": _all_l1(),
-            "selector": {
-                "ledger": {"options": _ledger_options()},
-            },
+            # #312 T6: 三字段 selector 块(账户=accounts 键 · 分类=历史+L1 · 账本=ledgers 键)
+            "selector": build_selector(fields, records, sources, category_suggs),
         },
     }
     # #300 统一信封
@@ -402,6 +384,15 @@ def main():
     p.add_argument("--category-hint", default=None, help="分类名目意图(AI 语义推荐)")
     p.add_argument("--account", default=None, help="账户")
     p.add_argument("--ledger", default=None, help="账本")
+    p.add_argument("--account-source", default=None,
+                   choices=["inferred", "recommended_new", "existing", "history", "custom"],
+                   help="账户来源(缺省: 传 --account 无来源 → 值在候选内=existing, 否则=recommended_new)")
+    p.add_argument("--category-source", default=None,
+                   choices=["inferred", "recommended_new", "existing", "history", "custom"],
+                   help="分类来源(同上)")
+    p.add_argument("--ledger-source", default=None,
+                   choices=["inferred", "recommended_new", "existing", "history", "custom"],
+                   help="账本来源(同上)")
     p.add_argument("--time", default=None, help="时间")
     p.add_argument("--note", default=None, help="备注")
     p.add_argument("--currency", default=None, help="币种")
@@ -434,7 +425,10 @@ def main():
             }
             if key_value:
                 fields[key_field] = key_value
-            payload = build_form_payload(args.scene, fields, args.category_hint or "", args.note or "")
+            sources = {k: getattr(args, f"{k}_source") for k in
+                       ("account", "category", "ledger") if getattr(args, f"{k}_source")}
+            payload = build_form_payload(args.scene, fields, args.category_hint or "", args.note or "",
+                                         sources=sources)
             scene = SCENES[args.scene]
             out = _render(payload, scene["form_template"], scene["title"] + "采集", args.out)
             form = payload["data"]["form"]

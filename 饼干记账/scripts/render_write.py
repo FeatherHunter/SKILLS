@@ -34,6 +34,9 @@ if str(_SCRIPT_DIR) not in sys.path:
 # #300 Base 管线共享层:统一信封 + Base 注入器 + utf-8-sig BOM
 from _base_render import envelope, inject_base, write_html
 
+# #312 T6 smartSelect 三字段 selector 块(账户/分类/账本 · 契约 公共组件 §6.9)
+from _selector import build_selector
+
 SKILL_DIR = _SCRIPT_DIR.parent
 TEMPLATE = SKILL_DIR / "templates" / "写入" / "expense_form.html"
 BATCH_TEMPLATE = SKILL_DIR / "templates" / "写入" / "batch_confirm.html"
@@ -140,12 +143,16 @@ def _category_suggestions(records: list, category_hint: str, form_type: str) -> 
 
 
 def build_payload(form_type: str, fields: dict, category_hint: str, note_hint: str, records: list,
-                  photo_meta: dict = None) -> dict:
-    """构建采集表单 payload(expense/income/photo)"""
+                  photo_meta: dict = None, sources: dict = None) -> dict:
+    """构建采集表单 payload(expense/income/photo)
+
+    sources: {field: source}（CLI --<field>-source · 契约 §4）; 缺省 None = 不显式预置
+    """
     meta = FORM_TYPES[form_type]
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     filled, prefill_src = _prefill(records, fields, category_hint, note_hint)
+    category_suggs = _category_suggestions(records, category_hint, form_type)
 
     # 记报销:备注自动附加 #待报销(未显式给 #tag 时)
     if form_type == "reimburse":
@@ -178,12 +185,11 @@ def build_payload(form_type: str, fields: dict, category_hint: str, note_hint: s
             "prefill_source": None if form_type == "photo" else prefill_src,
             "duplicate_hint": dup_hint if form_type != "photo" else None,
             "photo_meta": photo_meta,
-            "category_suggestions": _category_suggestions(records, category_hint, form_type),
+            "category_suggestions": category_suggs,
             "categories_history": _extract_categories(records),
             "categories_all": _all_l1(),
-            "selector": {
-                "ledger": {"options": _ledger_options()},
-            },
+            # #312 T6: 三字段 selector 块(账户=accounts 键 · 分类=历史+L1 · 账本=ledgers 键)
+            "selector": build_selector(fields, records, sources, category_suggs),
         },
     }
     # #300 统一信封:表单数据组织进 scene.snapshot(复制数据【场景名 · 数据快照】)
@@ -270,30 +276,6 @@ def build_batch_payload(items: list, ledger: str, records: list) -> dict:
 def _all_l1() -> list:
     from validators import ALL_L1
     return sorted(ALL_L1)
-
-
-def _ledger_options() -> list:
-    """账本候选(goals.json ledgers 键 · T4 #308 契约 · 供 smartSelect 消费)
-
-    返回 [{"name", "disabled"}, ...];缺键/空文件/损坏/键型非法 → 空数组
-    (组件降级普通输入)。只读,不写 goals.json。
-    """
-    from db import _find_db_path, DB_FILENAME
-    p = _find_db_path(SKILL_DIR, DB_FILENAME).parent / "goals.json"
-    if not p.exists():
-        return []
-    try:
-        data = json.loads(p.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError):
-        return []
-    if not isinstance(data, dict):
-        return []
-    ledgers = data.get("ledgers", [])
-    if not isinstance(ledgers, list):
-        return []
-    return [{"name": str(l.get("name") or ""), "disabled": bool(l.get("disabled"))}
-            for l in ledgers
-            if str(l.get("name") or "").strip()]
 
 
 def default_output_path(command_name: str) -> Path:
@@ -603,6 +585,15 @@ def main():
     parser.add_argument("--category-hint", default=None, help="分类名目意图(AI 语义推荐)")
     parser.add_argument("--account", default=None, help="账户")
     parser.add_argument("--ledger", default=None, help="账本")
+    parser.add_argument("--account-source", default=None,
+                        choices=["inferred", "recommended_new", "existing", "history", "custom"],
+                        help="账户来源(缺省: 传 --account 无来源 → 值在候选内=existing, 否则=recommended_new)")
+    parser.add_argument("--category-source", default=None,
+                        choices=["inferred", "recommended_new", "existing", "history", "custom"],
+                        help="分类来源(同上)")
+    parser.add_argument("--ledger-source", default=None,
+                        choices=["inferred", "recommended_new", "existing", "history", "custom"],
+                        help="账本来源(同上)")
     parser.add_argument("--time", default=None, help="时间")
     parser.add_argument("--note", default=None, help="备注")
     parser.add_argument("--currency", default=None, help="币种")
@@ -705,7 +696,10 @@ def main():
             "note": args.photo_note or "AI 识别结果，请核对金额",
         }
     payload = build_payload(args.form_type, fields, args.category_hint or "", args.note or "",
-                            records, photo_meta=photo_meta)
+                            records, photo_meta=photo_meta,
+                            sources={k: getattr(args, f"{k}_source") for k in
+                                     ("account", "category", "ledger")
+                                     if getattr(args, f"{k}_source")})
     _write_html(payload, TEMPLATE, FORM_TYPES[args.form_type]["command_cn"] + "采集", args.out)
     print(f"  分类建议: {[s['name'] for s in payload['data']['form']['category_suggestions']]}")
     if payload["data"]["form"]["prefill_source"]:

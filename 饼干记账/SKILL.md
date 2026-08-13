@@ -241,8 +241,9 @@ description: 记账技能。写入类:记支出、记收入、拍账单、批量
 4. 无法判断时，描述看到的内容并请用户确认
 
 **确认页生成硬约束（2026-08-13 · #298 缓解 · 违者视为 bug）：**
-1. **确认页只能由脚本生成**：调用 `scripts/render_write.py photo`（参数：`--images` 图片数 / `--photo-note` 识别说明 / `--amount` / `--category` / `--account` / `--ledger` / `--note` / `--out`）产出采集表单 HTML。**禁止 AI 手写/拼装确认页 HTML**——AI 的职责是解析账单并把识别结果当参数传给脚本，不是产 HTML。
-2. **账户必须推断并传参**：识别出商家/平台（如「美团外卖」→ 推断账户「美团」）时，AI 推断最可能的**已有**账户并通过 `--account` 传入；推断不出、或不确定该账户是否已存在 → 不传（表单留空待用户填），**不得编造**。账户预置只是省填写，用户可改可清空。
+1. **确认页只能由脚本生成**：调用 `scripts/render_write.py photo`（参数：`--images` 图片数 / `--photo-note` 识别说明 / `--amount` / `--category` / `--account` / `--ledger` / `--note` / `--account-source` / `--category-source` / `--ledger-source` / `--out`）产出采集表单 HTML。**禁止 AI 手写/拼装确认页 HTML**——AI 的职责是解析账单并把识别结果当参数传给脚本，不是产 HTML。
+2. **账户必须推断并传参**：识别出商家/平台（如「美团外卖」→ 推断账户「美团」）时，AI 推断最可能的**已有**账户 → `--account 美团 --account-source inferred`（表单标「AI 推断」）；推断出该账户不存在、建议新建（如「美团月付」）→ `--account 美团月付 --account-source recommended_new`（表单标「AI 推荐·新建」）；推断不出、或不确定该账户是否已存在 → 不传（表单留空待用户填），**不得编造**。账户预置只是省填写，用户可改可清空。
+3. **来源语义**：`--<field>-source` 取值 `inferred`（AI 推断已有项）/ `recommended_new`（AI 推荐新建）/ `existing` / `history` / `custom`；只传字段值不传来源 → 脚本按「值在候选内=已有(existing)、否则=推荐新建」处理；分类只给 `--category-hint` 时按建议走（命中已有=推断、全新=推荐新建）。
 
 #### 改记录
 
@@ -726,7 +727,7 @@ python3 scripts/account/render.py view
 
 #### 0. 过程型 HTML 硬约束（2026-08-13 · #298 缓解）
 
-所有写入类确认页/采集表单**只能由对应渲染脚本产出**（`render_write.py` / `link/cli.py` 等），**禁止 AI 手写 HTML**。AI 的职责 = 解析用户意图 + 把字段当参数传给脚本。字段推断（账户/分类/账本）传得出就传、传不出就不传，**不得编造**；预置值用户可改可清空（详见各场景小节，拍账单见上文「确认页生成硬约束」）。
+所有写入类确认页/采集表单**只能由对应渲染脚本产出**（`render_write.py` / `link/cli.py` 等），**禁止 AI 手写 HTML**。AI 的职责 = 解析用户意图 + 把字段当参数传给脚本。字段推断（账户/分类/账本）传得出就传、传不出就不传，**不得编造**；推断已有项配 `--<field>-source inferred`、推荐新建配 `--<field>-source recommended_new`（缺省只传值 → 值在候选内=已有、否则=推荐新建）；预置值用户可改可清空（详见各场景小节，拍账单见上文「确认页生成硬约束」）。
 
 #### 1. 分类选择器（过程型 HTML 必用）
 
@@ -1154,7 +1155,7 @@ python3 scripts/render_help.py --check
 | `installment_summary` | 分期总览(#分期) | （无） | **`--json`** |
 | `refund_summary` | 退款统计(#退款) | （无） | **`--json`** |
 | `breakdown` | 分类明细(旧口径兼容) | （无） | `--from`, `--to`, **`--json`** |
-| `form` | 联动采集表单渲染(买东西联动/吃饭联动) | `purchase`/`meal`(位置参数) | `--amount`, `--item`/`--ate`, `--category`, `--category-hint`, `--account`, `--ledger`, `--time`, `--note`, `--currency`, `--out` |
+| `form` | 联动采集表单渲染(买东西联动/吃饭联动) | `purchase`/`meal`(位置参数) | `--amount`, `--item`/`--ate`, `--category`, `--category-hint`, `--account`, `--ledger`, `--time`, `--note`, `--currency`, `--account-source`, `--category-source`, `--ledger-source`, `--out` |
 | `receipt` | 联动回执渲染(回执带联动按钮) | `purchase`/`meal` + `--id`(必需) | `--item`/`--ate`, `--out` |
 | `set-budget` | 设定月度预算(goal) | `--amount` | `--month`(默认本月), `--category`(不填=总预算), `--force`(覆盖), **`--json`** |
 | `budget` | 查看预算执行(goal) | （无） | `--month`, `--category`, **`--json`** |

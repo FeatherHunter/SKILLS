@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+<style><!--SHARED-CSS--></style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>训练复盘 · 卡路里</title>
@@ -247,8 +248,8 @@ footer{
 <div class="copy-section">
   <h3>📤 复制回 AI</h3>
   <div class="copy-actions">
-    <button class="btn" id="btnData" onclick="copyData()">复制数据</button>
-    <button class="btn" id="btnLog" onclick="copyLog()">复制日志</button>
+    
+    
   </div>
   <div class="copy-ext" id="copyExt"></div>
 </div>
@@ -263,12 +264,12 @@ footer{
 </div>
 <a id="backTop" href="#top" title="回到顶部">↑</a>
 
-<!--INJECT-DATA-->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <script>
 const DATA = (() => {
-  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
-  return window.__DATA__;
+  if (typeof window.__P__ !== 'object' || window.__P__ === null) return null;
+  return window.__P__;
 })();
 
 function escapeHTML(s) {
@@ -277,30 +278,15 @@ function escapeHTML(s) {
   }[c]));
 }
 
-function _copyNow(text, label) {
-  navigator.clipboard.writeText(text).then(() => {
-    toast(label);
-  }).catch(() => {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-  });
-}
-function copyData() {
-  _copyNow(document.getElementById('copyDataStore').textContent, '数据');
-}
-function copyLog() {
-  _copyNow(document.getElementById('copyLogStore').textContent, '日志');
-}
+
+
+
 function copyRelated(name) {
   // 激活态：当前扩展按钮高亮，其余取消
   document.querySelectorAll('.btn-ext').forEach(b => {
     b.classList.toggle('active', b.dataset.scene === name);
   });
-  const root = window.__DATA__ || {};
+  const root = window.__P__ || {};
   const meta = (root.__meta__) || {};
   const rs = (meta.related_scenes || []).find(s => s.name === name);
   _copyNow(rs ? rs.prompt : '', name);
@@ -484,7 +470,7 @@ function render() {
   // 解包：__DATA__ 可能带 {status,data,message} 包装；消费纯日期 dict
   const raw = DATA;
   const root = (raw && raw.data && typeof raw.data === 'object' && !raw.data.hasOwnProperty('completion_rate')) ? raw.data : raw;
-  const dates = Object.keys(root).filter(k => k !== '__meta__').sort();
+  const dates = Object.keys(root).filter(k => !['__meta__', 'meta', 'scene', 'copy_log'].includes(k)).sort();
   const days = dates.map(d => root[d]);
   if (dates.length === 0) {
     document.getElementById('subtitle').textContent = '暂无数据';
@@ -622,7 +608,10 @@ function render() {
 
 render();
 
-function toast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
+
 </script>
+<div id="actionbar-zone"></div>
+
+<script>(function(){var z=document.getElementById('actionbar-zone');if(z&&window.actionBar&&window.__P__){z.innerHTML=window.actionBar(window.__P__);}})();</script>
 </body>
 </html>

@@ -11,6 +11,8 @@
     python scripts/render_body_measurements_wizard.py --output /path/out.html
 """
 
+from _base_render import render_template, write_html  # noqa: E402
+
 import argparse
 import json
 import sqlite3
@@ -108,11 +110,9 @@ def render(output_path: Path, prefill: dict = None) -> Path:
         "message": "记围度 wizard — 填好参数后复制 prompt 给 AI",
     }
 
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    inject_data = f'<script>window.__DATA__ = {json.dumps(payload, ensure_ascii=False)};</script>'
-    html = template.replace('<!--INJECT-DATA-->', inject_data)
+    html = render_template(TEMPLATE_PATH, payload, "记围度")
 
-    output_path.write_text(html, encoding='utf-8')
+    write_html(html, output_path)
     return output_path
 
 

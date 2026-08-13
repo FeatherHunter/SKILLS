@@ -15,6 +15,8 @@
     python scripts/render_review.py --type month                    # 本月
     python scripts/render_review.py --output <path>                # 指定输出
 """
+
+from _base_render import render_template, write_html  # noqa: E402
 import argparse
 import json
 from html_paths import html_path
@@ -26,6 +28,8 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'review_template.html'
+
+COMMAND_CN = "复盘"
 
 
 def build_parser():
@@ -65,32 +69,16 @@ def fetch_gen(args) -> dict:
     return json.loads(json_str)
 
 
-def render_html(gen_result: dict) -> str:
-    """读 enriched 数据文件 + 注入模板"""
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-
-    # 占位符唯一性
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(
-            f"模板占位符数量异常: 期望 1 个,实际 {template.count(placeholder)} 个"
-        )
-
-    # 读 enriched 真实数据(从 data_path)
+def render_html(gen_result: dict):
+    """读 enriched 数据文件 + Base 管线注入"""
     data_path = gen_result['data']['data_path']
     enriched = json.loads(Path(data_path).read_text(encoding='utf-8'))['enriched']
-
-    # 包装成 {status, data, message} 三段式
     payload_obj = {
         'status': gen_result.get('status', 'ok'),
         'data': enriched,
         'message': gen_result.get('message', '已生成'),
     }
-
-    # 转义 </ 防止提前闭合 script 标签
-    payload = json.dumps(payload_obj, ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+    return render_template(TEMPLATE_PATH, payload_obj, COMMAND_CN)
 
 
 def main():
@@ -110,7 +98,7 @@ def main():
         out_path = html_path(SKILL_DIR, '复盘')
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     # 摘要
     e = json.loads(Path(gen_result['data']['data_path']).read_text(encoding='utf-8'))['enriched']

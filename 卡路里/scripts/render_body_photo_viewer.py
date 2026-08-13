@@ -10,6 +10,8 @@
     python scripts/render_body_photo_viewer.py --id 5 --output /path/out.html
 """
 
+from _base_render import render_template, write_html  # noqa: E402
+
 import argparse
 import json
 import sys
@@ -129,9 +131,7 @@ def render(photo_id: int, output_path: Path, embed_images: bool = True) -> Path:
         "message": "身材照单图查看",
     }
 
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    inject_data = f'<script>window.__DATA__ = {json.dumps(payload, ensure_ascii=False)};</script>'
-    html = template.replace('<!--INJECT-DATA-->', inject_data)
+    html = render_template(TEMPLATE_PATH, payload, "查身材照")
 
     # Python 渲染时直接给 <img id="mainPhoto"> 填好 base64 src
     main_b64 = photo.get('photo_data_base64', '')
@@ -142,7 +142,7 @@ def render(photo_id: int, output_path: Path, embed_images: bool = True) -> Path:
             f'<img id="mainPhoto" src="{main_b64}" alt="身材照">'
         )
 
-    output_path.write_text(html, encoding='utf-8')
+    write_html(html, output_path)
     return output_path
 
 

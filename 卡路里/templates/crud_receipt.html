@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<style><!--SHARED-CSS--></style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>卡路里 · 操作回执</title>
@@ -133,7 +134,7 @@
 </head>
 <body>
 
-<!--INJECT-DATA-->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -173,21 +174,12 @@
 <div class="footer">
   <div class="btn-group">
     <button class="btn" id="undoBtn">↩ 撤销</button>
-    <div class="fmt-wrap">
-    <button class="btn btn-primary" id="copyDataBtn">📋 复制数据 ▾</button>
-    <div class="fmt-menu" id="fmtMenu" style="display:none">
-      <button class="fmt-item" data-fmt="text">纯文本 <span>粘贴给 AI / 自己看</span></button>
-      <button class="fmt-item" data-fmt="json">JSON <span>结构化存档</span></button>
-      <button class="fmt-item" data-fmt="csv">CSV <span>表格导入</span></button>
-    </div>
-  </div>
-    <button class="btn" id="copyLogBtn">📋 复制日志</button>
   </div>
 </div>
 
 <script>
 (function(){
-  const D = window.__DATA__;
+  const D = window.__P__;
   if (!D || D.status !== 'ok') {
     document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
     return;
@@ -432,37 +424,17 @@
       const undoCmd = `请撤销刚才的${opLabel}${meta.entity_type}(操作时间 ${meta.action_at}),执行细节请按技能流程处理`;
       const done = () => {
         // 2026-08-03 · ticket #43 场景 6 终审:取消变绿闪烁,仅 toast
-        showToast('✓ 撤销指令已复制');
+        window.toast('✓ 撤销指令已复制');
       };
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(undoCmd).then(done).catch(() => { fallbackCopy(undoCmd); done(); });
-      } else { fallbackCopy(undoCmd); done(); }
+      window.copyText(undoCmd);
     };
   } else {
     undoBtn.style.display = 'none';
   }
 
-  // 复制工具:clipboard API + textarea fallback + toast(2026-08-02 对齐 crud_view)
-  function showToast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
-  function copyText(text, btn, okMsg) {
-    const after = () => {
-      // 2026-08-03 · ticket #43 场景 6 终审:取消按钮变绿闪烁(原 .copied),仅 toast 反馈
-      showToast(okMsg);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
-    } else { fallbackCopy(text); after(); }
-  }
-  function fallbackCopy(text) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.focus(); ta.select();
-    try { document.execCommand('copy'); } catch(e) {}
-    document.body.removeChild(ta);
-  }
+  
+  
+  
 
   // 复制数据(2026-08-05 08 规范:JSON 固定 5 段)
   function payloadData() {
@@ -486,91 +458,11 @@
     if (context && context.kpis) payload.kpis = context.kpis;
     if (context && context.items && context.items.length) payload.items = context.items;
     return payload;
-  }
-  // 复制数据:三格式选择(08 规范 §3.4 · 2026-08-05) — text 人类可读 / json 5 段 / csv 表格
-  function buildDataText(fmt) {
-    if (fmt === 'json') {
-      const data5 = {
-        scene_id: meta.scene_id || 'crud_receipt',
-        command_cn: (meta.wake_word || meta.entity_type || '操作') + ' 回执',
-        occurred_at: meta.fetched_at || meta.action_at || '',
-        target: (meta.source || '') + ' · ' + opLabel + ' #' + record_id,
-        payload: payloadData(),
-      };
-      return JSON.stringify(data5, null, 2);
-    }
-    const payload = (new_record && Object.keys(new_record).length) ? new_record : (old_record || {});
-    const keys = Object.keys(payload).filter(k => !k.startsWith('__impact_') && k !== 'id' && k !== 'created_at' && k !== 'updated_at');
-    if (fmt === 'csv') {
-      const esc = v => { const s = String(v == null ? '' : v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-      const lines = ['field,value'];
-      keys.forEach(k => lines.push(`${esc(FIELD_LABELS[k] || k)},${esc(payload[k])}`));
-      if (D.data.summary) lines.push(`summary,${esc(D.data.summary)}`);
-      return lines.join('\n');
-    }
-    const lines = [`${opLabel}${meta.entity_type}成功 #${record_id} (${meta.action_at})`, ''];
-    if (D.data.summary) lines.push(`💬 ${D.data.summary}`, '');
-    if (context && context.kpis) {
-      context.kpis.forEach(k => lines.push(`${k.label}: ${k.value}${k.extra ? ' ' + k.extra : ''}`));
-      lines.push('');
-    }
-    if (payload.note) lines.push(`备注: ${payload.note}`);
-    return lines.join('\n');
-  }
-
-  // 复制日志(2026-08-05 08 规范:6 段)
-  function buildLogText() {
-    const lines = [];
-    lines.push('① 场景标识');
-    lines.push(`  command_cn: ${meta.wake_word || meta.entity_type || '(未知)'} 回执`);
-    lines.push(`  唤醒词: ${meta.wake_word || '(未知)'}`);
-    lines.push(`  场景名: ${meta.entity_type || '(未知)'}(scene_id=${meta.scene_id || 'crud_receipt'})`);
-    lines.push('');
-    lines.push('② AI 思考链');
-    lines.push('  ' + (meta.chain || '(未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)'));
-    lines.push('');
-    lines.push('③ 底层数据结构');
-    lines.push('  payload: ' + JSON.stringify(payloadData()));
-    lines.push(`  DB 操作: ${opLabel} ${meta.entity_type || '(未知)'} #${record_id}(${meta.source || '(未知)'})`);
-    lines.push('');
-    lines.push('④ 调用链');
-    lines.push('  渲染脚本: ' + (meta.render_cmd || '(未知)'));
-    lines.push('  数据来源: ' + (meta.source || '(未知)'));
-    if (meta.undo_cli) {
-      lines.push('  撤销指令: ' + meta.undo_cli);
-    }
-    lines.push('');
-    lines.push('⑤ 时间戳 + 版本');
-    lines.push('  本地时间: ' + (meta.action_at || meta.fetched_at || '(未知)'));
-    lines.push('  skill 版本: 卡路里 v1.0');
-    lines.push('');
-    lines.push('⑥ 异常信息');
-    lines.push('  无');
-    return lines.join('\n');
-  }
-
-  document.getElementById('copyDataBtn').onclick = function() {
-    const menu = document.getElementById('fmtMenu');
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-  };
-  Array.from(document.querySelectorAll('.fmt-item')).forEach(item => {
-    item.onclick = () => {
-      const fmt = item.dataset.fmt;
-      const label = {text: '纯文本', json: 'JSON', csv: 'CSV'}[fmt];
-      copyText(buildDataText(fmt), null, `${meta.entity_type} 数据复制成功(${label}) ✓`);
-      document.getElementById('fmtMenu').style.display = 'none';
-    };
-  });
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.fmt-wrap')) {
-      document.getElementById('fmtMenu').style.display = 'none';
-    }
-  });
-  document.getElementById('copyLogBtn').onclick = function() {
-    copyText(buildLogText(), null, '排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');
-  };
-})();
+  }})();
 </script>
 
+<div id="actionbar-zone"></div>
+
+<script>(function(){var z=document.getElementById('actionbar-zone');if(z&&window.actionBar&&window.__P__){z.innerHTML=window.actionBar(window.__P__);}})();</script>
 </body>
 </html>

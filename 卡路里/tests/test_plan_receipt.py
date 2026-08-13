@@ -137,5 +137,5 @@ def test_html_output(seeded, tmp_path):
     out.write_text(html, encoding="utf-8")
     assert out.exists()
     text = out.read_text(encoding="utf-8")
-    assert "window.__DATA__" in text
+    assert 'id="payload"' in text and "actionBar" in text
     assert text.count("<!--INJECT-DATA-->") == 0

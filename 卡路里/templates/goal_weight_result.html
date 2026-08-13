@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<style><!--SHARED-CSS--></style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>体重目标已写入 · 卡路里</title>
@@ -72,15 +73,15 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:16px;borde
 <div class="section">
 <div class="section-title"><h2>回执数据</h2><span class="hint">可分享 · 可转发 · 可截图</span></div>
 <div class="btn-row">
-<button class="btn primary" id="copyDataBtn" onclick="copyData()">📋 复制数据</button>
-<button class="btn primary" id="copyLogBtn" onclick="copyLog()">📋 复制日志</button>
+
+
 </div>
 </div>
 <footer>卡路里 Skill · 体重目标结果回执 · 2026-08-05</footer>
 </div>
-<!--INJECT-DATA-->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 <script>
-const DATA=(()=>{if(typeof window.__DATA__!=='object'||window.__DATA__===null)return null;return window.__DATA__})();
+const DATA=(()=>{if(typeof window.__P__!=='object'||window.__P__===null)return null;return window.__P__})();
 const D=DATA&&DATA.data?DATA.data:{};
 const W=D.written||{};
 const META=D.meta||{};
@@ -147,56 +148,16 @@ function payloadData(){
     one_line: D.one_line,
   };
 }
-function buildDataText(){
-  const data5={
-    scene_id: META.scene_id||'goal_set_weight',
-    command_cn: (META.wake_word||'定体重目标')+' 结果回执',
-    occurred_at: META.fetched_at||'',
-    target: 'daily_goal(id=1) · 体重目标(weight_goal/goal_deadline/start_weight/start_date)',
-    payload: payloadData(),
-  };
-  return JSON.stringify(data5,null,2);
-}
+
 // 复制日志(2026-08-04 跨技能标准:6 段)
-function buildLogText(){
-  const lines=[];
-  lines.push('① 场景标识');
-  lines.push(`  command_cn: ${META.wake_word||'(未知)'} 结果回执`);
-  lines.push(`  唤醒词: ${META.wake_word||'(未知)'}`);
-  lines.push(`  场景名: ${META.wake_word||'(未知)'}(scene_id=${META.scene_id||'goal_set_weight'})`);
-  lines.push('');
-  lines.push('② AI 思考链');
-  lines.push('  '+(META.chain||'(未注入 · 渲染时未传 --chain)'));
-  lines.push('');
-  lines.push('③ 底层数据结构');
-  lines.push('  payload: '+JSON.stringify(payloadData()));
-  lines.push('  DB 操作: UPDATE daily_goal SET weight_goal/goal_deadline/start_weight/start_date WHERE id=1(weight_goal.set_weight_goal)');
-  lines.push('');
-  lines.push('④ 调用链');
-  lines.push('  渲染脚本: '+(META.render_cmd||'(未知)'));
-  lines.push('  数据来源: '+(META.source||'(未知)'));
-  lines.push('');
-  lines.push('⑤ 时间戳 + 版本');
-  lines.push('  本地时间: '+(META.fetched_at||'(未知)'));
-  lines.push('  skill 版本: 卡路里 v1.0');
-  lines.push('');
-  lines.push('⑥ 异常信息');
-  lines.push('  无');
-  return lines.join('\n');
-}
-function showToast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
-function doCopy(text,btnId,msg){
-  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),600);}showToast(msg);};
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
-  } else { fallbackCopy(text,done); }
-  function fallbackCopy(txt,ok){
-    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');ok();}catch(e){}document.body.removeChild(ta);
-  }
-}
-function copyData(){doCopy(buildDataText(),'copyDataBtn','数据复制成功 ✓(JSON 5 段标准)');}
-function copyLog(){doCopy(buildLogText(),'copyLogBtn','排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');}
+
+
+
+
+
 </script>
+<div id="actionbar-zone"></div>
+
+<script>(function(){var z=document.getElementById('actionbar-zone');if(z&&window.actionBar&&window.__P__){z.innerHTML=window.actionBar(window.__P__);}})();</script>
 </body>
 </html>

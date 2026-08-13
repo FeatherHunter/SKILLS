@@ -9,6 +9,9 @@
 数据来源: food_log × nutrition_products(按食物名关联,按克数折算每 100g);
          无食品库记录的条目标记「缺数据」(不参与合计)。
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看营养素深度'
 import argparse, json, sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -92,11 +95,7 @@ def build_data(start, end):
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -123,7 +122,7 @@ def main():
         return 1
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '营养素深度')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     sm = data['data']['summary']
     print(f'✅ {out_path}')
     print(f'   范围 {s} ~ {e} | 匹配 {sm["matched_meals"]} 餐 | 缺数据 {len(sm["missing_foods"])} 种食物')

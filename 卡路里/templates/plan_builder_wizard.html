@@ -1,6 +1,7 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN">
 <head>
+<style><!--SHARED-CSS--></style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>健身计划预览 · 卡路里</title>
@@ -506,12 +507,12 @@ footer{
 </div>
 <a id="backTop" href="#top" title="回到顶部">↑</a>
 
-<!--INJECT-DATA-->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <script>
 const DATA = (() => {
-  if (typeof window.__DATA__ !== 'object' || window.__DATA__ === null) return null;
-  return window.__DATA__;
+  if (typeof window.__P__ !== 'object' || window.__P__ === null) return null;
+  return window.__P__;
 })();
 
 const SUMMARY = (DATA && DATA.data && DATA.data.summary) || {};
@@ -1030,40 +1031,27 @@ function updatePreview() {
 }
 
 function copyAdopt() {
-  doCopy(buildAdoptPrompt(), 'btnAdopt', '✓ 已采纳 · 复制成功');
+  window.copyText(buildAdoptPrompt(), 'btnAdopt', '✓ 已采纳 · 复制成功');
 }
 
 function copyModifyPrefs() {
-  doCopy(buildModifyPrefsPrompt(), 'btnModify', '✓ 已复制偏好修改指令');
+  window.copyText(buildModifyPrefsPrompt(), 'btnModify', '✓ 已复制偏好修改指令');
 }
 
 function copySwapMove() {
-  doCopy(buildSwapMovePrompt(), 'btnSwap', '✓ 已复制动作调换指令');
+  window.copyText(buildSwapMovePrompt(), 'btnSwap', '✓ 已复制动作调换指令');
 }
 
-// BUG #1 修复:所有按钮统一 flashCopied 路径(不再用 null + console.log fallback)
-function doCopy(text, btnId, msg) {
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(() => flashCopied(btnId, msg));
-  } else {
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); flashCopied(btnId, msg); } catch(e) {}
-    document.body.removeChild(ta);
-  }
-}
 
-function flashCopied(btnId, msg) {
-  const btn = document.getElementById(btnId);
-  if (!btn) return;
-  const orig = btn.textContent;
-  btn.textContent = msg;
-  btn.classList.add('copied');
-  setTimeout(() => { btn.textContent = orig; btn.classList.remove('copied'); }, 2200);
-}
+
+
+
 
 render();
 updatePreview();
 </script>
+<div id="actionbar-zone"></div>
+
+<script>(function(){var z=document.getElementById('actionbar-zone');if(z&&window.actionBar&&window.__P__){z.innerHTML=window.actionBar(window.__P__);}})();</script>
 </body>
 </html>

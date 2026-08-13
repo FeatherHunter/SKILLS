@@ -18,6 +18,9 @@
 时间参数一统(2026-08-02 用户拍板):--days N(最近 N 天)/ --start --end(范围)
 / --start 单日(此时 end 自动 = start)三种表达都归一为 start/end 传给查询。
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '查身材照'
 import argparse
 import json
 import sys
@@ -135,11 +138,7 @@ def build(date_from, date_to, tag_filter, limit=500, embed=True, max_embed_bytes
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def emit_send_protocol(output_path):
@@ -190,7 +189,7 @@ def main():
 
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, '看身材照', 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     print(f'✅ {out_path}')
     print(f'   照片: {data["data"]["total_count"]} 张')
     emit_send_protocol(out_path)

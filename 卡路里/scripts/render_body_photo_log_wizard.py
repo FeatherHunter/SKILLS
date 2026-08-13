@@ -9,6 +9,8 @@
     python scripts/render_body_photo_log_wizard.py
 """
 
+from _base_render import render_template, write_html  # noqa: E402
+
 import argparse
 import json
 from datetime import datetime
@@ -30,11 +32,9 @@ def render(output_path: Path) -> Path:
         "message": "记身材照 wizard",
     }
 
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    inject_data = f'<script>window.__DATA__ = {json.dumps(payload, ensure_ascii=False)};</script>'
-    html = template.replace('<!--INJECT-DATA-->', inject_data)
+    html = render_template(TEMPLATE_PATH, payload, "记身材照")
 
-    output_path.write_text(html, encoding='utf-8')
+    write_html(html, output_path)
     return output_path
 
 

@@ -36,7 +36,7 @@ def test_food_search_html_passes_responsive_lint():
 
 def _extract_payload(html_text: str) -> dict | None:
     m = re.search(
-        r'<script>\s*window\.__DATA__\s*=\s*(\{.*?\});?\s*</script>',
+        r'<script id="payload" type="application/json">(.*?)</script>',
         html_text, re.DOTALL,
     )
     if not m:
@@ -108,7 +108,7 @@ def test_food_search_html_has_cards_and_data(temp_db, tmp_path):
     html = out.read_text(encoding="utf-8")
 
     payload = _extract_payload(html)
-    assert payload, f"HTML 缺 window.__DATA__: {html[:300]}"
+    assert payload, f"HTML 缺 payload 注入: {html[:300]}"
     assert payload.get("data", {}).get("query") == "牛肉", (
         f"__DATA__.query 应是 '牛肉',实得: {payload.get('data', {}).get('query')}"
     )

@@ -21,6 +21,9 @@
         --chain "1.识别→2.读DB聚合→3.渲染"   # 必填
         [--output <path>] [--wake-word <场景名>]
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看今日主页'
 import argparse
 import json
 import sys
@@ -522,17 +525,8 @@ def build_data(target_date: str, view: str = 'overview', period: str = None) -> 
     return data
 
 
-def render_html(data: dict) -> str:
-    """读模板 + 注入数据"""
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f"模板占位符数量异常: {template.count(placeholder)}")
-
-    payload = json.dumps({'status': 'ok', 'data': data, 'message': '主面板已生成'},
-                         ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+def render_html(data: dict):
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -583,7 +577,7 @@ def main():
         return 1
 
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene_name, 'result')
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     todo = data['today_status']['todo']
     todo_summary = f' — {", ".join(t["label"] for t in todo[:3])}' if todo else ' — 全部完成 ✓'

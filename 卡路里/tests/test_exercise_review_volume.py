@@ -138,7 +138,7 @@ def test_volume_no_actual_flag(seed_volume, temp_db):
 
 
 def test_render_injects_unwrapped_data(seed_volume):
-    """渲染注入解包: window.__DATA__ 顶层是纯日期 dict(非 {status,data,message} 包装)"""
+    """渲染注入解包(#314 Base 信封化): payload 为 {status, data},data 内是日期 dict + __meta__"""
     import render_exercise_review_html as rer
 
     raw = {
@@ -147,13 +147,17 @@ def test_render_injects_unwrapped_data(seed_volume):
         "message": "ok",
     }
     html = rer.render_html(raw)
-    m = re.search(r"window\.__DATA__ = (\{.*?\});</script>", html, re.DOTALL)
-    assert m, "模板未注入 __DATA__"
-    data = json.loads(m.group(1).replace("<\\/", "</"))
+    m = re.search(r'<script id="payload" type="application/json">(.*?)</script>', html, re.DOTALL)
+    assert m, "模板未注入 payload"
+    payload = json.loads(m.group(1).replace("<\\/", "</"))
+    assert payload["status"] == "ok"
+    data = payload["data"]
     assert "2026-07-27" in data
-    assert "status" not in data
     assert "__meta__" in data
     assert "volume" in data["__meta__"]
+    # Base 信封字段并存(复制数据/日志依赖)
+    assert data["meta"]["command_cn"]
+    assert data["scene"]["snapshot"]["title"]
 
 
 def test_template_contains_volume_sections():

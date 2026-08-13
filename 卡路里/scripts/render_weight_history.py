@@ -17,6 +17,9 @@
   - 看「有备注」的体重记录 → --mode notes --note-only
 对应模板: templates/weight_history.html
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看体重曲线'
 import argparse, json, sys, statistics
 from datetime import date, timedelta, datetime
 from pathlib import Path
@@ -333,11 +336,7 @@ def build_compare_summary(before, after):
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -424,7 +423,7 @@ def main():
 
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene_name, 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     n = len(data['data']['items'])
     print(f'✅ {out_path}')
     print(f'   模式: {mode} | 范围: {s} ~ {e} | {n} 条')

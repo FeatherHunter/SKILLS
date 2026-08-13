@@ -14,6 +14,8 @@
     python scripts/render_exercise_review_html.py --start X --end Y
     python scripts/render_exercise_review_html.py --output <path>
 """
+
+from _base_render import render_template, write_html  # noqa: E402
 import argparse
 import json
 from html_paths import html_path
@@ -25,6 +27,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'exercise_review.html'
+COMMAND_CN = "计划复盘"
 
 
 def build_parser():
@@ -92,27 +95,15 @@ def fetch_json(start: str, end: str) -> dict:
     return json.loads(result.stdout)
 
 
-def render_html(data: dict, scene_meta: dict | None = None) -> str:
-    """读模板 + 注入
-
-    注：exercise_review.py --format json 返回 {status, data, message} 包装，
-    模板按「日期 dict（含 __meta__）」消费，此处解包 data['data']。
-    scene_meta: {scene_name, prompt_template} 注入 __meta__ 供复制 prompt 按钮。
-    """
+def render_html(data: dict, scene_meta: dict | None = None):
+    """scene_meta: {scene_name, prompt_template, related_scenes} 注入 __meta__ 供复制 prompt 按钮"""
     inner = data.get('data', data) if isinstance(data, dict) else data
     if scene_meta and isinstance(inner, dict):
         meta = inner.setdefault('__meta__', {})
         meta['scene_name'] = scene_meta.get('scene_name', '')
         meta['prompt_template'] = scene_meta.get('prompt_template', '')
         meta['related_scenes'] = scene_meta.get('related_scenes', [])
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f"模板占位符数量异常: {template.count(placeholder)}")
-
-    payload = json.dumps(inner, ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -137,7 +128,7 @@ def main():
 
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '运动复盘')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     d = data.get('data', {})
     days_count = len(d)

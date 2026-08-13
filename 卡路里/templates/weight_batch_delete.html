@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<style><!--SHARED-CSS--></style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>批量删除体重 · 卡路里</title>
@@ -71,18 +72,18 @@ td.kg{font-weight:700;font-feature-settings:"tnum"}
 
   <div class="actions">
     <button class="btn primary" id="undoBtn">↩ 复制撤销指令</button>
-    <button class="btn ghost" id="copyDataBtn">📋 复制数据</button>
-    <button class="btn ghost" id="copyLogBtn">📋 复制日志</button>
+    
+    
   </div>
 
   <div class="footer">卡路里 Skill · 批量删除体重回执</div>
 
 </div>
 
-<!--INJECT-DATA-->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <script>
-const DATA = window.__DATA__ && window.__DATA__.data || {};
+const DATA = window.__P__ && window.__P__.data || {};
 const d = DATA;
 document.getElementById('metaLine').textContent = (d.meta && d.meta.action_at || '') + ' · ' + (d.meta && d.meta.entity_type || '');
 document.getElementById('summaryLine').textContent = '💬 ' + (d.summary || '');
@@ -129,42 +130,15 @@ if (d.latest_after && d.latest_after.weight_kg != null) {
   document.getElementById('statusTitle').textContent = '删除后最新体重:';
   document.getElementById('statusDetail').textContent =
     d.latest_after.weight_kg + ' kg (' + d.latest_after.date + ')';
-}
-
-// 复制数据
-function buildDataText() {
-  const lines = ['🗑 批量删除体重', '', '时间范围: ' + range, '删除条数: ' + items.length, ''];
-  items.forEach(i => lines.push((i.date || '') + ' ' + (i.time || '') + ' ' + (i.weight_kg != null ? i.weight_kg + 'kg' : '') + (i.note ? ' (' + i.note + ')' : '')));
-  return lines.join('\n');
-}
-function buildLogText() {
-  const lines = ['[批量删除体重 · 排障日志]', '', '唤醒词: 批量删体重', '时间: ' + (d.meta && d.meta.action_at || '')];
-  lines.push('撤销命令: ' + (d.meta && d.meta.undo_cli || '(无)'));
-  lines.push('', '原始数据: ' + JSON.stringify(DATA));
-  return lines.join('\n');
-}
-function showToast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
-function copyText(text, btn) {
-  const after = () => showToast('已复制');
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(after).catch(() => { fallbackCopy(text); after(); });
-  } else { fallbackCopy(text); after(); }
-}
-function fallbackCopy(text) {
-  const ta = document.createElement('textarea');
-  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0';
-  document.body.appendChild(ta); ta.focus(); ta.select();
-  try { document.execCommand('copy'); } catch(e) {}
-  document.body.removeChild(ta);
-}
-document.getElementById('copyDataBtn').addEventListener('click', function() { copyText(buildDataText(), this); });
-document.getElementById('copyLogBtn').addEventListener('click', function() { copyText(buildLogText(), this); });
-document.getElementById('undoBtn').addEventListener('click', function() {
+}document.getElementById('undoBtn').addEventListener('click', function() {
   const undo = d.meta && d.meta.undo_cli;
   if (undo) copyText(undo, this);
-  showToast('撤销命令已复制');
+  window.toast('撤销命令已复制');
 });
 </script>
 
+<div id="actionbar-zone"></div>
+
+<script>(function(){var z=document.getElementById('actionbar-zone');if(z&&window.actionBar&&window.__P__){z.innerHTML=window.actionBar(window.__P__);}})();</script>
 </body>
 </html>

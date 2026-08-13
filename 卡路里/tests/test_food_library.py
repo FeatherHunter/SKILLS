@@ -37,7 +37,7 @@ def test_food_library_html_passes_responsive_lint():
 
 def _extract_payload(html_text: str) -> dict | None:
     m = re.search(
-        r'<script>\s*window\.__DATA__\s*=\s*(\{.*?\});?\s*</script>',
+        r'<script id="payload" type="application/json">(.*?)</script>',
         html_text, re.DOTALL,
     )
     if not m:
@@ -75,7 +75,7 @@ def test_render_food_library_exits_zero(temp_db, tmp_path):
 
 
 def test_food_library_data_shape(temp_db, tmp_path):
-    """window.__DATA__ 含 total_count + items + page_size"""
+    """payload 含 total_count + items + page_size + Base 信封"""
     import sqlite3
     conn = sqlite3.connect(str(temp_db))
     cur = conn.cursor()
@@ -99,10 +99,10 @@ def test_food_library_data_shape(temp_db, tmp_path):
     )
     html = out.read_text(encoding="utf-8")
     payload = _extract_payload(html)
-    assert payload, f"HTML 缺 __DATA__: {html[:300]}"
+    assert payload, f"HTML 缺 payload 注入: {html[:300]}"
     data = payload.get("data", {})
-    assert "total_count" in data, f"__DATA__ 缺 total_count: {data.keys()}"
-    assert "items" in data, f"__DATA__ 缺 items"
+    assert "total_count" in data, f"payload 缺 total_count: {data.keys()}"
+    assert "items" in data, f"payload 缺 items"
     assert data["total_count"] == 50, f"total_count 应 50,实得 {data['total_count']}"
     assert len(data["items"]) == 50, f"items 应 50,实得 {len(data['items'])}"
 

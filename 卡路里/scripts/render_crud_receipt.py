@@ -24,6 +24,8 @@
   --live-weight-update            实读 DB:改体重记录(--id 或 --date,写库 + 回执一体 · ticket #4)
   --live-weight-delete            实读 DB:删体重记录(--id/--date/--start --end,写库 + 回执一体 · ticket #4)
 """
+
+from _base_render import render_template, write_html  # noqa: E402
 import argparse, json, re, sys
 from datetime import date, datetime
 from pathlib import Path
@@ -31,6 +33,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'crud_receipt.html'
+COMMAND_CN = None  # 场景名动态：来自 data.meta.wake_word（改档案/删饮食记录等）
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path, html_scene_path  # noqa
@@ -47,13 +50,10 @@ def _load_data(input_path):
 def render_html(data):
     # 2026-08-09 #43:批量删除用专门回执模板(weight_batch_delete.html)
     if data.get('data', {}).get('batch'):
-        template = (SKILL_DIR / 'templates' / 'weight_batch_delete.html').read_text(encoding='utf-8')
+        template = SKILL_DIR / 'templates' / 'weight_batch_delete.html'
     else:
-        template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+        template = TEMPLATE_PATH
+    return render_template(template, data, COMMAND_CN)
 
 
 # 中文标签映射(2026-08-02 用户拍板:diff 卡必须中文,用户看不懂英文键名)
@@ -1319,7 +1319,7 @@ def main():
     out_path = Path(args.output) if args.output else (
         html_scene_path(SKILL_DIR, cmd_name, ot, suffix=file_suffix) if ot else html_path(SKILL_DIR, cmd_name, suffix=file_suffix))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     d = data['data']
     print(f'✅ {out_path}')
     print(f'   操作: {d["op"]} | #{d["record_id"]} | {d["meta"]["entity_type"]}')

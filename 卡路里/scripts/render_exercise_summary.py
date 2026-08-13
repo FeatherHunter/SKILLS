@@ -22,6 +22,8 @@
 
 2026-08-02 · ticket #5 运动 · R3 --chain 强制 + R5 <场景名>_结果_TS.html
 """
+
+from _base_render import render_template, write_html  # noqa: E402
 import argparse
 import json
 import sys
@@ -31,6 +33,7 @@ from pathlib import Path
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'exercise_summary.html'
+COMMAND_CN = None  # 场景名动态（由参数推断 · R5 命名）
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_scene_path  # noqa
@@ -262,11 +265,7 @@ def build_data(start, end, mode='records', category=None, has_note=False,
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -334,7 +333,7 @@ def main():
         return 1
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene, 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     n = len(data['data']['items'])
     print(f'✅ {out_path}')
     print(f'   场景: {scene} | 范围: {s} ~ {e} | {n} 条 | 窗口: {window or "自定义"}')

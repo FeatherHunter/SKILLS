@@ -5,6 +5,9 @@
 对应 SKILL.md 唤醒词: 查卡路里数据
 对应模板: templates/lint_health.html
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '查卡路里数据'
 import argparse, json, sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -206,11 +209,7 @@ def build_data():
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding="utf-8")
-    if template.count("<!--INJECT-DATA-->") != 1:
-        raise ValueError("模板缺少唯一占位符")
-    payload = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
-    return template.replace("<!--INJECT-DATA-->", f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -226,7 +225,7 @@ def main():
         return 1
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, "数据体检")
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding="utf-8")
+    write_html(html, out_path)
     sm = data["data"]["summary"]
     print(f"OK {out_path}")
     print(f"   5 项 Lint: ✓{sm['good_count']} ⚠{sm['warn_count']} ✗{sm['bad_count']}")

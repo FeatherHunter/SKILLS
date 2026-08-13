@@ -9,6 +9,9 @@
 - 数据源: food_log 中 food_name='💧水' 的 grams 聚合(ml) + daily_goal.water_goal
 - 7 天范围: 含今天,最早 6 天前
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看今日喝水'
 import argparse
 import json
 import sys
@@ -96,13 +99,7 @@ def build_data(day):
 
 
 def render_html(data):
-    """注入数据到模板"""
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符 或 重复出现')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace('<!--INJECT-DATA-->', inject, 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -131,7 +128,7 @@ def main():
     else:
         out_path = html_path(SKILL_DIR, '今日饮水')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     s = data['data']['summary']
     pct = round(s['today_ml'] / s['target_ml'] * 100) if s['target_ml'] else 0

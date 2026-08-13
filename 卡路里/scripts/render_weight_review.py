@@ -15,6 +15,9 @@
   python scripts/render_weight_review.py --type week --chain "1.识别→2.读DB→3.复盘→4.渲染"
   python scripts/render_weight_review.py --type milestones --chain "..."
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '体重复盘'
 import argparse, calendar, json, statistics, sys
 from collections import defaultdict
 from datetime import date, timedelta
@@ -30,11 +33,7 @@ from render_crud_view import _chain_valid, _quote_arg  # noqa
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def _db():
@@ -207,7 +206,7 @@ def main():
 
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene_name, 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     print(f'✅ {out_path}')
     print(f'   类型: {args.type}')
     return 0

@@ -14,6 +14,9 @@
     python scripts/render_body_delete_receipt.py --entity composition --id <ID>
     python scripts/render_body_delete_receipt.py --entity measurements --id <ID>
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '删体脂记录'
 import argparse
 import json
 import sqlite3
@@ -141,13 +144,8 @@ def build_delete(entity, record_id, _chain=''):
     }
 
 
-def render_html(data: dict) -> str:
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f'模板占位符数量异常: {template.count(placeholder)}')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace(placeholder, f'<script>window.__DATA__ = {payload};</script>', 1)
+def render_html(data: dict):
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -185,7 +183,7 @@ def main():
         file_suffix = None
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, spec['scene'], 'receipt', suffix=file_suffix)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     print(f'✅ {out_path}')
     print(f"⚠️ ACTION=SEND_TO_USER | HTML={out_path.absolute()}")
     return 0

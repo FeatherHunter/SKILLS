@@ -18,6 +18,9 @@
 
 2026-08-02 · ticket #5 运动 · R3 思考链强制(--chain 必传)+ R5 命名(<场景名>_回执_TS.html)
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '记运动'
 import argparse
 import json
 import sys
@@ -35,11 +38,7 @@ import exercise_tracker as et  # noqa
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 # 回执展示字段白名单(隐藏内部列:created_at/updated_at/xunji_*/is_deleted)
@@ -447,7 +446,7 @@ def main():
         file_suffix = None
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene, 'receipt', suffix=file_suffix)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     d = data['data']
     print(f'✅ {out_path}')
     print(f'   操作: {d["op"]} | #{d["record_id"]} | {d["meta"]["entity_type"]}')

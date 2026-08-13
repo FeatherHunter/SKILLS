@@ -14,6 +14,9 @@
     python scripts/render_food_ranking.py --range 7/13:7/19              # 自定义范围
     python scripts/render_food_ranking.py --all --output <path>          # 一次性出 5 榜单
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看食品榜单'
 import argparse
 import json
 from html_paths import html_path
@@ -54,16 +57,8 @@ def fetch_one_ranking(category: str, start: str, end: str, top_n: int) -> dict:
     return diet_food_ranking(start, end, category=category, top_n=top_n, as_dict=True)
 
 
-def render_html(data: dict) -> str:
-    """读模板 + 注入"""
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f"模板占位符数量异常: {template.count(placeholder)}")
-
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+def render_html(data: dict):
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -108,7 +103,7 @@ def main():
         out_path = html_path(SKILL_DIR, f'食物排行_{FOOD_RANKING_CATEGORY_MAP[args.category]}')
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     print(f"✅ {out_path}")
     print(f"   范围: {start} ~ {end} | 榜单: {', '.join(cats)}")

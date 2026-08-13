@@ -9,9 +9,9 @@ def test_render_creates_file_with_data():
     Path(tmp).unlink()
     result = rbmw.render(Path(tmp))
     assert result.exists()
-    content = result.read_text(encoding='utf-8')
-    assert '__DATA__' in content
-    assert 'window.__DATA__ = ' in content
+    content = result.read_text(encoding='utf-8-sig')
+    assert 'id="payload"' in content
+    assert "actionBar" in content
     assert 'fetched_at' in content
     os.unlink(tmp)
 

@@ -28,6 +28,9 @@
     python scripts/render_goal_progress.py --mode weight_progress
     python scripts/render_goal_progress.py --mode history
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看今日目标'
 import argparse
 import json
 import sys
@@ -546,15 +549,8 @@ def build_mode_history(goal, days=30):
     }
 
 
-def render_html(data: dict) -> str:
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f'模板占位符数量异常: {template.count(placeholder)}')
-    payload = json.dumps({'status': 'ok', 'data': data, 'message': '目标进度已生成'},
-                         ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+def render_html(data: dict):
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -647,7 +643,7 @@ def main():
     # R5 命名:<场景名>_<类型中文>_<TS>.html
     out_path = Path(args.output) if args.output else scene_path(scene_name, output_type)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     print(f'✅ {out_path}')
     print(f'   mode={args.mode}' + (f' period={args.period}' if args.period else '')
           + (f' expiring={args.expiring}' if args.mode == 'weight' else '')

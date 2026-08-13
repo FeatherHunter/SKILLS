@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+<style><!--SHARED-CSS--></style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>身材照查看 · 卡路里</title>
@@ -103,7 +104,7 @@
 (function(){
   // v2.3.4(2026-07-25 fix):<img id="mainPhoto"> 已在 Python 渲染时填好 base64 src
   // JS 只负责元数据填充和交互,不重设 src
-  const D = window.__DATA__;
+  const D = window.__P__;
   if (!D || D.status !== 'ok') return;
   const { photo_meta: photo, prev_id, next_id } = D.data;
 
@@ -150,20 +151,15 @@
   document.getElementById('deleteBtn').onclick = function() {
     if (!confirm(`确认删除照片 #${photo.id} (${photo.date} ${photo.tag})?\n将返回 crud_receipt.html 回执。`)) return;
     const prompt = `删除身材照 #${photo.id} (${photo.date} ${photo.tag})`;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(prompt).then(() => {
-        window.location.href = `body_photo_gallery.html?action=delete&id=${photo.id}`;
-      }).catch(() => {
-        window.location.href = `body_photo_gallery.html?action=delete&id=${photo.id}`;
-      });
-    } else {
-      window.location.href = `body_photo_gallery.html?action=delete&id=${photo.id}`;
-    }
+    window.copyText(prompt);
   };
 })();
 </script>
 
-<!--INJECT-DATA-->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
+<div id="actionbar-zone"></div>
+
+<script>(function(){var z=document.getElementById('actionbar-zone');if(z&&window.actionBar&&window.__P__){z.innerHTML=window.actionBar(window.__P__);}})();</script>
 </body>
 </html>

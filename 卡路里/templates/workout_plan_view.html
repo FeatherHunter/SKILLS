@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<style><!--SHARED-CSS--></style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>健身计划</title>
@@ -173,14 +174,11 @@ td .sub{font-size:11px;color:var(--ink3);display:block;margin-top:2px}
   <div id="weeksContainer"></div>
   <div class="footer">
     <div class="src" id="srcLine">📊 数据来源 --</div>
-    <div class="btn-group">
-      <button class="btn primary" id="copyBtn">📋 复制数据</button>
-      <button class="btn" id="copyLogBtn">📋 复制日志</button>
-    </div>
+    <div id="actionbar-zone"></div>
   </div>
 </div>
 
-<!--INJECT-DATA-->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <script>
 /* ====== 部位色板（与原 render_workout_plan.py 一致） ====== */
@@ -672,8 +670,8 @@ function bindDayTabs() {
 
 /* ====== 主入口 ====== */
 (function() {
-  const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__ !== null)
-    ? window.__DATA__ : null;
+  const DATA = (typeof window.__P__ === 'object' && window.__P__ !== null)
+    ? ((window.__P__ && typeof window.__P__ === 'object' && window.__P__.data) ? window.__P__.data : window.__P__) : null;
   if (!DATA) {
     document.getElementById('planSubtitle').textContent = '❌ 数据加载失败';
     return;
@@ -706,74 +704,13 @@ function bindDayTabs() {
 
   /* 底部复制按钮(2026-08-10 #42 全局双按钮规则) */
   document.getElementById('srcLine').textContent =
-    '📊 数据来源:' + (data.meta && data.meta.source || 'workout_plans') + ' · ' + (data.meta && data.meta.wake_word || '') + ' · ' + (data.meta && data.meta.generated_at || '');
-  document.getElementById('copyBtn').onclick = function() {
-    const lines = [(data.config && data.config.title) || '健身计划', ''];
-    if (data.completion && data.completion.completion_rate != null) {
-      lines.push(`本周完成率: ${data.completion.completion_rate}% (计划 ${data.completion.plan_sets} 组 · 实做 ${data.completion.actual_sets} 组)`);
-    }
-    if (data.completion) {
-      lines.push(`已完成: ${data.completion.done_sets || 0} 组 · 剩余: ${data.completion.remaining_sets || 0} 组`);
-    }
-    if (data.kpi) {
-      const kp = data.kpi;
-      const statusTxt = kp.period_status === 'finished' ? '本周期已完成'
-        : kp.period_status === 'unstarted' ? '计划未开始'
-        : `第 ${kp.current_week ?? '—'}/${kp.total_weeks ?? '—'} 周 · 剩余 ${kp.remaining_weeks ?? 0} 周 · ${kp.remaining_training_days ?? 0} 个训练日`;
-      lines.push(`周期进度: ${statusTxt}`);
-      lines.push(`总周数: ${kp.total_weeks ?? '—'} · 整体完成率: ${kp.overall_rate ?? '—'}% · 训练日: ${kp.training_days ?? '—'} · 动作数: ${kp.total_movements ?? '—'}`);
-    }
-    if (data.movement_rows) {
-      data.movement_rows.forEach(r => lines.push(`  ${r.movement}: 计划 ${r.plan_sets} · 实做 ${r.actual_sets} · 偏差 ${r.deviation_pct === null ? '—' : r.deviation_pct + '%'}`));
-    }
-    if (data.ranking) {
-      data.ranking.forEach((r, i) => lines.push(`  #${i + 1} ${r.movement}: ${r.rate}% (${r.done_sets}/${r.plan_sets})`));
-    }
-    if (data.mode === 'action') {
-      lines.push(`动作: ${data.query}${data.error ? ' · ' + data.error : ''}`);
-      if (!data.error) {
-        const s = data.summary || {};
-        lines.push(`频率: ${s.times_per_week || 0} 次/周 · 覆盖 ${s.weeks_with || 0} 周 · 总 ${s.total_sets || 0} 组`);
-        if (data.next_date) lines.push(`下次练习日: ${data.next_date}${data.next_week ? ' (第 ' + data.next_week + ' 周)' : ''}`);
-        (data.positions || []).forEach(p => lines.push(`  第 ${p.week} 周 ${p.dow_label}: ${p.name} ${p.sets}×${p.reps != null ? p.reps : '?'}${p.weight ? ' ' + p.weight + p.unit : ''}`));
-      } else {
-        (data.candidates || []).forEach(c => lines.push(`  相近: ${c}`));
-      }
-    }
-    if (data.missed) {
-      data.missed.forEach(m => lines.push(`  ${m.date}: 计划 ${m.plan_sets} 组 · 实做 ${m.done_sets} 组 · ${m.movements.join('/')}`));
-    }
-    if (data.weeks) {
-      lines.push('', `计划: ${data.weeks.length} 周 · ${data.config && data.config.total_weeks ? data.config.total_weeks + ' 周循环' : ''}`);
-    }
-    doCopy(lines.join('\n'), '数据已复制');
-  };
-  document.getElementById('copyLogBtn').onclick = function() {
-    const meta = data.meta || {};
-    const lines = ['[健身计划 · 排障日志]', '',
-      '唤醒词: ' + (meta.wake_word || '(未知)'),
-      '渲染命令: ' + (meta.render_cmd || '(未知)'),
-      '数据来源: ' + (meta.source || 'workout_plans'),
-      '生成时间: ' + (meta.generated_at || '(未知)'),
-      '', 'AI 思考链:', meta.chain || '(未注入)',
-      '', '原始数据: ' + JSON.stringify(data)];
-    doCopy(lines.join('\n'), '排障日志已复制');
-  };
-})();
+    '📊 数据来源:' + (data.meta && data.meta.source || 'workout_plans') + ' · ' + (data.meta && data.meta.wake_word || '') + ' · ' + (data.meta && data.meta.generated_at || '');})();
 
-function doCopy(text, msg) {
-  const after = () => toast(msg);
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(text).then(after);
-  } else {
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); after(); } catch(e) {}
-    document.body.removeChild(ta);
-  }
-}
-function toast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
+
+
 </script>
 
+
+<script>(function(){var z=document.getElementById('actionbar-zone');if(z&&window.actionBar&&window.__P__){z.innerHTML=window.actionBar(window.__P__);}})();</script>
 </body>
 </html>

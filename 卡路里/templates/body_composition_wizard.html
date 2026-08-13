@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+<style><!--SHARED-CSS--></style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>记体脂 · 卡路里</title>
@@ -121,7 +122,7 @@
   .recent-bar .copy-prev-btn:hover { background: #d3e7ff; }
   .recent-bar .copy-prev-btn:disabled { opacity: .4; cursor: not-allowed; }
 
-  /* toast(2026-08-03 验收反馈:复制成功要有提示) */
+  /* window.toast(2026-08-03 验收反馈:复制成功要有提示) */
   #toast {
     position: fixed; left: 50%; bottom: 84px; transform: translateX(-50%) translateY(8px);
     background: rgba(29,29,31,.92); color: #fff; padding: 10px 18px; border-radius: 999px;
@@ -366,7 +367,8 @@
   <div class="body">
     <div class="prompt-box" id="promptBox">// 完成上方表单后,prompt 自动生成</div>
     <div class="sticky-bar">
-      <button class="btn-copy" id="copyBtn">📋 复制 prompt</button>
+      <button class="btn-copy" id="copyPromptBtn">📋 复制 prompt</button>
+      
     </div>
   </div>
 </details>
@@ -374,16 +376,11 @@
 <div id="toast"></div>
 
 <!-- 08 规范:复制数据/复制日志(硬标准) -->
-<div class="copy-bar">
-  <div class="inner">
-    <button class="btn" id="copyDataBtn">📋 复制数据</button>
-    <button class="btn btn-primary" id="copyLogBtn">📋 复制日志</button>
-  </div>
-</div>
+<div id="actionbar-zone"></div>
 
 <div class="footer">卡路里 · body_composition_wizard v1.0 · 飞书 webview 兼容</div>
 
-<!--INJECT-DATA-->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <script>
 (function(){
@@ -392,8 +389,8 @@
   const FIELDS = ['caliper-chest','caliper-abdominal','caliper-thigh','caliper-tricep',
                   'caliper-subscapular','caliper-suprailiac','caliper-midaxillary'];
 
-  // ---------- 注入数据(从 __DATA__ 渲染,放在本 IIFE 之前确保 window.__DATA__ 已注入) ----------
-  const DATA = (typeof window.__DATA__ === 'object' && window.__DATA__) || null;
+  // ---------- 注入数据(从 __DATA__ 渲染,放在本 IIFE 之前确保 window.__P__ 已注入) ----------
+  const DATA = (typeof window.__P__ === 'object' && window.__P__) || null;
   // (key, summary_id, label, input_id)
   const CALIPER_FIELDS = [
     ['recent_caliper_chest_mm',       'rcChest',       '胸',       'caliper-chest'],
@@ -404,10 +401,10 @@
     ['recent_caliper_suprailiac_mm',  'rcSuprailiac',  '髂上',     'caliper-suprailiac'],
     ['recent_caliper_midaxillary_mm', 'rcMidaxillary', '腋中线',   'caliper-midaxillary'],
   ];
-  // ---------- toast(2026-08-03 验收反馈) ----------
+  // ---------- window.toast(2026-08-03 验收反馈) ----------
   let _toastTimer = null;
   let _autoCalcSilent = false;
-  function toast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
+  
 
   // ---------- 复制上次 7 皮褶 ----------
   if (DATA && DATA.status === 'ok' && DATA.data) {
@@ -479,7 +476,7 @@
     _bfAuto = true;
     $('bfAutoTag').style.display = 'inline';
     updatePrompt();
-    if (manual && !_autoCalcSilent) toast(`自动算完成:体脂率 ${pct}%(Jackson-Pollock 7 点法)`);
+    if (manual && !_autoCalcSilent) window.toast(`自动算完成:体脂率 ${pct}%(Jackson-Pollock 7 点法)`);
   }
 
   // ---------- prompt 构建 ----------
@@ -622,26 +619,11 @@ function updatePrompt() {
   $('source').addEventListener('change', applySourceMode);
   applySourceMode();
 
-  // 复制按钮
-  $('copyBtn').onclick = function() {
+  $('copyPromptBtn').onclick = function() {
     const text = $('promptBox').textContent;
-    if (text.startsWith('//')) { toast('请先填好所有必填项'); return; }
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => {
-        toast('prompt 已复制,发给 AI 即可');
-      }, () => fallbackCopy(this, text));
-    } else fallbackCopy(this, text);
-  };
-
-  function fallbackCopy(btn, text) {
-    const ta = document.createElement('textarea');
-    ta.value = text; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); toast('prompt 已复制,发给 AI 即可'); }
-    catch(e) { toast('复制失败,请手动复制'); }
-    document.body.removeChild(ta);
-  }
-
-  // ---------- 08 规范:复制数据(5 段)/复制日志(6 段)(2026-08-05) ----------
+    if (text.startsWith('//')) { window.toast('请先填好所有必填项'); return; }
+    window.copyText(text);
+  };// ---------- 08 规范:复制数据(5 段)/复制日志(6 段)(2026-08-05) ----------
   const META = (DATA && DATA.data && DATA.data.meta) || {};
   function wizardPayload() {
     const vals = {};
@@ -657,66 +639,13 @@ function updatePrompt() {
       prompt: $('promptBox').textContent,
     };
   }
-  function buildDataText() {
-    const data5 = {
-      scene_id: META.scene_id || 'body_comp_add_caliper',
-      command_cn: (META.wake_word || '记体脂') + ' 采集表单',
-      occurred_at: META.fetched_at || '',
-      target: 'body_composition 表(wizard 表单 · 待 AI 写库)',
-      payload: wizardPayload(),
-    };
-    return JSON.stringify(data5, null, 2);
-  }
-  function buildLogText() {
-    const lines = [];
-    lines.push('① 场景标识');
-    lines.push(`  command_cn: ${META.wake_word || '记体脂'} 采集表单`);
-    lines.push(`  唤醒词: ${META.wake_word || '(未知)'}`);
-    lines.push(`  场景名: ${META.wake_word || '(未知)'}(scene_id=${META.scene_id || 'body_comp_add_caliper'})`);
-    lines.push('');
-    lines.push('② AI 思考链');
-    lines.push('  ' + (META.chain || '(本地采集表单 · 无 AI 链)'));
-    lines.push('');
-    lines.push('③ 底层数据结构');
-    lines.push('  payload: ' + JSON.stringify(wizardPayload()));
-    lines.push('  DB 操作: INSERT INTO body_composition(写库前待 AI 确认)');
-    lines.push('');
-    lines.push('④ 调用链');
-    lines.push('  渲染脚本: ' + (META.render_cmd || '(未知)'));
-    lines.push('  数据来源: ' + (META.source || '(未知)'));
-    lines.push('');
-    lines.push('⑤ 时间戳 + 版本');
-    lines.push('  本地时间: ' + (META.fetched_at || '(未知)'));
-    lines.push('  skill 版本: 卡路里 v1.0');
-    lines.push('');
-    lines.push('⑥ 异常信息');
-    lines.push('  无');
-    return lines.join('\n');
-  }
-  function doCopyStd(text, btnId, msg) {
-    const done = () => {
-      const b = $(btnId);
-      if (b) { b.classList.add('copied'); setTimeout(() => b.classList.remove('copied'), 1600); }
-      toast(msg);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => {
-        const ta = document.createElement('textarea');
-        ta.value = text; document.body.appendChild(ta); ta.select();
-        try { document.execCommand('copy'); done(); } catch (e) { toast('复制失败,请手动复制'); }
-        document.body.removeChild(ta);
-      });
-    } else {
-      const ta = document.createElement('textarea');
-      ta.value = text; document.body.appendChild(ta); ta.select();
-      try { document.execCommand('copy'); done(); } catch (e) { toast('复制失败,请手动复制'); }
-      document.body.removeChild(ta);
-    }
-  }
-  if ($('copyDataBtn')) $('copyDataBtn').onclick = () => doCopyStd(buildDataText(), 'copyDataBtn', '数据已复制(JSON 5 段标准)');
-  if ($('copyLogBtn')) $('copyLogBtn').onclick = () => doCopyStd(buildLogText(), 'copyLogBtn', '日志已复制(6 段标准)');
+  
+  
+  
 })();
 </script>
 
+
+<script>(function(){var z=document.getElementById('actionbar-zone');if(z&&window.actionBar&&window.__P__){z.innerHTML=window.actionBar(window.__P__);}})();</script>
 </body>
 </html>

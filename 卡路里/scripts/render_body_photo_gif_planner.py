@@ -10,6 +10,8 @@
     python scripts/render_body_photo_gif_planner.py --ids 12,15 --tags 正面 --output /path/out.html
 """
 
+from _base_render import render_template, write_html  # noqa: E402
+
 import argparse
 import json
 import sys
@@ -47,7 +49,7 @@ def embed_photo_as_base64(photo: dict, photos_dir: Path, max_dim: int = 500) -> 
     嵌入 base64 后 HTML 完全自包含。
 
     关键设计:base64 **只**用于静态 <img src="data:..."> 渲染,
-    不放进 window.__DATA__(避免飞书 webview 审查 <script> 段截断 base64)。
+    不放进 payload(避免飞书 webview 审查 <script> 段截断)。
     即使 JS 失败,HTML 解析阶段的 <img> 已经能显示图。
     """
     try:
@@ -177,9 +179,7 @@ def render(ids: list, output_path: Path, validate_files: bool = True, embed_imag
         "message": f"身材照 GIF planner · 共 {len(selected_for_display)} 张可用 · 跳过 {len(missing_ids)} 张丢失" + (" · 📦 图片已嵌 base64" if embed else ""),
     }
 
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    inject_data = f'<script>window.__DATA__ = {json.dumps(payload, ensure_ascii=False)};</script>'
-    html = template.replace('<!--INJECT-DATA-->', inject_data)
+    html = render_template(TEMPLATE_PATH, payload, "生成身材照GIF")
 
     # v2.3.6(2026-07-25):预填 <!-- 动态生成 --> 为带 base64 <img> 的 photo-item HTML
     # 飞书 webview 审查会截断 <script>__DATA__</script> 段,用户 JS 早 return 但不清空 photoList
@@ -192,7 +192,7 @@ def render(ids: list, output_path: Path, validate_files: bool = True, embed_imag
         # 兼容旧版占位符
         html = html.replace('<!--PHOTO_LIST-->', photo_list_html)
 
-    output_path.write_text(html, encoding='utf-8')
+    write_html(html, output_path)
     return output_path
 
 

@@ -12,6 +12,9 @@
         --fix-prompt "请帮我覆盖 2026-07-20 的体脂记录为 18.0%" \
         --chain "1.识别→2.查冲突→3.渲染错误回执"
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '操作失败'
 import argparse
 import json
 import sys
@@ -53,13 +56,8 @@ def build_error(args) -> dict:
     }
 
 
-def render_html(data: dict) -> str:
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f'模板占位符数量异常: {template.count(placeholder)}')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace(placeholder, f'<script>window.__DATA__ = {payload};</script>', 1)
+def render_html(data: dict):
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -82,7 +80,7 @@ def main():
     scene = args.scene_name or '操作失败'
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene, 'error')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     print(f'❌ {scene} 失败回执已生成')
     print(f"⚠️ ACTION=SEND_TO_USER | HTML={out_path.absolute()}")
     return 0

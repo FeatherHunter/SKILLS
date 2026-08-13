@@ -63,8 +63,8 @@ def seed_plan(temp_db):
 
 
 def _extract_data(html: str) -> dict:
-    m = re.search(r"window\.__DATA__ = (\{.*?\});</script>", html, re.DOTALL)
-    assert m, "模板未注入 __DATA__"
+    m = re.search(r'<script id="payload" type="application/json">(.*?)</script>', html, re.DOTALL)
+    assert m, "模板未注入 payload"
     raw = m.group(1).replace("<\\/", "</")
     return json.loads(raw)
 

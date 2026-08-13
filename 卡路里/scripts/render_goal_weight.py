@@ -15,6 +15,8 @@
     python scripts/render_goal_weight.py --mode modify            # 改体重目标(填写页)
     python scripts/render_goal_weight.py --live --kg <目标> --deadline <日期> [--start-kg] [--start-date] [--scene] --chain <思考链>  # 写库 + 结果回执(#79)
 """
+
+from _base_render import render_template, write_html  # noqa: E402
 import argparse
 import json
 import math
@@ -26,6 +28,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'goal_weight.html'
 RESULT_TEMPLATE_PATH = SKILL_DIR / 'templates' / 'goal_weight_result.html'
+COMMAND_CN = "定体重目标"
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa: E402
@@ -234,27 +237,13 @@ def build_live_result(kg, deadline=None, start_kg=None, start_date=None):
     }
 
 
-def render_html(data: dict) -> str:
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f'模板占位符数量异常: {template.count(placeholder)}')
-    payload = json.dumps({'status': 'ok', 'data': data, 'message': '体重目标已生成'},
-                         ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+def render_html(data: dict):
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def render_result_html(data: dict) -> str:
     """结果回执模板(goal_weight_result.html · #79)"""
-    template = RESULT_TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f'模板占位符数量异常: {template.count(placeholder)}')
-    payload = json.dumps({'status': 'ok', 'data': data, 'message': '体重目标结果回执已生成'},
-                         ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+    return render_template(RESULT_TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -329,7 +318,7 @@ def main():
 
     # R5 命名:<场景名>_<类型中文>_<TS>.html
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     print(f'✅ {out_path}')
     if args.live:
         r = data.get('rate') or {}

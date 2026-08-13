@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """tests/test_weight_history_mobile.py — weight_history.html mobile polish
 
@@ -348,7 +348,7 @@ def test_target_line_renders_even_below_data_range():
     html_content = sample.read_text(encoding="utf-8")
     html_content = html_content.replace(
         "<!--INJECT-DATA-->",
-        f'<script>window.__DATA__ = {json.dumps(data, ensure_ascii=False)};</script>',
+        json.dumps(data, ensure_ascii=False).replace('</', '<\\/'),
         1
     )
     sample_path.write_text(html_content, encoding="utf-8")
@@ -593,7 +593,7 @@ def test_phone_xr_delta_cell_occupies_full_column():
     html_content = sample.read_text(encoding="utf-8")
     html_content = html_content.replace(
         "<!--INJECT-DATA-->",
-        f'<script>window.__DATA__ = {json.dumps(data, ensure_ascii=False)};</script>',
+        json.dumps(data, ensure_ascii=False).replace('</', '<\\/'),
         1
     )
     sample_path.write_text(html_content, encoding="utf-8")
@@ -796,7 +796,7 @@ def test_phone_xr_kg_cell_no_wrap():
     html_content = sample.read_text(encoding="utf-8")
     html_content = html_content.replace(
         "<!--INJECT-DATA-->",
-        f'<script>window.__DATA__ = {json.dumps(data, ensure_ascii=False)};</script>',
+        json.dumps(data, ensure_ascii=False).replace('</', '<\\/'),
         1
     )
     sample_path.write_text(html_content, encoding="utf-8")
@@ -876,7 +876,7 @@ def test_phone_xr_chart_y_axis_no_expansion():
     html_content = sample.read_text(encoding="utf-8")
     html_content = html_content.replace(
         "<!--INJECT-DATA-->",
-        f'<script>window.__DATA__ = {json.dumps(data, ensure_ascii=False)};</script>',
+        json.dumps(data, ensure_ascii=False).replace('</', '<\\/'),
         1
     )
     sample_path.write_text(html_content, encoding="utf-8")
@@ -1244,4 +1244,6 @@ def test_date_column_does_not_regress_on_desktop(tmp_path):
 
     assert info["headerWidth"] >= 70
     assert info["headerWidth"] <= 220
+
+
 

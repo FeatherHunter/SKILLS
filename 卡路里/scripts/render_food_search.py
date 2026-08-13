@@ -9,10 +9,11 @@ CLI:
     python scripts/render_food_search.py --category <分类> [--output <path>]   # 查食品(按分类) · ticket #3
 
 查询 nutrition_products 表,匹配 product_name LIKE '%<term>%' 或 category 精确匹配,
-渲染成 templates/food_search.html,注入 window.__DATA__。
+渲染成 templates/food_search.html,经 Base 管线注入 payload。
 
 输出默认:<SKILLS_DB_PATH 或 fallback>/calorie_html/查热量_<YYYYMMDD>_<HHMMSS>.html
 """
+
 from __future__ import annotations
 
 import argparse
@@ -22,6 +23,8 @@ import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from _base_render import render_template, write_html  # noqa: E402
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = SKILL_DIR / "scripts"
@@ -97,23 +100,13 @@ def _default_output_path(query: str) -> Path:
 
 
 def _inject_data(html: str, data: dict) -> str:
-    """把 data 注入到 window.__DATA__ 占位符
-
-    S8:断言占位符唯一出现(SKILL.md §"占位符唯一"硬规则)。
-    模板若出现 0 或 ≥2 次,直接报错,避免 silent data loss。
-    """
-    count = html.count("<!--INJECT-DATA-->")
-    if count != 1:
+    """S8:占位符唯一性校验 → Base 管线注入"""
+    if html.count("<!--INJECT-DATA-->") != 1:
         raise ValueError(
-            f"templates/food_search.html 占位符 <!--INJECT-DATA--> 出现 {count} 次,"
+            f"templates/food_search.html 占位符 <!--INJECT-DATA--> 出现异常,"
             f"应为恰好 1 次(SKILL.md § 占位符唯一 规则)。"
         )
-    payload = json.dumps(data, ensure_ascii=False, default=str)
-    return html.replace(
-        "<!--INJECT-DATA-->",
-        f'<script>window.__DATA__ = {payload};</script>',
-        1,  # 只替换第一个
-    )
+    return render_template(TEMPLATE_PATH, data, "查食品")
 
 
 def main() -> int:
@@ -154,7 +147,7 @@ def main() -> int:
 
     out = Path(args.output) if args.output else _default_output_path(q)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(html, encoding="utf-8")
+    write_html(html, out)
     print(f"✓ HTML 已生成: {out}")
     print(f"⚠️ ACTION=SEND_TO_USER | HTML={out.absolute()}")
     return 0

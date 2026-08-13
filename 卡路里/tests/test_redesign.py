@@ -52,9 +52,9 @@ def _run_script(*args: str, timeout: int = 30) -> subprocess.CompletedProcess:
 
 
 def _extract_payload(html_text: str) -> dict | None:
-    """从生成的 HTML 抽取 window.__DATA__ JSON"""
+    """从生成的 HTML 抽取 Base 管线 payload JSON"""
     m = re.search(
-        r'<script>\s*window\.__DATA__\s*=\s*(\{.*?\});?\s*</script>',
+        r'<script id="payload" type="application/json">(.*?)</script>',
         html_text, re.DOTALL,
     )
     if not m:
@@ -152,7 +152,7 @@ class TestTodayWaterRenders:
             assert ".ring" in html, "模板缺少 .ring 节点(进度环)"
             assert ".bar-chart" in html, "模板缺少 .bar-chart 节点(7 天 bar)"
             assert ".bar-col" in html, "模板缺少 .bar-col 节点(每日列)"
-            assert "window.__DATA__" in html, "模板缺少数据注入"
+            assert 'id="payload"' in html, "模板缺少数据注入"
         finally:
             (SKILL_DIR / "_test_water.html").unlink(missing_ok=True)
 
@@ -167,7 +167,7 @@ class TestTodayWaterRenders:
         html = (SKILL_DIR / "_test_water_shape.html").read_text(encoding="utf-8")
         try:
             payload = _extract_payload(html)
-            assert payload is not None, "未能抽取 window.__DATA__"
+            assert payload is not None, "未能抽取 payload"
             assert payload["status"] == "ok", f"status 非 ok: {payload}"
             s = payload["data"]["summary"]
             assert isinstance(s["today_ml"], int) and s["today_ml"] == 1500, (

@@ -17,6 +17,9 @@
   python scripts/render_weight_compare.py --scenario a1 --chain "1.识别→2.读DB→3.对比→4.渲染"
   python scripts/render_weight_compare.py --scenario a2 --start-a 2026-06-01 --end-a 2026-06-30 --start-b 2026-07-01 --end-b 2026-07-31 --chain "..."
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '对比体重'
 import argparse, json, sys
 from datetime import date
 from pathlib import Path
@@ -32,11 +35,7 @@ from analysis.weight_compare import run_scenario, SCENARIO_LABELS  # noqa
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def _summary_line(scenario, data):
@@ -121,7 +120,7 @@ def main():
 
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, label, 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     print(f'✅ {out_path}')
     print(f'   场景: {args.scenario} | {label}')
     return 0

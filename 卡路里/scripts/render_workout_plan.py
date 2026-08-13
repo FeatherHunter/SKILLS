@@ -20,6 +20,8 @@
 - DOM 渲染交给 JS(CSS / JS / HTML 骨架都在稳定模板里)
 - 占位符唯一:<!--INJECT-DATA--> 恰好 1 次(注入器校验)
 """
+
+from _base_render import render_template, write_html  # noqa: E402
 import argparse
 import json
 from datetime import date, timedelta
@@ -31,6 +33,7 @@ from db import find_db_path, get_db, init_db  # noqa: E402 (供 _get_db 动态�
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 DB_FILENAME = "calorie_data.db"
+COMMAND_CN = None  # 场景名动态：render() 按 mode 推断
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'workout_plan_view.html'
 
 
@@ -618,22 +621,13 @@ def build_action_data(conn, name=None):
 
 
 def _render_html(data: dict) -> str:
-    """读模板 + 注入数据"""
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(
-            f"模板占位符数量异常: 期望 1 个,实际 {template.count(placeholder)} 个\n"
-            f"路径: {TEMPLATE_PATH}"
-        )
+    """读模板 + Base 管线注入"""
     payload_obj = {
         'status': 'ok',
         'data': data,
         'message': '健身计划 HTML 已生成',
     }
-    payload = json.dumps(payload_obj, ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+    return render_template(TEMPLATE_PATH, payload_obj, COMMAND_CN or "看训练计划")
 
 
 def render(mode='full', week=None, start_date=None, end_date=None, days=None, day_date=None, action_name=None,
@@ -709,7 +703,7 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None, da
         'missed': '看未完成训练', 'movement': '看动作完成率', 'action': '看某动作安排',
     }
     default_path = html_path(SKILL_DIR, scene_names.get(mode, '健身计划'))
-    default_path.write_text(html, encoding='utf-8')
+    write_html(html, default_path)
     return str(default_path)
 
 

@@ -17,6 +17,9 @@
     python scripts/render_body_measurements_view.py --mode trend --metric waist-cm [--days 90]
     python scripts/render_body_measurements_view.py --mode compare --date1 <D1> --date2 <D2>
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看围度'
 import argparse
 import json
 import sys
@@ -168,13 +171,8 @@ def build_compare(c, date1, date2):
     }
 
 
-def render_html(data: dict) -> str:
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f'模板占位符数量异常: {template.count(placeholder)}')
-    payload = json.dumps({'status': 'ok', 'data': data}, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace(placeholder, f'<script>window.__DATA__ = {payload};</script>', 1)
+def render_html(data: dict):
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -222,7 +220,7 @@ def main():
     html = render_html(data)
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, SCENE_NAME[args.mode], 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     print(f'✅ {out_path}')
     print(f"⚠️ ACTION=SEND_TO_USER | HTML={out_path.absolute()}")
     return 0

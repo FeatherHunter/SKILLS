@@ -10,6 +10,9 @@ v1.0 扩展(ticket #3):
   --month current|last  自然月
   --with-note           只看有备注的记录(看「有备注」的饮食记录)
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看饮食记录'
 import argparse, json, sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -119,11 +122,7 @@ def build_data(start, end, with_note=False):
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -168,7 +167,7 @@ def main():
         return 1
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'{label}饮食')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     sm = data['data']['summary']
     print(f'✅ {out_path}')
     print(f'   范围: {s} ~ {e} | 食物 {len(data["data"]["items"])} 条 | 总卡 {sm["total_calorie"]} | 蛋白 {sm["total_protein"]}g')

@@ -154,8 +154,8 @@ def test_render_contains_period_section(seed_period_plan):
     assert isinstance(html, str) and Path(html).exists()
     text = Path(html).read_text(encoding="utf-8")
     # 周期进度 section 存在(注入数据含字段即可, 不必等 JS 跑)
-    m = re.search(r"window\.__DATA__ = (\{.*?\});</script>", text, re.DOTALL)
-    assert m, "模板未注入 __DATA__"
+    m = re.search(r'<script id="payload" type="application/json">(.*?)</script>', text, re.DOTALL)
+    assert m, "模板未注入 payload"
     raw = m.group(1).replace("<\\/", "</")
     data = json.loads(raw)
     k = data["data"]["kpi"]

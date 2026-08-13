@@ -22,6 +22,7 @@
   python scripts/render_analysis.py --view six --date 2026-08-02
   python scripts/render_analysis.py --view combined --pair weight_calorie --window custom --start 2026-07-01 --end 2026-07-31
 """
+
 from __future__ import annotations
 
 import argparse
@@ -29,6 +30,8 @@ import json
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
+
+from _base_render import render_template, write_html  # noqa: E402
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 SKILL_DIR = SCRIPT_DIR.parent
@@ -74,20 +77,15 @@ A2_REF = {'bmi_ref': ((18.5, 24.9), 'BMI 健康范围 18.5-24.9'),
 
 # ---------- 工具 ----------
 
-def _render(template_name: str, data: dict) -> str:
-    template = (SKILL_DIR / template_name).read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f'{template_name} 模板占位符数量异常: {template.count(placeholder)}')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace(placeholder, f'<script>window.__DATA__ = {payload};</script>', 1)
+def _render(template_name: str, data: dict, scene_name: str = "") -> str:
+    return render_template(SKILL_DIR / template_name, data, scene_name or None)
 
 
 def _out(data: dict, view: str, scene_name: str) -> int:
     """渲染 + 落盘 + 输出 SEND_TO_USER 末行"""
-    html = _render(TEMPLATES[view], data)
+    html = _render(TEMPLATES[view], data, scene_name)
     out_path = html_scene_path(SKILL_DIR, scene_name, 'result')
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     print(f"✅ 已生成: {out_path}")
     print(f"   场景: {scene_name} | 窗口: {data.get('window', '')}")
     print(f"   洞察: {data.get('insight', '')[:80]}")

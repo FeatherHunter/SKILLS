@@ -17,6 +17,9 @@
     python scripts/render_process_progress.py --input tests/fixtures/mock/mock_process_progress.json
     python scripts/render_process_progress.py --input <流程输出.json> --output /path/out.html
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '落地训练'
 import argparse
 import json
 from html_paths import html_path
@@ -95,17 +98,8 @@ def default_summary() -> dict:
     }
 
 
-def render_html(data: dict) -> str:
-    """读模板 + 注入数据"""
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f"模板占位符数量异常: {template.count(placeholder)}")
-
-    payload = json.dumps({'status': 'ok', 'data': data, 'message': '流程进度已生成'},
-                         ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+def render_html(data: dict):
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -122,7 +116,7 @@ def main():
 
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, f'流程进度_{input_path.stem}')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     s = data['summary']
     print(f'✅ {out_path}')

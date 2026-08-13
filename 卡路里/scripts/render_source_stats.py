@@ -7,6 +7,9 @@
 
 呈现数据: 按来源分组计数 + 总数
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看食品来源统计'
 import argparse, json, sys
 from datetime import datetime
 from pathlib import Path
@@ -38,11 +41,7 @@ def build_data(chain=None):
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -58,7 +57,7 @@ def main():
         return 1
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '食品来源统计')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     sm = data['data']['summary']
     print(f'✅ {out_path}')
     print(f'   来源 {sm["sources"]} 个 | 总数 {sm["total"]} 条')

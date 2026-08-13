@@ -9,6 +9,7 @@ CLI:
 
 与 list-products CLI 同源,但输出 HTML 而非 text。默认 limit 200。
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,6 +20,8 @@ import sqlite3
 import sys
 from datetime import datetime
 from pathlib import Path
+
+from _base_render import render_template, write_html  # noqa: E402
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = SKILL_DIR / "scripts"
@@ -74,19 +77,13 @@ def _default_output_path() -> Path:
 
 
 def _inject_data(html: str, data: dict) -> str:
-    """S8:占位符唯一性校验(SKILL.md §"占位符唯一")"""
-    count = html.count("<!--INJECT-DATA-->")
-    if count != 1:
+    """S8:占位符唯一性校验 → Base 管线注入"""
+    if html.count("<!--INJECT-DATA-->") != 1:
         raise ValueError(
-            f"templates/food_library.html 占位符 <!--INJECT-DATA--> 出现 {count} 次,"
+            f"templates/food_library.html 占位符 <!--INJECT-DATA--> 出现异常,"
             f"应为恰好 1 次(SKILL.md § 占位符唯一 规则)。"
         )
-    payload = json.dumps(data, ensure_ascii=False, default=str)
-    return html.replace(
-        "<!--INJECT-DATA-->",
-        f'<script>window.__DATA__ = {payload};</script>',
-        1,
-    )
+    return render_template(TEMPLATE_PATH, data, "查食品库")
 
 
 def main() -> int:
@@ -132,7 +129,7 @@ def main() -> int:
         sys.stdout.write(f"# 共 {total_count} 条 · 本次输出 {len(items)} 条\n")
         return 0
 
-    out.write_text(html, encoding="utf-8")
+    write_html(html, out)
     print(f"✓ HTML 已生成: {out}")
     print(f"⚠️ ACTION=SEND_TO_USER | HTML={out.absolute()}")
     return 0

@@ -12,6 +12,9 @@
     python scripts/render_health_dashboard.py --range 7/13:7/19 # 自定义
     python scripts/render_health_dashboard.py --output <path>   # 指定输出
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '查健康报告'
 import argparse
 import json
 from html_paths import html_path
@@ -45,16 +48,8 @@ def fetch_dashboard(start: str, end: str) -> dict:
     return dashboard(start, end, as_dict=True)
 
 
-def render_html(data: dict) -> str:
-    """读模板 + 注入"""
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f"模板占位符数量异常: {template.count(placeholder)}")
-
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+def render_html(data: dict):
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -79,7 +74,7 @@ def main():
 
     out_path = Path(args.output) if args.output else html_path(SKILL_DIR, '健康仪表盘')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     d = data.get('data', {})
     print(f"✅ {out_path}")

@@ -17,6 +17,8 @@
     python scripts/render_goal_config.py --modify-water        # 改饮水目标(带改前/改后)
     python scripts/render_goal_config.py --mock <JSON>         # mock 数据(测试用)
 """
+
+from _base_render import render_template, write_html  # noqa: E402
 import argparse
 import json
 import sys
@@ -28,6 +30,7 @@ SKILL_DIR = SCRIPT_DIR.parent
 # 2026-08-04 ADR-0009:按形态选模板(营养 5 字段 / 饮水单字段),互不干扰
 TEMPLATE_NUTRITION = SKILL_DIR / 'templates' / 'goal_config_nutrition.html'
 TEMPLATE_WATER = SKILL_DIR / 'templates' / 'goal_config_water.html'
+COMMAND_CN = "定营养目标"
 
 sys.path.insert(0, str(SCRIPT_DIR))
 from html_paths import html_path  # noqa: E402
@@ -155,15 +158,7 @@ def normalize(data: dict) -> dict:
 
 
 def render_html(data: dict, template_path: Path = None) -> str:
-    template = (template_path or TEMPLATE_NUTRITION).read_text(encoding='utf-8')
-    placeholder = '<!--INJECT-DATA-->'
-    if template.count(placeholder) != 1:
-        raise ValueError(f'模板占位符数量异常: {template.count(placeholder)}')
-
-    payload = json.dumps({'status': 'ok', 'data': data, 'message': '目标配置已生成'},
-                         ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace(placeholder, inject, 1)
+    return render_template(template_path or TEMPLATE_NUTRITION, data, COMMAND_CN)
 
 
 def main():
@@ -220,7 +215,7 @@ def main():
     # R5 命名:<场景名>_<类型中文>_<TS>.html
     out_path = Path(args.output) if args.output else scene_path(scene_name, output_type)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     cg = data.get('current_goal', {})
     print(f'✅ {out_path}')

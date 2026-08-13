@@ -12,6 +12,9 @@ v2.4.8 修:列名对齐 db.py schema(exercise_log/food_log 2026-07-12 重构后)
                    minutes → duration_minutes, sets → set_index
   · food_log: calorie → calories
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '查运动分布'
 import argparse, json, sys
 from datetime import date, timedelta
 from pathlib import Path
@@ -110,11 +113,7 @@ def build_data(start, end, mode='distribution', tdee=1700):
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    return template.replace('<!--INJECT-DATA-->', f'<script>window.__DATA__ = {payload};</script>', 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -158,7 +157,7 @@ def main():
         return 1
     out_path = Path(args.output) if args.output else html_scene_path(SKILL_DIR, scene, 'result')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
     sm = data['data']['summary']
     print(f'✅ {out_path}')
     print(f'   模式: {args.mode} | 范围: {s} ~ {e} | 运动 {sm["active_days"]}/{data["data"]["meta"]["days"]} 天 | {sm["total_calorie"]} 卡')

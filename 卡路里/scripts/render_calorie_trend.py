@@ -7,6 +7,9 @@
 - 输出目录: $DATA_DIR/calorie_html/热量趋势_<TS>.html (手册 §4.1 · v2.4.8 中文化)
 - 占位符: <!--INJECT-DATA--> 恰好 1 次
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '查热量趋势'
 import argparse
 import json
 import sys
@@ -146,13 +149,7 @@ def build_data(start, end):
 
 
 def render_html(data):
-    """注入数据到模板"""
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符 或 重复出现')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace('<!--INJECT-DATA-->', inject, 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -187,7 +184,7 @@ def main():
     else:
         out_path = html_path(SKILL_DIR, '热量趋势')
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     s = data['data']['summary']
     print(f'✅ {out_path}')

@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
+<style><!--SHARED-CSS--></style>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>营养目标配置 · 卡路里</title>
@@ -105,14 +106,14 @@ footer{text-align:center;color:var(--ink3);font-size:12px;padding-top:20px;borde
 <p class="sub">拖动滑块调整目标,点击「更改配置」复制指令,粘到 AI 对话框即可按新配置写入。</p>
 <div class="btn-row">
 <button class="btn primary" id="btnAdopt" onclick="copyConfig()">✏️ 更改配置</button>
-<button class="btn secondary" id="copyDataBtn" onclick="copyData()">📋 复制数据</button>
-<button class="btn secondary" id="copyLogBtn" onclick="copyLog()">📋 复制日志</button>
+
+
 </div>
 </section>
 </div>
-<!--INJECT-DATA-->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 <script>
-const DATA=(()=>{if(typeof window.__DATA__!=='object'||window.__DATA__===null)return null;return window.__DATA__})();
+const DATA=(()=>{if(typeof window.__P__!=='object'||window.__P__===null)return null;return window.__P__})();
 const META=(DATA&&DATA.data&&DATA.data.meta)||{};
 const PAGE_TITLE=DATA&&DATA.data&&DATA.data.page_title?DATA.data.page_title:'营养目标';
 const CURRENT=DATA&&DATA.data&&DATA.data.current_goal?DATA.data.current_goal:{};
@@ -409,7 +410,7 @@ function buildConfigPrompt(){
 function hasYesterdayData(){
   return YESTERDAY&&Object.keys(YESTERDAY).length>0&&ACTIVE_FIELDS.some(f=>(YESTERDAY[f.yesterdayKey]||0)>0);
 }
-function copyConfig(){doCopy(buildConfigPrompt(),'btnAdopt','✓ 已复制配置指令,粘给 AI 即可');}
+function copyConfig(){window.copyText(buildConfigPrompt(),'btnAdopt','✓ 已复制配置指令,粘给 AI 即可');}
 renderHeader();
 renderSliders();
 renderWeight();
@@ -418,44 +419,15 @@ renderBmrWarning();
 updateMiniChart();
 
 // R2 双按钮:复制数据(用户口径)/ 复制日志(排障口径) · 2026-08-02 对齐 #8
-function buildDataText(){
-  const lines=['营养目标'+(META.fetched_at?' ('+META.fetched_at+')':''),''];
-  ACTIVE_FIELDS.forEach(f=>lines.push(`${f.label}: ${state[f.key]}${f.unit}`));
-  if(WEIGHT)lines.push(`体重: 当前 ${WEIGHT.current}kg → 目标 ${WEIGHT.target}kg (${WEIGHT.days_left}天)`);
-  const DIFF=DATA&&DATA.data&&DATA.data.diff?DATA.data.diff:null;
-  if(DIFF&&DIFF.items&&DIFF.items.length){
-    lines.push('');
-    DIFF.items.forEach(it=>lines.push(`改前 ${it.label}: ${it.old!=null?it.old:'未设'} → 改后 ${it.new!=null?it.new:'待定'}`));
-  }
-  return lines.join('\n');
-}
-function buildLogText(){
-  const lines=['[目标配置 排障日志]',''];
-  lines.push(`唤醒词: ${META.wake_word||'(未知)'}`);
-  lines.push(`渲染命令: ${META.render_cmd||'(未知)'}`);
-  lines.push(`数据来源: ${META.source||'(未知)'}`);
-  lines.push(`渲染时间: ${META.fetched_at||'(未知)'}`);
-  lines.push('');
-  if(META.chain){lines.push('AI 思考链:');lines.push(META.chain);}
-  else{lines.push('AI 思考链: (未注入 · 渲染时未传 --chain,AI 执行时用 --chain 附上处理步骤)');}
-  lines.push('');
-  lines.push('原始数据:');
-  lines.push(JSON.stringify(DATA&&DATA.data?DATA.data:null,null,2));
-  return lines.join('\n');
-}
-function showToast(msg){var t=document.createElement('div');t.style.cssText='position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0));transform:translateX(-50%) scale(.9);opacity:0;background:rgba(28,28,30,.94);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);color:#f0f0f0;border-radius:14px;padding:13px 14px 13px 16px;display:flex;align-items:flex-start;gap:12px;max-width:min(480px,calc(100vw - 24px));min-width:300px;box-shadow:0 10px 32px rgba(0,0,0,.32),0 0 0 .5px rgba(255,255,255,.08) inset;z-index:9999;transition:opacity .22s ease-out,transform .22s cubic-bezier(.34,1.56,.64,1)';t.innerHTML='<div style="font-size:20px;line-height:1;padding-top:1px;flex-shrink:0">📋</div><div style="flex:1;min-width:0"><div style="font-weight:600;font-size:12.5px;line-height:1.4;color:#fff;margin-bottom:2px">已复制 <em style="font-style:normal;color:#34c759;font-weight:600">'+msg+'</em></div><div style="font-size:11px;line-height:1.5;color:#c8c8cc">粘贴给 AI,卡路里技能会自动执行这个流程,完成后你会拿到结果 HTML + 一句话总结。</div></div><button style="background:rgba(255,255,255,.10);color:#34c759;border:0;border-radius:8px;padding:5px 9px;font-size:10.5px;font-weight:500;cursor:pointer;white-space:nowrap;margin-left:6px;flex-shrink:0">✓ 知道了</button>';document.body.appendChild(t);requestAnimationFrame(function(){t.style.opacity='1';t.style.transform='translateX(-50%) scale(1)';});var close=function(){t.style.opacity='0';t.style.transform='translateX(-50%) scale(.9)';setTimeout(function(){t.remove();},220);};t.querySelector('button').addEventListener('click',close);setTimeout(close,4500);}
-function doCopy(text,btnId,msg){
-  const done=()=>{const b=document.getElementById(btnId);if(b){b.classList.add('copied');setTimeout(()=>b.classList.remove('copied'),600);}showToast(msg);};
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(text).then(done).catch(()=>fallbackCopy(text,done));
-  } else { fallbackCopy(text,done); }
-  function fallbackCopy(txt,ok){
-    const ta=document.createElement('textarea');ta.value=txt;document.body.appendChild(ta);ta.select();
-    try{document.execCommand('copy');ok();}catch(e){}document.body.removeChild(ta);
-  }
-}
-function copyData(){doCopy(buildDataText(),'copyDataBtn','目标配置 数据复制成功 ✓');}
-function copyLog(){doCopy(buildLogText(),'copyLogBtn','排障日志复制成功 ✓ 可将日志发给开发者/AI 定位问题');}
+
+
+
+
+
+
 </script>
+<div id="actionbar-zone"></div>
+
+<script>(function(){var z=document.getElementById('actionbar-zone');if(z&&window.actionBar&&window.__P__){z.innerHTML=window.actionBar(window.__P__);}})();</script>
 </body>
 </html>

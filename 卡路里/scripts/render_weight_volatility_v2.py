@@ -15,6 +15,7 @@ CLI:
     python scripts/render_weight_volatility_v2.py [--days 30] [--start YYYY-MM-DD] [--end YYYY-MM-DD]
         [--baseline rolling|goal] [--view full|anomalies-only] [--text] [--output PATH]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -24,6 +25,8 @@ import statistics
 import sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
+
+from _base_render import render_template, write_html  # noqa: E402
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = SKILL_DIR / "scripts"
@@ -51,11 +54,9 @@ def _default_output_path(scene_label: str) -> Path:
 
 
 def _inject_data(html: str, data: dict) -> str:
-    count = html.count("<!--INJECT-DATA-->")
-    if count != 1:
-        raise ValueError(f"模板占位符 <!--INJECT-DATA--> 出现 {count} 次,应为 1 次")
-    payload = json.dumps(data, ensure_ascii=False, default=str)
-    return html.replace("<!--INJECT-DATA-->", f'<script>window.__DATA__ = {payload};</script>', 1)
+    if html.count("<!--INJECT-DATA-->") != 1:
+        raise ValueError(f"模板占位符 <!--INJECT-DATA--> 出现异常,应为 1 次")
+    return render_template(TEMPLATE_PATH, data, "看体重波动")
 
 
 def _augment_kpis(data: dict) -> dict:
@@ -176,7 +177,7 @@ def main() -> int:
 
     out = Path(args.output) if args.output else _default_output_path(scene_label)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(html, encoding="utf-8")
+    write_html(html, out)
 
     print(f"✅ {out}")
     print(f"⚠️ ACTION=SEND_TO_USER | HTML={out.absolute()}")

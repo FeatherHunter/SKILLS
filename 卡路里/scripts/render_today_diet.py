@@ -13,6 +13,9 @@
               calorie → calories, carbohydrates → carbs, water_ml 不存在
               (饮水以 food_name='💧水' 标记,sum(grams) 替代)
 """
+
+from _base_render import render_template, write_html  # noqa: E402
+COMMAND_CN = '看今日饮食'
 import argparse, json, sys
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -183,12 +186,7 @@ def diet_filename_label(day, today=None):
 
 
 def render_html(data):
-    template = TEMPLATE_PATH.read_text(encoding='utf-8')
-    if template.count('<!--INJECT-DATA-->') != 1:
-        raise ValueError('模板缺少唯一占位符 或 重复出现')
-    payload = json.dumps(data, ensure_ascii=False).replace('</', '<\\/')
-    inject = f'<script>window.__DATA__ = {payload};</script>'
-    return template.replace('<!--INJECT-DATA-->', inject, 1)
+    return render_template(TEMPLATE_PATH, data, COMMAND_CN)
 
 
 def main():
@@ -220,7 +218,7 @@ def main():
         # issue #53(2026-08-09):文件名随查询日期动态,不再写死「今日饮食总览」
         out_path = html_path(SKILL_DIR, diet_filename_label(day))
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(html, encoding='utf-8')
+    write_html(html, out_path)
 
     s = data['data']['summary']
     remain = s['target'] - s['calorie']

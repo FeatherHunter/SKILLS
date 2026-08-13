@@ -1145,7 +1145,9 @@
     const r = 80, cx = 110, cy = 110, c = 2 * Math.PI * r;
     let acc = 0;
     const segments = cats.map((cat, i) => {
-      const pct = total ? (cat.total / total) : 0;
+      // 兼容两种取值字段:category 场景用 expense,structure 场景映射为 total
+      const v = Number(cat.expense ?? cat.total) || 0;
+      const pct = total ? (v / total) : 0;
       const dash = pct * c;
       const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PALETTE[i % PALETTE.length]}" stroke-width="22" stroke-dasharray="${dash} ${c}" stroke-dashoffset="${-acc}" transform="rotate(-90 ${cx} ${cy})"/>`;
       acc += dash;
@@ -1194,13 +1196,19 @@
       const show = n <= 8 || i % Math.ceil(n / 8) === 0 || i === n - 1;
       return show ? `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-size="${fs}" fill="#86868b">${escapeHTML(lb)}</text>` : '';
     }).join('');
-    // 峰值标注(支出)
+    // 峰值标注(支出 · 靠边时贴边防裁剪)
     let peakMark = '';
     if (n > 0) {
       let pi = 0;
       for (let i = 1; i < n; i++) if (series[i].expense > series[pi].expense) pi = i;
       if (series[pi].expense > 0) {
-        peakMark = `<text x="${x(pi)}" y="${y(series[pi].expense) - 8}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="#ff3b30">峰值 ${fmtMoney(series[pi].expense)}</text>`;
+        const label = `峰值 ${fmtMoney(series[pi].expense)}`;
+        const estW = label.length * fs * 0.62; // 中文/数字混合宽度的粗略估计
+        let px = x(pi);
+        let anchor = 'middle';
+        if (px + estW / 2 > W - PR) { px = W - PR - 6; anchor = 'end'; }
+        else if (px - estW / 2 < PL) { px = PL + 6; anchor = 'start'; }
+        peakMark = `<text x="${px.toFixed(1)}" y="${(y(series[pi].expense) - 8).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="700" fill="#ff3b30">${label}</text>`;
       }
     }
     return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">

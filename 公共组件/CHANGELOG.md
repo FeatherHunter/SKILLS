@@ -2,6 +2,14 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.8.1（2026-08-13 · 测试卫生修复 · #325）
+
+**test_help_template 缺省落盘残留修复**（非资产变更 · 纯测试 + 忽略规则;Base 资产/契约签名零改动）。
+
+- `test_render_default_filename_by_skill` 改为在 pytest `tmp_path` 内复制模板副本后执行无 `--output` 调用,断言缺省产物落在临时 `out/help_<技能名>.html`（保留缺省文件名契约,不再向仓库目录落盘）
+- `.gitignore` 新增 `公共组件/assets/out/`（injector 缺省输出目录兜底,防 untracked 残留）
+- 回归:公共组件全量 151/151 全绿;测试后 `git status` 零残留
+
 ## 规划中（2026-08-13 · smartSelect 选择器组件立项登记）
 
 **smartSelect = 字段级「复用优先·新建其次」选择器组件**（公共层 ISSUE #320，挂 wayfinder #305；实施 = #312，落地后补版本号与细节）。

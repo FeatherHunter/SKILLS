@@ -103,7 +103,14 @@ def probe_skill(skill: str, entry: dict, registry_path: Path, repo_root: Path) -
 
     返回: {status: connected|broken, reason?, domains?}
     domains = --what 输出的域清单 [{name, cn, desc, fields}]。
+
+    兜底（#276 对抗审查补 · 2026-08-13）: 登记条目畸形（非 dict / 缺 path）时
+    返回 broken 而非崩溃——总览是仪表盘，坏状态也是状态，必须可见；
+    校验器同口径会在 commit 前拦住，正常仓库不出现。
     """
+    if not isinstance(entry, dict) or not entry.get("path"):
+        return {"status": "broken",
+                "reason": "登记条目畸形（缺 path 或非对象）——跑 check_public_contract 看详情"}
     skill_dir = _skill_dir(entry, repo_root)
     module_name = entry.get("module", "PUBLIC_DOMAINS")
     mod_file = skill_dir / f"{module_name}.py"

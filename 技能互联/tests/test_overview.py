@@ -115,6 +115,29 @@ def test_registered_missing_file_broken(tmp_path):
     assert "登记异常" in html
 
 
+def test_malformed_entry_broken_not_crash(tmp_path):
+    """畸形登记（缺 path）→ 该技能红，整页照常生成（仪表盘不整页失明）"""
+    reg = tmp_path / "registry.yaml"
+    reg.write_text("skills:\n  作息管家:\n    db_file: x.db\n", encoding="utf-8")
+    code, result, out = _render(tmp_path, reg)
+    assert code == 0
+    assert result["data"]["broken_count"] == 1
+    assert result["data"]["pending_count"] == 5
+    html = out.read_text(encoding="utf-8")
+    assert "登记异常" in html
+    assert "登记条目畸形" in html
+
+
+def test_malformed_entry_non_dict_broken(tmp_path):
+    """畸形登记（entry 不是对象）→ 红，不崩溃"""
+    reg = tmp_path / "registry.yaml"
+    reg.write_text("skills:\n  作息管家: just-a-string\n", encoding="utf-8")
+    code, result, _ = _render(tmp_path, reg)
+    assert code == 0
+    assert result["data"]["broken_count"] == 1
+    assert result["data"]["connected_count"] == 0
+
+
 def test_build_payload_snapshot():
     """payload 信封: 摘要/分区/结构化 skills 齐全（scene-data 契约 §4）"""
     skills = [

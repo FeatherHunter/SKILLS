@@ -221,13 +221,21 @@ class TestRenderEndToEnd:
         assert ('穿越' in out['message'] or '不安全' in out['message'])
 
     def test_render_default_filename_by_skill(self, tmp_out):
-        """不传 --output 时缺省文件名 = help_<技能名>.html"""
+        """不传 --output 时缺省文件名 = help_<技能名>.html,且落盘在模板同目录 out/ 下
+
+        模板复制到临时目录后再跑无 --output 调用:缺省产物落在临时 out/ 下,
+        保留真实缺省语义,同时不触碰仓库目录(防 assets/out 残留,见 #325)。
+        """
+        tmp_template = tmp_out.parent / 'help_template_copy.html'
+        tmp_template.write_bytes(HELP_TEMPLATE.read_bytes())
         payload = tmp_out.parent / 'help_data.json'
         payload.write_text(json.dumps(VALID_HELP, ensure_ascii=False), encoding='utf-8')
         args = [sys.executable, str(BASE_DIR / 'injector.py'),
-                str(HELP_TEMPLATE), '--payload', str(payload), '--help-template']
+                str(tmp_template), '--payload', str(payload), '--help-template']
         r = subprocess.run(args, capture_output=True, text=True,
                            encoding='utf-8', errors='replace')
         assert r.returncode == 0, r.stdout + r.stderr
         out = json.loads(r.stdout)
-        assert out['data']['output'].endswith('help_作息管家.html')
+        expected = tmp_out.parent / 'out' / 'help_作息管家.html'
+        assert str(out['data']['output']) == str(expected)
+        assert expected.exists(), '缺省产物应落在临时目录 out/ 下'

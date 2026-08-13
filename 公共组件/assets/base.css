@@ -1,6 +1,7 @@
-/* Base Skill token A 组 + 控件样式 v1.2（唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill token A 组 + 控件样式 v1.7（唯一真相源 · 跨技能 · 领域无关）
  * 来源: 居家管家模板 :root token（对齐 #248/08-HTML交互规范.md 按钮规范）
  * v1.2: 新增新控件样式（formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt/复制预览面板）
+ * v1.7: .hm-actions 自约束 max-width 520px 居中（#322 · 修复复制按钮被容器拉伸成半屏宽, 胶囊语义恢复）
  * 注入点: 由 injector.py 的 SHARED-CSS 占位符注入（模板声明点, 勿含闭合标签字样）
  */
 
@@ -74,6 +75,11 @@ button.copy.ghost {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 14px;
+  /* v1.7 #322: 胶囊按钮自约束宽度——避免被全宽容器拉伸成半屏宽块（跨技能一致） */
+  max-width: 520px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
 }
 .hm-actions .copy.wide {
   grid-column: 1 / -1;

@@ -10,7 +10,32 @@
 
 ---
 
+## [1.3.0] · 2026-08-13
+
+### Changed
+- **Base 公共组件全量迁移(#299 · Base Skill map #260 P2 技能重构票)**:7 模板(6 业务 + HELP)全量迁公共组件
+  - **注入管线**:自研 `script/injector.py` + `_shared/clipboard.js` 退役,注入收敛到 `公共组件/injector.py`(3 占位符硬拦截,漏迁即红);payload 升级 Base 信封(meta/scene.snapshot/copy_log 6 段)
+  - **复制统一**:全页面 `window.copyText({silent:true})` + 自定义 toast 文案表(#295 定稿:已复制这条备忘/筛选结果已复制/指令已复制/数据已复制/日志已复制…),按钮文字恒定
+  - **复制数据/复制日志**:每业务模板补齐(08 硬标准),字段表实施内定 + 守卫测试锁格式
+  - **HELP**:自研 `memo_help.html` 退役 → Base help_template;scenarios.yaml 不动(SoT)+ 新增转换层 → scene-data 契约 v1(dimensions→editable_fields、init 场景→init_banner、contact=GitHub/Issues);3 副本机制与命名不变
+  - **状态层**:4 状态横幅 → Base emptyState/errorReceipt(sync err 态含修正重试)
+  - **向导勾选行**:selectList 评估——无法承载行内日期/文本输入,保留自研 + 记偏离(差异反馈 → 公共层 ISSUE #313)
+- **视觉与文案改造(双端验收 + VLM 视觉审查两轮)**:
+  - 悬浮采纳按钮删除 → 面板内嵌主按钮;「采纳并复制/仅复制」双按钮 → 单「复制修改指令/复制排期指令」
+  - 复制指令去 CLI 硬编码(`memo_cli.py set-due` 等)→ 4 部分自然语言(08 §07 §3 不暴露 CLI)
+  - 开发者语言清零:placeholder/KPI hint/「命令」→「场景」/「sub:」/英文 eyebrow/footer 元信息
+  - 黑底代码块 → 浅灰浅字,预览默认隐藏点击后显示;时间戳短格式;同步报告状态卡竖条删除
+  - 手机端:查询页/批量改分类列表一行两列卡片(等高对齐 + 2 行截断);批量改分类「已选择 X 条,共 Y 条」计数 + ≤1 条隐藏全选
+- **08 §106 修订**(SKILL开发总纲):复制类 Toast 三态恒定 → 复用优先原则(统一走公共组件,文案技能自设计)
+- **测试**:新增 `tests/test_base_pipeline.py` 守卫(3 占位符恰 1 + 注入 0 残留 + 每模板复制数据/日志 + 漏迁即红 + 信封 + HELP 契约);删除 test_clipboard_shared / test_injector_local / test_memo_help_toptop(目标已退役);14 个旧测试文件同步改造;全量 343 全绿
+
+### 依赖
+- `公共组件/`(Base Skill · 注入器/base.js/base.css/help_template 唯一真相源)
+
+---
+
 ## [1.2.2] · 2026-08-08
+
 
 ### Added
 - **权限编排(常驻 sync check · #46 实施)**:`feishu_sync.py check` 扩 `permissions` 字段 —— `required`(REQUIRED_SCOPES 单一真值源:task 2 + calendar 3 写权限)/ `granted` / `missing`(差集,优先 `auth status --json`,退化逐项 `auth check`)/ `app_scopes`(应用侧提示层,非硬门禁)/ `sentinel_write_test`(真打 6 项:task create/update/complete + calendar create/update/delete,带「[备忘录测试]」前缀,必清协议)

@@ -7,10 +7,10 @@
 
 - 入口规范:`SKILL.md`(AI 决策用完整规范,1038 行)
 - 元数据:`_meta.json`(版本号镜像,SoT 为 SKILL.md frontmatter)
-- 脚本:`script/`(5 个 Python 模块:memo_cli / memo_render / injector / feishu_sync / reminder_scheduler)
+- 脚本:`script/`(4 个 Python 模块:memo_cli / memo_render / feishu_sync / reminder_scheduler;注入收敛到 公共组件/injector.py)
 - 场景资产:`references/scenarios.yaml`(HELP HTML 唯一事实源,30 场景 × 8 字段)
 - 参考文档:`references/`(schema.md / examples.md / cron.md)
-- HTML 模板:`templates/`(6 个:1 HELP + 1 结果型查询 + 1 同步报告 + 3 过程型向导)
+- HTML 模板:`templates/`(6 个业务模板,全部接 Base 公共组件管线;#299 起 HELP 走 Base help_template,自研 memo_help.html 已退役)
 - 测试:`tests/`(基线 pytest 入口 `pytest tests/`)
 - 工作目录:`.scratch/<feature>/`(A.4 5 文件范式:spec/verify/issues/decisions/artifacts)
 
@@ -35,5 +35,5 @@ Tested-By: exempt(无 fresh agent · 详见 ADR-0005)
 ## HTML 镜像约定
 
 - `备忘录.html` 是 SKILL.md 镜像(v1.1.4 起由 `memo_cli.py help` 自动生成,不再手写)
-- 改 `references/scenarios.yaml` 或 `templates/memo_help.html` 后必须跑一次 `help` 命令刷新
+- 改 `references/scenarios.yaml` 后必须跑一次 `help` 命令刷新(模板 = Base help_template,不需改)
 - `.githooks/pre-commit` 会在测试运行后自动还原 `备忘录.html` 到 HEAD 版本(测试副产物不入 commit)

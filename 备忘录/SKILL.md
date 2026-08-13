@@ -1,14 +1,15 @@
 ---
 name: 备忘录
-version: 1.2.2
+version: 1.3.0
 status: active
 description: 跨设备随手记录 · 结构化备忘 + 心愿 + 打卡 + 情绪追踪
-last_updated: 2026-08-08
+last_updated: 2026-08-13
 ---
 
 # 备忘录 (Memorandum)
 
-> **当前版本:1.2.2**(2026-08-08 · 权限编排 + 4 BUG 修复 · #197)
+> **当前版本:1.3.0**(2026-08-13 · Base 公共组件全量迁移 + 视觉改造 · #299)
+> v1.2.2:权限编排 + 4 BUG 修复(#197)
 > v1.2.1:HELP UI 全量对齐居家管家 + 中文搜索修复 + 开源就绪(wayfinder #152 map)
 > v1.2.0:HELP HTML 4 级重构 + 首次使用模块(wayfinder #30 map · ADR-0007)
 > v1.1.5:整体重构(规范合规化 · B+A+D 三阶段 23 决策落地 · 术语统一 + 结构文件 + 工程仪式)
@@ -262,7 +263,7 @@ HTML_DIR = DB_PATH.parent / f"{SKILL_HTML_NAME}_html"
 | 27 | 心愿排期 | 🟡 | `wish-batch-plan --html` | `wish_plan.html`(过程型) |
 | 28 | 备忘录同步 | ✅ | `sync-from-feishu --html` | `sync_report.html` |
 | - | **备忘改分类(批量)**(由"备忘改分类" + "都/全部/多 id" 触发) | 🟡 | `batch-update-category --from-category X --html` | `change_category.html`(过程型) |
-| 29 | **备忘录 HELP** | ✅ | `memo_cli.py help` | `memo_help.html`(HELP 自描述 · **不展示自身**) |
+| 29 | **备忘录 HELP** | ✅ | `memo_cli.py help` | Base `help_template.html`(HELP 自描述 · **不展示自身**) |
 
 ### 统计
 
@@ -1109,9 +1110,9 @@ memo_cli.py add "今天买咖啡" -c 心愿 --tasklist-guid <xxx-xxx-xxx>
 
 `备忘录 HELP` 命中后:
 
-1. 读 `references/scenarios.yaml`(场景资产,HELP HTML 唯一事实源)
-2. 渲染 `templates/memo_help.html` → 产出 HELP HTML
-3. 写**时间戳副本**:`D:\.db\memo_html\备忘录_HELP_<YYYYMMDD>_<HHMMSS>.html`(§04 原则 12.B)
+1. 读 `references/scenarios.yaml`(场景资产,HELP HTML 唯一事实源,不改动)
+2. 转换层对齐 scene-data 契约 v1(`memo_render._scenarios_to_contract_data`)+ Base `help_template.html` 渲染 → 产出 HELP HTML(#299 Base 重构,原自研 memo_help.html 退役)
+3. 写**时间戳副本**:`$SKILLS_DB_PATH 解析目录\memo_html\备忘录_HELP_<YYYYMMDD>_<HHMMSS>.html`(§04 原则 12.B)
 4. ★ **覆盖 skill 根目录 `备忘录.html`**(用户额外要求 · 取代旧手写用户手册)
 
 ### 场景资产契约(§07 §2.2)

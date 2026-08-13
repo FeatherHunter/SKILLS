@@ -22,7 +22,7 @@
 ├── 内容目录区 ──────── 注入: groups（分组 Tab → 子功能折叠 → 场景卡）
 ├── Sheet 弹层 ─────── 参数表单（editable_fields）+ Prompt 实时预览 + 复制
 ├── 关于 Tab ───────── 注入: contact / version / recommendations（可选）
-└── 底部 ──────────── 复用 Base P0 复制按钮/copyText/toast + statusBadge（#290 协同）
+└── 底部 ──────────── 复用 Base P0 复制按钮/copyText/toast（待开发徽章模板内置 t-dev · 对齐 V4.16 定稿视觉）
 ```
 
 ## 2. 注入参数（= scene-data-contract v1 顶层）
@@ -59,7 +59,7 @@
 
 - **`editable_fields`（v1.1 引入）**：复制按钮契约 v2（#123）「可编辑字段 + 实时预览 + 空值拦截」；无参数化需求时省略
 - `prompt_template` 与各技能 scene_data 定稿 **必须零差异**（一致性契约 #123）
-- `status:【待开发】` → 渲染待开发徽章（协同 #290 statusBadge 统一）
+- `status:【待开发】` → 渲染模板内置 t-dev 待开发徽章（对齐 V4.16 定稿视觉）
 
 ## 4. 文件名参数化（v1.1 安全规则）
 
@@ -90,12 +90,12 @@ python 公共组件/injector.py 公共组件/assets/help_template.html \
 
 - **盘点结论（#287 closed 2026-08-12）**：6 技能 scene_data 核心字段（wake_word/title/prompt/status）高度同构，统一为 2 级分组可行；差异集中在分组层级与 id 命名
 - **归一化层实体取消（用户拍板核心思想 2026-08-12）**：Base 不内置任何技能翻译映射；技能在自己重构 view 时主动对齐 scene-data-contract v1，数据文件可动（「技能侧零改动」红线已废）
-- 各技能对齐要点（移交 6 张技能重构优化票）：饼干 3 层展平、作息补一级分组、卡路里补 status、备忘录已有 category/subfunction 直接对齐
+- **各技能具体对齐动作归 6 张技能重构优化票自行盘点**：本契约只定义格式契约（scene-data-contract v1）；技能数据现状、改动清单、独家字段映射由重构票执行者调查（盘点基线见 #287）
 
 ## 7. 与现有资产的关系
 
 - 现有 4 种 HELP 布局家族（居家模板家族源 / 卡路里 4 层独立 / 作息 3 层+工具栏 / 私家大厨 ww-card）→ 技能重构时收敛到 Base help_template.html，各技能传数据
-- 复制 prompt 交互复用 Base P0（copyText/toast）；参数化场景复用「复制按钮契约 v2」（editable_fields）；待开发徽章复用 statusBadge（#290）
+- 复制 prompt 交互复用 Base P0（copyText/toast）；参数化场景复用「复制按钮契约 v2」（editable_fields）；待开发徽章模板内置 t-dev（对齐 V4.16 定稿视觉）
 - **范围：P2（第二版）正式落地**——本契约 v1.2 + scene-data-contract v1 + help_template.html + injector `--help-template` 全部入库（#289）
 
 ---

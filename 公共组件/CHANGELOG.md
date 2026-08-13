@@ -20,7 +20,7 @@
 
 **HELP 参数化正式版**（契约 v1.2 + scene-data-contract v1；新增资产非破坏性，既有接口零变更）。
 
-- **新资产 `assets/help_template.html`（单一真相源）**: V4.16 原型（用户 2026-08-12 认可）收敛为 Base 参数化模板——去手机壳真机全屏、数据全外部注入（`<!--INJECT-DATA-->` 注入 scene-data 契约 JSON）、复制/toast 走 Base 控件、statusBadge 协同 #290
+- **新资产 `assets/help_template.html`（单一真相源）**: V4.16 原型（用户 2026-08-12 认可）收敛为 Base 参数化模板——去手机壳真机全屏、数据全外部注入（`<!--INJECT-DATA-->` 注入 scene-data 契约 JSON）、复制/toast 走 Base 控件、待开发徽章模板内置（t-dev · 对齐 V4.16 定稿视觉）
 - **新契约 `docs/scene-data-contract.md` + `docs/scene_data.schema.json`（v1）**: 2 级分组（category→subfunction）scenes 契约 + meta_blocks 透传块 + editable_fields 表单字段;机读 schema 守卫测试
 - **归一化层实体取消（用户拍板核心思想）**: Base 零翻译、零适配;技能侧重构数据文件对齐契约（「技能侧零改动」红线作废）
 - **injector `--help-template` 模式**: `validate_help_data` 契约校验（必填/分组/场景/id 唯一/status 二态）+ 文件名 sanitize（缺省 `help_<技能名>.html` + `..` 穿越拒绝）

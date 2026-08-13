@@ -33,7 +33,7 @@
 
 **提示**:
 - 文件名缺省 `help_<技能名>.html`, 显式 `--output` 文件名部分 sanitize（含 `..` 拒绝）
-- `status:【待开发】` 渲染待开发徽章（协同 #290 statusBadge）; `editable_fields` 走契约 v2 参数表单（实时预览 + 空值拦截）
+- `status:【待开发】` 渲染模板内置 t-dev 待开发徽章（对齐 V4.16 定稿视觉）; `editable_fields` 走契约 v2 参数表单（实时预览 + 空值拦截）
 - 示例数据: `docs/examples/help_example_data.json`（覆盖全部特性）——新技能对齐时可参照
 - 原技能 HELP 渲染器（如作息 help_render.py / 卡路里 render_help_center.py）在技能重构票中退役或改调 Base
 

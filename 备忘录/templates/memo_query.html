@@ -4,68 +4,101 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>备忘录查询结果</title>
+<style><!--SHARED-CSS--></style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
 .wrap{max-width:1120px;margin:0 auto;padding:48px 22px 90px}
-.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow)}
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow-md,0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06))}
 .eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
 h1{font-size:38px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}.lead{color:var(--fg2);font-size:17px}.meta{margin-top:16px;color:var(--fg3);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.stat,.panel,.item{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
-.stat b{display:block;font-size:22px;letter-spacing:-.02em;font-weight:800}.stat span{color:var(--fg2);font-size:13px;font-weight:600}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;color:var(--fg2);cursor:pointer}.pill.active{background:#eef5ff;color:var(--blue2);border-color:#b8d8ff}
-.item{margin:12px 0}.item-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.id{color:var(--blue2);font-weight:800}.content{font-size:17px;margin:10px 0;white-space:pre-wrap}.muted{color:var(--fg2)}.small{font-size:13px;color:var(--fg3)}.badge{display:inline-block;background:var(--soft);color:var(--blue2);padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;margin:3px 5px 3px 0}.badge.warn{background:#fff7e8;color:#b25b00}.badge.ok{background:#ecfff2;color:#178a3a}
-.empty{padding:42px;text-align:center;color:var(--fg2)}button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 12px;cursor:pointer}.copy{background:#eef5ff;color:var(--blue2)}input{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;margin-top:12px}pre{white-space:pre-wrap;background:#1d1d1f;color:#f5f5f7;border-radius:16px;padding:16px;overflow:auto}
-@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:30px}.item-head{display:block}}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:18px 0}.stat,.panel,.item{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}.panel{margin:14px 0}
+.stat b{display:block;font-size:22px;letter-spacing:-.02em;font-weight:800}.stat span{color:var(--fg2);font-size:13px;font-weight:600}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}.pill{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;color:var(--fg2);cursor:pointer}.pill.active{background:#eef5ff;color:var(--blue);border-color:#b8d8ff}
+.item{margin:12px 0}.item-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}.id{color:var(--blue);font-weight:800}.content{font-size:17px;margin:10px 0;white-space:pre-wrap}.muted{color:var(--fg2)}.small{font-size:13px;color:var(--fg3)}.badge{display:inline-block;background:var(--soft,#f5f8ff);color:var(--blue);padding:3px 9px;border-radius:999px;font-size:12px;font-weight:700;margin:3px 5px 3px 0}.badge.warn{background:#fff7e8;color:#b25b00}.badge.ok{background:#ecfff2;color:#178a3a}
+#list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:stretch;margin:14px 0}
+#list .item{margin:0;padding:14px;display:flex;flex-direction:column;height:100%}
+#list .hm-empty{grid-column:1/-1}
+#list .item-head{flex-wrap:nowrap;gap:6px;min-height:32px;align-items:center}
+#list .id{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#list .item-head button.copy{flex:0 0 auto;min-height:30px;padding:5px 12px;font-size:12px}
+#list .content{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:14px;margin:8px 0;word-break:break-all;flex:1 1 auto}
+#list .item .badge{font-size:11px;padding:2px 8px;margin:2px 4px 2px 0}
+#list .small{font-size:12px;margin-top:auto;padding-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{padding:42px;text-align:center;color:var(--fg2)}button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:8px 12px;cursor:pointer}.item-head button.copy{flex:0 0 auto;min-height:40px;padding:8px 16px;font-size:13px}input{width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;margin-top:12px}pre{white-space:pre-wrap;background:#f5f5f7;color:var(--fg);border:1px solid var(--line);border-radius:16px;padding:16px;overflow:auto;font-size:13px;line-height:1.65;font-family:inherit}
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}h1{font-size:30px}.item-head{flex-wrap:wrap}}
 </style>
-<!--INJECT-SHARED-->
 </head>
 <body>
 <div class="wrap">
 <header class="hero">
-<div class="eyebrow">Memo Query</div>
 <h1 id="title">备忘录查询结果</h1>
 <p class="lead" id="subtitle">数据加载中</p>
 <p class="meta" id="meta"></p>
 </header>
+<section id="injectError" style="display:none"></section>
 <section class="grid" id="stats"></section>
 <section class="panel">
 <strong>筛选与检索</strong>
 <label for="filter" class="sr-only">在结果内搜索内容</label>
-<input id="filter" aria-label="在结果内搜索内容" placeholder="搜索内容(注:仅匹配 content 字段,不命中 ID / UUID)">
+<input id="filter" aria-label="在结果内搜索内容" placeholder="输入关键词搜索笔记内容">
 <div class="toolbar" id="chips"></div>
 <div class="toolbar" id="length-mode-bar" style="display:none"><button id="lengthModeBtn" class="copy" type="button">显示全部</button><span id="lengthModeHint" class="small"></span></div>
 </section>
 <section id="list"></section>
 <section class="panel">
-<strong>回执</strong>
-<div class="toolbar"><button class="copy" data-copy-receipt onclick="copyReceipt()">复制查询回执</button></div>
-<pre id="receipt"></pre>
+<strong>筛选快照</strong>
+<p class="small" style="margin-top:6px">跟随筛选/展开实时变化 · 粘贴给 AI 继续下一步(复制数据 = 初始全量存档)</p>
+<div class="toolbar"><button class="copy ghost" data-copy-receipt onclick="copyFiltered()">复制筛选结果</button></div>
+<pre id="receipt" style="display:none"></pre>
+</section>
+<section class="panel">
+<strong>数据与日志</strong>
+<p class="small" style="margin-top:6px">点复制数据保存当前结果 · 点复制日志用于反馈问题(日志不含隐私内容)</p>
+<div class="hm-actions">
+<button class="copy ghost" onclick="copyData()">复制数据</button>
+<button class="copy ghost" onclick="copyLog()">复制日志</button>
+</div>
 </section>
 </div>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script><!--SHARED-HELPERS--></script>
 <script>
-const PAYLOAD=window.__DATA__;
-const MAX_DEFAULT=50;
-const appState={category:'全部',q:'',showAll:false};
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function dataRows(){const d=PAYLOAD&&PAYLOAD.data?PAYLOAD.data:{};if(Array.isArray(d))return d;if(Array.isArray(d.items))return d.items;if(d.item)return [d.item];return []}
-function init(){if(!PAYLOAD){document.getElementById('list').innerHTML='<div class="panel empty">数据未注入</div>';return}const d=PAYLOAD.data||{};document.getElementById('title').textContent=d.title||'备忘录查询结果';document.getElementById('subtitle').textContent=PAYLOAD.message||d.subtitle||'查询完成';document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||''}`;renderStats();renderChips();renderList();renderReceipt();// success: 数据加载完成,内容已渲染
+(function(){
+"use strict";
+var raw=document.getElementById("payload");
+var payload=null,perr=null;
+try{payload=JSON.parse(raw.textContent||"{}");}catch(e){perr=e.message;}
+if(perr){document.getElementById("injectError").style.display="block";document.getElementById("injectError").innerHTML=window.errorReceipt({message:"数据解析失败",log:perr,payload:null});return;}
+if(!payload||payload.status!=="ok"||!payload.data){document.getElementById("injectError").style.display="block";document.getElementById("injectError").innerHTML=window.errorReceipt({message:(payload&&payload.message)||"数据未注入",retryPrompt:"请重新运行查询命令(唤醒词:查备忘)",payload:null});return;}
+window.__hmPayload=payload;
+const MAX_DEFAULT = 50;
+var appState={category:'全部',q:'',showAll:false};
+function dataRows(){var d=payload.data;if(Array.isArray(d))return d;if(Array.isArray(d.items))return d.items;if(d.item)return [d.item];return []}
+function init(){var d=payload.data;document.getElementById('title').textContent=d.title||'备忘录查询结果';document.getElementById('subtitle').textContent=payload.message||d.subtitle||'查询完成';var meta=d.meta||{};document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 场景：${meta.command_cn||d.command||''}`;renderStats();renderChips();renderList();renderReceipt();// success: 数据加载完成,内容已渲染
 }
-function rowsFiltered(){let rows=dataRows();if(appState.category!=='全部')rows=rows.filter(x=>(x.category||x.repeat_type||'未分类')===appState.category);if(appState.q){const q=appState.q.toLowerCase();rows=rows.filter(x=>String(x.content||'').toLowerCase().includes(q))}return rows}
+function rowsFiltered(){var rows=dataRows();if(appState.category!=='全部')rows=rows.filter(x=>(x.category||x.repeat_type||'未分类')===appState.category);if(appState.q){var q=appState.q.toLowerCase();rows=rows.filter(x=>String(x.content||'').toLowerCase().includes(q))}return rows}
 function categories(){return ['全部',...Array.from(new Set(dataRows().map(x=>x.category||x.repeat_type||'未分类').filter(Boolean)))]}
-function renderStats(){const rows=dataRows();const due=rows.filter(x=>x.due).length;const sample=rows[0]||{};const hasMediaField='media_path' in sample;const media=hasMediaField?rows.filter(x=>x.media_path).length:'—';const reminders=rows.filter(x=>x.remind_at||x.reminder_id).length;document.getElementById('stats').innerHTML=[['总数',rows.length],['有排期',due],['有附件',media],['有提醒',reminders]].map(x=>`<div class="stat"><b>${x[1]}</b><span>${esc(x[0])}</span></div>`).join('')}
-function renderChips(){document.getElementById('chips').innerHTML=categories().map(c=>`<span class="pill ${c===appState.category?'active':''}" data-cat="${esc(c)}">${esc(c)}</span>`).join('');const chipBar=document.getElementById('chips');if(chipBar&&!chipBar.dataset.bound){chipBar.addEventListener('click',function(e){var pill=e.target.closest('.pill');if(pill&&pill.dataset.cat){setCat(pill.dataset.cat)}});chipBar.dataset.bound='1'}}
+function renderStats(){var rows=dataRows();var due=rows.filter(x=>x.due).length;var sample=rows[0]||{};var hasMediaField='media_path' in sample;var media=hasMediaField?rows.filter(x=>x.media_path).length:'—';var reminders=rows.filter(x=>x.remind_at||x.reminder_id).length;document.getElementById('stats').innerHTML=[['总数',rows.length],['有排期',due],['有附件',media],['有提醒',reminders]].map(x=>`<div class="stat"><b>${x[1]}</b><span>${esc(x[0])}</span></div>`).join('')}
+function renderChips(){document.getElementById('chips').innerHTML=categories().map(c=>`<span class="pill ${c===appState.category?'active':''}" data-cat="${esc(c)}">${esc(c)}</span>`).join('');var chipBar=document.getElementById('chips');if(chipBar&&!chipBar.dataset.bound){chipBar.addEventListener('click',function(e){var pill=e.target.closest('.pill');if(pill&&pill.dataset.cat){setCat(pill.dataset.cat)}});chipBar.dataset.bound='1'}}
 function setCat(c){appState.category=c;renderChips();renderList();renderReceipt()}
 document.getElementById('filter').addEventListener('input',e=>{appState.q=e.target.value;renderList();renderReceipt()});
 document.getElementById('lengthModeBtn').addEventListener('click',toggleLengthMode);
-function renderList(){const all=rowsFiltered();const totalCount=all.length;const cap=appState.showAll?totalCount:Math.min(appState.MAX_DEFAULT,totalCount);const rows=all.slice(0,cap);const list=document.getElementById('list');if(!rows.length){list.innerHTML='<div class="panel empty">没有匹配结果</div>';document.getElementById('length-mode-bar').style.display='none';return}list.innerHTML=rows.map(renderItem).join('');const bar=document.getElementById('length-mode-bar');const btn=document.getElementById('lengthModeBtn');const hint=document.getElementById('lengthModeHint');if(totalCount>appState.MAX_DEFAULT){bar.style.display='flex';btn.textContent=appState.showAll?`显示前 ${appState.MAX_DEFAULT} 条`:`显示全部 (${totalCount} 条)`;hint.textContent=appState.showAll?`已展开全部 · 滚到底可看完`: `默认仅显示前 ${appState.MAX_DEFAULT} 条`;}else{bar.style.display='none'}}
+function renderList(){var all=rowsFiltered();var totalCount=all.length;var cap=appState.showAll?totalCount:Math.min(MAX_DEFAULT,totalCount);var rows=all.slice(0,cap);var list=document.getElementById('list');if(!all.length){list.innerHTML=window.emptyState({icon:'🔍',text:'没有匹配结果',hint:'换关键词或分类再试'});document.getElementById('length-mode-bar').style.display='none';return}list.innerHTML=rows.map(renderItem).join('');var bar=document.getElementById('length-mode-bar');var btn=document.getElementById('lengthModeBtn');var hint=document.getElementById('lengthModeHint');if(totalCount>MAX_DEFAULT){bar.style.display='flex';btn.textContent=appState.showAll?`显示前 ${MAX_DEFAULT} 条`:`显示全部 (${totalCount} 条)`;hint.textContent=appState.showAll?`已展开全部 · 滚到底可看完`: `默认仅显示前 ${MAX_DEFAULT} 条`;}else{bar.style.display='none'}}
 function toggleLengthMode(){appState.showAll=!appState.showAll;renderList();renderReceipt()}
-function renderItem(x){const id=x.id||x.checkin_note_id||x.reminder_id||'';const content=x.content||x.checkin_content||x.reminder_content||x.note_content||'';const badges=[x.category,x.sub_category,x.repeat_type,x.due?`排期 ${x.due}`:'',x.remind_at?`提醒 ${x.remind_at}`:'',x.media_path?'附件':''].filter(Boolean);return `<article class="item"><div class="item-head"><div class="id">#${esc(id)}</div><button class="copy" data-item='${esc(JSON.stringify(x))}' onclick="copyInfo(this)">复制</button></div><div class="content">${esc(content)}</div><div>${badges.map(b=>`<span class="badge ${String(b).includes('排期')||String(b).includes('提醒')?'warn':''}">${esc(b)}</span>`).join('')}</div><p class="small">创建：${esc(x.created_at||x.checkin_at||'')}　更新：${esc(x.updated_at||'')}</p></article>`}
-function receiptText(){const d=PAYLOAD.data||{};const filtered=rowsFiltered();let text=`备忘录查询回执\n命令：${d.command||''}\n结果数：${filtered.length}/${dataRows().length}\n筛选：${appState.category} ${appState.q||''}\n\n【${filtered.length} 条详情】`;filtered.forEach((x,i)=>{text+=`\n\n#${x.id||x.checkin_note_id||x.reminder_id||''} · [${esc(x.category||'未分类')}${x.sub_category?'/'+esc(x.sub_category):''}] · ${esc(x.created_at||x.checkin_at||'')}\n    ${esc((x.content||x.checkin_content||'').slice(0,80))}`;});return text}
-function renderReceipt(){document.getElementById('receipt').textContent=receiptText()}
-function copyInfo(btn){try{const raw=btn.getAttribute('data-item').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');const x=JSON.parse(raw);const id=x.id||x.checkin_note_id||x.reminder_id||'';const content=x.content||x.checkin_content||'';const cat=x.category||'未分类';const sub=x.sub_category?'/'+x.sub_category:'';const created=x.created_at||x.checkin_at||'';let text=`备忘录 #${id}\n分类: ${cat}${sub}\n创建: ${created}\n内容: ${content}\n`;if(x.due)text+=`排期: ${x.due}\n`;if(x.remind_at)text+=`提醒: ${x.remind_at}\n`;if(navigator.clipboard){navigator.clipboard.writeText(text).then(()=>{const orig=btn.textContent;btn.textContent='✓ 已复制';setTimeout(()=>{btn.textContent=orig;},2000)}).catch(()=>{btn.textContent='✗ 复制失败';setTimeout(()=>{btn.textContent='复制';},2000)})}else{btn.textContent='浏览器不支持'}}catch(e){btn.textContent='✗ 复制失败';setTimeout(()=>{btn.textContent='复制';},2000)}}
-function copyReceipt(){const text=receiptText();if(!text)return;const btn=document.querySelector('button.copy[data-copy-receipt]');safeWriteText(text).then(function(ok){if(btn)flashBtn(btn,ok?'✓ 已复制':'✗ 复制失败',2000)})}init();
+function renderItem(x){var id=x.id||x.checkin_note_id||x.reminder_id||'';var content=x.content||x.checkin_content||x.reminder_content||x.note_content||'';var badges=[x.category,x.sub_category,x.repeat_type,x.due?`排期 ${x.due}`:'',x.remind_at?`提醒 ${x.remind_at}`:'',x.media_path?'附件':''].filter(Boolean);var created=String(x.created_at||x.checkin_at||'').slice(5,16);var updated=String(x.updated_at||'').slice(5,16);var timeRow=updated&&updated!==created?`<p class="small">创建：${esc(created)}　改：${esc(updated)}</p>`:`<p class="small">创建：${esc(created)}</p>`;return `<article class="item"><div class="item-head"><div class="id">#${esc(id)}</div><button class="copy ghost" data-item='${esc(JSON.stringify(x))}' onclick="copyInfo(this)">复制</button></div><div class="content">${esc(content)}</div><div>${badges.map(b=>`<span class="badge ${String(b).includes('排期')||String(b).includes('提醒')?'warn':''}">${esc(b)}</span>`).join('')}</div>${timeRow}</article>`}
+function snapshotText(){var d=payload.data;var filtered=rowsFiltered();var meta=d.meta||{};var text=`① 场景: 我在备忘录查询页筛选出了 ${filtered.length} 条结果(共 ${dataRows().length} 条)\n\n② 数据(筛选后):`;if(!filtered.length){text+='\n    (无匹配结果 · 请调整筛选)';}filtered.forEach(function(x){text+=`\n    · #${x.id||x.checkin_note_id||x.reminder_id||''} [${esc(x.category||'未分类')}${x.sub_category?'/'+esc(x.sub_category):''}] ${esc(x.created_at||x.checkin_at||'')}\n      ${esc((x.content||x.checkin_content||'').slice(0,80))}`;});text+=`\n\n③ 期望: 请基于以上结果继续下一步(修改/删除/改分类/关联提醒等,我会补充说明)\n\n④ 来源: ${meta.command_cn||d.command||'search'} · 筛选: ${appState.category}${appState.q?' / '+appState.q:''} · ${d.generated_at||''}`;return text}
+function renderReceipt(){document.getElementById('receipt').textContent=snapshotText()}
+function copyInfo(btn){try{var raw=btn.getAttribute('data-item').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&amp;/g,'&');var x=JSON.parse(raw);var id=x.id||x.checkin_note_id||x.reminder_id||'';var content=x.content||x.checkin_content||'';var cat=x.category||'未分类';var sub=x.sub_category?'/'+x.sub_category:'';var created=x.created_at||x.checkin_at||'';var text=`备忘录 #${id}\n分类: ${cat}${sub}\n创建: ${created}\n内容: ${content}\n`;if(x.due)text+=`排期: ${x.due}\n`;if(x.remind_at)text+=`提醒: ${x.remind_at}\n`;window.copyText(text,{silent:true});window.toast('已复制这条备忘','#'+id+' · '+content.slice(0,20),{icon:'copy'});}catch(e){window.toast('复制失败','长按选择文本手动复制',{badge:{text:'失败',type:'danger'}})}}
+function copyFiltered(){var text=snapshotText();if(!text)return;var out=document.getElementById('receipt');out.textContent=text;out.style.display='block';window.copyText(text,{silent:true});window.toast('筛选结果已复制','粘贴给 AI 继续下一步',{icon:'copy'});}
+function copyData(){window.copyText(window.buildDataText(payload),{silent:true});window.toast('数据已复制','人类可读快照 · 可粘贴到笔记存档',{icon:'copy'});}
+function copyLog(){window.copyText(window.buildLogText(payload),{silent:true});window.toast('日志已复制','诊断信息 · 有异常时粘贴给开发者排查',{icon:'copy'});}
+window.copyInfo=copyInfo;
+window.copyFiltered=copyFiltered;
+window.copyData=copyData;
+window.copyLog=copyLog;
+init();
+})();
 </script>
 </body>
 </html>

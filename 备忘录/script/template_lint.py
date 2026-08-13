@@ -83,6 +83,10 @@ _DOM_METHODS = {
     "select", "execCommand", "rangeCount", "getSelection",
     # v1.1.5+:本仓库共享 clipboard helper(由 injector 注入)
     "safeWriteText", "flashBtn", "fallbackCopy",
+    # v1.3.0+#299 Base 公共组件注入(base.js:esc/copyText/toast/状态层控件)
+    "esc", "escapeHTML", "copyText", "buildDataText", "buildLogText",
+    "emptyState", "errorReceipt", "actionBar", "statusBadge", "foldBox",
+    "formPrompt", "selectList", "arr", "val", "yes", "validate", "metaHeader",
     # v1.1.5+:DOM 元素方法(classList.toggle 等)
     "toggle", "add", "remove", "replace",
     # v1.1.5+:Array.prototype 方法补全

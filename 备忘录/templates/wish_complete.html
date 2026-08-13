@@ -4,30 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>心愿完成向导</title>
+<style><!--SHARED-CSS--></style>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#f5f5f7;--card:#fff;--line:#d2d2d7;--blue:#007aff;--blue2:#0a63ce;--soft:#f5f8ff;--warn:#ff9500;--ok:#34c759;--err:#ff3b30;--err-soft:#fff5f5;--shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06)}
 body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--fg);line-height:1.65;-webkit-font-smoothing:antialiased}
 .wrap{max-width:980px;margin:0 auto;padding:48px 22px 90px}
-.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow)}
+.hero{background:linear-gradient(180deg,#fff 0%,#f8fbff 100%);border-radius:28px;padding:34px;margin-bottom:20px;box-shadow:var(--shadow,0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06))}
 .eyebrow{font-size:13px;color:var(--blue);font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px}
 h1{font-size:36px;line-height:1.15;letter-spacing:-.035em;margin-bottom:12px}
 .lead{color:var(--fg2);font-size:17px}
 .meta{margin-top:14px;color:var(--fg3);font-size:13px}
-.badge{display:inline-block;background:var(--soft);color:var(--blue2);padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;margin:2px 6px 2px 0}
+.badge{display:inline-block;background:var(--soft,#f5f8ff);color:var(--blue);padding:4px 11px;border-radius:999px;font-size:13px;font-weight:700;margin:2px 6px 2px 0}
 .badge.ok{background:#ecfff2;color:#178a3a}
+.badge.warn{background:#fff7e8;color:#b25b00}
 .panel{background:var(--card);border-radius:20px;padding:22px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin:14px 0}
+.panel .hint{font-size:12px;color:var(--fg3);margin-top:6px}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0;align-items:center}
 button{border:0;background:var(--blue);color:#fff;border-radius:999px;padding:10px 16px;cursor:pointer;font-size:14px;font-weight:600}
-button.ghost{background:transparent;color:var(--blue2);border:1px solid var(--line)}
-button.primary{background:var(--ok);color:#fff;font-size:15px;padding:12px 20px;position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 8px 24px rgba(52,199,89,.36);z-index:9000}
-input[type=text],textarea{border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:14px;font-family:inherit;width:100%}
+button.ghost{background:transparent;color:var(--blue);border:1px solid var(--line);min-height:44px}
+button.copy.ghost{background:var(--card);color:var(--blue);border:1.5px solid var(--blue)}
+button.primary{background:var(--blue);color:#fff;font-size:15px;padding:12px 20px}
+input[type=text],textarea{border:1px solid var(--line);border-radius:12px;padding:9px 12px;font-size:14px;font-family:inherit;width:100%;background:var(--card)}
 textarea{min-height:64px;resize:vertical}
 .wish{background:var(--card);border-radius:18px;padding:18px;margin:12px 0;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .15s,opacity .15s}
 .wish.on{opacity:.5}
 .wish.on .content{text-decoration:line-through;color:var(--fg3)}
 .wish-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
-.wish-id{color:var(--blue2);font-weight:800;font-size:15px;min-width:48px}
+.wish-id{color:var(--blue);font-weight:800;font-size:15px;min-width:48px}
 .wish-content{font-size:16px;flex:1}
 .wish-meta{display:flex;gap:16px;flex-wrap:wrap;align-items:center;color:var(--fg2);font-size:13px;margin:8px 0}
 .wish-content-input{margin-top:8px}
@@ -35,102 +38,111 @@ textarea{min-height:64px;resize:vertical}
 .kpi .stat{background:var(--card);border-radius:18px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
 .kpi b{display:block;font-size:22px;letter-spacing:-.02em;margin-bottom:4px}
 .kpi span{color:var(--fg2);font-size:13px}
-pre{white-space:pre-wrap;background:#1d1d1d;color:#f5f5f5;border-radius:16px;padding:18px;overflow:auto;font-size:13px;line-height:1.65;max-height:340px}
+pre{white-space:pre-wrap;background:#f5f5f7;color:var(--fg);border:1px solid var(--line);border-radius:16px;padding:16px;overflow:auto;font-size:13px;line-height:1.65;max-height:340px;margin-top:14px;font-family:inherit}
 .notice{padding:12px 16px;border-radius:14px;margin:10px 0;font-size:14px}
 .notice.warn{background:#fff7e8;color:#b25b00}
-.notice.err{background:var(--err-soft);color:var(--err)}
-.empty{padding:42px;text-align:center;color:var(--fg2)}
-@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}.kpi{grid-template-columns:1fr}h1{font-size:30px}}
+.notice.err{background:#fff5f5;color:#ff3b30}
+@media(max-width:800px){.wrap{padding:28px 14px 70px}.hero{padding:26px 20px}h1{font-size:30px}.kpi .stat{padding:12px}}
 </style>
-<!--INJECT-SHARED-->
 </head>
 <body>
 <div class="wrap">
 <header class="hero">
-<div class="eyebrow">Wish Complete</div>
 <h1 id="title">心愿完成向导</h1>
 <p class="lead" id="subtitle">数据加载中</p>
 <p class="meta" id="meta"></p>
 </header>
+<section id="injectError" style="display:none"></section>
 
 <section class="kpi" id="kpis"></section>
 
 <section class="panel">
 <div style="font-weight:700;margin-bottom:10px">✏️ 默认打卡内容(可选)</div>
-<p style="color:var(--fg2);font-size:13px;margin-bottom:10px">填了 → 默认应用到所有勾选(可逐条覆盖);留空 → 用原心愿 content 当打卡内容。</p>
+<p style="color:var(--fg2);font-size:13px;margin-bottom:10px">填了会应用到所有勾选的心愿,也能每条单独改;不填就用心愿原本的内容当打卡内容。</p>
 <input type="text" id="globalContent" placeholder="如:今天完成了 / 2026-07-03 已打卡" />
 <div class="toolbar" style="margin-top:14px">
 <button class="ghost" onclick="applyGlobalContent()">应用到所有勾选</button>
 <button class="ghost" onclick="selectAll(true)">全选</button>
-<button class="ghost" onclick="selectAll(false)">全不选</button>
+<button class="ghost" onclick="selectAll(false)">清空选择</button>
 </div>
 </section>
 
 <section id="wishList"></section>
 
 <section class="panel">
-<div style="font-weight:700;margin-bottom:8px">📋 采纳(复制修改指令)</div>
-<p style="color:var(--fg2);font-size:13px;margin-bottom:12px">点击后,把内容粘贴给 AI,AI 会按指令批量调 <code>complete-wish</code>(删除心愿 + 建打卡,原子)。</p>
+<div style="font-weight:700;margin-bottom:8px">📋 发给 AI 的指令</div>
+<p style="color:var(--fg2);font-size:13px;margin-bottom:12px">复制指令发给 AI,它会把这些心愿标记为完成(心愿转成一条打卡),改完给你回执。</p>
 <div class="toolbar">
-<button class="primary" onclick="adopt()">📋 采纳并复制</button>
-<button class="ghost" onclick="copyPrompt()">仅复制</button>
+<button class="primary" onclick="adopt()">📋 复制修改指令</button>
 </div>
 <div id="warnArea"></div>
-<pre id="promptOut">尚未采纳(无内容)</pre>
+<pre id="promptOut" style="display:none"></pre>
 </section>
 
-<footer style="margin-top:40px;text-align:center;color:var(--fg3);font-size:12px">
-<p>过程型 HTML · 心愿 → 打卡 原子转换 · 不调任何后端</p>
-</footer>
+<section class="panel">
+<strong>数据与日志</strong>
+<div class="hint">点复制数据保存当前心愿列表 · 点复制日志用于反馈问题(日志不含隐私内容)</div>
+<div class="hm-actions">
+<button class="copy ghost" onclick="copyData()">复制数据</button>
+<button class="copy ghost" onclick="copyLog()">复制日志</button>
+</div>
+</section>
 </div>
 
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script><!--SHARED-HELPERS--></script>
 <script>
-const PAYLOAD=window.__DATA__;
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function data(){return (PAYLOAD&&PAYLOAD.data)||{}}
+(function(){
+"use strict";
+var raw=document.getElementById("payload");
+var payload=null,perr=null;
+try{payload=JSON.parse(raw.textContent||"{}");}catch(e){perr=e.message;}
+if(perr){document.getElementById("injectError").style.display="block";document.getElementById("injectError").innerHTML=window.errorReceipt({message:"数据解析失败",log:perr,payload:null});return;}
+if(!payload||payload.status!=="ok"||!payload.data){document.getElementById("injectError").style.display="block";document.getElementById("injectError").innerHTML=window.errorReceipt({message:(payload&&payload.message)||"数据未注入",retryPrompt:"请重新运行心愿完成(唤醒词:心愿完成)",payload:null});return;}
+window.__hmPayload=payload;
+function data(){return payload.data}
 function items(){return data().items||[]}
 
 function init(){
-  if(!PAYLOAD){document.getElementById('wishList').innerHTML='<div class="empty">数据未注入</div>';return}
-  const d=data();
+  var d=data();
   document.getElementById('title').textContent=d.title||'心愿完成向导';
-  document.getElementById('subtitle').textContent=PAYLOAD.message||'勾选要完成的心愿';
-  document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 命令：${d.command||'wish-complete'} · 来源：${d.source||''}`;
+  document.getElementById('subtitle').textContent=payload.message||'勾选要完成的心愿';
+  var meta=d.meta||{};
+  document.getElementById('meta').textContent=`生成时间：${d.generated_at||''} · 场景：${meta.command_cn||d.command||'wish-complete'}`;
   if(d.default_content){document.getElementById('globalContent').value=d.default_content}
   renderKPIs();renderList();
   // success: 心愿列表已加载,等待用户勾选完成
 }
 
 function renderKPIs(){
-  const all=items();
-  const withFeishu=all.filter(w=>w.feishu_task_guid).length;
+  var all=items();
+  var withFeishu=all.filter(w=>w.feishu_task_guid).length;
   document.getElementById('kpis').innerHTML=[
     ['待完成',all.length,'勾选后转打卡'],
-    ['已同步飞书',withFeishu,'complete 后自动标飞书 task 完成'],
-    ['其他',all.length-withFeishu,'无飞书 task,跳过同步'],
+    ['已同步飞书',withFeishu,'完成后飞书任务同步标记完成'],
+    ['其他',all.length-withFeishu,'没有飞书任务,只在本机完成'],
   ].map(x=>`<div class="stat"><b>${x[1]}</b><span>${x[0]}</span><div style="color:var(--fg3);font-size:12px;margin-top:4px">${esc(x[2])}</div></div>`).join('');
 }
 
 function renderList(){
-  const list=document.getElementById('wishList');
-  if(!items().length){list.innerHTML='<div class="panel empty">没有心愿可选</div>';return}
+  var list=document.getElementById('wishList');
+  if(!items().length){list.innerHTML='<div class="panel">'+window.emptyState({icon:'🎯',text:'没有心愿可选',hint:'心愿都完成啦,或先记一条心愿'})+'</div>';return}
   list.innerHTML=items().map(renderWish).join('');
-  items().forEach(w=>{
-    const cb=document.getElementById('cb_'+w.id);
-    if(cb) cb.addEventListener('change',e=>{document.getElementById('wish_'+w.id).classList.toggle('on',e.target.checked)});
+  items().forEach(function(w){
+    var cb=document.getElementById('cb_'+w.id);
+    if(cb) cb.addEventListener('change',function(e){document.getElementById('wish_'+w.id).classList.toggle('on',e.target.checked)});
   });
 }
 
 function renderWish(w){
-  // v1.0.4:默认所有卡片 normal 样式,无论 selected 状态
-  // checkbox 渲染根据 selected 决定(默认 False → 未勾)
-  // opacity:.5 (.off class) 仅在用户切换 checkbox 时由 event handler 动态加
-  const checked=w.selected?'checked':'';
+  var checked=w.selected?'checked':'';
   return `<article class="wish" id="wish_${w.id}">
 <div class="wish-head">
+<label class="wish-check-label" style="display:flex;align-items:center;gap:12px;flex:1;cursor:pointer">
 <input type="checkbox" id="cb_${w.id}" class="wish-check" ${checked} data-id="${w.id}" />
 <span class="wish-id">#${esc(w.id)}</span>
 <span class="wish-content">${esc(w.content)}</span>
+</label>
 </div>
 <div class="wish-meta">
 ${w.category?`<span class="badge">${esc(w.category)}</span>`:''}
@@ -140,35 +152,35 @@ ${w.due?`<span class="badge warn">原排期：${esc(w.due)}</span>`:''}
 </div>
 <div class="wish-content-input">
 <label style="color:var(--fg2);font-size:13px;display:block;margin-bottom:6px">打卡内容(覆盖)</label>
-<textarea id="content_${w.id}" placeholder="留空 = 用原心愿内容 '${esc(w.content).slice(0,30)}${w.content.length>30?'…':''}'"></textarea>
+<textarea id="content_${w.id}" placeholder="默认使用:${esc(w.content).slice(0,20)}${w.content.length>20?'…':''}"></textarea>
 </div>
 </article>`;
 }
 
 function applyGlobalContent(){
-  const gv=document.getElementById('globalContent').value;
-  if(!gv){alert('请先填默认打卡内容');return}
-  items().forEach(w=>{
-    const cb=document.getElementById('cb_'+w.id);
+  var gv=document.getElementById('globalContent').value;
+  if(!gv){window.toast('请先填默认打卡内容','再应用到勾选项',{icon:'warn'});return}
+  items().forEach(function(w){
+    var cb=document.getElementById('cb_'+w.id);
     if(cb&&cb.checked){
-      const ti=document.getElementById('content_'+w.id);
+      var ti=document.getElementById('content_'+w.id);
       if(ti) ti.value=gv;
     }
   });
 }
 
 function selectAll(on){
-  items().forEach(w=>{
-    const cb=document.getElementById('cb_'+w.id);
+  items().forEach(function(w){
+    var cb=document.getElementById('cb_'+w.id);
     if(cb){cb.checked=on;document.getElementById('wish_'+w.id).classList.toggle('on',on)}
   });
 }
 
 function selectedRows(){
-  const rows=[];
-  items().forEach(w=>{
-    const cb=document.getElementById('cb_'+w.id);
-    const ti=document.getElementById('content_'+w.id);
+  var rows=[];
+  items().forEach(function(w){
+    var cb=document.getElementById('cb_'+w.id);
+    var ti=document.getElementById('content_'+w.id);
     if(cb&&cb.checked){
       rows.push({id:w.id,content:w.content,override:(ti&&ti.value.trim())||'',has_feishu:!!w.feishu_task_guid});
     }
@@ -178,24 +190,20 @@ function selectedRows(){
 
 function buildPrompt(rows,ctx){
   if(!rows.length) return '未选择任何心愿';
-  const src=ctx.source||(data().command||'wish-complete')+(ctx.default_content?' --content "'+ctx.default_content+'"':'');
-  // 全部走单独命令(complete-wish 无批量子命令)
-  const cmds=rows.map(r=>`memo_cli.py complete-wish ${r.id}${r.override?' --content "'+r.override+'"':''}${r.has_feishu?'  # 同步飞书 task 完成':''}`);
   return [
-    '① 场景: 我用心愿完成向导标记 '+rows.length+' 个心愿为已完成(原子转换心愿→打卡)',
+    '① 场景: 我用心愿完成向导,标记 '+rows.length+' 个心愿为已完成',
     '',
-    '② 数据(采纳后):',
-    ...rows.map(r=>`   · 心愿 #${r.id} "${r.content}" → 打卡内容: "${r.override||r.content}"${r.has_feishu?' (同步飞书 task 完成)':''}`),
+    '② 数据(要完成的心愿):',
+    ...rows.map(r=>`   · 心愿 #${r.id} "${r.content}" → 打卡内容: "${r.override||r.content}"${r.has_feishu?' (飞书任务同步完成)':''}`),
     '',
-    '③ 期望: 请按以下顺序执行 '+cmds.length+' 步 complete-wish(每步:删心愿+建打卡 原子):',
-    ...cmds.map(c=>'   '+c),
+    '③ 期望: 请把这些心愿标记为完成(每个心愿转成一条打卡),有飞书任务的心愿同步标记完成;完成后给我回执。',
     '',
-    '④ 来源: '+src+' / '+ctx.generated_at,
+    '④ 来源: 心愿完成向导 · '+ctx.generated_at,
   ].join('\n');
 }
 
 function warnIfAny(rows){
-  const nofb=rows.filter(r=>!r.has_feishu);
+  var nofb=rows.filter(r=>!r.has_feishu);
   if(nofb.length){
     document.getElementById('warnArea').innerHTML=`<div class="notice warn">ℹ️ ${nofb.length} 条心愿未同步飞书,完成时不会触发飞书联动</div>`;
   } else {
@@ -204,39 +212,28 @@ function warnIfAny(rows){
 }
 
 function adopt(){
-  const rows=selectedRows();
-  if(!rows.length){alert('未选择任何心愿');return}
+  var rows=selectedRows();
+  if(!rows.length){window.toast('未选择任何心愿','勾选要完成的心愿',{icon:'warn'});return}
   warnIfAny(rows);
-  const ctx={
-    default_content:document.getElementById('globalContent').value||'',
+  var ctx={
     generated_at:data().generated_at||'',
-    source:data().command||'wish-complete',
   };
-  const text=buildPrompt(rows,ctx);
-  document.getElementById('promptOut').textContent=text;
-  copyToClipboard(text);
+  var text=buildPrompt(rows,ctx);
+  var out=document.getElementById('promptOut');
+  out.textContent=text;out.style.display='block';
+  window.copyText(text,{silent:true});
+  window.toast('指令已复制','粘贴发给 AI 即可执行',{icon:'ok'});
 }
 
-function copyPrompt(){
-  const rows=selectedRows();
-  const ctx={
-    default_content:'',
-    generated_at:data().generated_at||'',
-    source:data().command||'wish-complete',
-  };
-  copyToClipboard(buildPrompt(rows,ctx));
-}
-
-function copyToClipboard(t){
-  const btn=document.querySelector('button.primary');
-  safeWriteText(t).then(function(ok){
-    if(btn)flashBtn(btn, ok ? '✅ 已复制 · 粘贴给 AI' : '✗ 复制失败', 2500);
-  });
-}
-  document.body.removeChild(ta);
-}
-
+function copyData(){window.copyText(window.buildDataText(payload),{silent:true});window.toast('数据已复制','人类可读快照 · 可粘贴到笔记存档',{icon:'copy'});}
+function copyLog(){window.copyText(window.buildLogText(payload),{silent:true});window.toast('日志已复制','诊断信息 · 有异常时粘贴给开发者排查',{icon:'copy'});}
+window.applyGlobalContent=applyGlobalContent;
+window.selectAll=selectAll;
+window.adopt=adopt;
+window.copyData=copyData;
+window.copyLog=copyLog;
 init();
+})();
 </script>
 </body>
 </html>

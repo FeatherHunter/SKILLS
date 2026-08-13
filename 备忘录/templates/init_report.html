@@ -5,21 +5,21 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <title>备忘录 · 初始化报告</title>
+<style><!--SHARED-CSS--></style>
 <style>
 /* ================================================================
    备忘录初始化报告 · 过程型 HTML(#8 经验:场景 HTML 承载 AI 执行证据)
    设计原则:
-     1. 移动优先:480px 居中,PC 不空
-     2. 首屏结论:就绪度汇总 → 逐项检查清单 → 待办指引
-     3. 承诺↔兑现:prompt 说 5 步,HTML 每步有对应物
-     4. 状态色:绿=就绪 / 橙=可选缺失 / 红=必装缺失
-     5. 自包含:零外链 · 原生 details 折叠 · 无 JS 依赖渲染
+      1. 移动优先:480px 居中,PC 不空
+      2. 首屏结论:就绪度汇总 → 逐项检查清单 → 待办指引
+      3. 承诺↔兑现:prompt 说 5 步,HTML 每步有对应物
+      4. 状态色:绿=就绪 / 橙=可选缺失 / 红=必装缺失
+      5. 自包含:零外链 · 原生 details 折叠
    ================================================================ */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;
   --bg:#f5f5f7;--card:#fff;--line:#d2d2d7;
-  --blue:#007aff;--blue-soft:#f5f8ff;
   --ok:#34c759;--ok-soft:#ecfff2;--ok-fg:#178a3a;
   --warn:#ff9500;--warn-soft:#fff7e8;--warn-fg:#b25b00;
   --err:#ff3b30;--err-soft:#fff5f5;--err-fg:#c7254e;
@@ -32,9 +32,9 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 
 /* ===== 首屏状态卡 ===== */
 .status-card{background:var(--card);border-radius:20px;padding:24px 22px;margin:16px 0 14px;box-shadow:var(--shadow-md);text-align:center}
-.status-icon{font-size:44px;line-height:1;margin-bottom:10px}
+.status-icon{font-size:32px;line-height:1;margin-bottom:10px}
 .status-title{font-size:20px;font-weight:700;letter-spacing:-.01em}
-.status-sub{font-size:13.5px;color:var(--fg2);margin-top:6px}
+.status-sub{font-size:13.5px;color:var(--fg2);margin-top:8px}
 .status-meta{font-size:12px;color:var(--fg3);margin-top:10px}
 
 /* ===== 段落 ===== */
@@ -61,23 +61,20 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
 .todo-card ol{padding-left:18px;font-size:13px;color:var(--fg2)}
 .todo-card li{margin-bottom:4px}
 
-/* ===== 完成验证清单(可勾选 · 承诺↔兑现) ===== */
+/* ===== 完成验证清单(承诺↔兑现 · #299 去勾选框:徽章已表达状态) ===== */
 .verify-card{background:var(--card);border-radius:14px;padding:14px 16px;border:1px solid var(--line)}
 .verify-card .verify-title{font-size:13.5px;font-weight:700;margin-bottom:6px}
 .verify-item{display:flex;gap:8px;align-items:flex-start;padding:6px 0;font-size:13px;color:var(--fg2)}
-.verify-item input{margin-top:3px}
 /* 三态徽章(#197 · 飞书权限已实测:已实测 ✓ / 跳过 / 未通过 ✗) */
 .verify-badge{font-size:11px;font-weight:800;border-radius:999px;padding:1px 10px;margin-left:auto;white-space:nowrap;flex:none}
 .verify-badge.ok{background:var(--ok-soft);color:var(--ok-fg)}
 .verify-badge.skip{background:#f0f0f3;color:var(--fg3)}
 .verify-badge.fail{background:var(--err-soft);color:var(--err-fg)}
 
-/* ===== 4 状态 fallback ===== */
-.state-banner{display:none;padding:18px;border-radius:14px;margin:16px 0;text-align:center;font-weight:600}
-.state-banner.success{background:var(--ok-soft);color:var(--ok-fg)}
-.state-banner.empty{background:var(--warn-soft);color:var(--warn-fg)}
-.state-banner.missing{background:var(--err-soft);color:var(--err-fg)}
-.state-banner.error{background:var(--err-soft);color:var(--err-fg)}
+/* ===== 数据与日志 ===== */
+.data-panel{background:var(--card);border-radius:14px;padding:14px 16px;border:1px solid var(--line);margin-top:14px}
+.data-panel strong{font-size:13.5px}
+.data-panel .hint{font-size:12px;color:var(--fg3);margin-top:6px}
 
 @media(max-width:360px){.check-item .name{font-size:13px}.status-card{padding:20px 16px}}
 </style>
@@ -91,28 +88,45 @@ body{font-family:var(--font);background:var(--bg);color:var(--fg);line-height:1.
   <div class="status-meta" id="statusMeta"></div>
 </div>
 
-<div id="stateSuccess" class="state-banner success" style="display:none;">✓ 初始化报告已加载</div>
-<div id="stateEmpty"   class="state-banner empty"   style="display:none;">📭 暂无检查数据</div>
-<div id="stateMissing" class="state-banner missing" style="display:none;">⚠️ 检查数据不完整</div>
-<div id="stateError"   class="state-banner error"   style="display:none;">❌ 加载失败,请重试</div>
+<section id="injectError" style="display:none"></section>
+<section id="stateArea"></section>
 
 <main id="bodyContent"></main>
+
+<section class="data-panel" id="dataPanel">
+<strong>数据与日志</strong>
+<div class="hint">点复制数据保存当前检查结果 · 点复制日志用于反馈问题</div>
+<div class="hm-actions">
+<button class="copy ghost" onclick="copyData()">复制数据</button>
+<button class="copy ghost" onclick="copyLog()">复制日志</button>
 </div>
-<!--INJECT-SHARED-->
+</section>
+<p style="text-align:center;color:var(--fg3);font-size:12px;margin-top:14px">补齐后回到对话,告诉 AI「重新检查」即可刷新本页</p>
+</div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script><!--SHARED-HELPERS--></script>
 <script>
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function showState(name){
-  ['Success','Empty','Missing','Error'].forEach(function(s){var el=document.getElementById('state'+s);if(el)el.style.display='none'});
-  if(name){var el=document.getElementById('state'+name);if(el)el.style.display='block'}
-}
+(function(){
+"use strict";
+var raw=document.getElementById("payload");
+var payload=null,perr=null;
+try{payload=JSON.parse(raw.textContent||"{}");}catch(e){perr=e.message;}
+if(perr){document.getElementById("injectError").style.display="block";document.getElementById("injectError").innerHTML=window.errorReceipt({message:"数据解析失败",log:perr,payload:null});return;}
+if(!payload||payload.status!=="ok"||!payload.data){document.getElementById("injectError").style.display="block";document.getElementById("injectError").innerHTML=window.errorReceipt({message:(payload&&payload.message)||"数据未注入",retryPrompt:"请重新运行首次使用(唤醒词:首次使用)",payload:null});return;}
+window.__hmPayload=payload;
 
 try{
-  if(typeof window.__DATA__!=='object'||window.__DATA__===null){showState('Error');throw new Error('数据未注入')}
-  var payload=(window.__DATA__.data)||{};
-  var items=Array.isArray(payload.items)?payload.items:[];
+  var d=payload.data;
+  var items=Array.isArray(d.items)?d.items:[];
 
   if(items.length===0){
-    showState('Empty');
+    // #299:空态 → Base emptyState(替代旧 4 状态横幅)
+    document.getElementById('stateArea').innerHTML=window.emptyState({
+      icon:'📭',text:'暂无检查数据',hint:'AI 诊断结果为空,请重新运行首次使用'
+    });
+    document.getElementById('statusCard').style.display='none';
+    document.getElementById('dataPanel').style.display='none';
   }else{
 
   // 汇总
@@ -123,8 +137,8 @@ try{
   var title=err>0?'环境未就绪':(warn>0?'部分就绪':'环境就绪');
   document.getElementById('statusIcon').textContent=icon;
   document.getElementById('statusTitle').textContent=title;
-  document.getElementById('statusSub').textContent='就绪 '+ready+' · 可选缺失 '+warn+' · 必装缺失 '+err;
-  document.getElementById('statusMeta').textContent=(payload.generated_at?'生成于 '+payload.generated_at+' · ':'')+'共 '+items.length+' 项检查';
+  document.getElementById('statusSub').textContent=ready+' 项正常 · '+warn+' 项需补 · '+err+' 项可选';
+  document.getElementById('statusMeta').textContent=(d.generated_at?'生成于 '+d.generated_at+' · ':'')+'共 '+items.length+' 项检查';
 
   var main=document.getElementById('bodyContent');
   main.innerHTML='';
@@ -140,14 +154,14 @@ try{
     var body=document.createElement('div');body.className='body';
     var name=document.createElement('div');name.className='name';name.textContent=esc(i.name);
     body.appendChild(name);
-    if(i.desc){var d=document.createElement('div');d.className='desc';d.textContent=esc(i.desc);body.appendChild(d)}
+    if(i.desc){var d1=document.createElement('div');d1.className='desc';d1.textContent=esc(i.desc);body.appendChild(d1)}
     if(i.action){var a=document.createElement('div');a.className='action';a.textContent=esc(i.action);body.appendChild(a)}
     el.appendChild(body);
     main.appendChild(el);
   });
 
   // 待办指引
-  var todos=Array.isArray(payload.todos)?payload.todos:[];
+  var todos=Array.isArray(d.todos)?d.todos:[];
   if(todos.length){
     var sec2=document.createElement('div');sec2.className='section-title';sec2.textContent='待办指引';
     main.appendChild(sec2);
@@ -165,16 +179,15 @@ try{
   }
 
   // 完成验证清单(承诺↔兑现:prompt 5 步 → 可勾选)
-  var verify=Array.isArray(payload.verify)?payload.verify:[];
+  var verify=Array.isArray(d.verify)?d.verify:[];
   if(verify.length){
     var sec3=document.createElement('div');sec3.className='section-title';sec3.textContent='完成验证清单';
     main.appendChild(sec3);
     var vc=document.createElement('div');vc.className='verify-card';
-    var vt=document.createElement('div');vt.className='verify-title';vt.textContent='全部完成即初始化成功,可勾选';
+    var vt=document.createElement('div');vt.className='verify-title';vt.textContent='请核对每项状态;跳过/未通过的建议手动补做,完成后告诉 AI 收尾';
     vc.appendChild(vt);
     verify.forEach(function(v){
-      var vi=document.createElement('label');vi.className='verify-item';
-      var cb=document.createElement('input');cb.type='checkbox';
+      var vi=document.createElement('div');vi.className='verify-item';
       var tx=document.createElement('span');
       // 兼容两种形态(#197):str = 旧契约; {text, status: ok|skip|fail} = 三态(飞书权限已实测)
       var status='';
@@ -184,7 +197,7 @@ try{
       }else{
         tx.textContent=esc(v);
       }
-      vi.appendChild(cb);vi.appendChild(tx);
+      vi.appendChild(tx);
       if(status){
         var badge=document.createElement('span');badge.className='verify-badge '+status;
         var labelMap={ok:'已实测',skip:'跳过',fail:'未通过'};
@@ -195,13 +208,18 @@ try{
     });
     main.appendChild(vc);
   }
-
-  showState('Success');
   }
+  // success: 初始化报告已渲染(检查清单 + 待办 + 验证清单)
 }catch(e){
-  console.error('渲染失败:',e);
-  showState('Error');
+  document.getElementById("injectError").style.display="block";
+  document.getElementById("injectError").innerHTML=window.errorReceipt({message:"渲染失败:"+e.message,payload:null});
 }
+
+function copyData(){window.copyText(window.buildDataText(payload),{silent:true});window.toast('数据已复制','人类可读快照 · 可粘贴到笔记存档',{icon:'copy'});}
+function copyLog(){window.copyText(window.buildLogText(payload),{silent:true});window.toast('日志已复制','诊断信息 · 有异常时粘贴给开发者排查',{icon:'copy'});}
+window.copyData=copyData;
+window.copyLog=copyLog;
+})();
 </script>
 </body>
 </html>

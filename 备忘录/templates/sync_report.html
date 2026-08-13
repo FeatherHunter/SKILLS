@@ -5,22 +5,22 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="light">
 <title>备忘录同步报告</title>
+<style><!--SHARED-CSS--></style>
 <style>
 /* ================================================================
    备忘录同步报告 · mobile-first Apple 风
    设计原则:
-     1. 移动优先:480px 居中,PC 也不空(类 Apple Mail 窄列)
-     2. 信息分层:首屏结论 → KPI → 按需展开明细
-     3. 零假动作:没数据就不展示,无"查看""跳过"链接
-     4. 原生 <details>:无 JS 折叠,移动端触控友好
-     5. 自包含:零外链(飞书 webview 兼容)
-     6. 状态色:绿=完成 / 橙=需注意 / 红=错误 / 灰=无变化
+      1. 移动优先:480px 居中,PC 也不空(类 Apple Mail 窄列)
+      2. 信息分层:首屏结论 → KPI → 按需展开明细
+      3. 零假动作:没数据就不展示,无"查看""跳过"链接
+      4. 原生 <details>:无 JS 折叠,移动端触控友好
+      5. 自包含:零外链(飞书 webview 兼容)
+      6. 状态色:绿=完成 / 橙=需注意 / 红=错误 / 灰=无变化
    ================================================================ */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--fg4:#aeaeb2;
   --bg:#f5f5f7;--card:#fff;--card2:#fbfbfd;--line:#d2d2d7;--line-soft:#e5e5ea;
-  --blue:#007aff;--blue-soft:#f5f8ff;--blue-light:#e8f1ff;
   --ok:#34c759;--ok-soft:#ecfff2;--ok-fg:#178a3a;
   --warn:#ff9500;--warn-soft:#fff7e8;--warn-fg:#b25b00;
   --err:#ff3b30;--err-soft:#fff5f5;--err-fg:#c7254e;
@@ -57,13 +57,9 @@ body{
   position:relative;
   overflow:hidden;
 }
-.status-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--fg4)}
 .status-card.ok{background:linear-gradient(180deg,#fff 0%,#ebfaef 100%)}
-.status-card.ok::before{background:var(--ok)}
 .status-card.warn{background:linear-gradient(180deg,#fff 0%,#fff7e0 100%)}
-.status-card.warn::before{background:var(--warn)}
 .status-card.err{background:linear-gradient(180deg,#fff 0%,#ffe8e6 100%)}
-.status-card.err::before{background:var(--err)}
 .status-card.idle{background:linear-gradient(180deg,#fff 0%,#fafafa 100%)}
 
 .status-icon{
@@ -259,14 +255,16 @@ body{
 }
 .err-list li:last-child{margin-bottom:0}
 
-/* ===== 空状态(本次无变化时) ===== */
-.empty-detail{
-  padding:18px;
-  text-align:center;
-  color:var(--fg3);
-  font-size:13.5px;
-  font-style:italic;
+/* ===== 数据与日志 ===== */
+.data-panel{
+  background:var(--card);
+  border-radius:16px;
+  box-shadow:var(--shadow-sm);
+  padding:16px 18px;
+  margin-top:14px;
 }
+.data-panel strong{font-size:14.5px}
+.data-panel .hint{font-size:12px;color:var(--fg3);margin-top:6px}
 
 /* ===== 移动端微调(已经在 480 内,只处理超小屏) ===== */
 @media(max-width:360px){
@@ -293,6 +291,7 @@ body{
 </head>
 <body>
 <div class="wrap">
+<section id="injectError" style="display:none"></section>
 
 <!-- ===== 状态卡(首屏 · 结论) ===== -->
 <section class="status-card" id="statusCard">
@@ -302,31 +301,38 @@ body{
   <div class="status-meta" id="statusMeta"></div>
 </section>
 
+<!-- ===== 错误回执(#299 Base errorReceipt · 仅 err>0) ===== -->
+<section id="errorReceipt" style="display:none"></section>
+
 <!-- ===== KPI 网格(第二屏 · 数字概览) ===== -->
 <section class="kpis" id="kpis"></section>
 
 <!-- ===== 明细区(按需展开 · 原生 details) ===== -->
 <div id="details"></div>
 
+<!-- ===== 数据与日志(#299 08 硬标准) ===== -->
+<section class="data-panel" id="dataPanel">
+<strong>数据与日志</strong>
+<div class="hint">点复制数据保存本次同步结果 · 点复制日志用于反馈问题</div>
+<div class="hm-actions">
+<button class="copy ghost" onclick="copyData()">复制数据</button>
+<button class="copy ghost" onclick="copyLog()">复制日志</button>
+</div>
+</section>
 </div>
 
+<script id="payload" type="application/json"><!--INJECT-DATA--></script>
+<script><!--SHARED-HELPERS--></script>
 <script>
+(function(){
 "use strict";
-/* ===== 数据读取(兼容 window.__DATA__ 注入 + 兜底) ===== */
-function loadPayload(){
-  try{
-    var raw = window.__DATA__;
-    if(!raw){return null}
-    return (raw && raw.data) ? raw : {status:"ok",data:raw,message:""};
-  }catch(e){return null}
-}
-var PAYLOAD = loadPayload();
+var raw=document.getElementById("payload");
+var payload=null,perr=null;
+try{payload=JSON.parse(raw.textContent||"{}");}catch(e){perr=e.message;}
+if(perr){document.getElementById("injectError").style.display="block";document.getElementById("injectError").innerHTML=window.errorReceipt({message:"数据解析失败",log:perr,payload:null});return;}
+if(!payload||payload.status!=="ok"||!payload.data){document.getElementById("injectError").style.display="block";document.getElementById("injectError").innerHTML=window.errorReceipt({message:(payload&&payload.message)||"数据未注入",retryPrompt:"请重新运行备忘录同步(唤醒词:备忘录同步)",payload:null});return;}
+window.__hmPayload=payload;
 
-function esc(s){
-  return String(s==null?'':s).replace(/[&<>"']/g,function(c){
-    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
-  });
-}
 function num(v){return (typeof v==='number'&&isFinite(v))?v:0}
 function fmtTime(s){
   if(!s||typeof s!=='string')return '';
@@ -334,7 +340,6 @@ function fmtTime(s){
   return m ? m[1]+':'+m[2] : s;
 }
 
-/* ===== 主渲染 ===== */
 function init(){
   var card = document.getElementById('statusCard');
   var icon = document.getElementById('statusIcon');
@@ -342,15 +347,7 @@ function init(){
   var desc = document.getElementById('statusDesc');
   var meta = document.getElementById('statusMeta');
 
-  if(!PAYLOAD){
-    card.className = 'status-card err';
-    icon.textContent = '!';
-    title.textContent = '数据未加载';
-    desc.textContent = '同步数据没有正确注入,请重新运行同步命令。';
-    return;
-  }
-
-  var d = PAYLOAD.data || {};
+  var d = payload.data || {};
   // success: 同步报告已渲染(4 状态 fallback · success 路径)
   var synced = num(d.synced);
   var backfilled = num(d.backfilled);
@@ -371,6 +368,14 @@ function init(){
     icon.textContent = '!';
     title.textContent = '同步完成 · ' + errs + ' 个错误';
     desc.innerHTML = '同步已执行,但有 <b>' + errs + '</b> 个错误需要关注。展开下方错误明细查看详情。';
+    // #299:err 态 → Base errorReceipt(修正重试 = 重新同步)
+    var er = document.getElementById('errorReceipt');
+    er.style.display = 'block';
+    er.innerHTML = window.errorReceipt({
+      message: '同步完成 · ' + errs + ' 个错误',
+      retryPrompt: '请重新运行备忘录同步(唤醒词:备忘录同步)',
+      payload: null
+    });
   }else if(totalChanged === 0 && totalSkipped === 0){
     card.className = 'status-card idle';
     icon.textContent = '—';
@@ -383,8 +388,8 @@ function init(){
     var parts = [];
     if(synced > 0) parts.push('<b>' + synced + '</b> 条心愿在飞书勾选,本机已转打卡');
     if(backfilled > 0) parts.push('<b>' + backfilled + '</b> 条本机心愿补建到飞书');
-    if(dueChanged > 0) parts.push('<b>' + dueChanged + '</b> 条排期跟了飞书');
-    desc.innerHTML = parts.join(' · ') + '。';
+    if(dueChanged > 0) parts.push('<b>' + dueChanged + '</b> 条排期已按飞书更新');
+    desc.innerHTML = parts.join('<br>') + '。';
   }else{
     card.className = 'status-card warn';
     icon.textContent = '·';
@@ -401,10 +406,10 @@ function init(){
 
   /* ----- KPI 网格 ----- */
   var kpis = [
-    {n:synced, label:'完成同步', hint:'飞书勾选 → 本机打卡', bar: synced>0?'ok':'', z:synced===0},
-    {n:backfilled, label:'补建到飞书', hint:'本机心愿 → 飞书 task', bar: backfilled>0?'ok':'', z:backfilled===0},
-    {n:dueChanged, label:'排期变更', hint:'跟随飞书 due 调整', bar: dueChanged>0?'warn':'', z:dueChanged===0},
-    {n:totalSkipped, label:'跳过', hint:'未对应到本机心愿', bar: totalSkipped>0?'warn':'', z:totalSkipped===0},
+    {n:synced, label:'完成同步', hint:'飞书上勾选的,本机已记为打卡', bar: synced>0?'ok':'', z:synced===0},
+    {n:backfilled, label:'补建到飞书', hint:'本机心愿 → 飞书任务', bar: backfilled>0?'ok':'', z:backfilled===0},
+    {n:dueChanged, label:'排期变更', hint:'已按飞书最新日期调整', bar: dueChanged>0?'warn':'', z:dueChanged===0},
+    {n:totalSkipped, label:'跳过', hint:'未匹配到本机心愿', bar: totalSkipped>0?'warn':'', z:totalSkipped===0},
   ];
   document.getElementById('kpis').innerHTML = kpis.map(function(k){
     return '<div class="kpi">' +
@@ -454,7 +459,7 @@ function init(){
     details.push(makeDetail('📅 排期变更', 'warn', dueChanged, body3));
   }
 
-  // 4. 跳过明细(174 这种 · 平静展示)
+  // 4. 跳过明细(平静展示)
   if(totalSkipped > 0){
     var skipParts = [];
     if(skippedNoLocal > 0) skipParts.push('<b>' + skippedNoLocal + '</b> 条在飞书已完成,但本机找不到对应心愿');
@@ -476,9 +481,11 @@ function init(){
     details.push(makeDetail('⚠ 错误', 'err', errs, body5));
   }
 
-  // 6. 全空兜底(empty 状态)
+  // 6. 全空兜底(empty 状态 · #299 Base emptyState)
   if(details.length === 0){
-    details.push('<div class="detail"><div class="empty-detail">本次同步无任何变更或跳过 · 本机与飞书完全一致</div></div>');
+    details.push('<div class="detail">' + window.emptyState({
+      icon: '—', text: '本次同步无任何变更或跳过', hint: '本机与飞书完全一致'
+    }) + '</div>');
   }
 
   document.getElementById('details').innerHTML = details.join('');
@@ -494,7 +501,12 @@ function makeDetail(label, badgeClass, count, body, open){
   '</details>';
 }
 
+function copyData(){window.copyText(window.buildDataText(payload),{silent:true});window.toast('数据已复制','人类可读快照 · 可粘贴到笔记存档',{icon:'copy'});}
+function copyLog(){window.copyText(window.buildLogText(payload),{silent:true});window.toast('日志已复制','诊断信息 · 有异常时粘贴给开发者排查',{icon:'copy'});}
+window.copyData=copyData;
+window.copyLog=copyLog;
 init();
+})();
 </script>
 </body>
 </html>

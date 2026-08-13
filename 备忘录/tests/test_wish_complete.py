@@ -166,10 +166,13 @@ class TestWishCompleteHtml:
         assert "② 数据" in text
         assert "③ 期望" in text
         assert "④ 来源" in text
-        # complete-wish 命令
-        assert "memo_cli.py complete-wish" in text
-        # "采纳并复制" 按钮
-        assert "采纳并复制" in text
+        # #299:复制指令不暴露 CLI(仅 buildPrompt 函数体)
+        import re as _re
+        m = _re.search(r"function buildPrompt\(rows,ctx\)\{(.*?)\n\}", text, _re.DOTALL)
+        assert m, "buildPrompt 函数未找到"
+        assert "memo_cli.py" not in m.group(1), "复制指令不应暴露 CLI 命令(自然语言)"
+        # "复制修改指令" 按钮(单按钮设计)
+        assert "复制修改指令" in text
 
     def test_render_does_not_pollute_other_templates(self, seeded_db):
         """渲染 wish_complete 不污染 memo_query / wish_plan / sync_report"""
@@ -218,22 +221,20 @@ class TestWishCompleteHtml:
             assert it["selected"] is False,                 f"v1.0.4 默认应未勾,实际 {it['content']!r}.selected={it['selected']!r}"
 
     def test_html_default_unchecked_v1_0_4(self, seeded_db):
-        """v1.0.4:HTML 注入的 window.__DATA__ 里 items[].selected = False
+        """v1.0.4:HTML 注入 payload 里 items[].selected = False
 
         验证端到端:CLI 返回的 JSON 经 memo_render.render_wish_complete 注入后,
-        window.__DATA__ 中每条 item 的 selected 都是 False。
-
-        注意:JS 渲染发生在浏览器端(运行时),HTML 文件中只有模板字面量。
-        所以测试要检查 PAYLOAD 数据,不是 HTML DOM 结构。
+        payload(script#payload)中每条 item 的 selected 都是 False。
         """
         rc, out, _ = _run_cli("wish-complete", "--html", env=seeded_db)
         assert rc == 0
         html_path = json.loads(out)["data"]["html_path"]
         text = Path(html_path).read_text(encoding="utf-8")
-        # 从注入的 window.__DATA__ 中解析 items
+        # #299:从 <script id="payload"> 中解析注入数据
         import re
-        m = re.search(r"window\.__DATA__\s*=\s*({.*?});</script>", text, re.DOTALL)
-        assert m, "找不到 window.__DATA__ 注入"
+        m = re.search(r'<script id="payload" type="application/json">(\{.*?\})</script>',
+                      text, re.DOTALL)
+        assert m, "找不到 payload 注入"
         data = json.loads(m.group(1))
         items = data["data"]["items"]
         assert len(items) == 3

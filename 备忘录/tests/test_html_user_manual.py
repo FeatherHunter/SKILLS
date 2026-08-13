@@ -28,19 +28,19 @@ class TestHelpHtmlReadability:
         assert 'id="filter"' not in text, "filter 已移除"
         assert 'id="toc"' not in text, "TOC 已移除"
 
-    def test_has_5_state_fallback(self, text):
-        """总纲 §04 原则 3:5 状态 fallback"""
-        for state_id in ["stateEmpty", "stateMissing", "stateError"]:
-            assert state_id in text, f"缺 5 状态 banner: {state_id}"
+    def test_has_4_state_handlers(self, text):
+        """#299:Base 状态层控件(base.js 注入)"""
+        assert "errorReceipt" in text, "缺 errorReceipt 错误态"
+        assert "emptyState" in text, "缺 emptyState 空态"
 
     def test_has_copy_button(self, text):
-        """总纲 §07 §5:每场景独立复制按钮"""
-        assert "copyPrompt" in text or "复制 prompt" in text, \
+        """总纲 §07 §5:每场景独立复制按钮 → Base copyText"""
+        assert "copyText" in text or "复制 prompt" in text, \
             "缺复制按钮机制"
 
     def test_has_clipboard_fallback(self, text):
-        """总纲 §07 §5:剪贴板 API 不可用时降级"""
-        assert "fallbackCopy" in text or "execCommand" in text, \
+        """总纲 §07 §5:剪贴板 API 不可用时降级(Base _fbCopy)"""
+        assert "_fbCopy" in text or "execCommand" in text, \
             "缺剪贴板降级"
 
     def test_has_escape_html(self, text):
@@ -58,10 +58,10 @@ class TestHelpHtmlReadability:
         # <summary> 平衡
         assert text.count("<summary>") == text.count("</summary>")
 
-    def test_placeholder_unique(self, text):
-        """总纲 §04 原则 4:占位符唯一"""
-        count = text.count("<!--INJECT-DATA-->")
-        assert count == 1, f"占位符 <!--INJECT-DATA--> 应为 1 个,实际 {count}"
+    def test_payload_injected_no_placeholder_left(self, text):
+        """#299:渲染产物占位符 0 残留 + Base 注入点"""
+        assert text.count("<!--INJECT-DATA-->") == 0, "渲染产物不应残留 INJECT-DATA"
+        assert 'id="help-data"' in text, "Base help-data 注入点应在"
 
 
 class TestHelpHtmlStructure:
@@ -85,19 +85,16 @@ class TestHelpHtmlStructure:
         for t in expected:
             assert t in text, f"HELP HTML 缺唤醒词: {t}"
 
-    def test_has_7_groups(self, text):
-        """#33 归类:8 个分类(categories 注入数据)完整注入 HTML。
-
-        4 级架构下分类名由 JS 动态渲染,静态文本不含 → 改从 window.__DATA__
-        注入数据断言(渲染层已有 Playwright 快照覆盖,见 test_help.py)。
-        """
-        m = re.search(r"window\.__DATA__ = (\{.*?\});</script>", text, re.DOTALL)
-        assert m, "找不到 window.__DATA__ 注入"
+    def test_has_8_groups(self, text):
+        """#299:8 个分类经 scene-data 契约 v1 注入 Base help_template"""
+        m = re.search(r'<script id="help-data" type="application/json">(\{.*?\})</script>',
+                      text, re.DOTALL)
+        assert m, "找不到 help-data 注入"
         import json
         payload = json.loads(m.group(1))
-        cats = [c["name"] for c in payload.get("data", {}).get("categories", [])]
+        labels = [g["label"] for g in payload.get("groups", [])]
         for g in ["备忘类", "查找类", "提醒类", "心愿类", "打卡类", "情绪类", "同步类", "初始化类"]:
-            assert g in cats, f"categories 注入缺分类: {g}"
+            assert g in labels, f"groups 注入缺分类: {g}"
 
     def test_help_not_show_itself(self, text):
         """§07 §5 反模式 3:HELP 唤醒词自身不出现在 HTML"""

@@ -42,16 +42,19 @@ class TestMemoHtmlSurrogateGuard:
         if not HELP_HTML.exists():
             return
         text = HELP_HTML.read_text(encoding="utf-8")
-        assert text.startswith("<!doctype"), "备忘录.html 缺 doctype"
+        assert text.lower().startswith("<!doctype"), "备忘录.html 缺 doctype"
         assert "<html" in text, "备忘录.html 缺 <html>"
         assert "</html>" in text, "备忘录.html 缺 </html>"
         assert "<body>" in text, "备忘录.html 缺 <body>"
 
-    def test_injects_window_data(self):
-        """必含 window.__DATA__ 注入(memo_cli.py help 标准输出)"""
+    def test_injects_help_data(self):
+        """#299:必含 Base help-data 注入(memo_cli.py help 标准输出)"""
         if not HELP_HTML.exists():
             return
         text = HELP_HTML.read_text(encoding="utf-8")
-        assert "window.__DATA__" in text, (
-            "备忘录.html 缺 window.__DATA__ 注入 · HELP 未正确生成"
+        assert 'id="help-data"' in text, (
+            "备忘录.html 缺 help-data 注入 · HELP 未正确生成"
+        )
+        assert "function copyText" in text, (
+            "备忘录.html 缺 Base base.js · HELP 管线未接"
         )

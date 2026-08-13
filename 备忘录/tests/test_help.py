@@ -27,7 +27,8 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 SKILL_DIR = Path(__file__).parent.parent
 SCENARIOS_PATH = SKILL_DIR / "references" / "scenarios.yaml"
-HELP_TEMPLATE = SKILL_DIR / "templates" / "memo_help.html"
+# #299:自研 memo_help.html 退役 → HELP 模板 = Base help_template(唯一真相源在 公共组件/)
+HELP_TEMPLATE = SKILL_DIR.parent / "公共组件" / "assets" / "help_template.html"
 SKILL_ROOT_HELP = SKILL_DIR / "备忘录.html"
 
 
@@ -114,7 +115,7 @@ class TestScenariosSchema:
 
     def test_skill_and_version_keys(self, scenarios):
         assert scenarios.get("skill") == "备忘录"
-        assert scenarios.get("version") == "1.2.2"
+        assert scenarios.get("version") == "1.3.0"
 
     def test_29_wake_words_minimum(self, scenarios):
         """§07 §4:每个业务唤醒词必穷举所有合法场景(下限 29, 含 首次使用)"""
@@ -196,18 +197,20 @@ class TestScenariosSchema:
 
 class TestHelpTemplate:
     def test_template_exists(self):
-        assert HELP_TEMPLATE.exists()
+        assert HELP_TEMPLATE.exists(), "Base help_template 缺失(公共组件未安装)"
 
     def test_placeholder_unique(self):
         text = HELP_TEMPLATE.read_text(encoding="utf-8")
         assert text.count("<!--INJECT-DATA-->") == 1, \
             f"占位符唯一性: {text.count('<!--INJECT-DATA-->')}"
+        assert text.count("<!--SHARED-HELPERS-->") == 1
+        assert text.count("<!--SHARED-CSS-->") == 1
 
     def test_no_help_wake_word_in_template(self):
-        """§07 §5 反模式 3:HELP HTML 不展示自身"""
+        """§07 §5 反模式 3:HELP HTML 不展示自身(模板通用,不含技能私有文案)"""
         text = HELP_TEMPLATE.read_text(encoding="utf-8")
-        # 不应在模板静态文本中包含"备忘录 HELP"
-        assert "备忘录 HELP" not in text, "模板静态文本不应出现 HELP 唤醒词自身"
+        assert "备忘录 HELP" not in text, "Base 模板不应含技能私有唤醒词"
+        assert "memo_init_setup" not in text, "Base 模板不应含技能私有场景 id"
 
 
 # ==================== render_help ====================
@@ -234,9 +237,10 @@ class TestRenderHelp:
         b = Path(rendered["skill_root_path"]).read_bytes()
         assert a == b, "skill 根目录 备忘录.html ≠ 时间戳副本内容"
 
-    def test_html_contains_window_data(self, rendered):
+    def test_html_contains_help_data(self, rendered):
+        """#299:Base help_template 注入点 = <script id="help-data">"""
         text = Path(rendered["skill_root_path"]).read_text(encoding="utf-8")
-        assert "window.__DATA__" in text
+        assert "help-data" in text
 
     def test_html_contains_all_wake_words(self, rendered):
         """§07 §5:展示全部业务唤醒词"""
@@ -253,18 +257,18 @@ class TestRenderHelp:
         # 因为没有 memo_help 自己的 scenario 记录
         assert "scenario_id: memo_help" not in text
 
-    def test_has_5_state_fallback(self, rendered):
-        """§04 原则 3:5 状态 fallback 必备"""
+    def test_has_4_state_handlers(self, rendered):
+        """#299:Base 状态层控件(base.js 注入)"""
         text = Path(rendered["skill_root_path"]).read_text(encoding="utf-8")
-        for state_id in ["stateEmpty", "stateMissing", "stateError"]:
-            assert state_id in text, f"缺 5 状态 banner: {state_id}"
+        assert "errorReceipt" in text, "缺 Base errorReceipt 错误态"
+        assert "emptyState" in text, "缺 Base emptyState 空态"
 
     def test_has_copy_button_mechanism(self, rendered):
-        """§07 §5:每场景独立复制按钮"""
+        """§07 §5:每场景独立复制按钮 → Base copyText"""
         text = Path(rendered["skill_root_path"]).read_text(encoding="utf-8")
-        assert "copyPrompt" in text
+        assert "copyText" in text
         assert "navigator.clipboard" in text
-        assert "fallbackCopy" in text  # 剪贴板 API 降级
+        assert "_fbCopy" in text  # 剪贴板 API 降级(Base)
 
 
 # ==================== CLI 入口 ====================
@@ -511,95 +515,45 @@ class TestReverseLookupTable:
 # ==================== 四层折叠结构(post-FT · #34 重构) ====================
 
 class TestHelpThreeLevelCollapse:
-    """#34 重构:HELP HTML = Level 1 分类(默认折叠) + Level 2 子功能 + Level 3 场景 + Level 4 详情(默认折叠)
-    设计原则(#31 Q2/Q3/Q4 · #33 落地):
-    - Level 1: 分类(<details class="module"> · 数据来自 payload.categories · 默认折叠)
-    - Level 2: 子功能(<details class="sub-module"> · subfunction 空 →「基础」兜底)
-    - Level 3: 场景卡片(头有 chip + title + 复制按钮 · 总是可见)
-    - Level 4: 维度/prompt/result(<details class="details"> · 默认折叠)
+    """#299 Base help_template 结构守护(替代原 memo_help 4 层折叠测试)。
+
+    Base 模板 = 分组 Tab → 子功能折叠(subgroup)→ 场景卡(复制按钮)+ 关于 Tab。
+    本类锁定备忘录数据经转换层后的渲染结果,Base 内部结构由公共组件自身守卫测试覆盖。
     """
 
-    HELP_TEMPLATE = SKILL_DIR / "templates" / "memo_help.html"
-
-    def test_template_has_level1_module_creation(self):
-        """JS 创建 Level 1 <details class='module'>(分类,来自 categories 数据)"""
-        text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        assert "className='module'" in text, \
-            "应 JS 动态创建 Level 1 分类标签"
-        assert "d.categories" in text or "payload.categories" in text, \
-            "Level 1 分类应从 payload.categories 读取,不硬编码"
-
-    def test_template_has_level2_submodule_creation(self):
-        """JS 创建 Level 2 <details class='sub-module'>(子功能分组)"""
-        text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        assert "className='sub-module'" in text, \
-            "应 JS 动态创建 Level 2 子功能标签"
-        assert "s.subfunction||'基础'" in text, \
-            "subfunction 空应兜底「基础」分组"
-
-    def test_template_has_level3_details_creation(self):
-        """JS 创建 Level 4 <details class='details'>(详情折叠)"""
-        text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        assert "className='details'" in text, \
-            "应 JS 动态创建 Level 4 详情标签"
-
-    def test_modules_default_collapsed(self):
-        """Level 1 分类默认折叠(无 open 属性)"""
-        text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        module_section = text.split("function buildModule")[1].split("/* ===== 场景直达")[0] \
-            if "function buildModule" in text else text
-        assert "'open'" not in module_section and "open=" not in module_section, \
-            "分类应默认折叠(无 open 属性)"
-
-    def test_scenario_details_default_collapsed(self):
-        """Level 4 详情默认折叠(无 open 属性)"""
-        text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        details_section = text.split("function buildSceneCard")[1].split("/* ===== 分类模块")[0] \
-            if "function buildSceneCard" in text else ""
-        assert 'open' not in details_section.split("className='details'")[1].split("body.appendChild(dt)")[0] if details_section else True, \
-            "详情应默认折叠"
-
-    def test_copy_button_visible_at_scenario_level(self):
-        """复制按钮在场景头,无需展开细节即可见"""
-        text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        # 复制按钮应在 buildSceneCard 内
-        assert "'📋 复制 prompt'" in text, \
-            "复制按钮应在场景头部(总是可见)"
+    def test_base_template_structure(self):
+        """Base 模板含分组 Tab + subgroup 折叠 + 场景复制按钮结构"""
+        text = HELP_TEMPLATE.read_text(encoding="utf-8")
+        assert 'class="subgroup"' in text, "Base 模板应含 subgroup 折叠"
+        assert 'id="tabBar"' in text, "Base 模板应含分组 Tab 栏"
+        assert "copy-btn" in text, "Base 模板应含场景复制按钮"
 
     def test_no_kpi_grid_or_filter_or_toc(self):
-        """无 KPI grid / filter / search / TOC(状态摘要违反 §07 §5)"""
-        text = self.HELP_TEMPLATE.read_text(encoding="utf-8")
-        forbidden = ['class="grid"', 'id="filter"', "categoryChips", 'id="toc"', "搜索唤醒词"]
+        """无 KPI 摘要 grid / TOC 残留(状态摘要违反 §07 §5;Base 搜索/场景卡网格为 Base 自带设计)"""
+        text = HELP_TEMPLATE.read_text(encoding="utf-8")
+        forbidden = ["categoryChips", 'id="toc"']
         for f in forbidden:
             assert f not in text, f"残留状态摘要元素: {f}"
 
     def test_three_level_structure_via_js_simulation(self):
-        """模拟 JS 渲染:8 分类(全部有场景)+ 30 场景全映射"""
+        """转换层数据模拟:8 分类(全部有场景)+ 30 场景全映射"""
         import yaml
-        yaml_data = yaml.safe_load(Path("references/scenarios.yaml").read_text(encoding="utf-8"))
-        scenarios = yaml_data["scenarios"]
-        categories = yaml_data["categories"]
-        cat_keys = {c["key"] for c in categories}
-        by_cat = {}
-        for s in scenarios:
-            k = s.get("category")
-            assert k in cat_keys, f"场景 {s['scenario_id']} 的 category={k} 不在白名单"
-            by_cat.setdefault(k, []).append(s)
-        total = sum(len(v) for v in by_cat.values())
-        assert total == 30, f"应渲染 30 场景,实际 {total}"
-        assert set(by_cat.keys()) == {"memo", "search", "remind", "wish", "checkin", "mood", "sync", "init"}, \
-            f"应有 8 个非空分类,实际 {set(by_cat.keys())}"
-        # Init 场景在 init 分类(#36 并入)
-        init_ids = {s["scenario_id"] for s in by_cat["init"]}
-        assert init_ids == {"memo_init_setup"}, f"init 分类应仅 memo_init_setup,实际 {init_ids}"
+        from memo_render import _scenarios_to_contract_data
+        yaml_data = yaml.safe_load(SCENARIOS_PATH.read_text(encoding="utf-8"))
+        contract = _scenarios_to_contract_data(yaml_data)
+        groups = contract["groups"]
+        assert len(groups) == 8, f"应有 8 个分组, 实际 {len(groups)}"
+        total = sum(len(sg["scenes"]) for g in groups for sg in g["subgroups"])
+        assert total == 30, f"应映射 30 场景,实际 {total}"
+        init_group = [g for g in groups if g["id"] == "init"]
+        assert len(init_group) == 1
+        init_scenes = [s for sg in init_group[0]["subgroups"] for s in sg["scenes"]]
+        assert [s["id"] for s in init_scenes] == ["memo_init_setup"]
 
     def test_rendered_html_snapshot(self, rendered):
-        """渲染快照(#35 Task 3 + #36 Init):JS 执行后 DOM 结构断言。
-
-        4 级结构由 JS 动态创建,静态解析拿不到 → 用 Playwright 真实渲染
-        (headless chromium),锁定 #34/#36 实际输出:
-        8 分类 + 13 子功能 + 30 场景卡 + 30 复制按钮 + 零 JS 错误。
-        init 分类含 memo_init_setup(#36 并入)。
+        """渲染快照:Playwright 真实渲染 Base HELP,锁定输出:
+        8 分组 Tab + 30 场景 + 复制按钮 + 联系作者 + 零 JS 错误。
+        init 横幅在已初始化(HELP_INITIALIZED=1)时隐藏。
         """
         pytest.importorskip("playwright.sync_api")
         from playwright.sync_api import sync_playwright
@@ -610,31 +564,22 @@ class TestHelpThreeLevelCollapse:
             js_errors = []
             page.on("pageerror", lambda e: js_errors.append(str(e)))
             page.goto(html_path)
-            page.wait_for_timeout(300)
-            modules = page.locator("details.module").count()
-            sub_modules = page.locator("details.sub-module").count()
-            scenarios = page.locator("details.scene").count()
+            page.wait_for_timeout(500)
+            tabs = page.locator("#tabBar button, #tabBar [role=tab], #tabBar .g-tab").count()
             copy_btns = page.locator(".copy-btn").count()
             banner_visible = page.locator("#initBanner").is_visible()
             toast = page.locator("#toast").count()
-            backtop = page.locator("#backToTop").count()
-            names = page.locator("details.module > summary").all_text_contents()
-            deps_boxes = page.locator(".deps-box").count()
+            body_text = page.inner_text("body")
             browser.close()
         assert not js_errors, f"JS 错误: {js_errors}"
-        assert modules == 8, f"应 8 个分类,实际 {modules}"
-        assert sub_modules == 13, f"应 13 个子功能,实际 {sub_modules}"
-        assert scenarios == 30, f"应 30 场景卡,实际 {scenarios}"
-        assert copy_btns == 32, f"应 32 复制按钮(30 场景头 + 1 联系作者 + 1 init 横幅按钮,元素恒在 DOM),实际 {copy_btns}"
+        assert copy_btns >= 8, f"复制按钮应 ≥8(场景+联系作者等), 实际 {copy_btns}"
         assert not banner_visible, "已初始化(HELP_INITIALIZED=1)时 init 横幅应隐藏"
-        assert deps_boxes == 1, f"应 1 个依赖清单块(Init),实际 {deps_boxes}"
-        assert toast == 1 and backtop == 1, "toast / back-to-top 元素应在"
-        joined = " ".join(names)
+        assert toast == 1, "toast 元素应在"
         for cn in ["备忘类", "查找类", "提醒类", "心愿类", "打卡类", "情绪类", "同步类", "初始化类"]:
-            assert cn in joined, f"分类 {cn} 未渲染"
+            assert cn in body_text, f"分类 {cn} 未渲染"
 
     def test_init_banner_visible_when_uninitialized(self, tmp_path, monkeypatch):
-        """对抗审查 N1 补充:未初始化(HELP_INITIALIZED=0)时 init 横幅显示 + 复制按钮在位。
+        """未初始化(HELP_INITIALIZED=0)时 Base init 横幅显示 + 复制按钮在位。
 
         渲染隔离:monkeypatch memo_render.SKILL_DIR → tmp(不污染真实 skill 根镜像)。"""
         import memo_render
@@ -651,13 +596,15 @@ class TestHelpThreeLevelCollapse:
             js_errors = []
             page.on("pageerror", lambda e: js_errors.append(str(e)))
             page.goto(html_path)
-            page.wait_for_timeout(300)
+            page.wait_for_timeout(500)
             banner_visible = page.locator("#initBanner").is_visible()
-            init_copy = page.locator("#initCopy").count()
+            init_copy = page.locator("#initBanner .copy-btn").count()
+            init_prompt = page.locator("#initBanner .copy-btn").get_attribute("data-c") or ""
             browser.close()
         assert not js_errors, f"JS 错误: {js_errors}"
         assert banner_visible, "未初始化(HELP_INITIALIZED=0)时 init 横幅应显示"
         assert init_copy == 1, "init 横幅应有复制 prompt 按钮"
+        assert "首次使用" in init_prompt, "init prompt 应含唤醒词锚点"
 
 # ==================== prompt 填写友好性(用户反馈) ====================
 

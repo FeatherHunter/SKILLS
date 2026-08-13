@@ -71,8 +71,12 @@ class TestBatchUpdateCategoryHtml:
         assert "② 数据" in text
         assert "③ 期望" in text
         assert "④ 来源" in text
-        assert "update-category" in text
-        assert "采纳并复制" in text
+        # #299:复制指令不暴露 CLI(仅 buildPrompt 函数体)
+        import re as _re
+        m = _re.search(r"function buildPrompt\(rows,target,ctx\)\{(.*?)\n\}", text, _re.DOTALL)
+        assert m, "buildPrompt 函数未找到"
+        assert "memo_cli.py" not in m.group(1), "复制指令不应暴露 CLI 命令(自然语言)"
+        assert "复制修改指令" in text
 
     def test_render_does_not_pollute_other_templates(self, seeded_db):
         from memo_render import render_change_category

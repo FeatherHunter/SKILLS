@@ -23,9 +23,10 @@ class TestInitReportTemplate:
         assert TEMPLATE.exists(), "templates/init_report.html 缺失"
 
     def test_has_4_state_fallback(self):
+        """#299:4 状态 → Base emptyState/errorReceipt"""
         text = TEMPLATE.read_text(encoding="utf-8")
-        for sid in ["stateSuccess", "stateEmpty", "stateMissing", "stateError"]:
-            assert sid in text, f"缺 {sid} banner"
+        assert "emptyState" in text, "缺 emptyState 空态"
+        assert "errorReceipt" in text, "缺 errorReceipt 错误态"
 
     def test_has_check_item_rendering(self):
         text = TEMPLATE.read_text(encoding="utf-8")
@@ -33,13 +34,16 @@ class TestInitReportTemplate:
         assert "todo-card" in text, "缺待办指引渲染"
         assert "verify-item" in text, "缺验证清单渲染"
 
-    def test_has_shared_inject_placeholder(self):
+    def test_has_base_pipeline_placeholder(self):
+        """#299:Base 管线占位符(clipboard.js 退役)"""
         text = TEMPLATE.read_text(encoding="utf-8")
-        assert "<!--INJECT-SHARED-->" in text, "缺共享 JS 占位符(clipboard)"
+        assert "<!--SHARED-HELPERS-->" in text, "缺 Base 公共 JS 占位符"
+        assert "<!--INJECT-DATA-->" in text, "缺 Base 数据注入占位符"
 
-    def test_window_data_contract(self):
+    def test_payload_data_contract(self):
+        """#299:payload 经 <script id='payload'> 注入(替代 window.__DATA__)"""
         text = TEMPLATE.read_text(encoding="utf-8")
-        assert "window.__DATA__" in text, "缺 window.__DATA__ 数据契约"
+        assert 'id="payload"' in text, "缺 payload 注入点"
 
 
 class TestRenderInitReport:
@@ -68,7 +72,8 @@ class TestRenderInitReport:
         p = Path(path)
         assert p.exists()
         text = p.read_text(encoding="utf-8")
-        assert "window.__DATA__" in text
+        assert 'id="payload"' in text
+        assert "function copyText" in text, "产物缺 Base base.js"
         assert "Python 3.10+" in text, "检查项未注入"
 
     def test_payload_round_trip(self):
@@ -76,11 +81,15 @@ class TestRenderInitReport:
         import json
         path = render_init_report(self._payload())
         text = Path(path).read_text(encoding="utf-8")
-        m = re.search(r"window\.__DATA__ = (\{.*?\});</script>", text, re.DOTALL)
-        assert m, "找不到 window.__DATA__ 注入"
+        m = re.search(r'<script id="payload" type="application/json">(\{.*?\})</script>',
+                      text, re.DOTALL)
+        assert m, "找不到 payload 注入点"
         payload = json.loads(m.group(1))
         assert len(payload["data"]["items"]) == 2
         assert payload["data"]["todos"][0]["title"] == "修复 SQLite FTS5"
+        # 信封(#299):meta + scene.snapshot + copy_log
+        assert payload["data"]["meta"]["skill_name"] == "备忘录"
+        assert "snapshot" in payload["data"]["scene"]
 
 
 class TestInitCliCommand:

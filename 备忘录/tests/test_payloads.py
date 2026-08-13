@@ -131,5 +131,6 @@ class TestSyncReportContract:
         html_path = Path(data["data"]["html_path"])
         assert html_path.exists()
         text = html_path.read_text(encoding="utf-8")
-        assert "window.__DATA__" in text
+        assert 'id="payload"' in text, "#299:payload 经 script#payload 注入"
+        assert "function copyText" in text, "#299:产物应含 Base base.js"
         assert "备忘录同步报告" in text

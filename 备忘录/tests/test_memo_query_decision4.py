@@ -16,6 +16,7 @@
 from pathlib import Path
 
 import pytest
+import re
 
 TEMPLATE = Path(__file__).parent.parent / "templates" / "memo_query.html"
 TEMPLATE_TEXT = TEMPLATE.read_text(encoding="utf-8")
@@ -80,43 +81,31 @@ class TestMemoQueryEscapeSymmetry:
 # ============================================================
 
 class TestMemoQueryCopyTextDefined:
-    """memo_query.html L61 `copyText is not defined` 修复验证。
+    """#299 Base 重构:L61 `copyText is not defined` 历史修复验证升级。
 
-    修复策略 = copyReceipt 自包含(内含 fallbackCopy),不再依赖任何外部 `copyText` /
-    `copyToClipboard`。这样最干净:L61 错误根因是复制函数未提供,根治方法是消灭该调用。
+    旧修复 = copyReceipt 自包含 safeWriteText;新 = 复制全走 Base window.copyText
+    (SHARED-HELPERS 注入),模板不再自研复制实现。
     """
 
-    def test_copyReceipt_self_contains_clipboard_write(self):
-        """copyReceipt 必须直接调 safeWriteText(共享 clipboard helper,v1.1.5+)"""
-        idx = TEMPLATE_TEXT.find("function copyReceipt(")
-        assert idx > 0, "copyReceipt 函数必须存在"
+    def test_copyFiltered_uses_base_copytext(self):
+        """copyFiltered 必须调 window.copyText(Base 注入,含 fallback)"""
+        idx = TEMPLATE_TEXT.find("function copyFiltered(")
+        assert idx > 0, "copyFiltered 函数必须存在(原 copyReceipt)"
         end = TEMPLATE_TEXT.find("\n}\n", idx)
         snippet = TEMPLATE_TEXT[idx:end]
-        # v1.1.5:copyReceipt 改用共享 safeWriteText(由 injector 注入 clipboard.js)
-        assert "safeWriteText" in snippet, (
-            f"copyReceipt 必须调共享 safeWriteText · 实际:{snippet}"
-        )
-        # 必须有按钮反馈(成功/失败)
-        assert ("flashBtn" in snippet or "已复制" in snippet), (
-            f"copyReceipt 必须含 flashBtn 调用(共享 helper 反馈)· 实际:{snippet}"
+        assert "window.copyText" in snippet, (
+            f"copyFiltered 必须调 Base window.copyText · 实际:{snippet}"
         )
 
-    def test_no_dead_copyText_call_anymore(self):
-        """L61 `copyText(...)` 死调用必须被移除(已被自包含 copyReceipt 取代)"""
-        # 解 memo_query 后,不能再出现 `copyText(` 调用(L61 引发的 ReferenceError)
-        # 但允许 `copyText` 出现在函数定义 / 注释 / 字符串字面里
-        # 只检测调用:copyText 紧跟 (
-        import re
-        calls = re.findall(r"\bcopyText\s*\(", TEMPLATE_TEXT)
+    def test_no_self_made_copy_anymore(self):
+        """自研复制(safeWriteText/flashBtn)必须清零,全走 Base"""
+        calls = re.findall(r"\b(safeWriteText|flashBtn|fallbackCopy)\s*\(", TEMPLATE_TEXT)
         assert calls == [], (
-            f"L61 死调用 copyText() 仍残留: {calls}。T02 修复后 copyReceipt 自包含,"
-            f"不应再调 copyText(...)"
+            f"自研复制残留: {calls}。Base copyText 已含 execCommand fallback"
         )
 
-    def test_fallbackCopy_exists(self):
-        """execCommand fallback 必须有 fallbackCopy() 函数(共享脚本由 injector 注入)"""
-        # v1.1.5 共享化后:模板不再 inline · 由 <!--INJECT-SHARED--> 占位符 + injector 注入
-        assert ("<!--INJECT-SHARED-->" in TEMPLATE_TEXT), (
-            "memo_query.html 模板应有 <!--INJECT-SHARED--> 占位符 · "
-            "fallbackCopy 由 injector.py 注入(共享脚本 script/_shared/clipboard.js)"
+    def test_base_helpers_placeholder_exists(self):
+        """Base 公共 JS 占位符存在(复制/taost 由 公共组件/assets/base.js 注入)"""
+        assert "<!--SHARED-HELPERS-->" in TEMPLATE_TEXT, (
+            "memo_query.html 应有 SHARED-HELPERS 占位符 · Base copyText/toast 注入点"
         )

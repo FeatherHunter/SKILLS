@@ -58,12 +58,12 @@ class TestCopyButtonV113:
     # ---- 1. 按钮文案(简化)----
 
     def test_copy_button_label_simplified(self, text):
-        """按钮文案是'复制'(不是'复制ID')"""
+        """按钮文案是'复制'(不是'复制ID')· #299 Base ghost 样式"""
         m = re.search(
-            r'renderItem\([^{]*\{.*?<button[^>]*class="copy"[^>]*>([^<]+)</button>',
+            r'renderItem\([^{]*\{.*?<button[^>]*class="copy ghost"[^>]*>([^<]+)</button>',
             text, re.DOTALL,
         )
-        assert m, "renderItem 缺 class='copy' 按钮"
+        assert m, "renderItem 缺 class='copy ghost' 按钮(#299 Base 复制按钮样式)"
         assert m.group(1).strip() == "复制", \
             f"按钮文案应为'复制',实际: {m.group(1).strip()!r}"
 
@@ -73,9 +73,9 @@ class TestCopyButtonV113:
         assert not bad, f"模板不应有'复制 ID'旧按钮文案: {bad}"
 
     def test_copy_button_exists_per_item(self, text):
-        """renderItem 含 class='copy' 按钮(每条 item 都有)"""
-        m = re.search(r'renderItem\([^{]*\{.*?class="copy".*?</button>', text, re.DOTALL)
-        assert m, "renderItem 缺复制按钮"
+        """renderItem 含 copy ghost 按钮(每条 item 都有)"""
+        m = re.search(r'renderItem\([^{]*\{.*?class="copy ghost".*?</button>', text, re.DOTALL)
+        assert m, "renderItem 缺复制按钮(#299 ghost)"
 
     # ---- 2. copyInfo 函数(单条复制)----
 
@@ -116,21 +116,20 @@ class TestCopyButtonV113:
     # ---- 3. 复制反馈(用户体验)----
 
     def test_copy_feedback_label_exists(self, text):
-        """字面含 '✓ 已复制' 反馈文案(用户点击后短暂态)"""
-        assert "✓ 已复制" in text, \
-            "缺'✓ 已复制'反馈文案(用户体验降级)"
+        """字面含自定义 toast 反馈文案(#299:按钮文字恒定,反馈走 Base toast)"""
+        assert "已复制这条备忘" in text, \
+            "缺'已复制这条备忘'taost 反馈文案(#295 文案表定稿)"
 
     # ---- 4. copyReceipt 改造(整批复制含详情)----
 
     def test_copy_receipt_includes_item_details(self, text):
-        """receiptText 含每条 item 详情(不是纯 ID 列表)
-        实际详情逻辑在 receiptText() 函数,copyReceipt 只是包装
+        """snapshotText 含每条 item 详情(不是纯 ID 列表)
+        #299:回执 → 筛选快照,receiptText → snapshotText,4 部分格式
         """
-        body = _extract_function_body(text, "receiptText")
-        assert body is not None, "receiptText 函数未找到"
-        # 应含"详情"标记 或 "forEach" / "for ... of" 循环(逐条详情)
+        body = _extract_function_body(text, "snapshotText")
+        assert body is not None, "snapshotText 函数未找到"
         has_detail_keywords = any(
-            kw in body for kw in ["详情", "details", "content", "forEach", " for ", "【"]
+            kw in body for kw in ["详情", "content", "forEach", "【", "① 场景", "② 数据"]
         )
         assert has_detail_keywords, \
-            "receiptText 应含每条 item 详情处理(不是纯 ID 列表)"
+            "snapshotText 应含每条 item 详情处理(不是纯 ID 列表)"

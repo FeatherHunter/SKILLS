@@ -34,8 +34,8 @@ HTML_HAS_UNDEFINED_CALL = """
 <script>
 function init() {
   renderList();
-  // copyText never defined anywhere
-  copyText('foo');
+  // renderMissingFunc never defined anywhere
+  renderMissingFunc('foo');
 }
 </script>
 """
@@ -122,10 +122,10 @@ class TestUndefinedFuncs:
         assert callable(lint_undefined_funcs)
 
     def test_reports_undefined_call(self):
-        """故意调用 copyText 但不定义,应报警"""
+        """故意调用 renderMissingFunc 但不定义,应报警(copyText 已入 Base 白名单,不再当反例)"""
         findings = lint_undefined_funcs(HTML_HAS_UNDEFINED_CALL)
         names = [f["name"] for f in findings if f["name"]]
-        assert "copyText" in names
+        assert "renderMissingFunc" in names
 
     def test_clean_when_all_defined(self):
         """全部已定义,无报警"""

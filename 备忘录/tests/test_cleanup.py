@@ -81,13 +81,11 @@ class TestPEP8TrailingNewline:
         "test_template_lint.py",
         "test_memo_query_decision4.py",
         "test_memo_query_visual.py",
-        "test_memo_help_toptop.py",
         "test_wish_shared_fixes.py",
         "test_wish_visual_reverse.py",
         "test_wish_plan_fixes.py",
         "test_change_category_neutral.py",
         "test_sync_report_ui.py",
-        "test_clipboard_shared.py",
         "test_kpi_unified.py",
         "test_lint_zero_false_positive.py",
     ]

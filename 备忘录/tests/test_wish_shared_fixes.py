@@ -20,22 +20,24 @@ def _read(name):
 class TestWishCopyFallback:
     EXPECTED_FILES = ["wish_plan.html", "wish_complete.html", "change_category.html"]
 
-    def test_each_has_fallback_copy(self):
-        """三模板都必须有 fallbackCopy 函数(或 execCommand fallback)· v1.1.5 共享化"""
+    def test_each_uses_base_copytext(self):
+        """#299:三模板复制全走 Base copyText(SHARED-HELPERS 注入,含 execCommand fallback)"""
         for name in self.EXPECTED_FILES:
             text = _read(name)
-            # v1.1.5:共享 clipboard helper · 模板占位符由 injector 注入
-            assert ("<!--INJECT-SHARED-->" in text), (
-                f"{name} 必须有 <!--INJECT-SHARED--> 占位符 · "
-                f"fallbackCopy 由 injector.py 注入(共享脚本 _shared/clipboard.js)"
+            assert "<!--SHARED-HELPERS-->" in text, (
+                f"{name} 必须有 SHARED-HELPERS 占位符 · copyText 由 Base base.js 注入"
+            )
+            assert "window.copyText" in text, (
+                f"{name} 复制必须调 Base window.copyText"
+            )
+            assert "safeWriteText" not in text, (
+                f"{name} 残留自研 safeWriteText(Base copyText 已含 fallback)"
             )
 
     def test_each_has_clearTimeout_in_btn_race(self):
         """btn 文字 setTimeout 必须配 clearTimeout 防止 race"""
-        # 原 bug:连续采纳两次,第二次的文字 timer 还原会覆盖第一次的新文字
         for name in self.EXPECTED_FILES:
             text = _read(name)
-            # 如果有 setTimeout(,必须有 clearTimeout(
             set_count = text.count("setTimeout(")
             if set_count == 0:
                 continue
@@ -46,39 +48,33 @@ class TestWishCopyFallback:
 
 
 # ============================================================
-# 采纳按钮 sticky
+# 采纳按钮(设计变更:悬浮 → 面板内嵌)
 # ============================================================
 
 class TestWishAdoptSticky:
     EXPECTED_FILES = ["wish_plan.html", "wish_complete.html", "change_category.html"]
 
-    def test_each_has_adopt_button_with_position_fixed(self):
-        """三模板的 .primary 按钮(采纳)必须有 position:fixed"""
+    def test_primary_button_not_floating(self):
+        """#299 用户验收反馈:悬浮贴屏按钮删除,主按钮内嵌在指令面板里"""
         for name in self.EXPECTED_FILES:
             text = _read(name)
-            # button.primary CSS 必须 fixed
-            # 形态:.primary{...position:fixed}
             import re
             m = re.search(r"button\.primary\s*\{[^}]*\}", text)
             assert m, f"{name} button.primary CSS 块必须存在"
             css = m.group(0)
-            assert ("position:fixed" in css
-                    or "position: sticky" in css), (
-                f"{name} button.primary 必须 position:fixed/sticky · "
-                f"原 CSS:{css}"
+            assert "position:fixed" not in css, (
+                f"{name} 悬浮按钮应已删除(视觉审查:悬浮丑)· CSS:{css}"
             )
 
     def test_each_adopt_button_has_handler(self):
-        """采纳按钮必须接 click handler(adopt() 或 addEventListener)"""
+        """主按钮必须接 click handler(adopt())"""
         for name in self.EXPECTED_FILES:
             text = _read(name)
-            # button.primary onclick=adopt()
             import re
             m = re.search(r'<button[^>]*class="[^"]*primary[^"]*"[^>]*>', text)
             assert m, f"{name} <button class=primary> 节点必须存在"
             button_html = m.group(0)
-            has_handler = ("onclick" in button_html
-                           or re.search(r"\.primary[^}]*onclick|addEventListener\('click'[^)]*\.primary", text))
+            has_handler = ("onclick" in button_html)
             assert has_handler, (
-                f"{name} 采纳按钮必须有 click handler · 实际:{button_html}"
+                f"{name} 主按钮必须有 click handler · 实际:{button_html}"
             )

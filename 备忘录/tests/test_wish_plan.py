@@ -151,12 +151,15 @@ class TestWishPlanHtml:
         assert "② 数据" in text
         assert "③ 期望" in text
         assert "④ 来源" in text
-        # 含 set-due CLI 命令模板
-        assert "memo_cli.py set-due" in text
-        # 含 "采纳并复制" 按钮(过程型 HTML 必需)
-        assert "采纳并复制" in text
-        # 含 "全选" / "全不选" 交互
-        assert "全选" in text and "全不选" in text
+        # #299:复制指令不暴露 CLI(自然语言 · 仅 buildPrompt 函数体;copy_log 给开发者属正常)
+        import re as _re
+        m = _re.search(r"function buildPrompt\(rows,ctx\)\{(.*?)\n\}", text, _re.DOTALL)
+        assert m, "buildPrompt 函数未找到"
+        assert "memo_cli.py" not in m.group(1), "复制指令不应暴露 CLI 命令(自然语言)"
+        # "复制排期指令" 按钮(过程型 HTML 必需 · 单按钮设计)
+        assert "复制排期指令" in text
+        # "全选" / "清空选择" 交互
+        assert "全选" in text and "清空选择" in text
 
     def test_render_does_not_pollute_other_templates(self, seeded_db):
         """渲染 wish_plan 不污染 memo_query.html 或 sync_report.html"""

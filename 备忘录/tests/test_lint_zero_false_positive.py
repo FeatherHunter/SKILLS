@@ -24,7 +24,6 @@ ALL_TEMPLATES = [
     "wish_plan.html",
     "wish_complete.html",
     "change_category.html",
-    "memo_help.html",
 ]
 
 

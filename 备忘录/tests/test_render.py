@@ -47,15 +47,16 @@ class TestInjection:
         output_dir = _get_html_output_dir()
         assert str(output_dir) in path
 
-    def test_render_injects_window_data(self):
+    def test_render_injects_payload_script(self):
+        """#299:payload 经 <script id='payload'> 注入(替代 window.__DATA__)"""
         path = render_query(self._payload())
         text = Path(path).read_text(encoding="utf-8")
-        assert "window.__DATA__" in text
-        # JSON 必须出现在 script 标签内
-        m = re.search(r"<script>window\.__DATA__ = (\{.*?\});</script>", text, re.DOTALL)
-        assert m, "window.__DATA__ 注入失败"
+        m = re.search(r'<script id="payload" type="application/json">(\{.*?\})</script>',
+                      text, re.DOTALL)
+        assert m, "payload 注入失败"
         data = json.loads(m.group(1))
         assert data["data"]["title"] == "测试标题"
+        assert data["data"]["meta"]["skill_name"] == "备忘录", "#299 信封"
 
     def test_script_close_tag_escaped(self):
         """含 </script> 的 content 应被转义成 <\\/script>,防止提前闭合注入块"""
@@ -63,13 +64,11 @@ class TestInjection:
         payload["data"]["items"] = [{"id": 99, "content": "<script>alert(1)</script>"}]
         path = render_query(payload)
         text = Path(path).read_text(encoding="utf-8")
-        # 找到注入的 payload 块
-        m = re.search(r"<script>window\.__DATA__ = (\{.*?\});</script>", text, re.DOTALL)
-        assert m, "window.__DATA__ 注入失败"
+        m = re.search(r'<script id="payload" type="application/json">(\{.*?\})</script>',
+                      text, re.DOTALL)
+        assert m, "payload 注入失败"
         injected = m.group(1)
-        # 转义后的 </ 必须存在(原始 </script> 被替换成 <\/script>)
         assert "<\\/script>" in injected, f"转义未生效: {injected[-100:]}"
-        # 同时验证 raw </script> 不在注入块中(否则会提前闭合)
         assert "</script>" not in injected, "raw </script> 出现在注入块里 → 提前闭合风险"
 
 
@@ -126,11 +125,12 @@ class TestSyncReportRender:
         assert path.endswith(".html")
         assert str(output_dir) in path
 
-    def test_injects_window_data(self):
+    def test_injects_payload_script(self):
         path = render_sync_report(self._payload())
         text = Path(path).read_text(encoding="utf-8")
-        m = re.search(r"<script>window\.__DATA__ = (\{.*?\});</script>", text, re.DOTALL)
-        assert m, "window.__DATA__ 注入失败"
+        m = re.search(r'<script id="payload" type="application/json">(\{.*?\})</script>',
+                      text, re.DOTALL)
+        assert m, "payload 注入失败"
         data = json.loads(m.group(1))
         assert data["data"]["backfilled"] == 2
         assert data["data"]["scanned_done"] == 5
@@ -139,7 +139,8 @@ class TestSyncReportRender:
     def test_includes_errors_in_payload(self):
         path = render_sync_report(self._payload(errors=["feishu CLI not available"]))
         text = Path(path).read_text(encoding="utf-8")
-        m = re.search(r"<script>window\.__DATA__ = (\{.*?\});</script>", text, re.DOTALL)
+        m = re.search(r'<script id="payload" type="application/json">(\{.*?\})</script>',
+                      text, re.DOTALL)
         assert m
         data = json.loads(m.group(1))
         assert data["data"]["errors"] == ["feishu CLI not available"]

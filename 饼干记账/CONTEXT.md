@@ -13,7 +13,7 @@ _Avoid_: 中文名"饼干记账"(用于 SKILL.md frontmatter / HELP 命名前缀
 _Avoid_: CLI 子命令名(英文 add/list/summary 等)、scenario_id
 
 **scenario / 场景资产**:
-本 Skill 的"场景资产"按域存于 `scenes/{域}.yaml`(7 域 · 各域唯一事实源),由 `scripts/merge_scenarios.py` 合并为汇总 `references/scenarios.yaml`,被 `scripts/render_help.py` / `templates/help.html` / 路由表引用,是 HELP HTML 与唤醒词路由的统一数据源。旧 `references/scenarios.json|md` 已归档(G3 决议),不再维护。
+本 Skill 的"场景资产"按域存于 `scenes/{域}.yaml`(7 域 · 各域唯一事实源),由 `scripts/merge_scenarios.py` 合并为汇总 `references/scenarios.yaml`,被 `scripts/render_help.py` / 路由表引用,是 HELP HTML 与唤醒词路由的统一数据源(#303 起 HELP 模板走 Base `公共组件/assets/help_template.html`,技能零模板副本)。旧 `references/scenarios.json|md` 已归档(G3 决议),不再维护。
 _Avoid_: 手工维护 HELP HTML 副本(应从 references/scenarios.yaml 渲染)
 
 **_HELP_ 保留字**:
@@ -48,7 +48,7 @@ _Avoid_: 分开存 `type: expense/income` 字段
 │   └── adr/              ← 架构决策记录
 ├── scenes/               ← 7 域场景注册 yaml(域唯一事实源,合并器汇总到 references/)
 ├── references/           ← categories.md / scenarios.yaml(合并汇总)/ scenarios.json|md(已归档 G3)
-├── templates/            ← query_view.html / help.html
+├── templates/            ← query_view.html(HELP 模板已迁 Base 参数化 · #303)
 ├── scripts/              ← db.py / analyze.py / record_bill.py / bill_inject.py / render_help.py / html_paths.py / 3 个迁移脚本
 ├── backups/              ← CSV 迁移备份 (gitignored)
 ├── config-cookie-accounting.ts ← SkillBoard 数据层视图(独立维护)

@@ -48,10 +48,19 @@ class TestPayloadPlaceholderUniqueness:
             f"实际 {text.count('<script id=\"payload\"')} 次"
         )
 
-    def test_help_inject_data_placeholder_count_is_one(self):
-        text = HELP_TEMPLATE.read_text(encoding="utf-8")
+    def test_help_template_retired_to_base(self):
+        """task ④(#303):原 templates/help.html 已废弃删除,HELP 渲染走 Base 参数化模板
+
+        Base help_template.html 的 <!--INJECT-DATA--> 唯一性由 公共组件 守卫测试覆盖,
+        此处守住「技能侧零模板副本」:旧 help.html 不再存在。
+        """
+        assert not HELP_TEMPLATE.exists(), (
+            "templates/help.html 应已删除(#303 废弃原 HELP 模板,统一走 Base)"
+        )
+        base_tmpl = SKILL_DIR.parent / "公共组件" / "assets" / "help_template.html"
+        text = base_tmpl.read_text(encoding="utf-8")
         assert text.count("<!--INJECT-DATA-->") == 1, (
-            f"help.html 中 <!--INJECT-DATA--> 应恰好 1 次，"
+            f"Base help_template.html 中 <!--INJECT-DATA--> 应恰好 1 次，"
             f"实际 {text.count('<!--INJECT-DATA-->')} 次"
         )
 

@@ -95,7 +95,7 @@ def _assert_html_well_formed(html_path: Path, *, allow_error_state: bool = False
 
     # 5 状态 fallback：renderError / empty / payload.status 等代码存在
     # （模板里都有这些 JS 函数；我们只校验关键关键词存在）
-    # query_view.html 用 escapeHTML()，help.html 用 esc() —— 都是 XSS 守卫
+    # 业务模板用 escapeHTML() 作 XSS 守卫（HELP 走 Base 模板的 esc()，#303 后无自研 help.html）
     assert "escapeHTML" in text or ("function esc(" in text and "esc(" in text), \
         "缺 XSS 守卫函数（escapeHTML 或 esc）"
     assert "error-card" in text or "renderError" in text or "渲染失败" in text or "加载失败" in text, \
@@ -400,14 +400,23 @@ class TestSkillMdBoundarySection:
 # ── HELP HTML ──────────────────────────────────────────────────────────────
 
 class TestHelpHtmlRender:
-    """render_help.py 也生成合法 HTML + BOM + 4 条 HELP 唤醒词"""
+    """render_help.py(v4.0 · Base 参数化)生成合法 HTML + BOM + 根镜像 + 无自研残留"""
 
-    def test_help_html_has_bom_and_payload(self, tmp_db_dir):
+    def test_help_html_has_bom_and_help_data(self, tmp_db_dir):
+        """BOM(ADR-0002) + Base 参数化注入点(help-data)+ 占位符 0 残留 + Base toast"""
         rc, out, err, html_path = _run_render_help(tmp_db_dir)
-        _assert_html_well_formed(html_path)
+        raw = html_path.read_bytes()
+        assert raw[:3] == b"\xef\xbb\xbf", f"HELP 输出缺 UTF-8 BOM（前 3 字节 = {raw[:3]!r}）"
+        text = raw.decode("utf-8-sig")
+        assert 'charset="UTF-8"' in text, "缺 <meta charset=UTF-8>"
+        assert '<script id="help-data"' in text, "缺 Base 参数化 HELP 数据注入点(help-data)"
+        for ph in ("<!--INJECT-DATA-->", "<!--SHARED-HELPERS-->", "<!--SHARED-CSS-->"):
+            assert ph not in text, f"注入后占位符应有 0 残留: {ph}"
+        assert "hm-toast" in text, "缺 Base toast(base.js 未注入)"
+        assert "function esc(" in text, "缺 XSS 守卫函数 esc(Base 模板)"
 
     def test_help_html_contains_four_wake_words(self, tmp_db_dir):
-        """HELP HTML 含 4 条 HELP 唤醒词字符串"""
+        """HELP HTML 含 4 条 HELP 唤醒词字符串(经 meta_blocks 透传进页面数据,与卡路里一致)"""
         rc, out, err, html_path = _run_render_help(tmp_db_dir)
         text = html_path.read_text(encoding="utf-8-sig")
         for ww in ["饼干记账 HELP", "饼干记账 帮助", "查帮助", "能做什么"]:
@@ -450,22 +459,22 @@ class TestHelpHtmlRender:
         assert "能力速查" not in fname, \
             f"HELP 文件名不应含 '能力速查'，实际: {fname}"
 
-    def test_help_html_no_sc_dim(self, tmp_db_dir):
-        """B2 契约(G4)：渲染输出无 .sc-dim(v15 遗留维度标签),含 B2 四级折叠类名"""
+    def test_help_html_no_self_made_legacy(self, tmp_db_dir):
+        """自研 B2 实现已退役:旧模板/旧共享 JS 文件删除,渲染输出无旧布局/旧 toast 残留"""
+        skill_root = Path(__file__).resolve().parent.parent
+        assert not (skill_root / "templates" / "help.html").exists(), \
+            "templates/help.html 应已删除(#303 废弃原 HELP 模板)"
+        assert not (skill_root / "scripts" / "_shared_js.py").exists(), \
+            "scripts/_shared_js.py 应已删除(#303 退役)"
         rc, out, err, html_path = _run_render_help(tmp_db_dir)
         text = html_path.read_text(encoding="utf-8-sig")
-        assert 'class="sc-dim"' not in text, \
-            "B2 模板不应再渲染 .sc-dim 维度标签(v15 设计契约)"
-        # G4 轮次 1:类名 .module/.sub-module/.scene 兼容 tools/双浏览器审查.py
-        assert ".module" in text and ".sub-module" in text and ".scene{" in text, \
-            "B2 模板应含四级折叠类名 .module/.sub-module/.scene(G4 契约)"
-        assert "scene-title" in text, \
-            "B2 模板应渲染 .scene-title 场景标题"
+        for marker in ('class="sc-dim"', "heroStats", "initCopy"):
+            assert marker not in text, f"旧自研实现残留: {marker}"
 
     def test_help_html_root_mirror_synced(self, tmp_db_dir):
-        """v15 落地契约：render_help.py 末尾 auto-copy 把同一份 HTML 写到 SKILL 根目录的 饼干记账.html
+        """命名契约(L10):render_help.py 末尾 auto-copy 把同一份 HTML 写到 SKILL 根目录 饼干记账.html
 
-        守 SKILL.md L10 的"功能变更必须同步更新"——从规则下沉为代码。
+        字节一致契约:timestamped 输出与根镜像逐字节相同(含 BOM)。
         用 setup/teardown 备份/恢复根目录的真实文件，不污染 skill 根目录。
         """
         # --- setup: 备份根目录 饼干记账.html (如果存在) ---
@@ -492,18 +501,7 @@ class TestHelpHtmlRender:
                 f"render_help.py stdout 应含 '已同步' 字样（auto-copy 工作证明），实际: {result.stdout}"
             )
 
-            # --- assert: 根目录文件存在 + BOM + 无 .sc-dim + payload 跟 timestamped 一致 ---
-            assert root_html.exists(), "auto-copy 后 skill 根目录 饼干记账.html 应存在"
-
-            root_raw = root_html.read_bytes()
-            assert root_raw[:3] == b"\xef\xbb\xbf", (
-                f"根目录 饼干记账.html 缺 UTF-8 BOM（前 3 字节 = {root_raw[:3]!r}）"
-            )
-            root_text = root_raw.decode("utf-8-sig")
-            assert 'class="sc-dim"' not in root_text, \
-                "auto-copy 到根目录的文件也应是 v15 布局（无 .sc-dim）"
-
-            # 从 stdout 的 "已生成" 行解析 timestamped 文件名,跟根目录对比 payload
+            # 从 stdout 的 "已生成" 行解析 timestamped 文件名
             ts_fname = None
             for line in result.stdout.splitlines():
                 if "已生成" in line:
@@ -516,22 +514,16 @@ class TestHelpHtmlRender:
                         break
             assert ts_fname, f"未从 stdout 解析到 timestamped 文件名: {result.stdout}"
 
-            # timestamped 文件路径
-            html_dir = skill_root.parent / "biscuit_accountant_html"  # via html_paths.find_db_path
-            # 实际 html_dir 来自 find_db_path() = $SKILLS_DB_PATH 父目录 / SKILL_HTML_NAME_html
             # SKILLS_DB_PATH=tmp_db_dir,所以 html_dir = tmp_db_dir / "biscuit_accountant_html"
             ts_path = tmp_db_dir / "biscuit_accountant_html" / ts_fname
             assert ts_path.exists(), f"timestamped 文件不存在: {ts_path}"
 
-            # 提取两边的 payload 段(从 <script id="payload"> 到 </script>)对比
-            import re
-            payload_re = re.compile(r'<script id="payload"[^>]*>(.*?)</script>', re.DOTALL)
-            ts_payload = payload_re.search(ts_path.read_text(encoding="utf-8-sig"))
-            root_payload = payload_re.search(root_text)
-            assert ts_payload, "timestamped 文件缺 <script id=\"payload\">"
-            assert root_payload, "根目录文件缺 <script id=\"payload\">"
-            assert ts_payload.group(1) == root_payload.group(1), (
-                "根目录 饼干记账.html 的 payload 段必须跟 timestamped 文件的 payload 段字节一致"
+            ts_raw = ts_path.read_bytes()
+            root_raw = root_html.read_bytes()
+            assert ts_raw[:3] == b"\xef\xbb\xbf", "timestamped 输出缺 UTF-8 BOM(ADR-0002)"
+            assert root_raw[:3] == b"\xef\xbb\xbf", "根目录 饼干记账.html 缺 UTF-8 BOM"
+            assert ts_raw == root_raw, (
+                "根目录 饼干记账.html 必须与 timestamped 输出逐字节一致(命名契约 · 字节一致)"
             )
         finally:
             # --- teardown: 恢复备份（无论测试成功失败） ---

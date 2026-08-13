@@ -1,4 +1,4 @@
-﻿---
+---
 name: 饼干记账
 description: 记账技能。写入类:记支出、记收入、拍账单、批量录入、改记录、撤销、恢复、记报销、记退款、记借出、记借入、记收回、记偿还、记分期。查询类:查今天、查某天、查月、查区间、查分类、搜备注、查标签、查账户、查账本、查欠款、查待报销。分析类:看月度、看总览、看分类、看对比、看趋势、看大额、做统计、看洞察、看借贷。目标/账户/联动:设定预算、看预算、设定目标、看目标、新增账户、改账户、账户转账、看账户汇总、买东西联动、吃饭联动。**所有查询/分析类唤醒词默认 invoke HTML 工作流**(scripts/bill_inject.py + templates),写入类保持文字回执。能力速查:说「饼干记账 HELP」/「查帮助」/「能做什么」。完整 70 个唤醒词见 references/路由表.md
 ---
@@ -1084,7 +1084,7 @@ python3 scripts/setup/cli.py import --file x.csv --mapping date=1,amount=3,categ
 - 初始化状态三重判定卡（存在 / schema / 版本）+ 迁移提示条
 - 备份列表空态引导一键备份;恢复向导覆盖警示（恢复前自动备份现状）
 
-### Step 7：HELP 能力速查（v2.4 升级）
+### Step 7：HELP 能力速查（v4.0 · Base 参数化 · #303）
 
 当用户说「饼干记账 HELP」「饼干记账 帮助」「查帮助」「能做什么」时，AI 调用 `scripts/render_help.py` 生成 HELP HTML 并交付。
 
@@ -1096,18 +1096,19 @@ python3 scripts/render_help.py
 # 指定输出
 python3 scripts/render_help.py --out /path/to/help.html
 
-# 仅校验场景资产 schema（CI 用）
+# 仅校验数据源与契约（CI 用）
 python3 scripts/render_help.py --check
 ```
 
-**HELP HTML 契约（§07）：**
-- 来源：`references/scenarios.yaml`（合并器汇总 · 7 域 scenes yaml 唯一事实源）+ `templates/help.html`（模板）
+**HELP HTML 契约（§07 · #303 重构）：**
+- 来源：`references/scenarios.yaml`（合并器汇总 · 7 域 scenes yaml 唯一事实源）+ `公共组件/assets/help_template.html`（Base 参数化模板 · scene-data 契约 v1 · V4.16 定稿）
+- 展平（技能侧 · render_help.py v4.0）：7 域 → 2 级分组（groups → subgroups）+ 场景卡；wake_word 层消失并入场景卡 chip；types 徽章 = type 单值包数组；**源 yaml 3 层结构不动**
 - 展示 **7 域**（写入 / 查询 / 分析 / 目标 / 账户 / 联动 / 开始使用）× **70 个功能唤醒词（+4 条 HELP）** × **71 个合法场景**
-- **4 层折叠**（域 → sub → 场景 → prompt 详情，**默认全部折叠**，点击 `<summary>` 展开）
-- 每场景独立「📋 复制 prompt」按钮 + **iOS 风格 Toast 通知**（4.5s 自动消失）
-- 粘性搜索栏 + 「全部展开 / 全部折叠」快捷键
-- 移动端 fallback toggle（部分 Android WebView 兼容）
-- 5 状态 fallback + 移动端适配
+- 子功能组默认展开；点场景卡开 Sheet 弹层看 prompt 详情 + 复制
+- 每场景「复制」按钮 + Base hm-toast 通知（toast(msg, detail, opts) · 样式由公共组件决定）
+- 粘性搜索栏（跨 Tab 匹配 + 自动跳转 + 高亮）+ 底部 Tab 栏（7 域 + 关于）
+- 未初始化时显示「首次使用」横幅（复制初始化 prompt，与 `setup_init_wizard` 场景逐字一致）
+- HELP 自身 4 条唤醒词经 meta_blocks 透传（页面不渲染展示，与卡路里一致）；联系作者 / 版本在「关于」Tab
 
 ---
 

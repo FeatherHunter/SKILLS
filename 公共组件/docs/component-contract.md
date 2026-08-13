@@ -1,6 +1,6 @@
-# Base 组件契约 v1.6
+# Base 组件契约 v1.9
 
-> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）
+> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）+ **v1.9 selectList 行内控件**（2026-08-13 · #327）
 > 本契约是 Base Skill 组件的**冻结接口**，修改必须走公共层 ISSUE（总纲 09 §92）+ 遵循 §8 版本机制。
 
 ## 0. 版本记录
@@ -13,6 +13,7 @@
 | v1.3 | 2026-08-12 | **#288 P2 图表组件落地**：新增 `assets/charts.js`（`charts.bar/line/donut/progress` 四接口，纯 CSS+SVG 无外部依赖，数据空→emptyState 联动）；`<!--CHARTS-HELPERS-->` 从「第二版预留」转**正式版**；注入器 `--charts` 参数正式化；SHARED_JS 全家桶处置清单（Base 等价物走 Base / 图表走 charts.js / 居家特定留技能侧） |
 | v1.4 | 2026-08-12 | **#290 P2 状态层落地（加固）**：三控件（statusBadge/emptyState/errorReceipt）从「零消费方定义」加固为**对外可靠接口**——①errorReceipt 去掉 `window.__hmPayload` 强依赖（新增显式 `payload` 参数优先、`data/log` 字符串直传兜底）②errorReceipt 复制按钮改为渲染期生成文本存 `data-t`（onclick 仅 `copyText(this.dataset.t)`，零注入面；点击不再实时调 buildDataText）③errorReceipt 补 `.hm-actions` 网格布局（修正重试 primary wide 独立一行 + 复制数据/日志 ghost 一行 2 个，08 规范奇数按钮）④payload 无 snapshot 时容错（不渲染复制按钮，控件不崩）⑤statusBadge 非法 status 白名单降级 `empty`（防无样式徽章）⑥emptyState/statusBadge/errorReceipt 全部文本字段 esc 防 XSS，action 明示「受信 HTML 透传」。守卫测试 +9（边界/XSS/容错/布局） |
 | v1.6 | 2026-08-12 | **图表全参数化（方向 A 定稿）**：charts.js 四形态全参数化（line 16 项 / bar 7 / donut 6 / progress 4）+ 复合形态（combo 柱线组合 / sparkline 迷你趋势 / gauge 仪表盘）+ 结构校验违规报错（对齐 v1.2）+ 坐标唯一性（容器零 padding）+ 双端自适应（≤720px 独立 UI）+ 全部动画。守卫测试 141/141。**注意：v1.6 与 #289/#290 并发推进，版本号按落地顺序递增** |
+| v1.9 | 2026-08-13 | **#327 selectList 行内控件**（非破坏性 · 签名零变更）：①items[].widget 新可选字段（date/text/select，行内控件与勾选/批量/计数共存）②批量回调第二参 `onClick(ids, values)` = 勾选条目行内值（只读勾选，未填 → null）③读取接口选定形态 = `opts.onSubmit(selectedIds, values)`（全部行内值，含未勾选条目）④计数联动隔离（控件值变化不干扰）⑤行内值渲染一律 esc 零注入面。守卫测试 +11 → 162/162 全绿。详见 §6.7 |
 
 ## 1. 目录结构
 
@@ -160,7 +161,7 @@ actionBar(p, extra?, opts?) → HTML
 | 组件 | 签名 | 语义 |
 |---|---|---|
 | `formPrompt(fields, template)` | fields[] + prompt 模板→HTML | **P0**：用户填参数表单（#122 拍板：页内表单+实时预览+空值拦截，禁系统弹窗）。fields: [{key,label,type:'text'\|'number'\|'select',options?,default?,placeholder?}]；生成表单+实时预览+空值拦截+复制按钮 |
-| `selectList(items, batchActions?, opts?)` | items[] → HTML | **P0**：勾选列表+批量操作+「本组已选 x/y」计数联动（2026-08-11 手机端拍板：文本不省略/批量进内容区/计数联动/激活色随语义）。支持单选行操作+全选 |
+| `selectList(items, batchActions?, opts?)` | items[] → HTML | **P0**：勾选列表+批量操作+「本组已选 x/y」计数联动（2026-08-11 手机端拍板：文本不省略/批量进内容区/计数联动/激活色随语义）。支持单选行操作+全选。**v1.9（#327）**：items[].widget 行内控件（date/text/select）+ 读取接口 opts.onSubmit —— 详见 §6.7 |
 | `confirm({title, detail?, danger?, onOk})` | 配置→对话框 | **P0**：危险操作二次确认。danger=true 红按钮+警示文案；点确认→onOk()，取消/遮罩→关闭 |
 | `foldBox(title, contentHtml)` | 字符串→HTML | **P1**：折叠区（查看详情/原始数据），默认折叠，展开动画统一 |
 | `statusBadge(status, text?)` | 'ok'\|'warn'\|'danger'\|'empty'→HTML | **P1**：状态徽章（语义色统一）。**v1.4 加固**：非法/未知 status 值白名单降级 `empty`（防无样式徽章）；text 缺省用语义默认（成功/警告/失败/无数据）；text 经 esc 防 XSS | 
@@ -216,6 +217,45 @@ charts.gauge(el, pct[, opt])        // 仪表盘（v1.6 新增）
 | `sparkline` | 迷你趋势卡（无坐标轴 + 首尾值 + 涨绿跌红） | 概览页每个分类一个小趋势 |
 | `gauge` | 弧形进度 + 目标刻度 | 单指标达成（今日目标 80%） |
 
+### 6.7 selectList 行内控件（v1.9 · #327）
+
+**一句话**：items 条目可声明一个行内输入控件，与勾选行/批量操作/计数联动共存；批量回调与 `opts.onSubmit` 可读取行内输入值。**非破坏性**：未声明 `widget` 的既有调用渲染输出与行为完全不变（守卫测试逐字节回归 outerHTML）。
+
+**widget 字段（items[].widget，新可选）**：
+
+```js
+items: [{
+  id, title, sub?, group?,
+  widget?: {                       // v1.9 · 单条目最多 1 个
+    type: 'date' | 'text' | 'select',
+    key:  '读取时使用的字段键',     // 缺省 'w'+行号
+    label?: '控件标题',             // esc
+    placeholder?: '占位提示',       // text/date 用, esc
+    options?: [ '原始值' | { value, label } ]   // select 用; 缺省渲染「请选择」占位
+  }
+}]
+```
+
+- **宽容渲染（不报错）**：非法 `type` 降级 `text`；`key` 缺省 `'w'+行号`；`options` 元素可为字符串（value=label）或 `{value,label}` 对象
+- **共存**：控件渲染在行内（`.sl-widget`），勾选/批量/计数全部照常；**计数联动只随勾选态，控件值变化不干扰**「本组已选 x/y」
+- **安全**：label/placeholder/option value+label 渲染一律 `esc`，零注入面
+
+**读取接口（v1.9 选定形态 = `opts.onSubmit` 等价形式，非返回对象）**：
+
+```js
+selectList(items, batchActions?, {
+  onSubmit(selectedIds, values){}   // 读取接口
+})
+```
+
+- **触发时机**：任意批量操作按钮点击后触发（与按钮自身 `onClick` 并列调用；无勾选时与既有拦截一致，不触发）
+- **`values` = 全部行内值**：`{ [id]: { [key]: value } }`——含**未勾选条目**；无 widget 条目不出现；**未填统一归一 `null`**（date/text 空输入、select 占位项）
+- **id 统一字符串键**（与勾选 idList 一致，来自 DOM `data-id`）
+
+**批量回调增强**：`batchActions[].onClick(ids, values)` 第二参 `values` = **勾选条目对应**的行内值 `{ [id]: { [key]: value } }`（只读勾选条目；未填 → null 不报错；未勾选条目不参与）。旧回调只取第一参，零影响。
+
+**样式**：`.sl-widget*` 走 token A 组（base.css v1.9），技能零样式副本。
+
 ## 7. 注入器接口（v1.3）
 
 ```bash
@@ -231,7 +271,7 @@ python injector.py <模板.html> --payload <数据.json> [--output <输出.html>
 
 ## 8. 版本与变更机制
 
-- Base 资产带版本号（当前 v1.3），变更记入 `CHANGELOG.md`
+- Base 资产带版本号（当前 v1.9），变更记入 `CHANGELOG.md`
 - **签名变更 = 破坏性变更**：必须全技能同步 + 一次性完成 + 变更记录；不允许「新签名 + 旧签名并存」跨版本漂移
 - 非破坏性变更（内部实现/样式细节）：可独立发布，CHANGELOG 记录
 - 任何变更先开公共层 ISSUE（总纲 09 §92），review 后实施

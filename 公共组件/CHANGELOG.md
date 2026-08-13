@@ -2,6 +2,18 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.9（2026-08-13 · selectList 行内控件 · #327）
+
+**selectList 行内输入控件**（非破坏性 · 签名零变更 · 新增可选能力; 备忘录 3 向导页自研勾选行退役的前置 Base 能力）。
+
+- **items[].widget 新可选字段**: `{type:'date'|'text'|'select', key, label?, placeholder?, options?}` —— 行内控件与勾选/批量/计数共存（单条目一格; 非法 type 降级 text, key 缺省 'w'+行号, options 元素可为字符串或 {value,label}）
+- **读取接口（选定形态 = opts.onSubmit 等价形式, 非返回对象）**: 任意批量操作点击后触发 `opts.onSubmit(selectedIds, values)`（与 onClick 并列; 无勾选不触发, 与既有拦截一致）; `values` = 全部行内值 `{[id]:{[key]:value}}`（含未勾选条目, 无 widget 条目不出现）; 未填统一归一 `null`
+- **批量回调增强**: `onClick(ids, values)` 第二参 = 勾选条目对应的行内值（只读勾选; 未填 → null 不报错; 未勾选条目不参与）——旧回调只取第一参, 零影响
+- **计数联动隔离**: 控件值变化不干扰「本组已选 x/y」（update 只数勾选态）
+- **零注入面**: 行内 label/placeholder/option value+label 渲染一律 esc; 样式走 token A 组（base.css `.sl-widget*`）
+- **向后兼容**: 未声明 widget 的既有调用渲染输出逐字节不变（守卫测试 outerHTML 回归断言）
+- 契约 §6.3 条目更新 + 新增 §6.7 + CHANGELOG 同步; 守卫测试 +11（三种控件渲染/onSubmit 全量读取/批量勾选读取/未填 null/计数隔离/点击不勾选/无 widget 逐字节回归/转义/非法 type 降级/无勾选拦截）→ 162/162 全绿
+
 ## v1.8.1（2026-08-13 · 测试卫生修复 · #325）
 
 **test_help_template 缺省落盘残留修复**（非资产变更 · 纯测试 + 忽略规则;Base 资产/契约签名零改动）。

@@ -6,7 +6,7 @@
 - buildDataText: text/json/csv 三种 format; 脱敏行; 头部/摘要/分节输出
 - buildLogText: 6 段结构; 缺省字段兜底
 - toast 增强: 徽章/操作/计数/队列/向后兼容
-- 新控件: formPrompt（预览+空值拦截）/ selectList（计数联动）/ confirm / foldBox / statusBadge / emptyState / errorReceipt
+- 新控件: formPrompt（预览+空值拦截）/ selectList（计数联动 + v1.9 行内控件）/ confirm / foldBox / statusBadge / emptyState / errorReceipt
 """
 import json
 import pathlib
@@ -314,6 +314,221 @@ def test_select_list_count(page):
     assert '已选 2/3' in count
     group = page.evaluate("document.querySelector('.sl-group-count')?.textContent")
     assert '本组已选 2/2' in group
+
+
+# ── selectList 行内控件（v1.9 · #327）──────────────────────
+
+def test_select_list_widget_text_renders(page):
+    """text 控件: 输入框 + label + placeholder 渲染, 与勾选行共存"""
+    page.evaluate("""
+      document.getElementById('root').innerHTML = window.selectList(
+        [{id:'a',title:'牛奶',widget:{type:'text',key:'qty',label:'数量',placeholder:'如 2 瓶'}}],
+        [{label:'确认',kind:'ok',onClick:function(){}}]
+      );
+    """)
+    page.wait_for_timeout(100)
+    typ = page.evaluate("document.querySelector('.sl-widget-input').type")
+    label = page.evaluate("document.querySelector('.sl-widget-label')?.textContent")
+    ph = page.evaluate("document.querySelector('.sl-widget-input').placeholder")
+    title = page.evaluate("document.querySelector('.sl-item-title')?.textContent")
+    cb = page.evaluate("document.querySelector('.sl-item input[type=checkbox]') !== null")
+    assert typ == 'text' and label == '数量' and ph == '如 2 瓶'
+    assert title == '牛奶' and cb is True  # 与勾选行共存
+
+
+def test_select_list_widget_date_renders(page):
+    """date 控件: type=date 输入框"""
+    page.evaluate("""
+      document.getElementById('root').innerHTML = window.selectList(
+        [{id:'a',title:'换分类',widget:{type:'date',key:'date',label:'日期'}}]
+      );
+    """)
+    page.wait_for_timeout(100)
+    typ = page.evaluate("document.querySelector('.sl-widget-input').type")
+    assert typ == 'date'
+
+
+def test_select_list_widget_select_renders(page):
+    """select 控件: options 渲染（value+label 分离）"""
+    page.evaluate("""
+      document.getElementById('root').innerHTML = window.selectList(
+        [{id:'a',title:'分类',widget:{type:'select',key:'cat',label:'新分类',
+          options:[{value:'食',label:'食品'},{value:'用',label:'日用'}]}}]
+      );
+    """)
+    page.wait_for_timeout(100)
+    opts = page.evaluate("[...document.querySelectorAll('.sl-widget-input option')].map(o => o.value + ':' + o.textContent)")
+    assert opts == ['食:食品', '用:日用']
+    sel = page.evaluate("document.querySelector('.sl-widget-input').selectedIndex")
+    assert sel == 0  # 默认选第一项
+
+
+def test_select_list_on_submit_reads_all_values(page):
+    """读取接口 opts.onSubmit: 全部行内值（含未勾选条目）, 未填 → null"""
+    page.evaluate("""
+      window.__sub = null;
+      document.getElementById('root').innerHTML = window.selectList(
+        [
+          {id:'a',title:'牛奶',widget:{type:'text',key:'qty'}},
+          {id:'b',title:'面包',widget:{type:'select',key:'cat',options:['冷藏','常温']}},
+          {id:'c',title:'苹果',widget:{type:'date',key:'day'}}
+        ],
+        [{label:'确认',kind:'ok',onClick:function(){}}],
+        {onSubmit:function(ids, values){window.__sub = {ids: ids, values: values};}}
+      );
+    """)
+    page.wait_for_timeout(100)
+    page.check('.sl-item input[data-id="a"]')
+    page.check('.sl-item input[data-id="c"]')
+    page.fill('label.sl-item:has(input[data-id="a"]) .sl-widget-input', '2')
+    page.select_option('label.sl-item:has(input[data-id="b"]) .sl-widget-input', '常温')
+    page.click('[data-batch="确认"]')
+    page.wait_for_timeout(50)
+    sub = page.evaluate('window.__sub')
+    assert sub['ids'] == ['a', 'c']                  # 勾选 a、c
+    assert sub['values']['a'] == {'qty': '2'}        # 已填
+    assert sub['values']['b'] == {'cat': '常温'}     # 未勾选条目也在全部值里
+    assert sub['values']['c'] == {'day': None}       # 未填 → null
+
+
+def test_select_list_batch_onclick_reads_checked_values(page):
+    """批量回调第二参 = 勾选条目行内值（只读勾选; 未勾选不参与; 未填 → null 不报错）"""
+    page.evaluate("""
+      window.__cb = null;
+      document.getElementById('root').innerHTML = window.selectList(
+        [
+          {id:'a',title:'牛奶',widget:{type:'text',key:'qty'}},
+          {id:'b',title:'面包',widget:{type:'select',key:'cat',options:['冷藏','常温']}},
+          {id:'c',title:'苹果',widget:{type:'date',key:'day'}}
+        ],
+        [{label:'确认',kind:'ok',onClick:function(ids, values){window.__cb = {ids: ids, values: values};}}]
+      );
+    """)
+    page.wait_for_timeout(100)
+    page.check('.sl-item input[data-id="a"]')
+    page.check('.sl-item input[data-id="b"]')
+    page.fill('label.sl-item:has(input[data-id="a"]) .sl-widget-input', '2')
+    page.click('[data-batch="确认"]')
+    page.wait_for_timeout(50)
+    cb = page.evaluate('window.__cb')
+    assert cb['ids'] == ['a', 'b']
+    assert cb['values']['a'] == {'qty': '2'}
+    assert cb['values']['b'] == {'cat': '冷藏'}      # 勾选条目含 select 默认值
+    assert 'c' not in cb['values']                   # 未勾选条目不参与批量回调
+
+
+def test_select_list_widget_change_not_affect_count(page):
+    """控件值变化不干扰计数联动（#327: 计数只随勾选态）"""
+    page.evaluate("""
+      document.getElementById('root').innerHTML = window.selectList(
+        [{id:'a',title:'牛奶',widget:{type:'text',key:'qty'}},
+         {id:'b',title:'面包',widget:{type:'text',key:'qty'}}],
+        [{label:'确认',kind:'ok',onClick:function(){}}]
+      );
+    """)
+    page.wait_for_timeout(100)
+    page.check('.sl-item input[data-id="a"]')
+    page.wait_for_timeout(50)
+    assert '已选 1/2' in page.evaluate("document.querySelector('.sl-count')?.textContent")
+    page.fill('label.sl-item:has(input[data-id="b"]) .sl-widget-input', 'x')
+    page.wait_for_timeout(50)
+    assert '已选 1/2' in page.evaluate("document.querySelector('.sl-count')?.textContent")
+    page.uncheck('.sl-item input[data-id="a"]')
+    page.wait_for_timeout(50)
+    assert '已选 0/2' in page.evaluate("document.querySelector('.sl-count')?.textContent")
+
+
+def test_select_list_widget_input_click_not_toggle(page):
+    """点击行内输入框不切换勾选态（label 激活只作用于非交互区）"""
+    page.evaluate("""
+      document.getElementById('root').innerHTML = window.selectList(
+        [{id:'a',title:'牛奶',widget:{type:'text',key:'qty'}}]
+      );
+    """)
+    page.wait_for_timeout(100)
+    page.click('label.sl-item:has(input[data-id="a"]) .sl-widget-input')
+    page.wait_for_timeout(50)
+    checked = page.evaluate("document.querySelector('.sl-item input[data-id=\"a\"]').checked")
+    assert checked is False
+
+
+def test_select_list_no_widget_backward_compat(page):
+    """未声明 widget: 行渲染逐字节不变 + 批量回调照旧（守卫回归）"""
+    page.evaluate("""
+      window.__ids = null;
+      document.getElementById('root').innerHTML = window.selectList(
+        [{id:'1',title:'牛奶',sub:'2 瓶',group:'冷藏'},{id:'2',title:'面包',group:'冷藏'}],
+        [{label:'全带走',kind:'ok',onClick:function(ids){window.__ids = ids;}}]
+      );
+    """)
+    page.wait_for_timeout(100)
+    row = page.evaluate("document.querySelector('.sl-group-items .sl-item').outerHTML")
+    assert row == ('<label class="sl-item"><input type="checkbox" data-id="1" data-g="冷藏">'
+                   '<span class="sl-item-body"><span class="sl-item-title">牛奶</span>'
+                   '<span class="sl-item-sub">2 瓶</span></span></label>')
+    assert page.evaluate("document.querySelectorAll('.sl-widget').length") == 0
+    page.check('.sl-item input[data-id="1"]')
+    page.click('[data-batch="全带走"]')
+    page.wait_for_timeout(50)
+    assert page.evaluate('window.__ids') == ['1']  # 第一参照旧
+
+
+def test_select_list_widget_esc_anti_xss(page):
+    """行内控件 label/placeholder/option value+label 一律 esc, 零注入面（#327）"""
+    page.evaluate("""
+      document.getElementById('root').innerHTML = window.selectList(
+        [{id:'a',title:'x',
+          widget:{type:'select',key:'cat',label:'<img src=x onerror=alert(1)>',
+                  placeholder:'<script>1</script>',
+                  options:[{value:'<img src=x onerror=alert(1)>',label:'<script>alert(2)</script>'}]}},
+         {id:'b',title:'y',widget:{type:'text',key:'q',placeholder:'<img src=x onerror=alert(3)>'}}]
+      );
+    """)
+    page.wait_for_timeout(100)
+    img = page.evaluate("document.querySelector('.sl img') !== null")
+    script = page.evaluate("document.querySelector('.sl script') !== null")
+    raw = page.evaluate("document.getElementById('root').innerHTML")
+    assert img is False and script is False
+    assert '&lt;img' in raw and '&lt;script' in raw and '<img src' not in raw
+
+
+def test_select_list_widget_invalid_type_degrades_text(page):
+    """非法 widget.type 降级 text（宽容渲染, 不报错）; key 缺省 'w'+行号"""
+    page.evaluate("""
+      window.__sub = null;
+      document.getElementById('root').innerHTML = window.selectList(
+        [{id:'a',title:'x',widget:{type:'color',key:'c'}}],
+        [{label:'确认',kind:'ok',onClick:function(){}}],
+        {onSubmit:function(ids, values){window.__sub = values;}}
+      );
+    """)
+    page.wait_for_timeout(100)
+    typ = page.evaluate("document.querySelector('.sl-widget-input').type")
+    assert typ == 'text'
+    page.check('.sl-item input[data-id="a"]')
+    page.fill('label.sl-item:has(input[data-id="a"]) .sl-widget-input', '7')
+    page.click('[data-batch="确认"]')
+    page.wait_for_timeout(50)
+    assert page.evaluate('window.__sub') == {'a': {'c': '7'}}
+
+
+def test_select_list_on_submit_requires_checked(page):
+    """无勾选点击批量 → 提示 toast, onSubmit 不触发（与既有拦截一致）"""
+    _clear_toasts(page)
+    page.evaluate("""
+      window.__sub = 0;
+      document.getElementById('root').innerHTML = window.selectList(
+        [{id:'a',title:'x',widget:{type:'text',key:'qty'}}],
+        [{label:'确认',kind:'ok',onClick:function(){}}],
+        {onSubmit:function(){window.__sub = 1;}}
+      );
+    """)
+    page.wait_for_timeout(100)
+    page.click('[data-batch="确认"]')
+    page.wait_for_timeout(80)
+    assert page.evaluate('window.__sub') == 0
+    title = page.evaluate("document.querySelector('.hm-toast .hm-toast-title')?.textContent")
+    assert title == '请先勾选'
 
 
 def test_confirm_dialog(page):

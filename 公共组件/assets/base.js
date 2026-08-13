@@ -384,10 +384,20 @@ function formPrompt(fields, template){
   return html;
 }
 
-/* ── selectList（P0 · 勾选列表 + 批量操作 + 计数联动）──
+/* ── selectList（P0 · 勾选列表 + 批量操作 + 计数联动 + 行内控件 v1.9）──
  * selectList(items, batchActions?, opts?)
- * items: [{ id, title, sub?, group? }]
- * batchActions: [{ label, kind:'ok'|'danger', onClick(ids) }]
+ * items: [{ id, title, sub?, group?, widget? }]
+ *   widget（v1.9 · #327）: { type:'date'|'text'|'select', key, label?, placeholder?, options? }
+ *     - options: [ {value,label} | '原始值' ]（select 用; 缺省渲染占位「请选择」）
+ *     - 非法 type 降级 text（宽容渲染, 不报错）; key 缺省 'w'+行号
+ * batchActions: [{ label, kind:'ok'|'danger', onClick(ids, values?) }]
+ *   - v1.9: onClick 第二参 values = 勾选条目对应的行内值 { [id]: { [key]: value } }
+ *     （只读勾选条目; 未填 → null, 不报错; 未勾选条目不参与）
+ * opts: { onSubmit(selectedIds, values) }  —— v1.9 读取接口（选定形态, 等价 getValues）
+ *   - 任意批量操作按钮点击后触发（与 onClick 并列; 无勾选时不触发, 与既有拦截一致）
+ *   - values = 全部行内值 { [id]: { [key]: value } }（含未勾选条目; 未填 → null; 无 widget 条目不出现）
+ * 安全: 行内 label/placeholder/option value+label 渲染一律 esc, 零注入面
+ * 兼容: 未声明 widget 的既有调用渲染输出与行为完全不变（守卫测试回归 outerHTML）
  */
 function selectList(items, batchActions, opts){
   items = arr(items);
@@ -400,6 +410,33 @@ function selectList(items, batchActions, opts){
     (groups[g] = groups[g] || []).push(it);
   });
   var groupNames = Object.keys(groups);
+
+  /* 行内控件 HTML（v1.9 · #327）: 未声明 widget → 空串, 渲染零变化 */
+  function widgetHtml(it, idx){
+    var w = it.widget;
+    if(!w || typeof w !== 'object') return '';
+    var t = w.type === 'date' ? 'date' : (w.type === 'select' ? 'select' : 'text');  // 非法 type 降级 text
+    var key = w.key != null ? String(w.key) : ('w' + idx);
+    var lbl = w.label ? '<span class="sl-widget-label">'+esc(w.label)+'</span>' : '';
+    var inner;
+    if(t === 'select'){
+      inner = '<select class="sl-widget-input" data-wkey="'+esc(key)+'">';
+      var os = arr(w.options);
+      if(!os.length) inner += '<option value="">请选择</option>';
+      os.forEach(function(o){
+        var ov = (o && typeof o === 'object') ? (o.value != null ? o.value : o.label) : o;
+        var ol = (o && typeof o === 'object') ? (o.label != null ? o.label : o.value) : o;
+        inner += '<option value="'+esc(String(ov == null ? '' : ov))+'">'+esc(String(ol == null ? '' : ol))+'</option>';
+      });
+      inner += '</select>';
+    } else {
+      inner = '<input class="sl-widget-input" data-wkey="'+esc(key)+'" type="'+t+'"'
+        + (w.placeholder ? ' placeholder="'+esc(w.placeholder)+'"' : '')
+        + '>';
+    }
+    return '<span class="sl-widget">'+lbl+inner+'</span>';
+  }
+
   var html = '<div class="sl" id="'+uid+'">';
   if(batchActions.length){
     html += '<div class="sl-batchbar" id="'+uid+'-batch">';
@@ -418,6 +455,7 @@ function selectList(items, batchActions, opts){
       html += '<label class="sl-item"><input type="checkbox" data-id="'+esc(it.id)+'" data-g="'+esc(g)+'">'
         + '<span class="sl-item-body"><span class="sl-item-title">'+esc(it.title)+'</span>'
         + (it.sub?'<span class="sl-item-sub">'+esc(it.sub)+'</span>':'')
+        + widgetHtml(it, idx)
         + '</span></label>';
     });
     html += '</div></div>';
@@ -443,13 +481,46 @@ function selectList(items, batchActions, opts){
     checkboxes.forEach(function(cb){
       cb.addEventListener('change', update);
     });
+    /* 行内值读取（v1.9 · #327）: 计数只随勾选态, 控件值变化不干扰 */
+    function widgetVal(el){
+      var v = el.value;
+      return (v === '' || v === null || v === undefined) ? null : v;  // 未填统一归一 null
+    }
+    function readAll(){
+      var out = {};
+      root.querySelectorAll('.sl-item').forEach(function(itemEl){
+        var cb = itemEl.querySelector('input[type="checkbox"]');
+        var id = cb ? cb.getAttribute('data-id') : null;
+        if(id == null) return;
+        itemEl.querySelectorAll('.sl-widget-input').forEach(function(el){
+          var key = el.getAttribute('data-wkey');
+          if(key == null) return;
+          (out[id] = out[id] || {})[key] = widgetVal(el);
+        });
+      });
+      return out;
+    }
+    function readChecked(){
+      var out = {};
+      root.querySelectorAll('input[type="checkbox"]:checked').forEach(function(cb){
+        var id = cb.getAttribute('data-id');
+        var itemEl = cb.closest('.sl-item');
+        itemEl.querySelectorAll('.sl-widget-input').forEach(function(el){
+          var key = el.getAttribute('data-wkey');
+          if(key == null) return;
+          (out[id] = out[id] || {})[key] = widgetVal(el);
+        });
+      });
+      return out;
+    }
     root.querySelectorAll('[data-batch]').forEach(function(btn){
       btn.addEventListener('click', function(){
         var ids = root.querySelectorAll('input[type="checkbox"]:checked');
         if(!ids.length){ toast('请先勾选','勾选要处理的条目',{badge:{text:'提示',type:'warn'}}); return; }
         var idList = Array.prototype.map.call(ids, function(x){ return x.getAttribute('data-id'); });
         var a = batchActions.filter(function(x){ return x.label === btn.getAttribute('data-batch'); })[0];
-        if(a && a.onClick) a.onClick(idList);
+        if(a && a.onClick) a.onClick(idList, readChecked());  // v1.9: 第二参 = 勾选条目行内值
+        if(opts.onSubmit) opts.onSubmit(idList, readAll());   // v1.9: 读取接口 = 全部行内值
       });
     });
     update();

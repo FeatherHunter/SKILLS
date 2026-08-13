@@ -402,8 +402,9 @@ window.charts={
     if(opt.animation){
       var rings=el.querySelectorAll('.hm-c-donut svg circle[stroke-dashoffset]');
       rings.forEach(function(cr){
-        /* #302 修复:动画目标从 data-dash 取(初始 dasharray 首项恒为 0, 直接 split 会把所有段目标设成 0 = 完整圆覆盖, 显示为最后一段颜色) */
-        var target=cr.getAttribute('data-dash')||cr.getAttribute('stroke-dasharray').split(' ')[0];
+        /* #326 修复 v2:动画目标 = 双值 "dash (c-dash)"(单值 dasharray = dash/gap 交替重复, 每段绕圈多周; 首项 split 取初值 0 = 完整圆覆盖) */
+        var dashTarget=Number(cr.getAttribute('data-dash'))||0;
+        var target=dashTarget+' '+(c-dashTarget);
         (function(c,t){requestAnimationFrame(function(){requestAnimationFrame(function(){c.style.transition='stroke-dasharray 0.8s cubic-bezier(.22,1,.36,1)';c.setAttribute('stroke-dasharray',t);});});})(cr,target);
       });
     }

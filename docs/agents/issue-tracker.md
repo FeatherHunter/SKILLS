@@ -1,4 +1,4 @@
-﻿# 问题追踪：GitHub Issues
+# 问题追踪：GitHub Issues
 
 本仓库的问题（issue）与规格（PRD）统一发布到 GitHub Issues（`FeatherHunter/SKILLS`），通过 `gh` CLI 读写。各技能共享同一份 issue 列表，靠**标题前缀 + label 命名空间**做分区。
 
@@ -18,7 +18,7 @@
 
 ### Label 命名空间
 
-- 技能分区：`skill:备忘录` / `skill:卡路里` / `skill:居家管家` / `skill:饼干记账` / `skill:智剪工坊` / `skill:作息管家` / `skill:总纲` / `skill:私家大厨` / `skill:学习系统` / `skill:面试系统`(2026-08-03 配色统一 + 新增 3 个技能 label)
+- 技能分区：`skill:备忘录` / `skill:卡路里` / `skill:居家管家` / `skill:饼干记账` / `skill:智剪工坊` / `skill:作息管家` / `skill:总纲` / `skill:私家大厨` / `skill:学习系统` / `skill:面试系统`(2026-08-03 配色统一 + 新增 3 个技能 label) / `skill:公共组件`(Base Skill 跨技能公共层, 2026-08-13 补登记)
 - 分类：`bug` / `enhancement`
 - 状态：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`
 - 自定义（如跨技能主题）：`cross-skill` / `docs` / `infra`

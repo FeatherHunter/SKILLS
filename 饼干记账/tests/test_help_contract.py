@@ -140,7 +140,8 @@ class TestRenderedPayload:
 
     def test_top_level_fields(self, payload):
         assert payload["skill_name"] == "饼干记账"
-        assert payload["title"] == "使用手册(HELP)"
+        # 大标题含技能名(#303 验收反馈)
+        assert payload["title"] == "饼干记账 · 使用手册(HELP)"
         assert payload["version"] == "2.0"
         assert "7 功能域" in payload["subtitle"] and "71 场景" in payload["subtitle"]
 

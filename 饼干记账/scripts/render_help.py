@@ -195,7 +195,8 @@ def build_help_contract(summary: dict, *, initialized: bool | None = None,
                     f"版本 {version} · 更新于 {ts}")
     contract = {
         "skill_name": "饼干记账",
-        "title": "使用手册(HELP)",
+        # 大标题含技能名(验收反馈 #303:技能名应在大字行;eyebrow 小字仍显示技能名,9px 可接受)
+        "title": "饼干记账 · 使用手册(HELP)",
         "subtitle": summary_line,
         "meta_blocks": [
             {"id": "help_summary", "title": "HELP 汇总", "html": f"<p>{summary_line}</p>"},

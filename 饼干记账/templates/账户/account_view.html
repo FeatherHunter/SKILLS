@@ -32,7 +32,6 @@
   .card { background: var(--card); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 14px; box-shadow: var(--shadow); }
   .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   .section-title .count { font-size: 13px; font-weight: 500; color: var(--fg3); margin-left: auto; }
-  .empty { color: var(--fg3); font-size: 14px; text-align: center; padding: 24px 0; }
 
   /* KPI Grid */
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
@@ -55,9 +54,7 @@
   .acct-card .head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
   .acct-card .name { font-size: 16px; font-weight: 700; }
   .acct-card .type { font-size: 11.5px; color: var(--fg3); background: var(--bg); padding: 2px 8px; border-radius: 999px; }
-  .badge { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; }
-  .badge.off { background: rgba(0,0,0,.06); color: var(--fg2); }
-  .badge.new { background: rgba(255,149,0,.14); color: var(--orange); }
+  /* #301 状态层统一:状态徽章/错误/空态 = Base statusBadge/errorReceipt/emptyState 控件(样式由公共组件决定) */
   .acct-card .balance { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; margin-bottom: 8px; }
   .acct-card .balance.neg { color: var(--red); }
   .acct-card .balance.pos { color: var(--green); }
@@ -82,9 +79,6 @@
   .footer code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--fg2); }
 
   /* Error / Offline */
-  .error-card { background: rgba(255,59,48,.08); border: 1px solid rgba(255,59,48,.2); border-radius: var(--radius); padding: 24px; text-align: center; }
-  .error-card h3 { color: var(--red); margin-bottom: 8px; font-size: 18px; }
-  .error-card p { color: var(--fg2); font-size: 14px; }
 
   /* #300 Base 统一:复制数据/日志 = actionBar 控件(样式由公共组件决定) */
 
@@ -144,7 +138,6 @@
     }
     if (payload.status === 'error') {
       renderError(payload.message || '查询失败');
-      renderActionBar(payload);
       return;
     }
     const data = payload.data || {};
@@ -174,13 +167,17 @@
     `;
   }
 
+  // #301 状态层统一:错误回执 = Base errorReceipt 控件(修正重试/复制数据/日志由公共组件决定)
   function renderError(msg) {
-    $('#app').innerHTML = `
-      <div class="error-card">
-        <h3>⚠️ 出错了</h3>
-        <p>${escapeHTML(msg)}</p>
-      </div>
-    `;
+    const raw = document.getElementById('payload').textContent;
+    let p = null;
+    try { p = JSON.parse(raw); } catch (e) { p = null; }
+    $('#app').innerHTML = window.errorReceipt({
+      message: msg,
+      data: raw,
+      log: '渲染错误: ' + msg + ' · 原始 payload 见「复制数据」',
+      payload: p,
+    });
   }
 
   function renderBody(data) {
@@ -189,7 +186,7 @@
     const flows = data.flows || [];
 
     if (!cards.length) {
-      $('#app').innerHTML = '<div class="card empty">账户表为空 · 先用「新增账户」登记账户,或用「记支出/记收入」产生流水后回来看汇总</div>';
+      $('#app').innerHTML = window.emptyState({icon:'💳', text:'账户表为空', hint:'先用「新增账户」登记账户,或用「记支出/记收入」产生流水后回来看汇总'});
       return;
     }
 
@@ -237,8 +234,8 @@
   function acctCard(a) {
     const cls = a.disabled ? ' disabled' : (a.registered === false ? ' unregistered' : '');
     const badges = [];
-    if (a.disabled) badges.push('<span class="badge off">已停用</span>');
-    if (a.registered === false) badges.push('<span class="badge new">未登记</span>');
+    if (a.disabled) badges.push(window.statusBadge('danger', '已停用'));
+    if (a.registered === false) badges.push(window.statusBadge('warn', '未登记'));
     const balCls = a.balance < 0 ? 'neg' : (a.balance > 0 ? 'pos' : '');
     return `
       <div class="acct-card${cls}">

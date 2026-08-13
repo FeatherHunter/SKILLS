@@ -335,3 +335,58 @@ class TestBomAfterInjection:
         out = tmp_path / "x.html"
         write_html("<html>测试</html>", out)
         assert out.read_bytes()[:3] == b"\xef\xbb\xbf"
+
+
+# ── 8. #301 状态层:自研状态样式零残留 + Base 三控件接入 ──────────────────────
+
+SELF_MADE_STATE_MARKERS = (
+    'class="error-card"', 'class="card empty"', 'class="empty"',
+    "status-chip", 'class="badge', 'class="chip warn"', 'class="chip done"', 'class="chip active"',
+    "empty-cand",
+)
+
+
+class TestStateLayer:
+    """#301 task ② 守卫:状态层统一走 Base 三控件(emptyState/errorReceipt/statusBadge)
+
+    对应 08 §6.1 三层反馈 + 空态 + 状态徽章:技能零自研状态样式副本。
+    """
+
+    @pytest.mark.parametrize("rel", BUSINESS_TEMPLATES)
+    def test_no_self_made_state_markers(self, rel):
+        """24 模板无自研状态样式残留(防漏迁/防回退)"""
+        text = _template_text(rel)
+        for marker in SELF_MADE_STATE_MARKERS:
+            assert marker not in text, f"{rel} 仍有自研状态样式残留: {marker}"
+
+    @pytest.mark.parametrize("rel", BUSINESS_TEMPLATES)
+    def test_each_business_template_has_error_receipt(self, rel):
+        """每个业务模板接入 Base errorReceipt(08 §6.1:错误不静默,可读可行动可反馈)"""
+        text = _template_text(rel)
+        assert "errorReceipt" in text, f"{rel} 未接入 Base errorReceipt(错误回执必达)"
+
+    def test_view_templates_use_base_state_controls(self):
+        """视图模板(查询/分析/账户/目标)状态层三控件齐备"""
+        views = ("query_view.html", "分析/analysis_view.html", "账户/account_view.html",
+                 "目标/budget_view.html", "目标/saving_view.html")
+        for rel in views:
+            text = _template_text(rel)
+            assert "errorReceipt" in text, f"{rel} 缺 errorReceipt"
+            assert "emptyState" in text, f"{rel} 缺 emptyState"
+
+    def test_state_badges_use_base_status_badge(self):
+        """状态徽章统一走 Base statusBadge(分析 chip / 账户 badge / 目标 status-chip)"""
+        for rel in ("分析/analysis_view.html", "账户/account_view.html",
+                    "目标/budget_view.html", "目标/saving_view.html"):
+            text = _template_text(rel)
+            assert "statusBadge" in text, f"{rel} 未接入 Base statusBadge"
+
+    def test_error_envelope_injects_into_query_view(self, tmp_db_dir):
+        """错误信封 payload 注入 query_view:输出含错误状态 + errorReceipt 调用(管线可用)"""
+        from _base_render import error_envelope, inject_base
+        tmpl = _template_text("query_view.html")
+        p = error_envelope("测试错误: 数据库打不开")
+        html = inject_base(tmpl, p)
+        assert "errorReceipt" in html, "注入后错误回执 JS 应存在"
+        assert '"status": "error"' in html, "注入后 payload 应带 error 状态"
+        assert '"测试错误: 数据库打不开"' in html, "错误消息应进 payload(message)"

@@ -65,7 +65,7 @@
     <div class="chips" id="chips"></div>
   </header>
 
-  <main>
+  <main id="app">
     <!-- 智能预填来源标注(有则显示) -->
     <div class="prefill" id="prefillBox" hidden></div>
     <!-- 重复检测提示(有则显示) -->
@@ -117,8 +117,24 @@
 
   // ── 读取 payload ──
   var payload;
-  try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
-  if (!payload || payload.status !== 'ok') return;
+  try { payload = JSON.parse(document.getElementById('payload').textContent); }
+  catch (e) {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: '数据解析失败: ' + e.message,
+      data: document.getElementById('payload').textContent,
+      log: 'payload JSON 解析异常'
+    });
+    return;
+  }
+  if (!payload || payload.status !== 'ok') {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: (payload && payload.message) || '数据未注入(操作未执行)',
+      data: document.getElementById('payload').textContent,
+      log: (payload && payload.status) ? 'payload status = ' + payload.status : 'payload 为空',
+      payload: payload || undefined
+    });
+    return;
+  }
   var d = payload.data || {};
   var meta = d.meta || {};
   var form = d.form || {};

@@ -32,7 +32,6 @@
   .card { background: var(--card); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 14px; box-shadow: var(--shadow); }
   .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   .section-title .count { font-size: 13px; font-weight: 500; color: var(--fg3); margin-left: auto; }
-  .empty { color: var(--fg3); font-size: 14px; text-align: center; padding: 24px 0; }
 
   /* KPI Grid */
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
@@ -95,10 +94,7 @@
   .footer { text-align: center; color: var(--fg3); font-size: 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
   .footer code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--fg2); }
 
-  /* Error / Empty / Loading */
-  .error-card { background: rgba(255,59,48,.08); border: 1px solid rgba(255,59,48,.2); border-radius: var(--radius); padding: 24px; text-align: center; }
-  .error-card h3 { color: var(--red); margin-bottom: 8px; font-size: 18px; }
-  .error-card p { color: var(--fg2); font-size: 14px; }
+  /* #301 状态层统一:错误/空态 = Base errorReceipt/emptyState 控件(样式由公共组件决定) */
 
   /* 模板能力接口(08 §4 硬标准):复制数据/复制日志 = Base actionBar 控件(样式由公共组件决定) */
   .offline { background: #fff7e8; border: 1px solid #ffe3b3; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 14px; color: #b25b00; font-size: 13.5px; }
@@ -164,7 +160,6 @@
     }
     if (payload.status === 'error') {
       renderError(payload.message || '查询失败');
-      renderActionBar(payload);
       return;
     }
     const data = payload.data || {};
@@ -223,17 +218,17 @@
     `;
   }
 
+  // #301 状态层统一:错误回执 = Base errorReceipt 控件(修正重试/复制数据/日志由公共组件决定)
   function renderError(msg) {
-    $('#app').innerHTML = `
-      <div class="error-card">
-        <h3>⚠️ 出错了</h3>
-        <p>${escapeHTML(msg)}</p>
-      </div>
-    `;
-  }
-
-  function renderEmpty(text) {
-    $('#app').innerHTML = `<div class="card empty">${escapeHTML(text || '暂无数据')}</div>`;
+    const raw = document.getElementById('payload').textContent;
+    let p = null;
+    try { p = JSON.parse(raw); } catch (e) { p = null; }
+    $('#app').innerHTML = window.errorReceipt({
+      message: msg,
+      data: raw,
+      log: '渲染错误: ' + msg + ' · 原始 payload 见「复制数据」',
+      payload: p,
+    });
   }
 
   // ── #300 Base 统一:复制数据/复制日志 = actionBar 控件(样式/反馈由公共组件决定) ──
@@ -274,7 +269,7 @@
           <div class="section-title">当日明细 <span class="count">${records.length} 笔</span></div>
           ${recordsList(records)}
         </div>
-      ` : '<div class="card empty">今天还没有记录</div>'}
+      ` : window.emptyState({icon:'🍪', text:'今天还没有记录', hint:'说「记支出」记下今天的第一笔'})}
     `;
   }
 
@@ -303,7 +298,7 @@
         </div>
       ` : ''}
       <div class="card">
-        ${records.length ? recordsList(records) : '<div class="empty">没有匹配的记录</div>'}
+        ${records.length ? recordsList(records) : window.emptyState({icon:'🔍', text:'没有匹配的记录'})}
       </div>
     `;
   }
@@ -321,7 +316,7 @@
       </div>
       <div class="card">
         <div class="section-title">分类明细 <span class="count">${cats.length} 类</span></div>
-        ${cats.length ? cats.map((c, i) => categoryBar(c, max, PALETTE[i % PALETTE.length])).join('') : '<div class="empty">本月暂无分类数据</div>'}
+        ${cats.length ? cats.map((c, i) => categoryBar(c, max, PALETTE[i % PALETTE.length])).join('') : window.emptyState({text:'本月暂无分类数据'})}
       </div>
     `;
   }
@@ -368,7 +363,7 @@
           <div class="section-title">占比明细</div>
           ${cats.map((c, i) => categoryBar(c, max, PALETTE[i % PALETTE.length])).join('')}
         </div>
-      ` : '<div class="card empty">该期间暂无分类数据</div>'}
+      ` : window.emptyState({text:'该期间暂无分类数据'})}
     `;
     // 环形图 → Base CHARTS-HELPERS donut(#302 task ③ · 样式/图例由公共组件决定)
     const donutEl = mountChart('breakdownDonutMount');
@@ -388,7 +383,7 @@
         ${kpiCard('收入', fmtMoney(data.income), '元', 'green')}
         ${kpiCard('净额', fmtMoney(data.net), '元', data.net >= 0 ? 'green' : 'red')}
       </div>
-      <div class="card empty" style="margin-top:14px;">
+      <div class="card" style="margin-top:14px;color:var(--fg2);font-size:13.5px;">
         月份 ${escapeHTML(data.month || '-')} · 仅展示汇总数字
       </div>
     `;
@@ -417,7 +412,7 @@
         ${kpiCard('收入', fmtMoney(data.income), '元', 'green')}
       </div>
       <div class="card" style="margin-top:14px;">
-        ${records.length ? recordsList(records) : '<div class="empty">没有 #' + escapeHTML(data.tag || '') + ' 的记录</div>'}
+        ${records.length ? recordsList(records) : window.emptyState({text:'没有 #' + escapeHTML(data.tag || '') + ' 的记录'})}
       </div>
     `;
   }
@@ -447,7 +442,7 @@
             `).join('')}
           </div>
         </div>
-      ` : '<div class="card empty" style="margin-top:14px;">没有未还欠款 🎉</div>'}
+      ` : window.emptyState({icon:'🎉', text:'没有未还欠款', hint:'借出/借入都已结清'})}
     `;
   }
 
@@ -460,7 +455,7 @@
         ${kpiCard('笔数', data.count || 0, '笔', 'blue')}
       </div>
       <div class="card" style="margin-top:14px;">
-        ${records.length ? recordsList(records) : '<div class="empty">没有待报销记录 🎉</div>'}
+        ${records.length ? recordsList(records) : window.emptyState({icon:'🎉', text:'没有待报销记录'})}
       </div>
     `;
   }
@@ -481,7 +476,7 @@
             ${kpiCard('剩余金额', fmtMoney(g.remaining_amount), '元', 'red', 'compact')}
           </div>
         </div>
-      `).join('') : '<div class="card empty">没有进行中的分期</div>'}
+      `).join('') : window.emptyState({text:'没有进行中的分期'})}
       ${records.length ? `
         <div class="card">
           <div class="section-title">#分期 记录明细 <span class="count">${records.length} 笔</span></div>
@@ -535,7 +530,7 @@
         </div>
         <div class="amt ${(r.amount || 0) < 0 ? 'expense' : 'income'}">${(r.amount || 0) < 0 ? '-' : '+'}${fmtMoney(Math.abs(r.amount || 0))}</div>
       </div>
-    `).join('')}</div>${records.length > 200 ? `<div class="empty" style="margin-top:12px;">仅显示前 200 条 · 共 ${records.length} 条</div>` : ''}`;
+    `).join('')}</div>${records.length > 200 ? `<div style="margin-top:12px;font-size:12.5px;color:var(--fg3);text-align:center;">仅显示前 200 条 · 共 ${records.length} 条</div>` : ''}`;
   }
 
   // ── 组件：Base 图表挂载(#302 task ③ · 自绘 donutSVG 已换 CHARTS-HELPERS) ──

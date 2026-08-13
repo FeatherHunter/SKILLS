@@ -69,7 +69,7 @@
     <div class="chips" id="chips"></div>
   </header>
 
-  <main>
+  <main id="app">
     <!-- 联动预告(顺路提醒区:回执带联动按钮 · 可选) -->
     <div class="link-note">🔗 记账完成后,回执会带<b>「同时录入居家管家」</b>按钮 —— 点击复制联动指令,可把刚买的东西同步到居家管家(可选,只记账也 OK)。</div>
 
@@ -128,8 +128,24 @@
 
   // ── 读取 payload ──
   var payload;
-  try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
-  if (!payload || payload.status !== 'ok') return;
+  try { payload = JSON.parse(document.getElementById('payload').textContent); }
+  catch (e) {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: '数据解析失败: ' + e.message,
+      data: document.getElementById('payload').textContent,
+      log: 'payload JSON 解析异常'
+    });
+    return;
+  }
+  if (!payload || payload.status !== 'ok') {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: (payload && payload.message) || '数据未注入(操作未执行)',
+      data: document.getElementById('payload').textContent,
+      log: (payload && payload.status) ? 'payload status = ' + payload.status : 'payload 为空',
+      payload: payload || undefined
+    });
+    return;
+  }
   var d = payload.data || {};
   var meta = d.meta || {};
   var form = d.form || {};

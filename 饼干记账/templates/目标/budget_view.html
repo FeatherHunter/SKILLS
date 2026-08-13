@@ -30,7 +30,6 @@
   .card { background: var(--card); border-radius: var(--radius); padding: 20px 22px; margin-bottom: 14px; box-shadow: var(--shadow); }
   .section-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   .section-title .count { font-size: 13px; font-weight: 500; color: var(--fg3); margin-left: auto; }
-  .empty { color: var(--fg3); font-size: 14px; text-align: center; padding: 24px 0; }
 
   .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
   .kpi { background: var(--card); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
@@ -55,17 +54,13 @@
   .budget-bar .foot .over { color: var(--red); font-weight: 700; }
   .budget-bar .proj { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 12px; color: var(--fg2); display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
   .budget-bar .proj .over { color: var(--red); font-weight: 600; }
-  .status-chip { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; }
-  .status-chip.ok { background: rgba(52,199,89,.12); color: var(--green); }
-  .status-chip.warn { background: rgba(255,149,0,.14); color: var(--orange); }
-  .status-chip.over { background: rgba(255,59,48,.12); color: var(--red); }
+
+  /* #301 状态层统一:状态徽章 = Base statusBadge 控件(样式由公共组件决定) */
 
   .footer { text-align: center; color: var(--fg3); font-size: 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
   .footer code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--fg2); }
 
-  .error-card { background: rgba(255,59,48,.08); border: 1px solid rgba(255,59,48,.2); border-radius: var(--radius); padding: 24px; text-align: center; }
-  .error-card h3 { color: var(--red); margin-bottom: 8px; font-size: 18px; }
-  .error-card p { color: var(--fg2); font-size: 14px; }
+  /* #301 状态层统一:错误回执 = Base errorReceipt 控件(样式由公共组件决定) */
 
   /* #300 Base 统一:复制数据/日志 = Base actionBar 控件(样式由公共组件决定) */
 
@@ -125,7 +120,6 @@
     }
     if (payload.status === 'error') {
       renderError(payload.message || '查询失败');
-      renderActionBar(payload);
       return;
     }
     const data = payload.data || {};
@@ -161,13 +155,17 @@
     `;
   }
 
+  // #301 状态层统一:错误回执 = Base errorReceipt 控件(修正重试/复制数据/日志由公共组件决定)
   function renderError(msg) {
-    $('#app').innerHTML = `
-      <div class="error-card">
-        <h3>⚠️ 出错了</h3>
-        <p>${escapeHTML(msg)}</p>
-      </div>
-    `;
+    const raw = document.getElementById('payload').textContent;
+    let p = null;
+    try { p = JSON.parse(raw); } catch (e) { p = null; }
+    $('#app').innerHTML = window.errorReceipt({
+      message: msg,
+      data: raw,
+      log: '渲染错误: ' + msg + ' · 原始 payload 见「复制数据」',
+      payload: p,
+    });
   }
 
   // ── #300 Base 统一:复制数据/复制日志 = actionBar 控件 ──
@@ -202,7 +200,7 @@
           <div class="section-title">预算明细 <span class="count">${budgets.length} 项</span></div>
           ${budgets.map(b => budgetBar(b)).join('')}
         </div>
-      ` : '<div class="card empty" style="margin-top:14px;">' + escapeHTML(data.month || '') + ' 还没有设置预算,说「设定预算」即可开始</div>'}
+      ` : window.emptyState({icon:'🎯', text: escapeHTML(data.month || '') + ' 还没有设置预算', hint:'说「设定预算」即可开始'})}
     `;
   }
 
@@ -222,7 +220,7 @@
     return `
       <div class="budget-bar">
         <div class="head">
-          <span class="name">${escapeHTML(b.category_cn)} <span class="status-chip ${sm.cls}">${sm.label}</span></span>
+          <span class="name">${escapeHTML(b.category_cn)} ${window.statusBadge(b.status === 'over' ? 'danger' : (b.status === 'warn' ? 'warn' : 'ok'), sm.label)}</span>
           <span class="stats">已用 <b>${fmtMoney(b.actual)}</b> / ${fmtMoney(b.amount)} 元 · ${b.count} 笔</span>
         </div>
         <div class="track"><div class="fill" style="width:${pct}%;background:${sm.color}"></div></div>

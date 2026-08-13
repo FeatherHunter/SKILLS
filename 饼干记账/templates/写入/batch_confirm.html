@@ -50,7 +50,7 @@
     <div class="chips" id="chips"></div>
   </header>
 
-  <main>
+  <main id="app">
     <div class="card">
       <div class="hint" id="ledgerHint"></div>
       <div class="missing-banner" id="missingBanner">⚠️ <b>有条目缺金额</b> —— 标红行请补金额后再确认（AI 不会替你猜）。</div>
@@ -77,8 +77,24 @@
   var esc = function (s) { return String(s ?? '').replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); };
 
   var payload;
-  try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
-  if (!payload || payload.status !== 'ok') return;
+  try { payload = JSON.parse(document.getElementById('payload').textContent); }
+  catch (e) {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: '数据解析失败: ' + e.message,
+      data: document.getElementById('payload').textContent,
+      log: 'payload JSON 解析异常'
+    });
+    return;
+  }
+  if (!payload || payload.status !== 'ok') {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: (payload && payload.message) || '数据未注入(操作未执行)',
+      data: document.getElementById('payload').textContent,
+      log: (payload && payload.status) ? 'payload status = ' + payload.status : 'payload 为空',
+      payload: payload || undefined
+    });
+    return;
+  }
   var d = payload.data || {};
   var meta = d.meta || {};
   var form = d.form || {};

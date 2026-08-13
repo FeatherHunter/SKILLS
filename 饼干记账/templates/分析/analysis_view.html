@@ -96,11 +96,7 @@
   .fact-row .k { color: var(--fg2); }
   .fact-row .v { font-weight: 700; font-variant-numeric: tabular-nums; }
 
-  /* Status chips */
-  .chip { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; margin-left: 8px; }
-  .chip.active { background: rgba(0,122,255,.12); color: var(--blue); }
-  .chip.done { background: rgba(52,199,89,.14); color: var(--green); }
-  .chip.warn { background: rgba(255,149,0,.14); color: var(--orange); }
+  /* #301 状态层统一:状态徽章 = Base statusBadge 控件(样式由公共组件决定) */
 
   /* Filter chip */
   .filter-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,122,255,.1); color: var(--blue); padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-right: 6px; margin-bottom: 4px; }
@@ -109,10 +105,7 @@
   .footer { text-align: center; color: var(--fg3); font-size: 12px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
   .footer code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: var(--fg2); }
 
-  /* Error / Empty / Loading */
-  .error-card { background: rgba(255,59,48,.08); border: 1px solid rgba(255,59,48,.2); border-radius: var(--radius); padding: 24px; text-align: center; }
-  .error-card h3 { color: var(--red); margin-bottom: 8px; font-size: 18px; }
-  .error-card p { color: var(--fg2); font-size: 14px; }
+  /* #301 状态层统一:错误/空态 = Base errorReceipt/emptyState 控件(样式由公共组件决定) */
 
   /* #300 Base 统一:复制数据/复制日志 = Base actionBar 控件(样式由公共组件决定) */
 
@@ -189,7 +182,6 @@
     }
     if (payload.status === 'error') {
       renderError(payload.message || '查询失败');
-      renderActionBar(payload);
       return;
     }
     const data = payload.data || {};
@@ -263,17 +255,17 @@
     `;
   }
 
+  // #301 状态层统一:错误回执 = Base errorReceipt 控件(修正重试/复制数据/日志由公共组件决定)
   function renderError(msg) {
-    $('#app').innerHTML = `
-      <div class="error-card">
-        <h3>⚠️ 出错了</h3>
-        <p>${escapeHTML(msg)}</p>
-      </div>
-    `;
-  }
-
-  function renderEmpty(text) {
-    $('#app').innerHTML = `<div class="card empty">${escapeHTML(text || '暂无数据')}</div>`;
+    const raw = document.getElementById('payload').textContent;
+    let p = null;
+    try { p = JSON.parse(raw); } catch (e) { p = null; }
+    $('#app').innerHTML = window.errorReceipt({
+      message: msg,
+      data: raw,
+      log: '渲染错误: ' + msg + ' · 原始 payload 见「复制数据」',
+      payload: p,
+    });
   }
 
   // ── #300 Base 统一:复制数据/复制日志 = actionBar 控件(样式/反馈由公共组件决定) ──
@@ -305,7 +297,7 @@
       <div style="margin-top:12px;"><span class="filter-chip">📅 ${escapeHTML(data.month || '-')}</span></div>
       <div class="card" style="margin-top:12px;">
         <div class="section-title">分类排行 <span class="count">${cats.length} 类</span></div>
-        ${cats.length ? cats.slice(0, 8).map((c, i) => categoryBar(c, max, PALETTE[i % PALETTE.length])).join('') : '<div class="empty">本月暂无分类数据</div>'}
+        ${cats.length ? cats.slice(0, 8).map((c, i) => categoryBar(c, max, PALETTE[i % PALETTE.length])).join('') : window.emptyState({text:'本月暂无分类数据'})}
       </div>
     `;
   }
@@ -325,11 +317,11 @@
       <div style="margin-top:12px;"><span class="filter-chip">📅 ${escapeHTML(String(data.year || ''))} 年</span></div>
       <div class="card" style="margin-top:12px;">
         <div class="section-title">逐月趋势 <span class="count">${monthly.length} 个月</span></div>
-        ${monthly.length ? monthly.map(m => categoryBar({ category: m.month, total: m.expense, count: m.count }, maxMonth, PALETTE[2])).join('') : '<div class="empty">该年暂无数据</div>'}
+        ${monthly.length ? monthly.map(m => categoryBar({ category: m.month, total: m.expense, count: m.count }, maxMonth, PALETTE[2])).join('') : window.emptyState({text:'该年暂无数据'})}
       </div>
       <div class="card">
         <div class="section-title">大额分类 TOP</div>
-        ${cats.length ? cats.map((c, i) => categoryBar({ category: c.key, total: c.expense, count: c.count }, Math.max(...cats.map(x => x.expense)), PALETTE[i % PALETTE.length])).join('') : '<div class="empty">无支出分类</div>'}
+        ${cats.length ? cats.map((c, i) => categoryBar({ category: c.key, total: c.expense, count: c.count }, Math.max(...cats.map(x => x.expense)), PALETTE[i % PALETTE.length])).join('') : window.emptyState({text:'无支出分类'})}
       </div>
     `;
   }
@@ -381,7 +373,7 @@
           <div class="section-title">本周大额支出 <span class="count">TOP ${tops.length}</span></div>
           ${recordsList(tops)}
         </div>
-      ` : '<div class="card empty">本周暂无支出</div>'}
+      ` : window.emptyState({text:'本周暂无支出'})}
     `;
   }
 
@@ -414,7 +406,7 @@
           `).join('')}
         </div>
         <div id="drillPanel" style="display:none;"></div>
-      ` : '<div class="card empty" style="margin-top:14px;">该期间暂无分类数据</div>'}
+      ` : window.emptyState({text:'该期间暂无分类数据'})}
     `;
     // 环形图 → Base CHARTS-HELPERS donut(样式/图例由公共组件决定,#302)
     const donutEl = mountChart('catDonutMount');
@@ -443,7 +435,7 @@
       panel.innerHTML = `
         <div class="card">
           <div class="section-title">${escapeHTML(cat)} 明细 <span class="count">${recs.length} 笔 · ${fmtMoney(recs.reduce((s, r) => s + Math.abs(r.amount || 0), 0))} 元</span></div>
-          ${recs.length ? recordsList(recs) : '<div class="empty">该分类暂无记录</div>'}
+          ${recs.length ? recordsList(recs) : window.emptyState({text:'该分类暂无记录'})}
         </div>
       `;
       panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -485,7 +477,7 @@
             `).join('')}
           </div>
         </div>
-      ` : '<div class="card empty">该期间暂无账户数据</div>'}
+      ` : window.emptyState({text:'该期间暂无账户数据'})}
     `;
   }
 
@@ -502,7 +494,7 @@
             ${kpiCard('净额', fmtMoney(x.net), '元', x.net >= 0 ? 'green' : 'red', 'compact')}
           </div>
         </div>
-      `).join('') : '<div class="card empty">该期间暂无账本数据</div>'}
+      `).join('') : window.emptyState({text:'该期间暂无账本数据'})}
     `;
   }
 
@@ -515,11 +507,11 @@
     $('#app').innerHTML = `
       <div class="card">
         <div class="section-title">收入来源结构</div>
-        ${inc.length ? `<div id="incDonutMount"></div>` : '<div class="empty">该期间暂无收入</div>'}
+        ${inc.length ? `<div id="incDonutMount"></div>` : window.emptyState({text:'该期间暂无收入'})}
       </div>
       <div class="card">
         <div class="section-title">支出去向结构</div>
-        ${exp.length ? `<div id="expDonutMount"></div>` : '<div class="empty">该期间暂无支出</div>'}
+        ${exp.length ? `<div id="expDonutMount"></div>` : window.emptyState({text:'该期间暂无支出'})}
       </div>
     `;
     const incEl = mountChart('incDonutMount');
@@ -630,7 +622,7 @@
             </div>`;
           }).join('')}
         </div>
-      ` : '<div class="card empty">两区间均无支出数据</div>'}
+      ` : window.emptyState({text:'两区间均无支出数据'})}
     `;
   }
 
@@ -665,7 +657,7 @@
           </div>
         </div>
         <div id="trendDrillPanel" style="display:none;"></div>
-      ` : '<div class="card empty" style="margin-top:14px;">暂无数据</div>'}
+      ` : window.emptyState({text:'暂无数据'})}
     `;
     if (series.length) renderTrendChart('trendChartMount', series);
   }
@@ -714,7 +706,7 @@
           <div class="section-title">${escapeHTML(data.category || '')} 逐月支出</div>
           <div id="catTrendChartMount"></div>
         </div>
-      ` : '<div class="card empty" style="margin-top:14px;">该分类暂无数据</div>'}
+      ` : window.emptyState({text:'该分类暂无数据'})}
     `;
     // 柱状图 → Base CHARTS-HELPERS bar(showValues/单色 #ff9500 对齐旧观感,#302)
     const barEl = mountChart('catTrendChartMount');
@@ -745,7 +737,7 @@
             </div>
           `).join('')}
         </div>
-      ` : '<div class="card empty">该期间暂无支出</div>'}
+      ` : window.emptyState({text:'该期间暂无支出'})}
     `;
   }
 
@@ -769,7 +761,7 @@
             </div>
           `).join('')}
         </div>
-      ` : '<div class="card empty">该期间暂无支出</div>'}
+      ` : window.emptyState({text:'该期间暂无支出'})}
     `;
   }
 
@@ -793,7 +785,7 @@
             <div class="fact-row"><span class="k">${escapeHTML(x.bucket)}</span><span class="v">${x.count} 笔 · ${fmtPct(x.pct)}</span></div>
           `).join('')}
         </div>
-      ` : '<div class="card empty" style="margin-top:14px;">该期间暂无数据</div>'}
+      ` : window.emptyState({text:'该期间暂无数据'})}
     `;
     // 直方图 → Base CHARTS-HELPERS bar 适配(buckets → items,#302)
     const histEl = mountChart('distChartMount');
@@ -850,7 +842,7 @@
       </div>
       <div class="card">
         <div class="section-title">时段分布(几点记)</div>
-        ${activeHours.length ? hourBars(activeHours) : '<div class="empty">暂无时段数据</div>'}
+        ${activeHours.length ? hourBars(activeHours) : window.emptyState({text:'暂无时段数据'})}
       </div>
     `;
   }
@@ -937,7 +929,7 @@
               const big = Math.abs(x.pct) >= 50;
               return `<div class="record">
                 <div class="time">${escapeHTML(x.month)}</div>
-                <div><div class="cat">${fmtMoney(x.prev)} → ${fmtMoney(x.cur)}</div>${big ? '<span class="chip warn">⚠ 幅度较大</span>' : ''}</div>
+                <div><div class="cat">${fmtMoney(x.prev)} → ${fmtMoney(x.cur)}</div>${big ? window.statusBadge('warn', '⚠ 幅度较大') : ''}</div>
                 <div class="amt" style="color:${up ? 'var(--orange)' : 'var(--green)'}">${up ? '↑' : '↓'} ${fmtPct(Math.abs(x.pct))}</div>
               </div>`;
             }).join('')}
@@ -948,7 +940,7 @@
         <div class="card">
           <div class="section-title">分类暴涨检测 <span class="count">${data.window_months || 6} 月 vs 上一月</span></div>
           ${surge.map(x => `
-            <div class="fact-row"><span class="k">${escapeHTML(x.category)} <span class="chip warn">+${fmtPct(x.pct)}</span></span><span class="v">${fmtMoney(x.prev)} → ${fmtMoney(x.cur)}</span></div>
+            <div class="fact-row"><span class="k">${escapeHTML(x.category)} ${window.statusBadge('warn', '+' + fmtPct(x.pct))}</span><span class="v">${fmtMoney(x.prev)} → ${fmtMoney(x.cur)}</span></div>
           `).join('')}
           <div style="font-size:12px;color:var(--fg3);margin-top:8px;">建议核对: 是否存在一次性大额 / 记错分类 / 真实增长</div>
         </div>
@@ -959,7 +951,7 @@
           <div id="anomalyChartMount"></div>
         </div>
       ` : ''}
-      ${!mom.length && !surge.length ? '<div class="card empty">近几个月数据平稳或暂无数据</div>' : ''}
+      ${!mom.length && !surge.length ? window.emptyState({text:'近几个月数据平稳或暂无数据'}) : ''}
     `;
     if (series.length) renderTrendChart('anomalyChartMount', series.map(m => ({ month: m.month, expense: m.expense, income: m.income })));
   }
@@ -981,7 +973,7 @@
             <span class="k">${escapeHTML(x.target)}</span>
             <span class="v">借出未还 ${fmtMoney(x.lent_unpaid)} / 借入未还 ${fmtMoney(x.borrowed_unpaid)}</span>
           </div>
-        `).join('') : '<div class="empty">暂无未还借贷</div>'}
+        `).join('') : window.emptyState({text:'暂无未还借贷'})}
       </div>
     `;
   }
@@ -1007,10 +999,10 @@
             </div>
             <div>
               <div class="amt expense">${fmtMoney(Math.abs(x.amount))}</div>
-              <span class="chip ${x.status === '已到账' ? 'done' : 'warn'}">${x.status === '已到账' ? '✓ 已到账' : '待报销'}</span>
+              ${window.statusBadge(x.status === '已到账' ? 'ok' : 'warn', x.status === '已到账' ? '✓ 已到账' : '待报销')}
             </div>
           </div>
-        `).join('') : '<div class="empty">暂无报销记录</div>'}
+        `).join('') : window.emptyState({text:'暂无报销记录'})}
       </div>
     `;
   }
@@ -1026,7 +1018,7 @@
       </div>
       ${active.length ? active.map(g => `
         <div class="card">
-          <div class="section-title">${escapeHTML(g.name)} <span class="chip active">进行中</span></div>
+          <div class="section-title">${escapeHTML(g.name)} ${window.statusBadge('ok', '进行中')}</div>
           <div class="kpi-grid" style="margin-bottom:0;">
             ${kpiCard('总额', fmtMoney(g.total), '元', 'purple', 'compact')}
             ${kpiCard('首期', fmtMoney(g.first), '元', '', 'compact')}
@@ -1041,11 +1033,11 @@
         <div class="card">
           <div class="section-title">历史分期(已还清)</div>
           ${history.map(g => `
-            <div class="fact-row"><span class="k">${escapeHTML(g.name)} <span class="chip done">✓ 已还清</span></span><span class="v">总额 ${fmtMoney(g.total)} · ${g.periods} 期</span></div>
+            <div class="fact-row"><span class="k">${escapeHTML(g.name)} ${window.statusBadge('ok', '✓ 已还清')}</span><span class="v">总额 ${fmtMoney(g.total)} · ${g.periods} 期</span></div>
           `).join('')}
         </div>
       ` : ''}
-      ${!active.length && !history.length ? '<div class="card empty">暂无分期记录</div>' : ''}
+      ${!active.length && !history.length ? window.emptyState({text:'暂无分期记录'}) : ''}
     `;
   }
 
@@ -1067,7 +1059,7 @@
       ` : ''}
       <div class="card">
         <div class="section-title">退款明细 <span class="count">${details.length} 笔</span></div>
-        ${details.length ? recordsList(details) : '<div class="empty">暂无退款记录</div>'}
+        ${details.length ? recordsList(details) : window.emptyState({text:'暂无退款记录'})}
       </div>
     `;
   }
@@ -1116,7 +1108,7 @@
         </div>
         <div class="amt ${(r.amount || 0) < 0 ? 'expense' : 'income'}">${(r.amount || 0) < 0 ? '-' : '+'}${fmtMoney(Math.abs(r.amount || 0))}</div>
       </div>
-    `).join('')}</div>${records.length > 200 ? `<div class="empty" style="margin-top:12px;">仅显示前 200 条 · 共 ${records.length} 条</div>` : ''}`;
+    `).join('')}</div>${records.length > 200 ? `<div style="margin-top:12px;font-size:12.5px;color:var(--fg3);text-align:center;">仅显示前 200 条 · 共 ${records.length} 条</div>` : ''}`;
   }
 
   // ── 组件：Base 图表挂载(#302 task ③ · 4 自绘 SVG 已换 CHARTS-HELPERS) ──

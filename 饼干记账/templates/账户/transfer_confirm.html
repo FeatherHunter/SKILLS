@@ -49,7 +49,7 @@
     <div class="chips" id="chips"></div>
   </header>
 
-  <main>
+  <main id="app">
     <div class="note">💰 转账 = 钱从 A 账户移到 B 账户,<b>不影响收支统计</b>(余额会正确增减)</div>
 
     <div class="card">
@@ -83,8 +83,24 @@
   'use strict';
   var esc = function (s) { return String(s ?? '').replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); };
   var payload;
-  try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
-  if (!payload || payload.status !== 'ok') return;
+  try { payload = JSON.parse(document.getElementById('payload').textContent); }
+  catch (e) {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: '数据解析失败: ' + e.message,
+      data: document.getElementById('payload').textContent,
+      log: 'payload JSON 解析异常'
+    });
+    return;
+  }
+  if (!payload || payload.status !== 'ok') {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: (payload && payload.message) || '数据未注入(操作未执行)',
+      data: document.getElementById('payload').textContent,
+      log: (payload && payload.status) ? 'payload status = ' + payload.status : 'payload 为空',
+      payload: payload || undefined
+    });
+    return;
+  }
   var d = payload.data || {};
   var meta = d.meta || {};
   var form = d.form || {};

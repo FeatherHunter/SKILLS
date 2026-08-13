@@ -29,7 +29,6 @@
   .cand .c-t { font-size:13.5px; font-weight:600; }
   .cand .c-d { font-size:12px; color:var(--fg3); }
   .cand .c-a { font-size:13px; font-weight:700; color:var(--red); margin-left:auto; white-space:nowrap; }
-  .empty-cand { color:var(--fg3); font-size:13px; padding:10px 4px; }
   label.field { display:block; font-size:12px; font-weight:600; color:var(--fg2); margin:12px 0 5px; }
   input[type=text], input[type=number] { width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 12px; font-size:14px; font-family:inherit; outline:none; }
   input:focus { border-color:var(--blue); box-shadow:0 0 0 3px rgba(0,122,255,.12); }
@@ -54,7 +53,7 @@
     <div class="chips" id="chips"></div>
   </header>
 
-  <main>
+  <main id="app">
     <div class="card">
       <h2>将执行以下操作</h2>
       <div id="ops"></div>
@@ -63,7 +62,7 @@
     <div class="card" id="candCard">
       <h2 id="candTitle">关联原记录</h2>
       <div id="cands"></div>
-      <div class="empty-cand" id="emptyCand" hidden>未找到原记录 —— AI 会询问你补全(不会猜)。</div>
+      <div id="emptyCand" hidden></div>
     </div>
 
     <div class="warn" id="warnBox"></div>
@@ -91,8 +90,24 @@
   var esc = function (s) { return String(s ?? '').replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); };
 
   var payload;
-  try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
-  if (!payload || payload.status !== 'ok') return;
+  try { payload = JSON.parse(document.getElementById('payload').textContent); }
+  catch (e) {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: '数据解析失败: ' + e.message,
+      data: document.getElementById('payload').textContent,
+      log: 'payload JSON 解析异常'
+    });
+    return;
+  }
+  if (!payload || payload.status !== 'ok') {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: (payload && payload.message) || '数据未注入(操作未执行)',
+      data: document.getElementById('payload').textContent,
+      log: (payload && payload.status) ? 'payload status = ' + payload.status : 'payload 为空',
+      payload: payload || undefined
+    });
+    return;
+  }
   var d = payload.data || {};
   var meta = d.meta || {};
   var form = d.form || {};
@@ -167,7 +182,10 @@
   var cands = form.candidates || [];
   var selectedId = null;
   var candBox = document.getElementById('cands');
-  document.getElementById('emptyCand').hidden = cands.length > 0;
+  var emptyCandEl = document.getElementById('emptyCand');
+  // #301 状态层统一:候选列表空态 = Base emptyState 控件(样式由公共组件决定)
+  emptyCandEl.innerHTML = window.emptyState({icon:'🔍', text:'未找到原记录', hint:'AI 会询问你补全(不会猜)'});
+  emptyCandEl.hidden = cands.length > 0;
   document.getElementById('candCard').style.display = cands.length ? '' : 'none';
   candBox.innerHTML = cands.map(function (c) {
     return '<div class="cand" data-id="' + c.id + '">' +

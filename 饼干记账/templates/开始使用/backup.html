@@ -33,9 +33,7 @@
   .btn { display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:999px; padding:11px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
   .btn:hover { background:var(--bg); }
   /* #300 Base 统一:复制/提示全部走公共组件 */
-  .error-card { background:rgba(255,59,48,.08); border:1px solid rgba(255,59,48,.2); border-radius:16px; padding:22px; text-align:center; }
-  .error-card h3 { color:var(--red); margin-bottom:8px; font-size:17px; }
-  .error-card p { color:var(--fg2); font-size:13.5px; word-break:break-all; }
+  /* #301 状态层统一:错误/空态 = Base errorReceipt/emptyState 控件(样式由公共组件决定) */
   @media (max-width:640px) { .wrap { padding:18px 12px 70px; } h1 { font-size:23px; } }
 </style>
 <style><!--SHARED-CSS--></style>
@@ -66,8 +64,24 @@
   'use strict';
   var esc = function (s) { return String(s ?? '').replace(/[&<>"']/g, function (c) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]); }); };
   var payload;
-  try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
-  if (!payload || payload.status === 'empty') return;
+  try { payload = JSON.parse(document.getElementById('payload').textContent); }
+  catch (e) {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: '数据解析失败: ' + e.message,
+      data: document.getElementById('payload').textContent,
+      log: 'payload JSON 解析异常'
+    });
+    return;
+  }
+  if (!payload || payload.status === 'empty') {
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: (payload && payload.message) || '数据未注入(状态数据为空)',
+      data: document.getElementById('payload').textContent,
+      log: (payload && payload.status) ? 'payload status = ' + payload.status : 'payload 为空',
+      payload: payload || undefined
+    });
+    return;
+  }
   // ── #300 Base 统一:复制数据/复制日志 = Base actionBar ──
   if (window.actionBar) {
     var abZoneX = document.getElementById('actionbar-zone');
@@ -79,8 +93,12 @@
   }
 
   if (payload.status === 'error') {
-    document.getElementById('app').innerHTML =
-      '<div class="error-card"><h3>⚠️ 备份失败</h3><p>' + esc(payload.message || '未知错误') + '</p></div>';
+    document.getElementById('app').innerHTML = window.errorReceipt({
+      message: payload.message || '未知错误',
+      data: document.getElementById('payload').textContent,
+      log: 'payload status = error · 原始 payload 见「复制数据」',
+      payload: payload
+    });
     return;
   }
   var d = payload.data || {};

@@ -65,7 +65,7 @@ td .bar-up-text.over{color:var(--red);font-weight:700}
 .paused-banner .btn-restart.copied{background:var(--green)!important}
 @media(min-width:641px){.paused-banner{flex-wrap:nowrap}.paused-banner .paused-sub{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
 @media(max-width:640px){.paused-banner{justify-content:flex-start;align-items:flex-end}.paused-banner .paused-sub{flex-basis:100%;order:3;color:var(--accent);font-weight:600}.paused-banner .btn-restart{order:4;margin:0 auto}}
-.vs-chart svg{width:100%;height:auto;display:block}
+.vs-chart #vs-chart-box{width:100%}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:6px}
 .kpi{padding:12px 14px;background:var(--card);border-radius:12px;border:1px solid rgba(60,60,67,.06);box-shadow:0 1px 2px rgba(0,0,0,.03)}
 .kpi .label{font-size:11px;color:var(--ink3);margin-bottom:4px}
@@ -103,7 +103,7 @@ td .bar-up-text.over{color:var(--red);font-weight:700}
   
 </div>
 </div>
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 <script>
 const DATA=(()=>{if(typeof window.__P__!=='object'||window.__P__===null)return null;return window.__P__})();
 const D=DATA&&DATA.data?DATA.data:{};
@@ -179,29 +179,27 @@ function renderVsChart(){
   const nums=rows.map(r=>parseFloat(r.actual)||0);
   const rawMax=Math.max(goal||0,...nums);
   const maxV=Math.max(200,Math.ceil((rawMax*1.15)/100)*100);
-  const W=640,H=200,pl=30,pr=10,pt=14,pb=22;
-  const x=i=>pl+i*(W-pl-pr)/(rows.length-1);
-  const y=v=>pt+(H-pt-pb)*(1-v/maxV);
-  const pts=nums.map((v,i)=>`${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-  const fmt=d=>(d||'').slice(5);
-  let grid='';
-  [0.25,0.5,0.75,1].forEach(f=>{
-    const gv2=Math.round(maxV*f/100)*100;
-    grid+='<line x1="'+pl+'" y1="'+y(gv2)+'" x2="'+(W-pr)+'" y2="'+y(gv2)+'" stroke="#e5e5ea" stroke-width="1"/>'+
-      '<text x="'+(pl-6)+'" y="'+(y(gv2)+4)+'" text-anchor="end" font-size="13" font-weight="600" fill="#3c3c43">'+gv2+'</text>';
-  });
-  let goalLine='';
-  if(goal!=null&&goal<=maxV){
-    const gy=y(goal);
-    goalLine='<line x1="'+pl+'" y1="'+gy+'" x2="'+(W-pr)+'" y2="'+gy+'" stroke="#ff9500" stroke-width="1.6" stroke-dasharray="6 4"/>'+
-      '<text x="'+(W-pr)+'" y="'+(gy-6)+'" text-anchor="end" font-size="13" fill="#ff9500" font-weight="700">目标 '+goal+' 卡</text>';
-  }
-  return '<div class="section vs-chart"><div class="section-title"><h2>目标线 vs 实际线</h2><span class="hint">近 '+rows.length+' 天</span></div>'+
-    '<svg viewBox="0 0 '+W+' '+H+'">'+grid+goalLine+
-    '<polyline points="'+pts+'" fill="none" stroke="#0071e3" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>'+
-    '<text x="'+pl+'" y="'+(H-8)+'" font-size="13" font-weight="600" fill="#3c3c43">'+fmt(rows[0].date)+'</text>'+
-    '<text x="'+(W-pr)+'" y="'+(H-8)+'" text-anchor="end" font-size="13" font-weight="600" fill="#3c3c43">'+fmt(rows[rows.length-1].date)+'</text>'+
-    '</svg></div>';
+  // #317 迁 Base charts.line: 实际线 + 目标 markLine
+  // 需在插入 DOM 后再调 charts(图表容器须在文档中)
+  const boxId='vs-chart-box';
+  const html='<div class="section vs-chart"><div class="section-title"><h2>目标线 vs 实际线</h2><span class="hint">近 '+rows.length+' 天</span></div>'+
+    '<div id="'+boxId+'"></div></div>';
+  setTimeout(function(){
+    const box=document.getElementById(boxId);
+    if(!box||!window.charts)return;
+    const opt={
+      height:200,
+      yMin:0,yMax:maxV,
+      labels:'edge',
+      format:v=>Number(v).toFixed(0),
+      tooltip:true,
+    };
+    if(goal!=null&&goal<=maxV)opt.markLine={value:goal,label:'目标 '+goal+' 卡'};
+    window.charts.line(box,
+      rows.map(r=>({label:(r.date||'').slice(5),value:parseFloat(r.actual)||0})),
+      opt);
+  },0);
+  return html;
 }
 
 function renderEmpty(){

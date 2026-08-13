@@ -31,7 +31,6 @@
   .kpi .extra.good { color:var(--good); }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
-  svg { width:100%; height:clamp(220px, 35vw, 380px); display:block; text-rendering: geometricPrecision; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:14px; }
@@ -130,7 +129,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -149,7 +148,7 @@
 
 <div class="section" id="chartSection">
   <h2 id="chartTitle">体重曲线</h2>
-  <svg id="chart" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet"></svg>
+  <div id="chart"></div>
   <div class="legend" id="legend"></div>
 </div>
 
@@ -214,98 +213,47 @@
   document.getElementById('k4').textContent = summary.k4.value;
   document.getElementById('k4E').innerHTML = summary.k4.extra;
 
-  // 折线图(适用于 trend/history/volatility)
+  // 折线图(适用于 trend/history/volatility) · #317 迁 Base charts.line
   if (m !== 'compare' && items.length > 0) {
-    const svg = document.getElementById('chart');
-    const W = 800, H = 500, PAD = 30;
-    // V2.5.1: mobile 上加大字号 + 加粗曲线(用户: '曲线在手机上看太小')
-    const isMobile = window.innerWidth < 640;
-    const labelFontSize = isMobile ? 20 : 18;
-    const lineStrokeWidth = isMobile ? 3 : 2.5;
+    const chartEl = document.getElementById('chart');
     const weights = items.map(i => i.kg);
     let minW = Math.min(...weights), maxW = Math.max(...weights);
     const range = (maxW - minW) || 1;
-    // V2.4 fix: Y 轴只由数据驱动,不基于 target 扩张
-    // 旧 H3 fix 让 target=69.9 < minW=86.9 时把 Y 轴扩到 [68,93],
-    // 数据线挤顶部 30%,看起来"几乎看不见"。
-    // 新设计: target 用 SVG 下方 badge 显示"还差 Xkg"距离。
+    // V2.4 fix: Y 轴只由数据驱动,不基于 target 扩张;
+    // target 用 markLine(范围内)或下方 badge(范围外)显示距离
     const axisPadding = Math.max(0.5, range * 0.05);
     let minY = Math.floor(minW - axisPadding);
     let maxY = Math.ceil(maxW + axisPadding);
-    const xStep = (W - 2*PAD) / Math.max(1, items.length - 1);
-    const x = i => PAD + i * xStep;
-    const y = v => H - PAD - (v - minY) / (maxY - minY) * (H - 2*PAD);
-
-    for (let v = minY; v <= maxY; v += Math.max(1, Math.round((maxY - minY) / 5))) {
-      svg.insertAdjacentHTML('beforeend',
-        `<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="#e5e5ea"/>` +
-        `<text x="4" y="${y(v) - 3}" font-size="${labelFontSize}" fill="#86868b" font-weight="700">${v}kg</text>`);
-    }
-    // V2.4 fix: target 线只在 [minY, maxY] 范围内渲染
-    // 用户减肥期 target 远低于数据,直接画会让数据线被压扁。
-    // 范围外则在 SVG 下方 badge 显示"目标 Xkg, 还差 Ykg"。
     const targetInRange = target && target >= minY && target <= maxY;
+    const lineItems = items.map(p => ({ label: p.date.slice(5), value: p.kg }));
+    const lineOpt = {
+      height: 380,
+      format: v => `${v}kg`,
+      avgLine: 7,
+      labels: 'select',
+      highlightLast: true,
+      tooltip: true,
+      yMin: minY, yMax: maxY,
+    };
     if (target && targetInRange) {
-      svg.insertAdjacentHTML('beforeend',
-        `<line x1="0" y1="${y(target)}" x2="${W}" y2="${y(target)}" stroke="#34c759" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.5"/>` +
-        `<text x="${W - 4}" y="${y(target) - 3}" font-size="${labelFontSize}" fill="#34c759" text-anchor="end" font-weight="700">目标 ${target}kg</text>`);
+      lineOpt.markLine = { value: target, label: `目标 ${target}kg` };
     }
-    if (items.length >= 7) {
-      let movingAverageLine = '';
-      for (let i = 6; i < items.length; i++) {
-        const average = items.slice(i - 6, i + 1).reduce((sum, item) => sum + item.kg, 0) / 7;
-        movingAverageLine += `${i === 6 ? 'M' : ' L'} ${x(i)},${y(average)}`;
-      }
-      svg.insertAdjacentHTML('beforeend',
-        `<path d="${movingAverageLine}" fill="none" stroke="#8e8e93" stroke-width="2" stroke-dasharray="8,5" opacity="0.9" vector-effect="non-scaling-stroke" aria-label="7 天移动平均线"/>`);
-    }
-    let line = `M ${x(0)},${y(items[0].kg)}`;
-    items.forEach((p, i) => { if (i > 0) line += ` L ${x(i)},${y(p.kg)}`; });
-    svg.insertAdjacentHTML('beforeend',
-      `<path d="${line}" fill="none" stroke="#0071e3" stroke-width="${lineStrokeWidth}" vector-effect="non-scaling-stroke"/>`);
-    items.forEach((p, i) => {
-      const isAnomaly = p.anomaly === true;
-      svg.insertAdjacentHTML('beforeend',
-        `<circle cx="${x(i)}" cy="${y(p.kg)}" r="${isAnomaly ? 7 : 4}" fill="${isAnomaly ? '#ff3b30' : '#0071e3'}" stroke="#fff" stroke-width="${isAnomaly ? 2 : 1.5}" vector-effect="non-scaling-stroke"/>`);
-      if (i === items.length - 1) {
-        svg.insertAdjacentHTML('beforeend',
-          `<text x="${x(i)}" y="${y(p.kg) - 8}" font-size="${labelFontSize}" fill="#0071e3" text-anchor="middle" font-weight="700">${p.kg}kg</text>`);
-      }
-    });
-    const extrema = [
-      { label: '最高', value: maxW, index: weights.indexOf(maxW), color: '#ff3b30', dy: -16 },
-      { label: '最低', value: minW, index: weights.indexOf(minW), color: '#34c759', dy: 22 },
-    ];
-    extrema.forEach(entry => {
-      const pointX = x(entry.index);
-      const pointY = y(entry.value);
-      const anchor = pointX > W - 100 ? 'end' : pointX < 100 ? 'start' : 'middle';
-      const textX = pointX + (anchor === 'end' ? -10 : anchor === 'start' ? 10 : 0);
-      svg.insertAdjacentHTML('beforeend',
-        `<g class="chart-extremum" aria-label="${entry.label}体重 ${entry.value}kg">` +
-        `<circle cx="${pointX}" cy="${pointY}" r="7" fill="${entry.color}" stroke="#fff" stroke-width="2" vector-effect="non-scaling-stroke"/>` +
-        `<text x="${textX}" y="${pointY + entry.dy}" font-size="${labelFontSize}" fill="${entry.color}" text-anchor="${anchor}" font-weight="700" style="font-weight: 800">${entry.label} ${entry.value}kg</text>` +
-        `</g>`);
-    });
+    window.charts.line(chartEl, lineItems, lineOpt);
 
     // V2.4 fix: target 不在范围时,SVG 下方 badge 显示"目标 Xkg, 还差 Ykg"
     let legendHtml = `<span><i class="a"></i> 体重</span>`;
     if (items.length >= 7) {
       legendHtml += `<span><i class="d"></i> 7 天均线</span>`;
     }
-    // ticket #4: 里程碑点(带里程碑视图 · 5/10kg 达成日)
+    // #317 近似: 极值标注(最高/最低)由图表内圈标迁为图例徽章(charts.line 无极值接口)
+    if (maxW !== minW) {
+      legendHtml += `<span class="trend-rate-badge" style="background:rgba(255,59,48,.12);color:var(--bad)">最高 ${maxW}kg</span>`;
+      legendHtml += `<span class="trend-rate-badge" style="background:rgba(52,199,89,.15);color:var(--good)">最低 ${minW}kg</span>`;
+    }
+    // ticket #4: 里程碑点(带里程碑视图 · 5/10kg 达成日) → 图例徽章近似(竖线+圆环无接口)
     if (milestones && milestones.length) {
       milestones.forEach(ms => {
-        const idx = items.findIndex(p => p.date === ms.date);
-        if (idx < 0) return;
-        const px = x(idx), py = y(ms.kg);
-        svg.insertAdjacentHTML('beforeend',
-          `<g class="chart-milestone" aria-label="减重 ${ms.delta_kg}kg 达成 ${ms.date}">` +
-          `<line x1="${px}" y1="0" x2="${px}" y2="${H}" stroke="#ff9500" stroke-width="1.5" stroke-dasharray="4,4" opacity="0.5"/>` +
-          `<circle cx="${px}" cy="${py}" r="8" fill="none" stroke="#ff9500" stroke-width="2.5" vector-effect="non-scaling-stroke"/>` +
-          `<text x="${px + 8}" y="${py - 6}" font-size="${labelFontSize}" fill="#ff9500" font-weight="700">减${ms.delta_kg}kg · ${ms.date}</text>` +
-          `</g>`);
-        legendHtml += `<span><i style="background:transparent;border:2px solid #ff9500;border-radius:50%"></i> 里程碑减${ms.delta_kg}kg</span>`;
+        legendHtml += `<span><i style="background:transparent;border:2px solid #ff9500;border-radius:50%"></i> 里程碑减${ms.delta_kg}kg · ${ms.date}</span>`;
       });
     }
     const firstItem = items[0];

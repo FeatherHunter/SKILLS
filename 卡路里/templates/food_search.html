@@ -39,8 +39,6 @@
   .food-card .macro .m-value { font-size: 14px; font-weight: 700; }
   .food-card .source { font-size: 11px; color: var(--fg3); margin-top: 8px; }
 
-  .empty { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 32px; text-align: center; color: var(--fg2); }
-
   .footer { margin-top:20px; padding:12px 16px; background:var(--soft); border-radius:12px; font-size:12px; color:var(--fg3); display:flex; justify-content:space-between; align-items:center; gap:8px; }
   .footer .btn-group { display:flex; gap:6px; }  /* #44:与 crud_receipt/today_meals 统一 */
   .btn { border:1px solid var(--border); background:var(--card); padding:8px 16px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--fg); white-space:nowrap; min-height:36px; }
@@ -97,7 +95,7 @@
 
   const results = document.getElementById('results');
   if (items.length === 0) {
-    results.innerHTML = '<div class="empty">无匹配食物。请尝试其他关键词,或先用 <code>存食品</code> 添加。</div>';
+    results.innerHTML = window.emptyState({icon: '🔍', text: '无匹配食物', hint: '尝试其他关键词,或先用「存食品」添加'});
     return;
   }
 
@@ -145,7 +143,7 @@
     document.getElementById('matchCount').textContent = filtered.length + ' 个匹配';
     // 过滤时不显示 updated_at(实时场景,源信息冗余)
     results.innerHTML = filtered.length === 0
-      ? '<div class="empty">实时过滤无匹配。</div>'
+      ? window.emptyState({icon: '🔍', text: '实时过滤无匹配'})
       : filtered.map(function(it) { return renderCard(it, false); }).join('');
   });
 })();

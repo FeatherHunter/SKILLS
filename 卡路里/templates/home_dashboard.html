@@ -704,7 +704,7 @@ footer{
 </div>
 <a id="backTop" href="#top" title="回到顶部">↑</a>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <script>
 const DATA = (() => {
@@ -923,22 +923,24 @@ function render() {
       </div>
     `).join('');
 
-    // 趋势小图(最近 7 天饮食热量 · 内联 SVG)
+    // 趋势小图(最近 7 天饮食热量 · #317 迁 Base charts.line)
     const trendEl = document.getElementById('trendChart');
     if (trendEl) {
       const calData = trend.map(t => t.calories || 0);
       const max = Math.max(...calData, 1);
-      const W = 300, H = 60, bw = W / Math.max(trend.length, 1);
-      const pts = calData.map((v, i) => `${(i * bw + bw / 2).toFixed(1)},${(H - (v / max) * (H - 8) - 4).toFixed(1)}`).join(' ');
       trendEl.innerHTML = `
         <div class="trend-title">📈 最近 7 天摄入趋势</div>
-        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:60px">
-          <polyline points="${pts}" fill="none" stroke="#007aff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-          <g fill="#007aff">
-            ${calData.map((v, i) => `<circle cx="${(i * bw + bw / 2).toFixed(1)}" cy="${(H - (v / max) * (H - 8) - 4).toFixed(1)}" r="3"/>`).join('')}
-          </g>
-        </svg>
+        <div class="trend-chart-box"></div>
         <div class="trend-labels">${trend.map(t => `<span>${t.date.slice(5)}</span>`).join('')}</div>`;
+      const box = trendEl.querySelector('.trend-chart-box');
+      if (box && window.charts) {
+        window.charts.line(box, trend.map(t => ({ label: t.date.slice(5), value: t.calories || 0 })), {
+          height: 60,
+          labels: 'none',
+          showDots: true,
+          format: v => Number(v).toLocaleString(),
+        });
+      }
     }
 
     // 一句话总结(R6 · overview 顶部)

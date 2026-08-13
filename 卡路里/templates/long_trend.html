@@ -27,7 +27,6 @@
   .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
   .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
-  svg { width:100%; height:clamp(220px, 45vh, 360px); display:block; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:16px; height:2px; }
@@ -54,7 +53,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -68,9 +67,9 @@
 
 <div class="section">
   <h2>多指标同图(归一化 0-100)</h2>
-  <svg id="chart" viewBox="0 0 800 260" preserveAspectRatio="none"></svg>
+  <div id="chart"></div>
   <div class="legend" id="legend"></div>
-  <div style="font-size:11px;color:var(--fg3);margin-top:8px">90 天以上自动月度聚合降采样;红点为异常日标注</div>
+  <div style="font-size:11px;color:var(--fg3);margin-top:8px">90 天以上自动月度聚合降采样</div>
 </div>
 
 <div class="section" id="periodSection" style="display:none">
@@ -105,35 +104,35 @@
       `<div class="kpi"><div class="label">${m.label}</div><div class="value">${st.min ?? '—'} ~ ${st.max ?? '—'}</div><div class="extra">原始值范围</div></div>`);
   });
 
-  // 多折线(归一化)
-  const svg = document.getElementById('chart');
-  const W = 800, H = 260, PAD = 34;
-  const colors = ['#0071e3', '#ff9500', '#34c759', '#ff3b30', '#af52de', '#5ac8fa'];
+  // #317 迁 Base charts.line 多序列(共享 Y 域 0-100 归一化天然吻合)
+  // 异常日红点标注无接口 → 省略(记偏离)
   const legend = document.getElementById('legend');
   const data = D.monthly || D.norm || [];
+  const colors = ['#0071e3', '#ff9500', '#34c759', '#ff3b30', '#af52de', '#5ac8fa'];
+  const series = [];
   (D.metrics || []).forEach((m, j) => {
     const vals = data.map(p => p[m.field]).filter(v => v !== null && v !== undefined);
     if (vals.length < 2) return;
     legend.insertAdjacentHTML('beforeend', `<span><i style="background:${colors[j % 6]}"></i> ${m.label}</span>`);
-    const X = i => PAD + i / (data.length - 1) * (W - PAD * 2);
-    const Y = v => H - PAD - v / 100 * (H - PAD * 2);
-    let d = '';
-    data.forEach((p, i) => {
-      if (p[m.field] === null || p[m.field] === undefined) return;
-      d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p[m.field]).toFixed(1)}`;
+    series.push({
+      name: m.label,
+      color: colors[j % 6],
+      items: data.map(p => ({
+        label: (p.date || p.month || '').slice(5),
+        value: (p[m.field] === null || p[m.field] === undefined) ? null : p[m.field],
+      })),
     });
-    svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="${colors[j % 6]}" stroke-width="2" opacity="0.9"/>`);
   });
-
-  // 异常日标注(红点)
-  (D.anomaly || []).forEach(d => {
-    const idx = data.findIndex(p => p.date === d || p.month === d);
-    if (idx < 0) return;
-    const X = i => PAD + i / (data.length - 1) * (W - PAD * 2);
-    svg.insertAdjacentHTML('beforeend', `<circle cx="${X(idx)}" cy="${PAD}" r="4" fill="#ff3b30"><title>${d}</title></circle>`);
-  });
-  if (data.length === 0) {
-    svg.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">窗口内无数据</text>`);
+  if (series.length) {
+    window.charts.line(document.getElementById('chart'), series[0].items, {
+      height: 260,
+      yMin: 0, yMax: 100,
+      labels: 'edge',
+      tooltip: true,
+      series,
+    });
+  } else if (data.length === 0) {
+    document.getElementById('chart').innerHTML = '<div style="text-align:center;color:#86868b;padding:40px">窗口内无数据</div>';
   }
 
   // 周期对比

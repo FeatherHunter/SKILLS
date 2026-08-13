@@ -232,8 +232,14 @@ class TestHardBlock:
 # ── 4. 每个业务模板含复制数据 + 复制日志按钮(Base actionBar) ─────────────────
 
 class TestCopyButtons:
+    # error_receipt.html 例外: 波② #315 改用 Base errorReceipt 控件(自带修正重试+复制数据/日志),
+    # 不再挂 actionBar(避免与控件复制按钮重复); 其余模板仍走 actionBar。
+    ERROR_RECEIPT_TEMPLATE = "error_receipt.html"
+
     @pytest.mark.parametrize("rel", BUSINESS_TEMPLATES)
     def test_each_business_template_uses_base_actionbar(self, rel):
+        if rel == self.ERROR_RECEIPT_TEMPLATE:
+            pytest.skip("error_receipt.html 用 Base errorReceipt 控件自带复制按钮(#315 波②)")
         text = _template_text(rel)
         assert "actionBar" in text, f"{rel} 未使用 Base actionBar(复制按钮必须走 Base 控件)"
         assert "actionbar-zone" in text, f"{rel} 缺 actionBar 挂载区"
@@ -328,3 +334,78 @@ class TestBomAfterInjection:
         out = tmp_path / "x.html"
         write_html("<html>测试</html>", out)
         assert out.read_bytes()[:3] == b"\xef\xbb\xbf"
+
+
+# ── 8. 图表(#317 task ③):CHARTS-HELPERS 0/1 + 注入后 charts.js 就位 ─────────
+
+CHART_TEMPLATES = sorted(
+    str(p.relative_to(TEMPLATES_DIR)).replace("\\", "/")
+    for p in TEMPLATES_DIR.rglob("*.html")
+    if "CHARTS-HELPERS" in p.read_text(encoding="utf-8")
+)
+
+
+class TestChartPlaceholder:
+    def test_chart_template_list(self):
+        """25 个图表模板全部声明 CHARTS-HELPERS(实盘盘点 25 模板 31 处 SVG, 全迁)"""
+        assert len(CHART_TEMPLATES) == 25, (
+            f"图表模板应为 25 个,实际 {len(CHART_TEMPLATES)}:{CHART_TEMPLATES}"
+        )
+
+    @pytest.mark.parametrize("rel", CHART_TEMPLATES)
+    def test_chart_placeholder_exactly_once(self, rel):
+        assert _template_text(rel).count("<!--CHARTS-HELPERS-->") == 1
+
+    def test_no_svg_left_in_chart_templates(self):
+        """迁移后 25 个图表模板零 <svg>(自绘 SVG 全退役)"""
+        for rel in CHART_TEMPLATES:
+            assert "<svg" not in _template_text(rel), f"{rel} 仍有自绘 <svg>"
+
+    def test_charts_loaded_for_chart_templates(self, tmp_path):
+        """含 CHARTS-HELPERS 的模板经 inject_base 后注入 charts.js 且占位符 0 残留"""
+        from db import init_db
+        init_db(str(tmp_path / "calorie_data.db"))
+        env = os.environ.copy()
+        env["SKILLS_DB_PATH"] = str(tmp_path)
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
+        out_dir = tmp_path / "chart_out"
+        out_dir.mkdir(exist_ok=True)
+        cases = [
+            ("render_weight_history.py", []),
+            ("render_today_diet.py", ["--date", "2026-08-13"]),
+            ("render_today_water.py", []),
+            ("render_exercise_summary.py", ["--chain", "1.识别→2.读DB→3.渲染"]),
+        ]
+        for i, (script, args) in enumerate(cases):
+            out_path = out_dir / f"c{i}.html"
+            full = [sys.executable, str(SCRIPTS_DIR / script)] + args + ["--output", str(out_path)]
+            r = subprocess.run(full, capture_output=True, timeout=90, env=env)
+            assert r.returncode == 0, f"{script} 失败: {(r.stderr or r.stdout).decode('utf-8', errors='replace')[:300]}"
+            text = out_path.read_text(encoding="utf-8-sig")
+            assert "<!--CHARTS-HELPERS-->" not in text, f"{script} 输出仍有 CHARTS-HELPERS 占位符残留"
+            assert "window.charts=" in text or "__chartsLoaded" in text, (
+                f"{script} 输出缺 charts.js(charts 资产未注入)"
+            )
+
+    def test_charts_not_injected_without_placeholder(self, tmp_path):
+        """不含 CHARTS-HELPERS 的模板不注入 charts.js(占位符 0/1 契约)"""
+        from _base_render import inject_base
+        html = "<html><body><!--INJECT-DATA--></body></html>"
+        payload = {
+            "status": "ok",
+            "data": {
+                "meta": {"command_cn": "测试", "occurred_at": "2026-08-13"},
+                "scene": {"snapshot": {"title": "t", "summary": [], "sections": []}},
+            },
+        }
+        out, err = None, None
+        # 直接构造无 CHARTS 占位符的模板 → 注入器不注入 charts
+        import injector
+        base_js = (Path(__file__).resolve().parent.parent.parent / "公共组件" / "assets" / "base.js").read_text(encoding="utf-8")
+        base_css = (Path(__file__).resolve().parent.parent.parent / "公共组件" / "assets" / "base.css").read_text(encoding="utf-8")
+        # 手动替换占位符验证 0/1: 不含 CHARTS-HELPERS → charts_asset=None
+        tpl = "<html><body><!--INJECT-DATA--><!--SHARED-HELPERS--><!--SHARED-CSS--></body></html>"
+        html2, err2 = injector.inject(tpl, payload, js_asset=base_js, css_asset=base_css, charts_asset=None, strict=False)
+        assert err2 is None
+        assert "__chartsLoaded" not in html2, "无占位符模板不应注入 charts.js"

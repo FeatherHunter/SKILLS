@@ -67,19 +67,8 @@
   .compare-summary .cs-big { font-size: 16px; font-weight: 600; }
   .compare-summary .cs-sub { font-size: 12px; color: var(--fg3); margin-top: 4px; }
 
-  /* 图表(2026-08-05 像素级渲染:手机可读) */
+  /* 图表(#317 迁 Base charts.js, 样式由组件自注入) */
   .chart { width: 100%; }
-  .chart svg { width: 100%; display: block; }
-  .chart .grid { stroke: #ececf1; stroke-width: 1; }
-  .chart .line { fill: none; stroke: var(--accent); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
-  .chart .area { fill: url(#chartGrad); }
-  .chart .dot { fill: var(--accent); stroke: #fff; stroke-width: 1.5; }
-  .chart .dot.hl { fill: var(--orange, #ff9500); }
-  .chart .dot.lo { fill: var(--green); }
-  .chart .vlabel { font-size: 10px; fill: var(--fg3); }
-  .chart .xlabel { font-size: 10px; fill: var(--fg3); }
-  .chart .line { animation: drawLine .8s ease-out forwards; }
-  @keyframes drawLine { from { stroke-dashoffset: var(--len, 600); } to { stroke-dashoffset: 0; } }
 
   /* 当前值锚点(2026-08-05 图表价值提升) */
   .current-anchor {
@@ -225,7 +214,7 @@
   </div>
 </div>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 
 <div id="toast"></div>
@@ -270,7 +259,7 @@ function payloadData() {
 
 let _toastTimer = null;
 
-// ---------- 图表:像素级渲染(多线/动画/点按 tooltip/当前值锚点) ----------
+// ---------- 图表 · #317 迁 Base charts.line(像素级自绘 → 组件) ----------
 const PALETTE = ['#0071e3', '#ff9500', '#34c759', '#af52de', '#ff3b30', '#00c7be', '#ff2d55', '#5e5ce6'];
 const chartTip = document.getElementById('chartTip');
 
@@ -282,92 +271,53 @@ function showChartTip(text, x, y) {
 }
 
 function renderLineChart(el, rows, unit, color, showTip) {
-  const W = Math.max(240, el.clientWidth - 2);
-  const H = el.clientWidth < 520 ? 180 : 220;
-  const padL = 40, padR = 16, padT = 26, padB = 30;
   const vals = rows.map(r => r.avg_val).filter(v => v != null);
   if (!vals.length) { el.innerHTML = ''; return; }
   const mx = Math.max(...vals), mn = Math.min(...vals);
   const rng = (mx - mn) || 1;
   const pad = rng * 0.12;
   const yMin = mn - pad, yMax = mx + pad;
-  const x = i => rows.length === 1 ? (W - padL - padR) / 2 + padL
-    : padL + i * (W - padL - padR) / (rows.length - 1);
-  const y = v => padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB);
   const c = color || PALETTE[0];
-
-  let s = `<svg width="${W}" height="${H}" role="img" style="height:${H}px">`;
-  s += `<defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${c}" stop-opacity=".22"/>
-        <stop offset="100%" stop-color="${c}" stop-opacity="0"/></linearGradient></defs>`;
-  for (let g = 0; g <= 3; g++) {
-    const gy = padT + g * (H - padT - padB) / 3;
-    const gv = (yMax - (yMax - yMin) * g / 3).toFixed(1);
-    s += `<line class="grid" x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}"/>`;
-    s += `<text class="vlabel" x="${padL - 6}" y="${(gy + 3).toFixed(1)}" text-anchor="end">${gv}</text>`;
-  }
-  if (rows.length >= 2) {
-    const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.avg_val).toFixed(1)}`).join(' ');
-    const areaPts = `${padL},${H - padB} ` + pts + ` ${x(rows.length - 1).toFixed(1)},${H - padB}`;
-    s += `<polygon class="area" points="${areaPts}"/>`;
-    s += `<path class="line" d="M${pts.replace(/ /g, ' L')}" stroke="${c}" style="--len:${W + H}"/>`;
-  }
-  const hiIdx = vals.indexOf(mx), loIdx = vals.indexOf(mn);
-  rows.forEach((r, i) => {
-    const cx = x(i), cy = y(r.avg_val);
-    s += `<circle class="dot" cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="${c}"><title>${r.date}: ${r.avg_val}${unit}</title></circle>`;
-    s += `<text class="vlabel" x="${cx.toFixed(1)}" y="${(cy - 9).toFixed(1)}" text-anchor="middle">${r.avg_val}</text>`;
-    const showX = rows.length <= 8 || i % Math.ceil(rows.length / 8) === 0;
-    if (showX) s += `<text class="xlabel" x="${cx.toFixed(1)}" y="${H - 8}" text-anchor="middle">${r.date.slice(5)}</text>`;
-  });
-  s += '</svg>';
-  el.innerHTML = s;
-  if (showTip) {
-    el.querySelectorAll('.dot').forEach((dot, i) => {
-      dot.addEventListener('click', () => {
-        const r = rows[i];
-        showChartTip(`${r.date} · ${r.avg_val}${unit}`, parseFloat(dot.getAttribute('cx')), parseFloat(dot.getAttribute('cy')));
-        setTimeout(() => { chartTip.style.display = 'none'; }, 2200);
-      });
+  window.charts.line(el,
+    rows.map(r => ({ label: r.date.slice(5), value: r.avg_val })),
+    { height: el.clientWidth < 520 ? 180 : 220,
+      yMin, yMax,
+      area: true, showValues: false,
+      labels: rows.length <= 8 ? 'all' : 'select',
+      format: v => `${v}${unit}`,
+      tooltip: true,
+      color: c,
     });
-  }
 }
 
-// 多部位叠加图(2026-08-05)
+// 多部位叠加图(2026-08-05) · #317 迁 Base charts.line 多序列
 function renderMultiChart(el, seriesMap, unit) {
-  const W = Math.max(240, el.clientWidth - 2);
-  const H = el.clientWidth < 520 ? 180 : 220;
-  const padL = 40, padR = 16, padT = 26, padB = 30;
   const keys = Object.keys(seriesMap);
   if (!keys.length) { el.innerHTML = ''; return; }
   const allVals = keys.flatMap(k => (seriesMap[k].rows || []).map(r => r.avg_val).filter(v => v != null));
+  if (!allVals.length) { el.innerHTML = ''; return; }
   const mx = Math.max(...allVals), mn = Math.min(...allVals);
   const rng = (mx - mn) || 1;
   const yMin = mn - rng * 0.12, yMax = mx + rng * 0.12;
-  const x = i => padL + i * (W - padL - padR) / (Math.max(...keys.map(k => (seriesMap[k].rows || []).length)) - 1 || 1);
-  const y = v => padT + (1 - (v - yMin) / (yMax - yMin)) * (H - padT - padB);
-
-  let s = `<svg width="${W}" height="${H}" role="img" style="height:${H}px">`;
-  for (let g = 0; g <= 3; g++) {
-    const gy = padT + g * (H - padT - padB) / 3;
-    const gv = (yMax - (yMax - yMin) * g / 3).toFixed(1);
-    s += `<line class="grid" x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}"/>`;
-    s += `<text class="vlabel" x="${padL - 6}" y="${(gy + 3).toFixed(1)}" text-anchor="end">${gv}</text>`;
-  }
-  keys.forEach((k, ki) => {
-    const rows = seriesMap[k].rows || [];
-    const color = PALETTE[ki % PALETTE.length];
-    if (rows.length >= 2) {
-      const pts = rows.map((r, i) => `${x(i).toFixed(1)},${y(r.avg_val).toFixed(1)}`).join(' ');
-      s += `<path class="line" d="M${pts.replace(/ /g, ' L')}" stroke="${color}" style="--len:${W + H}"/>`;
-    }
-    rows.forEach((r, i) => {
-      s += `<circle class="dot multi" cx="${x(i).toFixed(1)}" cy="${y(r.avg_val).toFixed(1)}" r="3.5" fill="${color}"><title>${k}: ${r.date} ${r.avg_val}${unit}</title></circle>`;
-    });
+  const series = keys.map((k, ki) => ({
+    name: k,
+    color: PALETTE[ki % PALETTE.length],
+    items: (seriesMap[k].rows || []).map(r => ({ label: r.date.slice(5), value: r.avg_val })),
+  })).filter(s => s.items.length >= 2);
+  if (!series.length) { el.innerHTML = ''; return; }
+  window.charts.line(el, series[0].items, {
+    height: el.clientWidth < 520 ? 180 : 220,
+    yMin, yMax,
+    labels: 'select',
+    format: v => `${v}${unit}`,
+    tooltip: true,
+    legend: true,
+    series,
   });
-  s += '</svg>';
-  el.innerHTML = s;
-  el.insertAdjacentHTML('afterend', `<div class="legend">${keys.map((k, ki) => `<span class="lg-item"><span class="lg-dot" style="background:${PALETTE[ki % PALETTE.length]}"></span>${k}</span>`).join('')}</div>`);
+  const oldLegend = el.nextElementSibling;
+  if (oldLegend && oldLegend.classList && oldLegend.classList.contains('legend')) {
+    oldLegend.remove();
+  }
 }
 
 function kpiHtml(kpi, ids) {

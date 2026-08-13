@@ -30,13 +30,7 @@
   .kpi-label { font-size: 11px; color: var(--fg2); margin-bottom: 6px; text-transform: uppercase; letter-spacing: .05em; }
   .kpi-value { font-size: 24px; font-weight: 700; }
   .kpi-extra { font-size: 12px; color: var(--fg2); margin-top: 6px; }
-  .kpi-pill { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 600; margin-left: 8px; }
-  .pill-normal { background: rgba(52,199,89,.15); color: var(--good); }
-  .pill-yellow { background: rgba(255,149,0,.15); color: var(--warn); }
-  .pill-red { background: rgba(255,59,48,.15); color: var(--bad); }
-  .pill-trend-up { background: rgba(255,59,48,.15); color: var(--bad); }
-  .pill-trend-down { background: rgba(52,199,89,.15); color: var(--good); }
-  .pill-trend-flat { background: rgba(0,113,227,.15); color: var(--accent); }
+  .kpi-pill { display: inline-block; margin-left: 8px; }
 
   /* Canvas 主图 */
   .chart-section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
@@ -48,8 +42,6 @@
   .anomalies { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; }
   .anomalies h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
   .anomalies h2 .count { font-size: 12px; color: var(--fg2); font-weight: 400; }
-  .empty-state { padding: 24px; text-align: center; color: var(--good); font-size: 14px; }
-  .empty-state::before { content: "✓ "; }
   .anomaly-item { display: grid; grid-template-columns: 100px 1fr 80px 70px; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
   .anomaly-item:last-child { border-bottom: none; }
   .anomaly-date { font-size: 13px; color: var(--fg2); font-variant-numeric: tabular-nums; }
@@ -221,9 +213,9 @@
     if (stdev != null) {
       document.getElementById('kpiValue').textContent = stdev.toFixed(2) + ' kg';
       const pill = document.getElementById('kpiPill');
-      if (stdev < 0.3) { pill.textContent = '🟢 稳定'; pill.className = 'kpi-pill pill-normal'; }
-      else if (stdev < 0.5) { pill.textContent = '🟡 正常'; pill.className = 'kpi-pill pill-yellow'; }
-      else { pill.textContent = '🔴 波动较大'; pill.className = 'kpi-pill pill-red'; }
+      if (stdev < 0.3) { pill.innerHTML = window.statusBadge('ok', '🟢 稳定'); }
+      else if (stdev < 0.5) { pill.innerHTML = window.statusBadge('warn', '🟡 正常'); }
+      else { pill.innerHTML = window.statusBadge('danger', '🔴 波动较大'); }
       document.getElementById('kpiExtra').textContent = '健康波动 < 0.3kg · 波动较大 ≥ 0.5kg';
     }
 
@@ -234,9 +226,9 @@
       const prev = d.daily_delta_prev;
       const pill2 = document.getElementById('kpiSigmaTrend');
       if (prev != null) {
-        if (dd < prev * 0.8) { pill2.textContent = '↓ σ 缩小'; pill2.className = 'kpi-pill pill-trend-down'; }
-        else if (dd > prev * 1.2) { pill2.textContent = '↑ σ 扩大'; pill2.className = 'kpi-pill pill-trend-up'; }
-        else { pill2.textContent = '→ σ 平稳'; pill2.className = 'kpi-pill pill-trend-flat'; }
+        if (dd < prev * 0.8) { pill2.innerHTML = window.statusBadge('ok', '↓ σ 缩小'); }
+        else if (dd > prev * 1.2) { pill2.innerHTML = window.statusBadge('danger', '↑ σ 扩大'); }
+        else { pill2.innerHTML = window.statusBadge('ok', '→ σ 平稳'); }
         document.getElementById('kpiSigmaExtra').textContent = `前 7 天 ${prev.toFixed(3)} kg/天`;
       } else {
         document.getElementById('kpiSigmaExtra').textContent = '需 14+ 天数据对比';
@@ -259,7 +251,7 @@
     const sigmaTrendLast7 = (d.sigma_trend || []).slice(-7);
 
     if (recent.length === 0) {
-      anomaliesList.innerHTML = '<div class="empty-state">过去 7 天无异常</div>';
+      anomaliesList.innerHTML = window.emptyState({icon: '✓', text: '过去 7 天无异常', hint: '波动都在正常范围'});
       anomaliesCount.textContent = '(0)';
     } else {
       anomaliesCount.textContent = `(${recent.length} 条按偏离度排序)`;

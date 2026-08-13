@@ -25,6 +25,8 @@ SKILL_DIR = _SCRIPT_DIR.parent
 SKILL_NAME = "卡路里"
 SKILL_VERSION = "2.4.19"
 
+CHARTS_HELPERS = "<!--CHARTS-HELPERS-->"
+
 
 def base_skill_dir() -> Path:
     """公共组件/ 目录（真实仓库路径优先，SKILLS_BASE_DIR 仅 fallback）"""
@@ -35,7 +37,10 @@ def base_skill_dir() -> Path:
 
 
 def inject_base(template_text: str, payload: dict) -> str:
-    """Base 注入器：payload + base.js + base.css（硬拦截，占位符缺失/重复报错）
+    """Base 注入器：payload + base.js + base.css + charts.js（硬拦截，占位符缺失/重复报错）
+
+    CHARTS-HELPERS 为 0 或 1：模板含占位符 → 注入 charts.js（#317 task ③ 图表契约）；
+    不含 → 不注入。charts.js 是公共组件唯一真相源，缺口走公共层 ISSUE，禁止技能内 fork。
 
     返回注入后的 HTML 字符串（不含 BOM；BOM 由 write_html 统一写）。
     """
@@ -51,8 +56,17 @@ def inject_base(template_text: str, payload: dict) -> str:
             "Base Skill 资产缺失: 找不到 公共组件/injector.py。"
             "请确认 公共组件/ 目录存在（#314 依赖 Base 管线）"
         )
+    charts_asset = None
+    if CHARTS_HELPERS in template_text:
+        charts_path = bd / "assets" / "charts.js"
+        if not charts_path.exists():
+            raise RuntimeError(
+                f"Base Skill 图表资产缺失: {charts_path}。"
+                "模板声明了 CHARTS-HELPERS 但公共组件缺 charts.js（缺口走公共层 ISSUE）"
+            )
+        charts_asset = charts_path.read_text(encoding="utf-8").strip()
     html, err = inject(template_text, payload, js_asset=base_js, css_asset=base_css,
-                       strict=False)
+                       charts_asset=charts_asset, strict=False)
     if err:
         raise RuntimeError(f"Base 注入失败: {err}")
     return html

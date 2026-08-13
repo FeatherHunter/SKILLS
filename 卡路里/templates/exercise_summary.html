@@ -30,7 +30,6 @@
   .kpi .extra { font-size:11px; color:var(--fg3); margin-top:3px; }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
-  svg { width:100%; height:clamp(180px, 40vh, 320px); display:block; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:14px; height:8px; border-radius:2px; }
@@ -70,7 +69,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -89,7 +88,7 @@
 
 <div class="section" id="chartSection" style="display:none">
   <h2 id="chartTitle"></h2>
-  <svg id="chart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+  <div id="chart"></div>
   <div class="legend" id="legend"></div>
 </div>
 
@@ -141,57 +140,34 @@
   document.getElementById('k4').textContent = summary.k4.value;
   document.getElementById('k4E').innerHTML = summary.k4.extra;
 
-  // 趋势图(只在 trend mode)
+  // 趋势图(只在 trend mode) · #317 迁 Base charts.line(面积柱语义 → area 近似)
   if (m === 'trend' && items.length > 0) {
     const sec = document.getElementById('chartSection');
     sec.style.display = 'block';
     document.getElementById('chartTitle').textContent = '每日运动热量';
-    const svg = document.getElementById('chart');
-    const W = 800, H = 220, PAD = 30;
     const cals = items.map(i => i.calorie);
     const dataMax = Math.max(...cals, 0);
-    // Y 轴自适应: 数据最大值的 1.15 倍,向上取整到合适刻度
     const step = dataMax > 1000 ? 200 : dataMax > 500 ? 100 : dataMax > 100 ? 50 : 20;
     const maxC = Math.max(Math.ceil(dataMax * 1.15 / step) * step, step);
-    const x = i => PAD + i * (W - 2*PAD) / Math.max(1, items.length - 1);
-    const y = v => H - PAD - (v / maxC) * (H - 2*PAD);
-    for (let v = 0; v <= maxC; v += step) {
-      svg.insertAdjacentHTML('beforeend',
-        `<line x1="0" y1="${y(v)}" x2="${W}" y2="${y(v)}" stroke="#e5e5ea"/>` +
-        `<text x="4" y="${y(v) - 3}" font-size="10" fill="#86868b">${v}</text>`);
-    }
-    let bar = `M ${x(0)},${H-PAD}`;
-    items.forEach((p, i) => { bar += ` L ${x(i)},${y(p.calorie)} L ${x(i)},${H-PAD}`; });
-    bar += ' Z';
-    svg.insertAdjacentHTML('beforeend', `<path d="${bar}" fill="rgba(0,113,227,0.3)" stroke="rgba(0,113,227,0.6)" stroke-width="0.5"/>`);
-    let line = `M ${x(0)},${y(items[0].calorie)}`;
-    items.forEach((p, i) => { if (i > 0) line += ` L ${x(i)},${y(p.calorie)}`; });
-    svg.insertAdjacentHTML('beforeend', `<path d="${line}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
-    items.forEach((p, i) => {
-      svg.insertAdjacentHTML('beforeend',
-        `<circle cx="${x(i)}" cy="${y(p.calorie)}" r="4" fill="#0071e3" stroke="#fff" stroke-width="1.5"/>`);
-    });
+    window.charts.line(document.getElementById('chart'),
+      items.map(p => ({ label: (p.date || '').slice(5), value: p.calorie })),
+      { height: 220, yMin: 0, yMax: maxC, area: true,
+        labels: 'select', format: v => Number(v).toLocaleString(), tooltip: true });
     document.getElementById('legend').innerHTML = `<span><i style="background:#0071e3"></i> 每日热量</span>`;
   } else if (m === 'stats' && stats && stats.by_category) {
     const sec = document.getElementById('chartSection');
     sec.style.display = 'block';
     document.getElementById('chartTitle').textContent = '按类型热量分布';
-    const svg = document.getElementById('chart');
-    // 4 类水平柱
     const cats = ['strength','cardio','flex','daily'];
     const labels = {'strength':'力量','cardio':'有氧','flex':'柔韧','daily':'日常'};
     const colors = {'strength':'var(--strength)','cardio':'var(--cardio)','flex':'var(--flex)','daily':'var(--daily)'};
-    const maxVal = Math.max(...cats.map(c => (stats.by_category[c] || 0).calorie || 0), 1);
-    cats.forEach((c, i) => {
-      const data = stats.by_category[c] || {calorie:0, count:0, minutes:0};
-      const barH = Math.max(2, (data.calorie / maxVal) * 150);
-      const cx = 100 + i * 200;
-      svg.insertAdjacentHTML('beforeend',
-        `<rect x="${cx-40}" y="${180-barH}" width="80" height="${barH}" fill="${colors[c]}" rx="4"/>` +
-        `<text x="${cx}" y="${195}" text-anchor="middle" font-size="13" font-weight="700">${labels[c]}</text>` +
-        `<text x="${cx}" y="${170-barH}" text-anchor="middle" font-size="14" font-weight="700" fill="#1d1d1f">${data.calorie}</text>` +
-        `<text x="${cx}" y="${208}" text-anchor="middle" font-size="11" fill="#86868b">${data.count} 次 · ${data.minutes} 分钟</text>`);
-    });
+    // #317 迁 Base charts.bar
+    window.charts.bar(document.getElementById('chart'),
+      cats.map(c => {
+        const data = stats.by_category[c] || {calorie:0, count:0, minutes:0};
+        return { label: labels[c], value: data.calorie, color: colors[c] };
+      }),
+      { height: 220, format: v => Number(v).toLocaleString(), tooltip: true });
     document.getElementById('legend').innerHTML =
       `<span><i style="background:var(--strength)"></i> 力量</span>` +
       `<span><i style="background:var(--cardio)"></i> 有氧</span>` +

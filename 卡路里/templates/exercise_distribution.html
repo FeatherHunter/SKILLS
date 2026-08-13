@@ -35,7 +35,6 @@
   .pie-pair { display:grid; grid-template-columns:1fr 1fr; gap:32px; }
   .pie-half { display:flex; flex-direction:column; align-items:center; }
   .pie-half h3 { font-size:14px; margin-bottom:8px; color:var(--fg2); }
-  svg.pie { width:220px; height:220px; flex-shrink:0; }
   .pie-legend { width:100%; font-size:13px; margin-top:14px; }
   .pie-legend .row { display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--border); }
   .pie-legend .row:last-child { border-bottom:none; }
@@ -70,7 +69,6 @@
     .food-card .macros { grid-template-columns:1fr 1fr; }
     /* 饼图容器移动端自适应(2026-08-02 · ticket #5 对抗审查:220px 固定宽溢出 375px) */
     .pie-pair { grid-template-columns:1fr; gap:20px; }
-    .pie { width:180px; height:180px; }
     .pie-half { overflow:hidden; }
   }
   /* table 在小屏内滚 */
@@ -82,7 +80,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -104,12 +102,12 @@
   <div class="pie-pair">
     <div class="pie-half">
       <h3 id="pie1L">按类型占比</h3>
-      <svg class="pie" id="pie1" viewBox="0 0 220 220"></svg>
+      <div id="pie1"></div>
       <div class="pie-legend" id="legend1"></div>
     </div>
     <div class="pie-half">
       <h3 id="pie2L">按热量分布</h3>
-      <svg class="pie" id="pie2" viewBox="0 0 220 220"></svg>
+      <div id="pie2"></div>
       <div class="pie-legend" id="legend2"></div>
     </div>
   </div>
@@ -171,31 +169,19 @@
     document.getElementById('k4E').textContent = `日均 ${summary.avg_sets}`;
   }
 
-  // 双饼图绘制函数
-  function drawPie(svgId, legendId, items, labelKey, valueKey, colorKey) {
-    const svg = document.getElementById(svgId);
-    const cx = 110, cy = 110, r = 88;
-    const total = items.reduce((a, b) => a + b[valueKey], 0) || 1;
-    let start = -Math.PI / 2;
-    items.forEach(it => {
-      if (it[valueKey] <= 0) return;
-      const ang = (it[valueKey] / total) * Math.PI * 2;
-      const end = start + ang;
-      const x1 = cx + r * Math.cos(start), y1 = cy + r * Math.sin(start);
-      const x2 = cx + r * Math.cos(end),   y2 = cy + r * Math.sin(end);
-      const large = ang > Math.PI ? 1 : 0;
-      svg.insertAdjacentHTML('beforeend',
-        `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z" fill="${it[colorKey]}"/>`);
-      start = end;
-    });
-    // 中心圆环
-    svg.insertAdjacentHTML('beforeend',
-      `<circle cx="${cx}" cy="${cy}" r="50" fill="#fff"/>` +
-      `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="10" fill="#86868b">总</text>` +
-      `<text x="${cx}" y="${cy + 14}" text-anchor="middle" font-size="16" font-weight="700" fill="#1d1d1f">${total}</text>`);
-
+  // 双饼图绘制函数 · #317 迁 Base charts.donut(中心「总+总数」+ 自定义图例保留)
+  function drawPie(divId, legendId, items, labelKey, valueKey, colorKey) {
+    const el = document.getElementById(divId);
+    const list = items.filter(it => it[valueKey] > 0);
+    const total = list.reduce((a, b) => a + b[valueKey], 0) || 1;
+    if (list.length && window.charts) {
+      window.charts.donut(el,
+        list.map(it => ({ label: it[labelKey], value: it[valueKey], color: it[colorKey] })),
+        { size: 220, ringWidth: 26, legend: 'none', showPercent: false,
+          centerLabel: '总', centerValue: total });
+    }
     const lg = document.getElementById(legendId);
-    items.forEach(it => {
+    list.forEach(it => {
       const pct = Math.round(it[valueKey] / total * 100);
       const cls = it.cat_class || '';
       lg.insertAdjacentHTML('beforeend',
@@ -225,8 +211,7 @@
       {label:'柔韧', cat_class:'cat-flex',     val:breakdown.flex.calorie,      color:'var(--flex)'},
       {label:'日常', cat_class:'cat-daily',    val:breakdown.daily.calorie,     color:'var(--daily)'},
     ];
-    drawPie('pie2', 'legend2', byCalorie.filter(it => it.val > 0), 'label', 'val', 'color');
-  } else {
+    drawPie('pie2', 'legend2', byCalorie.filter(it => it.val > 0), 'label', 'val', 'color');  } else {
     // 模式 2: 贡献 — 缺口结构 + 运动 vs 摄入
     drawPie('pie1', 'legend1', [
       {label:'运动消耗', cat_class:'cat-daily', val: contrib.exercise, color:'var(--good)'},

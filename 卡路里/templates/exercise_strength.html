@@ -77,7 +77,7 @@
 <script>
 (function(){
   const D = window.__P__;
-  if (!D || D.status !== 'ok') { document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>'; return; }
+  if (!D || D.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   const d = D.data;
   document.getElementById('metaLeft').textContent = d.meta.today;
   document.getElementById('subTitle').textContent = d.summary.subtitle;
@@ -97,7 +97,7 @@
       `<tr><td>${a.name}</td><td class="num">${a.sets}</td><td class="num">${a.weight} kg</td><td class="num">${a.reps}</td></tr>`);
   });
   if (!(d.actions || []).length) {
-    body.insertAdjacentHTML('beforeend', '<tr><td colspan="4" style="color:#86868b">暂无力量训练记录</td></tr>');
+    body.insertAdjacentHTML('beforeend', `<tr><td colspan="4">${window.emptyState({icon: '💪', text: '暂无力量训练记录', hint: '说「记力量训练」记下第一条'})}</td></tr>`);
   }
 
   const box = document.getElementById('trendBox');
@@ -120,7 +120,7 @@
     box.appendChild(row);
   });
   if (!(d.trends || []).length) {
-    box.innerHTML = '<div style="color:#86868b;font-size:13px">暂无数据</div>';
+    box.innerHTML = window.emptyState({text: '暂无数据'});
   }})();
 
   

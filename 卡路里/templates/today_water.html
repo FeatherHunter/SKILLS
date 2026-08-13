@@ -32,9 +32,6 @@
   /* Hero: ring + today ml */
   .hero { display:flex; align-items:center; gap:32px; padding:8px 4px; }
   .ring-wrap { position:relative; width:200px; height:200px; flex-shrink:0; }
-  .ring { transform:rotate(-90deg); width:100%; height:100%; }  /* #44:svg 跟随容器,避免手机缩 wrap 后圆环与文字错位 */
-  .ring-track { stroke:var(--ring-track); fill:none; }
-  .ring-fill  { stroke:var(--accent);    fill:none; stroke-linecap:round; transition:stroke-dashoffset 0.4s ease; }
   .ring-center { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; pointer-events:none; }
   .ring-center .num   { font-size:42px; font-weight:700; font-variant-numeric:tabular-nums; color:var(--fg); letter-spacing:-.02em; }
   .ring-center .unit  { font-size:13px; color:var(--fg3); margin-top:2px; }
@@ -86,7 +83,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -100,11 +97,7 @@
   <h2>今日进度</h2>
   <div class="hero">
     <div class="ring-wrap">
-      <svg class="ring" width="200" height="200" viewBox="0 0 200 200">
-        <circle class="ring-track" cx="100" cy="100" r="86" stroke-width="14"/>
-        <circle class="ring-fill"  id="ringFill" cx="100" cy="100" r="86" stroke-width="14"
-                stroke-dasharray="540.35" stroke-dashoffset="540.35"/>
-      </svg>
+      <div id="ringFill"></div>
       <div class="ring-center">
         <div class="num"   id="ringNum">--</div>
         <div class="unit"  id="ringUnit">ml</div>
@@ -177,15 +170,13 @@ let toastTimer = null;
     remainLine.className = 'remain-line done';
   }
 
-  // Ring animation: stroke-dasharray / offset
-  const circumference = 2 * Math.PI * 86;
-  const offset = circumference * (1 - Math.min(1, todayMl / targetMl));
-  const ring = document.getElementById('ringFill');
-  ring.setAttribute('stroke-dasharray', circumference.toFixed(2));
-  ring.setAttribute('stroke-dashoffset', offset.toFixed(2));
-  if (pct >= 100) ring.style.stroke = 'var(--good)';
+  // #317 迁 Base charts.donut 单段进度环(中心数值保留在 ring-center HTML)
+  const doneColor = pct >= 100 ? '#34c759' : 'var(--blue, #007aff)';
+  window.charts.donut(document.getElementById('ringFill'),
+    [{ label: '今日饮水', value: Math.min(100, pct || 0), color: doneColor }],
+    { size: 200, ringWidth: 14, legend: 'none', showPercent: false, centerValue: '' });
 
-  // 7-day bar chart
+  // 7-day bar chart(div 占比条 · #317 保留不动 — 对齐饼干先例)
   const chart  = document.getElementById('barChart');
   const wkMl   = summary.week_ml;
   const wkDate = summary.week_dates;

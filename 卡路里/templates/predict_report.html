@@ -29,11 +29,9 @@
   .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
   .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
-  svg { width:100%; height:clamp(220px, 45vh, 360px); display:block; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:16px; height:2px; background:#0071e3; }
-  .legend .band { width:16px; height:10px; background:rgba(0,113,227,.18); border-radius:2px; }
   .assume { font-size:12.5px; color:var(--fg2); background:var(--soft); border-radius:10px; padding:10px 14px; }
   .insight { background:var(--soft); border-radius:12px; padding:14px 18px; font-size:13.5px; margin-top:4px; }
   .insight b { color:var(--accent); }
@@ -54,7 +52,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -71,10 +69,9 @@
 
   <div class="section">
     <h2>预测/模拟轨迹</h2>
-    <svg id="chart" viewBox="0 0 800 260" preserveAspectRatio="none"></svg>
+    <div id="chart"></div>
     <div class="legend">
       <span><i></i> 预测值</span>
-      <span><span class="band"></span> 置信区间</span>
     </div>
   </div>
 
@@ -112,28 +109,14 @@
   const kpi = (label, value, extra) => `<div class="kpi"><div class="label">${label}</div><div class="value">${value}</div><div class="extra">${extra || ''}</div></div>`;
 
   if (D.forecast) {
-    // 预测折线 + 置信带
-    const svg = document.getElementById('chart');
-    const W = 800, H = 260, PAD = 40;
+    // #317 迁 Base charts.line: 置信带(hi/lo band)无接口 → 只画预测值主线的最近近似(记偏离)
     const pts = D.forecast.points || [];
-    const vals = pts.flatMap(p => [p.lo, p.hi, p.value]);
-    const mn = Math.min(...vals), mx = Math.max(...vals);
-    const X = i => PAD + i / (Math.max(pts.length - 1, 1)) * (W - PAD * 2);
-    const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
-    // 置信带
-    let band = '';
-    pts.forEach((p, i) => { band += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.hi).toFixed(1)}`; });
-    let band2 = '';
-    [...pts].reverse().forEach((p, i) => { band2 += `${i === 0 ? 'L' : 'L'}${X(pts.length - 1 - i).toFixed(1)},${Y(p.lo).toFixed(1)}`; });
     if (pts.length > 1) {
-      svg.insertAdjacentHTML('beforeend', `<path d="${band} ${band2} Z" fill="rgba(0,113,227,0.12)"/>`);
-      let d = '';
-      pts.forEach((p, i) => { d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.value).toFixed(1)}`; });
-      svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2.5"/>`);
-      pts.forEach((p, i) => svg.insertAdjacentHTML('beforeend',
-        `<circle cx="${X(i)}" cy="${Y(p.value)}" r="3" fill="#0071e3"><title>${p.date} ${p.value}</title></circle>`));
+      window.charts.line(document.getElementById('chart'),
+        pts.map(p => ({ label: p.date.slice(5), value: p.value })),
+        { height: 260, labels: 'select', format: v => Number(v).toFixed(1), tooltip: true });
     } else {
-      svg.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">预测点数不足</text>`);
+      document.getElementById('chart').innerHTML = '<div style="text-align:center;color:#86868b;padding:40px">预测点数不足</div>';
     }
   }
 

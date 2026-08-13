@@ -31,13 +31,11 @@
   .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
   .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
-  svg { width:100%; height:clamp(200px, 42vh, 340px); display:block; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:16px; height:2px; }
   .legend .a { background:var(--accent); }
   .legend .b { border-top:2px dashed var(--b); background:transparent; height:0; }
-  .legend .reg { border-top:2px dotted var(--good); background:transparent; height:0; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th,td { padding:8px 10px; text-align:left; border-bottom:1px solid var(--border); }
   th { color:var(--fg2); font-weight:500; font-size:12px; }
@@ -61,7 +59,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -80,17 +78,16 @@
 
 <div class="section">
   <h2>双轴走势</h2>
-  <svg id="dualChart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+  <div id="dualChart"></div>
   <div class="legend">
     <span><i class="a"></i> <span id="legA">--</span></span>
     <span><i class="b"></i> <span id="legB">--</span></span>
-    <span><i class="reg"></i> 回归线(散点图)</span>
   </div>
 </div>
 
 <div class="section">
-  <h2>散点图 + 回归</h2>
-  <svg id="scatterChart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+  <h2>相关性与回归</h2>
+  <div id="scatterChart"></div>
 </div>
 
 <div class="section" id="lagSection">
@@ -138,52 +135,55 @@
   document.getElementById('legA').textContent = A;
   document.getElementById('legB').textContent = B;
 
-  // 双轴折线
-  const svg = document.getElementById('dualChart');
-  const W = 800, H = 240, PAD = 34;
+  // #317 迁 Base charts.line 双系列: 各轴独立 min-max → 归一化共享 0-100 域近似
+  // (charts.line 无双轴独立刻度 — 记偏离)
   const line = D.line || [];
   if (line.length === 0) {
-    svg.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">窗口内无数据</text>`);
+    document.getElementById('dualChart').innerHTML = '<div style="text-align:center;color:#86868b;padding:40px">窗口内无数据</div>';
   } else {
-    const xs = line.map(p => new Date(p.date).getTime());
     const aVals = line.map(p => p.a).filter(v => v !== null && v !== undefined);
     const bVals = line.map(p => p.b).filter(v => v !== null && v !== undefined);
-    const xMin = Math.min(...xs), xMax = Math.max(...xs);
-    const aMin = Math.min(...aVals), aMax = Math.max(...aVals);
-    const bMin = Math.min(...bVals), bMax = Math.max(...bVals);
-    const X = x => PAD + (x - xMin) / (xMax - xMin || 1) * (W - PAD * 2);
-    const YA = v => H - PAD - (v - aMin) / (aMax - aMin || 1) * (H - PAD * 2);
-    const YB = v => H - PAD - (v - bMin) / (bMax - bMin || 1) * (H - PAD * 2);
-    const path = (f, getY) => line.filter(f).map((p, i) => `${i === 0 ? 'M' : 'L'}${X(new Date(p.date).getTime()).toFixed(1)},${getY(p).toFixed(1)}`).join(' ');
-    const aPath = path(p => p.a !== null && p.a !== undefined, p => YA(p.a));
-    const bPath = path(p => p.b !== null && p.b !== undefined, p => YB(p.b));
-    if (aPath) svg.insertAdjacentHTML('beforeend', `<path d="${aPath}" fill="none" stroke="#0071e3" stroke-width="2" opacity="0.9"/>`);
-    if (bPath) svg.insertAdjacentHTML('beforeend', `<path d="${bPath}" fill="none" stroke="#ff9500" stroke-width="2" stroke-dasharray="5 4" opacity="0.85"/>`);
-    line.forEach(p => {
-      if (p.a !== null && p.a !== undefined) svg.insertAdjacentHTML('beforeend', `<circle cx="${X(new Date(p.date).getTime())}" cy="${YA(p.a)}" r="2.4" fill="#0071e3"/>`);
-      if (p.b !== null && p.b !== undefined) svg.insertAdjacentHTML('beforeend', `<circle cx="${X(new Date(p.date).getTime())}" cy="${YB(p.b)}" r="2.4" fill="#ff9500"/>`);
-    });
+    const norm = (vals, get) => {
+      if (!vals.length) return null;
+      const mn = Math.min(...vals), mx = Math.max(...vals);
+      const range = (mx - mn) || 1;
+      return line.map(p => {
+        const v = get(p);
+        return { label: p.date.slice(5), value: (v === null || v === undefined) ? null : (v - mn) / range * 100 };
+      });
+    };
+    const aItems = norm(aVals, p => p.a);
+    const bItems = norm(bVals, p => p.b);
+    const first = aItems || bItems;
+    if (first) {
+      const series = [];
+      if (aItems) series.push({ name: A, items: aItems, color: '#0071e3' });
+      if (bItems) series.push({ name: B, items: bItems, color: '#ff9500', dashed: true });
+      window.charts.line(document.getElementById('dualChart'), first, {
+        height: 240,
+        yMin: 0, yMax: 100,
+        labels: 'select',
+        tooltip: true,
+        series,
+      });
+    }
   }
 
-  // 散点 + 回归
+  // #317 散点+回归无图表接口 → 降级为回归方程文字行(记偏离)
   const sc = document.getElementById('scatterChart');
   const pts = D.scatter || [];
   if (pts.length === 0) {
-    sc.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">无对齐样本,无法画散点</text>`);
-  } else {
-    const xs = pts.map(p => p.x), ys = pts.map(p => p.y);
-    const xMin = Math.min(...xs), xMax = Math.max(...xs);
-    const yMin = Math.min(...ys), yMax = Math.max(...ys);
-    const X = x => PAD + (x - xMin) / (xMax - xMin || 1) * (W - PAD * 2);
-    const Y = y => H - PAD - (y - yMin) / (yMax - yMin || 1) * (H - PAD * 2);
-    pts.forEach(p => sc.insertAdjacentHTML('beforeend',
-      `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="3.5" fill="#0071e3" opacity="0.6"/>`));
-    if (D.regression) {
-      const { slope, intercept } = D.regression;
-      const y0 = slope * xMin + intercept, y1 = slope * xMax + intercept;
-      sc.insertAdjacentHTML('beforeend', `<line x1="${X(xMin)}" y1="${Y(y0)}" x2="${X(xMax)}" y2="${Y(y1)}" stroke="#34c759" stroke-width="2" stroke-dasharray="4 3"/>`);
-      sc.insertAdjacentHTML('beforeend', `<text x="${PAD + 6}" y="${PAD + 12}" fill="#34c759" font-size="12">y = ${slope}x ${intercept >= 0 ? '+' : ''}${intercept}</text>`);
-    }
+    sc.innerHTML = '<div style="text-align:center;color:#86868b;padding:40px">无对齐样本,无法画散点</div>';
+  } else if (D.regression) {
+    const { slope, intercept } = D.regression;
+    const rv = D.correlation && D.correlation.r;
+    sc.innerHTML =
+      `<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding:8px 2px">` +
+      `<div style="font-size:13px;color:var(--fg2)">回归方程</div>` +
+      `<div style="font-size:15px;font-weight:700;color:var(--good)">y = ${slope}x ${intercept >= 0 ? '+' : ''}${intercept}</div>` +
+      (rv !== null && rv !== undefined ?
+        `<div style="font-size:13px;color:var(--fg2)">相关系数 r = ${rv.toFixed(3)} · 样本 ${pts.length} 对</div>` : '') +
+      `</div>`;
   }
 
   // 滞后相关

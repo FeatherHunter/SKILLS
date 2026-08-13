@@ -59,15 +59,6 @@ body{
 }
 .hero .sub{font-size:15px;color:var(--ink3);font-weight:400}
 .hero .pills{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-.pill{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:5px 12px;border-radius:999px;
-  font-size:13px;font-weight:600;
-}
-.pill.error{background:var(--red-soft);color:var(--red)}
-.pill.warn{background:var(--orange-soft);color:var(--orange)}
-.pill.ok{background:var(--green-soft);color:var(--green)}
-.pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
 
 /* SECTION */
 .section{
@@ -262,15 +253,6 @@ body{
   border:1px solid var(--lineS);
 }
 
-.empty{
-  text-align:center;padding:48px 24px;
-  background:var(--card);border-radius:var(--r-lg);
-  border:1px solid var(--lineS);
-}
-.empty .icon{font-size:48px;margin-bottom:12px}
-.empty h3{font-size:17px;font-weight:600;margin-bottom:6px}
-.empty p{font-size:13px;color:var(--ink3)}
-
 footer{
   text-align:center;color:var(--ink3);
   font-size:12px;padding-top:20px;
@@ -427,13 +409,13 @@ function render() {
   const pills = document.getElementById('pills');
   pills.innerHTML = '';
   if (SUMMARY.summary_status === 'fail') {
-    pills.innerHTML += `<span class="pill error">🔴 必须修复(${SUMMARY.by_severity?.error || 0})</span>`;
+    pills.innerHTML += window.statusBadge('danger', `🔴 必须修复(${SUMMARY.by_severity?.error || 0})`);
   } else if (SUMMARY.summary_status === 'warn') {
-    pills.innerHTML += `<span class="pill warn">🟡 需关注(${SUMMARY.by_severity?.warn || 0})</span>`;
+    pills.innerHTML += window.statusBadge('warn', `🟡 需关注(${SUMMARY.by_severity?.warn || 0})`);
   } else if (SUMMARY.summary_status === 'ok') {
-    pills.innerHTML += `<span class="pill ok">✓ 无失败</span>`;
+    pills.innerHTML += window.statusBadge('ok', '✓ 无失败');
   }
-  pills.innerHTML += `<span class="pill" style="background:var(--bg-soft);color:var(--ink3)">豁免 ${SUMMARY.safe_skipped || 0} 个</span>`;
+  pills.innerHTML += `<span style="background:var(--bg-soft);color:var(--ink3)">豁免 ${SUMMARY.safe_skipped || 0} 个</span>`;
 
   // KPI
   document.getElementById('kpiSessions').textContent = SUMMARY.scanned_sessions || 0;
@@ -452,7 +434,7 @@ function render() {
 function renderHits() {
   const container = document.getElementById('hitsContainer');
   if (HITS.length === 0) {
-    container.innerHTML = '<div class="empty"><div class="icon">✅</div><h3>未发现禁忌动作</h3><p>所有动作都在安全范围内</p></div>';
+    container.innerHTML = window.emptyState({icon: '✅', text: '未发现禁忌动作', hint: '所有动作都在安全范围内'});
     return;
   }
 

@@ -40,7 +40,6 @@
   section .sub{color:var(--fg2);font-size:13px;margin-bottom:16px;line-height:1.65}
 
   .chart-box{width:100%;overflow:hidden}
-  .chart-box svg{display:block;width:100%}
   .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--fg2);margin-top:10px}
   .legend span{display:inline-flex;align-items:center;gap:6px}
   .legend i{width:18px;height:3px;border-radius:2px;display:inline-block}
@@ -152,7 +151,7 @@
 
 </div>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script>
 <script>
 (function(){
   "use strict";
@@ -212,55 +211,33 @@
       box.innerHTML = '<div class="empty">📭 窗口内没有「同一天既有睡眠又有体重」的数据。<br>多记录几天，或扩大时间窗口再试。</div>';
       return;
     }
-    var W = Math.max(box.clientWidth || 760, 300);
-    var H = Math.round(W * 0.42);
-    var padL = 46, padR = 46, padT = 18, padB = 30;
-    var pw = W - padL - padR, ph = H - padT - padB;
-    var n = series.length;
-
-    var sleepMin = 0, sleepMax = 720;
-    var wv = series.map(function(s){ return s.weight_kg; });
-    var wMin = Math.min.apply(null, wv), wMax = Math.max.apply(null, wv);
-    var wSpan = (wMax - wMin) || 1;
-    wMin -= wSpan * 0.15; wMax += wSpan * 0.15;
-
-    function x(i){ return padL + (n === 1 ? pw / 2 : i * pw / (n - 1)); }
-    function ySleep(m){ return padT + ph - (Math.min(Math.max(m, sleepMin), sleepMax) - sleepMin) / (sleepMax - sleepMin) * ph; }
-    function yW(kg){ return padT + ph - (kg - wMin) / (wMax - wMin) * ph; }
-
-    var pathSleep = series.map(function(s, i){ return (i ? "L" : "M") + x(i).toFixed(1) + " " + ySleep(s.sleep_min).toFixed(1); }).join(" ");
-    var pathW = series.map(function(s, i){ return (i ? "L" : "M") + x(i).toFixed(1) + " " + yW(s.weight_kg).toFixed(1); }).join(" ");
-
-    // y 轴刻度：睡眠 4 档（0/240/480/720 分钟）
-    var ticksSleep = [0, 240, 480, 720].map(function(v){
-      return '<line x1="' + padL + '" y1="' + ySleep(v) + '" x2="' + (W - padR) + '" y2="' + ySleep(v) + '" stroke="#f0f0f2" stroke-width="1"/>'
-           + '<text x="' + (padL - 6) + '" y="' + (ySleep(v) + 4) + '" text-anchor="end" font-size="10" fill="#9b9ba0">' + v + '</text>';
-    }).join("");
-    // 体重刻度：3 档
-    var ticksW = [0, 0.5, 1].map(function(t){
-      var v = wMin + (wMax - wMin) * t;
-      var label = v.toFixed(1);
-      return '<line x1="' + (W - padR) + '" y1="' + yW(v) + '" x2="' + (W - padR + 4) + '" y2="' + yW(v) + '" stroke="#d2d2d7" stroke-width="1"/>'
-           + '<text x="' + (W - padR + 8) + '" y="' + (yW(v) + 4) + '" font-size="10" fill="#9b9ba0">' + label + '</text>';
-    }).join("");
-    // x 轴日期标签（首/中/尾）
-    var idxs = [];
-    if (n <= 8) { for (var i = 0; i < n; i++) idxs.push(i); }
-    else { idxs = [0, Math.floor((n - 1) / 2), n - 1]; }
-    var xLabels = idxs.map(function(i){
-      return '<text x="' + x(i) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="#9b9ba0">' + esc(series[i].date.slice(5)) + '</text>';
-    }).join("");
-
-    box.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg">'
-      + ticksSleep + ticksW + xLabels
-      + '<line x1="' + padL + '" y1="' + (padT + ph) + '" x2="' + (W - padR) + '" y2="' + (padT + ph) + '" stroke="#d2d2d7" stroke-width="1"/>'
-      + '<path d="' + pathSleep + '" fill="none" stroke="#007aff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
-      + '<path d="' + pathW + '" fill="none" stroke="#34c759" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>'
-      + series.map(function(s, i){
-          return '<circle cx="' + x(i).toFixed(1) + '" cy="' + ySleep(s.sleep_min).toFixed(1) + '" r="3" fill="#007aff"/>'
-               + '<circle cx="' + x(i).toFixed(1) + '" cy="' + yW(s.weight_kg).toFixed(1) + '" r="3" fill="#34c759"/>';
-        }).join("")
-      + '</svg>';
+    // #317 迁 Base charts.line 双序列: 左轴睡眠(分钟)/右轴体重(kg) 独立刻度无接口
+    // → 各序列独立 min-max 归一化到共享 0-100 域近似(保形状不保绝对刻度 — 记偏离)
+    function norm(field){
+      var vals = series.map(function(s){ return s[field]; }).filter(function(v){ return v !== null && v !== undefined; });
+      if (!vals.length) return null;
+      var mn = Math.min.apply(null, vals), mx = Math.max.apply(null, vals);
+      var span = (mx - mn) || 1;
+      return series.map(function(s){
+        var v = s[field];
+        return { label: (s.date || "").slice(5), value: (v === null || v === undefined) ? null : (v - mn) / span * 100 };
+      });
+    }
+    var sleepItems = norm("sleep_min");
+    var weightItems = norm("weight_kg");
+    var first = sleepItems || weightItems;
+    if (first && window.charts) {
+      var seriesList = [];
+      if (sleepItems) seriesList.push({ name: "睡眠时长(分钟)", items: sleepItems, color: "#007aff" });
+      if (weightItems) seriesList.push({ name: "体重(kg)", items: weightItems, color: "#34c759" });
+      window.charts.line(box, first, {
+        height: 240,
+        yMin: 0, yMax: 100,
+        labels: "select",
+        tooltip: true,
+        series: seriesList,
+      });
+    }
   }
 
   function renderGroups(){

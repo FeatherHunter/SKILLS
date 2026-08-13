@@ -29,7 +29,6 @@
   .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
   .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
-  svg { width:100%; height:clamp(180px, 38vh, 300px); display:block; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:16px; height:2px; background:#0071e3; }
@@ -59,7 +58,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -73,7 +72,7 @@
   <div class="kpi-grid" id="fullKpis"></div>
   <div class="section">
     <h2>各维度走势(摄入/运动/体重/饮水/缺口)</h2>
-    <svg id="fullChart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+    <div id="fullChart"></div>
     <div class="legend">
       <span><i style="background:#0071e3"></i> 摄入</span>
       <span><i style="background:#ff9500"></i> 运动</span>
@@ -96,7 +95,7 @@
   <div class="kpi-grid" id="singleKpis"></div>
   <div class="section" id="singleChartSection" style="display:none">
     <h2>历史轨迹</h2>
-    <svg id="singleChart" viewBox="0 0 800 220" preserveAspectRatio="none"></svg>
+    <div id="singleChart"></div>
   </div>
   <div class="section" id="singleTableSection" style="display:none">
     <h2 id="singleTableTitle">--</h2>
@@ -138,23 +137,40 @@
     document.getElementById('fullBlock').style.display = '';
     document.getElementById('fullKpis').innerHTML = (D.kpis || []).map(k =>
       kpi(k.label, esc(k.value), k.delta !== null && k.delta !== undefined ? `Δ ${k.delta >= 0 ? '+' : ''}${k.delta}` : '')).join('');
-    const svg = document.getElementById('fullChart');
-    const W = 800, H = 240, PAD = 34;
+    // #317 迁 Base charts.line 多序列: 各维度独立 min-max → 归一化共享 0-100 域近似
+    // (charts.line 无双轴独立刻度 — 记偏离)
     const s = D.series || [];
-    const draw = (field, color, min, max) => {
-      const vals = s.map(p => p[field]).filter(v => v !== null && v !== undefined);
-      if (vals.length < 2) return;
-      const mn = min !== undefined ? min : Math.min(...vals);
-      const mx = max !== undefined ? max : Math.max(...vals);
-      const X = i => PAD + i / (s.length - 1 || 1) * (W - PAD * 2);
-      const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
-      let d = '';
-      s.forEach((p, i) => { if (p[field] === null || p[field] === undefined) return;
-        d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p[field]).toFixed(1)}`; });
-      svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" opacity="0.85"/>`);
-    };
-    draw('calories', '#0071e3'); draw('exercise_kcal', '#ff9500');
-    draw('weight_kg', '#34c759'); draw('water_ml', '#af52de'); draw('deficit', '#ff3b30');
+    const fields = [
+      { name: '摄入', field: 'calories', color: '#0071e3' },
+      { name: '运动', field: 'exercise_kcal', color: '#ff9500' },
+      { name: '体重', field: 'weight_kg', color: '#34c759' },
+      { name: '饮水', field: 'water_ml', color: '#af52de' },
+      { name: '缺口', field: 'deficit', color: '#ff3b30' },
+    ];
+    const series = fields.map(f => {
+      const vals = s.map(p => p[f.field]).filter(v => v !== null && v !== undefined);
+      if (vals.length < 2) return null;
+      const mn = Math.min(...vals), mx = Math.max(...vals);
+      const range = (mx - mn) || 1;
+      return {
+        name: f.name, color: f.color,
+        items: s.map(p => ({
+          label: p.date.slice(5),
+          value: (p[f.field] === null || p[f.field] === undefined) ? null : (p[f.field] - mn) / range * 100,
+        })),
+      };
+    }).filter(Boolean);
+    if (series.length) {
+      window.charts.line(document.getElementById('fullChart'), series[0].items, {
+        height: 240,
+        yMin: 0, yMax: 100,
+        labels: 'select',
+        tooltip: true,
+        series,
+      });
+    } else {
+      document.getElementById('fullChart').innerHTML = '<div style="text-align:center;color:#86868b;padding:40px">窗口内无数据</div>';
+    }
     const an = D.anomaly_days || [];
     document.getElementById('anomalySection').style.display = an.length ? '' : 'none';
     document.getElementById('anomalyList').innerHTML = an.map(a => `· ${a.date}: ${a.notes.join('、')}`).join('<br>');
@@ -171,19 +187,11 @@
         + kpi('身高', esc(D.height) + ' cm', '用于计算')
         + kpi('采样点', D.history.length, '历史轨迹');
       document.getElementById('singleChartSection').style.display = '';
-      const svg = document.getElementById('singleChart');
-      const W = 800, H = 220, PAD = 34;
       const h = D.history || [];
       if (h.length >= 2) {
-        const xs = h.map(p => new Date(p.date).getTime());
-        const vals = h.map(p => p.bmi);
-        const mn = Math.min(...vals), mx = Math.max(...vals);
-        const X = i => PAD + i / (h.length - 1) * (W - PAD * 2);
-        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
-        let d = '';
-        h.forEach((p, i) => { d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.bmi).toFixed(1)}`; });
-        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
-        h.forEach((p, i) => svg.insertAdjacentHTML('beforeend', `<circle cx="${X(i)}" cy="${Y(p.bmi)}" r="2.5" fill="#0071e3"/>`));
+        window.charts.line(document.getElementById('singleChart'),
+          h.map(p => ({ label: p.date.slice(5), value: p.bmi })),
+          { height: 220, labels: 'select', format: v => Number(v).toFixed(1), tooltip: true });
       }
       document.getElementById('milestoneSection').style.display = (D.milestones || []).length ? '' : 'none';
       document.getElementById('milestoneList').innerHTML = (D.milestones || []).map(m => `· ${m.date}: ${m.from} → ${m.to}`).join('<br>');
@@ -213,20 +221,13 @@
         + kpi('达标率', esc(D.rate ?? '—') + '%', `按日目标 ${D.p_goal} g`)
         + kpi('采样天数', D.series.length, '历史轨迹');
       document.getElementById('singleChartSection').style.display = '';
-      const svg = document.getElementById('singleChart');
-      const W = 800, H = 220, PAD = 34;
       const s = D.series || [];
       const vals = s.map(p => p.protein).filter(v => v !== null && v !== undefined);
       if (vals.length >= 2) {
-        const mn = Math.min(...vals, D.target), mx = Math.max(...vals, D.target);
-        const X = i => PAD + i / (s.length - 1) * (W - PAD * 2);
-        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
-        let d = '';
-        s.forEach((p, i) => { if (p.protein === null || p.protein === undefined) return;
-          d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.protein).toFixed(1)}`; });
-        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
-        svg.insertAdjacentHTML('beforeend', `<line x1="${PAD}" y1="${Y(D.target)}" x2="${W - PAD}" y2="${Y(D.target)}" stroke="#ff9500" stroke-dasharray="5 4"/>`);
-        svg.insertAdjacentHTML('beforeend', `<text x="${PAD + 4}" y="${Y(D.target) - 6}" fill="#ff9500" font-size="11">目标 ${D.target} g</text>`);
+        window.charts.line(document.getElementById('singleChart'),
+          s.map(p => ({ label: p.date.slice(5), value: p.protein })),
+          { height: 220, labels: 'select', format: v => v + ' g', tooltip: true,
+            markLine: { value: D.target, label: `目标 ${D.target} g` } });
       }
     }
     if (D.kind === 'water') {
@@ -235,19 +236,13 @@
         + kpi('达标天数', D.days_ok + '/' + D.days, '≥ 目标')
         + kpi('达标率', esc(D.rate ?? '—') + '%', '');
       document.getElementById('singleChartSection').style.display = '';
-      const svg = document.getElementById('singleChart');
-      const W = 800, H = 220, PAD = 34;
       const s = D.series || [];
       const vals = s.map(p => p.water_ml).filter(v => v !== null && v !== undefined);
       if (vals.length >= 2) {
-        const mn = Math.min(...vals, D.goal), mx = Math.max(...vals, D.goal);
-        const X = i => PAD + i / (s.length - 1) * (W - PAD * 2);
-        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
-        let d = '';
-        s.forEach((p, i) => { if (p.water_ml === null || p.water_ml === undefined) return;
-          d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.water_ml).toFixed(1)}`; });
-        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
-        svg.insertAdjacentHTML('beforeend', `<line x1="${PAD}" y1="${Y(D.goal)}" x2="${W - PAD}" y2="${Y(D.goal)}" stroke="#ff9500" stroke-dasharray="5 4"/>`);
+        window.charts.line(document.getElementById('singleChart'),
+          s.map(p => ({ label: p.date.slice(5), value: p.water_ml })),
+          { height: 220, labels: 'select', format: v => v + ' ml', tooltip: true,
+            markLine: { value: D.goal, label: `目标 ${D.goal} ml` } });
       }
     }
     if (D.kind === 'score') {
@@ -262,18 +257,13 @@
       document.getElementById('singleTable').innerHTML = Object.entries(D.items).map(([k, v]) =>
         `<tr><td>${k}</td><td>${v}</td><td><div class="bar-wrap" style="display:flex;align-items:center;gap:10px"><div class="bar" style="flex:1;background:var(--soft);height:8px;border-radius:4px;overflow:hidden"><i style="display:block;height:100%;width:${v}%;background:${v >= 80 ? '#34c759' : v >= 60 ? '#ff9500' : '#ff3b30'}"></i></div></div></td></tr>`).join('');
       document.getElementById('singleChartSection').style.display = '';
-      const svg = document.getElementById('singleChart');
-      const W = 800, H = 220, PAD = 34;
       const h = D.history || [];
       const vals = h.map(p => p.score).filter(v => v !== null && v !== undefined);
       if (vals.length >= 2) {
-        const mn = Math.min(...vals), mx = Math.max(...vals);
-        const X = i => PAD + i / (h.length - 1) * (W - PAD * 2);
-        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
-        let d = '';
-        h.forEach((p, i) => { if (p.score === null || p.score === undefined) return;
-          d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.score).toFixed(1)}`; });
-        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#34c759" stroke-width="2"/>`);
+        window.charts.line(document.getElementById('singleChart'),
+          h.map(p => ({ label: p.date.slice(5), value: p.score })),
+          { height: 220, labels: 'select', format: v => v + ' 分', tooltip: true,
+            color: '#34c759' });
       }
     }
     if (D.kind === 'trend') {
@@ -282,22 +272,12 @@
         + kpi('后段均分', esc(D.second_half ?? '—'), '后半窗口')
         + kpi('拐点数', D.inflections?.length ?? 0, '方向反转点');
       document.getElementById('singleChartSection').style.display = '';
-      const svg = document.getElementById('singleChart');
-      const W = 800, H = 220, PAD = 34;
       const h = D.trend || [];
       const vals = h.map(p => p.score).filter(v => v !== null && v !== undefined);
       if (vals.length >= 2) {
-        const mn = Math.min(...vals), mx = Math.max(...vals);
-        const X = i => PAD + i / (h.length - 1) * (W - PAD * 2);
-        const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
-        let d = '';
-        h.forEach((p, i) => { d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p.score).toFixed(1)}`; });
-        svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="#0071e3" stroke-width="2"/>`);
-        (D.inflections || []).forEach(inf => {
-          const idx = h.findIndex(p => p.date === inf);
-          if (idx < 0) return;
-          svg.insertAdjacentHTML('beforeend', `<circle cx="${X(idx)}" cy="${Y(h[idx].score)}" r="5" fill="none" stroke="#ff9500" stroke-width="2"><title>拐点 ${inf}</title></circle>`);
-        });
+        window.charts.line(document.getElementById('singleChart'),
+          h.map(p => ({ label: p.date.slice(5), value: p.score })),
+          { height: 220, labels: 'select', format: v => v + ' 分', tooltip: true });
       }
     }
     if (D.kind === 'compare') {

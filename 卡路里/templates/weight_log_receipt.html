@@ -32,7 +32,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 .section-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px}
 .section-title h2{font-size:17px;font-weight:600;letter-spacing:-.2px}
 .section-title .hint{font-size:12px;color:var(--ink3)}
-.trend-svg{width:100%;height:clamp(220px,35vw,380px);display:block;background:linear-gradient(180deg,rgba(0,122,255,.02),transparent);border-radius:12px;text-rendering:geometricPrecision}
+.trend-svg{width:100%;background:linear-gradient(180deg,rgba(0,122,255,.02),transparent);border-radius:12px}
 .trend-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
 .trend-stat{padding:12px 14px;background:var(--bg-soft);border-radius:10px}
 .trend-stat .label{font-size:11px;color:var(--ink3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
@@ -73,9 +73,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 <h2>近 30 天趋势</h2>
 <span class="hint">橙色圆点 = 最新记录 · 共 <span id="historyCount">0</span> 条</span>
 </div>
-<svg class="trend-svg" id="trendSvg" viewBox="0 0 800 500" preserveAspectRatio="xMidYMid meet">
-<line x1="0" y1="100" x2="800" y2="100" stroke="rgba(60,60,67,.06)" stroke-width="1"></line>
-</svg>
+<div class="trend-svg" id="trendSvg"></div>
 <div class="trend-stats">
 <div class="trend-stat"><div class="label">当前距上次</div><div class="value" id="statDeltaLast">--</div></div>
 <div class="trend-stat"><div class="label">当前距目标</div><div class="value" id="statDiff">--</div></div>
@@ -90,7 +88,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC"
 
 </div>
 </div>
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 <script>
 const DATA=(()=>{if(typeof window.__P__!=='object'||window.__P__===null)return null;return window.__P__})();
 const SUMMARY=DATA&&DATA.data&&DATA.data.summary?DATA.data.summary:{};
@@ -136,84 +134,13 @@ function renderTrend(){
     return;
   }
   document.getElementById('historyCount').textContent=HISTORY.length;
-  const svg=document.getElementById('trendSvg');
-  // JS 响应式重绘(2026-08-03 · ticket #43 场景 2 终审):viewBox = 容器实际像素
-  // → scale=1:PC 铺满容器零留白,手机标签固定 px 字号清晰,resize 自动重绘
-  const box=svg.getBoundingClientRect();
-  const W=Math.max(200,box.width),H=Math.max(120,box.height);
-  svg.setAttribute('viewBox','0 0 '+W+' '+H);
-  const FONT=window.matchMedia('(max-width:640px)').matches?12:13.5;
-  const PADX=8,PADY=34;   // 水平近乎零留白(仅圆点半径 8px),垂直留标签/刻度空间
+  // #317 迁 Base charts.line: HISTORY 倒序(最新在前) → 正序喂图表, highlightLast 高亮最新点
+  const asc=HISTORY.slice().reverse();
   const weights=HISTORY.map(h=>h.weight_kg);
-  const minW=Math.min.apply(null,weights);
-  const maxW=Math.max.apply(null,weights);
-  const range=maxW-minW||1;
-  const lo=minW-range*0.10,hi=maxW+range*0.10;   // 数值域上下 10% 净空,防贴边
-  const yR=hi-lo||1;
-  const xStep=(W-2*PADX)/(Math.max(1,HISTORY.length-1));
-  function x(i){return PADX+i*xStep;}
-  function y(w){return H-PADY-((w-lo)/yR)*(H-2*PADY);}
-  let path='';
-  HISTORY.slice().reverse().forEach((h,i)=>{
-    const px=x(i),py=y(h.weight_kg);
-    path+=(i===0?'M':'L')+px+','+py+' ';
-  });
-  svg.innerHTML='';
-  const ns='http://www.w3.org/2000/svg';
-  const axis=document.createElementNS(ns,'line');
-  axis.setAttribute('x1',PADX);axis.setAttribute('y1',H-PADY);
-  axis.setAttribute('x2',W-PADX);axis.setAttribute('y2',H-PADY);
-  axis.setAttribute('stroke','rgba(60,60,67,.12)');axis.setAttribute('stroke-width','1');
-  svg.appendChild(axis);
-  const pathEl=document.createElementNS(ns,'path');
-  pathEl.setAttribute('d',path);
-  pathEl.setAttribute('fill','none');
-  pathEl.setAttribute('stroke','rgba(0,122,255,.4)');
-  pathEl.setAttribute('stroke-width','2');
-  pathEl.setAttribute('stroke-linejoin','round');
-  pathEl.setAttribute('stroke-linecap','round');
-  svg.appendChild(pathEl);
-  const areaPath=path+'L'+x(HISTORY.length-1)+','+(H-PADY)+'L'+x(0)+','+(H-PADY)+'Z';
-  const areaEl=document.createElementNS(ns,'path');
-  areaEl.setAttribute('d',areaPath);
-  areaEl.setAttribute('fill','rgba(0,122,255,.06)');
-  svg.appendChild(areaEl);
-  HISTORY.slice().reverse().forEach((h,i)=>{
-    const px=x(i),py=y(h.weight_kg);
-    const isLatest=i===HISTORY.length-1;
-    const c=document.createElementNS(ns,'circle');
-    c.setAttribute('cx',px);c.setAttribute('cy',py);
-    c.setAttribute('r',isLatest?7:4);
-    c.setAttribute('fill',isLatest?'#ff9500':'rgba(0,122,255,.7)');
-    c.setAttribute('stroke','#fff');c.setAttribute('stroke-width','2');
-    svg.appendChild(c);
-    if(isLatest){
-      const lbl=document.createElementNS(ns,'text');
-      // 正上方居中标注(2026-08-03 · ticket #43 场景 2 终审:mmx 反馈标签贴边错位 → middle anchor 消除飘移感;x 钳制在图内防边缘裁切)
-      lbl.setAttribute('text-anchor','middle');
-      lbl.setAttribute('x',Math.min(Math.max(px,32),W-32));lbl.setAttribute('y',py-14);
-      lbl.setAttribute('fill','#ff9500');lbl.setAttribute('font-size',FONT);lbl.setAttribute('font-weight','600');
-      lbl.setAttribute('font-family','-apple-system,sans-serif');
-      lbl.textContent=(h.weight_kg||'')+'kg';
-      svg.appendChild(lbl);
-    }
-  });
-  // X 轴首尾日期刻度(2026-08-03 · 场景 2 终审:mmx 反馈缺刻度 → 10px 浅灰,首尾日期)
-  const TICK_FONT=Math.max(9,FONT-2.5);
-  const tick=document.createElementNS(ns,'text');
-  tick.setAttribute('text-anchor','start');
-  tick.setAttribute('x',x(0));tick.setAttribute('y',H-PADY+18);
-  tick.setAttribute('fill','rgba(60,60,67,.5)');tick.setAttribute('font-size',TICK_FONT);
-  tick.setAttribute('font-family','-apple-system,sans-serif');
-  tick.textContent=(HISTORY[HISTORY.length-1].date||'').slice(5);
-  svg.appendChild(tick);
-  const tick2=document.createElementNS(ns,'text');
-  tick2.setAttribute('text-anchor','end');
-  tick2.setAttribute('x',x(HISTORY.length-1));tick2.setAttribute('y',H-PADY+18);
-  tick2.setAttribute('fill','rgba(60,60,67,.5)');tick2.setAttribute('font-size',TICK_FONT);
-  tick2.setAttribute('font-family','-apple-system,sans-serif');
-  tick2.textContent=(HISTORY[0].date||'').slice(5);
-  svg.appendChild(tick2);
+  window.charts.line(document.getElementById('trendSvg'),
+    asc.map(h=>({label:(h.date||'').slice(5),value:h.weight_kg})),
+    {height:300,area:true,highlightLast:true,labels:'edge',
+     format:v=>String(v)+'kg',tooltip:true});
   const avg=(weights.reduce((a,b)=>a+b,0)/weights.length).toFixed(1);
   const oldestW=HISTORY[HISTORY.length-1].weight_kg;
   const newestW=HISTORY[0].weight_kg;

@@ -85,7 +85,7 @@
 <script>
 (function(){
   const D = window.__P__;
-  if (!D || D.status !== 'ok') { document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>'; return; }
+  if (!D || D.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   const d = D.data;
   document.getElementById('metaLeft').textContent = d.meta.today + ' · ' + d.meta.period;
   document.getElementById('subTitle').textContent = d.summary.subtitle;
@@ -107,13 +107,13 @@
       `<div class="dist-bar"><div class="dist-fill" style="width:${Math.round(c.count / maxC * 100)}%"></div></div>` +
       `<div class="dist-val">${c.count} 次</div></div>`);
   });
-  if (!cats.length) distBox.innerHTML = '<div style="color:#86868b;font-size:13px">暂无数据</div>';
+  if (!cats.length) distBox.innerHTML = window.emptyState({text: '暂无数据'});
 
   const topBox = document.getElementById('topBox');
   (d.top_movements || []).forEach(m => {
     topBox.insertAdjacentHTML('beforeend', `<span class="chip">${m.name} <b>×${m.count}</b></span>`);
   });
-  if (!(d.top_movements || []).length) topBox.innerHTML = '<div style="color:#86868b;font-size:13px">暂无数据</div>';
+  if (!(d.top_movements || []).length) topBox.innerHTML = window.emptyState({text: '暂无数据'});
 
   const trend = d.trend || [];
   const maxCal = Math.max(...trend.map(t => t.calories), 1);
@@ -125,7 +125,7 @@
     document.getElementById('trendBox').appendChild(b);
   });
   if (!trend.length) document.getElementById('trendBox').innerHTML =
-    '<div style="color:#86868b;font-size:13px">暂无数据</div>';})();
+    window.emptyState({text: '暂无数据'});})();
 
   
 </script>

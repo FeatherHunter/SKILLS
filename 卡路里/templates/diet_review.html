@@ -97,7 +97,7 @@ let toastTimer = null;
 (function(){
   const D = window.__P__;
   if (!D || D.status !== 'ok') {
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'});
     return;
   }
   const { summary, top5, daily, meta } = D.data;

@@ -67,7 +67,7 @@
 <script>
 (function(){
   const D = window.__P__;
-  if (!D || D.status !== 'ok') { document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>'; return; }
+  if (!D || D.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   const d = D.data;
   document.getElementById('metaLeft').textContent = d.meta.today;
   document.getElementById('subTitle').textContent = d.summary.subtitle;
@@ -88,7 +88,7 @@
       `<td class="num">${i.pace ? i.pace + ' 分/km' : '—'}</td></tr>`);
   });
   if (!(d.items || []).length) {
-    body.insertAdjacentHTML('beforeend', '<tr><td colspan="5" style="color:#86868b">暂无有氧训练记录</td></tr>');
+    body.insertAdjacentHTML('beforeend', `<tr><td colspan="5">${window.emptyState({icon: '🏃', text: '暂无有氧训练记录', hint: '说「记有氧运动」记下第一条'})}</td></tr>`);
   }})();
 
   

@@ -133,7 +133,6 @@ tbody tr:hover td{background:var(--accent-soft)}
 
 /* VOLUME CHARTS (#257) */
 .chart-box{width:100%;overflow-x:auto}
-.chart-box svg{display:block;width:100%;height:auto}
 .chart-note{font-size:12px;color:var(--fg2);margin-top:8px}
 .chart-legend{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px;font-size:11.5px;color:var(--fg2)}
 .chart-legend .item{display:flex;align-items:center;gap:5px}
@@ -264,7 +263,7 @@ footer{
 </div>
 <a id="backTop" href="#top" title="回到顶部">↑</a>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <script>
 const DATA = (() => {
@@ -312,7 +311,7 @@ function fmtK(n) {
   return String(Math.round(n));
 }
 
-/* ---------- #257 周容量双柱 ---------- */
+/* ---------- #257 周容量双柱 → #317 迁 Base charts.combo(柱=实做, 线=计划)近似 ---------- */
 function renderVolume(volume) {
   const el = document.getElementById('volumeChart');
   const note = document.getElementById('volumeNote');
@@ -321,43 +320,18 @@ function renderVolume(volume) {
     return;
   }
   const weeks = volume.weeks;
-  const W = 640, H = 248, PL = 46, PR = 14, PT = 36, PB = 36;
-  const iw = W - PL - PR, ih = H - PT - PB;
   const maxV = Math.max(1, ...weeks.map(w => Math.max(w.plan || 0, w.actual || 0)));
-  // Y 轴刻度：向上取整
   const rawStep = maxV / 4;
   const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
   const step = Math.ceil(rawStep / mag) * mag;
   const yMax = step * 4;
-  const y = v => PT + ih - (v / yMax) * ih;
-
-  const groupW = iw / weeks.length;
-  const barW = Math.min(34, groupW * 0.32);
-  const gap = 6;
-  const half = barW / 2 + gap / 2;
-
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="周训练容量计划 vs 实做柱状图">`;
-  // 网格 + Y 刻度
-  for (let i = 0; i <= 4; i++) {
-    const v = step * i, yy = y(v);
-    svg += `<line x1="${PL}" y1="${yy}" x2="${W - PR}" y2="${yy}" stroke="#ececec" stroke-width="1"/>`;
-    svg += `<text x="${PL - 8}" y="${yy + 4}" text-anchor="end" font-size="13.5" fill="#6e6e73">${fmtK(v)}</text>`;
-  }
-  // X 标签 + 柱子
-  weeks.forEach((wk, i) => {
-    const cx = PL + groupW * i + groupW / 2;
-    const p = wk.plan || 0, a = wk.actual || 0;
-    const py = y(p), ay = y(a);
-    // 计划柱（浅蓝描边）
-    svg += `<rect x="${cx - half}" y="${py}" width="${barW}" height="${Math.max(0, PT + ih - py)}" rx="4" fill="rgba(0,113,227,.18)" stroke="var(--accent)" stroke-width="2"/>`;
-    // 实做柱（绿）
-    svg += `<rect x="${cx - half + barW + gap}" y="${ay}" width="${barW}" height="${Math.max(0, PT + ih - ay)}" rx="4" fill="${wk.actual > 0 ? 'var(--green)' : 'var(--gray)'}" opacity="${wk.actual > 0 ? 1 : .35}"/>`;
-    svg += `<text x="${cx}" y="${PT + ih + 26}" text-anchor="middle" font-size="13.5" fill="#86868b">${escapeHTML(wk.label)}</text>`;
-    if (p > 0) svg += `<text x="${cx}" y="${py - 6}" text-anchor="middle" font-size="13" fill="#6e6e73">${fmtK(p)}</text>`;
-    if (a > 0) svg += `<text x="${cx + barW + gap - 0}" y="${ay - 6}" text-anchor="middle" font-size="13" fill="#2ea24b" transform="translate(${barW/2+gap/2},0)">${fmtK(a)}</text>`;
-  });
-  svg += '</svg>';
-  el.innerHTML = svg;
+  // 分组双柱无接口 → combo 近似(柱=实做, 线=计划趋势); Y 刻度文字缺失(记偏离)
+  window.charts.combo(el,
+    {
+      bars: weeks.map(w => ({ label: w.label, value: w.actual || 0 })),
+      lines: weeks.map(w => ({ label: w.label, value: w.plan || 0 })),
+    },
+    { height: 248, y2: false, barColor: 'var(--green)', lineColor: 'var(--accent)', tooltip: true });
   if (!volume.has_actual) {
     note.innerHTML = '<div class="empty-tip">⚠️ 实做数据不足：当前范围无带重量实绩，仅显示计划容量</div>';
   } else {
@@ -370,19 +344,6 @@ function renderVolume(volume) {
 /* ---------- #257 主项动作负荷折线 ---------- */
 const MOV_COLORS = ['#0071e3', '#34c759', '#FF9500', '#AF52DE'];
 
-function catmull(points) {
-  if (points.length < 3) return points.map(p => [p.x, p.y]);
-  const d = [];
-  for (let i = 0; i < points.length; i++) {
-    const p0 = points[Math.max(0, i - 1)], p1 = points[i],
-          p2 = points[Math.min(points.length - 1, i + 1)], p3 = points[Math.min(points.length - 1, i + 2)];
-    const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
-    const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
-    d.push((d.length ? 'C' : 'M') + `${c1.x.toFixed(1)},${c1.y.toFixed(1)} ${c2.x.toFixed(1)},${c2.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)}`);
-  }
-  return d;
-}
-
 function renderMovements(volume) {
   const el = document.getElementById('movementChart');
   const note = document.getElementById('movementNote');
@@ -393,60 +354,37 @@ function renderMovements(volume) {
   }
   const movs = volume.movements;
   const weeks = (volume.weeks || []).map(w => w.label);
-  const W = 640, H = 248, PL = 46, PR = 14, PT = 36, PB = 36;
-  const iw = W - PL - PR, ih = H - PT - PB;
-  const placedLabels = [];
-  // 最大值：计划或实做
-  const allV = [];
-  movs.forEach(m => m.weeks.forEach(w => { if (w.plan) allV.push(w.plan); if (w.actual) allV.push(w.actual); }));
-  const maxV = Math.max(1, ...allV);
+  // #317 迁 Base charts.line 多序列(每动作 实做实线 + 计划虚线 同色);
+  // 首尾数值标签/碰撞避让无接口 → 省略(记偏离)
+  const maxV = Math.max(1, (() => {
+    const allV = [];
+    movs.forEach(m => m.weeks.forEach(w => { if (w.plan) allV.push(w.plan); if (w.actual) allV.push(w.actual); }));
+    return Math.max(...allV);
+  })());
   const rawStep = maxV / 4;
   const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
   const step = Math.ceil(rawStep / mag) * mag;
   const yMax = step * 4;
-  const y = v => PT + ih - (v / yMax) * ih;
-  const x = i => weeks.length <= 1 ? PL + iw / 2 : PL + (iw * i) / (weeks.length - 1);
-
-  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="主项动作每周负荷趋势折线图">`;
-  for (let i = 0; i <= 4; i++) {
-    const v = step * i, yy = y(v);
-    svg += `<line x1="${PL}" y1="${yy}" x2="${W - PR}" y2="${yy}" stroke="#ececec" stroke-width="1"/>`;
-    svg += `<text x="${PL - 8}" y="${yy + 4}" text-anchor="end" font-size="13.5" fill="#6e6e73">${fmtK(v)}</text>`;
-  }
-  weeks.forEach((lb, i) => {
-    svg += `<text x="${x(i)}" y="${PT + ih + 26}" text-anchor="middle" font-size="13.5" fill="#86868b">${escapeHTML(lb)}</text>`;
-  });
+  const series = [];
   movs.forEach((m, mi) => {
     const color = MOV_COLORS[mi % MOV_COLORS.length];
-    // 实做折线（实线）
-    const pts = m.weeks.map((w, i) => ({ x: x(i), y: y(w.actual || 0), v: w.actual || 0 })).filter(p => p.v > 0);
-    const hasActual = pts.length > 0;
-    if (hasActual) {
-      const line = catmull(pts);
-      svg += `<path d="${line.join(' ')}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>`;
-      // 标签只标首尾点；同列多线靠拢时跳过（碰撞检测），避免重叠
-      pts.forEach((p, pi) => {
-        svg += `<circle cx="${p.x}" cy="${p.y}" r="3.5" fill="#fff" stroke="${color}" stroke-width="2"/>`;
-        if (pi === 0 || pi === pts.length - 1) {
-          if (!placedLabels.some(L => Math.abs(L.x - p.x) < 34 && Math.abs(L.y - p.y) < 16)) {
-            placedLabels.push({ x: p.x, y: p.y });
-            // 首点标签从点右侧展开（避开左侧 Y 轴刻度带），末点居中
-            const anchor = pi === 0 ? 'start' : 'middle';
-            const lx = pi === 0 ? p.x + 7 : p.x;
-            svg += `<text x="${lx}" y="${p.y - 14}" text-anchor="${anchor}" font-size="13" fill="${color}" font-weight="600">${fmtK(p.v)}</text>`;
-          }
-        }
-      });
-    }
-    // 计划线（浅色虚线）
-    const pPts = m.weeks.map((w, i) => ({ x: x(i), y: y(w.plan || 0), v: w.plan || 0 })).filter(p => p.v > 0);
-    if (pPts.length > 1) {
-      const line = catmull(pPts);
-      svg += `<path d="${line.join(' ')}" fill="none" stroke="${color}" stroke-width="1.5" stroke-dasharray="5 4" opacity=".45"/>`;
-    }
+    const actualItems = m.weeks.map((w, i) => ({ label: weeks[i] || '', value: w.actual > 0 ? w.actual : null })).filter(it => it.value !== null);
+    const planItems = m.weeks.map((w, i) => ({ label: weeks[i] || '', value: w.plan > 0 ? w.plan : null })).filter(it => it.value !== null);
+    if (actualItems.length) series.push({ name: m.name + ' 实做', items: actualItems, color, smooth: true });
+    if (planItems.length > 1) series.push({ name: m.name + ' 计划', items: planItems, color, dashed: true, smooth: true });
   });
-  svg += '</svg>';
-  el.innerHTML = svg;
+  if (series.length) {
+    window.charts.line(el, series[0].items, {
+      height: 248,
+      yMin: 0, yMax,
+      labels: 'edge',
+      format: fmtK,
+      tooltip: true,
+      series,
+    });
+  } else {
+    el.innerHTML = '<p class="chart-note">暂无主项动作数据</p>';
+  }
 
   legendEl.innerHTML = movs.map((m, mi) => {
     const color = MOV_COLORS[mi % MOV_COLORS.length];

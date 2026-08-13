@@ -51,7 +51,6 @@
   .cell .meta .date { margin-top:2px; font-weight:600; color:var(--fg); }
   .budget-banner { background:rgba(255,149,0,.10); border:1px solid rgba(255,149,0,.35); color:#8a5a00;
                    border-radius:12px; padding:10px 14px; font-size:12px; margin-bottom:14px; line-height:1.5; }
-  .empty { text-align:center; padding:60px 20px; color:var(--fg3); }
   /* Footer 按钮 */
   .footer { margin-top:24px; padding:16px 18px; background:transparent; border-radius:12px; display:flex; justify-content:flex-end; }
   .footer .btn-group { display:flex; gap:8px; flex-wrap:wrap; }
@@ -95,7 +94,7 @@
 <div class="filter-bar" id="filterBar"></div>
 
 <div class="grid" id="grid"></div>
-<div class="empty" id="empty" style="display:none">📷 没有符合条件的照片</div>
+<div id="empty" style="display:none"></div>
 
 <div class="footer">
   
@@ -105,7 +104,7 @@
 (function(){
   const D = window.__P__;
   if (!D || D.status !== 'ok') {
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'});
     return;
   }
   const d = D.data;
@@ -176,7 +175,10 @@
     grid.appendChild(cell);
     cellById[p.id] = cell;
   });
-  if (!(d.photos || []).length) document.getElementById('empty').style.display = 'block';
+  if (!(d.photos || []).length) {
+    document.getElementById('empty').innerHTML = window.emptyState({icon: '📷', text: '没有符合条件的照片', hint: '换个标签或日期范围再试'});
+    document.getElementById('empty').style.display = 'block';
+  }
 
   // 标签筛选(点击即时过滤,再点恢复全部) · 2026-08-03 验收修复
   const kpiTotal = document.getElementById('kpiTotal');
@@ -189,7 +191,9 @@
       if (hit) visible++;
     });
     kpiTotal.textContent = visible;
-    document.getElementById('empty').style.display = visible ? 'none' : 'block';
+    const emptyEl = document.getElementById('empty');
+    emptyEl.style.display = visible ? 'none' : 'block';
+    if (!visible && !emptyEl.innerHTML) emptyEl.innerHTML = window.emptyState({icon: '📷', text: '没有符合条件的照片', hint: '换个标签或日期范围再试'});
     fbar.querySelectorAll('.tag-chip').forEach(c => {
       c.classList.toggle('active', c.textContent === (tag ? tag + ' ' + (d.tag_counts || []).find(t => t.tag === tag).count : '全部'));
     });

@@ -19,9 +19,8 @@
   .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
   .ring-card { background:var(--card); border:1px solid var(--border); border-radius:20px;
                padding:32px 24px; text-align:center; margin-bottom:16px; }
-  .ring-wrap { position:relative; width:220px; height:220px; margin:0 auto 16px; }
-  .ring-wrap svg { transform:rotate(-90deg); }
-  .ring-center { position:absolute; inset:0; display:flex; flex-direction:column;
+.ring-wrap { position:relative; width:220px; height:220px; margin:0 auto 16px; }
+.ring-center { position:absolute; inset:0; display:flex; flex-direction:column;
                  align-items:center; justify-content:center; }
   .ring-pct { font-size:44px; font-weight:800; letter-spacing:-.02em; }
   .ring-label { font-size:12px; color:var(--fg2); }
@@ -57,7 +56,7 @@
 </style>
 </head>
 <body>
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar"><div class="left" id="metaLeft">--</div></div>
 <h1 id="h1Title">🎯 运动目标达成</h1>
@@ -68,11 +67,7 @@
 <div id="content" style="display:none">
   <div class="ring-card">
     <div class="ring-wrap">
-      <svg width="220" height="220" viewBox="0 0 220 220">
-        <circle cx="110" cy="110" r="92" fill="none" stroke="#f0f0f2" stroke-width="16"/>
-        <circle id="ringBar" cx="110" cy="110" r="92" fill="none" stroke="var(--accent)"
-                stroke-width="16" stroke-linecap="round" stroke-dasharray="578.05" stroke-dashoffset="578.05"/>
-      </svg>
+      <div id="ringBar"></div>
       <div class="ring-center">
         <div class="ring-pct" id="ringPct">--</div>
         <div class="ring-label" id="ringLabel">完成度</div>
@@ -112,12 +107,11 @@
 
   document.getElementById('content').style.display = 'block';
   const pct = Math.min(d.pct, 100);
-  const R = 92, CIRC = 2 * Math.PI * R;
-  const offset = CIRC * (1 - pct / 100);
-  const bar = document.getElementById('ringBar');
-  bar.setAttribute('stroke-dasharray', CIRC);
-  bar.setAttribute('stroke-dashoffset', offset);
-  bar.setAttribute('stroke', d.achieved ? '#34c759' : '#0071e3');
+  // #317 迁 Base charts.donut 单段(进度环);中心值 + 完成度文案保留
+  window.charts.donut(document.getElementById('ringBar'),
+    [{ label: '完成度', value: pct, color: d.achieved ? '#34c759' : '#0071e3' }],
+    { size: 220, ringWidth: 16, legend: 'none', showPercent: false,
+      centerLabel: '完成度', centerValue: d.pct + '%', format: v => v + '%' });
   document.getElementById('ringPct').textContent = d.pct + '%';
   const verdict = document.getElementById('verdict');
   verdict.textContent = d.verdict;

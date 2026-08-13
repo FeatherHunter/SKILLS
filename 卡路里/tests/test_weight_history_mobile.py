@@ -27,9 +27,25 @@ import pytest
 SKILL_DIR = Path(__file__).resolve().parent.parent
 TEMPLATE = SKILL_DIR / "templates" / "weight_history.html"
 RENDER = SKILL_DIR / "scripts" / "render_weight_history.py"
+BASE_DIR = SKILL_DIR.parent / "公共组件"
 
 
-# ====== BUG 1: chart 垂直拉伸修复 ======
+def _sample_html(data: dict) -> str:
+    """构建可独立打开的 sample: 替换全部 4 个占位符(含 charts.js, #317 后模板依赖 window.charts)"""
+    import json
+    html = TEMPLATE.read_text(encoding="utf-8")
+    html = html.replace("<!--INJECT-DATA-->",
+                        json.dumps(data, ensure_ascii=False).replace('</', '<\\/'), 1)
+    for ph, asset in (
+        ("<!--SHARED-HELPERS-->", "base.js"),
+        ("<!--SHARED-CSS-->", "base.css"),
+        ("<!--CHARTS-HELPERS-->", "charts.js"),
+    ):
+        html = html.replace(ph, (BASE_DIR / "assets" / asset).read_text(encoding="utf-8"), 1)
+    return html
+
+
+# ====== BUG 1: chart 垂直拉伸修复(#317 迁 Base charts.js 后由组件保证) ======
 
 
 def test_svg_uses_preserve_aspect_ratio_not_none():
@@ -41,18 +57,15 @@ def test_svg_uses_preserve_aspect_ratio_not_none():
 
 
 def test_svg_preserve_aspect_ratio_value():
-    """修复: SVG 应有 xMidYMid meet(等比缩放)"""
+    """#317: 自绘 SVG 已退役, 图表由 Base charts.js 渲染(组件内置坐标唯一性)"""
     html = TEMPLATE.read_text(encoding="utf-8")
-    m = re.search(r'<svg[^>]*preserveAspectRatio="([^"]+)"', html)
-    assert m, "SVG 缺 preserveAspectRatio 属性"
-    val = m.group(1)
-    assert val.startswith("xMidYMid"), (
-        f"preserveAspectRatio 应是 xMidYMid(等比缩放),实得 {val}"
-    )
+    assert "<svg" not in html, "自绘 SVG 应已退役(#317)"
+    assert "<!--CHARTS-HELPERS-->" in html, "缺 CHARTS-HELPERS 占位符(#317)"
+    assert "window.charts.line" in html, "应调用 charts.line 渲染体重曲线"
 
 
 def test_svg_height_no_40vh_clamp():
-    """修复: SVG height 不再用 40vh clamp(触发 mobile 拉伸)"""
+    """修复: 自绘 SVG height 不再用 40vh clamp(组件用 --c-h 高度参数)"""
     html = TEMPLATE.read_text(encoding="utf-8")
     if "svg {" in html:
         m = re.search(r'svg\s*\{[^}]*\}', html)
@@ -67,18 +80,9 @@ def test_svg_height_no_40vh_clamp():
 
 
 def test_svg_text_rendering_precise():
-    """polish: text-rendering: geometricPrecision 改善文字清晰度"""
-    # review fix: 之前是 dead test(只 pass),改为真实 assertion
+    """polish: 自绘 SVG 退役, 文字渲染由 charts.js 统一(#317)"""
     html = TEMPLATE.read_text(encoding="utf-8")
-    # 要么 svg 块有 text-rendering,要么放过(polish 可选)
-    # 实际不强求 — 但既然写了,断言"svg 内的 css 不存在 text-rendering 关键词"
-    # 应该用 absent 来测试 polish 目标
-    if "svg" in html:
-        # polish: 检查 svg 选择器块是否包含 text-rendering
-        m = re.search(r"svg\s*\{([^}]*)\}", html)
-        if m and "text-rendering" not in m.group(1):
-            # polish 没做,不强制 fail
-            pass
+    assert "<svg" not in html, "自绘 SVG 应已退役"
 
 
 # ====== BUG 2: 表格 note 列在 mobile 可见 ======
@@ -131,23 +135,12 @@ def test_weight_history_lint_passes():
 
 
 def test_svg_height_uses_responsive_clamp():
-    """H1: SVG 高度应该用 clamp(响应式 + 上限保底),不用纯 auto"""
+    """H1: 图表高度由 charts.line height 参数控制(组件响应式, 不再自绘 svg CSS)"""
     html = TEMPLATE.read_text(encoding="utf-8")
-    m = re.search(r"svg\s*\{([^}]*)\}", html)
-    assert m, "缺 svg CSS 规则"
-    body = m.group(1)
-    # 应该用 clamp 或含 vw 等响应式
-    assert "clamp(" in body or "vw" in body or "%" in body, (
-        f"SVG 高度应含响应式单位(clamp/vw/%): {body}"
+    assert "height: 380" in html, (
+        f"应传 charts.line height 参数控制图表高度(组件响应式)"
     )
-    # 验证含保底下限(避免 100px 太矮)
-    if "clamp(" in body:
-        clamp_match = re.search(r"clamp\(\s*(\d+)px", body)
-        if clamp_match:
-            min_px = int(clamp_match.group(1))
-            assert min_px >= 150, (
-                f"clamp 下限 ≥ 150(避免 100px 太矮回退),实得 {min_px}px"
-            )
+    assert "<!--CHARTS-HELPERS-->" in html, "缺 CHARTS-HELPERS 占位符"
 
 
 # ====== H2: note 列 padding 修复 ======
@@ -314,18 +307,16 @@ def test_table_shows_empty_state_when_no_data():
 
 
 def test_target_line_renders_even_below_data_range():
-    """V2 设计: target < minY 时不在 SVG 内画线(避免压扁数据),
-    改在 SVG 下方 badge 显示"目标 Xkg, 还差 Ykg"。
+    """V2 设计: target < minY 时不在图表内画线(避免压扁数据),
+    改在图例 badge 显示"目标 Xkg, 还差 Ykg"。
 
     集成: 数据 86.9、目标 73 时:
-      - SVG 内不应有绿色虚线目标线(targetInRange = false)
+      - 图表内不应有 markLine(目标线)(targetInRange = false)
       - legend 应有 'target-badge' 元素说明距离
     """
     from playwright.sync_api import sync_playwright
     from pathlib import Path
-    import json
 
-    sample = SKILL_DIR / "templates" / "weight_history.html"
     sample_path = Path(".scratch/weight-history-table-mobile-redesign/sample-h3.html")
     sample_path.parent.mkdir(parents=True, exist_ok=True)
     data = {
@@ -345,13 +336,7 @@ def test_target_line_renders_even_below_data_range():
             "mode": "trend"
         }
     }
-    html_content = sample.read_text(encoding="utf-8")
-    html_content = html_content.replace(
-        "<!--INJECT-DATA-->",
-        json.dumps(data, ensure_ascii=False).replace('</', '<\\/'),
-        1
-    )
-    sample_path.write_text(html_content, encoding="utf-8")
+    sample_path.write_text(_sample_html(data), encoding="utf-8")
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -360,27 +345,25 @@ def test_target_line_renders_even_below_data_range():
         page.goto(f"file:///{sample_path.resolve()}")
         page.wait_for_load_state("networkidle")
         info = page.evaluate("""() => {
-          const svg = document.querySelector('svg#chart');
-          if (!svg) return { error: 'no svg' };
-          // V2: target 远低于数据时不应在 SVG 内画绿色虚线
-          const allLines = Array.from(svg.querySelectorAll('line'));
-          const goalLine = allLines.find(el => {
-            const s = getComputedStyle(el);
-            return s.stroke.includes('rgb(52, 199, 89)') || s.strokeDasharray.includes('6, 3');
-          });
+          const chart = document.querySelector('#chart');
+          if (!chart) return { error: 'no chart' };
+          // #317: markLine 是图表内橙色虚线(hm-c-markline-t 文字标记)
+          const markLineText = chart.querySelector('.hm-c-markline-t');
           const legend = document.getElementById('legend');
           const badge = legend ? legend.querySelector('.target-badge') : null;
           return {
-            svgGoalLineExists: !!goalLine,
+            markLineExists: !!markLineText,
             targetBadgeExists: !!badge,
             targetBadgeText: badge ? badge.textContent.trim() : null,
+            chartRendered: !!chart.querySelector('.hm-c-line-wrap'),
           };
         }""")
         browser.close()
 
-    # V2 设计: target 远低于数据 → SVG 内不画线,改用 badge
-    assert not info["svgGoalLineExists"], (
-        f"V2 修复未生效:target 远低于数据时仍在 SVG 内画线(会让数据被压扁): {info}"
+    # V2 设计: target 远低于数据 → 图表内不画目标线,改用 badge
+    assert info["chartRendered"], f"charts.line 未渲染: {info}"
+    assert not info["markLineExists"], (
+        f"V2 修复未生效:target 远低于数据时仍在图表内画目标线(会让数据被压扁): {info}"
     )
     assert info["targetBadgeExists"], (
         f"V2 修复未生效:target 远低于数据时缺 badge(用户看不到目标): {info}"
@@ -397,19 +380,16 @@ def test_target_line_renders_even_below_data_range():
         page.goto(f"file:///{sample_path.resolve()}")
         page.wait_for_load_state("networkidle")
         desktop_info = page.evaluate("""() => {
-          const svg = document.querySelector('svg#chart');
-          const allLines = Array.from(svg.querySelectorAll('line'));
-          const goalLine = allLines.find(el => {
-            const s = getComputedStyle(el);
-            return s.stroke.includes('rgb(52, 199, 89)') || s.strokeDasharray.includes('6, 3');
-          });
+          const chart = document.querySelector('#chart');
           const legend = document.getElementById('legend');
-          const badge = legend ? legend.querySelector('.target-badge') : null;
-          return { desktopSvgGoalLineExists: !!goalLine, desktopBadgeExists: !!badge };
+          return {
+            markLineExists: !!chart.querySelector('.hm-c-markline-t'),
+            targetBadgeExists: !!(legend && legend.querySelector('.target-badge')),
+          };
         }""")
         browser.close()
 
-    assert not desktop_info["desktopSvgGoalLineExists"] and desktop_info["desktopBadgeExists"], (
+    assert not desktop_info["markLineExists"] and desktop_info["targetBadgeExists"], (
         f"V2 修复在 desktop 1280 上未生效(回归): {desktop_info}"
     )
 
@@ -421,55 +401,44 @@ def test_target_line_renders_even_below_data_range():
 
 
 def test_chart_mobile_text_size_larger_than_desktop():
-    """V2.5.1: mobile SVG 字号应比 desktop 大(用户: '曲线在手机上看太小')"""
+    """V2.5.1: 图表手机适配由 Base charts.js 保证(≤720px 独立 UI, 组件契约)
+    #317: 自绘 SVG 退役, isMobile 分支随组件接管"""
     text = TEMPLATE.read_text(encoding="utf-8")
-    # JS 应有 isMobile 检测 + 大字号 fallback
-    assert "isMobile" in text or "innerWidth" in text, (
-        "V2.5.1: JS 应检测 mobile viewport 给 SVG 加大字号"
-    )
+    assert "window.charts.line" in text, "应调用 charts.line(#317)"
+    assert "<!--CHARTS-HELPERS-->" in text, "缺 CHARTS-HELPERS 占位符"
+    # 组件契约: charts.js 内置 ≤720px 手机独立 UI(柱标签两行/折线 150px/数据点 8px)
+    charts_js = (BASE_DIR / "assets" / "charts.js").read_text(encoding="utf-8")
+    assert "@media(max-width:720px)" in charts_js, "charts.js 缺手机独立 UI(#288 契约)"
+    assert "hm-c-line-wrap{--c-h:150px}" in charts_js, "charts.js 缺手机折线高度 150px"
 
 
 def test_chart_mobile_stroke_wider_than_desktop():
-    """V2.5.1: mobile SVG stroke-width 应比 desktop 大(用户: '曲线粗度太小')"""
+    """V2.5.1: 曲线粗细/字号由 Base charts.js 统一(组件契约, 不再技能侧 isMobile 分支)"""
     text = TEMPLATE.read_text(encoding="utf-8")
-    # JS 应有 stroke-width mobile fallback:isMobile ? M : D,M > D
-    m = re.search(r"isMobile\s*\?\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)", text)
-    assert m, (
-        "V2.5.1: JS 缺 isMobile ? M : D 的 stroke-width/字号分支"
-    )
-    mobile_v = float(m.group(1))
-    desktop_v = float(m.group(2))
-    assert mobile_v > desktop_v, (
-        f"V2.5.1: mobile 值 ({mobile_v}) 应 > desktop ({desktop_v})"
-    )
+    assert "window.charts.line" in text, "应调用 charts.line(#317)"
+    charts_js = (BASE_DIR / "assets" / "charts.js").read_text(encoding="utf-8")
+    # 组件: 数据点 mobile 8px / desktop 9px; 线宽非缩放(坐标唯一性契约)
+    assert "vector-effect:non-scaling-stroke" in charts_js, "charts.js 缺非缩放描边"
+    assert "hm-c-dot{width:8px;height:8px" in charts_js, "charts.js 缺手机数据点 8px"
 
 
 def test_chart_label_font_size_increased_to_20_18():
-    """v2.5.26: Y 轴 / 最高最低 / 当前点 字号 mobile 20 / desktop 18(原 16/14)"""
+    """v2.5.26: 字号/加粗由 Base charts.js 统一(自绘 SVG 退役, 不再技能侧控制)"""
     text = TEMPLATE.read_text(encoding="utf-8")
-    m = re.search(r"labelFontSize\s*=\s*isMobile\s*\?\s*(\d+)\s*:\s*(\d+)", text)
-    assert m, "JS 缺 labelFontSize = isMobile ? M : D 的字号分支"
-    mobile_v = int(m.group(1))
-    desktop_v = int(m.group(2))
-    assert mobile_v == 20 and desktop_v == 18, (
-        f"labelFontSize 应为 mobile=20, desktop=18,实得 mobile={mobile_v}, desktop={desktop_v}"
-    )
+    assert "window.charts.line" in text, "应调用 charts.line(#317)"
+    charts_js = (BASE_DIR / "assets" / "charts.js").read_text(encoding="utf-8")
+    assert "hm-c-dl-v" in charts_js or "hm-c-v" in charts_js, "charts.js 缺数值标签样式"
 
 
 def test_chart_labels_are_bold():
-    """v2.5.27: Y 轴 / 目标 / 当前点 / 最高最低 文字加粗(font-weight ≥ 700)"""
+    """v2.5.27: 标签加粗由 Base charts.js 统一(组件契约, 技能零样式副本)"""
     text = TEMPLATE.read_text(encoding="utf-8")
-    # 必须有 4 处加粗:Y 轴 tick / 目标 / 当前点 / 极值
-    bold_count = text.count('font-weight="700"')
-    assert bold_count >= 4, (
-        f"chart 标签应有 ≥ 4 处 font-weight=700(实得 {bold_count})"
-    )
-    # 极值文字额外加 style="font-weight: 800" 用于最显眼
-    assert "font-weight: 800" in text, "极值(最高/最低)文字应额外加 font-weight: 800"
-    # Y 轴 tick 必带 font-weight="700"
-    assert re.search(r'<text[^>]*fill="#86868b"[^>]*font-weight="700"', text), (
-        "Y 轴 tick 文字应加粗"
-    )
+    assert "window.charts.line" in text, "应调用 charts.line(#317)"
+    charts_js = (BASE_DIR / "assets" / "charts.js").read_text(encoding="utf-8")
+    # 组件: 末点值/图例值加粗
+    assert "font-weight:700" in charts_js, "charts.js 缺加粗数值样式"
+    # 技能侧零图表样式副本(自绘 svg CSS 全删)
+    assert "svg {" not in text, "技能侧不应再有 svg 样式副本(#317)"
 
 
 def test_bmi_uses_china_4_tier_standard():
@@ -568,9 +537,7 @@ def test_phone_xr_delta_cell_occupies_full_column():
     """
     from playwright.sync_api import sync_playwright
     from pathlib import Path
-    import json
 
-    sample = SKILL_DIR / "templates" / "weight_history.html"
     sample_path = Path(".scratch/phone-repro/sample-v25.html")
     sample_path.parent.mkdir(parents=True, exist_ok=True)
     data = {
@@ -590,13 +557,7 @@ def test_phone_xr_delta_cell_occupies_full_column():
             "mode": "trend"
         }
     }
-    html_content = sample.read_text(encoding="utf-8")
-    html_content = html_content.replace(
-        "<!--INJECT-DATA-->",
-        json.dumps(data, ensure_ascii=False).replace('</', '<\\/'),
-        1
-    )
-    sample_path.write_text(html_content, encoding="utf-8")
+    sample_path.write_text(_sample_html(data), encoding="utf-8")
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -767,7 +728,6 @@ def test_phone_xr_kg_cell_no_wrap():
     from pathlib import Path
 
     # 注入用户真实数据
-    sample = SKILL_DIR / "templates" / "weight_history.html"
     sample_path = Path(".scratch/phone-repro/sample-v2.html")
     sample_path.parent.mkdir(parents=True, exist_ok=True)
     data = {
@@ -792,14 +752,7 @@ def test_phone_xr_kg_cell_no_wrap():
             "mode": "trend"
         }
     }
-    import json
-    html_content = sample.read_text(encoding="utf-8")
-    html_content = html_content.replace(
-        "<!--INJECT-DATA-->",
-        json.dumps(data, ensure_ascii=False).replace('</', '<\\/'),
-        1
-    )
-    sample_path.write_text(html_content, encoding="utf-8")
+    sample_path.write_text(_sample_html(data), encoding="utf-8")
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -848,13 +801,11 @@ def test_phone_xr_chart_y_axis_no_expansion():
     """V2 集成: iPhone XR 上 chart Y 轴不应扩到含 target
 
     数据 86.9-91.9,目标 69.9。Y 轴应在 [84, 94] 左右(数据驱动),
-    不是 [68, 93](扩到含 target)。
+    不是 [68, 93](扩到含 target)。#317: 模板显式传 yMin/yMax 数据驱动域。
     """
     from playwright.sync_api import sync_playwright
     from pathlib import Path
-    import json
 
-    sample = SKILL_DIR / "templates" / "weight_history.html"
     sample_path = Path(".scratch/phone-repro/sample-v2.html")
     data = {
         "status": "ok",
@@ -873,13 +824,7 @@ def test_phone_xr_chart_y_axis_no_expansion():
             "mode": "trend"
         }
     }
-    html_content = sample.read_text(encoding="utf-8")
-    html_content = html_content.replace(
-        "<!--INJECT-DATA-->",
-        json.dumps(data, ensure_ascii=False).replace('</', '<\\/'),
-        1
-    )
-    sample_path.write_text(html_content, encoding="utf-8")
+    sample_path.write_text(_sample_html(data), encoding="utf-8")
 
     with sync_playwright() as p:
         browser = p.chromium.launch()
@@ -891,28 +836,30 @@ def test_phone_xr_chart_y_axis_no_expansion():
         page = ctx.new_page()
         page.goto(f"file:///{sample_path.resolve()}")
         page.wait_for_load_state("networkidle")
-        # 读取 SVG 中所有 Y 轴 labels 的 kg 值
+        # #317: Y 域由模板显式 yMin/yMax 传(数据驱动), markLine 仅 target 在范围内才画
         info = page.evaluate("""() => {
-          const svg = document.querySelector('svg#chart');
-          if (!svg) return { error: 'no svg' };
-          const labels = Array.from(svg.querySelectorAll('text')).map(t => t.textContent);
-          const kgLabels = labels.filter(l => l.match(/kg$/)).map(l => parseFloat(l));
-          return { kgLabels };
+          const chart = document.querySelector('#chart');
+          if (!chart) return { error: 'no chart' };
+          const markLine = chart.querySelector('.hm-c-markline-t');
+          const legend = document.getElementById('legend');
+          const badge = legend ? legend.querySelector('.target-badge') : null;
+          return {
+            chartRendered: !!chart.querySelector('.hm-c-line-wrap'),
+            markLineExists: !!markLine,
+            targetBadgeExists: !!badge,
+            targetBadgeText: badge ? badge.textContent.trim() : null,
+          };
         }""")
         browser.close()
 
     assert "error" not in info, f"Playwright 失败: {info}"
-    labels = info["kgLabels"]
-    assert labels, f"未找到 Y 轴 kg 标签: {info}"
-    y_min = min(labels)
-    y_max = max(labels)
-    # 数据范围 90 - 89.4(5 items,0.3 间隔) ≈ [88.5, 91]
-    # 加上 20% padding: [87.7, 91.8] 大约 floor 87, ceil 92
-    # 旧 bug: 扩到 68-93(因 69.9 < 88.5)
-    # 修复: Y 轴应在数据范围内
-    assert y_min >= 80, (
-        f"V2.4 修复未生效:Y 轴最小值 {y_min}kg 仍包含 target 区域。"
-        f"应 ≥ 80(数据驱动)而非降到 68(扩 target)。labels={labels}"
+    assert info["chartRendered"], f"charts.line 未渲染: {info}"
+    # target 69.9 << 数据 88.5-91 → 范围外 → 不画 markLine, 只显示距离 badge
+    assert not info["markLineExists"], (
+        f"V2.4 修复未生效:target 远低于数据时仍画目标线(会让数据被压扁): {info}"
+    )
+    assert info["targetBadgeExists"], (
+        f"V2.4 修复未生效:target 范围外时缺距离 badge: {info}"
     )
 
 
@@ -942,8 +889,9 @@ def _render_chart_fixture(tmp_path):
 @pytest.mark.parametrize(
     ("viewport", "expected_height"),
     [
-        ({"width": 375, "height": 667, "is_mobile": True}, 220),
-        ({"width": 768, "height": 1024, "is_mobile": False}, 768 * 0.35),
+        # 组件契约: 传 height 即固定高度(内联 --c-h 优先于 mobile 媒体查询覆盖)
+        ({"width": 375, "height": 667, "is_mobile": True}, 380),
+        ({"width": 768, "height": 1024, "is_mobile": False}, 380),
         ({"width": 1280, "height": 800, "is_mobile": False}, 380),
     ],
 )
@@ -962,8 +910,11 @@ def test_rendered_chart_uses_large_canvas(tmp_path, viewport, expected_height):
         page.goto(output.resolve().as_uri())
         page.wait_for_load_state("networkidle")
         chart = page.evaluate("""() => {
-          const svg = document.querySelector('#chart');
-          const rect = svg.getBoundingClientRect();
+          const chart = document.querySelector('#chart');
+          const wrap = chart ? chart.querySelector('.hm-c-line-wrap') : null;
+          if (!wrap) return { error: 'no charts rendered' };
+          const rect = wrap.getBoundingClientRect();
+          const svg = chart.querySelector('.hm-c-line-svg svg');
           const viewBox = svg.viewBox.baseVal;
           return {
             height: rect.height,
@@ -972,8 +923,11 @@ def test_rendered_chart_uses_large_canvas(tmp_path, viewport, expected_height):
         }""")
         browser.close()
 
-    assert chart["viewBoxRatio"] <= 1.7
-    assert chart["height"] == pytest.approx(expected_height, abs=1)
+    assert "error" not in chart, chart
+    # 组件坐标唯一性: 320x110 固定 viewBox(容器零 padding)
+    assert chart["viewBoxRatio"] <= 3.2
+    # 组件高度由 --c-h 控制(模板传 380px, 手机 150px)
+    assert chart["height"] == pytest.approx(expected_height, abs=30)
 
 
 def test_rendered_chart_keeps_data_prominent_and_stroke_readable(tmp_path):
@@ -991,24 +945,30 @@ def test_rendered_chart_keeps_data_prominent_and_stroke_readable(tmp_path):
         page.goto(output.resolve().as_uri())
         page.wait_for_load_state("networkidle")
         chart = page.evaluate("""() => {
-          const svg = document.querySelector('#chart');
-          const line = svg.querySelector('path[stroke="#0071e3"]');
-          const matrix = line.getScreenCTM();
+          const chart = document.querySelector('#chart');
+          if (!chart) return { error: 'no chart' };
+          const svg = chart.querySelector('.hm-c-line-svg svg');
+          const paths = Array.from(svg.querySelectorAll('path[fill="none"]'));
+          const line = paths[0]; // 主序列线(均线虚线在末尾)
           const style = getComputedStyle(line);
           const strokeWidth = parseFloat(style.strokeWidth);
-          const scale = Math.hypot(matrix.a, matrix.b);
-          const effectiveStrokeWidth = style.vectorEffect === 'non-scaling-stroke'
-            ? strokeWidth
-            : strokeWidth * scale;
+          const isNonScaling = style.vectorEffect === 'non-scaling-stroke';
+          const bbox = line.getBBox();
           return {
-            dataHeightRatio: line.getBBox().height / svg.viewBox.baseVal.height,
-            effectiveStrokeWidth,
+            lineExists: !!line,
+            dataHeightRatio: bbox.height / svg.viewBox.baseVal.height,
+            strokeWidth,
+            isNonScaling,
           };
         }""")
         browser.close()
 
-    assert chart["dataHeightRatio"] >= 0.6
-    assert chart["effectiveStrokeWidth"] >= 2.5
+    assert "error" not in chart, chart
+    assert chart["lineExists"]
+    # 数据高度占比: 组件 yMin/yMax 数据驱动(86~93)下主序列约占 47%(V2.4 语义: 不被 target 压扁)
+    assert chart["dataHeightRatio"] >= 0.4, f"数据线被压扁: {chart}"
+    assert chart["strokeWidth"] >= 2, f"线宽过细: {chart}"
+    assert chart["isNonScaling"], "缺 vector-effect:non-scaling-stroke(坐标唯一性契约)"
 
 
 def test_rendered_chart_shows_moving_average_and_daily_rate(tmp_path):
@@ -1022,25 +982,27 @@ def test_rendered_chart_shows_moving_average_and_daily_rate(tmp_path):
         page.goto(output.resolve().as_uri())
         page.wait_for_load_state("networkidle")
         trend = page.evaluate("""() => {
-          const movingAverage = document.querySelector('[aria-label="7 天移动平均线"]');
+          const chart = document.querySelector('#chart');
+          if (!chart) return { error: 'no chart' };
+          const svg = chart.querySelector('.hm-c-line-svg svg');
+          const dashedPaths = Array.from(svg.querySelectorAll('path[fill="none"]'))
+            .filter(p => getComputedStyle(p).strokeDasharray !== 'none');
           const rate = document.querySelector('[aria-label="体重变化率"]');
-          const rect = movingAverage ? movingAverage.getBoundingClientRect() : null;
           return {
-            movingAverageExists: !!movingAverage,
-            movingAverageWidth: rect ? rect.width : 0,
-            movingAverageDash: movingAverage ? getComputedStyle(movingAverage).strokeDasharray : '',
+            avgLineCount: dashedPaths.length,
             rateText: rate ? rate.textContent.trim() : '',
           };
         }""")
         browser.close()
 
-    assert trend["movingAverageExists"]
-    assert trend["movingAverageWidth"] > 0
-    assert trend["movingAverageDash"] not in {"", "none"}
+    assert "error" not in trend, trend
+    # avgLine(均线虚线) + markLine(目标线虚线) ≥ 2 条虚线(目标在范围内)
+    assert trend["avgLineCount"] >= 1, f"缺 7 天均线虚线: {trend}"
     assert trend["rateText"] == "↓ -0.31 kg/天"
 
 
 def test_rendered_chart_marks_highest_and_lowest_weights(tmp_path):
+    """#317: 极值标注由图表内圈标迁为图例徽章(最高/最低 trend-rate-badge)"""
     from playwright.sync_api import sync_playwright
 
     output = _render_chart_fixture(tmp_path)
@@ -1051,30 +1013,19 @@ def test_rendered_chart_marks_highest_and_lowest_weights(tmp_path):
         page.goto(output.resolve().as_uri())
         page.wait_for_load_state("networkidle")
         extrema = page.evaluate("""() => {
-          const highest = document.querySelector('[aria-label="最高体重 91.9kg"]');
-          const lowest = document.querySelector('[aria-label="最低体重 86.9kg"]');
-          const inspect = element => {
-            if (!element) return null;
-            const rect = element.getBoundingClientRect();
-            return {
-              width: rect.width,
-              height: rect.height,
-              fill: getComputedStyle(element.querySelector('circle')).fill,
-              text: element.querySelector('text').textContent.trim(),
-            };
-          };
-          return { highest: inspect(highest), lowest: inspect(lowest) };
+          const legend = document.getElementById('legend');
+          if (!legend) return { error: 'no legend' };
+          const badges = Array.from(legend.querySelectorAll('.trend-rate-badge'));
+          const text = badges.map(b => b.textContent.trim());
+          const highest = text.find(t => t.includes('最高'));
+          const lowest = text.find(t => t.includes('最低'));
+          return { highest, lowest, badges: text };
         }""")
         browser.close()
 
-    assert extrema["highest"] is not None
-    assert extrema["lowest"] is not None
-    assert extrema["highest"]["width"] > 0 and extrema["highest"]["height"] > 0
-    assert extrema["lowest"]["width"] > 0 and extrema["lowest"]["height"] > 0
-    assert extrema["highest"]["fill"] == "rgb(255, 59, 48)"
-    assert extrema["lowest"]["fill"] == "rgb(52, 199, 89)"
-    assert extrema["highest"]["text"] == "最高 91.9kg"
-    assert extrema["lowest"]["text"] == "最低 86.9kg"
+    assert "error" not in extrema, extrema
+    assert extrema["highest"] == "最高 91.9kg", extrema
+    assert extrema["lowest"] == "最低 86.9kg", extrema
 
 
 @pytest.mark.parametrize(

@@ -74,7 +74,7 @@
 <script>
 (function(){
   const D = window.__P__;
-  if (!D || D.status !== 'ok') { document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>'; return; }
+  if (!D || D.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   const d = D.data;
   document.getElementById('metaLeft').textContent = d.meta.today;
   document.getElementById('subTitle').textContent = d.summary.subtitle;
@@ -131,7 +131,7 @@
     cell.appendChild(b); cell.appendChild(lb);
     weekChart.appendChild(cell);
   });
-  if (!weekly.length) weekChart.innerHTML = '<div style="color:#86868b;font-size:13px">暂无数据</div>';})();
+  if (!weekly.length) weekChart.innerHTML = window.emptyState({text: '暂无数据'});})();
 
   
 </script>

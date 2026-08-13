@@ -31,7 +31,6 @@
   .delta-ok { color:var(--fg3); }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
   .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
-  svg { width:100%; height:clamp(180px, 36vh, 280px); display:block; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:16px; height:2px; }
@@ -53,7 +52,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -67,7 +66,7 @@
 
 <div class="section">
   <h2>最近 7 天走势(摄入/运动/饮水/体重)</h2>
-  <svg id="chart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+  <div id="chart"></div>
   <div class="legend">
     <span><i style="background:#0071e3"></i> 摄入</span>
     <span><i style="background:#ff9500"></i> 运动</span>
@@ -107,26 +106,40 @@
       `<div class="kpi"><div class="label">${k.label}</div><div class="value">${k.value}${deltaHtml}</div><div class="extra">${k.label}当日值</div></div>`);
   });
 
-  const svg = document.getElementById('chart');
-  const W = 800, H = 240, PAD = 34;
+  // #317 迁 Base charts.line 多序列: 各指标独立 min-max 归一化 → 共享 0-100 域近似
+  // (charts.line 无双轴独立刻度; Y 轴刻度文字缺失 — 均记偏离)
   const wk = D.week || [];
-  const draw = (field, color, min, max) => {
+  const norm = (field) => {
     const vals = wk.map(p => p[field]).filter(v => v !== null && v !== undefined);
-    if (vals.length < 2) return;
-    const mn = min !== undefined ? min : Math.min(...vals);
-    const mx = max !== undefined ? max : Math.max(...vals);
-    const X = i => PAD + i / (wk.length - 1 || 1) * (W - PAD * 2);
-    const Y = v => H - PAD - (v - mn) / (mx - mn || 1) * (H - PAD * 2);
-    let d = '';
-    wk.forEach((p, i) => {
-      if (p[field] === null || p[field] === undefined) return;
-      d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p[field]).toFixed(1)}`;
-    });
-    svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="${color}" stroke-width="2" opacity="0.85"/>`);
+    if (vals.length === 0) return null;
+    const mn = Math.min(...vals), mx = Math.max(...vals);
+    const range = (mx - mn) || 1;
+    return wk.map(p => ({
+      label: (p.date || '').slice(5),
+      value: (p[field] === null || p[field] === undefined) ? null : (p[field] - mn) / range * 100,
+    }));
   };
-  draw('calories', '#0071e3'); draw('exercise_kcal', '#ff9500');
-  draw('water_ml', '#af52de'); draw('weight_kg', '#34c759');
-  if (wk.length === 0) svg.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">无数据</text>`);
+  const seriesDefs = [
+    { name: '摄入', field: 'calories', color: '#0071e3' },
+    { name: '运动', field: 'exercise_kcal', color: '#ff9500' },
+    { name: '饮水', field: 'water_ml', color: '#af52de' },
+    { name: '体重', field: 'weight_kg', color: '#34c759' },
+  ];
+  const series = seriesDefs.map(sd => {
+    const items = norm(sd.field);
+    return items ? { name: sd.name, items, color: sd.color } : null;
+  }).filter(Boolean);
+  if (series.length && series[0].items.length >= 2) {
+    window.charts.line(document.getElementById('chart'), series[0].items, {
+      height: 240,
+      yMin: 0, yMax: 100,
+      labels: 'edge',
+      tooltip: true,
+      series,
+    });
+  } else if (wk.length === 0) {
+    document.getElementById('chart').innerHTML = '<div style="text-align:center;color:#86868b;padding:40px">无数据</div>';
+  }
 
   const an = D.anomaly || [];
   if (an.length) document.getElementById('anomaly').textContent = '异常日: ' + an.join('、') + '(摄入超目标 130%)';

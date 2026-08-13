@@ -23,12 +23,7 @@
   .meta-bar .type-badge.bad { background:var(--bad); }
   h1 { font-size:32px; font-weight:700; letter-spacing:-.025em; margin-bottom:4px; }
   .sub { font-size:14px; color:var(--fg3); margin-bottom:24px; }
-  .pill { display:inline-block; padding:2px 9px; border-radius:10px; font-size:11px; font-weight:600; margin-right:4px; }
-  .pill-good { background:rgba(52,199,89,.15); color:var(--good); }
-  .pill-warn { background:rgba(255,149,0,.15); color:var(--warn); }
-  .pill-bad  { background:rgba(255,59,48,.15); color:var(--bad); }
-  .pill-info { background:rgba(0,113,227,.15); color:var(--accent); }
-  .pill-neutral { background:rgba(110,110,115,.15); color:var(--fg2); }
+
   /* 顶部 ID 卡 */
   .id-card { background:linear-gradient(135deg,#e8f5e8,#f0f8ff); border:1px solid var(--good);
              border-radius:16px; padding:28px 32px; text-align:center; margin-bottom:16px; }
@@ -59,8 +54,6 @@
   .pinfo .pmeta { color:var(--fg2); font-size:12px; margin-top:2px; }
   .pinfo .pnote { color:var(--fg3); font-size:12px; margin-top:2px; }
   .pstatus { text-align:right; flex-shrink:0; }
-  .pstatus .st { font-size:12px; font-weight:600; }
-  .st-ok { color:var(--good); } .st-fail { color:var(--bad); } .st-skip { color:var(--warn); }
   /* 标签 diff 卡 · 水平方向感(2026-08-03 验收拍板) */
   .diff-card { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
   .diff-card h2 { font-size:16px; font-weight:600; margin-bottom:14px; }
@@ -151,7 +144,7 @@
 (function(){
   const D = window.__P__;
   if (!D || D.status !== 'ok') {
-    document.body.innerHTML = '<div style="padding:60px;text-align:center;color:#86868b">⚠ 数据未注入或状态非 ok</div>';
+    document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'});
     return;
   }
   const d = D.data;
@@ -163,7 +156,7 @@
   badge.className = 'type-badge ' + (op === 'delete' ? 'bad' : op === 'update' ? 'warn' : '');
 
   document.getElementById('sub').innerHTML =
-    `<span class="pill pill-${op === 'delete' ? 'bad' : op === 'update' ? 'warn' : 'good'}">${op === 'delete' ? '删除' : op === 'update' ? '修改' : '新增'}</span> ${scene} ${op === 'delete' ? '已删除' : op === 'update' ? '已更新' : '已存入'}`;
+    `${window.statusBadge(op === 'delete' ? 'danger' : op === 'update' ? 'warn' : 'ok', op === 'delete' ? '删除' : op === 'update' ? '修改' : '新增')}</span> ${scene} ${op === 'delete' ? '已删除' : op === 'update' ? '已更新' : '已存入'}`;
 
   const idCard = document.getElementById('idCard');
   idCard.className = 'id-card ' + (op === 'delete' ? 'delete' : op === 'update' ? 'update' : '');
@@ -200,7 +193,7 @@
         ? `<img src="${p.photo_data_base64}" alt="照片">`
         : `<div class="noimg">📷</div>`;
       const tags = (p.tag_list || []).map(t => `<span>${t}</span>`).join('') || '<span style="background:rgba(134,134,139,.15);color:var(--fg3)">无</span>';
-      const stCls = p.status === '成功' || p.status === '已删除' ? 'st-ok' : (p.status === '失败' ? 'st-fail' : 'st-skip');
+      const stCls = p.status === '成功' || p.status === '已删除' ? 'ok' : (p.status === '失败' ? 'danger' : 'warn');
       const reason = p.reason ? `<div class="pnote">原因:${p.reason}</div>` : '';
       list.insertAdjacentHTML('beforeend',
         `<div class="photo-row">
@@ -210,7 +203,7 @@
              <div class="pmeta">#${p.id ?? '—'} · ${p.date ?? ''} ${p.time ?? ''}</div>
              <div class="pnote">${p.note ? '📝 ' + p.note : ''}</div>
            </div>
-           <div class="pstatus"><span class="st ${stCls}">${p.status || '—'}</span></div>
+           <div class="pstatus">${window.statusBadge(stCls, p.status || '—')}</div>
          </div>` + (reason ? `<div class="pnote" style="padding:0 0 10px 90px;color:var(--bad)">${reason}</div>` : ''));
     });
   }

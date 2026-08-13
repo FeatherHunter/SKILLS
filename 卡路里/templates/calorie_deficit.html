@@ -34,7 +34,6 @@
   .kpi .extra.bad  { color:var(--bad); }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:22px 26px; margin-bottom:16px; }
   .section h2 { font-size:17px; font-weight:600; margin-bottom:14px; }
-  svg { width:100%; height:clamp(180px, 40vh, 320px); display:block; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:18px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:14px; }
@@ -75,7 +74,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -94,12 +93,11 @@
 
 <div class="section">
   <h2>每日摄入 vs 消耗</h2>
-  <svg id="chart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+  <div id="chart"></div>
   <div class="legend">
     <span><i class="a"></i> 摄入</span>
     <span><i class="b"></i> 消耗</span>
-    <span><i class="c"></i> 零线</span>
-    <span><i class="d"></i> 缺口(摄入-消耗)</span>
+    <span><i class="c"></i> 摄入目标</span>
   </div>
 </div>
 
@@ -147,55 +145,24 @@
   document.getElementById('kLossE').textContent = `7 天累计 · ${summary.weekly_deficit >= 0 ? '+' : ''}${summary.weekly_deficit} 卡`;
   document.getElementById('kLossE').className = 'extra ' + (summary.predicted_loss_kg > 0 ? 'good' : 'bad');
 
-  // SVG 双线 + 缺口 area
-  const svg = document.getElementById('chart');
-  const W = 800, H = 240, PAD = 30;
+  // #317 迁 Base charts.line: 双系列(摄入实线/消耗虚线)共享 Y 域 + 摄入目标 markLine
+  // 线间缺口填充无接口 → 省略(记偏离);Y 轴刻度文字缺失(记偏离)
   const yMin = 1000, yMax = 3000;
-  function x(i) { return PAD + i * (W - 2*PAD) / Math.max(1, series.length - 1); }
-  function y(v) { return H - PAD - (v - yMin) / (yMax - yMin) * (H - 2*PAD); }
-  for (let v = yMin; v <= yMax; v += 500) {
-    const yy = y(v);
-    svg.insertAdjacentHTML('beforeend',
-      `<line x1="0" y1="${yy}" x2="${W}" y2="${yy}" stroke="#e5e5ea"/>` +
-      `<text x="4" y="${yy - 3}" font-size="10" fill="#86868b">${v}</text>`);
-  }
-  // 零摄入参考线(1500 卡)
-  if (target.intake > yMin && target.intake < yMax) {
-    const yy = y(target.intake);
-    svg.insertAdjacentHTML('beforeend',
-      `<line x1="0" y1="${yy}" x2="${W}" y2="${yy}" stroke="#ff9500" stroke-width="1" stroke-dasharray="4,3" opacity="0.5"/>` +
-      `<text x="${W - 4}" y="${yy - 3}" font-size="10" fill="#ff9500" text-anchor="end">摄入目标 ${target.intake}</text>`);
-  }
-  // 缺口 area (between intake & burn)
-  let area = '';
-  series.forEach((p, i) => {
-    if (i === 0) area = `M ${x(i)},${y(p.intake)}`;
-    else area += ` L ${x(i)},${y(p.intake)}`;
-  });
-  series.slice().reverse().forEach((p, idx) => {
-    const i = series.length - 1 - idx;
-    area += ` L ${x(i)},${y(p.burn)}`;
-  });
-  area += ' Z';
-  svg.insertAdjacentHTML('beforeend',
-    `<path d="${area}" fill="rgba(255,59,48,0.18)"/>`);
-  // 摄入线
-  let li = `M ${x(0)},${y(series[0].intake)}`;
-  series.forEach((p, i) => { if (i > 0) li += ` L ${x(i)},${y(p.intake)}`; });
-  svg.insertAdjacentHTML('beforeend',
-    `<path d="${li}" fill="none" stroke="var(--intake)" stroke-width="2.5"/>`);
-  // 消耗线
-  let lb = `M ${x(0)},${y(series[0].burn)}`;
-  series.forEach((p, i) => { if (i > 0) lb += ` L ${x(i)},${y(p.burn)}`; });
-  svg.insertAdjacentHTML('beforeend',
-    `<path d="${lb}" fill="none" stroke="var(--burn)" stroke-width="2.5" stroke-dasharray="5,3"/>`);
-  // 数据点 + 日期
-  series.forEach((p, i) => {
-    svg.insertAdjacentHTML('beforeend',
-      `<circle cx="${x(i)}" cy="${y(p.intake)}" r="4" fill="var(--intake)" stroke="#fff" stroke-width="1.5"/>` +
-      `<circle cx="${x(i)}" cy="${y(p.burn)}" r="3" fill="var(--burn)" stroke="#fff" stroke-width="1.5"/>` +
-      `<text x="${x(i)}" y="${H - 8}" font-size="10" fill="#86868b" text-anchor="middle">${p.date.slice(5)}</text>`);
-  });
+  window.charts.line(document.getElementById('chart'),
+    series.map(p => ({ label: p.date.slice(5), value: p.intake })),
+    {
+      height: 240,
+      yMin, yMax,
+      labels: 'select',
+      format: v => Number(v).toLocaleString(),
+      tooltip: true,
+      legend: true,
+      series: [
+        { name: '摄入', items: series.map(p => ({ label: p.date.slice(5), value: p.intake })) },
+        { name: '消耗', items: series.map(p => ({ label: p.date.slice(5), value: p.burn })), dashed: true },
+      ],
+      markLine: { value: target.intake, label: `摄入目标 ${target.intake}` },
+    });
 
   // 表格
   const tb = document.getElementById('table');

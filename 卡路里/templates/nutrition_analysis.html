@@ -29,7 +29,6 @@
   .kpi .extra { font-size:11px; color:var(--fg3); margin-top:4px; }
   .section { background:var(--card); border:1px solid var(--border); border-radius:16px; padding:20px 24px; margin-bottom:16px; }
   .section h2 { font-size:16px; font-weight:600; margin-bottom:12px; }
-  svg { width:100%; height:clamp(200px, 42vh, 340px); display:block; }
   .legend { font-size:12px; color:var(--fg2); margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
   .legend span { display:inline-flex; align-items:center; gap:6px; }
   .legend i { display:inline-block; width:16px; height:2px; background:#0071e3; }
@@ -63,7 +62,7 @@
 </head>
 <body>
 
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 
 <div class="meta-bar">
   <div class="left" id="metaLeft">--</div>
@@ -77,7 +76,7 @@
   <div class="kpi-grid" id="macroKpis"></div>
   <div class="section">
     <h2>三大营养每日占比(蛋白/碳水/脂肪)</h2>
-    <svg id="macroChart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+    <div id="macroChart"></div>
     <div class="legend">
       <span><i style="background:#0071e3"></i> 蛋白</span>
       <span><i class="b"></i> 碳水</span>
@@ -90,7 +89,7 @@
   <div class="kpi-grid" id="sodiumKpis"></div>
   <div class="section">
     <h2>钠 / 糖 / 纤维 日序列</h2>
-    <svg id="sodiumChart" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+    <div id="sodiumChart"></div>
     <div class="legend">
       <span><i style="background:#0071e3"></i> 钠(mg)</span>
       <span><i class="b"></i> 糖(g)</span>
@@ -151,28 +150,27 @@
       kpi.insertAdjacentHTML('beforeend',
         `<div class="kpi"><div class="label">${label}占比</div><div class="value" style="color:${color}">${v ?? '—'}%</div><div class="extra">参考 ${ref}</div></div>`);
     });
-    const svg = document.getElementById('macroChart');
-    const W = 800, H = 240, PAD = 34;
+    // #317 100% 堆叠柱无图表接口 → div 占比条近似(对齐饼干先例: div 占比条保留)
     const series = D.series || [];
-    const stacks = series.map(p => ({ protein: p.protein ?? 0, carbs: p.carbs ?? 0, fat: p.fat ?? 0 }));
-    const total = stacks.map(x => x.protein + x.carbs + x.fat);
-    const xMin = 0, xMax = Math.max(series.length - 1, 1);
-    const X = i => PAD + i / xMax * (W - PAD * 2);
-    const colors = ['#0071e3', '#ff9500', '#34c759'];
     const keys = ['protein', 'carbs', 'fat'];
-    series.forEach((p, i) => {
-      const t = total[i] || 1;
-      let acc = 0;
-      keys.forEach((k, j) => {
-        const share = (p[k] || 0) / t;
-        const y1 = H - PAD - acc / 1 * (H - PAD * 2);
-        const y2 = H - PAD - (acc + share) * (H - PAD * 2);
-        acc += share;
-        svg.insertAdjacentHTML('beforeend',
-          `<rect x="${X(i)}" y="${y2}" width="${Math.max((W - PAD * 2) / xMax * 0.6, 2)}" height="${Math.max(y1 - y2, 1)}" fill="${colors[j]}" opacity="0.85"><title>${p.date} ${k} ${Math.round(share * 100)}%</title></rect>`);
-      });
-    });
-    if (series.length === 0) svg.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">无数据</text>`);
+    const colors = ['#0071e3', '#ff9500', '#34c759'];
+    const macroEl = document.getElementById('macroChart');
+    if (series.length === 0) {
+      macroEl.innerHTML = '<div style="text-align:center;color:#86868b;padding:40px">无数据</div>';
+    } else {
+      macroEl.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:6px">' +
+        series.map(p => {
+          const t = (p.protein ?? 0) + (p.carbs ?? 0) + (p.fat ?? 0) || 1;
+          const segs = keys.map((k, j) =>
+            `<div style="flex:${(p[k] || 0) / t};background:${colors[j]};min-width:2px;border-radius:${j === 0 ? '4px 0 0 4px' : j === 2 ? '0 4px 4px 0' : '0'}" title="${p.date} ${k} ${Math.round((p[k] || 0) / t * 100)}%"></div>`).join('');
+          return `<div style="display:flex;align-items:center;gap:8px">` +
+            `<div style="flex:0 0 52px;font-size:10px;color:var(--fg3)">${p.date.slice(5)}</div>` +
+            `<div style="flex:1;display:flex;height:16px;border-radius:4px;overflow:hidden;background:var(--soft)">${segs}</div>` +
+            `</div>`;
+        }).join('') +
+        '</div>';
+    }
   }
 
   if (D.group === 'sodium_fiber') {
@@ -181,29 +179,39 @@
     [['钠', D.sodium, '≤2000 mg'], ['糖', D.sugar, '≤50 g'], ['纤维', D.fiber, '25-30 g']].forEach(([label, v, ref]) => {
       kpi.insertAdjacentHTML('beforeend', `<div class="kpi"><div class="label">日均${label}</div><div class="value">${v.avg ?? '—'}</div><div class="extra">参考 ${ref} · 达标率 ${v.rate === null ? '—' : v.rate + '%'}</div></div>`);
     });
-    const svg = document.getElementById('sodiumChart');
-    const W = 800, H = 240, PAD = 34;
     const series = D.series || [];
     if (series.length === 0) {
-      svg.insertAdjacentHTML('beforeend', `<text x="${W/2}" y="${H/2}" text-anchor="middle" fill="#86868b">无钠/糖/纤维数据(食品库匹配后自动回填)</text>`);
+      document.getElementById('sodiumChart').innerHTML = '<div style="text-align:center;color:#86868b;padding:40px">无钠/糖/纤维数据(食品库匹配后自动回填)</div>';
       return;
     }
-    const draw = (field, color, label) => {
-      const vals = series.map(p => p[field]).filter(v => v !== null && v !== undefined);
-      if (vals.length < 2) return;
-      const min = Math.min(...vals), max = Math.max(...vals);
-      const X = i => PAD + i / (series.length - 1 || 1) * (W - PAD * 2);
-      const Y = v => H - PAD - (v - min) / (max - min || 1) * (H - PAD * 2);
-      let d = '';
-      series.forEach((p, i) => {
-        if (p[field] === null || p[field] === undefined) return;
-        d += `${i === 0 ? 'M' : 'L'}${X(i).toFixed(1)},${Y(p[field]).toFixed(1)}`;
+    // #317 迁 Base charts.line 多序列: 各指标独立 min-max → 归一化共享 0-100 域近似
+    const fields = [
+      { name: '钠', field: 'sodium_mg', color: '#0071e3' },
+      { name: '糖', field: 'sugar_g', color: '#ff9500' },
+      { name: '纤维', field: 'fiber_g', color: '#34c759' },
+    ];
+    const seriesList = fields.map(f => {
+      const vals = series.map(p => p[f.field]).filter(v => v !== null && v !== undefined);
+      if (vals.length < 2) return null;
+      const mn = Math.min(...vals), mx = Math.max(...vals);
+      const range = (mx - mn) || 1;
+      return {
+        name: f.name, color: f.color,
+        items: series.map(p => ({
+          label: p.date.slice(5),
+          value: (p[f.field] === null || p[f.field] === undefined) ? null : (p[f.field] - mn) / range * 100,
+        })),
+      };
+    }).filter(Boolean);
+    if (seriesList.length) {
+      window.charts.line(document.getElementById('sodiumChart'), seriesList[0].items, {
+        height: 240,
+        yMin: 0, yMax: 100,
+        labels: 'select',
+        tooltip: true,
+        series: seriesList,
       });
-      svg.insertAdjacentHTML('beforeend', `<path d="${d}" fill="none" stroke="${color}" stroke-width="2"/>`);
-    };
-    draw('sodium_mg', '#0071e3', '钠');
-    draw('sugar_g', '#ff9500', '糖');
-    draw('fiber_g', '#34c759', '纤维');
+    }
   }
 
   if (D.group === 'sodium_combined') {

@@ -25,7 +25,6 @@ h1{font-size:24px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
 .kpi .extra{font-size:11px;color:var(--ink3);margin-top:4px}
 .section{background:var(--card);border-radius:18px;padding:22px 26px;margin-bottom:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border:1px solid rgba(60,60,67,.06)}
 .section h2{font-size:15px;font-weight:600;margin-bottom:12px}
-svg{width:100%;height:clamp(140px, 30vw, 240px);display:block}
 .todayCard{background:var(--card);border:1px solid var(--lineS);border-radius:18px;margin-bottom:14px;padding:14px 0 8px}
 .today-big{font-size:52px;font-weight:700;letter-spacing:-1px;text-align:center;padding:18px 0 6px;font-feature-settings:"tnum"}
 .today-big .unit{font-size:20px;color:var(--ink3);font-weight:500;margin-left:6px}
@@ -59,7 +58,7 @@ svg{width:100%;height:clamp(140px, 30vw, 240px);display:block}
 <div class="kpi-grid" id="kpis"></div>
 <div class="section" id="trendSection">
   <h2 id="trendTitle">最近 7 天趋势</h2>
-  <svg id="trendSvg" viewBox="0 0 800 240" preserveAspectRatio="none"></svg>
+  <div id="trendSvg"></div>
 </div>
 <div class="todayCard" id="todayCard" style="display:none">
   <div class="today-big" id="todayKg">--<span class="unit">kg</span></div>
@@ -74,7 +73,7 @@ svg{width:100%;height:clamp(140px, 30vw, 240px);display:block}
   
 </div>
 </div>
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script><script>window.__P__=(function(){try{return JSON.parse(document.getElementById('payload').textContent||'{}');}catch(e){return null;}})();</script>
 <script>
 (function(){
   const D = window.__P__;
@@ -108,76 +107,27 @@ svg{width:100%;height:clamp(140px, 30vw, 240px);display:block}
       dl.className = 'today-delta ' + (zero ? '' : (up ? 'bad' : 'good'));
     }
   } else if (pts.length >= 2) {
-    const svg = document.getElementById('trendSvg');
-    const W = 800, H = 240, PAD = 30;
+    // #317 迁 Base charts.line: Catmull 平滑 + 面积 + 末点高亮
+    // Y 轴 nice 刻度(0.1 整数倍, 居中展开)由 yMin/yMax 显式传入(保留 #43 方差过小防贴底)
     const kgs = pts.map(p => p.kg);
-    // 2026-08-10 #43 审查:方差过小/为 0 时居中展开(±),避免直线贴底像坏图
-    // Y 轴 nice 刻度:步长取 0.1 整数倍,保证刻度等距(toFixed 后不出现 0.1/0.2 混用)
     const rawMin = Math.min.apply(null, kgs), rawMax = Math.max.apply(null, kgs);
     const span0 = Math.max(rawMax - rawMin, 0.4);
     const step = Math.max(0.1, Math.ceil(span0 / 3 * 10) / 10);
     const span = step * 3;
     const padKg = (span - (rawMax - rawMin)) / 2;
     const minW = rawMin - padKg, maxW = rawMax + padKg;
-    const range = maxW - minW;
-    const x = i => PAD + i * (W - 2 * PAD) / (pts.length - 1);
-    const y = v => H - PAD - (v - minW) / range * (H - 2 * PAD);
-    // Y 轴网格线(3 条分隔 → 4 刻度;文字放 SVG 外避免 preserveAspectRatio 拉伸变形)
-    let grid = '';
-    const yLabels = [];
-    for (let g = 0; g <= 3; g++) {
-      const gy = PAD + g * (H - 2 * PAD) / 3;
-      const gv = maxW - g * step;
-      grid += `<line x1="${PAD}" y1="${gy}" x2="${W - PAD}" y2="${gy}" stroke="rgba(60,60,67,.10)" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
-      yLabels.push(gv.toFixed(1));
-    }
-    // 2026-08-10 #43 审查:Catmull-Rom 平滑(密集逐日数据避免阶梯/锯齿观感)
-    const pv = pts.map((p, i) => ({ x: x(i), y: y(p.kg) }));
-    const smoothPath = (() => {
-      let d = 'M' + pv[0].x.toFixed(1) + ',' + pv[0].y.toFixed(1);
-      for (let i = 0; i < pv.length - 1; i++) {
-        const p0 = pv[Math.max(0, i - 1)], p1 = pv[i], p2 = pv[i + 1], p3 = pv[Math.min(pv.length - 1, i + 2)];
-        const c1x = p1.x + (p2.x - p0.x) / 6, c1y = p1.y + (p2.y - p0.y) / 6;
-        const c2x = p2.x - (p3.x - p1.x) / 6, c2y = p2.y - (p3.y - p1.y) / 6;
-        d += 'C' + c1x.toFixed(1) + ',' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ',' + c2y.toFixed(1) + ' ' + p2.x.toFixed(1) + ',' + p2.y.toFixed(1);
-      }
-      return d;
-    })();
-    svg.innerHTML =
-      grid +
-      `<path d="${smoothPath}" fill="none" stroke="#0071e3" stroke-width="2.5" vector-effect="non-scaling-stroke"/>` +
-      `<path d="${smoothPath}L${x(pts.length - 1)},${H - PAD}L${x(0)},${H - PAD}Z" fill="rgba(0,113,227,.08)"/>`;
-    // Y 轴标签层(HTML 独立列,flex space-between 对齐网格线;放 SVG 外避免拉伸变形)
-    const axis = document.createElement('div');
-    axis.style.cssText = 'width:26px;flex-shrink:0;display:flex;flex-direction:column;justify-content:space-between;font-size:9px;color:#a1a1a6;text-align:right;padding:2px 0;font-variant-numeric:tabular-nums;pointer-events:none';
-    axis.innerHTML = yLabels.map(v => `<div style="line-height:1">${v}</div>`).join('');
-    const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;gap:6px;align-items:stretch';
-    svg.parentElement.insertBefore(wrap, svg);
-    wrap.appendChild(axis);
-    wrap.appendChild(svg);
-    svg.style.cssText = 'flex:1;min-width:0;width:auto;height:clamp(140px, 30vw, 240px);display:block';
-    // 2026-08-10 #43 审查:标签抽样 + 间距避让
-    let lastLabelX = -99;
-    const stepLabel = Math.max(2, Math.floor(pts.length / 6));
-    pts.forEach((p, i) => {
-      const isLast = i === pts.length - 1;
-      svg.insertAdjacentHTML('beforeend',
-        `<circle cx="${x(i)}" cy="${y(p.kg)}" r="${isLast ? 6 : 3.5}" fill="${isLast ? '#ff9500' : '#0071e3'}" stroke="#fff" stroke-width="1.5"/>`);
-      const tx = x(i);
-      if ((i % stepLabel === 0 && tx - lastLabelX > 40) || isLast) {
-        svg.insertAdjacentHTML('beforeend',
-          `<text x="${tx}" y="${H - 6}" font-size="11" fill="#8e8e93" text-anchor="middle">${p.date.slice(5)}</text>`);
-        lastLabelX = tx;
-      }
-    });
-    // 2026-08-10 #43:末尾标签(今天)强制保留,与上一位太近则上一位让位
-    const ts = svg.querySelectorAll('text');
-    if (ts.length >= 2) {
-      const ax = parseFloat(ts[ts.length - 2].getAttribute('x'));
-      const bx = parseFloat(ts[ts.length - 1].getAttribute('x'));
-      if (bx - ax < 44) ts[ts.length - 2].remove();
-    }
+    window.charts.line(document.getElementById('trendSvg'),
+      pts.map(p => ({ label: p.date.slice(5), value: p.kg })),
+      {
+        height: 240,
+        smooth: true,
+        area: true,
+        highlightLast: true,
+        yMin: minW, yMax: maxW,
+        labels: 'select',
+        format: v => `${Number(v).toFixed(1)}kg`,
+        tooltip: true,
+      });
     document.getElementById('trendTitle').textContent = d.trend_title || '最近 7 天趋势';
   } else {
     document.getElementById('trendSection').style.display = 'none';

@@ -222,12 +222,12 @@ class TestPayloadScriptCloseEscape:
         )
 
 
-# ── 4. breakdown donut SVG 渲染非空 ──────────────────────────────────────────
+# ── 4. breakdown 环形图渲染非空(#302 换 Base CHARTS-HELPERS donut) ──────────
 
 class TestBreakdownDonutSvg:
-    """breakdown 命令的 donut SVG 渲染非空（<svg 标签 + 至少 1 个 <path>）"""
+    """breakdown 命令走 CHARTS-HELPERS:charts.js 注入 + donut 调用点 + 挂载容器"""
 
-    def test_breakdown_html_contains_svg_and_path(self, seeded_db, tmp_db_dir):
+    def test_breakdown_html_contains_charts_helpers(self, tmp_db_dir):
         env = os.environ.copy()
         env["SKILLS_DB_PATH"] = str(tmp_db_dir)
         env["PYTHONIOENCODING"] = "utf-8"
@@ -244,15 +244,11 @@ class TestBreakdownDonutSvg:
         assert result.returncode == 0, f"bill_inject breakdown 失败: {result.stderr}"
 
         text = out_path.read_text(encoding="utf-8-sig")
-        # 模板里的 SVG 容器 + 渲染逻辑应当存在
-        # （数据是 seeded_db 注入的 30 条样本，breakdown 应有数据 → 渲染 SVG）
-        # 我们校验模板里含 SVG 容器（class="donut" 或 <svg）
-        assert "donut" in text.lower() or "<svg" in text.lower(), \
-            "breakdown HTML 缺 SVG 容器（donut / <svg）"
-
-        # 校验模板里至少有 1 个 SVG 形状元素（circle / path / rect）
-        # donut SVG 用 <circle> 表示扇形（donutSVG 函数生成）
-        # 注：实际 <circle> 是 JS 动态生成的，所以静态 HTML 不一定有 <circle>
-        # 但模板里的 JS 函数 donutSVG 应有生成 circle 的代码
-        assert "circle" in text.lower() or "path" in text.lower() or "rect" in text.lower(), \
-            "breakdown 模板缺 SVG 形状元素（circle / path / rect）"
+        # charts.js 注入(占位符 0 残留 + window.charts 存在)
+        assert "<!--CHARTS-HELPERS-->" not in text, "注入后 CHARTS-HELPERS 应有 0 残留"
+        assert "window.charts" in text, "breakdown HTML 缺 charts.js 注入"
+        # 模板 donut 调用点 + 挂载容器(#302 数据实时传入)
+        assert "breakdownDonutMount" in text, "breakdown 模板缺 donut 挂载容器"
+        assert "charts.donut" in text, "breakdown 模板缺 charts.donut 调用"
+        # 自绘 donutSVG 已退役
+        assert "function donutSVG" not in text, "自研 donutSVG 应已退役(#302 换 Base donut)"

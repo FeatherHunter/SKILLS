@@ -86,23 +86,7 @@
   .cat-bar .track { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
   .cat-bar .fill { height: 100%; border-radius: 4px; }
 
-  /* Donut */
-  .donut-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: center; padding: 16px 0; }
-  .donut { width: 220px; height: 220px; flex-shrink: 0; }
-  .donut-legend { flex: 1; min-width: 200px; }
-  .donut-legend .item { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; }
-  .donut-legend .dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
-  .donut-legend .name { flex: 1; }
-  .donut-legend .pct { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg); }
-  .donut-center { font-size: 12px; fill: var(--fg2); }
-  .donut-center-big { font-size: 20px; font-weight: 700; fill: var(--fg); font-variant-numeric: tabular-nums; }
-
-  /* Chart (line/bar/histogram) */
-  .chart-card .chart-title { font-size: 13px; color: var(--fg2); font-weight: 600; margin-bottom: 8px; }
-  svg.chart { width: 100%; height: auto; display: block; }
-  .chart-legend { display: flex; gap: 18px; flex-wrap: wrap; font-size: 12px; color: var(--fg2); margin-top: 8px; }
-  .chart-legend .item { display: inline-flex; align-items: center; gap: 6px; }
-  .chart-legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+  /* Donut / Chart:样式全部由公共组件 charts.js 决定(#302 task ③ · 技能零样式副本) */
 
   /* Insight cards */
   .insight-card { border-left: 3px solid var(--purple); }
@@ -150,7 +134,6 @@
     .kpi .value { font-size: 22px; }
     .compare-grid { grid-template-columns: 1fr; }
     .record { grid-template-columns: 70px 1fr auto; gap: 8px; padding: 10px 12px; }
-    .donut { width: 180px; height: 180px; }
   }
 </style>
 <style><!--SHARED-CSS--></style>
@@ -165,7 +148,7 @@
 </div>
 
 <!-- 注入点:AI / bill_inject.py 把 CLI JSON 包成 {status, data, message} 信封后经 Base 注入器注入 -->
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script>
 
 <script>
 (function() {
@@ -415,18 +398,8 @@
       </div>
       ${cats.length ? `
         <div class="card" style="margin-top:14px;">
-          <div class="donut-wrap">
-            ${donutSVG(cats, total, '总支出')}
-            <div class="donut-legend">
-              ${cats.slice(0, 10).map((c, i) => `
-                <div class="item">
-                  <span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
-                  <span class="name">${escapeHTML(c.key || c.category)}</span>
-                  <span class="pct">${fmtPct(c.pct)}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
+          <div class="section-title">分类占比</div>
+          <div id="catDonutMount"></div>
         </div>
         <div class="card">
           <div class="section-title">占比明细 <span class="count">${cats.length} 类 · 点击分类看明细</span></div>
@@ -443,6 +416,13 @@
         <div id="drillPanel" style="display:none;"></div>
       ` : '<div class="card empty" style="margin-top:14px;">该期间暂无分类数据</div>'}
     `;
+    // 环形图 → Base CHARTS-HELPERS donut(样式/图例由公共组件决定,#302)
+    const donutEl = mountChart('catDonutMount');
+    if (donutEl && cats.length) {
+      charts.donut(donutEl,
+        cats.map((c, i) => ({ label: c.key || c.category, value: c.expense, color: PALETTE[i % PALETTE.length] })),
+        { centerLabel: '总支出', centerValue: total, format: fmtMoney, colors: PALETTE });
+    }
   }
 
   // 分类下钻:展示该分类记录明细(本地只读 · 08 §3 · 点开/收起)
@@ -526,7 +506,7 @@
     `;
   }
 
-  // ── 8. 收支结构 structure(双环形) ──
+  // ── 8. 收支结构 structure(双环形 · #302 换 Base donut) ──
   function renderStructure(data) {
     const inc = data.income_structure || [];
     const exp = data.expense_structure || [];
@@ -535,39 +515,25 @@
     $('#app').innerHTML = `
       <div class="card">
         <div class="section-title">收入来源结构</div>
-        ${inc.length ? `
-          <div class="donut-wrap">
-            ${donutSVG(inc.map(x => ({ category: x.key, total: x.income })), incTotal, '总收入')}
-            <div class="donut-legend">
-              ${inc.slice(0, 8).map((x, i) => `
-                <div class="item">
-                  <span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
-                  <span class="name">${escapeHTML(x.key)}</span>
-                  <span class="pct">${fmtMoney(x.income)}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        ` : '<div class="empty">该期间暂无收入</div>'}
+        ${inc.length ? `<div id="incDonutMount"></div>` : '<div class="empty">该期间暂无收入</div>'}
       </div>
       <div class="card">
         <div class="section-title">支出去向结构</div>
-        ${exp.length ? `
-          <div class="donut-wrap">
-            ${donutSVG(exp.map(x => ({ category: x.key, total: x.expense })), expTotal, '总支出')}
-            <div class="donut-legend">
-              ${exp.slice(0, 8).map((x, i) => `
-                <div class="item">
-                  <span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
-                  <span class="name">${escapeHTML(x.key)}</span>
-                  <span class="pct">${fmtMoney(x.expense)}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        ` : '<div class="empty">该期间暂无支出</div>'}
+        ${exp.length ? `<div id="expDonutMount"></div>` : '<div class="empty">该期间暂无支出</div>'}
       </div>
     `;
+    const incEl = mountChart('incDonutMount');
+    if (incEl && inc.length) {
+      charts.donut(incEl,
+        inc.map((x, i) => ({ label: x.key, value: x.income, color: PALETTE[i % PALETTE.length] })),
+        { centerLabel: '总收入', centerValue: incTotal, format: fmtMoney });
+    }
+    const expEl = mountChart('expDonutMount');
+    if (expEl && exp.length) {
+      charts.donut(expEl,
+        exp.map((x, i) => ({ label: x.key, value: x.expense, color: PALETTE[i % PALETTE.length] })),
+        { centerLabel: '总支出', centerValue: expTotal, format: fmtMoney });
+    }
   }
 
   // ── 9. 周期对比 compare(双卡 + 变化率徽章) ──
@@ -681,11 +647,7 @@
       ${series.length ? `
         <div class="card" style="margin-top:14px;">
           <div class="section-title">逐月收支走势</div>
-          ${lineChart(series)}
-          <div class="chart-legend">
-            <span class="item"><span class="dot" style="background:#ff3b30"></span>支出</span>
-            <span class="item"><span class="dot" style="background:#34c759"></span>收入</span>
-          </div>
+          <div id="trendChartMount"></div>
         </div>
         <div class="card">
           <div class="section-title">逐月明细 <span class="count">点击月份看该月汇总</span></div>
@@ -705,6 +667,7 @@
         <div id="trendDrillPanel" style="display:none;"></div>
       ` : '<div class="card empty" style="margin-top:14px;">暂无数据</div>'}
     `;
+    if (series.length) renderTrendChart('trendChartMount', series);
   }
 
   // 月份下钻:展开该月净额/占比快览(本地只读 · 08 §3)
@@ -749,10 +712,17 @@
       ${series.length ? `
         <div class="card" style="margin-top:14px;">
           <div class="section-title">${escapeHTML(data.category || '')} 逐月支出</div>
-          ${barChart(series)}
+          <div id="catTrendChartMount"></div>
         </div>
       ` : '<div class="card empty" style="margin-top:14px;">该分类暂无数据</div>'}
     `;
+    // 柱状图 → Base CHARTS-HELPERS bar(showValues/单色 #ff9500 对齐旧观感,#302)
+    const barEl = mountChart('catTrendChartMount');
+    if (barEl && series.length) {
+      charts.bar(barEl,
+        series.map(m => ({ label: (m.month || '').slice(2), value: m.expense })),
+        { singleColor: '#ff9500', showValues: true, format: fmtMoney, tooltip: true });
+    }
   }
 
   // ── 15. 大额排行 top ──
@@ -815,7 +785,7 @@
       ${buckets.length ? `
         <div class="card" style="margin-top:14px;">
           <div class="section-title">金额区间分布</div>
-          ${histChart(buckets)}
+          <div id="distChartMount"></div>
         </div>
         <div class="card">
           <div class="section-title">各区间明细</div>
@@ -825,6 +795,13 @@
         </div>
       ` : '<div class="card empty" style="margin-top:14px;">该期间暂无数据</div>'}
     `;
+    // 直方图 → Base CHARTS-HELPERS bar 适配(buckets → items,#302)
+    const histEl = mountChart('distChartMount');
+    if (histEl && buckets.length) {
+      charts.bar(histEl,
+        buckets.map(b => ({ label: b.bucket, value: b.count })),
+        { singleColor: '#007aff', showValues: true, format: (v) => v + '笔' });
+    }
   }
 
   // ── 18. 记账统计 stats ──
@@ -931,7 +908,7 @@
       ${months.length ? `
         <div class="card">
           <div class="section-title">月度走势(近 ${data.window_months || 6} 个月)</div>
-          ${lineChart(months.map(m => ({ month: m.month, expense: m.expense, income: m.income })))}
+          <div id="insightChartMount"></div>
         </div>
       ` : ''}
       ${tops.length ? `
@@ -941,6 +918,7 @@
         </div>
       ` : ''}
     `;
+    if (months.length) renderTrendChart('insightChartMount', months.map(m => ({ month: m.month, expense: m.expense, income: m.income })));
   }
 
   // ── 21. 异常检测 anomaly(突增月/暴涨分类) ──
@@ -978,11 +956,12 @@
       ${series.length ? `
         <div class="card">
           <div class="section-title">月度序列(事实)</div>
-          ${lineChart(series.map(m => ({ month: m.month, expense: m.expense, income: m.income })))}
+          <div id="anomalyChartMount"></div>
         </div>
       ` : ''}
       ${!mom.length && !surge.length ? '<div class="card empty">近几个月数据平稳或暂无数据</div>' : ''}
     `;
+    if (series.length) renderTrendChart('anomalyChartMount', series.map(m => ({ month: m.month, expense: m.expense, income: m.income })));
   }
 
   // ── 22. 借贷总览 debt_summary ──
@@ -1140,147 +1119,35 @@
     `).join('')}</div>${records.length > 200 ? `<div class="empty" style="margin-top:12px;">仅显示前 200 条 · 共 ${records.length} 条</div>` : ''}`;
   }
 
-  // ── 组件：SVG 环形图 ─────────────────────────────────────
-  function donutSVG(cats, total, centerLabel) {
-    const r = 80, cx = 110, cy = 110, c = 2 * Math.PI * r;
-    let acc = 0;
-    const segments = cats.map((cat, i) => {
-      // 兼容两种取值字段:category 场景用 expense,structure 场景映射为 total
-      const v = Number(cat.expense ?? cat.total) || 0;
-      const pct = total ? (v / total) : 0;
-      const dash = pct * c;
-      const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PALETTE[i % PALETTE.length]}" stroke-width="22" stroke-dasharray="${dash} ${c}" stroke-dashoffset="${-acc}" transform="rotate(-90 ${cx} ${cy})"/>`;
-      acc += dash;
-      return seg;
-    }).join('');
-    return `<svg class="donut" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#f5f5f7" stroke-width="22"/>
-      ${segments}
-      <text class="donut-center" x="${cx}" y="${cy - 8}" text-anchor="middle">${escapeHTML(centerLabel || '合计')}</text>
-      <text class="donut-center-big" x="${cx}" y="${cy + 18}" text-anchor="middle">${fmtMoney(total)}</text>
-    </svg>`;
+  // ── 组件：Base 图表挂载(#302 task ③ · 4 自绘 SVG 已换 CHARTS-HELPERS) ──
+  // 样式/交互/响应式全部由公共组件 charts.js 决定,技能只负责领域数据实时传入
+  function mountChart(id) {
+    if (!window.charts) return null;
+    return document.getElementById(id);
   }
 
-  // ── 组件：SVG 双线折线图(趋势 · 响应式:按容器宽度动态字号,手机 ≥8px) ──
-  function chartBase() {
-    // 视口感知:≤640px 手机用紧凑画布,否则 800px 桌面画布(SVG 内文字按比例放大)
-    const mobile = window.innerWidth <= 640;
-    const W = mobile ? 375 : 800;
-    const H = mobile ? 240 : 260;
-    const fs = mobile ? 13 : 11;          // 文字基础字号(手机 13px ≥ 8px 可读)
-    const lw = mobile ? 3 : 2.5;          // 线宽
-    const padL = mobile ? 44 : 56;        // 左 padding(坐标轴数字宽度)
-    return { W, H, PL: padL, PR: 20, PT: 16, PB: mobile ? 44 : 36, fs, lw };
-  }
-
-  function lineChart(series) {
-    if (!series.length) return '<div class="empty">暂无数据</div>';
-    const { W, H, PL, PR, PT, PB, fs, lw } = chartBase();
-    const iw = W - PL - PR, ih = H - PT - PB;
-    const maxV = Math.max(...series.map(m => Math.max(m.expense, m.income)), 1) * 1.15;
-    const n = series.length;
-    const x = (i) => PL + (n === 1 ? iw / 2 : iw * i / (n - 1));
-    const y = (v) => PT + ih - (v / maxV) * ih;
-    const labels = series.map(m => m.month.slice(2)); // YY-MM
-
-    function polyline(values, color) {
-      const pts = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
-      return `<polyline points="${pts}" fill="none" stroke="${color}" stroke-width="${lw}" stroke-linejoin="round" stroke-linecap="round"/>`;
+  // 双线折线: 支出红/收入绿 + 峰值 markLine 近似(公共组件 markPoint 未实现,缺口见 ISSUE #319)
+  function renderTrendChart(mountId, series) {
+    const el = mountChart(mountId);
+    if (!el) return;
+    const items = series.map(m => ({ label: (m.month || '').slice(2), value: m.expense }));
+    let peakIdx = -1;
+    series.forEach((m, i) => { if (peakIdx < 0 || m.expense > series[peakIdx].expense) peakIdx = i; });
+    const opt = {
+      series: [
+        { name: '支出', items: items, color: '#ff3b30' },
+        { name: '收入', items: series.map(m => ({ label: (m.month || '').slice(2), value: m.income })), color: '#34c759' },
+      ],
+      legend: true,
+      labels: 'select',
+      highlightLast: true,
+      format: fmtMoney,
+      tooltip: true,
+    };
+    if (peakIdx >= 0 && series[peakIdx].expense > 0) {
+      opt.markLine = { value: series[peakIdx].expense, label: '峰值 ' + fmtMoney(series[peakIdx].expense) };
     }
-    const gridY = [0, 0.25, 0.5, 0.75, 1].map(f => {
-      const gy = PT + ih * f;
-      const val = (maxV * (1 - f)).toFixed(0);
-      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="${fs}" fill="#86868b">${val}</text>`;
-    }).join('');
-    const xLabels = labels.map((lb, i) => {
-      const show = n <= 8 || i % Math.ceil(n / 8) === 0 || i === n - 1;
-      return show ? `<text x="${x(i)}" y="${H - 12}" text-anchor="middle" font-size="${fs}" fill="#86868b">${escapeHTML(lb)}</text>` : '';
-    }).join('');
-    // 峰值标注(支出 · 靠边时贴边防裁剪)
-    let peakMark = '';
-    if (n > 0) {
-      let pi = 0;
-      for (let i = 1; i < n; i++) if (series[i].expense > series[pi].expense) pi = i;
-      if (series[pi].expense > 0) {
-        const label = `峰值 ${fmtMoney(series[pi].expense)}`;
-        const estW = label.length * fs * 0.62; // 中文/数字混合宽度的粗略估计
-        let px = x(pi);
-        let anchor = 'middle';
-        if (px + estW / 2 > W - PR) { px = W - PR - 6; anchor = 'end'; }
-        else if (px - estW / 2 < PL) { px = PL + 6; anchor = 'start'; }
-        peakMark = `<text x="${px.toFixed(1)}" y="${(y(series[pi].expense) - 8).toFixed(1)}" text-anchor="${anchor}" font-size="${fs}" font-weight="700" fill="#ff3b30">${label}</text>`;
-      }
-    }
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-      ${gridY}
-      ${polyline(series.map(m => m.income), '#34c759')}
-      ${polyline(series.map(m => m.expense), '#ff3b30')}
-      ${xLabels}
-      ${peakMark}
-    </svg>`;
-  }
-
-  // ── 组件：SVG 柱状图(分类趋势/时段 · 响应式) ──
-  function barChart(series) {
-    if (!series.length) return '<div class="empty">暂无数据</div>';
-    const { W, H, PL, PR, PT, PB, fs } = chartBase();
-    const iw = W - PL - PR, ih = H - PT - PB;
-    const maxV = Math.max(...series.map(m => m.expense), 1) * 1.1;
-    const n = series.length;
-    const bw = Math.min(iw / n * 0.6, 40);
-    const step = iw / n;
-    const bars = series.map((m, i) => {
-      const bx = PL + step * i + (step - bw) / 2;
-      const bh = (m.expense / maxV) * ih;
-      const by = PT + ih - bh;
-      return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(bh, 1).toFixed(1)}" rx="4" fill="#ff9500"/>
-        ${m.expense > 0 ? `<text x="${(bx + bw / 2).toFixed(1)}" y="${(by - 6).toFixed(1)}" text-anchor="middle" font-size="${fs}" fill="#86868b">${fmtMoney(m.expense)}</text>` : ''}`;
-    }).join('');
-    const gridY = [0, 0.5, 1].map(f => {
-      const gy = PT + ih * f;
-      const val = (maxV * (1 - f)).toFixed(0);
-      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="${fs}" fill="#86868b">${val}</text>`;
-    }).join('');
-    const xLabels = series.map((m, i) => {
-      const show = n <= 8 || i % Math.ceil(n / 8) === 0 || i === n - 1;
-      return show ? `<text x="${(PL + step * i + step / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="${fs}" fill="#86868b">${escapeHTML(m.month.slice(2))}</text>` : '';
-    }).join('');
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-      ${gridY}
-      ${bars}
-      ${xLabels}
-    </svg>`;
-  }
-
-  // ── 组件：SVG 直方图(金额分布 · 响应式) ──
-  function histChart(buckets) {
-    if (!buckets.length) return '<div class="empty">暂无数据</div>';
-    const { W, H, PL, PR, PT, PB, fs } = chartBase();
-    const iw = W - PL - PR, ih = H - PT - PB;
-    const maxV = Math.max(...buckets.map(b => b.count), 1) * 1.15;
-    const n = buckets.length;
-    const bw = Math.min(iw / n * 0.62, 90);
-    const step = iw / n;
-    const bars = buckets.map((b, i) => {
-      const bx = PL + step * i + (step - bw) / 2;
-      const bh = (b.count / maxV) * ih;
-      const by = PT + ih - bh;
-      return `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(bh, 1).toFixed(1)}" rx="4" fill="#007aff"/>
-        <text x="${(bx + bw / 2).toFixed(1)}" y="${(by - 6).toFixed(1)}" text-anchor="middle" font-size="${fs}" fill="#86868b">${b.count}笔</text>`;
-    }).join('');
-    const gridY = [0, 0.5, 1].map(f => {
-      const gy = PT + ih * f;
-      const val = Math.round(maxV * (1 - f));
-      return `<line x1="${PL}" y1="${gy}" x2="${W - PR}" y2="${gy}" stroke="#eee" stroke-width="1"/><text x="${PL - 8}" y="${gy + 4}" text-anchor="end" font-size="${fs}" fill="#86868b">${val}</text>`;
-    }).join('');
-    const xLabels = buckets.map((b, i) => {
-      return `<text x="${(PL + step * i + step / 2).toFixed(1)}" y="${H - 12}" text-anchor="middle" font-size="${fs}" fill="#86868b">${escapeHTML(b.bucket)}</text>`;
-    }).join('');
-    return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-      ${gridY}
-      ${bars}
-      ${xLabels}
-    </svg>`;
+    charts.line(el, items, opt);
   }
 
   // ── 组件：时段柱状(activity 小时段,纯 div 条形) ─────────

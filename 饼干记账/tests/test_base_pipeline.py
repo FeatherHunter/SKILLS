@@ -60,6 +60,81 @@ class TestPlaceholders:
         assert "help.html" not in BUSINESS_TEMPLATES
 
 
+# ── 1.5 CHARTS-HELPERS 占位符(0 或 1 · #302 task ③) ────────────────────────
+
+CHARTS_HELPERS = "<!--CHARTS-HELPERS-->"
+CHART_TEMPLATES = ("query_view.html", "分析/analysis_view.html")
+
+
+class TestChartsPlaceholder:
+    @pytest.mark.parametrize("rel", CHART_TEMPLATES)
+    def test_chart_templates_have_charts_placeholder_exactly_once(self, rel):
+        text = _template_text(rel)
+        assert text.count(CHARTS_HELPERS) == 1, \
+            f"{rel} 的 {CHARTS_HELPERS} 应恰好 1 个,实际 {text.count(CHARTS_HELPERS)} 个"
+
+    @pytest.mark.parametrize("rel", sorted(set(BUSINESS_TEMPLATES) - set(CHART_TEMPLATES)))
+    def test_non_chart_templates_have_zero_charts_placeholder(self, rel):
+        text = _template_text(rel)
+        assert CHARTS_HELPERS not in text, \
+            f"{rel} 不应含 {CHARTS_HELPERS}(非图表模板为 0)"
+
+    def test_chart_template_output_injects_charts_js(self, seeded_db):
+        """图表模板注入后:CHARTS 0 残留 + charts.js(window.charts)存在"""
+        import os
+        import subprocess
+        env = os.environ.copy()
+        env["SKILLS_DB_PATH"] = str(seeded_db)
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
+        out_dir = seeded_db / "charts_out"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        cases = [
+            ("bill_inject.py", ["breakdown"], "query_view"),
+            ("bill_inject.py", ["trend", "--months", "6"], "analysis_view"),
+        ]
+        for script, args, _tmpl in cases:
+            out_path = out_dir / f"c-{args[0]}.html"
+            full = [sys.executable, str(SCRIPTS_DIR.joinpath(*script.split("/")))] + args + ["--out", str(out_path)]
+            r = subprocess.run(full, capture_output=True, text=True, encoding="utf-8",
+                               env=env, timeout=60)
+            assert r.returncode == 0, f"{script} {args} 失败: {r.stderr}"
+            text = out_path.read_text(encoding="utf-8-sig")
+            assert CHARTS_HELPERS not in text, f"{args} 注入后 CHARTS-HELPERS 应有 0 残留"
+            assert "window.charts" in text, f"{args} 输出缺 charts.js(window.charts)"
+
+    def test_non_chart_template_output_has_no_charts_js(self, seeded_db):
+        """非图表模板(写入域)注入后:不含 charts.js(CHARTS 为 0 不注入)"""
+        import os
+        import subprocess
+        env = os.environ.copy()
+        env["SKILLS_DB_PATH"] = str(seeded_db)
+        env["PYTHONIOENCODING"] = "utf-8"
+        env["PYTHONUTF8"] = "1"
+        out_dir = seeded_db / "charts_out"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        out_path = out_dir / "write.html"
+        full = [sys.executable, str(SCRIPTS_DIR / "render_write.py"), "expense",
+                "--amount", "35", "--out", str(out_path)]
+        r = subprocess.run(full, capture_output=True, text=True, encoding="utf-8",
+                           env=env, timeout=60)
+        assert r.returncode == 0, r.stderr
+        text = out_path.read_text(encoding="utf-8-sig")
+        assert "window.charts" not in text, "非图表模板不应注入 charts.js"
+
+    def test_duplicate_charts_placeholder_render_fails(self):
+        """CHARTS 占位符 ×2 → 注入器硬拦截报错(契约 CHARTS ≤1)"""
+        from _base_render import inject_base
+        tmpl = _template_text("query_view.html")
+        broken = tmpl.replace(CHARTS_HELPERS, CHARTS_HELPERS + CHARTS_HELPERS, 1)
+        payload = {
+            "status": "ok",
+            "data": {"meta": {"command_cn": "测试", "occurred_at": "now"}},
+        }
+        with pytest.raises(RuntimeError, match="CHARTS-HELPERS"):
+            inject_base(broken, payload)
+
+
 # ── 2. 注入后:占位符 0 残留(渲染脚本全链路输出真实页面) ──────────────────────
 
 class TestInjectionNoResidual:

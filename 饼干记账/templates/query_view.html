@@ -86,16 +86,7 @@
   .cat-bar .track { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; }
   .cat-bar .fill { height: 100%; border-radius: 4px; }
 
-  /* Donut */
-  .donut-wrap { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: center; padding: 16px 0; }
-  .donut { width: 220px; height: 220px; flex-shrink: 0; }
-  .donut-legend { flex: 1; min-width: 200px; }
-  .donut-legend .item { display: flex; align-items: center; gap: 10px; padding: 6px 0; font-size: 13px; }
-  .donut-legend .dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
-  .donut-legend .name { flex: 1; }
-  .donut-legend .pct { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--fg); }
-  .donut-center { font-size: 12px; fill: var(--fg2); }
-  .donut-center-big { font-size: 20px; font-weight: 700; fill: var(--fg); font-variant-numeric: tabular-nums; }
+  /* Donut:样式全部由公共组件 charts.js 决定(#302 task ③ · 技能零样式副本) */
 
   /* Filter chip */
   .filter-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(0,122,255,.1); color: var(--blue); padding: 5px 12px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-right: 6px; margin-bottom: 4px; }
@@ -118,7 +109,6 @@
     .kpi .value { font-size: 22px; }
     .compare-grid { grid-template-columns: 1fr; }
     .record { grid-template-columns: 70px 1fr auto; gap: 8px; padding: 10px 12px; }
-    .donut { width: 180px; height: 180px; }
   }
 </style>
 <style><!--SHARED-CSS--></style>
@@ -133,7 +123,7 @@
 </div>
 
 <!-- 注入点:AI / bill_inject.py 把 CLI JSON 包成 {status, data, message} 信封后经 Base 注入器注入 -->
-<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script><script><!--CHARTS-HELPERS--></script>
 
 <script>
 (function() {
@@ -371,18 +361,8 @@
       </div>
       ${cats.length ? `
         <div class="card">
-          <div class="donut-wrap">
-            ${donutSVG(cats, total)}
-            <div class="donut-legend">
-              ${cats.map((c, i) => `
-                <div class="item">
-                  <span class="dot" style="background:${PALETTE[i % PALETTE.length]}"></span>
-                  <span class="name">${escapeHTML(c.category)}</span>
-                  <span class="pct">${fmtPct(c.pct)}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
+          <div class="section-title">分类占比</div>
+          <div id="breakdownDonutMount"></div>
         </div>
         <div class="card">
           <div class="section-title">占比明细</div>
@@ -390,6 +370,13 @@
         </div>
       ` : '<div class="card empty">该期间暂无分类数据</div>'}
     `;
+    // 环形图 → Base CHARTS-HELPERS donut(#302 task ③ · 样式/图例由公共组件决定)
+    const donutEl = mountChart('breakdownDonutMount');
+    if (donutEl && cats.length) {
+      charts.donut(donutEl,
+        cats.map((c, i) => ({ label: c.category, value: c.total, color: PALETTE[i % PALETTE.length] })),
+        { centerLabel: '总支出', centerValue: total, format: fmtMoney });
+    }
   }
 
   // ── 6. 收支总览 overview ─────────────────────────────────
@@ -551,23 +538,10 @@
     `).join('')}</div>${records.length > 200 ? `<div class="empty" style="margin-top:12px;">仅显示前 200 条 · 共 ${records.length} 条</div>` : ''}`;
   }
 
-  // ── 组件：SVG 环形图（breakdown 用）───────────────────────
-  function donutSVG(cats, total) {
-    const r = 80, cx = 110, cy = 110, c = 2 * Math.PI * r;
-    let acc = 0;
-    const segments = cats.map((cat, i) => {
-      const pct = total ? (cat.total / total) : 0;
-      const dash = pct * c;
-      const seg = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PALETTE[i % PALETTE.length]}" stroke-width="22" stroke-dasharray="${dash} ${c}" stroke-dashoffset="${-acc}" transform="rotate(-90 ${cx} ${cy})"/>`;
-      acc += dash;
-      return seg;
-    }).join('');
-    return `<svg class="donut" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#f5f5f7" stroke-width="22"/>
-      ${segments}
-      <text class="donut-center" x="${cx}" y="${cy - 8}" text-anchor="middle">总支出</text>
-      <text class="donut-center-big" x="${cx}" y="${cy + 18}" text-anchor="middle">${fmtMoney(total)}</text>
-    </svg>`;
+  // ── 组件：Base 图表挂载(#302 task ③ · 自绘 donutSVG 已换 CHARTS-HELPERS) ──
+  function mountChart(id) {
+    if (!window.charts) return null;
+    return document.getElementById(id);
   }
 
   // ── 启动 ──────────────────────────────────────────────────

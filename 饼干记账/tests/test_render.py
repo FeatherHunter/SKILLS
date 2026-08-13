@@ -171,11 +171,11 @@ class TestAnalysisDomainRender:
         _assert_html_well_formed(html_path)
 
     def test_analysis_types_use_analysis_template(self, seeded_db):
-        """分析域类型注入分析域模板(analysis_view.html 特征:SVG 折线 lineChart + 图表图例)"""
+        """分析域类型注入分析域模板(analysis_view.html 特征:CHARTS-HELPERS charts.js + 标题)"""
         for qt, extra in [("yearly", ["--year", "2026"]), ("trend", ["--months", "6"])]:
             rc, out, err, html_path = _run_bill_inject(seeded_db, qt, *extra)
             text = html_path.read_text(encoding="utf-8-sig")
-            assert "lineChart" in text, f"{qt} 应使用分析域模板(含 lineChart)"
+            assert "window.charts" in text, f"{qt} 应注入 CHARTS-HELPERS(charts.js)"
             assert "分析视图" in text, f"{qt} 应使用分析域模板标题"
 
     def test_analysis_empty_db(self, empty_db):
@@ -822,13 +822,17 @@ class TestAdversarialReviewFixes:
             assert f in text, f"toCSV 缺数组字段映射: {f}"
 
     def test_chart_responsive_base(self, tmp_db_dir):
-        """SVG 图表响应式:chartBase 按 window.innerWidth 切手机画布(手机字号 ≥ 桌面可读)"""
-        text = Path(__file__).resolve().parent.parent.joinpath(
+        """图表响应式 → Base CHARTS-HELPERS(#302):模板声明占位符, charts.js 自带 ≤720px 手机独立 UI"""
+        tmpl = Path(__file__).resolve().parent.parent.joinpath(
             "templates", "分析", "analysis_view.html").read_text(encoding="utf-8")
-        assert "function chartBase()" in text, "缺 chartBase 响应式基座"
-        assert "window.innerWidth <= 640" in text, "应监听视口宽度切手机画布"
-        assert "font-size=\"${fs}\"" in text, "图表文字字号应走 fs 变量(响应式)"
-        assert "mobile ? 13 : 11" in text, "手机字号应 ≥ 11(缩放后可读)"
+        assert "<!--CHARTS-HELPERS-->" in tmpl, "分析域模板应声明 CHARTS-HELPERS 占位符"
+        assert "function chartBase()" not in tmpl, "自研 chartBase 应已退役(#302 换 Base charts.js)"
+        # 注入后输出:charts.js 已进页面(≤720px 手机 UI + vector-effect 坐标唯一性由公共组件负责)
+        rc, out, err, html_path = _run_bill_inject(tmp_db_dir, "trend", "--months", "6")
+        text = html_path.read_text(encoding="utf-8-sig")
+        assert "window.charts" in text, "trend 注入后应含 charts.js"
+        assert "@media(max-width:720px)" in text, "charts.js 应自带 ≤720px 手机独立 UI"
+        assert "vector-effect" in text, "charts.js 应含 vector-effect(坐标唯一性契约)"
 
     def test_drill_interactions_bound(self, tmp_db_dir):
         """本地只读下钻:category 点分类→明细 / trend 点月份→汇总(bind + onclick 绑定)"""

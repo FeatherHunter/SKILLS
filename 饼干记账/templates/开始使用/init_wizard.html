@@ -40,7 +40,7 @@
   .done-big { font-size:44px; margin-bottom:6px; }
   .done-title { font-size:19px; font-weight:700; }
   .done-sub { color:var(--fg2); font-size:13.5px; margin-top:4px; word-break:break-all; }
-  .actions { display:flex; gap:8px; justify-content:center; margin:4px 0 12px; }
+    .actions { display:flex; gap:8px; justify-content:center; margin:4px 0 8px; }
   .actions .btn-main, .actions .btn { flex:1; min-width:0; justify-content:center; }
   .btn-main { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:999px; padding:11px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
   .btn-main:hover { background:var(--bg); }
@@ -66,12 +66,12 @@
   </header>
 
   <main id="app"></main>
-</div>
 
 <div class="actions">
   <button class="btn-main primary" id="copyPromptBtn">🚀 开始初始化</button>
 </div>
 <div id="actionbar-zone"></div>
+</div>
 
 <script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 

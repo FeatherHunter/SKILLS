@@ -39,9 +39,15 @@ reconfigure_utf8()
 
 GOALS_FILENAME = "goals.json"
 
-# 规则约定账本(系统按名字写入,不可手动入键/改名,否则历史与新写入分叉)
+# 规则约定账本(系统按名字写入,不可手动入键/改名,否则历史与新写入分叉):
+#   "转账" = account/cli.py TRANSFER_LEDGER(账户转账固定账本)
+#   "借贷" = 写入域借贷流程固定账本(记借出/记借入/记收回/记偿还,见 write/cli.py 与
+#           render_write.py build_flow_payload 的 ledger="借贷")
+# ⚠️ 此列表是上述两处的知识副本:一致性由 tests/test_ledger.py 守卫测试强制
+# (改 account/写入域的固定账本名而不同步本列表 → 测试失败)
 RESERVED_LEDGERS = ("转账", "借贷")
-# 写入默认账本(write CLI --ledger 默认「生活」· 存量行为零变化 → 不可被改名弃用)
+# 写入默认账本(write CLI --ledger 默认「生活」· 存量行为零变化 → 不可被改名弃用;
+# 事实源 = db.py INSERT 默认 / record_bill.py --ledger 默认 / write/cli.py 默认)
 DEFAULT_LEDGER = "生活"
 
 

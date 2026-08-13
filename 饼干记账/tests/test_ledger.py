@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sqlite3
 import subprocess
 import sys
@@ -284,7 +285,88 @@ class TestUpdateLedger:
             conn.close()
 
 
-# ── 渲染器读取(供 T6 smartSelect 消费) ────────────────────────────────────────
+# ── 保留名一致性守卫(跨域知识副本防静默分叉) ──────────────────────────────────
+
+class TestReservedLedgersConsistency:
+    def test_reserved_covers_transfer_ledger(self):
+        """「转账」必须覆盖 account/cli.py TRANSFER_LEDGER(账户转账固定账本)
+
+        若 account 域改固定账本名而本列表不同步 → 本测试失败(强制人工对齐)。
+        """
+        from account.cli import TRANSFER_LEDGER
+        from ledger.cli import RESERVED_LEDGERS
+        assert TRANSFER_LEDGER == "转账"
+        assert TRANSFER_LEDGER in RESERVED_LEDGERS
+
+    def test_reserved_covers_loan_ledger(self):
+        """「借贷」必须覆盖写入域借贷流程固定账本(记借出/记借入等 ledger=借贷)
+
+        写入侧无常量(散落 write/cli.py / render_write.py 流程规则),以规则字符串断言。
+        """
+        from ledger.cli import RESERVED_LEDGERS
+        assert "借贷" in RESERVED_LEDGERS
+
+
+# ── 渲染器 CLI 子进程冒烟(闭环 T6 消费端契约 · payload 级之外的最后一公里) ─────
+
+def _run_renderer(tmp_db_dir, script, args):
+    result = subprocess.run(
+        [sys.executable, str(SCRIPTS_DIR / script)] + args,
+        capture_output=True, text=True, encoding="utf-8", env=_env(tmp_db_dir), timeout=30,
+    )
+    return result
+
+
+def _payload_from_html(html: str) -> dict:
+    m = re.search(r'id="payload"[^>]*>(.*?)</script>', html, re.DOTALL)
+    assert m, "HTML 缺 payload 脚本块"
+    return json.loads(m.group(1).strip())
+
+
+class TestRendererCliSmoke:
+    def test_render_write_cli_embeds_selector_options(self, tmp_db_dir):
+        """render_write.py 子进程:ledgers 键 → 输出 HTML payload 含 selector options"""
+        (tmp_db_dir / "goals.json").write_text(
+            json.dumps({"ledgers": [
+                {"name": "旅行", "disabled": False},
+                {"name": "餐饮", "disabled": True},
+            ]}, ensure_ascii=False), encoding="utf-8")
+        out = tmp_db_dir / "out_expense.html"
+        result = _run_renderer(tmp_db_dir, "render_write.py",
+                               ["expense", "--amount", "35", "--category-hint", "午饭",
+                                "--out", str(out)])
+        assert result.returncode == 0, result.stderr
+        payload = _payload_from_html(out.read_text(encoding="utf-8-sig"))
+        assert payload["data"]["form"]["selector"]["ledger"]["options"] == [
+            {"name": "旅行", "disabled": False},
+            {"name": "餐饮", "disabled": True},
+        ]
+
+    def test_render_write_cli_empty_when_no_key(self, tmp_db_dir):
+        """无 ledgers 键 → 输出 HTML payload options 空数组(组件降级)"""
+        out = tmp_db_dir / "out_expense2.html"
+        result = _run_renderer(tmp_db_dir, "render_write.py",
+                               ["expense", "--amount", "35", "--out", str(out)])
+        assert result.returncode == 0, result.stderr
+        payload = _payload_from_html(out.read_text(encoding="utf-8-sig"))
+        assert payload["data"]["form"]["selector"]["ledger"]["options"] == []
+
+    def test_link_cli_embeds_selector_options(self, tmp_db_dir):
+        """link/cli.py form 子进程:ledgers 键 → 输出 HTML payload 含 selector options"""
+        (tmp_db_dir / "goals.json").write_text(
+            json.dumps({"ledgers": [{"name": "旅行", "disabled": False}]},
+                       ensure_ascii=False), encoding="utf-8")
+        out = tmp_db_dir / "out_purchase.html"
+        result = _run_renderer(tmp_db_dir, "link/cli.py",
+                               ["form", "purchase", "--amount", "199", "--item", "空气炸锅",
+                                "--out", str(out)])
+        assert result.returncode == 0, result.stderr
+        payload = _payload_from_html(out.read_text(encoding="utf-8-sig"))
+        assert payload["data"]["form"]["selector"]["ledger"]["options"] == [
+            {"name": "旅行", "disabled": False},
+        ]
+
+# ── 渲染器读取(payload 级 · 供 T6 smartSelect 消费) ─────────────────────────────
 
 class TestRendererReadsLedgers:
     def test_render_write_selector_options(self, tmp_db_dir):

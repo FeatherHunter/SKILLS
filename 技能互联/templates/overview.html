@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>技能互联 · 接入状态总览</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --fg:#1d1d1f;--fg2:#6e6e73;--fg3:#86868b;--bg:#fafafa;
+    --card:#fff;--line:#e8e8ed;--soft:#f5f8ff;
+    --blue:#007aff;--blue2:#0a63ce;
+    --good:#34c759;--warn:#ff9500;--danger:#ff3b30;--mute:#9b9ba0;
+    --shadow:0 1px 3px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);
+  }
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Apple Color Emoji","Segoe UI Emoji",emoji,sans-serif;background:linear-gradient(180deg,#eef6ff 0%,#fafafa 100%);color:var(--fg);line-height:1.7;-webkit-font-smoothing:antialiased;min-height:100vh}
+  .wrap{max-width:880px;margin:0 auto;padding:56px 24px 80px}
+
+  .hero{background:linear-gradient(135deg,#e8f0ff 0%,#dceaff 100%);border-radius:28px;padding:44px 40px;margin-bottom:24px;box-shadow:var(--shadow);text-align:center}
+  .hero .globe{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#5e5ce6,#007aff);color:#fff;font-size:34px;display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 4px 16px rgba(0,122,255,.35);animation:popIn .6s cubic-bezier(.34,1.56,.64,1)}
+  @keyframes popIn{0%{transform:scale(0);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+  .hero h1{font-size:32px;line-height:1.15;letter-spacing:-.03em;margin-bottom:8px;color:#0a63ce;font-weight:700}
+  .hero .sub{font-size:15px;color:#3a6bbf;margin-bottom:14px}
+  .hero .insight{background:rgba(255,255,255,.7);border:1px solid rgba(0,122,255,.18);border-radius:14px;padding:12px 18px;font-size:13.5px;color:#1d3a6e;line-height:1.7;text-align:left}
+  .hero .insight b{color:#0a63ce}
+
+  .summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:8px 0 24px}
+  .stat{background:var(--card);border-radius:16px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.04);display:flex;flex-direction:column;gap:3px;border:1px solid var(--line)}
+  .stat .n{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.15;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:11px;color:var(--fg3);letter-spacing:.04em;margin-top:2px}
+  .stat .d{font-size:12px;color:var(--fg2);line-height:1.5}
+  .stat.blue .n{color:var(--blue)}
+  .stat.good .n{color:var(--good)}
+  .stat.warn .n{color:var(--warn)}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 28px;margin:16px 0;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+  section h2{font-size:20px;letter-spacing:-.02em;margin-bottom:4px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  section h2 .sec-num{font-size:12px;color:var(--blue);font-weight:700;letter-spacing:.05em;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  section .sub{color:var(--fg2);font-size:13px;margin-bottom:16px;line-height:1.65}
+
+  .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12px;color:var(--fg2);margin-bottom:16px}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+
+  .skill-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .skill-card{border:1px solid var(--line);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;background:#fff}
+  .skill-card.connected{border-color:rgba(52,199,89,.35)}
+  .skill-card.broken{border-color:rgba(255,59,48,.4);background:#fffbfa}
+  .skill-card .row1{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+  .skill-card .name{font-size:17px;font-weight:700;letter-spacing:-.01em}
+  .skill-card .desc{font-size:12px;color:var(--fg2);line-height:1.6}
+  .chips{display:flex;flex-wrap:wrap;gap:6px}
+  .chip{font-size:11.5px;color:var(--blue2);background:var(--soft);border:1px solid rgba(0,122,255,.18);border-radius:999px;padding:3px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .chip small{color:var(--fg3);font-family:inherit}
+  .reason{font-size:12.5px;color:var(--fg2);line-height:1.6}
+  .reason.red{color:#a83228}
+
+  .steps{display:flex;flex-direction:column;gap:10px}
+  .step{display:flex;gap:12px;align-items:flex-start;background:var(--soft);border:1px solid rgba(0,122,255,.15);border-radius:14px;padding:12px 16px;font-size:13.5px;color:var(--fg2);line-height:1.7}
+  .step .num{flex:none;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;margin-top:2px}
+  .step code{background:rgba(0,122,255,.08);border-radius:6px;padding:1px 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:var(--blue2)}
+
+  .cmd{background:#f6f6f8;border:1px solid var(--line);border-radius:14px;padding:14px 18px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:var(--fg2);line-height:2;overflow-x:auto}
+  .cmd .c{color:var(--blue2);font-weight:600}
+  .cmd .p{color:var(--fg3)}
+
+  .footer{margin-top:36px;text-align:center;color:var(--fg3);font-size:12px;line-height:1.7}
+
+  @media(max-width:760px){
+    .wrap{padding:36px 12px 60px}
+    .hero{padding:30px 18px;border-radius:22px}
+    .hero h1{font-size:25px}
+    .summary{grid-template-columns:repeat(2,1fr);gap:10px}
+    .skill-grid{grid-template-columns:1fr}
+    section{padding:20px 16px;border-radius:18px}
+    section h2{font-size:17px}
+    .legend{gap:14px;font-size:11px}
+  }
+</style>
+<style><!--SHARED-CSS--></style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="globe">🌐</div>
+  <h1>技能互联 · 接入状态总览</h1>
+  <p class="sub" id="hero-sub">—</p>
+  <div class="insight" id="hero-insight">加载中…</div>
+</header>
+
+<div class="summary">
+  <div class="stat blue">
+    <div class="n" id="stat-total">—</div>
+    <div class="l">目标技能</div>
+    <div class="d">本 map 打通范围</div>
+  </div>
+  <div class="stat good">
+    <div class="n" id="stat-connected">—</div>
+    <div class="l">已接入（绿）</div>
+    <div class="d">契约一致 · 可被 skilllink-read</div>
+  </div>
+  <div class="stat warn">
+    <div class="n" id="stat-pending">—</div>
+    <div class="l">未接入（灰）</div>
+    <div class="d">公开「还没接」状态</div>
+  </div>
+  <div class="stat blue">
+    <div class="n" id="stat-domains">—</div>
+    <div class="l">可用数据域</div>
+    <div class="d">已接入技能对外暴露</div>
+  </div>
+</div>
+
+<section>
+  <h2><span class="sec-num">§1</span>技能接入状态</h2>
+  <p class="sub">判定口径与 check_public_contract 校验器一致：登记 + 注册表文件 + skilllink --what 跑通</p>
+  <div class="legend">
+    <span><span class="hm-status ok">已接入</span>契约一致，可被 skilllink-read 读取</span>
+    <span><span class="hm-status empty">未接入</span>公开「还没接」状态，促使开发时补上</span>
+    <span><span class="hm-status danger">登记异常</span>已登记但契约失效（校验器会拦住）</span>
+  </div>
+  <div class="skill-grid" id="skill-grid"></div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§2</span>未接入技能怎么补</h2>
+  <p class="sub">灰显技能接入三步走（详见 技能互联/SKILL.md 接入步骤）</p>
+  <div class="steps">
+    <div class="step"><span class="num">1</span><span>复制脚手架 <code>scaffolds/PUBLIC_DOMAINS.py.template</code> 到 <code>&lt;技能&gt;/PUBLIC_DOMAINS.py</code>，按契约 v1 填自己的域注册表</span></div>
+    <div class="step"><span class="num">2</span><span>在 <code>skill_registry.yaml</code> 登记：技能名 → 路径 + 注册表模块（只存路径，不存 DB 路径）</span></div>
+    <div class="step"><span class="num">3</span><span>跑 <code>check_public_contract.py</code> 全绿，本页即自动从灰变绿</span></div>
+  </div>
+</section>
+
+<section>
+  <h2><span class="sec-num">§3</span>命令速查</h2>
+  <p class="sub">skilllink-read · 命令真身住技能互联 Base（契约 v1 §7）</p>
+  <div class="cmd">
+    <span class="c">skilllink-read</span> <span class="p">--skill 作息管家 --what</span> &nbsp;<span class="p"># 问「你能提供什么」</span><br>
+    <span class="c">skilllink-read</span> <span class="p">--skill 作息管家 --domain sleep --from 2026-08-01 --to 2026-08-10</span> &nbsp;<span class="p"># 查数据（统一信封）</span><br>
+    <span class="c">check_public_contract.py</span> &nbsp;<span class="p"># commit 前静态闸门：登记 ↔ 注册表双向兑现</span>
+  </div>
+</section>
+
+<div class="footer">
+  <p>本页由 <code>overview_render.py</code> 生成 · 技能互联（Skill Link）Base · 不执行任何 fetch / 不碰任何数据库</p>
+  <p class="note" id="footer-note">—</p>
+</div>
+
+</div>
+
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
+<script>
+(function(){
+  "use strict";
+
+  function esc(s){ return String(s ?? "").replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+
+  var raw = document.getElementById("payload");
+  var payload, err = null;
+  try { payload = JSON.parse(raw.textContent || "{}"); }
+  catch(e){ err = e.message; }
+
+  if (err) {
+    document.body.insertAdjacentHTML("afterbegin", '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据解析失败: ' + esc(err) + '</div>');
+    return;
+  }
+  if (payload.status !== "ok" || !payload.data) {
+    var msg = payload.message || payload.error || "未知错误";
+    document.body.insertAdjacentHTML("afterbegin", '<div style="background:#fff0ee;color:#a83228;padding:16px;text-align:center">❌ 数据加载失败: ' + esc(msg) + '</div>');
+    return;
+  }
+
+  var data = payload.data;
+  var meta = data.meta || {};
+  var ov = data.overview || {};
+  var skills = ov.skills || [];
+  var conn = ov.connected_count || 0, pend = ov.pending_count || 0, broken = ov.broken_count || 0;
+  var totalDomains = ov.domain_count || 0;
+
+  // Hero
+  document.getElementById("hero-sub").textContent = "生成于 " + (ov.generated_at || meta.occurred_at || "—");
+  var insight = "已接入 " + conn + "/" + (ov.target_total || skills.length) + " · 可用数据域 " + totalDomains + " 个";
+  if (broken > 0) insight += " · ⚠ " + broken + " 个登记异常待修复";
+  else if (pend > 0) insight += " · " + pend + " 个技能未接入（灰显）";
+  else insight += " · 全部技能已接入 🎉";
+  document.getElementById("hero-insight").innerHTML = "<b>" + esc(insight.split(" · ")[0]) + "</b>" + esc(insight.slice(insight.indexOf(" · ")));
+
+  // 摘要卡
+  document.getElementById("stat-total").textContent = ov.target_total ?? skills.length;
+  document.getElementById("stat-connected").textContent = conn;
+  document.getElementById("stat-pending").textContent = pend;
+  document.getElementById("stat-domains").textContent = totalDomains;
+
+  // §1 技能卡片
+  var STATUS_TEXT = { connected: "已接入", pending: "未接入", broken: "登记异常" };
+  var STATUS_BADGE = { connected: "ok", pending: "empty", broken: "danger" };
+  var STATUS_DESC = {
+    connected: "契约一致 · skilllink-read 可直接读取",
+    pending: "未接入互联 · 接入后本页自动变绿",
+    broken: "已登记但契约失效 · 跑 check_public_contract 看详情"
+  };
+  var grid = document.getElementById("skill-grid");
+  grid.innerHTML = skills.map(function(s){
+    var badge = window.statusBadge ? window.statusBadge(STATUS_BADGE[s.status] || "empty", STATUS_TEXT[s.status] || s.status) : "";
+    var body = "";
+    if (s.status === "connected" && s.domains) {
+      body = '<div class="chips">' + s.domains.map(function(d){
+        return '<span class="chip">' + esc(d.cn || d.name) + '<small> · ' + esc(d.name) + '</small></span>';
+      }).join("") + '</div>';
+    } else {
+      var reason = s.reason || STATUS_DESC[s.status] || "";
+      body = '<div class="reason' + (s.status === "broken" ? " red" : "") + '">' + esc(reason) + '</div>';
+    }
+    return '<div class="skill-card ' + esc(s.status) + '">'
+      + '<div class="row1"><span class="name">' + esc(s.name) + '</span>' + badge + '</div>'
+      + body
+      + '</div>';
+  }).join("") || '<div class="empty">暂无技能数据。</div>';
+
+  document.getElementById("footer-note").textContent = "registry: " + (ov.registry || "—");
+})();
+</script>
+</body>
+</html>

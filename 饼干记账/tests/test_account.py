@@ -314,11 +314,10 @@ class TestRender:
         m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
         assert m, "缺 payload 注入点"
         payload = json.loads(m.group(1))
-        # 08 §4 硬标准:复制按钮 + 弹层三选一(全部模板 · 门禁 B 修复)+ B1 toast
-        assert 'id="copyDataBtn"' in text and 'id="copyLogBtn"' in text, "缺复制按钮"
-        assert 'data-f="text"' in text and 'data-f="json"' in text and 'data-f="csv"' in text, \
-            "缺复制数据弹层三选一(纯文本/JSON/CSV)"
-        assert 'id="toastClose"' in text and "4500" in text, "缺 B1 toast"
+        # #300 Base 统一:复制数据/日志按钮 = actionBar 控件,toast 走 Base
+        assert "复制数据" in text and "复制日志" in text, "缺复制数据/日志按钮"
+        assert "hm-actions" in text and "window.actionBar" in text, "复制按钮必须走 Base actionBar"
+        assert "hm-toast" in text and "4500" in text, "缺 Base toast(4.5s 自动消失)"
         # meta 对齐 scenes/account.yaml(门禁 A 层 1)
         meta = payload.get("data", {}).get("meta", {})
         if expect_wake:
@@ -373,7 +372,7 @@ class TestRender:
         assert "不在账户表" in result.stderr
 
     def test_view_summary(self, tmp_db_dir):
-        """看账户汇总结果型 HTML(account-4-1):余额卡 + KPI + 最近流水 + 弹层三选一 + 副标题"""
+        """看账户汇总结果型 HTML(account-4-1):余额卡 + KPI + 最近流水 + Base 复制按钮 + 副标题"""
         _seed_accounts(tmp_db_dir)
         result, out_path = _run_render(tmp_db_dir, "view")
         assert result.returncode == 0, result.stderr
@@ -383,8 +382,8 @@ class TestRender:
         assert d["totals"]["income"] == 8000.0
         # 副标题信息密度(门禁 B 发现 5):账户数 + 流水笔数
         assert d["subtitle"] and "个账户" in d["subtitle"] and "笔流水" in d["subtitle"]
-        # 弹层三选一(结果型 · 08 §4)
-        assert 'data-f="text"' in text and 'data-f="json"' in text and 'data-f="csv"' in text
+        # Base actionBar(结果型 · #300)
+        assert "hm-actions" in text and "window.actionBar" in text
         # 停用灰显样式类
         assert "acct-card" in text and "disabled" in text
 

@@ -349,26 +349,29 @@ class TestGoalRender:
             html_path, require_error_fallback=(mode in ("budget", "saving")))
 
     def test_view_html_has_copy_actions_and_b1(self, tmp_db_dir):
-        """结果型视图:复制数据/日志按钮 + 弹层三选一 + B1 toast(08 §4 硬标准)"""
+        """结果型视图:复制数据/日志按钮 + Base toast(#300 Base 统一 · 08 §4 硬标准)"""
         for mode, extra in [("budget", []), ("saving", [])]:
             rc, out, err, html_path = _run_goal_render(tmp_db_dir, mode, *extra)
             text = html_path.read_text(encoding="utf-8-sig")
-            assert 'id="copyDataBtn"' in text and 'id="copyLogBtn"' in text, f"{mode} 缺复制按钮"
-            assert 'data-f="text"' in text and 'data-f="json"' in text and 'data-f="csv"' in text, \
-                f"{mode} 缺弹层三选一"
-            assert 'id="toastClose"' in text and "4500" in text, f"{mode} 缺 B1 toast(4.5s)"
-            assert "buildData5" in text and "buildLogText" in text, f"{mode} 缺 5/6 段组装"
+            assert "复制数据" in text and "复制日志" in text, f"{mode} 缺复制按钮"
+            assert "hm-actions" in text and "window.actionBar" in text, \
+                f"{mode} 复制按钮必须走 Base actionBar"
+            assert "hm-toast" in text and "4500" in text, f"{mode} 缺 Base toast(4.5s)"
+            assert "function buildDataText" in text and "function buildLogText" in text, \
+                f"{mode} 缺 Base 数据/日志组装"
             assert "data.offline" in text, f"{mode} 缺离线态兜底"
 
     def test_form_html_has_confirm_prompt(self, tmp_db_dir):
-        """采集表单:确认按钮(复制 prompt)+ 复制数据/日志 + B1 toast"""
+        """采集表单:确认按钮(复制 prompt)+ 复制数据/日志(Base actionBar)+ Base toast"""
         for mode, extra in [("set-budget", ["--amount", "3000"]),
                             ("set-saving", ["--name", "换手机", "--amount", "10000"])]:
             rc, out, err, html_path = _run_goal_render(tmp_db_dir, mode, *extra)
             text = html_path.read_text(encoding="utf-8-sig")
             assert 'id="copyPromptBtn"' in text, f"{mode} 缺确认按钮"
-            assert 'id="copyDataBtn"' in text and 'id="copyLogBtn"' in text, f"{mode} 缺复制按钮"
-            assert 'id="toastClose"' in text and "4500" in text, f"{mode} 缺 B1 toast"
+            assert "复制数据" in text and "复制日志" in text, f"{mode} 缺复制按钮"
+            assert "hm-actions" in text and "window.actionBar" in text, \
+                f"{mode} 复制按钮必须走 Base actionBar"
+            assert "hm-toast" in text, f"{mode} 缺 Base toast"
 
     def test_meta_aligned_with_scenes_goal_yaml(self, tmp_db_dir):
         """meta.scene_id/wake_word 对齐 scenes/goal.yaml(门禁 A 层 1)"""

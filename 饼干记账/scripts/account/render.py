@@ -37,6 +37,9 @@ _SCRIPTS = _SCRIPT_DIR.parent
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
+# #300 Base 管线共享层:统一信封 + Base 注入器 + utf-8-sig BOM
+from _base_render import envelope, inject_base, write_html
+
 SKILL_DIR = _SCRIPTS.parent
 TEMPLATES = SKILL_DIR / "templates" / "账户"
 SKILL_VERSION = "2.0"
@@ -76,34 +79,38 @@ def _write_html(payload: dict, template_path: Path, out_name: str, out_arg: str 
     if not template_path.exists():
         raise FileNotFoundError(f"模板不存在: {template_path}")
     template = template_path.read_text(encoding="utf-8")
-    payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    if "<!--INJECT-DATA-->" not in template:
-        raise RuntimeError(f"模板缺注入点: {template_path}")
-    html = template.replace("<!--INJECT-DATA-->", payload_json, 1)
+    html = inject_base(template, payload)
     from html_paths import html_path
     out = Path(out_arg) if out_arg else html_path(out_name)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(html, encoding="utf-8-sig")
-    return out
+    return write_html(html, out)
 
 
 # ── 新增账户(采集) ───────────────────────────────────────────────────────────
 
 def build_add_payload(name: str, acct_type: str) -> dict:
     now = _now()
+    data = {
+        "title": "新增账户",
+        "generated_at": now,
+        "meta": _build_meta("add", "account/render.py add-form"),
+        "form": {
+            "type": "account_add",
+            "name": name or "",
+            "acct_type": acct_type or "",
+            "accounts": _accounts_list(),
+        },
+    }
+    # #300 统一信封
+    envelope(data, "新增账户", "新增账户", "account_add", "account/render.py add-form",
+             [f"账户名 {name or '(待填)'} · 类型 {acct_type or '(选填)'}"],
+             [{"heading": "已有账户", "rows": [
+                 f"{a['name']}（{'已停用' if a.get('disabled') else '使用中'}）"
+                 for a in data["form"]["accounts"][:15]
+             ] or ["账户表为空,直接填写即可"]}],
+             data_structure="goals.json(accounts) 账户表（待用户确认后写入）")
     return {
         "status": "ok",
-        "data": {
-            "title": "新增账户",
-            "generated_at": now,
-            "meta": _build_meta("add", "account/render.py add-form"),
-            "form": {
-                "type": "account_add",
-                "name": name or "",
-                "acct_type": acct_type or "",
-                "accounts": _accounts_list(),
-            },
-        },
+        "data": data,
         "message": "新增账户 采集表单",
     }
 
@@ -120,21 +127,32 @@ def cmd_add_form(args):
 
 def build_transfer_payload(amount: str, from_acct: str, to_acct: str, time_str: str) -> dict:
     now = _now()
+    data = {
+        "title": "账户间转账",
+        "generated_at": now,
+        "meta": _build_meta("transfer", "account/render.py transfer-form"),
+        "form": {
+            "type": "account_transfer",
+            "amount": amount or "",
+            "from": from_acct or "",
+            "to": to_acct or "",
+            "time": time_str or "",
+            "accounts": _accounts_list(),
+        },
+    }
+    # #300 统一信封
+    envelope(data, "账户转账", "账户转账", "account_transfer",
+             "account/render.py transfer-form",
+             [f"金额 {amount or '(待填)'} · {from_acct or '(待填)'} → {to_acct or '(待填)'}",
+              f"时间 {time_str or '(默认现在)'}"],
+             [{"heading": "已有账户", "rows": [
+                 f"{a['name']}（{'已停用' if a.get('disabled') else '使用中'}）"
+                 for a in data["form"]["accounts"][:15]
+             ] or ["账户表为空,可直接手填"]}],
+             data_structure="biscuit_accountant.db bills 表（转账两笔分录 · 待确认后 INSERT）")
     return {
         "status": "ok",
-        "data": {
-            "title": "账户间转账",
-            "generated_at": now,
-            "meta": _build_meta("transfer", "account/render.py transfer-form"),
-            "form": {
-                "type": "account_transfer",
-                "amount": amount or "",
-                "from": from_acct or "",
-                "to": to_acct or "",
-                "time": time_str or "",
-                "accounts": _accounts_list(),
-            },
-        },
+        "data": data,
         "message": "账户转账 采集表单",
     }
 
@@ -166,22 +184,30 @@ def build_update_payload(name: str, new_name: str, disable: bool, enable: bool) 
     if not changes:
         raise ValueError("没有可执行的变更(至少传 --new-name / --disable / --enable 之一)")
 
+    data = {
+        "title": "修改账户",
+        "generated_at": now,
+        "meta": _build_meta("update", "account/render.py update-form"),
+        "form": {
+            "type": "account_update",
+            "account": {
+                "name": target["name"],
+                "type": target.get("type") or "",
+                "disabled": bool(target.get("disabled")),
+            },
+            "changes": changes,
+        },
+    }
+    # #300 统一信封
+    envelope(data, "改账户", "改账户", "account_update", "account/render.py update-form",
+             [f"账户 {name} · {len(changes)} 项变更"],
+             [{"heading": "变更项", "rows": [
+                 f"{c['field']}: {c['old']} → {c['new']}" for c in changes
+             ]}],
+             data_structure="goals.json(accounts) + bills.account（待确认后写入）")
     return {
         "status": "ok",
-        "data": {
-            "title": "修改账户",
-            "generated_at": now,
-            "meta": _build_meta("update", "account/render.py update-form"),
-            "form": {
-                "type": "account_update",
-                "account": {
-                    "name": target["name"],
-                    "type": target.get("type") or "",
-                    "disabled": bool(target.get("disabled")),
-                },
-                "changes": changes,
-            },
-        },
+        "data": data,
         "message": "改账户 确认",
     }
 
@@ -228,11 +254,25 @@ def build_summary_payload() -> dict:
     )
     data["generated_at"] = now
     data["meta"] = _build_meta("summary", "account/render.py view")
+    # #300 统一信封
+    totals = data.get("totals") or {}
+    envelope(data, "账户汇总", "看账户汇总", "account_summary", "account/render.py view",
+             [f"{len(data.get('accounts') or [])} 个账户 · 最近 {data.get('flow_count') or 0} 笔流水",
+              f"总余额 {totals.get('balance', 0):.2f} · 收入 {totals.get('income', 0):.2f} · 支出 {totals.get('expense', 0):.2f}"],
+             [{"heading": "账户余额", "rows": [
+                 f"{a.get('name')} 余额 {a.get('balance', 0):.2f} · 收入 {a.get('income', 0):.2f} · 支出 {a.get('expense', 0):.2f}"
+                 for a in (data.get("accounts") or [])[:15]
+             ]}],
+             data_structure="biscuit_accountant.db bills + goals.json(accounts)（只读查询）")
     return {"status": "ok", "data": data, "message": cli.get("message", "账户汇总")}
 
 
 def cmd_view(args):
     payload = build_summary_payload()
+    if payload.get("status") == "error":
+        # #300 错误信封:错误页也带 scene.snapshot(复制数据/日志按钮可用)
+        from _base_render import error_envelope
+        payload = error_envelope(payload.get("message", "未知错误"), command_cn="账户汇总")
     out = _write_html(payload, TEMPLATES / "account_view.html", "账户汇总", args.out)
     if payload.get("status") == "error":
         print(f"⚠ 已生成错误页: {out}")

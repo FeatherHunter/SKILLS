@@ -96,8 +96,8 @@ class TestFormPayload:
         assert "id=\"fKey\"" in text                   # 联动关键字段(物品)
         assert "link-note" in text                     # 联动预告条
         assert "同时录入居家管家" in text               # 预告目标技能
-        assert "copyDataBtn" in text and "copyLogBtn" in text  # 复制数据/日志
-        assert "toastClose" in text                    # B1 toast
+        assert "actionbar-zone" in text and "window.actionBar" in text  # Base actionBar(#300)
+        assert "<!--SHARED-HELPERS-->" in text          # Base 管线占位符
 
     def test_meal_form_html_structure(self, tmp_path):
         p = lk.build_form_payload("meal", {"amount": "35", "category": "餐饮/外卖/午餐"}, "午餐", "", RECORDS)
@@ -107,7 +107,8 @@ class TestFormPayload:
         text = raw.decode("utf-8-sig")
         assert "id=\"fKey\"" in text
         assert "同时记卡路里" in text
-        assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
+        assert "copyPromptBtn" in text and "actionbar-zone" in text and "window.actionBar" in text
+        assert "<!--SHARED-HELPERS-->" in text          # Base 管线占位符
 
 
 class TestReceiptPayload:
@@ -177,8 +178,8 @@ class TestReceiptPayload:
         assert "id=\"linkBtn\"" in text         # 联动按钮
         assert "id=\"linkFields\"" in text      # 联动字段预览
         assert "id=\"undoBtn\"" in text         # 撤销
-        assert "copyDataBtn" in text and "copyLogBtn" in text
-        assert "toastClose" in text
+        assert "actionbar-zone" in text and "window.actionBar" in text  # Base actionBar(#300)
+        assert "<!--SHARED-HELPERS-->" in text  # Base 管线占位符
         # payload 内嵌联动 prompt(JS 读取)
         assert "同时录入居家管家" in text
 

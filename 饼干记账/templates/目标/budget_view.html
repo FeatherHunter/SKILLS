@@ -67,28 +67,7 @@
   .error-card h3 { color: var(--red); margin-bottom: 8px; font-size: 18px; }
   .error-card p { color: var(--fg2); font-size: 14px; }
 
-  /* 模板能力接口(08 §4 硬标准 · G4):toolbar 动作区 / 弹层三选一 / B1 toast / 离线态 */
-  .toolbar { display: flex; justify-content: flex-end; gap: 10px; margin: 4px 0 16px; flex-wrap: wrap; }
-  .btn { display: inline-flex; align-items: center; justify-content: center; border: 0; background: var(--blue); color: #fff; border-radius: 999px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background .15s; }
-  .btn:hover { background: #0a63ce; }
-  .btn.ghost { background: #fff; color: var(--fg); border: 1px solid var(--border); }
-  .btn.ghost:hover { background: var(--bg); }
-
-  .sheet-mask { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 90; display: none; align-items: flex-end; justify-content: center; }
-  .sheet-mask.show { display: flex; }
-  .sheet { background: #fff; border-radius: 18px 18px 0 0; width: 100%; max-width: 480px; padding: 10px 14px calc(14px + env(safe-area-inset-bottom,0)); box-shadow: 0 -8px 32px rgba(0,0,0,.12); }
-  .sheet-title { font-size: 15px; font-weight: 700; text-align: center; padding: 10px 0 4px; }
-  .sheet-sub { font-size: 12px; color: var(--fg3); text-align: center; padding-bottom: 10px; }
-  .sheet-item { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--bg); border: 0; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; }
-  .sheet-item .f { font-weight: 700; font-size: 14px; min-width: 56px; }
-  .sheet-item .d { font-size: 11.5px; color: var(--fg3); }
-  .sheet-cancel { width: 100%; background: var(--bg); border: 0; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 600; color: var(--fg2); cursor: pointer; }
-
-  .toast { position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom,0)); transform: translateX(-50%) scale(.9); opacity: 0; background: rgba(28,28,30,.94); -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%); color: #f0f0f0; border-radius: 14px; padding: 13px 14px 13px 16px; display: flex; align-items: flex-start; gap: 12px; max-width: 480px; min-width: 300px; box-shadow: 0 10px 32px rgba(0,0,0,.32); pointer-events: none; transition: opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index: 99; }
-  .toast.show { opacity: 1; transform: translateX(-50%) scale(1); pointer-events: auto; }
-  .toast-title { font-weight: 600; font-size: 12.5px; color: #fff; margin-bottom: 2px; }
-  .toast-detail { font-size: 11px; color: #c8c8cc; }
-  .toast-close { background: rgba(255,255,255,.10); color: #34c759; border: 0; border-radius: 8px; padding: 5px 9px; font-size: 10.5px; margin-left: 6px; cursor: pointer; flex-shrink: 0; }
+  /* #300 Base 统一:复制数据/日志 = Base actionBar 控件(样式由公共组件决定) */
 
   .offline { background: #fff7e8; border: 1px solid #ffe3b3; border-radius: var(--radius); padding: 14px 18px; margin-bottom: 14px; color: #b25b00; font-size: 13.5px; }
 
@@ -100,38 +79,19 @@
     .budget-bar .stats b { font-size: 13px; }
   }
 </style>
+<style><!--SHARED-CSS--></style>
 </head>
 <body>
 <div class="container">
   <header class="header" id="header"></header>
   <main id="app"></main>
-  <!-- 动作区(08 §2 通用骨架:内容区下方,页面底部) -->
-  <div class="toolbar">
-    <button class="btn" id="copyDataBtn">📋 复制数据</button>
-    <button class="btn ghost" id="copyLogBtn">🛠 复制日志</button>
-  </div>
+  <!-- 动作区(#300 Base 统一:复制数据/复制日志 = actionBar 控件) -->
+  <div id="actionbar-zone"></div>
   <footer class="footer" id="footer"></footer>
 </div>
 
-<!-- 注入点：goal/render.py 会把 CLI JSON 输出包成 {status, data, message} 后注入这里 -->
-<script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>
-
-<!-- 模板能力接口(08 §4 · G4):复制数据弹层三选一 + B1 toast -->
-<div class="sheet-mask" id="sheetMask">
-  <div class="sheet">
-    <div class="sheet-title">复制数据</div>
-    <div class="sheet-sub">选格式,点哪个复制哪个</div>
-    <button class="sheet-item" data-f="text"><span class="f">纯文本</span><span class="d">粘贴到聊天/笔记</span></button>
-    <button class="sheet-item" data-f="json"><span class="f">JSON</span><span class="d">粘贴给 AI 记账</span></button>
-    <button class="sheet-item" data-f="csv"><span class="f">CSV</span><span class="d">粘贴到 Excel 存档</span></button>
-    <button class="sheet-cancel" id="sheetCancel">取消</button>
-  </div>
-</div>
-<div class="toast" id="toast">
-  <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
-  <div class="toast-detail" id="toastDetail"></div>
-  <button class="toast-close" id="toastClose">✓ 知道了</button>
-</div>
+<!-- 注入点:goal/render.py 把 CLI JSON 包成 {status, data, message} 信封后经 Base 注入器注入 -->
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 
 <script>
 (function() {
@@ -164,14 +124,14 @@
       return;
     }
     if (payload.status === 'error') {
-      renderError(payload.message || '查询失败', payload.data);
+      renderError(payload.message || '查询失败');
+      renderActionBar(payload);
       return;
     }
     const data = payload.data || {};
     const type = data.type;
     const title = data.title || payload.message || '饼干记账 · 查看预算执行';
 
-    window._payloadData = data;
     renderHeader(title, data);
     if (data.offline) {
       $('#app').insertAdjacentHTML('afterbegin', '<div class="offline">⚠️ 离线态:展示本地缓存数据,可能过期</div>');
@@ -181,6 +141,7 @@
       return;
     }
     renderBudget(data);
+    renderActionBar(payload);
     renderFooter(data);
   }
 
@@ -200,143 +161,28 @@
     `;
   }
 
-  function renderError(msg, hint) {
+  function renderError(msg) {
     $('#app').innerHTML = `
       <div class="error-card">
         <h3>⚠️ 出错了</h3>
         <p>${escapeHTML(msg)}</p>
-        ${hint ? `<p style="margin-top:8px;font-size:12px;">${escapeHTML(JSON.stringify(hint))}</p>` : ''}
       </div>
     `;
   }
 
-  // ── 模板能力接口(08 §4 · G4 决议):复制数据弹层三选一 + 复制日志 + B1 toast ──
-  const TOAST_NEXT = { text: '粘贴到聊天/笔记保存', json: '粘贴给 AI 即可记账', csv: '粘贴到 Excel 存档', log: '发给开发者排障' };
-  let _toastTimer = null;
-
-  function showToast(fmt) {
-    const t = document.getElementById('toast');
-    document.getElementById('toastFmt').textContent = (fmt === 'log') ? '日志' : fmt.toUpperCase();
-    document.getElementById('toastDetail').textContent = TOAST_NEXT[fmt] || '';
-    t.classList.add('show');
-    clearTimeout(_toastTimer);
-    _toastTimer = setTimeout(() => t.classList.remove('show'), 4500);
-  }
-
-  function fallbackCopy(text, done) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    ta.remove();
-    done();
-  }
-
-  function doCopy(text, fmt) {
-    const done = () => showToast(fmt);
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
-    } else {
-      fallbackCopy(text, done);
-    }
-  }
-
-  // 复制数据:结构化 JSON 固定 5 段(08 §4.1) { scene_id, command_cn, occurred_at, target, payload }
-  function pickPayload(d) {
-    const out = {};
-    for (const k in d) {
-      if (['type', 'title', 'subtitle', 'generated_at', 'meta'].includes(k)) continue;
-      out[k] = d[k];
-    }
-    return out;
-  }
-
-  function buildData5() {
-    const d = window._payloadData || {};
-    const m = d.meta || {};
-    return {
-      scene_id: m.scene_id || d.type || '',
-      command_cn: m.command_cn || ((d.title || '') + ' 结果'),
-      occurred_at: m.occurred_at || d.generated_at || '',
-      target: 'goals.json/budgets',
-      payload: pickPayload(d),
+  // ── #300 Base 统一:复制数据/复制日志 = actionBar 控件 ──
+  function renderActionBar(p) {
+    const zone = document.getElementById('actionbar-zone');
+    if (!zone || !window.actionBar) return;
+    const ab = (p && p.data && p.data.scene) ? p : {
+      status: 'error',
+      message: (p && p.message) || '未知错误',
+      data: {
+        meta: { command_cn: '操作失败', occurred_at: '' },
+        scene: { snapshot: { title: '操作失败', summary: [(p && p.message) || '未知错误'], sections: [] } },
+      },
     };
-  }
-
-  function toCSV(d5) {
-    const p = d5.payload || {};
-    const arr = p.budgets || null;
-    if (Array.isArray(arr) && arr.length) {
-      const keys = Object.keys(arr[0]);
-      return [keys.join(','), ...arr.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n');
-    }
-    return Object.entries(p).map(([k, v]) => k + ',' + JSON.stringify(v ?? '')).join('\n');
-  }
-
-  function buildDataText(fmt) {
-    const d5 = buildData5();
-    if (fmt === 'json') return JSON.stringify(d5, null, 2);
-    if (fmt === 'text') {
-      return [
-        '场景: ' + d5.command_cn,
-        '时间: ' + d5.occurred_at,
-        '目标: ' + d5.target,
-        '数据: ' + JSON.stringify(d5.payload),
-      ].join('\n');
-    }
-    return toCSV(d5);
-  }
-
-  // 复制日志:6 段(08 §4.2)
-  function buildLogText() {
-    const d = window._payloadData || {};
-    const m = d.meta || {};
-    const lines = [];
-    lines.push('① 场景标识');
-    lines.push('  command_cn: ' + (m.command_cn || '(未知)'));
-    lines.push('  唤醒词: ' + (m.wake_word || '(未知)'));
-    lines.push('  场景名: ' + (d.title || '(未知)') + ' (scene_id=' + (m.scene_id || '') + ')');
-    lines.push('');
-    lines.push('② AI 思考链');
-    lines.push('  ' + (m.chain || '(未注入)'));
-    lines.push('');
-    lines.push('③ 底层数据结构');
-    lines.push('  payload: ' + JSON.stringify(pickPayload(d)));
-    lines.push('  DB 操作: SELECT bills(只读聚合) + goals.json(预算计划值)');
-    lines.push('');
-    lines.push('④ 调用链');
-    lines.push('  渲染脚本: ' + (m.render_cmd || '(未知)'));
-    lines.push('');
-    lines.push('⑤ 时间戳 + 版本');
-    lines.push('  本地时间: ' + (m.occurred_at || d.generated_at || '(未知)'));
-    lines.push('  skill 版本: ' + (m.version || '(未知)'));
-    lines.push('');
-    lines.push('⑥ 异常信息');
-    lines.push('  无');
-    return lines.join('\n');
-  }
-
-  function bindCopyActions() {
-    const sheetMask = document.getElementById('sheetMask');
-    const closeSheet = () => sheetMask.classList.remove('show');
-
-    document.getElementById('copyDataBtn').onclick = () => sheetMask.classList.add('show');
-    document.getElementById('sheetCancel').onclick = closeSheet;
-    sheetMask.addEventListener('click', (e) => { if (e.target === sheetMask) closeSheet(); });
-    sheetMask.querySelectorAll('.sheet-item').forEach((b) => {
-      b.onclick = () => {
-        const f = b.getAttribute('data-f');
-        closeSheet();
-        doCopy(buildDataText(f), f);
-      };
-    });
-
-    document.getElementById('copyLogBtn').onclick = () => doCopy(buildLogText(), 'log');
-    document.getElementById('toastClose').onclick = () => {
-      document.getElementById('toast').classList.remove('show');
-      clearTimeout(_toastTimer);
-    };
+    zone.innerHTML = window.actionBar(ab);
   }
 
   // ── 看预算 budget(预算 vs 实际/剩余/超支 · 进度条 + 月底预测) ──
@@ -400,7 +246,6 @@
 
   // ── 启动 ──────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', () => {
-    bindCopyActions();
     init();
   });
 })();

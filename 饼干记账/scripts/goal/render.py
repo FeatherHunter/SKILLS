@@ -41,6 +41,9 @@ SKILL_DIR = _SCRIPT_DIR.parent.parent
 TEMPLATES_DIR = SKILL_DIR / "templates" / "目标"
 SKILL_VERSION = "2.0"
 
+# #300 Base 管线共享层:统一信封 + Base 注入器 + utf-8-sig BOM
+from _base_render import envelope, inject_base, write_html  # noqa: E402
+
 # 场景 meta(对齐 scenes/goal.yaml · 门禁 A 层 1 数据源)
 GOAL_META = {
     "set-budget": {"scene_id": "goal_set_budget",    "wake_word": "设定预算",
@@ -119,14 +122,30 @@ def build_form_payload(mode: str, fields: dict, extra_args: list,
         "meta": _meta(mode, extra_args),
         "form": {"type": mode, "fields": fields, "existing": existing},
     }
+    # #300 统一信封
+    summary = [m["title"]]
+    for k, lab in (("amount", "金额"), ("month", "月份"), ("category", "分类"),
+                   ("name", "目标"), ("deadline", "截止日期")):
+        v = fields.get(k)
+        if v:
+            summary.append(f"{lab} {v}")
+    sections = []
+    if existing:
+        sections.append({"heading": "覆盖冲突", "rows": [
+            f"已存在 {existing.get('month')} 预算({existing.get('category') or '总'} "
+            f"{existing.get('amount')} 元),确认后将覆盖"
+        ]})
+    envelope(data, m["command_cn"], m["wake_word"], m["scene_id"],
+             data["meta"]["render_cmd"], summary, sections,
+             data_structure="goals.json（budgets/savings · 待用户确认后写入）")
     return {"status": "ok", "data": data, "message": f"{m['command_cn']} 采集"}
 
 
 def build_view_payload(mode: str, cli_json: dict, extra_args: list) -> dict:
     """结果型 payload:CLI 数据 + type/title/subtitle/meta(复制数据/日志数据源)"""
     if cli_json.get("status") == "error":
-        return {"status": "error", "data": None,
-                "message": cli_json.get("message", "未知错误")}
+        from _base_render import error_envelope
+        return error_envelope(cli_json.get("message", "未知错误"), command_cn=GOAL_META[mode]["command_cn"])
     m = GOAL_META[mode]
     data = dict(cli_json.get("data") or {})
     data["type"] = mode
@@ -134,26 +153,43 @@ def build_view_payload(mode: str, cli_json: dict, extra_args: list) -> dict:
     data["subtitle"] = m["subtitle"]
     data["generated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     data["meta"] = _meta(mode, extra_args)
+    # #300 统一信封
+    if mode == "budget":
+        t = data.get("totals") or {}
+        envelope(data, m["command_cn"], m["wake_word"], m["scene_id"],
+                 data["meta"]["render_cmd"],
+                 [f"预算总额 {t.get('budget', 0):.2f} · 实际支出 {t.get('actual', 0):.2f} · "
+                  f"剩余 {t.get('remaining', 0):.2f}", f"超支项 {t.get('over_count', 0)}"],
+                 [{"heading": "预算明细", "rows": [
+                     f"{b.get('category_cn')} 已用 {b.get('actual', 0):.2f}/{b.get('amount', 0):.2f} 元 · "
+                     f"{b.get('count', 0)} 笔 · {b.get('status')}"
+                     for b in (data.get("budgets") or [])[:15]
+                 ]}],
+                 data_structure="biscuit_accountant.db bills（只读聚合）+ goals.json（预算计划值）")
+    else:
+        savings = data.get("savings") or []
+        total_saved = sum((g.get("saved") or 0) for g in savings)
+        total_goal = sum((g.get("amount") or 0) for g in savings)
+        envelope(data, m["command_cn"], m["wake_word"], m["scene_id"],
+                 data["meta"]["render_cmd"],
+                 [f"{len(savings)} 个目标 · 已存 {total_saved:.2f} / 目标总额 {total_goal:.2f}"],
+                 [{"heading": "目标进度", "rows": [
+                     f"{s.get('name')} 已存 {s.get('saved', 0):.2f}/{s.get('amount', 0):.2f} 元 · "
+                     f"{s.get('pct', 0):.1f}% · {s.get('status')}"
+                     for s in savings[:15]
+                 ]}],
+                 data_structure="goals.json（savings）+ bills 聚合（目标期内收入-支出）")
     return {"status": "ok", "data": data, "message": cli_json.get("message", "")}
 
 
 def inject_to_template(payload: dict, mode: str, output_path: Path) -> Path:
-    """注入 payload 到 目标/<模板>,写文件(utf-8-sig BOM)"""
+    """payload → Base 注入器 → 写文件(utf-8-sig BOM · #300 契约)"""
     template_path = TEMPLATES_DIR / MODE_TEMPLATE[mode]
     if not template_path.exists():
         raise FileNotFoundError(f"模板不存在: {template_path}")
     template = template_path.read_text(encoding="utf-8")
-    payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-
-    old = '<script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>'
-    new = f'<script id="payload" type="application/json">{payload_json}</script>'
-    if old not in template:
-        raise RuntimeError("模板中找不到 payload 注入点(<script id=\"payload\" ...>)")
-
-    html = template.replace(old, new, 1)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    output_path.write_text(html, encoding="utf-8-sig")
-    return output_path
+    html = inject_base(template, payload)
+    return write_html(html, output_path)
 
 
 def default_output_path(mode: str) -> Path:

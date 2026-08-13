@@ -118,10 +118,9 @@ class TestPayload:
         assert "id=\"fAmount\"" in text                # 金额输入
         assert "category_suggestions" in text          # 分类推荐
         assert "AI 推荐的已有分类" in text             # 已有标记
-        assert "copyDataBtn" in text and "copyLogBtn" in text  # 复制数据/日志
-        assert "sheetMask" in text and "buildDataText" in text  # 三选一浮层(08 §4 修订)
-        assert "数据快照" in text                       # 人类可读快照(08 修订:禁默认 JSON)
-        assert "toastClose" in text                    # B1 toast
+        assert "actionbar-zone" in text and "window.actionBar" in text  # Base actionBar(#300)
+        assert "<!--SHARED-HELPERS-->" in text          # Base 管线占位符(渲染时注入 base.js)
+        assert '"snapshot"' in text                      # 信封 scene.snapshot(人类可读快照)
 
 
 class TestPhoto:
@@ -189,9 +188,9 @@ class TestBatch:
         assert "缺金额" in text                 # 缺金额标记
         assert "missingBanner" in text          # 缺金额警示条
         assert "id=\"totalAmt\"" in text        # 总计
-        assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
-        assert "sheetMask" in text and "buildDataText" in text  # 三选一浮层
-        assert "数据快照" in text
+        assert "copyPromptBtn" in text and "actionbar-zone" in text and "window.actionBar" in text
+        assert "<!--SHARED-HELPERS-->" in text  # Base 管线占位符
+        assert '"snapshot"' in text
 
 
 class TestReimburse:
@@ -272,10 +271,9 @@ class TestFlow:
         assert "id=\"ops\"" in text          # 两步操作预览
         assert "id=\"cands\"" in text        # 候选 radio
         assert "id=\"warnBox\"" in text      # 超支警示
-        assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
-        assert "sheetMask" in text and "buildDataText" in text  # 三选一浮层
-        assert "数据快照" in text
-        assert "toastClose" in text
+        assert "copyPromptBtn" in text and "actionbar-zone" in text and "window.actionBar" in text
+        assert "<!--SHARED-HELPERS-->" in text  # Base 管线占位符
+        assert '"snapshot"' in text
 
 
 class TestLendBorrow:
@@ -382,9 +380,9 @@ class TestInstallment:
         text = raw.decode("utf-8-sig")
         assert "id=\"params\"" in text      # 参数回显
         assert "id=\"rows\"" in text        # 分摊预览
-        assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
-        assert "sheetMask" in text and "buildDataText" in text  # 三选一浮层
-        assert "数据快照" in text
+        assert "copyPromptBtn" in text and "actionbar-zone" in text and "window.actionBar" in text
+        assert "<!--SHARED-HELPERS-->" in text  # Base 管线占位符(渲染时注入 base.js)
+        assert '"snapshot"' in text
 
 
 class TestUpdate:
@@ -427,4 +425,5 @@ class TestUpdate:
         assert "id=\"orig\"" in text       # 原记录
         assert "id=\"diff\"" in text       # diff 表
         assert "class=\"old\"" in text and "class=\"new\"" in text  # 原值划线/新值蓝
-        assert "copyPromptBtn" in text and "copyDataBtn" in text and "copyLogBtn" in text
+        assert "copyPromptBtn" in text and "actionbar-zone" in text and "window.actionBar" in text
+        assert "<!--SHARED-HELPERS-->" in text  # Base 管线占位符

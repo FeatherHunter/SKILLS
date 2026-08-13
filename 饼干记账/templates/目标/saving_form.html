@@ -35,14 +35,10 @@
   .btn.ghost { background:#fff; color:var(--fg); border:1px solid var(--line); }
   .btn.ghost:hover { background:var(--bg); }
 
-  /* B1 toast */
-  .toast { position:fixed; left:50%; bottom:calc(24px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) scale(.9); opacity:0; background:rgba(28,28,30,.94); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); color:#f0f0f0; border-radius:14px; padding:13px 14px 13px 16px; display:flex; align-items:flex-start; gap:12px; max-width:480px; min-width:300px; box-shadow:0 10px 32px rgba(0,0,0,.32); pointer-events:none; transition:opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index:99; }
-  .toast.show { opacity:1; transform:translateX(-50%) scale(1); pointer-events:auto; }
-  .toast-title { font-weight:600; font-size:12.5px; color:#fff; margin-bottom:2px; }
-  .toast-detail { font-size:11px; color:#c8c8cc; }
-  .toast-close { background:rgba(255,255,255,.10); color:#34c759; border:0; border-radius:8px; padding:5px 9px; font-size:10.5px; margin-left:6px; cursor:pointer; flex-shrink:0; }
+  /* #300 Base 统一:复制/提示全部走公共组件 */
   @media (max-width:640px) { .wrap { padding:18px 12px 70px; } .actions .btn-main, .actions .btn { font-size:12.5px; padding:9px 8px; white-space:nowrap; } h1 { font-size:23px; } }
 </style>
+<style><!--SHARED-CSS--></style>
 </head>
 <body>
 <div class="wrap">
@@ -68,20 +64,14 @@
     </div>
   </main>
 
-  <!-- 动作区(08 §2 底部右对齐) -->
+  <!-- 动作区(08 §2 底部右对齐 · #300 复制数据/日志 = Base actionBar) -->
   <div class="actions">
     <button class="btn-main" id="copyPromptBtn">📋 确认</button>
-    <button class="btn ghost" id="copyDataBtn">复制数据</button>
-    <button class="btn ghost" id="copyLogBtn">🛠 复制日志</button>
   </div>
+  <div id="actionbar-zone"></div>
 
-  <script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>
+  <script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 
-  <div class="toast" id="toast">
-    <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
-    <div class="toast-detail" id="toastDetail"></div>
-    <button class="toast-close" id="toastClose">✓ 知道了</button>
-  </div>
 </div>
 
 <script>
@@ -125,56 +115,18 @@
     return lines.join('\n');
   }
 
-  // ── 复制(toast) ──
-  var toastTimer = null;
-  function showToast(fmt) {
-    var detailMap = { prompt: '粘贴给 AI 即可写入', data: '粘贴到聊天/笔记', log: '发给开发者排障' };
-    document.getElementById('toastFmt').textContent = fmt === 'log' ? '日志' : fmt.toUpperCase();
-    document.getElementById('toastDetail').textContent = detailMap[fmt] || '';
-    document.getElementById('toast').classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { document.getElementById('toast').classList.remove('show'); }, 4500);
+  // ── #300 Base 统一:复制/提示走公共组件 ──
+  document.getElementById('copyPromptBtn').onclick = function () { window.copyText(buildPrompt()); };
+
+  if (window.actionBar) {
+    var abPayload = (payload.data && payload.data.scene) ? payload : {
+      status: 'error', message: '数据未注入',
+      data: { meta: { command_cn: '操作失败', occurred_at: '' },
+              scene: { snapshot: { title: '操作失败', summary: ['数据未注入'], sections: [] } } },
+    };
+    var abZone = document.getElementById('actionbar-zone');
+    if (abZone) abZone.innerHTML = window.actionBar(abPayload);
   }
-  function doCopy(text, fmt) {
-    function done() { showToast(fmt); }
-    function fb() { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fb);
-    else fb();
-  }
-  function payloadData() {
-    return { form: { type: 'set-saving', fields: {
-      name: elName.value, amount: elAmount.value, deadline: elDeadline.value
-    } } };
-  }
-  document.getElementById('copyPromptBtn').onclick = function () { doCopy(buildPrompt(), 'prompt'); };
-  document.getElementById('copyDataBtn').onclick = function () { doCopy(JSON.stringify(payloadData(), null, 2), 'data'); };
-  document.getElementById('copyLogBtn').onclick = function () {
-    var lines = [];
-    lines.push('① 场景标识');
-    lines.push('  command_cn: ' + (meta.command_cn || '设定目标') + ' 采集');
-    lines.push('  唤醒词: ' + WAKE);
-    lines.push('  场景名: ' + (d.title || ACTION) + ' (scene_id=' + (meta.scene_id || '') + ')');
-    lines.push('');
-    lines.push('② AI 思考链: 生成采集表单 → 用户确认');
-    lines.push('');
-    lines.push('③ 底层数据结构');
-    lines.push('  payload: ' + JSON.stringify(payloadData()));
-    lines.push('  DB 操作: 写 goals.json/savings(待用户确认后)');
-    lines.push('');
-    lines.push('④ 调用链');
-    lines.push('  渲染脚本: ' + (meta.render_cmd || '(未知)'));
-    lines.push('');
-    lines.push('⑤ 时间戳 + 版本');
-    lines.push('  本地时间: ' + (d.generated_at || '(未知)'));
-    lines.push('  skill 版本: ' + (meta.version || '(未知)'));
-    lines.push('');
-    lines.push('⑥ 异常信息: 无');
-    doCopy(lines.join('\n'), 'log');
-  };
-  document.getElementById('toastClose').onclick = function () {
-    document.getElementById('toast').classList.remove('show');
-    clearTimeout(toastTimer);
-  };
 })();
 </script>
 </body>

@@ -42,6 +42,9 @@ _SCRIPTS = _SCRIPT_DIR.parent
 if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
+# #300 Base 管线共享层:统一信封 + Base 注入器 + utf-8-sig BOM
+from _base_render import envelope, error_envelope, inject_base, write_html
+
 SKILL_DIR = _SCRIPTS.parent
 TEMPLATES = SKILL_DIR / "templates" / "开始使用"
 SKILL_VERSION = "2.0"
@@ -121,17 +124,10 @@ def _write_html(payload: dict, mode: str, out_arg: str = None) -> Path:
     if not template_path.exists():
         raise FileNotFoundError(f"模板不存在: {template_path}")
     template = template_path.read_text(encoding="utf-8")
-    payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    old = '<script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>'
-    new = f'<script id="payload" type="application/json">{payload_json}</script>'
-    if old not in template:
-        raise RuntimeError("模板中找不到 payload 注入点(<script id=\"payload\" ...>)")
-    html = template.replace(old, new, 1)
+    html = inject_base(template, payload)
     from html_paths import html_path
     out = Path(out_arg) if out_arg else html_path(SCENE_META[mode]["cn"])
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(html, encoding="utf-8-sig")
-    return out
+    return write_html(html, out)
 
 
 # ── 首次使用向导(4 步零决策 · 完成页「记第一笔」引导) ─────────────────────────
@@ -181,6 +177,14 @@ def build_init_wizard_payload() -> dict:
         "status": st,
         "steps": steps,
     }
+    # #300 统一信封
+    envelope(data, "初始化向导", "初始化", "setup_init_wizard",
+             "setup/render.py init-wizard",
+             [f"就绪 {ready} · 数据库 {st.get('db_path', '')} · 现有记录 {st.get('records', 0)} 条"],
+             [{"heading": "检测步骤", "rows": [
+                 f"{s['name']} · {s['status']} · {s['detail']}" for s in steps
+             ]}],
+             data_structure="biscuit_accountant.db（幂等自愈建库 · 只读验证）")
     return {"status": "ok", "data": data, "message": "初始化向导" if not ready else "初始化完成"}
 
 
@@ -198,6 +202,16 @@ def build_init_status_payload() -> dict:
     data["subtitle"] = "就绪" if cli.get("ready") else "未就绪 · 见下方引导"
     data["generated_at"] = now
     data["meta"] = _meta("init-status", "setup/render.py init-status")
+    # #300 统一信封
+    envelope(data, "初始化状态", "初始化状态", "setup_init_status",
+             "setup/render.py init-status",
+             [f"就绪 {cli.get('ready')}", f"数据库 {cli.get('db_path', '')}",
+              f"schema {cli.get('schema_version', '')} · 记录 {cli.get('records', 0)} 条"],
+             [{"heading": "三重判定", "rows": [
+                 f"存在: {'是' if cli.get('exists') else '否'} · "
+                 f"schema: {cli.get('schema_version') or '(缺失)'} · 就绪: {cli.get('ready')}"
+             ]}],
+             data_structure="biscuit_accountant.db（只读判定）")
     return {"status": "ok", "data": data, "message": cli_json.get("message", "初始化状态")}
 
 
@@ -215,6 +229,15 @@ def build_backup_create_payload() -> dict:
     data["subtitle"] = "数据库 + 目标(goals.json)已归档"
     data["generated_at"] = now
     data["meta"] = _meta("backup-create", "setup/render.py backup-create")
+    # #300 统一信封
+    envelope(data, "一键备份", "备份", "setup_backup_create",
+             "setup/render.py backup-create",
+             [f"备份路径 {cli.get('target', '')}", f"时间 {cli.get('time', '')}",
+              f"内容 {cli.get('content', '')}"],
+             [{"heading": "备份文件", "rows": [
+                 f"{f.get('name')} {f.get('size', 0)} B" for f in (cli.get("files") or [])[:15]
+             ]}],
+             data_structure="备份目录（db + goals.json 副本 · 只写备份目录）")
     return {"status": "ok", "data": data, "message": cli_json.get("message", "一键备份完成")}
 
 
@@ -232,6 +255,15 @@ def build_backup_list_payload() -> dict:
     data["subtitle"] = f"共 {cli.get('count', 0)} 个备份"
     data["generated_at"] = now
     data["meta"] = _meta("backup-list", "setup/render.py backup-list")
+    # #300 统一信封
+    envelope(data, "查看备份", "备份", "setup_backup_list",
+             "setup/render.py backup-list",
+             [f"共 {cli.get('count', 0)} 个备份"],
+             [{"heading": "备份列表", "rows": [
+                 f"{b.get('name')} · {b.get('time', '')} · {b.get('size', 0)} B"
+                 for b in (cli.get("backups") or [])[:15]
+             ] or ["暂无备份 · 可一键备份"]}],
+             data_structure="备份目录（只读列表）")
     return {"status": "ok", "data": data, "message": cli_json.get("message", "查看备份")}
 
 
@@ -259,6 +291,17 @@ def build_restore_payload(name: str) -> dict:
         "backups": backups,
         "selected": detail,
     }
+    # #300 统一信封
+    envelope(data, "从备份恢复", "恢复备份", "setup_restore", "setup/render.py restore",
+             [f"选中备份 {detail.get('name')} · {detail.get('time', '')}",
+              f"共 {len(backups)} 个可用备份"],
+             [{"heading": "选中备份详情", "rows": [
+                 f"{k}: {v}" for k, v in detail.items() if k not in ("files",)
+             ]},
+              {"heading": "全部备份", "rows": [
+                  f"{b.get('name')} · {b.get('time', '')}" for b in backups[:15]
+              ]}],
+             data_structure="备份目录（恢复前自动备份现状 · 待确认后执行）")
     return {"status": "ok", "data": data, "message": "恢复向导 · 备份详情预览"}
 
 
@@ -278,6 +321,15 @@ def build_import_payload(file_arg: str) -> dict:
     data["subtitle"] = "列映射向导 · 前几行预览,映射可修改"
     data["generated_at"] = now
     data["meta"] = _meta("import", f"setup/render.py import --file {cli.get('name', '')}")
+    # #300 统一信封
+    envelope(data, "导入CSV", "导入", "setup_import",
+             data["meta"]["render_cmd"],
+             [f"文件 {cli.get('name', '')} · {cli.get('rows', 0)} 行",
+              f"列 {cli.get('columns', [])}"],
+             [{"heading": "预览(前几行)", "rows": [
+                 str(r) for r in (cli.get("preview") or [])[:10]
+             ] or ["(无预览)"]}],
+             data_structure="CSV 文件（列映射预览 · 待确认后导入）")
     return {"status": "ok", "data": data, "message": "导入向导 · 列映射确认"}
 
 
@@ -301,6 +353,9 @@ def main():
         "import": lambda: build_import_payload(args.file or ""),
     }
     payload = builders[args.mode]()
+    # #300 错误信封:错误页也带 scene.snapshot(复制数据/日志按钮可用)
+    if payload.get("status") == "error":
+        payload = error_envelope(payload.get("message", "未知错误"), command_cn=SCENE_META[args.mode]["command_cn"])
 
     try:
         out = _write_html(payload, args.mode, args.out)

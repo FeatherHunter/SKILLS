@@ -31,6 +31,9 @@ _SCRIPT_DIR = Path(__file__).parent.resolve()
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
+# #300 Base 管线共享层:统一信封 + Base 注入器 + utf-8-sig BOM
+from _base_render import envelope, inject_base, write_html
+
 SKILL_DIR = _SCRIPT_DIR.parent
 TEMPLATE = SKILL_DIR / "templates" / "写入" / "expense_form.html"
 BATCH_TEMPLATE = SKILL_DIR / "templates" / "写入" / "batch_confirm.html"
@@ -158,30 +161,57 @@ def build_payload(form_type: str, fields: dict, category_hint: str, note_hint: s
 
     dup_hint = _dup_check(records, filled.get("category"), amount) if filled.get("category") else None
 
+    data = {
+        "title": meta["action"],
+        "generated_at": now,
+        "meta": {
+            "scene_id": meta["scene_id"],
+            "wake_word": meta["wake_word"],
+            "command_cn": meta["command_cn"] + " 采集",
+            "occurred_at": now,
+            "render_cmd": f"render_write.py {form_type}",
+            "version": SKILL_VERSION,
+        },
+        "form": {
+            "type": form_type,
+            "fields": filled,
+            "prefill_source": None if form_type == "photo" else prefill_src,
+            "duplicate_hint": dup_hint if form_type != "photo" else None,
+            "photo_meta": photo_meta,
+            "category_suggestions": _category_suggestions(records, category_hint, form_type),
+            "categories_history": _extract_categories(records),
+            "categories_all": _all_l1(),
+        },
+    }
+    # #300 统一信封:表单数据组织进 scene.snapshot(复制数据【场景名 · 数据快照】)
+    summary = [f"{meta['command_cn']} · {meta['action']}"]
+    if filled.get("amount"):
+        summary.append(f"金额 {filled['amount']}")
+    if filled.get("category"):
+        summary.append(f"分类 {filled['category']}")
+    if filled.get("account"):
+        summary.append(f"账户 {filled['account']}")
+    if filled.get("ledger"):
+        summary.append(f"账本 {filled['ledger']}")
+    if filled.get("note"):
+        summary.append(f"备注 {filled['note']}")
+    if prefill_src and form_type != "photo":
+        summary.append(f"预填 {prefill_src}")
+    if dup_hint and form_type != "photo":
+        summary.append(f"重复提示 {dup_hint}")
+    sections = []
+    suggs = data["form"]["category_suggestions"]
+    if suggs:
+        sections.append({"heading": "分类建议", "rows": [
+            f"{s['name']}（{'已有分类' if s['kind'] == 'existing' else '推荐新建'}）" for s in suggs
+        ]})
+    envelope(data, meta["command_cn"] + " 采集", meta["wake_word"], meta["scene_id"],
+             f"render_write.py {form_type}", summary, sections,
+             data_structure="biscuit_accountant.db bills 表（待用户确认后 INSERT）")
+
     return {
         "status": "ok",
-        "data": {
-            "title": meta["action"],
-            "generated_at": now,
-            "meta": {
-                "scene_id": meta["scene_id"],
-                "wake_word": meta["wake_word"],
-                "command_cn": meta["command_cn"] + " 采集",
-                "occurred_at": now,
-                "render_cmd": f"render_write.py {form_type}",
-                "version": SKILL_VERSION,
-            },
-            "form": {
-                "type": form_type,
-                "fields": filled,
-                "prefill_source": None if form_type == "photo" else prefill_src,
-                "duplicate_hint": dup_hint if form_type != "photo" else None,
-                "photo_meta": photo_meta,
-                "category_suggestions": _category_suggestions(records, category_hint, form_type),
-                "categories_history": _extract_categories(records),
-                "categories_all": _all_l1(),
-            },
-        },
+        "data": data,
         "message": f"{meta['command_cn']} 采集表单",
     }
 
@@ -199,28 +229,37 @@ def build_batch_payload(items: list, ledger: str, records: list) -> dict:
         if is_missing:
             missing += 1
         normalized.append({"amount": amount, "category": category, "note": note, "missing": is_missing})
+    data = {
+        "title": "批量录入多笔",
+        "generated_at": now,
+        "meta": {
+            "scene_id": "write_batch",
+            "wake_word": "批量录入",
+            "command_cn": "批量录入 确认",
+            "occurred_at": now,
+            "render_cmd": "render_write.py batch",
+            "version": SKILL_VERSION,
+        },
+        "form": {
+            "type": "batch",
+            "items": normalized,
+            "ledger": ledger or "生活",
+            "missing_count": missing,
+            "categories_history": _extract_categories(records),
+            "categories_all": _all_l1(),
+        },
+    }
+    # #300 统一信封
+    envelope(data, "批量录入 确认", "批量录入", "write_batch", "render_write.py batch",
+             [f"共 {len(normalized)} 笔 · 缺金额 {missing} 笔", f"账本 {ledger or '生活'}"],
+             [{"heading": "条目", "rows": [
+                 f"{it['amount'] or '(缺金额)'} {it['category']} {it['note']}".strip()
+                 for it in normalized[:20]
+             ]}],
+             data_structure="biscuit_accountant.db bills 表（待用户确认后批量 INSERT）")
     return {
         "status": "ok",
-        "data": {
-            "title": "批量录入多笔",
-            "generated_at": now,
-            "meta": {
-                "scene_id": "write_batch",
-                "wake_word": "批量录入",
-                "command_cn": "批量录入 确认",
-                "occurred_at": now,
-                "render_cmd": "render_write.py batch",
-                "version": SKILL_VERSION,
-            },
-            "form": {
-                "type": "batch",
-                "items": normalized,
-                "ledger": ledger or "生活",
-                "missing_count": missing,
-                "categories_history": _extract_categories(records),
-                "categories_all": _all_l1(),
-            },
-        },
+        "data": data,
         "message": "批量录入确认",
     }
 
@@ -269,26 +308,37 @@ def build_flow_payload(flow_type: str, amount: str, search_hint: str = "", reaso
                 "command_cn": ("记借出" if is_lend else "记借入") + " 确认"}
         category = "借贷/借出" if is_lend else "借贷/借入"
         tag_txt = f"#借出 #借给{{{search_hint or '对象'}}} #未还" if is_lend else f"#借入 #向{{{search_hint or '对象'}}}借 #未还"
+        ops = [
+            {"label": "记一笔" + ("支出" if is_lend else "收入"),
+             "text": f"{category} {amount or '____'} 元", "detail": f"账本=借贷 · 备注 {tag_txt}"},
+        ]
+        data = {
+            "title": "借给别人钱" if is_lend else "向别人借钱",
+            "generated_at": now,
+            "meta": {**meta, "occurred_at": now, "render_cmd": f"render_write.py {flow_type}",
+                     "version": SKILL_VERSION},
+            "form": {
+                "type": flow_type,
+                "amount": amount or "",
+                "target": search_hint or "",
+                "deadline": reason or "",
+                "note": tag_txt,
+                "candidates": [],
+                "operations": ops,
+            },
+        }
+        # #300 统一信封
+        envelope(data, meta["command_cn"], meta["wake_word"], meta["scene_id"],
+                 f"render_write.py {flow_type}",
+                 [f"金额 {amount or '(未填)'}", f"对象 {search_hint or '(未填)'}",
+                  f"备注 {tag_txt}"],
+                 [{"heading": "操作预览", "rows": [
+                     f"{o['label']} · {o['text']} · {o['detail']}" for o in ops
+                 ]}],
+                 data_structure="biscuit_accountant.db bills 表（待用户确认后 INSERT）")
         return {
             "status": "ok",
-            "data": {
-                "title": "借给别人钱" if is_lend else "向别人借钱",
-                "generated_at": now,
-                "meta": {**meta, "occurred_at": now, "render_cmd": f"render_write.py {flow_type}",
-                         "version": SKILL_VERSION},
-                "form": {
-                    "type": flow_type,
-                    "amount": amount or "",
-                    "target": search_hint or "",
-                    "deadline": reason or "",
-                    "note": tag_txt,
-                    "candidates": [],
-                    "operations": [
-                        {"label": "记一笔" + ("支出" if is_lend else "收入"),
-                         "text": f"{category} {amount or '____'} 元", "detail": f"账本=借贷 · 备注 {tag_txt}"},
-                    ],
-                },
-            },
+            "data": data,
             "message": meta["command_cn"],
         }
 
@@ -324,21 +374,35 @@ def build_flow_payload(flow_type: str, amount: str, search_hint: str = "", reaso
         {"label": "② 原记录标记", "text": op2_label, "detail": "执行后回执展示两笔状态"},
     ]
 
+    data = {
+        "title": meta["command_cn"].replace(" 确认", ""),
+        "generated_at": now,
+        "meta": {**meta, "occurred_at": now, "render_cmd": f"render_write.py {flow_type}",
+                 "version": SKILL_VERSION},
+        "form": {
+            "type": flow_type,
+            "amount": amount or "",
+            "reason": reason or "",
+            "candidates": candidates,
+            "operations": operations,
+        },
+    }
+    # #300 统一信封
+    envelope(data, meta["command_cn"], meta["wake_word"], meta["scene_id"],
+             f"render_write.py {flow_type}",
+             [f"金额 {amount or '(未填)'}", f"候选原记录 {len(candidates)} 笔"]
+             + ([f"原因 {reason}"] if reason else []),
+             [{"heading": "候选原记录", "rows": [
+                 f"#{c['id']} {c['time'][:16]} {c['category']} {c['amount']:.2f} {c['note']}".rstrip()
+                 for c in candidates
+             ] or ["（无候选 · 以最近记录兜底）"]},
+              {"heading": "操作预览", "rows": [
+                  f"{o['label']} · {o['text']} · {o['detail']}" for o in operations
+              ]}],
+             data_structure="biscuit_accountant.db bills 表（两步操作 · 待用户确认后执行）")
     return {
         "status": "ok",
-        "data": {
-            "title": meta["command_cn"].replace(" 确认", ""),
-            "generated_at": now,
-            "meta": {**meta, "occurred_at": now, "render_cmd": f"render_write.py {flow_type}",
-                     "version": SKILL_VERSION},
-            "form": {
-                "type": flow_type,
-                "amount": amount or "",
-                "reason": reason or "",
-                "candidates": candidates,
-                "operations": operations,
-            },
-        },
+        "data": data,
         "message": meta["command_cn"],
     }
 
@@ -395,31 +459,41 @@ def build_installment_payload(name: str, total: str, periods: int, start_date: s
     each = round(total_f / periods, 2)
     first = items[0]["amount"]
     last = items[-1]["date"]
+    data = {
+        "title": "记一笔分期",
+        "generated_at": now,
+        "meta": {
+            "scene_id": "write_installment", "wake_word": "记分期",
+            "command_cn": "记分期 确认", "occurred_at": now,
+            "render_cmd": f"render_write.py installment --name {name} --total {total} --periods {periods}",
+            "version": SKILL_VERSION,
+        },
+        "form": {
+            "type": "installment",
+            "name": name,
+            "total": round(total_f, 2),
+            "periods": periods,
+            "each": each,
+            "first": first,
+            "start_date": start_date or now[:10],
+            "last_date": last,
+            "account": account or "",
+            "ledger": ledger or "",
+            "items": items,
+        },
+    }
+    # #300 统一信封
+    envelope(data, "记分期 确认", "记分期", "write_installment",
+             data["meta"]["render_cmd"],
+             [f"{name} · 总价 {total_f:.2f} 元 · {periods} 期",
+              f"每期 {each:.2f} · 首期 {first:.2f} · {start_date or now[:10]} ~ {last}"],
+             [{"heading": "分摊明细", "rows": [
+                 f"第{i['seq']}期 {i['date']} {i['amount']:.2f} 元" for i in items[:12]
+             ]}],
+             data_structure="biscuit_accountant.db bills 表（待用户确认后按期 INSERT）")
     return {
         "status": "ok",
-        "data": {
-            "title": "记一笔分期",
-            "generated_at": now,
-            "meta": {
-                "scene_id": "write_installment", "wake_word": "记分期",
-                "command_cn": "记分期 确认", "occurred_at": now,
-                "render_cmd": f"render_write.py installment --name {name} --total {total} --periods {periods}",
-                "version": SKILL_VERSION,
-            },
-            "form": {
-                "type": "installment",
-                "name": name,
-                "total": round(total_f, 2),
-                "periods": periods,
-                "each": each,
-                "first": first,
-                "start_date": start_date or now[:10],
-                "last_date": last,
-                "account": account or "",
-                "ledger": ledger or "",
-                "items": items,
-            },
-        },
+        "data": data,
         "message": "记分期确认",
     }
 
@@ -449,30 +523,40 @@ def build_update_payload(record_id: int, new_fields: dict) -> dict:
     if not changes:
         raise ValueError("没有实际变更的字段(原值 = 新值)")
 
+    data = {
+        "title": "修改已有记录",
+        "generated_at": now,
+        "meta": {
+            "scene_id": "write_update", "wake_word": "改记录",
+            "command_cn": "改记录 确认", "occurred_at": now,
+            "render_cmd": f"render_write.py update --id {record_id}",
+            "version": SKILL_VERSION,
+        },
+        "form": {
+            "type": "update",
+            "original": {
+                "id": orig["id"], "time": str(orig.get("time") or ""),
+                "category": str(orig.get("category") or ""),
+                "amount": f"{float(orig.get('amount') or 0):.2f}",
+                "account": str(orig.get("account") or ""),
+                "ledger": str(orig.get("ledger") or ""),
+                "note": str(orig.get("note") or ""),
+            },
+            "changes": changes,
+        },
+    }
+    # #300 统一信封
+    envelope(data, "改记录 确认", "改记录", "write_update",
+             data["meta"]["render_cmd"],
+             [f"记录 ID {record_id} · {len(changes)} 项变更",
+              f"原记录 {data['form']['original']['time'][:16]} {data['form']['original']['category']} {data['form']['original']['amount']}"],
+             [{"heading": "变更项", "rows": [
+                 f"{c['field']}: {c['old']} → {c['new']}" for c in changes
+             ]}],
+             data_structure="biscuit_accountant.db bills 表（待用户确认后 UPDATE）")
     return {
         "status": "ok",
-        "data": {
-            "title": "修改已有记录",
-            "generated_at": now,
-            "meta": {
-                "scene_id": "write_update", "wake_word": "改记录",
-                "command_cn": "改记录 确认", "occurred_at": now,
-                "render_cmd": f"render_write.py update --id {record_id}",
-                "version": SKILL_VERSION,
-            },
-            "form": {
-                "type": "update",
-                "original": {
-                    "id": orig["id"], "time": str(orig.get("time") or ""),
-                    "category": str(orig.get("category") or ""),
-                    "amount": f"{float(orig.get('amount') or 0):.2f}",
-                    "account": str(orig.get("account") or ""),
-                    "ledger": str(orig.get("ledger") or ""),
-                    "note": str(orig.get("note") or ""),
-                },
-                "changes": changes,
-            },
-        },
+        "data": data,
         "message": "改记录确认",
     }
 
@@ -603,16 +687,14 @@ def main():
 
 
 def _write_html(payload: dict, template_path: Path, out_name: str, out_arg: str = None):
-    """注入 payload 到模板并写文件"""
+    """payload → Base 注入器 → 写文件(utf-8-sig BOM · #300 契约)"""
     if not template_path.exists():
         print(f"✗ 模板不存在: {template_path}", file=sys.stderr)
         sys.exit(1)
     template = template_path.read_text(encoding="utf-8")
-    payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    html = template.replace("<!--INJECT-DATA-->", payload_json, 1)
+    html = inject_base(template, payload)
     out = Path(out_arg) if out_arg else default_output_path(out_name)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(html, encoding="utf-8-sig")
+    write_html(html, out)
     print(f"✓ 已生成采集表单: {out}")
 
 

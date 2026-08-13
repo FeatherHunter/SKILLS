@@ -547,18 +547,19 @@ class TestTemplateCapability:
     """业务 HTML 交互标准:复制数据弹层三选一 + 复制日志 + B1 toast + meta 注入"""
 
     def test_query_html_has_copy_actions(self, tmp_db_dir):
-        """query_view 输出含:复制数据/日志按钮 + 弹层三选一 + B1 toast"""
+        """query_view 输出含:复制数据/日志按钮(Base actionBar)+ Base toast(#300 统一)"""
         rc, out, err, html_path = _run_bill_inject(tmp_db_dir, "summary")
         text = html_path.read_text(encoding="utf-8-sig")
-        assert 'id="copyDataBtn"' in text, "缺复制数据按钮(08 §4 硬标准)"
-        assert 'id="copyLogBtn"' in text, "缺复制日志按钮(08 §4 硬标准)"
-        # 弹层三选一(G4 轮次 2):纯文本/JSON/CSV 三选项
-        assert 'data-f="text"' in text and 'data-f="json"' in text and 'data-f="csv"' in text, \
-            "缺复制数据弹层三选一(纯文本/JSON/CSV)"
-        # B1 toast:知道了按钮 + 4.5s 自动消失
-        assert 'id="toastClose"' in text and "4500" in text, "缺 B1 toast(知道了按钮/4.5s)"
-        # 5 段/6 段组装函数
-        assert "buildData5" in text and "buildLogText" in text, "缺 5 段数据/6 段日志组装"
+        assert "复制数据" in text and "复制日志" in text, "缺复制数据/日志按钮(08 §4 硬标准)"
+        # Base 控件(#300):复制按钮走 actionBar,toast 样式由公共组件决定
+        assert "hm-actions" in text and "window.actionBar" in text, \
+            "复制按钮必须走 Base actionBar 控件"
+        assert "function copyText" in text, "缺 Base copyText(base.js 未注入)"
+        assert "hm-toast" in text, "缺 Base toast(样式由公共组件决定)"
+        # 自研实现已删(防漂移)
+        assert "buildData5" not in text and "sheetMask" not in text and "toastFmt" not in text, \
+            "自研复制/toast 实现未删除"
+        assert "buildDataText" in text and "buildLogText" in text, "缺 Base 数据/日志组装函数"
         # 5 状态之离线态兜底
         assert "data.offline" in text, "缺离线态分支(5 状态契约)"
 
@@ -740,8 +741,8 @@ class TestTemplateCapability:
             m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
             payload = json.loads(m.group(1))
             if payload.get("status") == "error":
-                # 错误回执页也必带复制数据/日志按钮(08 §6.1 错误回执 HTML)
-                assert 'id="copyDataBtn"' in text and 'id="copyLogBtn"' in text, \
+                # 错误回执页也必带复制数据/日志按钮(#300 Base actionBar · 08 硬标准)
+                assert "复制数据" in text and "复制日志" in text, \
                     f"{qt} 错误页缺复制按钮(08 硬标准)"
                 continue
             meta = payload["data"].get("meta", {})

@@ -475,11 +475,10 @@ def _assert_well_formed(html_path, expect_wake=None, expect_scene=None):
     m = re.search(r'<script id="payload"[^>]*>(.*?)</script>', text, re.DOTALL)
     assert m, "缺 payload 注入点"
     payload = json.loads(m.group(1))
-    # 08 §4 硬标准:复制按钮 + 弹层三选一 + B1 toast
-    assert 'id="copyDataBtn"' in text and 'id="copyLogBtn"' in text, "缺复制按钮"
-    assert 'data-f="text"' in text and 'data-f="json"' in text and 'data-f="csv"' in text, \
-        "缺复制数据弹层三选一(纯文本/JSON/CSV)"
-    assert 'id="toastClose"' in text and "4500" in text, "缺 B1 toast"
+    # #300 Base 统一:复制数据/日志按钮 = actionBar 控件,toast 走 Base
+    assert "复制数据" in text and "复制日志" in text, "缺复制数据/日志按钮"
+    assert "hm-actions" in text and "window.actionBar" in text, "复制按钮必须走 Base actionBar"
+    assert "hm-toast" in text and "4500" in text, "缺 Base toast(4.5s 自动消失)"
     # meta 对齐 scenes/setup.yaml(门禁 A 层 1)
     meta = payload.get("data", {}).get("meta", {})
     if expect_wake:

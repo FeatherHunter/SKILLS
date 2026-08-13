@@ -39,6 +39,10 @@ _SCRIPT_DIR = Path(__file__).parent.resolve()
 if str(_SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPT_DIR))
 
+# #300 Base 管线共享层:统一信封 + Base 注入器 + utf-8-sig BOM
+from _base_render import (SKILL_NAME, SKILL_VERSION, envelope, error_envelope,
+                          inject_base, write_html, bill_summary, bill_rows)
+
 SKILL_DIR = _SCRIPT_DIR.parent
 TEMPLATE_PATH = SKILL_DIR / "templates" / "query_view.html"
 ANALYSIS_TEMPLATE_PATH = SKILL_DIR / "templates" / "分析" / "analysis_view.html"
@@ -296,7 +300,7 @@ def _human_args(query_type: str, extra_args: list) -> str:
 
 
 def build_payload(cli_json: dict, query_type: str, extra_args: list, ai_note: str = None, chain: str = None) -> dict:
-    """把 CLI JSON 包成模板期望的 payload 结构
+    """把 CLI JSON 包成模板期望的 payload 结构（#300 统一信封 + Base scene.snapshot）
 
     ai_note: AI 解读文本(看洞察/看异常 · 注入 data.ai_note 供洞察卡渲染,08 §5 双通道)
     chain:   AI 思考链(注入 meta.chain · 复制日志②段数据源)
@@ -305,11 +309,7 @@ def build_payload(cli_json: dict, query_type: str, extra_args: list, ai_note: st
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     if cli_json.get("status") == "error":
-        return {
-            "status": "error",
-            "data": None,
-            "message": cli_json.get("message", "未知错误")
-        }
+        return error_envelope(cli_json.get("message", "未知错误"), command_cn=meta["title"])
 
     data = cli_json.get("data") or {}
     # 注入 type / title / subtitle / generated_at / extra_args / meta(复制数据日志数据源)
@@ -336,6 +336,23 @@ def build_payload(cli_json: dict, query_type: str, extra_args: list, ai_note: st
         "version": SKILL_VERSION,
     }
 
+    # #300 统一信封:领域数据组织进 scene.snapshot(复制数据【场景名 · 数据快照】)
+    sections = []
+    records = enriched.get("records") or []
+    if records:
+        sections.append({"heading": "记录明细", "rows": bill_rows(records)})
+    cats = enriched.get("categories") or []
+    if cats:
+        sections.append({"heading": "分类聚合", "rows": [
+            f"{c.get('category', '')} {c.get('total', '')} {c.get('count', '')}笔".strip()
+            for c in cats[:15]
+        ]})
+    envelope(enriched, m["command_cn"], m["wake_word"], m["scene_id"],
+             enriched["meta"]["render_cmd"],
+             bill_summary(enriched), sections,
+             thinking=(chain or None),
+             data_structure="biscuit_accountant.db bills 表（只读查询）")
+
     return {
         "status": cli_json.get("status", "ok"),
         "data": enriched,
@@ -344,23 +361,15 @@ def build_payload(cli_json: dict, query_type: str, extra_args: list, ai_note: st
 
 
 def inject_to_template(payload: dict, output_path: Path, query_type: str = None) -> Path:
-    """把 payload 注入到模板，生成 HTML 文件(分析域 → templates/分析/analysis_view.html)"""
+    """payload → Base 注入器 → 生成 HTML(分析域 → templates/分析/analysis_view.html · utf-8-sig BOM)"""
     template_path = template_path_for(query_type) if query_type else TEMPLATE_PATH
     if not template_path.exists():
         raise FileNotFoundError(f"模板不存在: {template_path}")
 
     template = template_path.read_text(encoding="utf-8")
-    payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-
-    old = '<script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>'
-    new = f'<script id="payload" type="application/json">{payload_json}</script>'
-    if old not in template:
-        raise RuntimeError("模板中找不到 payload 注入点（<script id=\"payload\" type=\"application/json\">...</script>）")
-
-    html = template.replace(old, new, 1)
-    # 使用 utf-8-sig 写入 BOM,兼容 Windows 记事本/PowerShell ISE 按 GBK 误判
-    output_path.write_text(html, encoding="utf-8-sig")
-    return output_path
+    # Base 注入(3 占位符硬拦截:缺/重复 → 报错;#300 契约)
+    html = inject_base(template, payload)
+    return write_html(html, output_path)
 
 
 def default_output_path(query_type: str, args=None, extra=None) -> Path:

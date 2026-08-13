@@ -50,25 +50,13 @@
   .btn:hover { background:var(--bg); }
   .btn-main.primary { background:var(--blue); color:#fff; border-color:var(--blue); }
   .btn-main.primary:hover { background:var(--blue2); }
-  .toast { position:fixed; left:50%; bottom:calc(76px + env(safe-area-inset-bottom,0)); transform:translateX(-50%) scale(.9); opacity:0; background:rgba(28,28,30,.94); -webkit-backdrop-filter:blur(20px) saturate(180%); backdrop-filter:blur(20px) saturate(180%); color:#f0f0f0; border-radius:14px; padding:13px 14px 13px 16px; display:flex; align-items:flex-start; gap:12px; max-width:480px; min-width:300px; box-shadow:0 10px 32px rgba(0,0,0,.32); pointer-events:none; transition:opacity .22s ease-out, transform .22s cubic-bezier(.34,1.56,.64,1); z-index:99; }
-  .toast.show { opacity:1; transform:translateX(-50%) scale(1); pointer-events:auto; }
-  .toast-title { font-weight:600; font-size:12.5px; color:#fff; margin-bottom:2px; }
-  .toast-detail { font-size:11px; color:#c8c8cc; }
-  .toast-close { background:rgba(255,255,255,.10); color:#34c759; border:0; border-radius:8px; padding:5px 9px; font-size:10.5px; margin-left:6px; cursor:pointer; flex-shrink:0; }
-  .sheet-mask { position:fixed; inset:0; background:rgba(0,0,0,.35); z-index:90; display:none; align-items:flex-end; justify-content:center; }
-  .sheet-mask.show { display:flex; }
-  .sheet { background:#fff; border-radius:18px 18px 0 0; width:100%; max-width:480px; padding:10px 14px calc(14px + env(safe-area-inset-bottom,0)); box-shadow:0 -8px 32px rgba(0,0,0,.12); }
-  .sheet-title { font-size:15px; font-weight:700; text-align:center; padding:10px 0 4px; }
-  .sheet-sub { font-size:12px; color:var(--fg3); text-align:center; padding-bottom:10px; }
-  .sheet-item { display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:var(--bg); border:0; border-radius:12px; padding:12px 14px; margin-bottom:8px; cursor:pointer; font-family:inherit; }
-  .sheet-item .f { font-weight:700; font-size:14px; min-width:56px; }
-  .sheet-item .d { font-size:11.5px; color:var(--fg3); }
-  .sheet-cancel { width:100%; background:var(--bg); border:0; border-radius:12px; padding:12px; font-size:14px; font-weight:600; color:var(--fg2); cursor:pointer; font-family:inherit; }
+  /* #300 Base 统一:复制/提示全部走公共组件 */
   .error-card { background:rgba(255,59,48,.08); border:1px solid rgba(255,59,48,.2); border-radius:16px; padding:22px; text-align:center; }
   .error-card h3 { color:var(--red); margin-bottom:8px; font-size:17px; }
   .error-card p { color:var(--fg2); font-size:13.5px; word-break:break-all; }
   @media (max-width:640px) { .wrap { padding:18px 12px 70px; } h1 { font-size:23px; } .actions .btn-main, .actions .btn { font-size:12.5px; padding:10px 8px; white-space:nowrap; } }
 </style>
+<style><!--SHARED-CSS--></style>
 </head>
 <body>
 <div class="wrap">
@@ -84,28 +72,12 @@
 
 <div class="actions">
   <button class="btn-main primary" id="copyPromptBtn">↩️ 确认恢复</button>
-  <button class="btn" id="copyDataBtn">复制数据</button>
-  <button class="btn" id="copyLogBtn">🛠 复制日志</button>
 </div>
+<div id="actionbar-zone"></div>
 
-<script id="payload" type="application/json">{"status":"empty","data":null,"message":"数据未注入"}</script>
+<script id="payload" type="application/json"><!--INJECT-DATA--></script><script><!--SHARED-HELPERS--></script>
 
-<div class="sheet-mask" id="sheetMask">
-  <div class="sheet">
-    <div class="sheet-title">复制数据</div>
-    <div class="sheet-sub">选格式,点哪个复制哪个</div>
-    <button class="sheet-item" data-f="text"><span class="f">纯文本</span><span class="d">粘贴到聊天/笔记</span></button>
-    <button class="sheet-item" data-f="json"><span class="f">JSON</span><span class="d">粘贴给 AI 记账</span></button>
-    <button class="sheet-item" data-f="csv"><span class="f">CSV</span><span class="d">粘贴到 Excel 存档</span></button>
-    <button class="sheet-cancel" id="sheetCancel">取消</button>
-  </div>
-</div>
 
-<div class="toast" id="toast">
-  <div class="toast-title">已复制 <em id="toastFmt" style="font-style:normal;color:#34c759;font-weight:600"></em></div>
-  <div class="toast-detail" id="toastDetail"></div>
-  <button class="toast-close" id="toastClose">✓ 知道了</button>
-</div>
 
 <script>
 (function () {
@@ -114,6 +86,16 @@
   var payload;
   try { payload = JSON.parse(document.getElementById('payload').textContent); } catch (e) { return; }
   if (!payload || payload.status === 'empty') return;
+  // ── #300 Base 统一:复制数据/复制日志 = Base actionBar ──
+  if (window.actionBar) {
+    var abZoneX = document.getElementById('actionbar-zone');
+    if (abZoneX) abZoneX.innerHTML = window.actionBar((payload.data && payload.data.scene) ? payload : {
+      status: 'error', message: payload.message || '数据未注入',
+      data: { meta: { command_cn: '操作失败', occurred_at: '' },
+              scene: { snapshot: { title: '操作失败', summary: [payload.message || '数据未注入'], sections: [] } } },
+    });
+  }
+
   if (payload.status === 'error') {
     document.getElementById('app').innerHTML =
       '<div class="error-card"><h3>⚠️ 无法恢复</h3><p>' + esc(payload.message || '未知错误') + '</p></div>';
@@ -170,80 +152,11 @@
   });
 
   document.getElementById('copyPromptBtn').onclick = function () {
-    doCopy('请加载「饼干记账」技能,帮我从备份恢复数据(唤醒词:恢复备份):\n\n  备  份: ' + (curName || '____') + ' (默认最新)', 'prompt');
+    window.copyText('请加载「饼干记账」技能,帮我从备份恢复数据(唤醒词:恢复备份):\n\n  备  份: ' + (curName || '____') + ' (默认最新)');
   };
 
   // ── 复制能力(08 §4 硬标准) ──
-  var toastTimer = null;
-  var TOAST_NEXT = { text: '粘贴到聊天/笔记保存', json: '粘贴给 AI 即可记账', csv: '粘贴到 Excel 存档', log: '发给开发者排障', prompt: '粘贴发给 AI 继续' };
-  function showToast(fmt) {
-    document.getElementById('toastFmt').textContent = fmt === 'log' ? '日志' : fmt === 'prompt' ? 'Prompt' : fmt.toUpperCase();
-    document.getElementById('toastDetail').textContent = TOAST_NEXT[fmt] || '';
-    document.getElementById('toast').classList.add('show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { document.getElementById('toast').classList.remove('show'); }, 4500);
-  }
-  function doCopy(text, fmt) {
-    function done() { showToast(fmt); }
-    function fb() { var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); done(); }
-    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done).catch(fb);
-    else fb();
-  }
-
-  function pickPayload() {
-    var out = {};
-    for (var k in d) { if (['type','title','subtitle','generated_at','meta'].indexOf(k) < 0) out[k] = d[k]; }
-    return out;
-  }
-  function buildData5() {
-    return { scene_id: meta.scene_id || 'setup_restore', command_cn: meta.command_cn || '从备份恢复',
-             occurred_at: d.generated_at || '', target: '数据库 + goals.json', payload: pickPayload() };
-  }
-  function buildDataText(fmt) {
-    var d5 = buildData5();
-    if (fmt === 'json') return JSON.stringify(d5, null, 2);
-    if (fmt === 'text') {
-      return ['场景: ' + d5.command_cn, '时间: ' + d5.occurred_at, '目标: ' + d5.target,
-              '数据: ' + JSON.stringify(d5.payload)].join('\n');
-    }
-    return Object.entries(d5.payload).map(function (e) { return e[0] + ',' + JSON.stringify(e[1] ?? ''); }).join('\n');
-  }
-
-  var sheetMask = document.getElementById('sheetMask');
-  var closeSheet = function () { sheetMask.classList.remove('show'); };
-  document.getElementById('copyDataBtn').onclick = function () { sheetMask.classList.add('show'); };
-  document.getElementById('sheetCancel').onclick = closeSheet;
-  sheetMask.addEventListener('click', function (e) { if (e.target === sheetMask) closeSheet(); });
-  sheetMask.querySelectorAll('.sheet-item').forEach(function (b) {
-    b.onclick = function () { var f = b.getAttribute('data-f'); closeSheet(); doCopy(buildDataText(f), f); };
-  });
-  document.getElementById('copyLogBtn').onclick = function () {
-    var lines = [];
-    lines.push('① 场景标识');
-    lines.push('  command_cn: ' + (meta.command_cn || '从备份恢复'));
-    lines.push('  唤醒词: ' + (meta.wake_word || '恢复备份'));
-    lines.push('  场景名: 从备份恢复 (scene_id=' + (meta.scene_id || 'setup_restore') + ')');
-    lines.push('');
-    lines.push('② AI 思考链: 用户恢复备份 → 备份详情预览 → 确认 → restore(自动备份现状)');
-    lines.push('');
-    lines.push('③ 底层数据结构');
-    lines.push('  payload: ' + JSON.stringify(pickPayload()));
-    lines.push('  DB 操作: COPY 备份 → 数据目录 + sqlite 打开校验');
-    lines.push('');
-    lines.push('④ 调用链');
-    lines.push('  渲染脚本: ' + (meta.render_cmd || '(未知)'));
-    lines.push('');
-    lines.push('⑤ 时间戳 + 版本');
-    lines.push('  本地时间: ' + (d.generated_at || '(未知)'));
-    lines.push('  skill 版本: ' + (meta.version || '(未知)'));
-    lines.push('');
-    lines.push('⑥ 异常信息: 无');
-    doCopy(lines.join('\n'), 'log');
-  };
-  document.getElementById('toastClose').onclick = function () {
-    document.getElementById('toast').classList.remove('show');
-    clearTimeout(toastTimer);
-  };
+  
 })();
 </script>
 </body>

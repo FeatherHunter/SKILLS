@@ -35,6 +35,9 @@ if str(_SCRIPTS) not in sys.path:
 from validators import ALL_L1  # noqa: E402
 from html_paths import html_path  # noqa: E402
 
+# #300 Base 管线共享层:统一信封 + Base 注入器 + utf-8-sig BOM
+from _base_render import envelope, inject_base, write_html  # noqa: E402
+
 SKILL_DIR = _SCRIPTS.parent
 TEMPLATE_DIR = SKILL_DIR / "templates" / "联动"
 SKILL_VERSION = "2.0"
@@ -184,33 +187,56 @@ def build_form_payload(scene_key: str, fields: dict, category_hint: str, note_hi
 
     dup_hint = _dup_check(records, filled.get("category"), amount) if filled.get("category") else None
 
+    data = {
+        "title": scene["title"],
+        "generated_at": now,
+        "meta": {
+            "scene_id": scene["scene_id"],
+            "wake_word": scene["wake_word"],
+            "action": scene["action"],
+            "command_cn": scene["title"] + " 采集",
+            "occurred_at": now,
+            "render_cmd": f"link/cli.py form {scene_key}",
+            "version": SKILL_VERSION,
+        },
+        "form": {
+            "type": scene_key,
+            "fields": filled,
+            "default_category": scene["default_category"],
+            "key_label": scene["key_label"],
+            "key_placeholder": scene["key_placeholder"],
+            "prefill_source": prefill_src,
+            "duplicate_hint": dup_hint,
+            "category_suggestions": _category_suggestions(records, category_hint),
+            "categories_history": _extract_categories(records),
+            "categories_all": _all_l1(),
+        },
+    }
+    # #300 统一信封
+    summary = [f"{scene['title']} · 联动 {scene['link_target']}"]
+    if filled.get("amount"):
+        summary.append(f"金额 {filled['amount']}")
+    key_v = filled.get(scene["key_field"]) or ""
+    if key_v:
+        summary.append(f"{scene['key_label'].strip()} {key_v}")
+    if filled.get("category"):
+        summary.append(f"分类 {filled['category']}")
+    sections = []
+    suggs = data["form"]["category_suggestions"]
+    if suggs:
+        sections.append({"heading": "分类建议", "rows": [
+            f"{s['name']}（{'已有分类' if s['kind'] == 'existing' else '推荐新建'}）" for s in suggs
+        ]})
+    if prefill_src:
+        sections.append({"heading": "预填", "rows": [prefill_src]})
+    if dup_hint:
+        sections.append({"heading": "重复检测", "rows": [dup_hint]})
+    envelope(data, scene["title"] + " 采集", scene["wake_word"], scene["scene_id"],
+             f"link/cli.py form {scene_key}", summary, sections,
+             data_structure="biscuit_accountant.db bills 表（待确认后 INSERT · 联动 " + scene["link_target"] + "）")
     return {
         "status": "ok",
-        "data": {
-            "title": scene["title"],
-            "generated_at": now,
-            "meta": {
-                "scene_id": scene["scene_id"],
-                "wake_word": scene["wake_word"],
-                "action": scene["action"],
-                "command_cn": scene["title"] + " 采集",
-                "occurred_at": now,
-                "render_cmd": f"link/cli.py form {scene_key}",
-                "version": SKILL_VERSION,
-            },
-            "form": {
-                "type": scene_key,
-                "fields": filled,
-                "default_category": scene["default_category"],
-                "key_label": scene["key_label"],
-                "key_placeholder": scene["key_placeholder"],
-                "prefill_source": prefill_src,
-                "duplicate_hint": dup_hint,
-                "category_suggestions": _category_suggestions(records, category_hint),
-                "categories_history": _extract_categories(records),
-                "categories_all": _all_l1(),
-            },
-        },
+        "data": data,
         "message": scene["title"] + " 采集表单",
     }
 
@@ -271,59 +297,69 @@ def build_receipt_payload(scene_key: str, bill_id: int, key_value: str) -> dict:
         + (f" · {key_value}" if key_value else "") + ")"
     )
 
+    data = {
+        "title": scene["title"] + " · 已记账",
+        "generated_at": now,
+        "meta": {
+            "scene_id": scene["scene_id"],
+            "wake_word": scene["wake_word"],
+            "command_cn": scene["title"] + " 回执",
+            "occurred_at": now,
+            "render_cmd": f"link/cli.py receipt {scene_key} --id {bill_id}",
+            "version": SKILL_VERSION,
+        },
+        "receipt": {
+            "type": scene_key,
+            "bill": {
+                "id": bill_id,
+                "amount": f"{amount_abs}",
+                "amount_sign": f"{float(bill.get('amount') or 0):.2f}",
+                "category": str(bill.get("category") or ""),
+                "time": str(bill.get("time") or ""),
+                "account": str(bill.get("account") or ""),
+                "ledger": str(bill.get("ledger") or ""),
+                "note": str(bill.get("note") or ""),
+            },
+            "key": {key_field: key_value},
+            "link": {
+                "target": scene["link_target"],
+                "wake_word": scene["link_wake"],
+                "button": scene["link_button"],
+                "head": scene["link_head"],
+                "fields": link_fields,
+                "prompt": link_prompt,
+            },
+            "undo": {"prompt": undo_prompt},
+        },
+    }
+    # #300 统一信封
+    envelope(data, scene["title"] + " 回执", scene["wake_word"], scene["scene_id"],
+             data["meta"]["render_cmd"],
+             [f"已记账 ID={bill_id} · {bill.get('category')} {bill.get('amount')} 元",
+              f"联动 {scene['link_target']}（{scene['link_wake']}）"],
+             [{"heading": "账单", "rows": [
+                 f"ID {bill_id} · {bill.get('time')} · {bill.get('category')} {bill.get('amount')} {bill.get('note')}".rstrip(),
+             ]},
+              {"heading": "联动字段", "rows": [
+                 f"{f['label']}: {f['value'] or '(待填)'}" for f in link_fields
+              ]}],
+             data_structure="biscuit_accountant.db bills 表（已写入 · 联动目标 " + scene["link_target"] + "）")
     return {
         "status": "ok",
-        "data": {
-            "title": scene["title"] + " · 已记账",
-            "generated_at": now,
-            "meta": {
-                "scene_id": scene["scene_id"],
-                "wake_word": scene["wake_word"],
-                "command_cn": scene["title"] + " 回执",
-                "occurred_at": now,
-                "render_cmd": f"link/cli.py receipt {scene_key} --id {bill_id}",
-                "version": SKILL_VERSION,
-            },
-            "receipt": {
-                "type": scene_key,
-                "bill": {
-                    "id": bill_id,
-                    "amount": f"{amount_abs}",
-                    "amount_sign": f"{float(bill.get('amount') or 0):.2f}",
-                    "category": str(bill.get("category") or ""),
-                    "time": str(bill.get("time") or ""),
-                    "account": str(bill.get("account") or ""),
-                    "ledger": str(bill.get("ledger") or ""),
-                    "note": str(bill.get("note") or ""),
-                },
-                "key": {key_field: key_value},
-                "link": {
-                    "target": scene["link_target"],
-                    "wake_word": scene["link_wake"],
-                    "button": scene["link_button"],
-                    "head": scene["link_head"],
-                    "fields": link_fields,
-                    "prompt": link_prompt,
-                },
-                "undo": {"prompt": undo_prompt},
-            },
-        },
+        "data": data,
         "message": scene["title"] + " 回执",
     }
 
 
 def _render(payload: dict, template_name: str, out_name: str, out_arg: str = None) -> Path:
-    """注入 payload 到模板并写文件(BOM + </ 转义,对齐 render_write)"""
+    """payload → Base 注入器 → 写文件(utf-8-sig BOM · #300 契约)"""
     template_path = TEMPLATE_DIR / template_name
     if not template_path.exists():
         raise FileNotFoundError(f"模板不存在: {template_path}")
     template = template_path.read_text(encoding="utf-8")
-    payload_json = json.dumps(payload, ensure_ascii=False).replace("</", "<\\/")
-    html = template.replace("<!--INJECT-DATA-->", payload_json, 1)
+    html = inject_base(template, payload)
     out = Path(out_arg) if out_arg else html_path(out_name)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(html, encoding="utf-8-sig")
-    return out
+    return write_html(html, out)
 
 
 def main():

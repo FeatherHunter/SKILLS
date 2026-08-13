@@ -67,6 +67,17 @@ gh issue list --state open \
   --jq '[.[] | {number, title, body, labels: [.labels[].name], comments: [.comments[].body]}]'
 ```
 
+## Wayfinding operations（wayfinder 子议题约定 · 2026-08-13）
+
+wayfinder map 的父/子关系与进度追踪用 GitHub **原生子议题（sub-issues）** 表达（gh ≥ 2.63 支持；本机 2.97.0 已验证，仓库 API 可用）：
+
+- 建子票：`gh issue create --parent <map号>`（新票直接挂父）
+- 存量补挂：`gh issue edit <map号> --add-sub-issue <号,号,...>`，或对单票 `gh issue edit <子票号> --parent <map号>`
+- **进度条自动维护**：父 issue 页面原生渲染「子议题」进度（n/N），子票 closed 自动更新——map body 内**不再维护手动勾选清单/状态列**（与原生进度重复会漂移），保留「票索引表」作对照即可
+- 解绑：`gh issue edit <子票号> --remove-parent`
+- 阻塞关系（原生依赖图，gh ≥ 2.97）：`gh issue create --blocked-by/--blocking` / `gh issue edit --add-blocked-by/--add-blocking`——可替代 body 内「⛓ 阻塞」文字约定
+- 子议题与普通 issue 在列表中无区别（仍是独立 issue，可独立打标签/指派/关闭）
+
 ## 本地 .scratch 与 GitHub 的关系（历史迁移）
 
 仓库初始化前，部分技能（`作息管家/`、`备忘录/` 等）已经在 `.scratch/<feature>/issues/NN-*.md` 内维护本地 markdown ticket。以**本次提交日为分界线**：

@@ -1340,6 +1340,95 @@ def test_line_connect_nulls_series(chart_page):
     assert len(ds) == 2 and all(d.count('M') == 1 for d in ds)
 
 
+# ── line: yTicks 轴刻度文字（v1.15 · #333）────────────────
+
+def test_line_yticks_renders_four(chart_page):
+    """yTicks:4: DOM 出现 4 条刻度短线 + 4 个刻度文字, 值 = 共享 Y 域(含 padding)均分"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, yTicks:4})', LINE_ITEMS)
+    lines = chart_page.evaluate("document.querySelectorAll('.hm-c-yt-l').length")
+    labels = chart_page.evaluate("[...document.querySelectorAll('.hm-c-yt')].map(n=>n.textContent)")
+    assert lines == 4
+    # LINE_ITEMS min=2 max=8 range=6 pad=0.36 → 域 [1.64, 8.36] 均分 4 段
+    assert labels == ['1.64', '3.88', '6.12', '8.36']
+
+
+def test_line_yticks_positions_inside(chart_page):
+    """贴边防裁剪: 最上/最下刻度文字均落在 svg 区上下界内（不裁剪不重叠）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, yTicks:4})', LINE_ITEMS)
+    pos = chart_page.evaluate("""() => {
+      const svg = document.querySelector('.hm-c-line-svg').getBoundingClientRect();
+      const ys = [...document.querySelectorAll('.hm-c-yt')].map(n => n.getBoundingClientRect());
+      return {top: ys[0].top - svg.top, bottom: ys[ys.length-1].bottom - svg.top, h: svg.height};
+    }""")
+    assert pos['top'] >= 0 and pos['bottom'] <= pos['h']
+
+
+def test_line_yticks_default_and_false_absent(chart_page):
+    """缺省/false: 无任何刻度元素（既有渲染逐字节不变）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    n1 = chart_page.evaluate("document.querySelectorAll('.hm-c-yt,.hm-c-yt-l').length")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, yTicks:false})', LINE_ITEMS)
+    n2 = chart_page.evaluate("document.querySelectorAll('.hm-c-yt,.hm-c-yt-l').length")
+    assert n1 == 0 and n2 == 0
+
+
+def test_line_yticks_byte_identical(chart_page):
+    """yTicks 未传 vs false: 整段 innerHTML 逐字节一致（回归断言）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    html1 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, yTicks:false})', LINE_ITEMS)
+    html2 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    assert html1 == html2
+
+
+def test_line_yticks_format(chart_page):
+    """刻度文字走 format（与 tooltip 同一格式化器）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, yTicks:4, format:"¥{v}"})', LINE_ITEMS)
+    labels = chart_page.evaluate("[...document.querySelectorAll('.hm-c-yt')].map(n=>n.textContent)")
+    assert labels[0] == '¥1.64' and all(l.startswith('¥') for l in labels)
+
+
+def test_line_yticks_clamped(chart_page):
+    """刻度数收敛 2-6: 1→2, 20→6; 非数字字符串/0 → 关闭"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, yTicks:1})', LINE_ITEMS)
+    n1 = chart_page.evaluate("document.querySelectorAll('.hm-c-yt').length")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, yTicks:20})', LINE_ITEMS)
+    n2 = chart_page.evaluate("document.querySelectorAll('.hm-c-yt').length")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, yTicks:"4"})', LINE_ITEMS)
+    n3 = chart_page.evaluate("document.querySelectorAll('.hm-c-yt').length")
+    assert n1 == 2 and n2 == 6 and n3 == 0
+
+
+def test_line_yticks_extremes(chart_page):
+    """极端值: 全 0 / 全相同值 → 正常渲染 4 刻度不报错"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'a',value:0},{label:'b',value:0},{label:'c',value:0}], {animation:false, yTicks:4})")
+    n1 = chart_page.evaluate("document.querySelectorAll('.hm-c-yt').length")
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'a',value:5},{label:'b',value:5},{label:'c',value:5}], {animation:false, yTicks:4})")
+    n2 = chart_page.evaluate("document.querySelectorAll('.hm-c-yt').length")
+    assert n1 == 4 and n2 == 4
+
+
+def test_line_yticks_series_shared_domain(chart_page):
+    """series 多序列: 刻度 = 共享 Y 域（所有序列并入同一域均分）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'a',value:150}], {animation:false, yTicks:4,
+        series:[{name:'A',items:[{label:'a',value:10},{label:'b',value:20}]},
+                {name:'B',items:[{label:'a',value:100},{label:'b',value:200}]}]})
+    """)
+    labels = chart_page.evaluate("[...document.querySelectorAll('.hm-c-yt')].map(n=>n.textContent)")
+    assert len(labels) == 4
+    # 全域 min=10 max=200 range=190 pad=11.4 → [-1.4, 211.4] 均分 4: -1.4/69.53/140.47/211.4
+    assert labels == ['-1.4', '69.53', '140.47', '211.4']
+
+
+def test_line_yticks_grid_off_still_marks(chart_page):
+    """grid:false + yTicks:4: 仍画 4 条刻度短线 + 4 文字（刻度独立于网格）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, grid:false, yTicks:4})', LINE_ITEMS)
+    lines = chart_page.evaluate("document.querySelectorAll('.hm-c-yt-l').length")
+    labels = chart_page.evaluate("document.querySelectorAll('.hm-c-yt').length")
+    assert lines == 4 and labels == 4
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

@@ -1,3 +1,102 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>yTicks 轴刻度文字 v1.15 · 验收演示（#333）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{max-width:100%;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f5f7;color:#1d1d1f;line-height:1.7;-webkit-font-smoothing:antialiased;padding:28px 16px 70px}
+.page-head{max-width:960px;margin:0 auto 14px;text-align:center}
+.page-head h1{font-size:22px;letter-spacing:-.02em}
+.page-head .sub{color:#6e6e73;font-size:13px;margin-top:4px}
+.card{background:#fff;border-radius:18px;padding:18px 20px;margin:0 auto 14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);max-width:960px}
+.c-title{font-size:15px;font-weight:800;margin-bottom:2px}
+.c-sub{font-size:12px;color:#86868b;margin-bottom:4px}
+.c-sub code{background:#f2f2f5;border-radius:5px;padding:1px 6px;font-size:11.5px}
+.chart{margin-top:10px}
+.chk{font-size:11.5px;color:#34c759;margin-top:8px;font-weight:700}
+@media(max-width:720px){
+  body{padding:20px 12px 60px;background:#f2f2f5}
+  .page-head h1{font-size:19px}
+}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+<h1>📏 charts.line · Y 轴刻度文字 yTicks（v1.15 · #333）</h1>
+<div class="sub">桌面 1280×900 / 手机 ≤720px 双端验收 · 刻度 = 共享 Y 域（含 padding）均分 · 默认关闭既有渲染逐字节不变</div>
+</div>
+
+<div class="card">
+<div class="c-title">① 常规 · yTicks:4（左侧 4 条刻度短线 + 4 个刻度文字）</div>
+<div class="c-sub">数据 2/5/3/8/6 → 域 [1.64, 8.36] 均分 → 1.64 / 3.88 / 6.12 / 8.36</div>
+<div id="c1" class="chart"></div>
+<div class="chk">✓ 刻度值 = padded 域均分 · 首尾不裁剪</div>
+</div>
+
+<div class="card">
+<div class="c-title">② 刻度文字走 format · yTicks:4 + format:'¥{v}'</div>
+<div class="c-sub">与 tooltip 同一格式化器（悬停看 tooltip 值一致）</div>
+<div id="c2" class="chart"></div>
+<div class="chk">✓ ¥1.64 / ¥3.88 / ¥6.12 / ¥8.36</div>
+</div>
+
+<div class="card">
+<div class="c-title">③ 3 刻度（与 3 条网格线重合）· yTicks:3</div>
+<div class="c-sub">2/5/3/8/6 → 1.64 / 5 / 8.36</div>
+<div id="c3" class="chart"></div>
+</div>
+
+<div class="card">
+<div class="c-title">④ 极端值 · 全 0</div>
+<div class="c-sub">yTicks:4 · 域 [-0.06, 1.06]（hi=lo+1 兜底 + padding）</div>
+<div id="c4" class="chart"></div>
+<div class="chk">✓ 不报错 · 4 刻度正常渲染</div>
+</div>
+
+<div class="card">
+<div class="c-title">⑤ 极端值 · 全相同值（5/5/5）</div>
+<div class="c-sub">yTicks:4 · 域 [4.94, 6.06]</div>
+<div id="c5" class="chart"></div>
+<div class="chk">✓ 不报错 · 4 刻度正常渲染</div>
+</div>
+
+<div class="card">
+<div class="c-title">⑥ series 多序列 · 共享域刻度</div>
+<div class="c-sub">录入 2-8 vs 废弃 1-3 同图 → 刻度 = 全域 [0.64, 8.36] 均分（共享域语义）</div>
+<div id="c6" class="chart"></div>
+</div>
+
+<div class="card">
+<div class="c-title">⑦ grid:false + yTicks:4（刻度短线独立于网格）</div>
+<div id="c7" class="chart"></div>
+<div class="chk">✓ 无网格仍保留 4 条刻度短线 + 文字</div>
+</div>
+
+<div class="card">
+<div class="c-title">⑧ 默认关闭对照 · 不传 yTicks</div>
+<div class="c-sub">与 v1.14 渲染逐字节一致（无任何刻度元素）</div>
+<div id="c8" class="chart"></div>
+<div class="chk">✓ 无刻度 · 兼容既有调用</div>
+</div>
+
+<div class="card">
+<div class="c-title">⑨ 大数值域 · yTicks:5 + format:'{v}k'</div>
+<div class="c-sub">0 → 1,000,000 量级刻度可读</div>
+<div id="c9" class="chart"></div>
+</div>
+
+<div class="card">
+<div class="c-title">⑩ 与 markLine / area 组合 · yTicks:4</div>
+<div class="c-sub">目标线 7 + 面积填充 + 轴刻度共存</div>
+<div id="c10" class="chart"></div>
+</div>
+
+<script>
+/* ═══ charts.js v1.15 快照（#333 验收 · 与 assets 同源）═══ */
 /* Base Skill 图表组件 v1.15（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
@@ -566,3 +665,24 @@ window.charts={
   }
 };
 })();
+
+/* ═══ 验收用例 ═══ */
+(function(){
+var root=function(id){return document.getElementById(id);};
+var A=[{label:'周一',value:2},{label:'周二',value:5},{label:'周三',value:3},{label:'周四',value:8},{label:'周五',value:6}];
+window.charts.line(root('c1'),A,{animation:false,yTicks:4});
+window.charts.line(root('c2'),A,{animation:false,yTicks:4,format:'¥{v}',tooltip:true});
+window.charts.line(root('c3'),A,{animation:false,yTicks:3});
+window.charts.line(root('c4'),[{label:'a',value:0},{label:'b',value:0},{label:'c',value:0}],{animation:false,yTicks:4});
+window.charts.line(root('c5'),[{label:'a',value:5},{label:'b',value:5},{label:'c',value:5}],{animation:false,yTicks:4});
+window.charts.line(root('c6'),A,{animation:false,yTicks:4,legend:true,
+  series:[{name:'录入',items:A},{name:'废弃',items:[{label:'周一',value:1},{label:'周二',value:2},{label:'周三',value:1},{label:'周四',value:3},{label:'周五',value:2}]}]});
+window.charts.line(root('c7'),A,{animation:false,yTicks:4,grid:false});
+window.charts.line(root('c8'),A,{animation:false});
+var big=[];for(var i=0;i<7;i++){big.push({label:'D'+i,value:[0,120000,380000,650000,820000,940000,1000000][i]});}
+window.charts.line(root('c9'),big,{animation:false,yTicks:5,format:'{v}k'});
+window.charts.line(root('c10'),A,{animation:false,yTicks:4,area:true,markLine:{value:7,label:'目标 7'},showDots:false});
+})();
+</script>
+</body>
+</html>

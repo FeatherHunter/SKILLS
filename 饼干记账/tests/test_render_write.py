@@ -115,6 +115,8 @@ class TestPayload:
         assert raw[:3] == b"\xef\xbb\xbf"
         text = raw.decode("utf-8-sig")
         assert "id=\"copyPromptBtn\"" in text          # 复制确认 prompt
+        assert "📋 确认复制" in text                    # #312 实测反馈: 按钮文案明确「确认复制」
+        assert "window.copyText(buildPrompt(), { toast: { ok: { msg: '已复制记账信息'" in text  # 定制 toast
         assert "id=\"fAmount\"" in text                # 金额输入
         assert "category_suggestions" in text          # 分类推荐(payload 数据)
         assert "window.smartSelect" in text            # #312: 三字段走 Base smartSelect 组件

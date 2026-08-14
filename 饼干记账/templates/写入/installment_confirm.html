@@ -27,12 +27,12 @@
   .fold-hint { font-size:12px; color:var(--fg3); text-align:center; padding:8px 0 2px; }
   .actions { display:flex; justify-content:flex-end; gap:8px; margin:4px 0 16px; }
   .actions .btn-main, .actions .btn { flex:1; min-width:0; justify-content:center; }
-  .btn-main { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); background:#fff; color:var(--fg); border-radius:999px; padding:10px 18px; font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; transition:background .15s; }
-  .btn-main:hover { background:var(--bg); }
+  .btn-main { display:inline-flex; align-items:center; justify-content:center; gap:6px; border:none; background:var(--blue); color:#fff; border-radius:999px; padding:13px 20px; font-size:15px; font-weight:700; min-height:52px; cursor:pointer; font-family:inherit; transition:background .15s; box-shadow:0 2px 10px rgba(0,122,255,.25); }
+  .btn-main:hover { background:var(--blue2); }
   .btn { display:inline-flex; align-items:center; justify-content:center; border:0; background:#fff; color:var(--fg); border:1px solid var(--line); border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600; cursor:pointer; font-family:inherit; }
   .btn:hover { background:var(--bg); }
   /* #300 Base 统一:复制/提示全部走公共组件 */
-  @media (max-width:640px) { .wrap { padding:18px 12px 70px; } .actions .btn-main, .actions .btn { font-size:12.5px; padding:9px 8px; white-space:nowrap; } h1 { font-size:23px; } }
+  @media (max-width:640px) { .wrap { padding:18px 12px 70px; } .actions .btn-main, .actions .btn { font-size:13px; padding:12px 10px; min-height:50px; white-space:nowrap; } h1 { font-size:23px; } }
 </style>
 <style><!--SHARED-CSS--></style>
 </head>
@@ -61,7 +61,7 @@
   </main>
 
   <div class="actions">
-    <button class="btn-main" id="copyPromptBtn">📋 确认</button>
+    <button class="btn-main" id="copyPromptBtn">📋 确认复制</button>
   </div>
   <div id="actionbar-zone"></div>
 
@@ -137,7 +137,9 @@
   }
 
   // ── #300 Base 统一:复制/提示走公共组件 ──
-  document.getElementById('copyPromptBtn').onclick = function () { window.copyText(buildPrompt()); };
+  document.getElementById('copyPromptBtn').onclick = function () {
+    window.copyText(buildPrompt(), { toast: { ok: { msg: '已复制分期信息', detail: '发给 AI 即可按期入账', icon: '✅' } } });
+  };
 
   if (window.actionBar) {
     var abPayload = (payload.data && payload.data.scene) ? payload : {

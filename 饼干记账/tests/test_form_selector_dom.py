@@ -171,6 +171,23 @@ class TestExpenseFormSelector:
         page.close()
 
 
+    def test_confirm_button_blue_prominent(self, tmp_db_dir, browser):
+        """确认按钮(#312 实测反馈): 蓝实心大按钮 + 「确认复制」文案 + 定制 toast"""
+        out = tmp_db_dir / "expense4.html"
+        result = _run_renderer(tmp_db_dir, "render_write.py",
+                               ["expense", "--amount", "35", "--category", "餐饮", "--out", str(out)])
+        assert result.returncode == 0, result.stderr
+        page, errs = _open_html(browser, out)
+        assert errs == [], errs
+        btn = page.locator('#copyPromptBtn')
+        assert '确认复制' in btn.text_content()
+        bg = page.evaluate("getComputedStyle(document.getElementById('copyPromptBtn')).backgroundColor")
+        mh = page.evaluate("getComputedStyle(document.getElementById('copyPromptBtn')).minHeight")
+        assert bg == 'rgb(0, 122, 255)'  # 蓝实心(--blue #007aff)
+        assert mh == '52px'
+        page.close()
+
+
 class TestLinkFormSelector:
     def test_purchase_default_category_and_account(self, tmp_db_dir, browser):
         """买东西联动: 场景默认分类「居家/家电」标已有 + 账户推断"""

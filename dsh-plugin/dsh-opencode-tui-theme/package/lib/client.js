@@ -1,14 +1,17 @@
 /**
- * dsh-opencode-tui-theme 浏览器半（Client bundle）
+ * dsh-opencode-tui-theme 浏览器半（Client bundle）v1.1.0
  *
  * 格式：DSH client-modules 的惰性 CJS bundle —— 经典脚本执行时只注册 factory，
  * 由浏览器内核（vendored Cordis Loader）在挂载该插件条目时物化执行。
  * 导出形状与官方 client 包一致：named exports { inject, apply }。
  *
- * 功能 = dsh-opencode-tui-theme/client.js（动态版）去掉控制面板后的核心：
- *   - theme.overrideTokens：13 个注册主题 token（背景/边框/品牌色/文字/状态色）
- *   - <style> 注入：CSS 层变量（输入框/按钮/菜单/滚动条/代码块分层/shiki/字体/字号）
- *   - 内联代码无背景芯片（opencode TUI 同款）、代码块柔和亮度阶梯、无硬边框
+ * v1.1.0 变更：
+ *   1. 修复 v1.0.0 致命 bug：ctx.effect(fn) 的 fn 是「立即执行」、返回值才是
+ *      卸载清理器。旧代码把清理动作直接写进 effect 体，导致样式注入后
+ *      在同一瞬间被移除（插件 active 但界面毫无变化）。
+ *   2. 新增控制面板：设置 → 插件 → 「Opencode 主题」标签页 ——
+ *      ● 已启用/○ 已停用 状态、启用/停用开关、正文模式/字号/代码字体调节、
+ *      以及 getComputedStyle 实测生效自检（背景/字体/字号）。
  */
 window.__ModuleLoader__.load({
   id: 'dsh-opencode-tui-theme',
@@ -16,6 +19,8 @@ window.__ModuleLoader__.load({
     var module = { exports: {} }
     var exports = module.exports
     Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' })
+
+    let react = require('react')
 
     // ── 主题常量（与动态版 client.js 同一套配色）──
     const BG = '#0a0a0a' // 截图背景色（像素采样 #0A0A0A）：整个界面背景统一
@@ -27,10 +32,10 @@ window.__ModuleLoader__.load({
     const CODE_BG = '#131316'
     const BANNER_BG = '#19191d'
 
-    // 固定默认值（动态版的「正文模式/字号/代码字体」控制默认项）
-    const MODE = 'mono' // 全等宽终端
-    const SIZE = 13
-    const FONT_KEY = 'JetBrains Mono'
+    // 运行时可调参数（控制面板修改；默认值 = v1.0.0 固定参数）
+    let mode = 'mono' // mono=全等宽终端(默认) tui=无衬线忠实
+    let size = 13 // 正文基础字号 12/13/14
+    let fontKey = 'JetBrains Mono'
 
     const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif"
 
@@ -62,10 +67,10 @@ window.__ModuleLoader__.load({
 
     // 生成完整样式：统一深色体系 + 文字层级 + 代码块分层 + 语法高亮 + 字号 + 字体 + 标题紫色
     function buildCss() {
-      const bodyFont = MODE === 'mono' ? FONTS[FONT_KEY] : SANS
-      const codeFont = FONTS[FONT_KEY]
-      const lh = SIZE + 9 // 13px → 22px 行高，约 1.7
-      const small = SIZE - 1
+      const bodyFont = mode === 'mono' ? FONTS[fontKey] : SANS
+      const codeFont = FONTS[fontKey]
+      const lh = size + 9 // 13px → 22px 行高，约 1.7
+      const small = size - 1
       return [
         'body, body[data-ds-dark-theme]{',
         // 文字颜色层级
@@ -146,8 +151,8 @@ window.__ModuleLoader__.load({
         '--dsw-font-family:' + bodyFont + ';',
         '--ds-font-family-code:' + codeFont + ';',
         // 字号层级（markdown）
-        '--dsw-font-markdown-base:' + SIZE + 'px/' + lh + 'px var(--dsw-font-family);',
-        '--dsw-font-markdown-base-font-size:' + SIZE + 'px;',
+        '--dsw-font-markdown-base:' + size + 'px/' + lh + 'px var(--dsw-font-family);',
+        '--dsw-font-markdown-base-font-size:' + size + 'px;',
         '--dsw-font-markdown-base-line-height:' + lh + 'px;',
         '--dsw-font-markdown-h1:700 16px/24px var(--dsw-font-family);',
         '--dsw-font-markdown-h1-font-size:16px;',
@@ -167,36 +172,160 @@ window.__ModuleLoader__.load({
         // markdown 标题：opencode 淡紫色
         'body h1,body h2,body h3,body h4,body h5,body h6{color:#c084fc;}',
         // 正文基础字号
-        'body{font-size:' + SIZE + 'px;}',
+        'body{font-size:' + size + 'px;}',
         // 有意不加代码块描边：opencode TUI 无硬边框，靠亮度阶梯 + 12px 圆角定义模块
       ].join('')
     }
 
-    exports.inject = ['theme']
+    exports.inject = ['theme', 'slots']
 
     exports.apply = function (ctx) {
       const theme = ctx.get('theme')
-      if (theme === undefined) return
+      const slots = ctx.get('slots')
 
-      // 1) 覆盖 13 个注册主题 token（light/dark 均为深色终端值）
-      const d1 = theme.overrideTokens('opencode-tui-style-boot', TOKENS)
+      let tokenDispose = null
+      let styleTag = null
+      let enabled = false
 
-      // 2) 注入 CSS 层变量覆盖（静态插件无 styles.insert builtin，手动建 <style>，
-      //    与官方 client 包（如 ui-theme bundle）的样式注入方式一致）
-      let tag = null
-      if (typeof document !== 'undefined') {
-        tag = document.createElement('style')
-        tag.dataset.plugin = 'dsh-opencode-tui-theme'
-        tag.textContent = buildCss()
-        document.head.appendChild(tag)
+      // 应用样式：token 层（13 个注册 token）+ <style> 层（其余 CSS 变量）
+      function applyStyle() {
+        if (!theme) return
+        if (tokenDispose) { try { tokenDispose() } catch (error) {} }
+        tokenDispose = theme.overrideTokens('opencode-tui-style-boot', TOKENS)
+        if (styleTag === null && typeof document !== 'undefined') {
+          styleTag = document.createElement('style')
+          styleTag.dataset.plugin = 'dsh-opencode-tui-theme'
+          document.head.appendChild(styleTag)
+        }
+        if (styleTag) styleTag.textContent = buildCss()
+      }
+      function clearStyle() {
+        if (tokenDispose) { try { tokenDispose() } catch (error) {} tokenDispose = null }
+        if (styleTag !== null && styleTag.parentNode) styleTag.parentNode.removeChild(styleTag)
+        styleTag = null
       }
 
-      // 3) 卸载时清理：token 层 + 样式标签
+      // 面板动作（与 React 组件共享的闭包）
+      function getState() { return { enabled, mode, size, fontKey } }
+      function toggle() {
+        if (enabled) { clearStyle(); enabled = false }
+        else { applyStyle(); enabled = true }
+      }
+      function refresh(nextMode, nextSize, nextFont) {
+        mode = nextMode
+        size = nextSize
+        fontKey = nextFont
+        if (enabled) { clearStyle(); applyStyle() }
+      }
+
+      // 默认启用（与 v1.0.0 行为一致）
+      applyStyle()
+      enabled = true
+
+      // ── 控制面板：设置 → 插件 → 「Opencode 主题」标签页 ──
+      let disposePanel = null
+      if (slots !== undefined && typeof document !== 'undefined') {
+        const Panel = function (props) {
+          const init = props.getState()
+          const [on, setOn] = react.useState(init.enabled)
+          const [curMode, setMode] = react.useState(init.mode)
+          const [curSize, setSize] = react.useState(init.size)
+          const [curFont, setFont] = react.useState(init.fontKey)
+          const [tick, setTick] = react.useState(0)
+
+          const change = function (nextMode, nextSize, nextFont) {
+            props.refresh(nextMode, nextSize, nextFont)
+            setMode(nextMode); setSize(nextSize); setFont(nextFont)
+          }
+          const flip = function () {
+            props.toggle()
+            setOn(!on)
+            setTick(tick + 1)
+          }
+
+          // 生效自检：getComputedStyle 实测 body（每次渲染重算）
+          let evidence = null
+          try {
+            if (typeof getComputedStyle !== 'undefined' && document.body) {
+              const cs = getComputedStyle(document.body)
+              evidence = {
+                bg: cs.backgroundColor,
+                font: (cs.fontFamily || '').split(',')[0] || '',
+                size: cs.fontSize,
+              }
+            }
+          } catch (error) { /* 忽略自检失败 */ }
+
+          const labelStyle = { color: 'var(--dsw-alias-label-secondary)', fontSize: 12 }
+          const controlStyle = {
+            background: 'var(--dsw-alias-bg-layer-2)',
+            color: 'var(--dsw-alias-label-primary)',
+            border: '1px solid var(--dsw-alias-border-l1)',
+            borderRadius: 4,
+            padding: '3px 6px',
+            fontFamily: 'var(--dsw-font-family)',
+            fontSize: 12,
+            cursor: 'pointer',
+          }
+          const field = function (labelText, select) {
+            return react.createElement('label', { style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
+              react.createElement('span', { style: labelStyle }, labelText),
+              select,
+            ])
+          }
+          const select = function (value, options, onChange) {
+            return react.createElement('select', { value: String(value), onChange: onChange, style: controlStyle },
+              options.map(function (opt) {
+                return react.createElement('option', { key: String(opt.value), value: String(opt.value) }, opt.label)
+              }))
+          }
+
+          return react.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 720 } }, [
+            react.createElement('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } }, [
+              react.createElement('strong', null, '🖥 Opencode TUI 主题'),
+              react.createElement('span', { style: { color: on ? 'var(--dsw-alias-state-success-primary)' : 'var(--dsw-alias-label-secondary)', fontSize: 12 } },
+                on ? '● 已启用' : '○ 已停用'),
+            ]),
+            react.createElement('div', { style: labelStyle }, '复刻 opencode TUI：统一深黑背景 #0a0a0a + 全等宽终端正文 + One Dark 语法高亮'),
+            react.createElement('div', { style: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' } }, [
+              field('正文', select(curMode, [
+                { value: 'mono', label: '全等宽(终端)' },
+                { value: 'tui', label: '无衬线(忠实)' },
+              ], function (e) { change(e.target.value, curSize, curFont) })),
+              field('字号', select(curSize, [12, 13, 14].map(function (s) { return { value: s, label: s + 'px' } }),
+                function (e) { change(curMode, Number(e.target.value), curFont) })),
+              field('代码字体', select(curFont, Object.keys(FONTS).map(function (k) { return { value: k, label: k } }),
+                function (e) { change(curMode, curSize, e.target.value) })),
+              react.createElement('button', {
+                onClick: flip,
+                style: {
+                  ...controlStyle,
+                  borderColor: on ? 'var(--dsw-alias-state-warn-primary)' : 'var(--dsw-alias-state-success-primary)',
+                  color: on ? 'var(--dsw-alias-state-warn-primary)' : 'var(--dsw-alias-state-success-primary)',
+                },
+              }, on ? '停用风格' : '启用风格'),
+            ]),
+            evidence === null ? null : react.createElement('div', { style: { ...labelStyle, fontFamily: 'monospace', marginTop: 4 } },
+              '实测 body → 背景 ' + evidence.bg + ' · 字体 ' + evidence.font + ' · ' + evidence.size),
+          ])
+        }
+        disposePanel = slots.inject('settings.plugins.tab', function () {
+          return slots.register({
+            name: 'settings.plugins.tab',
+            id: 'opencode-tui-theme',
+            order: 30,
+            label: function () { return 'Opencode 主题' },
+            inject: function () { return { getState, toggle, refresh } },
+          }, Panel)
+        })
+      }
+
+      // 卸载清理（v1.1.0 修复：fn 立即执行建立 effect，RETURN 的函数才是清理器）
       ctx.effect(function () {
-        try {
-          if (typeof d1 === 'function') d1()
-        } catch (error) { /* 忽略清理期错误 */ }
-        if (tag !== null && tag.parentNode) tag.parentNode.removeChild(tag)
+        return function () {
+          try { clearStyle() } catch (error) { /* 忽略清理期错误 */ }
+          try { if (disposePanel) disposePanel() } catch (error) { /* 忽略清理期错误 */ }
+        }
       }, 'dsh-opencode-tui-theme: styles')
     }
 

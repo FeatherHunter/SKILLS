@@ -4,7 +4,7 @@
 > 让整个对话界面的文字样式复刻 opencode TUI 的观感。
 > 这不是 TUI 插件，只是一个改字体、颜色、字号、代码风格的主题插件。
 
-- **插件包名**: `dsh-opencode-tui-theme`（可分发 npm 包，见 `package/`）
+- **插件包名**: `dsh-opencode-tui-theme`（可分发 npm 包，见 `package/`，当前 v1.1.0）
 - **动态版 pluginId**: `ocode-2`，显示名 `dsh-Opencode TUI 主题`
 - **平台**: Client（浏览器页面）
 - **两种形态**: ① 动态插件（进程内，会话级）；② 正式安装的本地插件（开机自启，推荐）
@@ -42,6 +42,11 @@
 3. 刷新浏览器页面。之后每次 DSH 启动主题自动生效，**无需任何审批**。
 4. 卸载：删掉 patch 里的 insert 行 + 删除 `node_modules/dsh-opencode-tui-theme/`。
 
+> **v1.1.0 起正式安装版自带控制面板**：设置 → 插件 → 「Opencode 主题」标签页，
+> 提供 ● 已启用/○ 已停用 状态、启用/停用开关、正文模式/字号/代码字体调节，
+> 以及一行「实测 body → …」生效自检（getComputedStyle 实测背景/字体/字号）。
+> 若该标签页能打开，说明插件已在本浏览器挂载。
+
 > 原理：DSH 的 `dsh.client` 插件机制（`dsh-client-modules`）会扫描组合里声明了
 > `dsh.client: { platform: 'web' }` 的包，把 `exports["./client"]` 指向的 bundle
 > 伺服为 `/plugins/<id>/client.js` 并注入 `window.__DSH_BOOT__`，浏览器内核在启动
@@ -65,7 +70,7 @@
 
 - **颜色 token**：`theme.overrideTokens(source, tokens)` 覆盖 13 个注册主题 token
   （`--dsw-alias-*`），light/dark 均为深色终端值。
-- **CSS 层变量**：`styles.insert(css)` 注入覆盖其余变量：
+- **CSS 层变量**：`styles.insert(css)`（动态版）/ `<style>` 标签（安装版）注入：
   - 文字层级 `--dsw-alias-label-tertiary/caption/dimmed`
   - 代码风格 `--dsw-alias-markdown-code-block(-banner)`、`markdown-inline-code`
   - 语法高亮 `--shiki-token-*`（One Dark 配色）
@@ -87,14 +92,17 @@
   - `package.json` —— 包声明：`dsh.client`（platform web / immediately / inject ui-theme）
   - `lib/index.js` —— 宿主半（no-op，保证 loader 条目可挂载）
   - `lib/client.js` —— 浏览器半 bundle（`window.__ModuleLoader__.load` 注册格式，
-    主题核心 = 动态版去掉控制面板；固定 mono 13px JetBrains Mono）
+    v1.1.0 起 = 主题核心 + 设置面板；默认全等宽 13px JetBrains Mono）
 - `README.md` —— 本说明
 
 ## 备注
 
-- 正式安装的包只包含主题核心（无控制面板），参数固定为默认值
-  （全等宽 13px / JetBrains Mono）；要改参数直接编辑
-  `package/lib/client.js` 顶部的 `MODE / SIZE / FONT_KEY`。
+- **v1.0.0 已知 bug（已修复）**：旧 `lib/client.js` 把卸载清理写进
+  `ctx.effect(fn)` 的函数体，而 cordis 语义是 fn 立即执行、返回值才是清理器，
+  导致样式注入后立即被移除（清单里 active 但界面无变化）。v1.1.0 已修复；
+  npm 上若仍是 1.0.0，请用本仓库 `package/` 覆盖安装。
+- 要改默认参数直接编辑 `package/lib/client.js` 顶部的 `mode / size / fontKey`；
+  安装版面板可实时调节，无需改文件。
 - 若动态版（方式二）与正式安装版同时生效，两者 token 层不同源、互不冲突，
   视觉一致；建议保留正式安装版即可，动态版 `cordis_stop` 掉。
 - pnpm 下次重装 profile 依赖时可能清理 `node_modules` 下手动放入的包，

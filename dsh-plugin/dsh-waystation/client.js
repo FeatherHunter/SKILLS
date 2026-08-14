@@ -1,20 +1,24 @@
 /**
- * DSH-Waystation · Client 半（UX v18 · 2026-08-14 第四批执行）
+ * DSH-Waystation · Client 半（UX v19 · 2026-08-14 第五批执行）
  *
- * v18 变更（用户拍板）：
- *   30. 状态栏可接/占用改用「列表 open issue」口径：可接 = open 未认领且未被 open 阻塞；
- *       占用 = 已认领 + 被阻塞（host fetchIssues 带出 assignees）；与面板列表口径一致
- *   31. 动作按钮文案去「开始」：needs-triage→「诊断」/ 其余→「执行」/ bug→「修复」
- *       （颜色保持 label 配置色：黄/紫/红）
- *   32. 行级动作点击改为预填输入框（inject，不再复制到剪贴板；输入框不可用时兜底复制）
+ * v19 变更（用户拍板）：
+ *   34. wayfinder:grilling →「讨论」按钮（颜色动态取该 label 配置色 #d93f0b）
+ *   35. 面板头部「真数据」→ 显示 repo 名（异常时红色「快照异常」）
+ *   36. 状态栏「环境」段移至末尾（更新左侧）
+ *   37. 共分屏幕：研究结论不做（shell 布局不开放第三方 dock），保持自由悬浮
+ *   38. map 详情：顶部「执行」按钮（整 map）+ 任务按 label 给 诊断/修复/讨论/执行（blocked 无动作）；
+ *       rowAction 抽为模块级共享 mkRowAction（列表与详情同逻辑）
+ *   40. map 行显示子 issue 进度（closed/total + 进度条，如 13/14）
+ *   41. 交接：第一击只提示（不再注入模板）；文档名带时间戳（YYYYMMDD-HHMMSS）；
+ *       第二击 host wf.handoffLatest 查最新文档 → 预填 + 复制到剪贴板 + 开新会话
  *
- * v17：isLight 改 YIQ 感知亮度。v16：按钮色 = label 配置色 +「开始执行」改名。
- * v15 变更：状态栏防换行自适应 / map 置顶 / 被阻塞标签+跳详情+隐藏动作 /
- * 会话 cwd 改 SessionSummary.cwd。
- * v14 变更：全部执行批次（三选一动作 / map 行突出 / 已关闭折叠 / chips 深边框 / 窄屏折叠 /
+ * v18：可接/占用列表口径 / 按钮去开始（诊断/执行/修复）/ 点击预填输入框。
+ * v17：isLight 改 YIQ 感知亮度。v16：按钮色 = label 配置色。
+ * v15：状态栏防换行自适应 / map 置顶 / 被阻塞标签 / 会话 cwd 改 SessionSummary.cwd。
+ * v14：全部执行批次（三选一动作 / map 行突出 / 已关闭折叠 / chips 深边框 / 窄屏折叠 /
  * 刷新遮罩 / 主题安全色 / 交接按钮 / 状态栏等宽 / 按会话 store）。
  * v13：cwd 权威反查（wf.cwd）+ sessionId 变化重探测。v12：repoKey 按 cwd 缓存 /
- * 失败不兜假数据 / 三视图收敛 / 开始=复制 prompt / 沉淀=注入快照模板。
+ * 失败不兜假数据 / 三视图收敛 / 沉淀=注入快照模板。
  * v11：label 颜色 = GitHub 配置色。v10：cwd 关联 / 标签视图 / 圆形技能环。
  * v9：DESIGN.md §12.2 Round 3 定稿 1A-7A 落实。
  *
@@ -278,6 +282,52 @@ return {
     const occCount = (st) => openIssuesOf(st).filter(function (x) { return isOccupied(st, x) }).length
     const frontierCount = (st) => openIssuesOf(st).length - occCount(st)
 
+    // v19：共享 —— 标签配置色映射（从快照 issues 收集 GitHub label 配置色，动态查询非写死）
+    const buildColorOf = function (st) {
+      const colorOf = {}
+      const issues = (st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []
+      issues.forEach(function (x) {
+        (x.labels || []).forEach(function (l) { if (l.color && !colorOf[l.name]) colorOf[l.name] = l.color })
+      })
+      return colorOf
+    }
+    // v19：共享 —— 行级动作（列表与 map 详情共用）：按 label 四选一（诊断/修复/讨论/执行），预填输入框；
+    // 按钮主体色 = 对应 label 的 GitHub 配置色（YIQ 感知亮度定文字色）
+    const mkRowAction = function (st, x, narrow, colorOf) {
+      const url = 'https://github.com/' + repoStr(st) + '/issues/' + x.number
+      const has = function (nm) { return (x.labels || []).some(function (l) { return (typeof l === 'string') ? l === nm : l.name === nm }) }
+      const isLight = function (hex) {
+        try {
+          const hh = String(hex || '').replace('#', '')
+          if (!/^[0-9a-fA-F]{6}$/.test(hh)) return false
+          const r = parseInt(hh.slice(0, 2), 16), g = parseInt(hh.slice(2, 4), 16), b = parseInt(hh.slice(4, 6), 16)
+          return (299 * r + 587 * g + 114 * b) / 1000 > 160
+        } catch (e) { return false }
+      }
+      const btnColor = function (nm, fb) { const c = colorOf[nm]; return c ? '#' + c : fb }
+      const mk = (icon, label, text, colorHex) => {
+        const light = isLight(colorHex)
+        return h('button', {
+          className: 'dsws-btn primary',
+          onClick: function (e) { e.stopPropagation(); inject(st, text) },
+          style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: colorHex, borderColor: 'transparent', color: light ? '#140a1e' : '#ffffff' },
+          title: label,
+        }, [Ic({ n: icon, size: 10 }), narrow ? null : h('span', null, label)])
+      }
+      if (has('needs-triage')) return mk('chat', '诊断', '/triage\n' + url + '\n\n请按 triage 流程为这个 issue 分流：categorise → verify → grill → 写 agent-ready brief。', btnColor('needs-triage', '#f59e0b'))
+      if (has('bug')) return mk('hammer', '修复', '/wayfinder\n' + url + '\n\n请按 wayfinder 流程开始修复这个 bug：对齐所属 map 的 Destination，认领后处理。', btnColor('bug', '#f87171'))
+      if (has('wayfinder:grilling')) return mk('chat', '讨论', '/wayfinder\n' + url + '\n\n请按 wayfinder 流程处理这个 grilling 票：加载所属 map 对齐 Destination，按 grilling 流程穷追不舍地对齐设计问题；完成后以 resolution comment 收尾。', btnColor('wayfinder:grilling', '#d93f0b'))
+      return mk('play', '执行', startText(st, x), '#c084fc')
+    }
+    // v19：交接文档时间戳文件名（YYYYMMDD-HHMMSS）
+    const timeStampStr = () => {
+      try {
+        const d = new Date()
+        const p = function (n) { return String(n).padStart(2, '0') }
+        return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes()) + p(d.getSeconds())
+      } catch (e) { return 'latest' }
+    }
+
     // ---- 环境检查（#344 · host.call('wf.status')；host 侧 30s 缓存 / force 重查）----
     // v12：失败不再兜假数据 —— 非 real 状态一律视为未知（--/8），不展示假绿点
     const CHECKS_TOTAL = 8
@@ -474,32 +524,39 @@ return {
       '4. 列完后停下等我逐条核对。我确认或修正完毕后，你再把清单落盘：已有地图就写进 map 正文和对应 ISSUE；还没建图就先生成一份快照笔记并告诉我存哪，等建图时搬入。'
     const injectFixate = (st) => { inject(st, FIXATE_PROMPT) }
 
-    // v14-20：交接（M9 定向传递）—— 第一击注入 /handoff 模板（要求写 .scratch/handoff/latest.md）；
-    // 文案变「交接给新会话」；第二击 = workspaces.startSession 新开空白会话（非 fork，避免复制旧上下文）
-    // + 跨会话 pendingDraft 预填 /read 路径（普通新会话不加载 = 定向传递）
-    const HANDOFF_PROMPT = '/handoff\n\n' +
-      '请把当前会话生成交接文档，写到 .scratch/handoff/latest.md（相对当前工作目录），包含三部分：\n' +
-      '1. 结论：本次会话已确认的决定与成果；\n' +
-      '2. 未完成事项：下一步要继续的事；\n' +
-      '3. 建议 skill：新会话接手时建议加载的技能。'
+    // v14-20 + v19-41：交接（M9 定向传递）—— 第一击只提示（不再注入模板，文档名带时间戳）；
+    // 文案变「交接给新会话」；第二击 = host 查最新时间戳交接文档 → 预填 + 复制到剪贴板
+    // + workspaces.startSession 新开空白会话（非 fork，避免复制旧上下文）
     const HANDOFF_READ = '/read .scratch/handoff/latest.md'
     let pendingDraft = null  // 跨会话预填（新会话 dock 挂载后消费）
     const doHandoff = function (st) {
       if (!st.handoffReady) {
         st.handoffReady = true
-        inject(st, HANDOFF_PROMPT)
-        flash(st, '交接模板已注入输入框；发送后生成文档，再点「交接」= 开新会话接手', 'ok')
+        flash(st, '交接：发送 /handoff 生成交接文档（建议命名 .scratch/handoff/' + timeStampStr() + '.md）；再点「交接给新会话」开新会话接手', 'ok')
         return
       }
       const ws = ctx.get('workspaces')
-      pendingDraft = HANDOFF_READ
-      if (ws && typeof ws.startSession === 'function') {
-        ws.startSession()
-        flash(st, '已开新会话，输入框预填交接文档路径', 'ok')
-      } else {
-        pendingDraft = null
-        copyText(st, HANDOFF_READ, '已复制交接文档路径（无法开新会话，兜底）')
+      const cwdArg = st.cwd ? { cwd: st.cwd } : {}
+      const finish = function (readPath, msg) {
+        pendingDraft = readPath
+        copyText(st, readPath, msg || '已复制交接文档路径')
+        if (ws && typeof ws.startSession === 'function') {
+          ws.startSession()
+        } else {
+          pendingDraft = null
+        }
       }
+      if (typeof host === 'undefined' || typeof host.call !== 'function') {
+        finish(HANDOFF_READ, '已复制交接文档路径（无法查询最新文档，兜底）')
+        return
+      }
+      host.call('wf.handoffLatest', cwdArg).then(function (res) {
+        const file = (res && res.ok && res.file) ? res.file : null
+        if (file) finish('/read .scratch/handoff/' + file, '已复制交接文档路径：' + file)
+        else finish(HANDOFF_READ, '未找到交接文档，已复制默认路径；可先发送 /handoff 生成')
+      }).catch(function () {
+        finish(HANDOFF_READ, '已复制交接文档路径（查询失败兜底）')
+      })
     }
 
     const inject = (st, text) => {
@@ -592,11 +649,12 @@ return {
           Icon({ scheme: s.ui.icon, size: 14 }),
           h('span', null, 'Waystation'),
         ]),
-        seg('dot', [h('span', null, '环境'), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
         seg('target', [h('span', null, '可接'), num(String(fr), '2ch')], '#4ade80', function () { go('list') }),
         seg('lock', [h('span', null, '占用'), num(String(blk), '2ch')], '#f0883e', function () { go('list') }),
         seg('note', s.ui.word, '#c084fc', function () { injectFixate(s) }, '沉淀：注入零丢失快照 prompt'),
-        seg('handoff', s.handoffReady ? '交接给新会话' : '交接', '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? '开新会话并预填交接文档路径' : '交接：注入 /handoff 模板生成交接文档'),
+        seg('handoff', s.handoffReady ? '交接给新会话' : '交接', '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? '开新会话并预填交接文档路径' : '交接：发送 /handoff 生成交接文档'),
+        // v19-36：环境段移至末尾（更新左侧），用户少点
+        seg('dot', [h('span', null, '环境'), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
         h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: '重新检查 + 刷新快照' }, '更新 ' + timeStr),
       ])
       if (!amber) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
@@ -610,11 +668,10 @@ return {
       ])
     }
 
-    // ---- 5.3 票务行（地图详情内：标题/阻塞来源 ellipsis；「开始」= 直接复制 prompt）----
-    const TicketRow = ({ st, g, t, indent }) => {
-      const canStart = t.state === 'OPEN' && !t.claimedBy && !t.blockedBy.some(function (b) {
-        const bt = g.m.tickets.find(function (x) { return x.number === b }); return bt && bt.state === 'OPEN'
-      })
+    // ---- 5.3 票务行（地图详情内：标题/阻塞来源 ellipsis；v19：按标签给 诊断/修复/讨论/执行 动作，预填输入框）----
+    const TicketRow = ({ st, g, t, indent, colorOf }) => {
+      const openBlocker = function (b) { const bt = g.m.tickets.find(function (x) { return x.number === b }); return bt && bt.state === 'OPEN' }
+      const blocked = t.state === 'OPEN' && t.blockedBy.some(openBlocker)
       const subItem = (icon, color, text) => h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 3, color: color, minWidth: 0 } }, [
         Ic({ n: icon, size: 11 }),
         h('span', { className: 'dsws-ellip', style: { maxWidth: 200 }, title: text }, text),
@@ -633,18 +690,16 @@ return {
           ]),
         ]),
         t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4, alignItems: 'center', flex: 'none' } }, [
-          canStart ? h('button', { className: 'dsws-btn primary', onClick: function () { inject(st, startText(st, t)) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
-            Ic({ n: 'play', size: 10 }),
-            h('span', null, '开始'),
-          ]) : null,
+          blocked ? null : mkRowAction(st, t, false, colorOf),
           h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'link', size: 12 })),
         ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, '查看'),
       ])
     }
 
-    // ---- 5.4 地图详情（定稿 3A 垂直走廊：可接/已认领/被阻塞常显，已关闭折叠；阻塞缩进）----
+    // ---- 5.4 地图详情（定稿 3A 垂直走廊：可接/已认领/被阻塞常显，已关闭折叠；阻塞缩进；v19 顶部执行 + 任务按状态动作）----
     const MapDetail = ({ st, g }) => {
       const m = g.m
+      const colorOf = buildColorOf(st)
       return h('div', null, [
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 } }, [
           h('button', { className: 'dsws-btn', onClick: function () { st.activeMap = null; emit(st) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
@@ -652,6 +707,12 @@ return {
             h('span', null, '返回列表'),
           ]),
           h('span', { className: 'dsws-chip dsws-chip-m' }, [Ic({ n: 'map', size: 11 }), h('span', null, 'wayfinder:map')]),
+          h('span', { style: { flex: 1 } }),
+          // v19-38：顶部「执行」= 整张 map 的执行入口（预填输入框）
+          h('button', { className: 'dsws-btn primary', onClick: function () { inject(st, '/wayfinder\n' + m.url + '\n\n请按 wayfinder 流程执行这张 map：加载低分辨率视图对齐 Destination，按 Notes 指定技能推进；完成后以 resolution comment 收尾并关闭。') }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
+            Ic({ n: 'play', size: 10 }),
+            h('span', null, '执行'),
+          ]),
         ]),
         h('div', { className: 'dsws-mtitle dsws-ellip', title: m.title }, m.title),
         m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, String((m.error && m.error.error) || '加载失败').slice(0, 160))]) : null,
@@ -672,14 +733,14 @@ return {
           h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.outOfScope.map(function (o, i) { return h('div', { key: i, className: 'dsws-ellip', title: o }, '· ' + o) })),
         ]),
         g.frontier.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'target', size: 12, color: '#4ade80' }), h('span', null, '可接 ' + g.frontier.length)]) : null,
-        g.frontier.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t }) }),
+        g.frontier.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, colorOf: colorOf }) }),
         g.claimed.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'person', size: 12, color: '#58a6ff' }), h('span', null, '已认领 ' + g.claimed.length)]) : null,
-        g.claimed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t }) }),
+        g.claimed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, colorOf: colorOf }) }),
         g.blocked.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'lock', size: 12, color: '#f0883e' }), h('span', null, '被阻塞 ' + g.blocked.length)]) : null,
-        g.blocked.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, indent: true }) }),
+        g.blocked.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, indent: true, colorOf: colorOf }) }),
         h('details', { style: { marginTop: 8 } }, [
           h('summary', { className: 'dsws-grp', style: { margin: '6px 0 2px', cursor: 'pointer' } }, [Ic({ n: 'check', size: 12, color: '#52525b' }), h('span', null, '已关闭 ' + g.closed.length)]),
-          h('div', null, g.closed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t }) })),
+          h('div', null, g.closed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, colorOf: colorOf }) })),
         ]),
       ])
     }
@@ -744,33 +805,8 @@ return {
         }, nm + (withCount ? ' · ' + stat[nm] : ''))
       }
       const copyUrl = function (x) { copyText(st, 'https://github.com/' + repoStr(st) + '/issues/' + x.number, '已复制链接 #' + x.number) }
-      // v14-4：行级动作按 label 三选一（诊断 / 执行 / 修复），全部预填输入框（v18-32：不再复制）；
-      // v18-31：按钮文案去「开始」（诊断 / 执行 / 修复）；v14-3：按钮 80%；v14-19：窄屏折叠为纯图标
-      // v16-17：按钮主体色 = 对应 label 的 GitHub 配置色（动态查询 colorOf）；文字色按 YIQ 感知亮度自适应
-      const isLight = function (hex) {
-        try {
-          const hh = String(hex || '').replace('#', '')
-          if (!/^[0-9a-fA-F]{6}$/.test(hh)) return false
-          const r = parseInt(hh.slice(0, 2), 16), g = parseInt(hh.slice(2, 4), 16), b = parseInt(hh.slice(4, 6), 16)
-          return (299 * r + 587 * g + 114 * b) / 1000 > 160
-        } catch (e) { return false }
-      }
-      const btnColor = function (nm, fb) { const c = colorOf[nm]; return c ? '#' + c : fb }
-      const rowAction = function (x, narrow) {
-        const url = 'https://github.com/' + repoStr(st) + '/issues/' + x.number
-        const mk = (icon, label, text, colorHex) => {
-          const light = isLight(colorHex)
-          return h('button', {
-            className: 'dsws-btn primary',
-            onClick: function (e) { e.stopPropagation(); inject(st, text) },
-            style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: colorHex, borderColor: 'transparent', color: light ? '#140a1e' : '#ffffff' },
-            title: label,
-          }, [Ic({ n: icon, size: 10 }), narrow ? null : h('span', null, label)])
-        }
-        if (has(x, 'needs-triage')) return mk('chat', '诊断', '/triage\n' + url + '\n\n请按 triage 流程为这个 issue 分流：categorise → verify → grill → 写 agent-ready brief。', btnColor('needs-triage', '#f59e0b'))
-        if (has(x, 'bug')) return mk('hammer', '修复', '/wayfinder\n' + url + '\n\n请按 wayfinder 流程开始修复这个 bug：对齐所属 map 的 Destination，认领后处理。', btnColor('bug', '#f87171'))
-        return mk('play', '执行', startText(st, x), '#c084fc')
-      }
+      // v14-4：行级动作按 label 四选一（诊断/修复/讨论/执行），全部预填输入框；
+      // v19：共享 mkRowAction（列表与 map 详情同逻辑，按钮色动态取 label 配置色）；v14-3 按钮 80%；v14-19 窄屏折叠为纯图标
       // v14-19：行 = 左列(flex:1 截断) + 右列按钮组(flex:none 不换行)
       const issueRow = function (x, isOpen, narrow) {
         const isMap = has(x, 'wayfinder:map')
@@ -781,7 +817,7 @@ return {
         const shown = (x.labels || []).slice(0, 2)
         const rest = (x.labels || []).length - shown.length
         const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
-          isOpen && !blocked ? rowAction(x, narrow) : null,
+          isOpen && !blocked ? mkRowAction(st, x, narrow, colorOf) : null,
           h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: '复制链接', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
           h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
         ])
@@ -805,6 +841,11 @@ return {
               }),
               rest > 0 ? h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)' } }, '+' + rest) : null,
               blocked ? h('span', { key: 'blk', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: '被 ' + blk.by.map(function (b) { return '#' + b }).join('、') + ' 阻塞（点击查看地图详情）', style: { fontSize: 10, marginRight: 0, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, '被阻塞')]) : null,
+            ]) : null,
+            // v19-40：map 行进度（已完成/总数 + 进度条，如 13/14）
+            (isMap && mapObj && mapObj.stats) ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 } }, [
+              h('div', { className: 'dsws-prog', style: { flex: 1 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]),
+              h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none' } }, mapObj.stats.closed + '/' + mapObj.stats.total),
             ]) : null,
           ]),
           rightCol,
@@ -1020,9 +1061,10 @@ return {
       return h('div', { ref: panelRef, className: 'dsws-panel', style: panelStyle }, [
         h('div', { className: 'dsws-head', onMouseDown: startDrag }, [
           h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } }, Icon({ scheme: s.ui.icon, size: 17 }), 'DSH-Waystation'),
-          h('span', { className: 'dsws-chip ' + (s.snapMode === 'err' ? 'dsws-chip-t' : 'dsws-chip-m') }, [
+          // v19-35：「真数据」→ 显示 repo 名（对未来用户更有意义；异常时红色提示）
+          h('span', { className: 'dsws-chip ' + (s.snapMode === 'err' ? 'dsws-chip-t' : 'dsws-chip-m'), style: { maxWidth: 220 } }, [
             Ic({ n: s.snapMode === 'err' ? 'alert' : 'info', size: 11 }),
-            h('span', null, s.snapMode === 'real' ? '真数据' : s.snapMode === 'err' ? '快照异常' : s.snapMode === 'loading' ? '加载中…' : '原型'),
+            h('span', { className: 'dsws-ellip', title: repoStr(s) }, s.snapMode === 'err' ? '快照异常' : s.snapMode === 'loading' ? '加载中…' : repoStr(s)),
           ]),
           h('span', { style: { flex: 1 } }),
           h('button', { className: 'dsws-btn ghost', onClick: function () { s.open = false; emit(s) }, style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'x', size: 12 })),

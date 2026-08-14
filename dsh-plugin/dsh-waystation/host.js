@@ -514,6 +514,35 @@ return {
       }
     })
 
+    // v19：查询 .scratch/handoff/ 下最新的交接文档（按 mtime 倒序），供「交接给新会话」预填 + 复制
+    harness.handle('wf.handoffLatest', async function (args) {
+      const cwd = (args && args.cwd) || DEFAULT_CWD
+      if (fs === undefined) return { ok: false, error: 'fs 服务不可用' }
+      try {
+        const dir = await fs.resolve('.scratch/handoff', { cwd: cwd })
+        const entries = await fs.listDir(dir)
+        const mds = []
+        for (let i = 0; i < entries.length; i++) {
+          const e = entries[i]
+          const name = (e && (e.name || e.path || '')) || ''
+          if (!name || !/\.md$/i.test(name)) continue
+          let mtime = 0
+          try {
+            const info = await fs.stat(await fs.resolve('.scratch/handoff/' + name, { cwd: cwd }))
+            if (info) {
+              const mt = info.mtime
+              mtime = typeof mt === 'number' ? mt : (mt ? Date.parse(String(mt)) : 0)
+            }
+          } catch (e2) { mtime = 0 }
+          mds.push({ name: name, mtime: mtime })
+        }
+        mds.sort(function (a, b) { return b.mtime - a.mtime })
+        return { ok: true, file: mds.length ? mds[0].name : null }
+      } catch (e) {
+        return { ok: true, file: null }  // 目录不存在/不可读 = 还没有交接文档
+      }
+    })
+
     // ============ 认领（开始此 Issue 流程 · T5 #347）============
     // 用户在 UI 点击「确认开始」且勾选认领后调用：gh issue edit <n> --add-assignee @me。
     // 写操作前 UI 已二次确认（用户点击即同意），不走 approval 服务（RESEARCH-NOTES §3 结论）。

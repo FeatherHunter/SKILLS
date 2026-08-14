@@ -261,5 +261,68 @@
   <div class="src">2026-08-14；待用户 UI 复核。</div>
 </div>
 
+<div class="item">
+  <span class="no">34</span><span class="title">wayfinder:grilling → 「讨论」按钮 + 颜色动态性确认</span><span class="badge b-done">已解决</span>
+  <div class="desc">带 wayfinder:grilling 标签的 issue 显示「讨论」按钮；颜色必须动态查询（每个用户 GitHub label 颜色不同，非写死）。</div>
+  <div class="plan">v19 已落实：mkRowAction 增加 wayfinder:grilling 分支（bug 之后、默认之前），按钮色 = btnColor('wayfinder:grilling', '#d93f0b') 动态取色；颜色来源 = host 实时带出的 GitHub label 配置色（colorOf），确认非写死。</div>
+  <div class="src">来源：2026-08-14 用户需求；v19 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">35</span><span class="title">面板头部「真数据」标签困惑</span><span class="badge b-done">已解决</span>
+  <div class="desc">面板头部紫色「真数据」chip 对未来用户是测试信息（他们只有真数据）。</div>
+  <div class="plan">v19 已落实：改为显示 repo 名（owner/repo，ellipsis）；快照异常红色「快照异常」；加载中「加载中…」。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v19 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">36</span><span class="title">状态栏「环境」段位置</span><span class="badge b-done">已解决</span>
+  <div class="desc">环境信息用户很少点击，移到末尾位置。</div>
+  <div class="plan">v19 已落实（用户拍板：末尾/更新左侧）：顺序 = Waystation 可接 占用 沉淀 交接 环境 更新。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v19 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">37</span><span class="title">面板拖到右侧与聊天窗口共分屏幕（研究）</span><span class="badge b-info">已澄清</span>
+  <div class="desc">希望面板拖到最右侧时像 VSCode 一样吸附分屏，可再拖出。</div>
+  <div class="plan">研究结论（已核实 DSH slots 树 + layout 服务）：shell 布局（侧栏/中列/右侧 details 列）不开放第三方 dock 机制，真正分屏无法实现；用户拍板不做（保持自由悬浮拖拽）。</div>
+  <div class="src">来源：2026-08-14 用户需求；已澄清，不做。</div>
+</div>
+
+<div class="item">
+  <span class="no">38</span><span class="title">map 详情页：顶部执行按钮 + 任务按状态动作</span><span class="badge b-done">已解决</span>
+  <div class="desc">map 详情页顶部应有「执行」按钮（整张 map 的执行入口）；打开的任务根据状态/标签可进行 诊断/讨论/执行/修复。</div>
+  <div class="plan">v19 已落实：MapDetail 标题行加「执行」（预填 /wayfinder+map URL+流程指令）；TicketRow 复用共享 mkRowAction（按 label 四选一），blocked 无动作；rowAction/colorOf 已抽为模块级（buildColorOf/mkRowAction）。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v19 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">39</span><span class="title">map 详情页整体设计讨论</span><span class="badge b-done">已解决</span>
+  <div class="desc">用户认为详情页丑陋，没起到 map 效果。</div>
+  <div class="plan">v19 按用户拍板「直接实现+打磨」落实第一批：顶部执行按钮 + 任务按标签动作（诊断/修复/讨论/执行）+ 进度条 + 保留垂直走廊分组；剩余视觉迭代待用户复核后继续。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v19 第一批已解决，效果待复核。</div>
+</div>
+
+<div class="item">
+  <span class="no">40</span><span class="title">map 行显示子 issue 进度（13/14）</span><span class="badge b-done">已解决</span>
+  <div class="desc">列表中的 map 行应像 GitHub issue 列表一样显示完成进度（已完成/总数 + 进度条），如 13/14。</div>
+  <div class="plan">v19 已落实：map 行显示 closed/total（如 13/14）+ 绿色进度条（dsws-prog）。</div>
+  <div class="src">来源：2026-08-14 用户反馈（附 GitHub 截图）；v19 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">41</span><span class="title">交接：只提示 + 时间戳文件名 + 预填且复制</span><span class="badge b-done">已解决</span>
+  <div class="desc">① 点击「交接」只提示（不再注入模板）；② 交接文档名带时间戳（.scratch/handoff/&lt;时间戳&gt;.md）；③ 「交接给新会话」预填输入框的同时也复制到剪贴板（防预填失败）。</div>
+  <div class="plan">v19 已落实（用户拍板：时间戳+查最新）：第一击 toast 提示（含时间戳命名建议 YYYYMMDD-HHMMSS）；第二击 host wf.handoffLatest 查 .scratch/handoff/ 最新 md → 预填 /read .scratch/handoff/&lt;最新&gt;.md + 复制到剪贴板 + 开新会话；无文档则提示先发 /handoff。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v19 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">42</span><span class="title">v19 上线 + 二次重建</span><span class="badge b-done">已解决</span>
+  <div class="desc">2026-08-14 用户报 8 项（34-41），拍板后 v19 落地；期间 DSH 再次重启导致插件丢失，已二次重建（wfst-1/pkg-1，run-1 批准运行成功）。</div>
+  <div class="plan">产出：host.js（wf.handoffLatest）+ client.js v19（讨论按钮 / repo 名头部 / 环境段末尾 / map 详情执行+任务动作 / map 行进度 / 交接时间戳+查最新+复制）。tests 21/21 + 22/22 PASS。</div>
+  <div class="src">2026-08-14；待用户 UI 复核。</div>
+</div>
+
 </body>
 </html>

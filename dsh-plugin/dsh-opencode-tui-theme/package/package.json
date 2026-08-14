@@ -9,6 +9,18 @@
     "./client": "./lib/client.js",
     "./package.json": "./package.json"
   },
+  "files": [
+    "lib"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "theme",
+    "opencode",
+    "tui",
+    "dark"
+  ],
   "dsh": {
     "client": {
       "platform": "web",

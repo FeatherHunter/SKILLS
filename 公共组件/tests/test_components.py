@@ -1828,6 +1828,76 @@ def test_line_show_values_sparse_all_kept(chart_page):
     assert len(labels) == len(LINE_ITEMS)
 
 
+# ── bar: stacked 堆叠柱（v1.23 · #336 多值 item 结构单一真相源）──
+
+def test_bar_stacked_renders_percent(chart_page):
+    """stacked:true 默认 percent 模式: 每柱 N 段, 高度合计 100%（段高占比正确）"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'周一',values:[30,50,20]},{label:'周二',values:[40,40,20]}],
+        {stacked:true, animation:false});
+    """)
+    segs = chart_page.evaluate("document.querySelectorAll('.hm-c-sg').length")
+    heights = chart_page.evaluate("[...document.querySelectorAll('.hm-c-sg')].map(n=>parseFloat(n.style.height))")
+    assert segs == 6
+    assert heights[:3] == [30.0, 50.0, 20.0]  # 周一三段 30/50/20
+    assert sum(heights[:3]) == 100.0 and sum(heights[3:]) == 100.0
+
+
+def test_bar_stacked_absolute_mode(chart_page):
+    """stackMode:'absolute': 高度相对全局最大值（maxTotal）"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'周一',values:[30,50,20]},{label:'周二',values:[10,10,10]}],
+        {stacked:true, stackMode:'absolute', animation:false});
+    """)
+    heights = chart_page.evaluate("[...document.querySelectorAll('.hm-c-sg')].map(n=>parseFloat(n.style.height))")
+    assert heights[0] == 30.0  # maxTotal=100, 段 30 → 30%
+    assert heights[3] == 10.0  # 周二首段 10 → 10%
+
+
+def test_bar_stacked_validation_throws(chart_page):
+    """缺 values / 段值非数字 / 各 item 段数不一致 → 直接报错"""
+    e1 = chart_page.evaluate("""() => { try { window.charts.bar(document.getElementById('root'), [{label:'a',value:1}], {stacked:true}); return ''; } catch(e) { return e.message; } }""")
+    e2 = chart_page.evaluate("""() => { try { window.charts.bar(document.getElementById('root'), [{label:'a',values:[1,'x']}], {stacked:true}); return ''; } catch(e) { return e.message; } }""")
+    e3 = chart_page.evaluate("""() => { try { window.charts.bar(document.getElementById('root'), [{label:'a',values:[1,2]},{label:'b',values:[1]}], {stacked:true}); return ''; } catch(e) { return e.message; } }""")
+    assert '必须含 values 数组' in e1 and '无效' in e2 and '长度必须一致' in e3
+
+
+def test_bar_stacked_legend_and_colors(chart_page):
+    """legend:true → segNames 图例（段色板）; colors 色板逐段取色"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'周一',values:[30,50,20]}],
+        {stacked:true, legend:true, segNames:['蛋白质','脂肪','碳水'], colors:['#111','#222','#333'], animation:false});
+    """)
+    lg = chart_page.evaluate("[...document.querySelectorAll('.hm-c-lg')].map(n=>n.textContent)")
+    segs_bg = chart_page.evaluate("[...document.querySelectorAll('.hm-c-sg')].map(n=>n.style.background)")
+    assert lg == ['蛋白质', '脂肪', '碳水']
+    # 浏览器归一化为 rgb: #111→rgb(17,17,17) / #222→rgb(34,34,34) / #333→rgb(51,51,51)
+    assert segs_bg == ['rgb(17, 17, 17)', 'rgb(34, 34, 34)', 'rgb(51, 51, 51)']
+
+
+def test_bar_stacked_total_label(chart_page):
+    """showValues: 柱顶显示合计值（走 format）"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'周一',values:[30,50,20]}],
+        {stacked:true, showValues:true, format:'{v}%', animation:false});
+    """)
+    v = chart_page.evaluate("document.querySelector('.hm-c-v')?.textContent")
+    assert v == '100%'
+
+
+def test_bar_stacked_default_byte_identical(chart_page):
+    """缺省（不传 stacked/grouped）: 既有单柱渲染逐字节不变"""
+    chart_page.evaluate('(items) => window.charts.bar(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    html1 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    chart_page.evaluate('(items) => window.charts.bar(document.getElementById("root"), items, {animation:false, stacked:false})', LINE_ITEMS)
+    html2 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    assert html1 == html2
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

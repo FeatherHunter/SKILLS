@@ -2,6 +2,17 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.23（2026-08-14 · charts.bar 堆叠柱 stacked · #336）
+
+**charts.bar 新增可选参数 `stacked/segNames/stackMode`**（非破坏性 · 新可选参数 · 签名零变更；缺省行为逐字节不变）。
+
+- **多值 item 结构（单一真相源, 本票定义, #339 复用）**: `items: [{label, values: [v1, v2, ...], color?}]`——段值数组, 各 item 长度一致, 值必须为数字（缺 values/非数字/长度不一致 → 直接报错）
+- **`stacked: true`（段纵向堆叠）**: `stackMode: 'percent'`（缺省: 柱内合计 100%）/ `'absolute'`（相对全局最大合计）——三大营养素每日占比堆叠柱（nutrition_analysis macro3 div 占比条近似）恢复
+- **每段独立颜色**: item.color 或 `colors` 色板逐段取色; `segNames` 图例（legend:true）+ 段级 tooltip（悬停列出各段值与占比）
+- **柱顶合计值**: showValues 显示合计（走 format）; 动画/双端自适应沿用既有语义
+- **向后兼容**: 不传 stacked/grouped → 既有单柱渲染逐字节一致（显式断言 innerHTML 全等）
+- 契约 §6.5 bar 多值结构 + §0 版本记录 + CHANGELOG 同步; 守卫测试 +6 → 全量全绿
+
 ## v1.22（2026-08-14 · charts.line 小缺口三能力 · #341）
 
 **charts.line 三个小能力落地**（非破坏性 · 新可选字段 · 签名零变更；缺省行为逐字节不变）。

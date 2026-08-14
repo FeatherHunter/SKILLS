@@ -1,4 +1,4 @@
-/* Base Skill 图表组件 v1.22（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.23（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
@@ -54,6 +54,14 @@ if(!document.getElementById(_styleId)){
   +'.hm-c-bar .hm-c-col{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;min-width:0}'
   +'.hm-c-bar .hm-c-v{font-size:10px;color:var(--fg3,#86868b);margin-bottom:3px;white-space:nowrap}'
   +'.hm-c-bar .hm-c-b{width:100%;max-width:34px;border-radius:6px 6px 2px 2px;background:var(--blue,#007aff);min-height:2px;cursor:pointer;transition:filter .15s,height .6s cubic-bezier(.22,1,.36,1)}'
+  /* bar 多值模式（v1.23 · #336/#339）: 堆叠段 + 分组子柱 */
+  +'.hm-c-stack{width:100%;max-width:34px;border-radius:6px 6px 2px 2px;overflow:hidden;min-height:2px;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer}'
+  +'.hm-c-sg{width:100%;min-height:2px;transition:height .6s cubic-bezier(.22,1,.36,1)}'
+  +'.hm-c-col-grouped{flex-direction:row;align-items:flex-end;justify-content:center;gap:3px}'
+  +'.hm-c-gw{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;flex:1;min-width:0;max-width:18px}'
+  +'.hm-c-gb{width:100%;border-radius:4px 4px 2px 2px;background:var(--blue,#007aff);min-height:2px;cursor:pointer;transition:filter .15s,height .6s cubic-bezier(.22,1,.36,1)}'
+  +'.hm-c-gb:hover{filter:brightness(.9)}'
+  +'.hm-c-gv2{font-size:9px;margin-bottom:2px;white-space:nowrap}'
   +'.hm-c-bar .hm-c-b:hover{filter:brightness(.9)}'
   +'.hm-c-bar .hm-c-labels{display:flex;gap:8px;margin-top:6px}'
   +'.hm-c-bar .hm-c-l{flex:1;text-align:center;font-size:10.5px;color:var(--fg2,#6e6e73);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}'
@@ -226,6 +234,96 @@ function _bindTooltip(el,wrapEl,svgEl,items,opt,fmt){
   wrapEl.addEventListener('touchstart',function(e){var t=e.touches[0];onMove({clientX:t.clientX,clientY:t.clientY});setTimeout(function(){tip.classList.remove('show');cross.classList.remove('show');},1800);},{passive:true});
 }
 
+/* ═══ bar 多值模式（v1.23 · #336 stacked 堆叠柱 / #339 grouped 分组双柱 共用）═══
+ * 单一真相源: items:[{label, values:[v1,v2,...], color?}] — values 数组 = 多段/多值
+ * stacked:true → 段纵向堆叠; grouped:true → 段横向并排; 每段独立颜色(colors 色板) + segNames 图例 */
+function _barMulti(el,items,opt){
+  items.forEach(function(it,i){
+    if(!Array.isArray(it.values)||!it.values.length)throw new Error('charts.bar: stacked/grouped 模式下 items['+i+'] 必须含 values 数组: '+JSON.stringify(it));
+    it.values.forEach(function(v,j){if(!_isNum(v))throw new Error('charts.bar: items['+i+'].values['+j+'] 无效（缺省/非数字）: '+JSON.stringify(v));});
+  });
+  var nSeg=items[0].values.length;
+  items.forEach(function(it,i){if(it.values.length!==nSeg)throw new Error('charts.bar: 各 item values 长度必须一致 ('+nSeg+'), items['+i+']='+it.values.length);});
+  var segColor=function(j){return opt.colors?opt.colors[j%opt.colors.length]:_PALETTE[j%_PALETTE.length];};
+  var segNames=opt.segNames||items[0].values.map(function(v,j){return '段'+(j+1);});
+  var totals=items.map(function(it){var s=0;it.values.forEach(function(v){s+=_num(v);});return s;});
+  var maxTotal=Math.max.apply(null,totals);
+  var allMax=0;items.forEach(function(it){it.values.forEach(function(v){if(_num(v)>allMax)allMax=_num(v);});});
+  var allMin=Math.min.apply(null,items.map(function(x){return Math.min.apply(null,x.values);}).concat([0]));
+  var allHi=Math.max.apply(null,items.map(function(x){return Math.max.apply(null,x.values);}));
+  if(allHi===allMin)allHi=allMin+1;
+  var hStyle=opt.height?('style="--c-h:'+opt.height+'px"'):'';
+  var plot=items.map(function(it,i){
+    var tot=totals[i];
+    var segs='';
+    it.values.forEach(function(v,j){
+      var c=it.color||segColor(j);
+      if(opt.stacked){
+        var pctS=(opt.stackMode==='absolute')?(maxTotal>0?Math.round(_num(v)/maxTotal*100):0):(tot>0?Math.round(_num(v)/tot*100):0);
+        segs+='<div class="hm-c-sg" style="height:'+(opt.animation?0:pctS)+'%;background:'+c+'" data-i="'+i+'" data-j="'+j+'" title="'+_esc(segNames[j]+': '+_fmt(_num(v),opt.format))+'"></div>';
+      }else{
+        var pctG=Math.max(2,Math.round((_num(v)-allMin)/(allHi-allMin)*100));
+        segs+='<div class="hm-c-gw">'+(opt.showValues?'<div class="hm-c-v hm-c-gv2">'+_esc(_fmt(_num(v),opt.format))+'</div>':'')+'<div class="hm-c-gb" style="height:'+(opt.animation?0:pctG)+'%;background:'+c+'" data-i="'+i+'" data-j="'+j+'" title="'+_esc(segNames[j]+': '+_fmt(_num(v),opt.format))+'"></div></div>';
+      }
+    });
+    var valHtml=opt.showValues&&opt.stacked?('<div class="hm-c-v">'+_esc(_fmt(tot,opt.format))+'</div>'):'';
+    return '<div class="hm-c-col'+(opt.grouped?' hm-c-col-grouped':'')+'" data-i="'+i+'">'+valHtml+(opt.stacked?'<div class="hm-c-stack" data-i="'+i+'">'+segs+'</div>':segs)+'</div>';
+  }).join('');
+  var labels=items.map(function(it,i){
+    var show=opt.labels==='all'||(opt.labels==='select'&&(i===0||i===items.length-1));
+    return show?'<div class="hm-c-l" title="'+_esc(it.label)+'">'+_esc(it.label)+'</div>':'';
+  }).join('');
+  var legend='';
+  if(opt.legend){
+    legend='<div class="hm-c-legend">'+segNames.map(function(n,j){
+      return '<span class="hm-c-lg"><span class="hm-c-lg-dot" style="background:'+segColor(j)+';width:9px;height:9px;border-radius:2px"></span>'+_esc(n)+'</span>';
+    }).join('')+'</div>';
+  }
+  el.innerHTML='<div class="hm-c-bar" '+hStyle+'>'+legend+'<div class="hm-c-plot">'+plot+'</div><div class="hm-c-labels">'+labels+'</div></div>';
+  if(opt.animation){
+    requestAnimationFrame(function(){requestAnimationFrame(function(){
+      el.querySelectorAll('.hm-c-sg').forEach(function(sg){
+        var j=Number(sg.getAttribute('data-j')),i=Number(sg.getAttribute('data-i')),v=_num(items[i].values[j]),tot=totals[i];
+        sg.style.height=(opt.stackMode==='absolute'?(maxTotal>0?Math.round(v/maxTotal*100):0):(tot>0?Math.round(v/tot*100):0))+'%';
+      });
+      el.querySelectorAll('.hm-c-gb').forEach(function(gb){
+        var j=Number(gb.getAttribute('data-j')),i=Number(gb.getAttribute('data-i')),v=_num(items[i].values[j]);
+        gb.style.height=Math.max(2,Math.round((v-allMin)/(allHi-allMin)*100))+'%';
+      });
+    });});
+  }
+  if(opt.tooltip){
+    var tip=document.createElement('div');tip.className='hm-c-tip';el.appendChild(tip);
+    var onHover=function(e,target){
+      var i=Number(target.getAttribute('data-i'));
+      var j=target.hasAttribute('data-j')?Number(target.getAttribute('data-j')):null;
+      var html='<div>'+_esc(items[i].label)+'</div>';
+      if(j!==null){html+='<div><b>'+_esc(segNames[j]+': '+_fmt(_num(items[i].values[j]),opt.format))+'</b></div>';}
+      else{
+        items[i].values.forEach(function(v,k){
+          var pct=totals[i]>0?Math.round(_num(v)/totals[i]*100):0;
+          html+='<div>'+_esc(segNames[k]+' '+_fmt(_num(v),opt.format))+' ('+pct+'%)</div>';
+        });
+      }
+      tip.innerHTML=html;
+      var r=el.getBoundingClientRect();
+      var lx=Math.min(Math.max(4,e.clientX-r.left-tip.offsetWidth/2),r.width-tip.offsetWidth-4);
+      tip.style.left=lx+'px';tip.style.top=Math.max(4,e.clientY-r.top-tip.offsetHeight-10)+'px';
+      tip.classList.add('show');
+    };
+    el.querySelectorAll('.hm-c-sg,.hm-c-gb,.hm-c-stack').forEach(function(n){
+      n.addEventListener('mousemove',function(e){onHover(e,n);});
+      n.addEventListener('mouseleave',function(){tip.classList.remove('show');});
+    });
+  }
+  if(opt.onclick){
+    el.querySelectorAll('.hm-c-sg,.hm-c-gb,.hm-c-stack').forEach(function(n){
+      n.style.cursor='pointer';
+      n.onclick=function(){opt.onclick(Number(n.getAttribute('data-i')));};
+    });
+  }
+}
+
 window.charts={
 
   /* ═══ 进度条: charts.progress(el, pct[, opt]) ═══
@@ -247,10 +345,18 @@ window.charts={
    *   labels(all默认|none|select), showValues(默认true), valuePosition(顶|内), yMin,yMax, grid, tooltip, animation, onclick} */
   bar:function(el,items,opt){
     if(!el)return;
-    _validate(items,'bar');
+    if(!Array.isArray(items))throw new Error('charts.bar: items 必须是数组, 收到 '+(items===null?'null':typeof items));
     if(!items.length){_empty(el);return;}
     opt=_merge({format:null,colors:null,singleColor:'var(--blue,#007aff)',height:null,compact:false,
-      labels:'all',showValues:true,valuePosition:'top',yMin:null,yMax:null,grid:true,tooltip:false,animation:true,onclick:null},opt);
+      labels:'all',showValues:true,valuePosition:'top',yMin:null,yMax:null,grid:true,tooltip:false,animation:true,onclick:null,
+      stacked:false,grouped:false,segNames:null,stackMode:'percent'},opt);
+    /* 多值 item 结构（v1.23 · #336 定义单一真相源, #339 复用）: items:[{label, values:[v1,v2,...], color?}]
+     * stacked:true 堆叠柱 / grouped:true 分组双柱; 校验违规直接报错; 缺省 → 既有单值行为逐字节不变 */
+    if(opt.stacked||opt.grouped){
+      _barMulti(el,items,opt);
+      return;
+    }
+    _validate(items,'bar');
     var allV=items.map(function(it){return _num(it.value);});
     var yMin=opt.yMin!==null&&!isNaN(opt.yMin)?_num(opt.yMin):null;
     var yMax=opt.yMax!==null&&!isNaN(opt.yMax)?_num(opt.yMax):null;

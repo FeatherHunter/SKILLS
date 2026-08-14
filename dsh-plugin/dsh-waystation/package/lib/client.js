@@ -155,7 +155,7 @@ window.__ModuleLoader__.load({
       '.dsws-cfg-btn:hover{border-color:var(--dsw-alias-border-l2,#3a3f4a);color:var(--dsw-alias-label-primary,#e6edf3)}',
     ].join('')
 
-    exports.inject = ['connection', 'slots', 'locale', 'workspaces']
+    exports.inject = ['connection', 'slots', 'locale', 'workspaces', 'sessions']
 
     exports.apply = function (ctx) {
       const slots = ctx.get('slots')
@@ -292,6 +292,9 @@ window.__ModuleLoader__.load({
           'toast.clipboardUnavailable': '剪贴板不可用',
           'toast.snapFail': '快照刷新失败：{err}',
           'toast.copiedLink': '已复制链接 #{n}',
+          'toast.newSessionOpened': '已在新会话中打开并预填指令（同 cwd）',
+          'toast.newSessionManual': '请手动新建会话并命名为「{title}」；指令已预填当前输入框',
+          'list.newSessionTitle': '在新会话中打开（同 cwd · 自动命名）',
           'err.hostUnavailable': 'host.call 不可用（Host 半未加载）',
           'err.connUnavailable': 'connection 服务不可用（Host 半未加载）',
           'err.statusEmpty': 'wf.status 返回空结果',
@@ -449,6 +452,9 @@ window.__ModuleLoader__.load({
           'toast.clipboardUnavailable': 'Clipboard unavailable',
           'toast.snapFail': 'Snapshot refresh failed: {err}',
           'toast.copiedLink': 'Link # {n} copied',
+          'toast.newSessionOpened': 'Opened in a new session with the prompt prefilled (same cwd)',
+          'toast.newSessionManual': 'Please create a new session manually and name it "{title}"; the prompt is prefilled in the current input',
+          'list.newSessionTitle': 'Open in a new session (same cwd · auto-named)',
           'err.hostUnavailable': 'host.call unavailable (host half not loaded)',
           'err.connUnavailable': 'connection service unavailable (host half not loaded)',
           'err.statusEmpty': 'wf.status returned an empty result',
@@ -855,6 +861,15 @@ window.__ModuleLoader__.load({
         })
         return colorOf
       }
+      // #361：行级动作注入文本的单一真源（诊断/修复/讨论/执行）—— 新会话打开与行内动作共用
+      const rowActionText = function (st, x) {
+        const url = 'https://github.com/' + repoStr(st) + '/issues/' + x.number
+        const has = function (nm) { return (x.labels || []).some(function (l) { return (typeof l === 'string') ? l === nm : l.name === nm }) }
+        if (has('needs-triage')) return renderTemplate('diagnose', { url: url })
+        if (has('bug')) return renderTemplate('fix', { url: url })
+        if (has('wayfinder:grilling')) return renderTemplate('discuss', { url: url })
+        return startText(st, x)
+      }
       // v19：共享 —— 行级动作（列表与 map 详情共用）：按 label 四选一（诊断/修复/讨论/执行），预填输入框；
       // 按钮主体色 = 对应 label 的 GitHub 配置色（YIQ 感知亮度定文字色）
       const mkRowAction = function (st, x, narrow, colorOf) {
@@ -880,10 +895,10 @@ window.__ModuleLoader__.load({
         }
         // v21：技能命令 + URL + 统一引导句（不再重复灌输技能内部流程）
         // v25 · T2b：诊断/修复/讨论走模板渲染（用户可自定义静态文本，{url} 注入）
-        if (has('needs-triage')) return mk('chat', tr('act.diagnose'), renderTemplate('diagnose', { url: url }), btnColor('needs-triage', '#f59e0b'))
-        if (has('bug')) return mk('hammer', tr('act.fix'), renderTemplate('fix', { url: url }), btnColor('bug', '#f87171'))
-        if (has('wayfinder:grilling')) return mk('chat', tr('act.discuss'), renderTemplate('discuss', { url: url }), btnColor('wayfinder:grilling', '#d93f0b'))
-        return mk('play', tr('act.execute'), startText(st, x), '#c084fc')
+        if (has('needs-triage')) return mk('chat', tr('act.diagnose'), rowActionText(st, x), btnColor('needs-triage', '#f59e0b'))
+        if (has('bug')) return mk('hammer', tr('act.fix'), rowActionText(st, x), btnColor('bug', '#f87171'))
+        if (has('wayfinder:grilling')) return mk('chat', tr('act.discuss'), rowActionText(st, x), btnColor('wayfinder:grilling', '#d93f0b'))
+        return mk('play', tr('act.execute'), rowActionText(st, x), '#c084fc')
       }
       // v19：交接文档时间戳文件名（YYYYMMDD-HHMMSS）
       const timeStampStr = () => {
@@ -1223,6 +1238,30 @@ window.__ModuleLoader__.load({
         })
       }
 
+      // #361：在新会话中打开 ticket —— 同 cwd + 自动命名（[dsh-waystation] <标题> #<号>）+ 预填指令
+      //   契约（dsh-client-runtime ISessions）：create({cwd}) → SessionId；scope(sid) → AgentContext；
+      //   sessionOf(ctx) → SessionFace.rename(title)；open(sid) 切换。任一步失败降级为当前会话注入 + 提醒。
+      const openInNewSession = function (st, x) {
+        const text = rowActionText(st, x)
+        const sessions = ctx.get('sessions')
+        const doFallback = function () {
+          inject(st, text)
+          flash(st, tr('toast.newSessionManual', { title: newSessionTitle(x) }), 'warn')
+        }
+        if (!sessions || typeof sessions.create !== 'function' || !st.cwd) { doFallback(); return }
+        sessions.create({ cwd: st.cwd }).then(function (sid) {
+          // 自动命名（失败不阻塞打开）
+          try {
+            const scopeCtx = sessions.scope(sid)
+            const face = scopeCtx ? sessions.sessionOf(scopeCtx) : undefined
+            if (face && typeof face.rename === 'function') face.rename(newSessionTitle(x)).catch(function () { /* 命名失败忽略 */ })
+          } catch (e) { /* 命名失败忽略 */ }
+          // 预填：新会话 dock 挂载后经 StatusBar 消费 pendingDraft（与交接开新会话同机制）
+          pendingDraft = text
+          sessions.open(sid)
+          flash(st, tr('toast.newSessionOpened'), 'ok')
+        }).catch(function () { doFallback() })
+      }
       const inject = (st, text) => {
         if (st.injector) { st.injector(text); flash(st, tr('toast.injected'), 'ok') }
         else copyText(st, text, tr('toast.copiedFallback'))
@@ -1357,6 +1396,8 @@ window.__ModuleLoader__.load({
           ]),
           t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4, alignItems: 'center', flex: 'none' } }, [
             blocked ? null : mkRowAction(st, t, false, colorOf),
+            // #361：新会话打开（同 cwd + 自动命名 + 预填指令）
+            h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); openInNewSession(st, t) }, title: tr('list.newSessionTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'handoff', size: 12 })),
             h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'link', size: 12 })),
           ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, tr('act.view')),
         ])
@@ -1547,6 +1588,8 @@ window.__ModuleLoader__.load({
           const toggleTags = function (e) { e.stopPropagation(); st.expTags[x.number] = !expanded; emit(st) }
           const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
             isOpen && !blocked ? mkRowAction(st, x, narrow, colorOf) : null,
+            // #361：新会话打开（同 cwd + 自动命名 + 预填指令）
+            isOpen ? h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'handoff', size: 12 })) : null,
             h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
             h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
           ])

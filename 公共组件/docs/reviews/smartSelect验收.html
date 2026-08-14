@@ -21,8 +21,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .sc-note{font-size:12px;color:#6e6e73;background:#fafbfc;border:1px solid #f0f0f3;border-radius:10px;padding:8px 12px;margin:10px 0}
 .ss-label{font-size:13px;font-weight:700;margin:12px 0 4px;color:#1d1d1f}
 .ss-label .opt{color:#86868b;font-weight:normal;font-size:11.5px}
-.meter{font-size:11.5px;line-height:1.8;background:#0d1117;color:#7ee787;border-radius:10px;padding:10px 12px;margin-top:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all}
+.meter{font-size:11.5px;line-height:1.8;background:#0d1117;color:#7ee787;border-radius:10px;padding:10px 12px;margin-top:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-all;display:none}
 .meter b{color:#ffb340;font-weight:600}
+body.show-meter .meter{display:block}
 @media(max-width:720px){
   body{padding:20px 12px 70px;background:#f2f2f5}
   .page-head h1{font-size:19px}
@@ -511,6 +512,7 @@ button.copy.ghost {
 <div class="controls">
   <button class="ctl" id="themeBtn">主题: 账本藏蓝</button>
   <button class="ctl" id="resetBtn">重置全部</button>
+  <button class="ctl" id="meterBtn">回填仪表: 关</button>
 </div>
 <div id="root"></div>
 
@@ -1535,6 +1537,10 @@ document.getElementById('themeBtn').addEventListener('click', function(){
   mountAll();
 });
 document.getElementById('resetBtn').addEventListener('click', mountAll);
+document.getElementById('meterBtn').addEventListener('click', function(){
+  var on = document.body.classList.toggle('show-meter');
+  this.textContent = '回填仪表: ' + (on ? '开' : '关');
+});
 
 mountAll();
 </script>

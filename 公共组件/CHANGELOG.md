@@ -20,7 +20,7 @@
 - **回填协议**（组件→上层）: `input.value` + `dataset.source` + `dataset.new('1'=新建)` + change 事件（bubbles）; `smartSelect(el).getState()/getValue()` 可选; **prompt 由上层 buildPrompt 自拼（组件零 prompt 知识）**
 - **守卫**（契约 §6）: 结构校验违规直接报错（对齐 Base v1.2）; 类名全 `ss-` 命名空间（封装纪律, #309 用户实测揪出裸类名 `.plain` 冲突 bug 的教训）; 全部动态文本 esc 零注入面; chips 用 `<button type="button">`（无障碍 + 键盘可用）
 - 契约 §6.3 条目更新 + 新增 §6.9 + CHANGELOG 同步; 守卫测试 +29（渲染/优先级推导/回填协议/停用/新建/重名/相似提示/留空/降级/校验报错/封装纪律反例/XSS/多实例/搜索过滤/主题覆盖/getState）→ 全量全绿
-- 验收页: `docs/reviews/smartSelect验收.html`（#298 美团场景 + 三字段 + 降级 + 主题切换 + 回填仪表）
+- 验收页: `docs/reviews/smartSelect验收.html`（#298 美团场景 + 三字段 + 降级 + 主题切换; 回填仪表**默认隐藏**（生产不显示）, 验收时可开）
 
 ## v1.10（2026-08-13 · copyText 反馈钩子 · #328）
 

@@ -90,7 +90,10 @@ window.__ModuleLoader__.load({
       // 数字区固定两位数等宽（98/99 5 字符；--/8 等宽；未来 9/10 不变宽）
       '.dsws-num{display:inline-block;min-width:5ch;text-align:center;font-variant-numeric:tabular-nums;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:11px;line-height:1.5;white-space:nowrap}',
       // 胶囊宽度适配内容（fit-content 不压缩不换行；上限放宽）
-      '.dsws-capsule{max-width:min(92vw,640px);width:fit-content;margin:0 auto;display:flex;align-items:center;gap:2px;background:var(--dsw-alias-bg-layer-1,#10131a);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:999px;padding:3px 6px;font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer;user-select:none;white-space:nowrap}',
+      // #372 修复（2026-08-14 英文态溢出）：原上限 min(92vw,640px) 在英文长文案（如「Handoff · new session」）下触顶，
+      //   内容从背景右缘溢出。放宽到 min(96vw,1400px)：width:fit-content + margin:0 auto → 胶囊始终
+      //   以状态栏中心为轴向两边生长（背景完整包裹内容），不再截断/溢出。
+      '.dsws-capsule{max-width:min(96vw,1400px);width:fit-content;margin:0 auto;display:flex;align-items:center;gap:2px;background:var(--dsw-alias-bg-layer-1,#10131a);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:999px;padding:3px 6px;font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer;user-select:none;white-space:nowrap}',
       '.dsws-capsule .dsws-capsule-word{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:99px;font-weight:600;color:var(--dsw-alias-label-primary,#e6edf3);flex:none}',
       '.dsws-capsule .dsws-capsule-word:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08))}',
       '.dsws-capsule .dsws-seg{flex:none}',

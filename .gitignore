@@ -117,3 +117,27 @@ Thumbs.db
 
 # 公共组件 injector 缺省输出目录(模板同目录 out/,测试与手动运行均可能落盘,不入库 · #325)
 公共组件/assets/out/
+
+# 根目录 pytest 临时目录(测试运行产物,不入库 · 2026-08-14)
+.pytest-tmp/
+
+# 饼干记账调试临时 JSON(tmp_*.json 为运行期抓包/调试产物,不入库 · 2026-08-14)
+饼干记账/tmp_*.json
+
+# DSH 飞书协议调研抓取素材(根目录暂存,核对后可直接删除,不入库 · 2026-08-14)
+/gosdk_*.go
+/pysdk_*.py
+/openlark_*
+/feishu_longconn.md
+/feishu_official.md
+/feishu_ws_extracted.rs
+/docsrs_feishu_ws.rs
+/cnblogs_ws_article.*
+/extract_cnblogs.py
+/extract_docsrs.py
+
+# 卡路里渲染调试产物(_test_*.html 为 connectNulls 等验证临时输出,不入库)
+卡路里/_test_*.html
+
+# dsh-opencode-tui-theme npm 依赖锁文件(npm 生成,不入库 · 对齐智剪工坊先例)
+dsh-plugin/dsh-opencode-tui-theme/package/package-lock.json

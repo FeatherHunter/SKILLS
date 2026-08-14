@@ -2,6 +2,17 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.24（2026-08-14 · charts.bar 分组双柱 grouped · #339）
+
+**charts.bar 新增可选参数 `grouped`**（非破坏性 · 新可选参数 · 签名零变更 · #336 原生阻塞解除）。
+
+- **复用 #336 多值 item 结构（零新字段）**: `items: [{label, values: [v1, v2, ...]}]`——本票只新增 `grouped` 渲染模式（triage 拍板「禁止另立字段」遵守）
+- **`grouped: true`（每列 N 根并排子柱）**: 宽度均分（.hm-c-gw 包裹, gap 3px）; 高度相对共享域（全域 max/min, 对齐单柱语义）——实做 vs 计划对比（goal_progress / exercise_review combo 近似）恢复
+- 每子柱独立颜色（item.color 或 colors 色板）+ `segNames` 图例; showValues 每子柱顶部数值标签（9px 小字）; tooltip 按子柱命中（段名 + 值）
+- 校验与 stacked 同源（缺 values/非数字/长度不一致 → 报错）; 与 stacked 互斥（同传时 stacked 优先）
+- **向后兼容**: 不传 grouped → 既有单柱渲染逐字节一致（显式断言 innerHTML 全等）
+- 契约 §6.5 grouped 条目 + §0 版本记录 + CHANGELOG 同步; 守卫测试 +6 → 全量全绿
+
 ## v1.23（2026-08-14 · charts.bar 堆叠柱 stacked · #336）
 
 **charts.bar 新增可选参数 `stacked/segNames/stackMode`**（非破坏性 · 新可选参数 · 签名零变更；缺省行为逐字节不变）。

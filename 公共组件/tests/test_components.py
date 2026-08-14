@@ -1898,6 +1898,72 @@ def test_bar_stacked_default_byte_identical(chart_page):
     assert html1 == html2
 
 
+# ── bar: grouped 分组双柱（v1.24 · #339 复用 #336 多值结构）──
+
+def test_bar_grouped_renders_side_by_side(chart_page):
+    """grouped:true: 每列 N 根并排子柱（宽度均分）; 高度按共享域"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'一月',values:[2,8]},{label:'二月',values:[4,6]}],
+        {grouped:true, animation:false});
+    """)
+    gbs = chart_page.evaluate("[...document.querySelectorAll('.hm-c-gb')].map(n=>({w:n.getBoundingClientRect().width, h:parseFloat(n.style.height)}))")
+    assert len(gbs) == 4
+    assert abs(gbs[0]['w'] - gbs[1]['w']) < 1  # 子柱宽度均分
+    assert gbs[1]['h'] > gbs[0]['h']  # 8 > 2
+
+
+def test_bar_grouped_values_shared_domain(chart_page):
+    """高度相对共享域（全域 max/min, 对齐单柱语义）: 值 8 → 100%"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'一月',values:[2,8]}],
+        {grouped:true, animation:false});
+    """)
+    heights = chart_page.evaluate("[...document.querySelectorAll('.hm-c-gb')].map(n=>parseFloat(n.style.height))")
+    # 域 [0,8]: 2→25%, 8→100%
+    assert heights == [25.0, 100.0]
+
+
+def test_bar_grouped_validation_throws(chart_page):
+    """grouped 复用多值校验: 缺 values 数组 → 直接报错"""
+    err = chart_page.evaluate("""() => { try { window.charts.bar(document.getElementById('root'), [{label:'a',value:1}], {grouped:true}); return ''; } catch(e) { return e.message; } }""")
+    assert '必须含 values 数组' in err
+
+
+def test_bar_grouped_legend_and_showvalues(chart_page):
+    """legend: segNames 图例; showValues: 每根子柱顶部数值标签"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'一月',values:[2,8]}],
+        {grouped:true, legend:true, segNames:['实做','计划'], showValues:true, format:'{v}件', animation:false});
+    """)
+    lg = chart_page.evaluate("[...document.querySelectorAll('.hm-c-lg')].map(n=>n.textContent)")
+    vals = chart_page.evaluate("[...document.querySelectorAll('.hm-c-gv2')].map(n=>n.textContent)")
+    assert lg == ['实做', '计划']
+    assert vals == ['2件', '8件']
+
+
+def test_bar_grouped_colors_palette(chart_page):
+    """colors 色板逐子柱取色"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'一月',values:[2,8]}],
+        {grouped:true, colors:['#007aff','#ff9500'], animation:false});
+    """)
+    bgs = chart_page.evaluate("[...document.querySelectorAll('.hm-c-gb')].map(n=>n.style.background)")
+    assert bgs == ['rgb(0, 122, 255)', 'rgb(255, 149, 0)']
+
+
+def test_bar_grouped_default_byte_identical(chart_page):
+    """缺省（不传 grouped）: 既有单柱渲染逐字节不变"""
+    chart_page.evaluate('(items) => window.charts.bar(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    html1 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    chart_page.evaluate('(items) => window.charts.bar(document.getElementById("root"), items, {animation:false, grouped:false})', LINE_ITEMS)
+    html2 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    assert html1 == html2
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

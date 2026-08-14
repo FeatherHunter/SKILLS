@@ -37,7 +37,7 @@ return {
     // ============ 状态 ============
     let ghPath = null
     let ghPathError = null
-    let repoKey = null
+    let repoKeys = {}  // v12：repoKey 按 cwd 缓存（切换仓库会话时不再串仓库）
     let cache = { ts: 0, snapshot: null, error: null, cwd: null }
     let statusCache = { ts: 0, status: null, error: null, cwd: null }  // wf.status 30s 缓存（按 cwd 区分）
     let userHome = null                                     // 用户主目录（cmd 探测，缓存）
@@ -150,15 +150,16 @@ return {
       return userHome
     }
 
-    async function getRepoKey() {
-      if (repoKey) return repoKey
-      const r = await runGh(['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner'])
+    async function getRepoKey(cwd) {
+      const key = cwd || DEFAULT_CWD
+      if (repoKeys[key]) return repoKeys[key]
+      const r = await runGh(['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner'], key)
       if (!r.ok) return null
       const s = r.text.trim()
       const i = s.indexOf('/')
       if (i <= 0) return null
-      repoKey = { owner: s.slice(0, i), name: s.slice(i + 1) }
-      return repoKey
+      repoKeys[key] = { owner: s.slice(0, i), name: s.slice(i + 1) }
+      return repoKeys[key]
     }
 
     // ============ 数据流 ============
@@ -218,32 +219,66 @@ return {
       }
     }
 
-    async function fetchMaps() {
-      const r = await runGh(['issue', 'list', '--state', 'open', '--label', 'wayfinder:map', '--json', 'number,title,body,labels,assignees,state,updatedAt'])
+    async function fetchMaps(cwd) {
+      const r = await runGh(['issue', 'list', '--state', 'open', '--label', 'wayfinder:map', '--json', 'number,title,body,labels,assignees,state,updatedAt'], cwd)
       if (!r.ok) return { ok: false, error: r }
       try { return { ok: true, maps: JSON.parse(r.text) } } catch (e) { return { ok: false, error: { kind: 'parse', error: String(e) } } }
     }
 
-    async function fetchMapDetail(number) {
-      const repo = await getRepoKey()
-      if (!repo) return { ok: false, error: { kind: 'env', error: '无法解析 owner/repo（git remote 或 gh repo view 失败）' } }
-      const r = await runGh(['api', 'graphql', '-f', 'query=' + QUERY, '-F', 'owner=' + repo.owner, '-F', 'name=' + repo.name, '-F', 'n=' + String(number)])
+    // 全部 issue（open + closed，Client 列表 open 常显、底部「已关闭」折叠行），
+    // 按 updatedAt 倒序；labels 带 name + color（GitHub 配置色）；state 区分 open/closed
+    async function fetchIssues(cwd) {
+      const r = await runGh(['issue', 'list', '--state', 'all', '--limit', '200', '--json', 'number,title,labels,state,updatedAt'], cwd)
       if (!r.ok) return { ok: false, error: r }
       try {
-        const j = JSON.parse(r.text)
-        if (j.errors) return { ok: false, error: { kind: 'graphql', error: JSON.stringify(j.errors).slice(0, 300) } }
-        return { ok: true, issue: j.data.repository.issue }
+        const all = JSON.parse(r.text)
+        const issues = all.map(function (x) {
+          return {
+            number: x.number,
+            title: x.title,
+            state: x.state,
+            labels: (x.labels || []).map(function (l) { return { name: l.name, color: l.color || '' } }),
+            updatedAt: x.updatedAt,
+          }
+        })
+        issues.sort(function (a, b) { return String(b.updatedAt).localeCompare(String(a.updatedAt)) })
+        return { ok: true, issues: issues }
       } catch (e) { return { ok: false, error: { kind: 'parse', error: String(e) } } }
     }
 
+    async function fetchMapDetail(number, cwd) {
+      const repo = await getRepoKey(cwd)
+      if (!repo) return { ok: false, error: { kind: 'env', error: '无法解析 owner/repo（git remote 或 gh repo view 失败）' } }
+      // 网络类失败重试 1 次（实测 api.github.com 偶发 EOF；其他错误直接返回）
+      let last = null
+      for (let attempt = 0; attempt < 2; attempt++) {
+        const r = await runGh(['api', 'graphql', '-f', 'query=' + QUERY, '-F', 'owner=' + repo.owner, '-F', 'name=' + repo.name, '-F', 'n=' + String(number)])
+        if (!r.ok) {
+          last = r
+          if (r.kind !== 'network') return { ok: false, error: r }
+          continue
+        }
+        try {
+          const j = JSON.parse(r.text)
+          if (j.errors) return { ok: false, error: { kind: 'graphql', error: JSON.stringify(j.errors).slice(0, 300) } }
+          return { ok: true, issue: j.data.repository.issue }
+        } catch (e) { return { ok: false, error: { kind: 'parse', error: String(e) } } }
+      }
+      return { ok: false, error: last || { kind: 'network', error: 'GraphQL 请求失败（重试后仍失败）' } }
+    }
+
     async function buildSnapshot(cwd) {
-      const repo = await getRepoKey()
-      const fm = await fetchMaps()
+      const repo = await getRepoKey(cwd)
+      const fm = await fetchMaps(cwd)
       if (!fm.ok) throw fm.error
+      const fi = await fetchIssues(cwd)
+      const issues = fi.ok ? fi.issues : []
+      // 并行拉取各 map 详情（Promise.all 保序输出；实测串行 7 map ≈ 10s → 并行 ≈ 3s）
+      const details = await Promise.all(fm.maps.map(function (m) { return fetchMapDetail(m.number, cwd) }))
       const maps = []
       for (let i = 0; i < fm.maps.length; i++) {
         const m = fm.maps[i]
-        const d = await fetchMapDetail(m.number)
+        const d = details[i]
         if (!d.ok) {
           maps.push({ number: m.number, title: m.title, state: m.state, error: d.error, tickets: [], stats: { total: 0, open: 0, closed: 0, frontier: 0, claimed: 0, blocked: 0 } })
           continue
@@ -268,6 +303,7 @@ return {
         generatedMs: Date.now(),
         env: { ghPath: ghPath, ghError: ghPathError },
         maps: maps,
+        issues: issues,
       }
     }
 
@@ -432,6 +468,24 @@ return {
       return { ok: true, ts: Date.now() }
     })
 
+    // v13：按 sessionId 反查会话工作目录（client 切换对话时用；宿主 sessions.meta 是权威字段，
+    // 不再依赖 client 猜测 ConversationSnapshot 字段名）
+    harness.handle('wf.cwd', async function (args) {
+      const sid = args && args.sessionId
+      if (!sid) return { ok: false, error: '缺少 sessionId' }
+      const sessions = ctx.get('sessions')
+      if (sessions === undefined || typeof sessions.get !== 'function') return { ok: false, error: 'sessions 服务不可用' }
+      try {
+        const s = sessions.get(sid)
+        const meta = s && s.meta
+        const cwd = meta && (meta.cwd || meta.path || meta.worktree || meta.projectDir || meta.directory)
+        if (typeof cwd === 'string' && cwd) return { ok: true, cwd: cwd }
+        return { ok: false, error: '会话无 cwd 信息' }
+      } catch (e) {
+        return { ok: false, error: String((e && e.message) || e) }
+      }
+    })
+
     harness.handle('wf.snapshot', async function (args) {
       const cwd = (args && args.cwd) || DEFAULT_CWD
       const now = Date.now()
@@ -465,7 +519,7 @@ return {
       const n = args && args.number
       const cwd = (args && args.cwd) || DEFAULT_CWD
       if (!n) return { ok: false, error: '缺少参数 number（ticket 号）' }
-      const repo = await getRepoKey()
+      const repo = await getRepoKey(cwd)
       if (!repo) return { ok: false, error: { kind: 'env', error: '无法解析 owner/repo（git remote 或 gh repo view 失败）' } }
       const r = await runGh(['issue', 'edit', String(n), '--add-assignee', '@me'], cwd)
       if (!r.ok) return { ok: false, error: r }

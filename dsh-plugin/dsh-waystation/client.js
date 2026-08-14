@@ -1,15 +1,32 @@
 /**
- * DSH-Waystation · Client 半（UX 原型 v3 · 评审反馈迭代）
+ * DSH-Waystation · Client 半（UX v14 · 2026-08-14 全部开始执行批次）
  *
- * 对应地图 #342：原型 #355（v3 评审）+ 开始此 Issue 流程 #347（host.call 认领 RPC + 模板配置 + 前置黄条）。
- * v3 变更（2026-08-14 评审）：
- *   1. 状态栏固定在输入框正上方（conversation.input.dock 末位行）
- *   2. 交互：去掉「面板」专用按钮；点「就绪/可接/占用」开合面板；时间区做成隐约按键，点击即刷新
- *   3. 面板可拖动（头部）、可调大小（右下角手柄），不再固定右侧遮挡
- *   4. 外观方案（Run 卡内可切换）：4 套 SVG 图标（罗盘/灯塔/雷达/图钉）+ 4 个动作词（沉淀/落纸/存档/快照）
+ * v14 变更（用户拍板后执行）：
+ *   1. 「全部」chip 恒清空过滤，不再进入空过滤态
+ *   2. 地图行视觉突出：紫色竖条 + 浅紫底 + 图标放大 + 标题加粗
+ *   3. 分流/开始修复/开始执行按钮缩至 80%（padding 1px 6px / 11px）
+ *   4. 行级动作按 label 三选一（needs-triage→分流 / bug→开始修复 / 其余 open→开始执行），
+ *      全部改为「复制 prompt」；map 行保留点击进详情 + 加「开始执行」；
+ *      列表底部加「已关闭 (N)」折叠行（默认收起，展开可见）
+ *   5. 主色按钮不再依赖 var(--dsw-alias-button-primary-fill)（当前主题解析为深色 → 黑底黑字），
+ *      改固定 #c084fc 底 + #140a1e 字
+ *   15. client store 按会话隔离（cwd/快照/筛选/视图各自独立；面板跟随当前激活会话）
+ *   17. 刷新加载态：手动刷新（更新/刷新/重新检查）→ 全面板遮罩 + spinner + 禁点；
+ *       会话切换自动刷新 → 轻量（不遮罩）
+ *   18. 标签 chips 全部加边框：边框色 = 该 label 色加深一档（HSL 亮度 -16%）
+ *   19. 窄屏（面板宽 <380px）：行内双栏固定（左列截断 / 右列按钮组 flex:none 不换行），
+ *       动作按钮折叠为纯图标
+ *   20. 胶囊第 5 段「交接」（M9 定向传递）：第一击注入 /handoff 模板（要求写
+ *       .scratch/handoff/latest.md）→ 文案变「交接给新会话」→ 第二击新开空白会话
+ *       （workspaces.startSession，非 fork 避免复制旧上下文）+ 输入框预填
+ *       /read .scratch/handoff/latest.md（跨会话 pendingDraft 机制）
+ *   22. 状态栏数字区固定两位数等宽（tabular-nums + min-width 5ch / 2ch），
+ *       6/8 ↔ --/8 ↔ 98/99 均不改变状态栏宽度
  *
- * 数据源（#344/#346 已接真）：就绪检查走 host.call('wf.status')；面板/地图/票务走
- * host.call('wf.snapshot' | 'wf.refresh')。FIX 仅保留就绪检查兜底；FIX.maps 假地图已移除。
+ * v13：cwd 权威反查（wf.cwd）+ sessionId 变化重探测。v12：repoKey 按 cwd 缓存 /
+ * 失败不兜假数据 / 三视图收敛 / 开始=复制 prompt / 沉淀=注入快照模板。
+ * v11：label 颜色 = GitHub 配置色。v10：cwd 关联 / 标签视图 / 圆形技能环。
+ * v9：DESIGN.md §12.2 Round 3 定稿 1A-7A 落实。
  *
  * 本文件内容 = cordis_define 的 code.client（纯 JS 函数体，返回 Cordis Plugin）。
  */
@@ -24,21 +41,28 @@ return {
     // 0. 样式
     // ============================================================
     styles.insert([
-      '.dsws-panel{position:fixed;right:12px;top:12px;width:420px;display:flex;flex-direction:column;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.45);z-index:9999;font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary,#e6edf3);line-height:1.6;overflow:hidden}',
+      '.dsws-panel{position:fixed;left:16px;top:76px;width:460px;max-height:calc(100vh - 24px);display:flex;flex-direction:column;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.45);z-index:9999;font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary,#e6edf3);line-height:1.6;overflow:hidden}',
       '.dsws-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,#2a2d35);cursor:move;user-select:none}',
       '.dsws-tabs{display:flex;gap:4px;padding:8px 12px 0}',
       '.dsws-tab{padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);font-size:12px}',
       '.dsws-tab.on{background:var(--dsw-alias-interactive-bg-active,rgba(255,255,255,.14));color:var(--dsw-alias-label-primary,#e6edf3);border-color:var(--dsw-alias-border-l1,#2a2d35)}',
       '.dsws-body{flex:1;overflow-y:auto;padding:10px 12px}',
-      '.dsws-resize{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,var(--dsw-alias-label-caption,#8b8b95) 50%);opacity:.5;border-radius:0 0 12px 0}',
-      '.dsws-resize:hover{opacity:1}',
-      '.dsws-maprow{border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;padding:10px 12px;margin-bottom:8px;cursor:pointer;background:var(--dsw-alias-bg-layer-1,#10131a)}',
+      '.dsws-rz{position:absolute;z-index:6}',
+      '.dsws-rz-n{top:0;left:8px;right:8px;height:5px;cursor:ns-resize}',
+      '.dsws-rz-s{bottom:0;left:8px;right:8px;height:5px;cursor:ns-resize}',
+      '.dsws-rz-e{right:0;top:8px;bottom:8px;width:5px;cursor:ew-resize}',
+      '.dsws-rz-w{left:0;top:8px;bottom:8px;width:5px;cursor:ew-resize}',
+      '.dsws-rz-ne{top:0;right:0;width:10px;height:10px;cursor:nesw-resize}',
+      '.dsws-rz-nw{top:0;left:0;width:10px;height:10px;cursor:nwse-resize}',
+      '.dsws-rz-se{bottom:0;right:0;width:14px;height:14px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 50%,var(--dsw-alias-label-caption,#8b8b95) 50%);opacity:.5;border-radius:0 0 12px 0}',
+      '.dsws-rz-se:hover{opacity:1}',
+      '.dsws-rz-sw{bottom:0;left:0;width:10px;height:10px;cursor:nesw-resize}',
+      '.dsws-maprow{border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;padding:9px 12px;margin-bottom:8px;cursor:pointer;background:var(--dsw-alias-bg-layer-1,#10131a)}',
       '.dsws-maprow:hover{border-color:var(--dsw-alias-border-l2,#3a3f4a)}',
       '.dsws-mtitle{font-weight:600;font-size:13px}',
-      '.dsws-mdest{color:var(--dsw-alias-label-secondary,#a1a1aa);font-size:12px;margin:2px 0 6px}',
       '.dsws-prog{height:4px;border-radius:2px;background:var(--dsw-alias-bg-layer-3,#0c0e12);overflow:hidden;margin-top:4px}',
       '.dsws-prog>i{display:block;height:100%;background:var(--dsw-alias-state-success-primary,#4ade80);border-radius:2px}',
-      '.dsws-chip{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11px;line-height:1.7;margin-right:4px;white-space:nowrap}',
+      '.dsws-chip{display:inline-flex;align-items:center;gap:3px;padding:1px 8px;border-radius:99px;font-size:11px;line-height:1.7;margin-right:4px;white-space:nowrap}',
       '.dsws-chip-r{background:rgba(88,166,255,.18);color:#58a6ff}',
       '.dsws-chip-p{background:rgba(247,120,186,.16);color:#f778ba}',
       '.dsws-chip-g{background:rgba(63,185,80,.16);color:#3fb950}',
@@ -47,51 +71,54 @@ return {
       '.dsws-trow{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border-radius:6px;border:1px solid transparent}',
       '.dsws-trow:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06));border-color:var(--dsw-alias-border-l1,#2a2d35)}',
       '.dsws-trow .dsws-tt{flex:1;min-width:0}',
-      '.dsws-tt-name{font-size:12.5px;word-break:break-all}',
+      '.dsws-tt-name{font-size:12.5px;word-break:break-all;display:flex;align-items:center;gap:5px}',
       '.dsws-tt-sub{font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa)}',
       '.dsws-btn{padding:3px 10px;border-radius:6px;border:1px solid var(--dsw-alias-border-l1,#2a2d35);background:var(--dsw-alias-bg-layer-1,#10131a);color:var(--dsw-alias-label-primary,#e6edf3);font-size:12px;cursor:pointer}',
       '.dsws-btn:hover{border-color:var(--dsw-alias-border-l2,#3a3f4a)}',
-      '.dsws-btn.primary{background:var(--dsw-alias-button-primary-fill,#c084fc);border-color:transparent;color:#140a1e;font-weight:600}',
+      // v14-5：主色按钮固定主题安全色（不再依赖 alias 变量，当前主题下会解析成深色导致黑底黑字）
+      '.dsws-btn.primary{background:#c084fc;border-color:transparent;color:#140a1e;font-weight:600}',
+      '.dsws-btn.primary:hover{border-color:rgba(20,10,30,.55)}',
       '.dsws-btn.ghost{background:transparent;border-color:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)}',
-      '.dsws-grp{margin:10px 0 4px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa);display:flex;align-items:center;gap:6px}',
-      '.dsws-dot{width:8px;height:8px;border-radius:50%;display:inline-block}',
+      '.dsws-grp{margin:12px 0 4px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa);display:flex;align-items:center;gap:6px}',
+      '.dsws-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}',
       '.dsws-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:10000}',
-      '.dsws-modalbox{width:440px;max-width:92vw;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;padding:14px 16px;font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary,#e6edf3)}',
+      '.dsws-modalbox{width:460px;max-width:94vw;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;padding:14px 16px;font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary,#e6edf3)}',
       '.dsws-ta{width:100%;min-height:90px;background:var(--dsw-alias-bg-layer-1,#10131a);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:6px;color:var(--dsw-alias-label-primary,#e6edf3);font-family:var(--ds-font-family-code,monospace);font-size:12px;padding:8px;box-sizing:border-box}',
-      '.dsws-check{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px dashed var(--dsw-alias-border-l1,#2a2d35)}',
       '.dsws-note{position:absolute;right:14px;top:46px;padding:6px 12px;border-radius:6px;background:var(--dsw-alias-toast-bg,#22252c);border:1px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3);font-size:12px;z-index:10001;box-shadow:0 4px 20px rgba(0,0,0,.4)}',
       '.dsws-skill{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px}',
       '.dsws-skill:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06))}',
       '.dsws-skill .dsws-tt{flex:1;min-width:0}',
-      '.dsws-remind{display:flex;align-items:center;gap:8px;padding:6px 12px;margin:6px 0;border-radius:8px;background:rgba(188,140,255,.1);border:1px solid rgba(188,140,255,.35);font-size:12px;color:var(--dsw-alias-label-primary,#e6edf3)}',
-      '.dsws-seg{cursor:pointer;padding:2px 6px;border-radius:6px;border:1px solid transparent}',
+      '.dsws-seg{cursor:pointer;padding:2px 7px;border-radius:99px;border:1px solid transparent;display:inline-flex;align-items:center;gap:4px}',
       '.dsws-seg:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08));border-color:var(--dsw-alias-border-l1,#2a2d35)}',
-      '.dsws-timebtn{cursor:pointer;padding:2px 6px;border-radius:6px;border:1px dashed transparent;color:var(--dsw-alias-label-caption,#8b8b95)}',
+      '.dsws-timebtn{cursor:pointer;padding:2px 7px;border-radius:99px;border:1px dashed transparent;color:var(--dsw-alias-label-caption,#8b8b95);white-space:nowrap;font-variant-numeric:tabular-nums}',
       '.dsws-timebtn:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08));border-color:var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3)}',
       '.dsws-uirow{display:flex;align-items:center;gap:6px;margin:4px 0;flex-wrap:wrap}',
       '.dsws-uirow .dsws-btn.on{border-color:var(--dsw-alias-state-success-primary,#4ade80);color:var(--dsw-alias-state-success-primary,#4ade80)}',
+      // v14-22：数字区固定两位数等宽（98/99 5 字符；--/8 等宽；未来 9/10 不变宽）
+      '.dsws-num{display:inline-block;min-width:5ch;text-align:center;font-variant-numeric:tabular-nums;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:11px;line-height:1.5}',
+      '.dsws-capsule{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:2px;background:var(--dsw-alias-bg-layer-1,#10131a);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:999px;padding:3px 6px;font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer;user-select:none}',
+      '.dsws-capsule .dsws-capsule-word{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:99px;font-weight:600;color:var(--dsw-alias-label-primary,#e6edf3)}',
+      '.dsws-capsule .dsws-capsule-word:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08))}',
+      '.dsws-banner{display:flex;align-items:center;gap:8px;border-radius:8px;padding:6px 10px;font-size:12px;margin:6px 0;cursor:pointer}',
+      '.dsws-banner.bad{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.45);color:#f87171}',
+      '.dsws-banner.warn{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);color:#fbbf24}',
+      '.dsws-banner.ok{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.35);color:#4ade80}',
+      '.dsws-aggrow{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;border:1px solid transparent}',
+      '.dsws-aggrow:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06));border-color:var(--dsw-alias-border-l1,#2a2d35)}',
+      '.dsws-ellip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}',
+      '.dsws-cgroup{margin:10px 0 2px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa);display:flex;align-items:center;gap:6px}',
+      '.dsws-ccard{border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--dsw-alias-bg-layer-1,#10131a)}',
+      '.dsws-ccard .nm{font-size:12.5px;font-weight:600}',
+      '.dsws-ccard .dt{font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa)}',
+      '.dsws-ccard .act{margin-top:5px;display:flex;gap:6px}',
+      // v14-17：手动刷新全面板遮罩 + spinner
+      '.dsws-shade{position:absolute;inset:0;background:rgba(8,10,14,.55);display:flex;align-items:center;justify-content:center;gap:8px;z-index:7;border-radius:12px}',
+      '.dsws-spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.18);border-top-color:#c084fc;animation:dsws-spin .8s linear infinite;flex:none}',
+      '@keyframes dsws-spin{to{transform:rotate(360deg)}}',
     ].join(''))
 
     // ============================================================
-    // 1. 假数据 fixture（覆盖全状态 + 3 级阻塞链）
-    // ============================================================
-    const FIX = {
-      mode: 'fake',
-      updatedAt: '21:30',
-      checks: [
-        { id: 1, name: '仓库定位', level: 'ok', detail: 'FeatherHunter/SKILLS', hint: '' },
-        { id: 2, name: 'setup 已执行', level: 'ok', detail: 'docs/agents/issue-tracker.md 存在', hint: '' },
-        { id: 3, name: 'tracker = GitHub', level: 'ok', detail: 'GitHub Issues + gh CLI', hint: '' },
-        { id: 4, name: 'gh CLI 可用', level: 'ok', detail: 'D:\\0Tools\\GitHubCLI\\gh.exe (2.97.0)', hint: '' },
-        { id: 5, name: 'gh 已登录', level: 'ok', detail: 'FeatherHunter (keyring)', hint: '' },
-        { id: 6, name: 'API 可达', level: 'ok', detail: 'api.github.com 200', hint: '' },
-        { id: 7, name: 'wayfinder 技能', level: 'warn', detail: '已安装但未挂载到当前会话', hint: '用 /wayfinder 加载' },
-        { id: 8, name: 'ask-matt 技能', level: 'warn', detail: '已安装但未挂载到当前会话', hint: '用 /ask-matt 加载' },
-      ],
-    }
-
-    // ============================================================
-    // 2. 技能目录 + 场景推荐映射
+    // 1. 技能目录 + 场景推荐映射
     // ============================================================
     const SKILLS = [
       { name: 'ask-matt', level: 'warn', use: '技能路由器：不知道该用哪个 skill 时问它' },
@@ -122,14 +149,15 @@ return {
       task: ['implement'],
     }
     const TYPE_LABEL = {
-      research: ['research', 'r', '🔍 研究'],
-      prototype: ['prototype', 'p', '🛠 原型'],
-      grilling: ['grilling', 'g', '💬 对齐'],
-      task: ['task', 't', '⚙ 任务'],
+      research: ['research', 'r', '研究'],
+      prototype: ['prototype', 'p', '原型'],
+      grilling: ['grilling', 'g', '对齐'],
+      task: ['task', 't', '任务'],
     }
+    const TYPE_ICON = { research: 'search', prototype: 'hammer', grilling: 'chat', task: 'gear' }
 
     // ============================================================
-    // 3. 外观方案（图标 + 动作词，可切换）
+    // 2. 外观方案（图标 + 动作词，可切换）
     // ============================================================
     const ICON_SCHEMES = [
       { id: 'compass', label: '罗盘' },
@@ -141,42 +169,87 @@ return {
 
     const Icon = ({ scheme, size }) => {
       const s = size || 16
-      const common = { viewBox: '0 0 24 24', width: s, height: s, fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', style: { display: 'inline-block', verticalAlign: '-2px' } }
+      const common = { viewBox: '0 0 24 24', width: s, height: s, fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', style: { display: 'inline-block', verticalAlign: '-2px', flex: 'none' } }
       if (scheme === 'beacon') return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 4, fill: 'currentColor', stroke: 'none' }), h('path', { d: 'M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1' })])
       if (scheme === 'radar') return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 9 }), h('circle', { cx: 12, cy: 12, r: 5 }), h('circle', { cx: 12, cy: 12, r: 1.2, fill: 'currentColor', stroke: 'none' }), h('path', { d: 'M12 12L19 8' }), h('circle', { cx: 16.5, cy: 6.5, r: 1.1, fill: 'currentColor', stroke: 'none' })])
       if (scheme === 'pin') return h('svg', common, [h('path', { d: 'M12 21s-6-5.1-6-10a6 6 0 1112 0c0 4.9-6 10-6 10z' }), h('circle', { cx: 12, cy: 11, r: 2.2, fill: 'currentColor', stroke: 'none' })])
       return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 9 }), h('polygon', { points: '15.5 8.5 13 13 8.5 15.5 11 11', fill: 'currentColor', stroke: 'none' })])
     }
 
+    // ---- 通用图标集（统一 SVG stroke 风格）----
+    const Ic = ({ n, size, color }) => {
+      const s = size || 13
+      const common = { viewBox: '0 0 24 24', width: s, height: s, fill: 'none', stroke: 'currentColor', strokeWidth: 1.8, strokeLinecap: 'round', strokeLinejoin: 'round', style: { display: 'inline-block', verticalAlign: '-2px', flex: 'none' }, color: color || undefined }
+      switch (n) {
+        case 'dot': return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 4.5, fill: 'currentColor', stroke: 'none' })])
+        case 'target': return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 8 }), h('circle', { cx: 12, cy: 12, r: 2.4, fill: 'currentColor', stroke: 'none' })])
+        case 'lock': return h('svg', common, [h('rect', { x: 5, y: 11, width: 14, height: 9, rx: 2 }), h('path', { d: 'M8 11V8a4 4 0 018 0v3' })])
+        case 'map': return h('svg', common, [h('path', { d: 'M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z' }), h('path', { d: 'M9 3v15M15 6v15' })])
+        case 'compass': return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 9 }), h('polygon', { points: '15.5 8.5 13 13 8.5 15.5 11 11', fill: 'currentColor', stroke: 'none' })])
+        case 'gear': return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 3 }), h('path', { d: 'M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1' })])
+        case 'refresh': return h('svg', common, [h('path', { d: 'M21 12a9 9 0 11-2.6-6.4' }), h('polyline', { points: '21 3 21 9 15 9' })])
+        case 'note': return h('svg', common, [h('rect', { x: 4, y: 4, width: 16, height: 16, rx: 2 }), h('path', { d: 'M8 9h8M8 13h8M8 17h5' })])
+        case 'fog': return h('svg', common, [h('path', { d: 'M8 17a4 4 0 010-8 5 5 0 019.6-1.6A3.5 3.5 0 0118 17z' }), h('path', { d: 'M3 21h18' })])
+        case 'ban': return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M5.6 5.6l12.8 12.8' })])
+        case 'person': return h('svg', common, [h('circle', { cx: 12, cy: 8, r: 3.5 }), h('path', { d: 'M5 20a7 7 0 0114 0' })])
+        case 'check': return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M8.5 12.5l2.5 2.5 4.5-5' })])
+        case 'play': return h('svg', common, [h('path', { d: 'M8 5.5l11 6.5-11 6.5z', fill: 'currentColor', stroke: 'none' })])
+        case 'link': return h('svg', common, [h('path', { d: 'M10 14a5 5 0 007.1 0l2.8-2.8a5 5 0 00-7.1-7.1L11 5.9' }), h('path', { d: 'M14 10a5 5 0 00-7.1 0l-2.8 2.8a5 5 0 007.1 7.1L13 18.1' })])
+        case 'back': return h('svg', common, [h('path', { d: 'M19 12H5' }), h('polyline', { points: '12 19 5 12 12 5' })])
+        case 'alert': return h('svg', common, [h('path', { d: 'M12 3l10 18H2z' }), h('path', { d: 'M12 9.5V14' }), h('circle', { cx: 12, cy: 17, r: 0.7, fill: 'currentColor', stroke: 'none' })])
+        case 'x': return h('svg', common, [h('path', { d: 'M6 6l12 12M18 6L6 18' })])
+        case 'star': return h('svg', common, [h('path', { d: 'M12 3l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2-5.6-3.2-5.6 3.2 1.3-6.2L3 9.5l6.3-.7z', fill: 'currentColor', stroke: 'none' })])
+        case 'search': return h('svg', common, [h('circle', { cx: 11, cy: 11, r: 7 }), h('path', { d: 'M21 21l-4.3-4.3' })])
+        case 'hammer': return h('svg', common, [h('path', { d: 'M14 4l6 6-2.5 2.5-6-6z' }), h('path', { d: 'M3 21l7.5-7.5' }), h('path', { d: 'M12.5 9.5l2 2' })])
+        case 'chat': return h('svg', common, [h('path', { d: 'M21 15a2 2 0 01-2 2H8l-5 4V5a2 2 0 012-2h14a2 2 0 012 2z' })])
+        case 'clipboard': return h('svg', common, [h('rect', { x: 5, y: 4, width: 14, height: 16, rx: 2 }), h('path', { d: 'M9 2h6v4H9z' }), h('path', { d: 'M9 11h6M9 15h4' })])
+        case 'list': return h('svg', common, [h('path', { d: 'M8 6h12M8 12h12M8 18h12' }), h('circle', { cx: 4, cy: 6, r: 0.8, fill: 'currentColor', stroke: 'none' }), h('circle', { cx: 4, cy: 12, r: 0.8, fill: 'currentColor', stroke: 'none' }), h('circle', { cx: 4, cy: 18, r: 0.8, fill: 'currentColor', stroke: 'none' })])
+        case 'info': return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 11v5' }), h('circle', { cx: 12, cy: 8, r: 0.7, fill: 'currentColor', stroke: 'none' })])
+        case 'handoff': return h('svg', common, [h('path', { d: 'M7 17l-4-4 4-4' }), h('path', { d: 'M3 13h6a6 6 0 016 6' }), h('path', { d: 'M17 7l4 4-4 4' }), h('path', { d: 'M21 11h-6a6 6 0 00-6-6' })])
+        default: return null
+      }
+    }
+
     // ============================================================
-    // 4. 迷你 store（跨插槽共享状态）
+    // 3. store（v14：按会话隔离；无 sid 时用 shared）
     // ============================================================
-    const S = {
-      open: false, tab: 'maps', activeMap: null, startFor: null, fixateFor: null,
-      notice: null, injector: null, remindDismissed: false, tick: 0,
-      pos: null, size: { w: 420, h: null },
+    const makeStore = () => ({
+      open: false, tab: 'list', activeMap: null,
+      notice: null, injector: null, tick: 0,
+      pos: null, size: { w: 460, h: null },
       ui: { icon: 'compass', word: '沉淀' },
       snapshot: null, cfgOpen: false,
+      cwd: '', lblFilter: null, skillView: 'list',
       checks: null, checksUpdatedAt: '', checksMode: 'loading', checksError: null, checking: false,
       snapMode: 'loading', snapError: null, snapLoading: false,
+      refreshing: false, handoffReady: false, subs: [],
+    })
+    const shared = makeStore()
+    const stores = {}
+    const storeOf = (sid) => {
+      if (!sid) return shared
+      let st = stores[sid]
+      if (!st) { st = makeStore(); stores[sid] = st }
+      return st
     }
-    const subs = []
-    const emit = () => { S.tick++; subs.forEach(function (f) { f(S.tick) }) }
-    const sub = (f) => { subs.push(f); return () => { const i = subs.indexOf(f); if (i >= 0) subs.splice(i, 1) } }
-    const flash = (msg) => {
-      S.notice = msg; emit()
-      if (timer !== undefined) timer.timeout(function () { if (S.notice === msg) { S.notice = null; emit() } }, 2800)
-    }
-    const useStore = () => {
+    const emit = (st) => { st.tick++; (st.subs || []).forEach(function (f) { f(st.tick) }) }
+    const sub = (st, f) => { st.subs.push(f); return () => { const i = st.subs.indexOf(f); if (i >= 0) st.subs.splice(i, 1) } }
+    const useStore = (sid) => {
+      const st = storeOf(sid)
       const [, set] = React.useState(0)
-      React.useEffect(() => sub((n) => set(n)), [])
-      return S
+      React.useEffect(() => sub(st, (n) => set(n)), [st])
+      return st
     }
-    const WORD = () => S.ui.word
+    const NOTICE_COLOR = { ok: '#4ade80', warn: '#fbbf24', info: '#a1a1aa' }
+    const noticeIcon = (k) => k === 'ok' ? 'check' : k === 'warn' ? 'alert' : 'clipboard'
+    const flash = (st, msg, kind) => {
+      st.notice = { text: msg, kind: kind || 'info' }; emit(st)
+      if (timer !== undefined) timer.timeout(function () { if (st.notice && st.notice.text === msg) { st.notice = null; emit(st) } }, 2800)
+    }
 
-    // 派生：票务分组（frontier/claimed/blocked/closed · #346 接真快照）
-    const compute = () => {
-      const maps = (S.snapshot && Array.isArray(S.snapshot.maps)) ? S.snapshot.maps : []
+    // 派生：票务分组（frontier/claimed/blocked/closed）
+    const compute = (st) => {
+      const maps = (st.snapshot && Array.isArray(st.snapshot.maps)) ? st.snapshot.maps : []
       return maps.map(function (m) {
         const byNum = {}; m.tickets.forEach(function (t) { byNum[t.number] = t })
         const openBlocker = (b) => { const t = byNum[b]; return t !== undefined && t.state === 'OPEN' }
@@ -188,55 +261,118 @@ return {
         return { m: m, open: open, closed: closed, frontier: frontier, claimed: claimed, blocked: blocked }
       })
     }
-    const frontierAll = () => compute().reduce(function (n, g) { return n + g.frontier.length }, 0)
+    const frontierAll = (st) => compute(st).reduce(function (n, g) { return n + g.frontier.length }, 0)
 
-    // ---- 就绪检查（#344 · host.call('wf.status') 真数据；host 侧 30s 缓存 / force 重查）----
+    // ---- 环境检查（#344 · host.call('wf.status')；host 侧 30s 缓存 / force 重查）----
+    // v12：失败不再兜假数据 —— 非 real 状态一律视为未知（--/8），不展示假绿点
     const CHECKS_TOTAL = 8
-    const loadChecks = (force) => {
-      if (S.checking) return
+    const loadChecks = (st, force) => {
+      if (st.checking) return Promise.resolve()
       if (typeof host === 'undefined' || typeof host.call !== 'function') {
-        S.checksMode = 'err'
-        S.checksError = 'host.call 不可用（Host 半未加载）'
-        emit()
-        return
+        st.checksMode = 'err'
+        st.checksError = 'host.call 不可用（Host 半未加载）'
+        emit(st)
+        return Promise.resolve()
       }
-      S.checking = true
-      emit()
-      host.call('wf.status', force ? { force: true } : {}).then(function (res) {
-        S.checking = false
+      st.checking = true
+      if (force) st.checksMode = 'loading'
+      emit(st)
+      const args = Object.assign({}, st.cwd ? { cwd: st.cwd } : {}, force ? { force: true } : {})
+      return host.call('wf.status', args).then(function (res) {
+        st.checking = false
         if (res && res.checks && res.checks.length) {
-          S.checks = res.checks
-          S.checksUpdatedAt = nowStr()
-          S.checksMode = 'real'
-          S.checksError = null
+          st.checks = res.checks
+          st.checksUpdatedAt = nowStr()
+          st.checksMode = 'real'
+          st.checksError = null
         } else {
-          S.checksMode = 'err'
-          S.checksError = (res && res.error) ? String(res.error).slice(0, 160) : 'wf.status 返回空结果'
+          st.checksMode = 'err'
+          st.checksError = (res && res.error) ? String(res.error).slice(0, 160) : 'wf.status 返回空结果'
         }
-        emit()
+        emit(st)
       }).catch(function (e) {
-        S.checking = false
-        S.checksMode = 'err'
-        S.checksError = String((e && e.message) || e).slice(0, 160)
-        emit()
+        st.checking = false
+        st.checksMode = 'err'
+        st.checksError = String((e && e.message) || e).slice(0, 160)
+        emit(st)
       })
     }
-    const activeChecks = () => (S.checks && S.checks.length ? S.checks : FIX.checks)
-    const readyCount = () => activeChecks().filter(function (c) { return c.level === 'ok' }).length
-    const setupCheck = () => (S.checks || []).find(function (c) { return c.id === 2 })
+    const activeChecks = (st) => (st.checksMode === 'real' && st.checks && st.checks.length) ? st.checks : []
+    const readyCount = (st) => { const cs = activeChecks(st); return cs.length ? cs.filter(function (c) { return c.level === 'ok' }).length : -1 }
+    // v14-22：返回纯数字串（'6/8' / '--/8'），由状态栏 num() 固定宽度渲染
+    const envLabel = (st) => { const n = readyCount(st); return n < 0 ? '--/8' : n + '/8' }
+    const setupCheck = (st) => (st.checks || []).find(function (c) { return c.id === 2 })
 
     const blockerNames = (t, m) => t.blockedBy.map(function (b) {
       const bt = m.tickets.find(function (x) { return x.number === b })
       return bt ? bt.title : ('#' + b)
     }).join('；')
 
+    // v10：从会话快照探测当前工作目录（ConversationSnapshot 字段名多探几个）
+    const detectCwd = function (ss) {
+      try {
+        if (ss && typeof ss === 'object') {
+          for (const k of ['cwd', 'workspacePath', 'projectPath', 'path', 'dir', 'root']) {
+            if (typeof ss[k] === 'string' && ss[k]) return ss[k]
+          }
+        }
+      } catch (e) { /* 探测失败走 host 默认 */ }
+      return ''
+    }
+    // v11：label 用 GitHub 配置色渲染 —— hex → rgba（.18 背景），无效 hex 返回 null 走兜底
+    const hexA = function (hex, a) {
+      try {
+        const hh = String(hex || '').replace('#', '')
+        if (!/^[0-9a-fA-F]{6}$/.test(hh)) return null
+        const r = parseInt(hh.slice(0, 2), 16), g = parseInt(hh.slice(2, 4), 16), b = parseInt(hh.slice(4, 6), 16)
+        return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'
+      } catch (e) { return null }
+    }
+    // v14-18：hex → HSL 亮度下调 amt（0-1）→ hex（chips 边框比 label 色深一档）
+    const darken = function (hex, amt) {
+      try {
+        const hh = String(hex || '').replace('#', '')
+        if (!/^[0-9a-fA-F]{6}$/.test(hh)) return null
+        const r = parseInt(hh.slice(0, 2), 16) / 255, g = parseInt(hh.slice(2, 4), 16) / 255, b = parseInt(hh.slice(4, 6), 16) / 255
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b)
+        const l = (mx + mn) / 2
+        let hue = 0, sat = 0
+        if (mx !== mn) {
+          const d = mx - mn
+          sat = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn)
+          if (mx === r) hue = ((g - b) / d + (g < b ? 6 : 0))
+          else if (mx === g) hue = ((b - r) / d + 2)
+          else hue = ((r - g) / d + 4)
+          hue *= 60
+        }
+        const l2 = Math.max(0, l - amt)
+        const hue2rgb = function (p, q, t) { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1 / 6) return p + (q - p) * 6 * t; if (t < 1 / 2) return q; if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6; return p }
+        const q2 = l2 < 0.5 ? l2 * (1 + sat) : l2 + sat - l2 * sat
+        const p2 = 2 * l2 - q2
+        const rr = Math.round(hue2rgb(p2, q2, hue / 360 + 1 / 3) * 255)
+        const gg = Math.round(hue2rgb(p2, q2, hue / 360) * 255)
+        const bb = Math.round(hue2rgb(p2, q2, hue / 360 - 1 / 3) * 255)
+        return '#' + ((1 << 24) + (rr << 16) + (gg << 8) + bb).toString(16).slice(1)
+      } catch (e) { return null }
+    }
+
     // ============================================================
-    // 5. 文本生成 + 注入
+    // 4. 文本生成 + 复制/注入
     // ============================================================
     const nowStr = () => {
       try { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') } catch (e) { return '' }
     }
-    // 开始模板配置（#347 · localStorage 持久化）：是否带 /wayfinder 前缀 + 自定义模板
+    // 定稿 1A：时间固定格式 MM-DD HH:MM（本地）
+    const timeOf = (snap) => {
+      if (!snap) return ''
+      try {
+        const ms = (typeof snap.generatedMs === 'number' && snap.generatedMs) || Date.parse(snap.updatedAt || '')
+        if (!ms) return ''
+        const d = new Date(ms)
+        return String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
+      } catch (e) { return '' }
+    }
+    // 开始模板配置（#347 · localStorage 持久化）
     const START_CFG_KEY = 'dsws.startCfg'
     const startCfg = (function () {
       const d = { withWayfinder: true, custom: '' }
@@ -248,44 +384,57 @@ return {
     })()
     const saveStartCfg = function () { try { localStorage.setItem(START_CFG_KEY, JSON.stringify(startCfg)) } catch (e) {} }
 
-    // 真数据快照（#346：面板数据源；force 走 wf.refresh 全量重建；wf.snapshot 侧 5s 缓存）
-    const loadSnapshot = function (force) {
-      if (S.snapLoading) return
+    // 快照（#346：面板数据源；force 走 wf.refresh 全量重建；wf.snapshot 侧 5s 缓存）
+    const loadSnapshot = function (st, force) {
+      if (st.snapLoading) return Promise.resolve()
       if (typeof host === 'undefined' || typeof host.call !== 'function') {
-        S.snapMode = 'err'
-        S.snapError = 'host.call 不可用（Host 半未加载）'
-        emit()
-        return
+        st.snapMode = 'err'
+        st.snapError = 'host.call 不可用（Host 半未加载）'
+        emit(st)
+        return Promise.resolve()
       }
-      S.snapLoading = true
-      S.snapMode = 'loading'
-      emit()
-      const p = force ? host.call('wf.refresh', {}) : host.call('wf.snapshot', {})
-      p.then(function (snap) {
-        S.snapLoading = false
+      st.snapLoading = true
+      if (force) st.snapMode = 'loading'
+      emit(st)
+      const args = st.cwd ? { cwd: st.cwd } : {}
+      const p = force ? host.call('wf.refresh', args) : host.call('wf.snapshot', args)
+      return p.then(function (snap) {
+        st.snapLoading = false
         if (snap && snap.ok === true && Array.isArray(snap.maps)) {
-          S.snapshot = snap
-          S.snapMode = 'real'
-          S.snapError = null
+          st.snapshot = snap
+          st.snapMode = 'real'
+          st.snapError = null
         } else {
-          S.snapMode = 'err'
-          S.snapError = (snap && snap.error) ? String(snap.error).slice(0, 160) : 'wf.snapshot 返回异常'
+          st.snapMode = 'err'
+          st.snapError = (snap && snap.error) ? String(snap.error).slice(0, 160) : 'wf.snapshot 返回异常'
+          if (force) flash(st, '快照刷新失败：' + st.snapError, 'warn')
         }
-        emit()
+        emit(st)
       }).catch(function (e) {
-        S.snapLoading = false
-        S.snapMode = 'err'
-        S.snapError = String((e && e.message) || e).slice(0, 160)
-        emit()
+        st.snapLoading = false
+        st.snapMode = 'err'
+        st.snapError = String((e && e.message) || e).slice(0, 160)
+        if (force) flash(st, '快照刷新失败：' + st.snapError, 'warn')
+        emit(st)
       })
     }
 
-    const repoStr = () => (S.snapshot && S.snapshot.repo)
-      ? S.snapshot.repo.owner + '/' + S.snapshot.repo.name
+    // v14-17：手动刷新（状态栏「更新」/ 列表「刷新」/ 检查页「重新检查」）→ 全面板遮罩 + 禁点
+    const refreshAll = function (st) {
+      if (st.refreshing) return
+      st.refreshing = true; emit(st)
+      Promise.all([loadChecks(st, true), loadSnapshot(st, true)]).then(function () {
+        st.refreshing = false; emit(st)
+      })
+    }
+
+    const repoStr = (st) => (st.snapshot && st.snapshot.repo)
+      ? st.snapshot.repo.owner + '/' + st.snapshot.repo.name
       : 'FeatherHunter/SKILLS'
 
-    const startText = (t) => {
-      const url = 'https://github.com/' + repoStr() + '/issues/' + t.number
+    // 开始 prompt：/wayfinder + URL + 流程指令（v12：点击「开始」直接复制，不再弹窗/开新会话）
+    const startText = (st, t) => {
+      const url = 'https://github.com/' + repoStr(st) + '/issues/' + t.number
       if (startCfg.custom) {
         return startCfg.custom
           .replace(/\{number\}/g, String(t.number))
@@ -293,227 +442,388 @@ return {
           .replace(/\{title\}/g, t.title)
       }
       const body = url +
-        '\n\n⚠️ 本 ticket 应在**独立的新会话**中执行（wayfinder 语义：每张 ticket 一个会话，设计者要求彼此独立）。' +
+        '\n\n**本 ticket 应在独立的新会话中执行**（wayfinder 语义：每张 ticket 一个会话，设计者要求彼此独立）。' +
         '保持当前工作目录；会话命名建议：' + newSessionTitle(t) +
         '\n\n请按 wayfinder 流程处理这个 ticket：先加载所属 map 的低分辨率视图对齐 Destination，认领该 ticket，再用 Notes 中指定的技能（如 /research）解析它；完成后以 resolution comment 收尾并关闭 issue。本 session 只解析这一个 ticket。'
       return (startCfg.withWayfinder ? '/wayfinder\n' : '') + body
     }
-    // 会话命名格式（拍板：与插件 DSH-Waystation 同名前缀）
     const SESSION_TITLE_PREFIX = '[dsh-waystation]'
     const newSessionTitle = (t) => SESSION_TITLE_PREFIX + ' ' + t.title + ' #' + t.number
 
-    // 一键开新会话（拍板后新增需求）：同 cwd + 自动命名 + 切换；任何一步失败降级为提醒手动
-    const openInNewSession = async function (t) {
-      const sessions = ctx.get('sessions')
-      if (sessions === undefined || typeof sessions.create !== 'function' || typeof sessions.open !== 'function') {
-        flash('⚠️ 无法自动开新会话（sessions 服务不可用）：请手动开新会话，命名「' + newSessionTitle(t) + '」')
-        return false
+    // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt，用户回车即发给 AI
+    const FIXATE_PROMPT = '里程碑固化点。暂停推进，执行「零丢失快照」，从第一性原理出发：\n' +
+      '\n' +
+      '1. 全量复述：把我从会话开始到现在说过的全部信息，按「目的地 / 约束与偏好 / 已确认的决定 / 待决问题 / 雾区（隐约可见但还不清晰）」五类，逐条列出——不压缩、不合并，宁可啰嗦不可省略。\n' +
+      '2. 每条后面标注出处：用我的原话引用，让我知道它来自我哪句话。\n' +
+      '3. 单独列一节「可疑遗漏」：凡是我提过、但你觉得与主线无关、太模糊或像执行细节而没纳入的，全部摆出来，写明你当初不纳入的理由，由我裁决。\n' +
+      '4. 列完后停下等我逐条核对。我确认或修正完毕后，你再把清单落盘：已有地图就写进 map 正文和对应 ISSUE；还没建图就先生成一份快照笔记并告诉我存哪，等建图时搬入。'
+    const injectFixate = (st) => { inject(st, FIXATE_PROMPT) }
+
+    // v14-20：交接（M9 定向传递）—— 第一击注入 /handoff 模板（要求写 .scratch/handoff/latest.md）；
+    // 文案变「交接给新会话」；第二击 = workspaces.startSession 新开空白会话（非 fork，避免复制旧上下文）
+    // + 跨会话 pendingDraft 预填 /read 路径（普通新会话不加载 = 定向传递）
+    const HANDOFF_PROMPT = '/handoff\n\n' +
+      '请把当前会话生成交接文档，写到 .scratch/handoff/latest.md（相对当前工作目录），包含三部分：\n' +
+      '1. 结论：本次会话已确认的决定与成果；\n' +
+      '2. 未完成事项：下一步要继续的事；\n' +
+      '3. 建议 skill：新会话接手时建议加载的技能。'
+    const HANDOFF_READ = '/read .scratch/handoff/latest.md'
+    let pendingDraft = null  // 跨会话预填（新会话 dock 挂载后消费）
+    const doHandoff = function (st) {
+      if (!st.handoffReady) {
+        st.handoffReady = true
+        inject(st, HANDOFF_PROMPT)
+        flash(st, '交接模板已注入输入框；发送后生成文档，再点「交接」= 开新会话接手', 'ok')
+        return
       }
-      let cwd = ''
-      try {
-        const st = await host.call('wf.status')
-        if (st && st.cwd) cwd = st.cwd
-      } catch (e) { /* cwd 不可得 → 走 host 默认项目目录 */ }
-      try {
-        const res = await sessions.create(cwd ? { cwd: cwd } : {})
-        const sid = res && res.sessionId
-        if (!sid) {
-          flash('⚠️ 开新会话失败：' + String(((res && res.error) || '未知')).slice(0, 120) + '（可手动开新会话）')
-          return false
-        }
-        let renamed = false
-        try {
-          const scoped = (typeof sessions.scope === 'function') ? sessions.scope(sid) : undefined
-          const face = (scoped && typeof sessions.sessionOf === 'function') ? sessions.sessionOf(scoped) : undefined
-          if (face && typeof face.rename === 'function') {
-            const rr = await face.rename(newSessionTitle(t))
-            renamed = !!(rr && rr.title)
-          }
-        } catch (e2) { renamed = false }
-        if (renamed) flash('✅ 已开新会话并命名：「' + newSessionTitle(t) + '」')
-        else flash('✅ 已开新会话（自动命名不可用，可手动重命名）：' + newSessionTitle(t))
-        try { sessions.open(sid) } catch (e3) { flash('新会话已创建（' + newSessionTitle(t) + '），请从会话列表打开') }
-        return true
-      } catch (e) {
-        flash('⚠️ 开新会话失败：' + String((e && e.message) || e).slice(0, 120) + '（请手动开新会话）')
-        return false
+      const ws = ctx.get('workspaces')
+      pendingDraft = HANDOFF_READ
+      if (ws && typeof ws.startSession === 'function') {
+        ws.startSession()
+        flash(st, '已开新会话，输入框预填交接文档路径', 'ok')
+      } else {
+        pendingDraft = null
+        copyText(st, HANDOFF_READ, '已复制交接文档路径（无法开新会话，兜底）')
       }
     }
-    const fixateText = (t) => '【' + WORD() + ' ' + nowStr() + '】' + t.title + ' #' + t.number + '\n\n'
-    const inject = (text) => {
-      if (S.injector) { S.injector(text); flash('✅ 已注入输入框（inputActions.setDraft），确认后发送') }
-      else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(function () { flash('📋 已复制到剪贴板（输入框不可用，兜底）') }).catch(function () { flash('复制失败，请手动粘贴') })
-      } else flash('无法注入：输入框不可用')
+
+    const inject = (st, text) => {
+      if (st.injector) { st.injector(text); flash(st, '已注入输入框，确认后发送', 'ok') }
+      else copyText(st, text, '已复制到剪贴板（输入框不可用，兜底）')
+    }
+    const copyText = (st, text, okMsg) => {
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function () { flash(st, okMsg || '已复制', 'ok') }).catch(function () { flash(st, '复制失败，请手动复制', 'warn') })
+      } else flash(st, '剪贴板不可用', 'warn')
     }
 
     // ============================================================
-    // 6. 组件
+    // 5. 组件
     // ============================================================
     const Dot = ({ level }) => h('span', { className: 'dsws-dot', style: { background: level === 'ok' ? '#4ade80' : level === 'warn' ? '#f59e0b' : level === 'bad' ? '#f87171' : '#52525b' } })
     const TypeChip = ({ type }) => {
       const t = TYPE_LABEL[type] || [type, '', type]
       const cls = { research: 'dsws-chip-r', prototype: 'dsws-chip-p', grilling: 'dsws-chip-g', task: 'dsws-chip-t' }[type] || ''
-      return h('span', { className: 'dsws-chip ' + cls }, t[2])
+      return h('span', { className: 'dsws-chip ' + cls }, [
+        Ic({ n: TYPE_ICON[type] || 'dot', size: 11 }),
+        h('span', null, t[2]),
+      ])
     }
 
-    // ---- 6.1 侧栏脚部入口 ----
-    const SidebarButton = () => {
-      const s = useStore()
+    // ---- 5.1 侧栏脚部入口（跟随当前激活会话）----
+    const SidebarButton = (props) => {
+      const cur = props.useSessions((x) => x.current)
+      const s = useStore(cur)
+      const n = readyCount(s)
       return h('button', {
-        onClick: function () { s.open = !s.open; emit() },
+        type: 'button',
+        onClick: function (e) { e.stopPropagation(); s.open = true; emit(s) },
         style: { display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: 'var(--dsw-alias-label-primary,#e6edf3)', fontSize: 12, cursor: 'pointer', padding: '4px 6px', borderRadius: 6 },
       }, [
-        h('span', { style: { color: readyCount() === activeChecks().length ? '#4ade80' : '#f59e0b' } }, Icon({ scheme: s.ui.icon, size: 15 })),
+        h('span', { style: { color: n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b' } }, Icon({ scheme: s.ui.icon, size: 15 })),
         h('span', null, 'Waystation'),
-        h('span', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 11 } }, readyCount() + '/' + activeChecks().length + ' · ' + frontierAll() + ' 可接'),
+        h('span', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 11 } }, (n < 0 ? '--/8' : n + '/8') + ' · ' + frontierAll(s) + ' 可接'),
       ])
     }
 
-    // ---- 6.2 输入区状态条（输入框正上方 · 兼注入落点 · #344 接真）----
+    // ---- 5.2 输入区状态栏（定稿 1A 居中胶囊 · 反馈不进状态栏 · cwd 关联 · v14 数字区等宽 + 交接段）----
     const StatusBar = (props) => {
-      const s = useStore()
+      const sid = props && props.sessionId
+      const s = useStore(sid)
       React.useEffect(function () {
-        if (props && props.inputActions && typeof props.inputActions.setDraft === 'function') s.injector = props.inputActions.setDraft
+        if (props && props.inputActions && typeof props.inputActions.setDraft === 'function') {
+          s.injector = props.inputActions.setDraft
+          // v14-20：跨会话预填（交接开新会话后，新 dock 挂载即消费）
+          if (pendingDraft) { props.inputActions.setDraft(pendingDraft); pendingDraft = null }
+        }
       }, [props])
-      React.useEffect(function () { loadChecks(false); loadSnapshot(false) }, [])
-      const fr = frontierAll()
-      const blk = compute().reduce(function (n, g) { return n + g.blocked.length + g.claimed.length }, 0)
-      const cs = activeChecks()
-      const toggle = function () { s.open = !s.open; emit() }
-      const refresh = function () { loadChecks(true); loadSnapshot(true) }
-      const modeTag = (s.checksMode === 'real' && S.snapMode === 'real') ? ' · 真数据' : s.checksMode === 'real' ? ' · 就绪真数据' : s.checksMode === 'err' ? ' · 就绪异常' : s.checksMode === 'loading' ? ' · 检测中…' : (FIX.mode === 'fake' ? ' · 假数据' : '')
-      const timeStr = (S.snapshot && S.snapshot.updatedAt) ? String(S.snapshot.updatedAt).slice(11, 16) : (s.checksUpdatedAt || FIX.updatedAt)
-      const setup = setupCheck()
+      // v13：会话工作目录探测 —— 依赖 sessionId 变化重跑（切换对话必触发）。
+      // 先读 props.session 直取；拿不到则走 host wf.cwd（宿主 sessions.meta 权威反查）。
+      // cwd 变化后主动重拉快照与检查（否则面板/状态栏仍显示旧仓库数据）。
+      React.useEffect(function () {
+        const apply = function (cwd) {
+          if (cwd && cwd !== s.cwd) { s.cwd = cwd; emit(s); loadChecks(s, false); loadSnapshot(s, false) }
+        }
+        const cwd0 = detectCwd(props && props.session)
+        if (cwd0) { apply(cwd0); return }
+        if (sid && typeof host !== 'undefined' && typeof host.call === 'function') {
+          host.call('wf.cwd', { sessionId: sid }).then(function (res) {
+            if (res && res.ok && res.cwd) apply(res.cwd)
+          }).catch(function () { /* 保持现有 cwd */ })
+        }
+      }, [sid])
+      React.useEffect(function () { loadChecks(s, false); loadSnapshot(s, false) }, [])
+      const fr = frontierAll(s)
+      const blk = compute(s).reduce(function (n, g) { return n + g.blocked.length + g.claimed.length }, 0)
+      const n = readyCount(s)
+      const timeStr = timeOf(s.snapshot) || (s.checksUpdatedAt ? s.checksUpdatedAt.slice(5, 16) : '') || '-- --:--'
+      const setup = setupCheck(s)
       const amber = s.checksMode === 'real' && setup && setup.level !== 'ok'
-      const row = h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '2px 4px', flexWrap: 'wrap' } }, [
-        h('span', { style: { display: 'flex', alignItems: 'center', gap: 5, marginRight: 2 } }, Icon({ scheme: s.ui.icon, size: 14 })),
-        h('span', null, 'Waystation'),
-        h('span', { className: 'dsws-seg', onClick: toggle, style: { color: readyCount() === cs.length ? '#4ade80' : '#f59e0b' } }, '● 就绪 ' + readyCount() + '/' + cs.length),
-        h('span', { className: 'dsws-seg', onClick: toggle, style: { color: '#4ade80' } }, '🟢 可接 ' + fr),
-        h('span', { className: 'dsws-seg', onClick: toggle, style: { color: '#f0883e' } }, '🔒 占用 ' + blk),
-        h('span', { className: 'dsws-timebtn', onClick: refresh, title: '点击重新检查（就绪 + 面板快照）' }, '更新 ' + timeStr + modeTag),
-        s.notice ? h('span', { style: { color: 'var(--dsw-alias-state-success-primary,#4ade80)' } }, s.notice) : null,
+      const go = function (tab) { s.tab = tab; s.open = true; emit(s) }
+      // v14-22：数字区固定两位数等宽（环境 5ch 容 '98/99'；可接/占用 2ch）
+      const num = (txt, minW) => h('span', { className: 'dsws-num', style: minW ? { minWidth: minW } : null }, txt)
+      const seg = (icon, label, color, onGo, title) => h('span', { className: 'dsws-seg', onClick: function (e) { e.stopPropagation(); onGo() }, title: title || '', style: { display: 'inline-flex', alignItems: 'center', gap: 4, color: color } }, [
+        Ic({ n: icon, size: 12 }),
+        label,
       ])
-      if (!amber) return row
-      return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 } }, [
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.45)', color: '#fbbf24', borderRadius: 6, padding: '3px 10px', fontSize: 12 } }, [
-          h('span', null, '⚠️ 本仓库尚未初始化 Matt 技能配置（setup 未跑）'),
-          h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject('/setup-matt-pocock-skills\n（请选择 GitHub Issues 作为 issue tracker）') } }, '帮我执行 /setup-matt-pocock-skills'),
+      const capsule = h('div', { className: 'dsws-capsule', onClick: function () { s.open = true; emit(s) } }, [
+        h('span', { className: 'dsws-capsule-word', onClick: function (e) { e.stopPropagation(); s.open = !s.open; emit(s) } }, [
+          Icon({ scheme: s.ui.icon, size: 14 }),
+          h('span', null, 'Waystation'),
         ]),
-        row,
+        seg('dot', [h('span', null, '环境'), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
+        seg('target', [h('span', null, '可接'), num(String(fr), '2ch')], '#4ade80', function () { go('list') }),
+        seg('lock', [h('span', null, '占用'), num(String(blk), '2ch')], '#f0883e', function () { go('list') }),
+        seg('note', s.ui.word, '#c084fc', function () { injectFixate(s) }, '沉淀：注入零丢失快照 prompt'),
+        seg('handoff', s.handoffReady ? '交接给新会话' : '交接', '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? '开新会话并预填交接文档路径' : '交接：注入 /handoff 模板生成交接文档'),
+        h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: '重新检查 + 刷新快照' }, '更新 ' + timeStr),
+      ])
+      if (!amber) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
+      return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '3px 8px 0' } }, [
+        capsule,
+        h('div', { className: 'dsws-banner warn', style: { margin: 0, maxWidth: 560, cursor: 'default' } }, [
+          Ic({ n: 'alert', size: 13 }),
+          h('span', null, 'setup 未执行'),
+          h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(s, '/setup-matt-pocock-skills\n（请选择 GitHub Issues 作为 issue tracker）') } }, '帮我执行 /setup-matt-pocock-skills'),
+        ]),
       ])
     }
 
-    // ---- 6.3 票务行 ----
-    const TicketRow = ({ g, t }) => {
-      const s = useStore()
+    // ---- 5.3 票务行（地图详情内：标题/阻塞来源 ellipsis；「开始」= 直接复制 prompt）----
+    const TicketRow = ({ st, g, t, indent }) => {
       const canStart = t.state === 'OPEN' && !t.claimedBy && !t.blockedBy.some(function (b) {
         const bt = g.m.tickets.find(function (x) { return x.number === b }); return bt && bt.state === 'OPEN'
       })
-      return h('div', { className: 'dsws-trow' }, [
+      const subItem = (icon, color, text) => h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 3, color: color, minWidth: 0 } }, [
+        Ic({ n: icon, size: 11 }),
+        h('span', { className: 'dsws-ellip', style: { maxWidth: 200 }, title: text }, text),
+      ])
+      return h('div', { className: 'dsws-trow', style: indent ? { paddingLeft: 18 } : null }, [
         h('div', { className: 'dsws-tt' }, [
           h('div', { className: 'dsws-tt-name' }, [
             TypeChip({ type: t.type }),
-            h('span', null, t.title),
-            h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11 } }, ' #' + t.number),
+            h('span', { className: 'dsws-ellip', style: { flex: 1 }, title: t.title }, t.title),
+            h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + t.number),
           ]),
-          h('div', { className: 'dsws-tt-sub' }, [
-            t.claimedBy ? h('span', { style: { color: '#58a6ff' } }, '🔵 已认领 ' + t.claimedBy + '　') : null,
-            t.blockedBy.length ? h('span', { style: { color: '#f0883e' } }, '🔒 被阻塞：' + blockerNames(t, g.m)) : null,
-            t.state === 'CLOSED' ? h('span', { style: { color: '#3fb950' } }, '✅ 已关闭' + (t.resolution ? ' · ' + t.resolution : '')) : null,
+          h('div', { className: 'dsws-tt-sub', style: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } }, [
+            t.claimedBy ? subItem('person', '#58a6ff', '已认领 ' + t.claimedBy) : null,
+            t.blockedBy.length ? subItem('lock', '#f0883e', '被阻塞：' + blockerNames(t, g.m)) : null,
+            t.state === 'CLOSED' ? subItem('check', '#3fb950', '已关闭') : null,
           ]),
         ]),
-        t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4 } }, [
-          canStart ? h('button', { className: 'dsws-btn primary', onClick: function () { s.startFor = t; emit() } }, '▶ 开始此 Issue') : null,
-          h('button', { className: 'dsws-btn', onClick: function () { s.fixateFor = t; emit() } }, WORD()),
-          h('a', { className: 'dsws-btn ghost', href: 'https://github.com/FeatherHunter/SKILLS/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, '🔗'),
-        ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/FeatherHunter/SKILLS/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, '查看'),
+        t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4, alignItems: 'center', flex: 'none' } }, [
+          canStart ? h('button', { className: 'dsws-btn primary', onClick: function () { copyText(st, startText(st, t), '已复制开始指令，请粘贴到新会话发送') }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
+            Ic({ n: 'play', size: 10 }),
+            h('span', null, '开始'),
+          ]) : null,
+          h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'link', size: 12 })),
+        ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, '查看'),
       ])
     }
 
-    // ---- 6.4 地图详情 ----
-    const MapDetail = ({ g }) => {
-      const s = useStore()
+    // ---- 5.4 地图详情（定稿 3A 垂直走廊：可接/已认领/被阻塞常显，已关闭折叠；阻塞缩进）----
+    const MapDetail = ({ st, g }) => {
       const m = g.m
       return h('div', null, [
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 } }, [
-          h('button', { className: 'dsws-btn', onClick: function () { s.activeMap = null; emit() } }, '← 全部地图'),
-          h('span', { className: 'dsws-chip dsws-chip-m' }, 'wayfinder:map'),
+          h('button', { className: 'dsws-btn', onClick: function () { st.activeMap = null; emit(st) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
+            Ic({ n: 'back', size: 12 }),
+            h('span', null, '返回列表'),
+          ]),
+          h('span', { className: 'dsws-chip dsws-chip-m' }, [Ic({ n: 'map', size: 11 }), h('span', null, 'wayfinder:map')]),
         ]),
-        h('div', { className: 'dsws-mtitle' }, m.title),
-        m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6 } }, '⚠️ ' + String((m.error && m.error.error) || '加载失败').slice(0, 160)) : null,
-        h('div', { className: 'dsws-mdest' }, '🎯 ' + (m.destination || '（未填写 Destination）')),
-        h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, '📝 Notes：' + m.notes),
+        h('div', { className: 'dsws-mtitle dsws-ellip', title: m.title }, m.title),
+        m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, String((m.error && m.error.error) || '加载失败').slice(0, 160))]) : null,
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#4ade80', margin: '2px 0 2px' } }, [Ic({ n: 'target', size: 12 }), h('span', { className: 'dsws-ellip', title: m.destination }, m.destination || '（未填写 Destination）')]),
+        m.notes ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, [Ic({ n: 'note', size: 11 }), h('span', { className: 'dsws-ellip', title: m.notes }, m.notes)]) : null,
         h('details', { style: { marginBottom: 4 } }, [
           h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, 'Decisions so far（' + m.decisions.length + '）'),
           h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.decisions.map(function (d, i) {
-            return h('div', { key: i }, '· ' + d.title + '（' + d.gist + '）')
+            return h('div', { key: i, className: 'dsws-ellip', title: d.title + ' ' + d.gist }, '· ' + d.title)
           })),
         ]),
         h('details', { style: { marginBottom: 4 } }, [
           h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, 'Not yet specified（战雾 ' + m.fog.length + '）'),
-          h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.fog.map(function (f, i) { return h('div', { key: i }, '🌫 ' + f) })),
+          h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.fog.map(function (f, i) { return h('div', { key: i, className: 'dsws-ellip', title: f }, '· ' + f) })),
         ]),
         h('details', { style: { marginBottom: 8 } }, [
           h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, 'Out of scope（' + m.outOfScope.length + '）'),
-          h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.outOfScope.map(function (o, i) { return h('div', { key: i }, '🚫 ' + o) })),
+          h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.outOfScope.map(function (o, i) { return h('div', { key: i, className: 'dsws-ellip', title: o }, '· ' + o) })),
         ]),
-        h('div', { className: 'dsws-grp' }, [h('span', { className: 'dsws-dot', style: { background: '#4ade80' } }), h('span', null, '🟢 可接（frontier · ' + g.frontier.length + '）')]),
-        g.frontier.map(function (t) { return h(TicketRow, { key: t.number, g: g, t: t }) }),
-        h('div', { className: 'dsws-grp' }, [h('span', { className: 'dsws-dot', style: { background: '#58a6ff' } }), h('span', null, '🔵 已认领（' + g.claimed.length + '）')]),
-        g.claimed.map(function (t) { return h(TicketRow, { key: t.number, g: g, t: t }) }),
-        h('div', { className: 'dsws-grp' }, [h('span', { className: 'dsws-dot', style: { background: '#f0883e' } }), h('span', null, '🔒 被阻塞（' + g.blocked.length + '）')]),
-        g.blocked.map(function (t) { return h(TicketRow, { key: t.number, g: g, t: t }) }),
+        g.frontier.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'target', size: 12, color: '#4ade80' }), h('span', null, '可接 ' + g.frontier.length)]) : null,
+        g.frontier.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t }) }),
+        g.claimed.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'person', size: 12, color: '#58a6ff' }), h('span', null, '已认领 ' + g.claimed.length)]) : null,
+        g.claimed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t }) }),
+        g.blocked.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'lock', size: 12, color: '#f0883e' }), h('span', null, '被阻塞 ' + g.blocked.length)]) : null,
+        g.blocked.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, indent: true }) }),
         h('details', { style: { marginTop: 8 } }, [
-          h('summary', { className: 'dsws-grp', style: { margin: '6px 0 2px', cursor: 'pointer' } }, [h('span', { className: 'dsws-dot', style: { background: '#52525b' } }), h('span', null, '✅ 已关闭（' + g.closed.length + '）')]),
-          h('div', null, g.closed.map(function (t) { return h(TicketRow, { key: t.number, g: g, t: t }) })),
+          h('summary', { className: 'dsws-grp', style: { margin: '6px 0 2px', cursor: 'pointer' } }, [Ic({ n: 'check', size: 12, color: '#52525b' }), h('span', null, '已关闭 ' + g.closed.length)]),
+          h('div', null, g.closed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t }) })),
         ]),
       ])
     }
 
-    // ---- 6.5 地图列表（#346：真快照 + 刷新/加载/错误态）----
-    const MapList = () => {
-      const s = useStore()
-      const groups = compute()
-      const repoTag = (S.snapshot && S.snapshot.repo) ? S.snapshot.repo.owner + '/' + S.snapshot.repo.name : ''
-      return h('div', null, [
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12 } }, [
-          h('span', { className: 'dsws-grp', style: { margin: 0 } }, '🗺 地图 ' + groups.length + ' 张' + (repoTag ? ' · ' + repoTag : '')),
-          h('span', { style: { flex: 1 } }),
-          h('button', { className: 'dsws-btn', onClick: function () { loadSnapshot(true) }, style: { fontSize: 11, padding: '2px 8px' } }, '↻ 刷新'),
-        ]),
-        S.snapMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, '加载中…（拉取全部 wayfinder:map 与子票）') : null,
-        S.snapMode === 'err' ? h('div', { style: { color: '#f87171', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, '⚠️ 快照加载失败：' + s.snapError) : null,
-        groups.map(function (g) {
-          const m = g.m
-          const pct = m.tickets.length ? Math.round(g.closed.length / m.tickets.length * 100) : 0
-          return h('div', { key: m.number, className: 'dsws-maprow', onClick: function () { s.activeMap = m.number; emit() } }, [
-            h('div', { className: 'dsws-mtitle' }, m.title),
-            h('div', { className: 'dsws-mdest' }, '🎯 ' + (m.destination || '（未填写 Destination）')),
-            m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 4 } }, '⚠️ ' + String((m.error && m.error.error) || '加载失败').slice(0, 120)) : null,
-            h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [
-              h('span', null, '进度 ' + g.closed.length + '/' + m.tickets.length),
-              h('span', { style: { color: '#4ade80' } }, '🟢 可接 ' + g.frontier.length),
-              h('span', { style: { color: '#f0883e' } }, '🔒 ' + (g.blocked.length + g.claimed.length)),
+    // ---- 5.5 主列表（v14：三选一动作 / map 行突出 + 开始执行 / 已关闭折叠行 / chips 深边框 / 窄屏双栏）----
+    const ListTab = ({ st, narrow }) => {
+      const issues = (st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []
+      const openIssues = issues.filter(function (x) { return x.state !== 'CLOSED' })
+      const closedIssues = issues.filter(function (x) { return x.state === 'CLOSED' })
+      const groups = compute(st)
+      const occ = groups.reduce(function (n, g) { return n + g.blocked.length + g.claimed.length }, 0)
+      const cs = activeChecks(st)
+      const nBad = cs.filter(function (c) { return c.level === 'bad' }).length
+      // 标签统计（open + closed 全量）与配色
+      const stat = {}
+      const colorOf = {}
+      issues.forEach(function (x) {
+        (x.labels || []).forEach(function (l) {
+          stat[l.name] = (stat[l.name] || 0) + 1
+          if (l.color && !colorOf[l.name]) colorOf[l.name] = l.color
+        })
+      })
+      const tagNames = Object.keys(stat).sort(function (a, b) { return stat[b] - stat[a] })
+      const filtered = st.lblFilter ? openIssues.filter(function (x) { return (x.labels || []).some(function (l) { return l.name === st.lblFilter }) }) : openIssues
+      const has = function (x, nm) { return (x.labels || []).some(function (l) { return l.name === nm }) }
+      const findMap = function (num) { return (st.snapshot && st.snapshot.maps || []).find(function (m) { return m.number === num }) }
+      // v14-18：chips 常显深一档边框（边框色 = label 色 HSL 亮度 -16%）
+      const chip = (nm, withCount, on, isAll) => {
+        const c = colorOf[nm]
+        const borderColor = isAll ? 'rgba(255,255,255,.35)' : (darken(c, 0.16) || 'rgba(188,140,255,.6)')
+        const selColor = isAll ? 'rgba(255,255,255,.65)' : (c ? '#' + c : '#bc8cff')
+        return h('span', {
+          key: nm,
+          className: 'dsws-chip',
+          // v14-1：「全部」恒清空过滤并保持选中，与普通标签 toggle 语义分离
+          onClick: function (e) { e.stopPropagation(); st.lblFilter = isAll ? null : ((st.lblFilter === nm) ? null : nm); emit(st) },
+          style: {
+            cursor: 'pointer', marginRight: 4, marginBottom: 3, fontSize: 10,
+            background: isAll ? 'rgba(255,255,255,.08)' : (hexA(c, 0.18) || 'rgba(188,140,255,.16)'),
+            color: isAll ? 'var(--dsw-alias-label-secondary,#a1a1aa)' : (c ? '#' + c : '#bc8cff'),
+            border: '1px solid ' + (on ? selColor : borderColor),
+          },
+        }, nm + (withCount ? ' · ' + stat[nm] : ''))
+      }
+      const copyUrl = function (x) { copyText(st, 'https://github.com/' + repoStr(st) + '/issues/' + x.number, '已复制链接 #' + x.number) }
+      // v14-4：行级动作按 label 三选一（分流 / 开始修复 / 开始执行），全部复制 prompt；
+      // v14-3：按钮 80%（padding 1px 6px / 11px）；v14-19：窄屏折叠为纯图标
+      const rowAction = function (x, narrow) {
+        const url = 'https://github.com/' + repoStr(st) + '/issues/' + x.number
+        const mk = (icon, label, text) => h('button', {
+          className: 'dsws-btn primary',
+          onClick: function (e) { e.stopPropagation(); copyText(st, text, '已复制开始指令，请粘贴到新会话发送') },
+          style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none' },
+          title: label,
+        }, [Ic({ n: icon, size: 10 }), narrow ? null : h('span', null, label)])
+        if (has(x, 'needs-triage')) return mk('chat', '分流', '/triage\n' + url + '\n\n请按 triage 流程为这个 issue 分流：categorise → verify → grill → 写 agent-ready brief。')
+        if (has(x, 'bug')) return mk('hammer', '开始修复', '/wayfinder\n' + url + '\n\n请按 wayfinder 流程开始修复这个 bug：对齐所属 map 的 Destination，认领后处理。')
+        return mk('play', '开始执行', startText(st, x))
+      }
+      // v14-19：行 = 左列(flex:1 截断) + 右列按钮组(flex:none 不换行)
+      const issueRow = function (x, isOpen, narrow) {
+        const isMap = has(x, 'wayfinder:map')
+        const mapObj = isMap ? findMap(x.number) : null
+        const shown = (x.labels || []).slice(0, 2)
+        const rest = (x.labels || []).length - shown.length
+        const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
+          isOpen ? rowAction(x, narrow) : null,
+          h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: '复制链接', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
+          h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
+        ])
+        return h('div', {
+          key: x.number,
+          className: 'dsws-aggrow',
+          onClick: function () { if (isMap && mapObj) { st.activeMap = x.number; emit(st) } },
+          title: (isMap && mapObj) ? '查看地图详情' : undefined,
+          // v14-2：地图行突出 —— 紫色竖条 + 浅紫底
+          style: isMap ? { cursor: 'pointer', borderLeft: '3px solid #c084fc', background: 'rgba(188,140,255,.07)' } : undefined,
+        }, [
+          h('div', { style: { flex: 1, minWidth: 0 } }, [
+            h('div', { style: { display: 'flex', alignItems: 'center', gap: 5 } }, [
+              isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, flex: 'none', fontWeight: 600 } }, [Ic({ n: 'map', size: 12 }), h('span', null, '地图')]) : null,
+              h('span', { className: 'dsws-ellip', style: { flex: 1, fontWeight: isMap ? 600 : undefined }, title: x.title }, x.title),
+              h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + x.number),
             ]),
-            h('div', { className: 'dsws-prog' }, [h('i', { style: { width: pct + '%' } })]),
+            shown.length ? h('div', { style: { marginTop: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 } }, [
+              shown.map(function (l, i) {
+                return h('span', { key: i, className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, background: hexA(l.color, 0.18) || 'rgba(188,140,255,.16)', color: l.color ? '#' + l.color : '#bc8cff', border: '1px solid ' + (darken(l.color, 0.16) || 'rgba(188,140,255,.6)') } }, l.name)
+              }),
+              rest > 0 ? h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)' } }, '+' + rest) : null,
+            ]) : null,
+          ]),
+          rightCol,
+        ])
+      }
+      const kpi = (num, lab, icon, color) => h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [Ic({ n: icon, size: 11, color: color }), h('span', null, String(num) + ' ' + lab)])
+      return h('div', null, [
+        // KPI 行 + 环境提示
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' } }, [
+          kpi(frontierAll(st), '可接', 'target', '#4ade80'),
+          kpi(occ, '占用', 'lock', '#f0883e'),
+          kpi(closedIssues.length, '已关闭', 'check', '#52525b'),
+          h('span', { style: { flex: 1 } }),
+          h('button', { className: 'dsws-btn', onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, '刷新')]),
+        ]),
+        nBad > 0 ? h('div', { className: 'dsws-banner bad', onClick: function () { st.tab = 'checks'; emit(st) } }, [
+          Ic({ n: 'alert', size: 13 }),
+          h('span', null, nBad + ' 项环境未就绪，点此查看'),
+        ]) : null,
+        // 标签过滤 chips（动态统计 · GitHub 配置色 · v14-18 深边框）
+        h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0, marginBottom: 6 } }, [
+          chip('全部', false, st.lblFilter === null, true),
+          tagNames.slice(0, 9).map(function (nm) { return chip(nm, true, st.lblFilter === nm, false) }),
+        ]),
+        st.snapMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, '加载中…') : null,
+        st.snapMode === 'err' ? h('div', { style: { color: '#f87171', fontSize: 12, padding: '14px 0', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 12 }), h('span', null, '快照加载失败：' + st.snapError)]) : null,
+        filtered.length === 0 ? h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '14px 0', textAlign: 'center' } }, '暂无') : filtered.map(function (x) { return issueRow(x, true, narrow) }),
+        // v14-4⑤：列表底部「已关闭 (N)」折叠行（默认收起，只占一行，展开可见）
+        closedIssues.length ? h('details', { style: { marginTop: 8 } }, [
+          h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: '4px 2px', userSelect: 'none' } }, [
+            Ic({ n: 'check', size: 11 }),
+            h('span', null, '已关闭 ' + closedIssues.length),
+          ]),
+          h('div', null, closedIssues.map(function (x) { return issueRow(x, false, narrow) })),
+        ]) : null,
+      ])
+    }
+
+    // ---- 5.6 技能雷达（定稿 4A 推荐+列表 · 4B 圆形技能环，A/B 切换）----
+    const RingSkills = ({ st, rec, list }) => {
+      const cx = 110, cy = 108, R2 = 88
+      const center = rec[0] || 'ask-matt'
+      const ring = list.filter(function (sk) { return sk.name !== center }).slice(0, 8)
+      const nodes = ring.map(function (sk, i) {
+        const a = (i / ring.length) * Math.PI * 2 - Math.PI / 2
+        const x = cx + R2 * Math.cos(a), y = cy + R2 * Math.sin(a)
+        const filled = sk.level === 'ok'
+        return h('div', { key: sk.name, title: sk.use, onClick: function () { inject(st, '/' + sk.name) }, style: { position: 'absolute', left: x - 15, top: y - 15, width: 30, height: 30, borderRadius: '50%', border: filled ? '2px solid #4ade80' : '2px solid #52525b', background: filled ? 'rgba(74,222,128,.15)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, cursor: 'pointer', color: filled ? '#4ade80' : '#8b8b95', lineHeight: 1.2, textAlign: 'center' } }, sk.name.length > 4 ? sk.name.slice(0, 4) + '…' : sk.name)
+      })
+      return h('div', null, [
+        h('div', { style: { position: 'relative', width: 220, height: 220, margin: '0 auto 6px' } }, [
+          h('div', { onClick: function () { inject(st, '/' + center) }, title: center, style: { position: 'absolute', left: cx - 30, top: cy - 30, width: 60, height: 60, borderRadius: '50%', background: 'rgba(188,140,255,.18)', border: '2px solid #c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#c084fc', cursor: 'pointer', textAlign: 'center', lineHeight: 1.3 } }, '/' + center),
+          nodes,
+        ]),
+        h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', textAlign: 'center', marginBottom: 8 } }, '中心 = 推荐 · 环绕 = 相关（实心已装/空心未装）· 点击注入 /skill'),
+        h('div', { className: 'dsws-grp' }, [Ic({ n: 'compass', size: 12 }), h('span', null, '全部技能')]),
+        list.map(function (sk) {
+          const on = rec.indexOf(sk.name) >= 0
+          return h('div', { key: sk.name, className: 'dsws-skill', style: on ? { background: 'rgba(188,140,255,.12)', borderRadius: 6 } : null }, [
+            Dot({ level: sk.level }),
+            h('div', { className: 'dsws-tt' }, [
+              h('div', { className: 'dsws-tt-name', style: on ? { color: '#c084fc' } : null }, [h('span', null, '/' + sk.name), on ? Ic({ n: 'star', size: 11, color: '#c084fc' }) : null]),
+              h('div', { className: 'dsws-tt-sub dsws-ellip', title: sk.use }, sk.use),
+            ]),
+            h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + sk.name) } }, '加载'),
           ])
         }),
       ])
     }
 
-    // ---- 6.6 技能雷达 ----
-    const SkillsTab = () => {
-      const s = useStore()
-      const groups = compute()
+    const SkillsTab = ({ st }) => {
+      const groups = compute(st)
       let rec = []
       let recTitle = '通用建议'
-      if (s.startFor) {
-        rec = TYPE_SKILLS[s.startFor.type] || []
-        recTitle = '「' + s.startFor.title + '」按类型推荐'
-      } else if (s.activeMap !== null) {
-        const g = groups.find(function (x) { return x.m.number === s.activeMap })
+      if (st.activeMap !== null) {
+        const g = groups.find(function (x) { return x.m.number === st.activeMap })
         if (g && /research/.test(g.m.notes)) rec = ['research']
         if (g && /grill/.test(g.m.notes)) rec = ['grilling', 'domain-modeling']
         recTitle = '「' + g.m.title + '」Notes 指定'
@@ -524,14 +834,24 @@ return {
         return h('div', { key: sk.name, className: 'dsws-skill', style: on ? { background: 'rgba(188,140,255,.12)', borderRadius: 6 } : null }, [
           Dot({ level: sk.level }),
           h('div', { className: 'dsws-tt' }, [
-            h('div', { className: 'dsws-tt-name', style: on ? { color: '#c084fc' } : null }, '/' + sk.name + (on ? ' ★' : '')),
-            h('div', { className: 'dsws-tt-sub' }, sk.use),
+            h('div', { className: 'dsws-tt-name', style: on ? { color: '#c084fc' } : null }, [
+              h('span', null, '/' + sk.name),
+              on ? Ic({ n: 'star', size: 11, color: '#c084fc' }) : null,
+            ]),
+            h('div', { className: 'dsws-tt-sub dsws-ellip', title: sk.use }, sk.use),
           ]),
-          h('button', { className: 'dsws-btn', onClick: function () { inject('/' + sk.name) } }, '加载'),
+          h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + sk.name) } }, '加载'),
         ])
       })
+      const head = h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 } }, [
+        h('div', { className: 'dsws-grp', style: { margin: 0 } }, [Ic({ n: 'compass', size: 12 }), h('span', null, recTitle)]),
+        h('span', { style: { flex: 1 } }),
+        h('span', { className: 'dsws-seg' + (st.skillView === 'list' ? ' on' : ''), onClick: function () { st.skillView = 'list'; emit(st) }, style: { fontSize: 11 } }, '列表'),
+        h('span', { className: 'dsws-seg' + (st.skillView === 'ring' ? ' on' : ''), onClick: function () { st.skillView = 'ring'; emit(st) }, style: { fontSize: 11 } }, '圆环'),
+      ])
+      if (st.skillView === 'ring') return h('div', null, [head, h(RingSkills, { st: st, rec: rec, list: SKILLS })])
       return h('div', null, [
-        h('div', { className: 'dsws-grp' }, '🧭 ' + recTitle),
+        head,
         h('div', { style: { marginBottom: 8 } }, rec.map(function (r, i) {
           return h('span', { key: i, className: 'dsws-chip dsws-chip-m' }, '/' + r)
         })),
@@ -539,258 +859,180 @@ return {
       ])
     }
 
-    // ---- 6.7 就绪检查（#344 · 真数据 wf.status；host 不可用时假数据兜底）----
-    const ChecksTab = () => {
-      const s = useStore()
-      React.useEffect(function () { loadChecks(false) }, [])
-      const cs = activeChecks()
+    // ---- 5.7 环境检查（定稿 5A：横幅 + 红/黄/绿分组卡；v12 失败不兜假数据）----
+    const ChecksTab = ({ st }) => {
+      React.useEffect(function () { loadChecks(st, false) }, [])
+      const cs = activeChecks(st)
+      const bad = cs.filter(function (c) { return c.level === 'bad' })
+      const warn = cs.filter(function (c) { return c.level === 'warn' })
+      const ok = cs.filter(function (c) { return c.level === 'ok' })
+      const actBtn = (c) => {
+        const hint = c.hint || ''
+        const m = hint.match(/\/([a-z0-9-]+)/i)
+        if (!m) return null
+        return h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + m[1]) } }, '用 /' + m[1] + ' 处理')
+      }
+      const card = (c) => h('div', { key: c.id, className: 'dsws-ccard' }, [
+        h('div', { className: 'nm' }, c.name),
+        h('div', { className: 'dt dsws-ellip', title: c.detail }, c.detail),
+        c.hint ? h('div', { className: 'act' }, [actBtn(c)]) : null,
+      ])
+      const grp = (title, color, items) => items.length ? h('div', null, [
+        h('div', { className: 'dsws-cgroup' }, [h('span', { style: { width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' } }), h('span', null, title + ' ' + items.length)]),
+        items.map(card),
+      ]) : null
       return h('div', null, [
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12 } }, [
-          h('span', null, '就绪 ' + readyCount() + '/' + CHECKS_TOTAL + '（双层探测：DSH 会话级 + 文件系统级）'),
+          h('span', { style: { display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'gear', size: 12 }), h('span', null, '环境检查 ' + envLabel(st))]),
           h('span', { style: { flex: 1 } }),
-          h('button', { className: 'dsws-btn', onClick: function () { loadChecks(true) }, style: { fontSize: 11, padding: '2px 8px' } }, '↻ 重新检查'),
+          h('button', { className: 'dsws-btn', disabled: st.checking, onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
+            Ic({ n: 'refresh', size: 11 }),
+            h('span', null, st.checking ? '检查中…' : '重新检查'),
+          ]),
         ]),
-        s.checksMode === 'err' ? h('div', { style: { color: '#f87171', fontSize: 12, marginBottom: 6 } }, '⚠️ 就绪检测失败：' + s.checksError + '（展示假数据兜底）') : null,
-        s.checksMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, marginBottom: 6 } }, '检测中…') : null,
-        cs.map(function (c) {
-          return h('div', { key: c.id, className: 'dsws-check' }, [
-            Dot({ level: c.level }),
-            h('div', { style: { flex: 1 } }, [
-              h('div', { className: 'dsws-tt-name' }, c.name),
-              h('div', { className: 'dsws-tt-sub' }, c.detail + (c.hint ? ' → ' + c.hint : '')),
-            ]),
-          ])
-        }),
+        st.checksMode === 'err' ? h('div', { className: 'dsws-banner bad', style: { cursor: 'default' } }, [Ic({ n: 'alert', size: 13 }), h('span', null, '环境检查失败：' + st.checksError)]) : null,
+        st.checksMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, marginBottom: 6 } }, '检测中…') : null,
+        bad.length ? h('div', { className: 'dsws-banner bad', style: { cursor: 'default' } }, [Ic({ n: 'alert', size: 13 }), h('span', null, bad.length + ' 项缺失，先补齐再开始 wayfinder 工作')]) : null,
+        grp('缺失', '#f87171', bad),
+        grp('部分就绪', '#f59e0b', warn),
+        grp('就绪', '#4ade80', ok),
       ])
     }
 
-    // ---- 6.8 主面板（可拖动 · 可调大小）----
-    const OverlayPanel = () => {
-      const s = useStore()
-      const dragRef = React.useRef(null)
-      React.useEffect(function () { if (s.open) loadSnapshot(false) }, [s.open])
+    // ---- 5.8 主面板（可拖动 · 8 向缩放 · 三视图 · v14 跟随当前会话 + 刷新遮罩）----
+    const OverlayPanel = (props) => {
+      const cur = props.useSessions((x) => x.current)
+      const s = useStore(cur)
+      const panelRef = React.useRef(null)
+      React.useEffect(function () { if (s.open) loadSnapshot(s, false) }, [s.open])
       if (!s.open) return null
-      const groups = compute()
+      const groups = compute(s)
       const active = s.activeMap !== null ? groups.find(function (x) { return x.m.number === s.activeMap }) : null
-      const tabBtn = (id, label) => h('button', { className: 'dsws-tab' + (s.tab === id ? ' on' : ''), onClick: function () { s.tab = id; emit() } }, label)
-
-      const onHeaderDown = function (e) {
-        if (typeof document === 'undefined' || typeof window === 'undefined') return
-        const w = s.size.w || 420
-        dragRef.current = {
-          sx: e.clientX, sy: e.clientY,
-          px: s.pos ? s.pos.x : window.innerWidth - w - 12,
-          py: s.pos ? s.pos.y : 12,
-        }
-        const mm = function (ev) { s.pos = { x: dragRef.current.px + ev.clientX - dragRef.current.sx, y: dragRef.current.py + ev.clientY - dragRef.current.sy }; emit() }
-        const mu = function () { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu) }
-        document.addEventListener('mousemove', mm)
-        document.addEventListener('mouseup', mu)
-      }
-      const onResizeDown = function (e) {
-        e.stopPropagation()
-        if (typeof document === 'undefined' || typeof window === 'undefined') return
-        const r0 = { sw: s.size.w || 420, sh: s.size.h || (window.innerHeight - 24), sx: e.clientX, sy: e.clientY }
-        const mm = function (ev) { s.size = { w: Math.min(900, Math.max(320, r0.sw + ev.clientX - r0.sx)), h: Math.min(920, Math.max(240, r0.sh + ev.clientY - r0.sy)) }; emit() }
-        const mu = function () { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu) }
-        document.addEventListener('mousemove', mm)
-        document.addEventListener('mouseup', mu)
-      }
-
-      const panelStyle = { width: s.size.w, ...(s.size.h ? { height: s.size.h } : {}), ...(s.pos ? { left: s.pos.x, top: s.pos.y, right: 'auto' } : { right: 12, top: 12 }) }
-      return h('div', { className: 'dsws-panel', style: panelStyle }, [
-        h('div', { className: 'dsws-head', onMouseDown: onHeaderDown }, [
-          h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } }, Icon({ scheme: s.ui.icon, size: 17 }), 'DSH-Waystation'),
-          h('span', { className: 'dsws-chip ' + (S.snapMode === 'err' ? 'dsws-chip-t' : 'dsws-chip-m') }, S.snapMode === 'real' ? '真数据' : S.snapMode === 'err' ? '快照异常' : S.snapMode === 'loading' ? '加载中…' : '原型 · 假数据'),
-          h('span', { style: { flex: 1 } }),
-          h('button', { className: 'dsws-btn ghost', onClick: function () { s.open = false; emit() } }, '✕'),
-        ]),
-        h('div', { className: 'dsws-tabs' }, [tabBtn('maps', '🗺 地图'), tabBtn('skills', '🧭 技能'), tabBtn('checks', '⚙ 就绪')]),
-        h('div', { className: 'dsws-body' }, [
-          s.tab === 'maps' ? (active ? h(MapDetail, { g: active }) : h(MapList, null)) : null,
-          s.tab === 'skills' ? h(SkillsTab, null) : null,
-          s.tab === 'checks' ? h(ChecksTab, null) : null,
-        ]),
-        h('div', { className: 'dsws-resize', onMouseDown: onResizeDown, title: '拖动调整大小' }),
-        s.notice ? h('div', { className: 'dsws-note' }, s.notice) : null,
-        s.startFor ? h(StartModal, { t: s.startFor }) : null,
-        s.fixateFor ? h(FixateModal, { t: s.fixateFor }) : null,
-        s.cfgOpen ? h(StartCfgModal, null) : null,
+      // v14-19：窄屏阈值（面板宽 <380px 时动作按钮折叠为纯图标）
+      const narrow = s.size.w < 380
+      const tabBtn = (id, icon, label) => h('button', { className: 'dsws-tab' + (s.tab === id ? ' on' : ''), onClick: function () { s.tab = id; emit(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
+        Ic({ n: icon, size: 12 }),
+        h('span', null, label),
       ])
-    }
 
-    // ---- 6.9 开始此 Issue 确认框（#347 认领 RPC + 黄条；新会话增强：提醒 + 一键开新会话同 cwd + 自动命名）----
-    const StartModal = ({ t }) => {
-      const s = useStore()
-      const [claim, setClaim] = React.useState(true)
-      const [openInNew, setOpenInNew] = React.useState(true)
-      const [warnings, setWarnings] = React.useState([])
-      const [busy, setBusy] = React.useState(false)
-      const rec = TYPE_SKILLS[t.type] || []
-      React.useEffect(function () {
-        let alive = true
-        const probe = async function () {
-          const w = []
-          try {
-            if (typeof host !== 'undefined' && typeof host.call === 'function') {
-              try {
-                const st = await host.call('wf.status')
-                if (st && st.checks && st.checks.length) {
-                  st.checks.forEach(function (c) {
-                    if (!c.ok) w.push(c.name + '：' + (c.hint || c.detail || '未就绪'))
-                  })
-                  if (alive) { setWarnings(w); return }
-                }
-              } catch (e) {
-                if (!/not registered|method-not-found/.test(String((e && e.message) || e))) w.push('就绪检测失败：' + String((e && e.message) || e))
-              }
-              // wf.status 未注册（#344 未落地时）→ 快照 env 兜底
-              const snap = s.snapshot || await host.call('wf.snapshot')
-              if (snap && snap.ok === false) w.push('GitHub 快照失败：' + String(snap.error || '未知').slice(0, 80))
-              else if (snap && snap.env && !snap.env.ghPath) w.push('gh CLI 不可用：' + (snap.env.ghError || '未找到'))
-            }
-          } catch (e2) { /* 探测失败不阻断 */ }
-          if (alive) setWarnings(w)
-        }
-        probe()
-        return function () { alive = false }
-      }, [])
-      const confirm = async function () {
-        if (busy) return
-        const n = t.number
-        if (claim && typeof host !== 'undefined' && typeof host.call === 'function') {
-          setBusy(true)
-          try {
-            const res = await host.call('wf.claim', { number: n })
-            if (res && res.ok) {
-              t.claimedBy = res.assignedTo || '已认领'
-              flash('✅ 已认领 #' + n + '（GitHub assignee 已更新）')
-              try { host.call('wf.refresh', {}) } catch (e2) { /* 刷新失败不阻断 */ }
-            } else {
-              const err = (res && res.error) ? ((res.error && res.error.error) || res.error) : '未知错误'
-              flash('⚠️ 认领失败（仍会注入）：' + String(err).slice(0, 120))
-            }
-          } catch (e) {
-            flash('⚠️ 认领失败（仍会注入）：' + String((e && e.message) || e).slice(0, 120))
+      const startDrag = function (e) {
+        if (typeof document === 'undefined' || typeof window === 'undefined') return
+        if (!panelRef.current) return
+        e.preventDefault()
+        const rect = panelRef.current.getBoundingClientRect()
+        const r0 = { x: s.pos ? s.pos.x : rect.left, y: s.pos ? s.pos.y : rect.top, sx: e.clientX, sy: e.clientY }
+        const mm = function (ev) { s.pos = { x: r0.x + ev.clientX - r0.sx, y: r0.y + ev.clientY - r0.sy }; emit(s) }
+        const mu = function () { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu) }
+        document.addEventListener('mousemove', mm)
+        document.addEventListener('mouseup', mu)
+      }
+      const onBodyDown = function (e) {
+        if (e.target === e.currentTarget) startDrag(e)
+      }
+
+      const onResizeDown = function (dir) {
+        return function (e) {
+          e.stopPropagation()
+          e.preventDefault()
+          if (typeof document === 'undefined' || typeof window === 'undefined' || !panelRef.current) return
+          const rect = panelRef.current.getBoundingClientRect()
+          const r0 = { x: s.pos ? s.pos.x : rect.left, y: s.pos ? s.pos.y : rect.top, w: s.size.w || rect.width, h: s.size.h || rect.height, sx: e.clientX, sy: e.clientY }
+          const mm = function (ev) {
+            const dx = ev.clientX - r0.sx, dy = ev.clientY - r0.sy
+            let w = r0.w, h = r0.h
+            if (dir.indexOf('e') >= 0) w = r0.w + dx
+            if (dir.indexOf('s') >= 0) h = r0.h + dy
+            if (dir.indexOf('w') >= 0) w = r0.w - dx
+            if (dir.indexOf('n') >= 0) h = r0.h - dy
+            w = Math.min(900, Math.max(340, w))
+            h = Math.min(920, Math.max(240, h))
+            let x = r0.x, y = r0.y
+            if (dir.indexOf('w') >= 0) x = r0.x + (r0.w - w)
+            if (dir.indexOf('n') >= 0) y = r0.y + (r0.h - h)
+            s.pos = { x: x, y: y }
+            s.size = { w: w, h: h }
+            emit(s)
           }
-          setBusy(false)
-        } else if (claim) {
-          t.claimedBy = '已认领'
-          flash('⚠️ 无 Host 认领能力：已本地标记（需加载插件 Host 半）')
+          const mu = function () { document.removeEventListener('mousemove', mm); document.removeEventListener('mouseup', mu) }
+          document.addEventListener('mousemove', mm)
+          document.addEventListener('mouseup', mu)
         }
-        // 2) 开新会话（勾选时：create+rename+open 内部完成；失败自动降级为提醒）
-        let opened = false
-        if (openInNew) { opened = await openInNewSession(t) }
-        // 3) 注入/复制指令（新会话就绪用）：已切走时走剪贴板，否则写入当前输入框
-        const text = startText(t)
-        if (opened) {
-          try {
-            if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-              await navigator.clipboard.writeText(text)
-              flash('✅ 指令已复制，请在新会话中粘贴发送')
-            } else { inject(text) }
-          } catch (e) { inject(text) }
-        } else {
-          inject(text)
-        }
-        s.startFor = null
-        emit()
       }
-      return h('div', { className: 'dsws-modal', onClick: function () { if (!busy) { s.startFor = null; emit() } } }, [
-        h('div', { className: 'dsws-modalbox', onClick: function (e) { e.stopPropagation() } }, [
-          warnings.length ? h('div', { style: { background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.45)', color: '#f59e0b', borderRadius: 6, padding: '6px 10px', fontSize: 12, marginBottom: 10 } }, '⚠️ 前置未就绪：' + warnings.join('；') + '（不阻断，可继续）') : null,
-          h('div', { style: { background: 'rgba(188,140,255,.1)', border: '1px solid rgba(188,140,255,.35)', color: '#c084fc', borderRadius: 6, padding: '6px 10px', fontSize: 12, marginBottom: 10 } }, '⚠️ 每张 ticket 应在**独立的新会话**中完成（wayfinder 语义）。勾选后：保持当前工作目录开新会话 → 自动命名「' + SESSION_TITLE_PREFIX + ' <标题> #号」→ /wayfinder 指令就绪供新会话发送'),
-          h('div', { style: { fontWeight: 600, marginBottom: 8 } }, '▶ 开始此 Issue'),
-          h('div', { style: { marginBottom: 4 } }, [TypeChip({ type: t.type }), h('span', null, t.title), h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)' } }, ' #' + t.number)]),
-          h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', marginBottom: 8 } }, '推荐技能：' + (rec.length ? rec.map(function (r) { return '/' + r }).join(' + ') : '（无）') + '　·　注入后将自动带上 /wayfinder 与流程指令'),
-          h('label', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 6, cursor: 'pointer' } }, [
-            h('input', { type: 'checkbox', checked: claim, disabled: busy, onChange: function (e) { setClaim(e.target.checked) } }),
-            h('span', null, '同时认领（assign 给自己 · wayfinder 的 claim 语义）'),
+
+      const panelStyle = { width: s.size.w, ...(s.size.h ? { height: s.size.h } : {}), ...(s.pos ? { left: s.pos.x, top: s.pos.y, right: 'auto' } : { left: 16, top: 76, right: 'auto' }) }
+      return h('div', { ref: panelRef, className: 'dsws-panel', style: panelStyle }, [
+        h('div', { className: 'dsws-head', onMouseDown: startDrag }, [
+          h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } }, Icon({ scheme: s.ui.icon, size: 17 }), 'DSH-Waystation'),
+          h('span', { className: 'dsws-chip ' + (s.snapMode === 'err' ? 'dsws-chip-t' : 'dsws-chip-m') }, [
+            Ic({ n: s.snapMode === 'err' ? 'alert' : 'info', size: 11 }),
+            h('span', null, s.snapMode === 'real' ? '真数据' : s.snapMode === 'err' ? '快照异常' : s.snapMode === 'loading' ? '加载中…' : '原型'),
           ]),
-          h('label', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 12, cursor: 'pointer' } }, [
-            h('input', { type: 'checkbox', checked: openInNew, disabled: busy, onChange: function (e) { setOpenInNew(e.target.checked) } }),
-            h('span', null, '同时在新会话中打开（保持当前工作目录 · 自动命名）'),
-          ]),
-          h('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end' } }, [
-            h('button', { className: 'dsws-btn', disabled: busy, onClick: function () { s.startFor = null; emit() } }, '取消'),
-            h('button', { className: 'dsws-btn primary', disabled: busy, onClick: confirm }, busy ? '认领中…' : '确认开始'),
-          ]),
+          h('span', { style: { flex: 1 } }),
+          h('button', { className: 'dsws-btn ghost', onClick: function () { s.open = false; emit(s) }, style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'x', size: 12 })),
         ]),
+        h('div', { className: 'dsws-tabs' }, [tabBtn('list', 'list', '列表'), tabBtn('skills', 'compass', '技能'), tabBtn('checks', 'gear', '环境检查')]),
+        h('div', { className: 'dsws-body', onMouseDown: onBodyDown }, [
+          s.tab === 'list' ? (active ? h(MapDetail, { st: s, g: active }) : h(ListTab, { st: s, narrow: narrow })) : null,
+          s.tab === 'skills' ? h(SkillsTab, { st: s }) : null,
+          s.tab === 'checks' ? h(ChecksTab, { st: s }) : null,
+        ]),
+        h('div', { className: 'dsws-rz dsws-rz-n', onMouseDown: onResizeDown('n'), title: '向上拉大' }),
+        h('div', { className: 'dsws-rz dsws-rz-s', onMouseDown: onResizeDown('s'), title: '向下拉大' }),
+        h('div', { className: 'dsws-rz dsws-rz-e', onMouseDown: onResizeDown('e'), title: '向右拉大' }),
+        h('div', { className: 'dsws-rz dsws-rz-w', onMouseDown: onResizeDown('w'), title: '向左拉大' }),
+        h('div', { className: 'dsws-rz dsws-rz-ne', onMouseDown: onResizeDown('ne'), title: '右上角缩放' }),
+        h('div', { className: 'dsws-rz dsws-rz-nw', onMouseDown: onResizeDown('nw'), title: '左上角缩放' }),
+        h('div', { className: 'dsws-rz dsws-rz-se', onMouseDown: onResizeDown('se'), title: '右下角缩放' }),
+        h('div', { className: 'dsws-rz dsws-rz-sw', onMouseDown: onResizeDown('sw'), title: '左下角缩放' }),
+        // v14-17：手动刷新遮罩（期间禁点）
+        s.refreshing ? h('div', { className: 'dsws-shade' }, [
+          h('div', { className: 'dsws-spinner' }),
+          h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, '刷新中…'),
+        ]) : null,
+        s.notice ? h('div', { className: 'dsws-note', style: { display: 'flex', alignItems: 'center', gap: 6 } }, [
+          Ic({ n: noticeIcon(s.notice.kind), size: 13, color: NOTICE_COLOR[s.notice.kind] || '#4ade80' }),
+          h('span', null, s.notice.text),
+        ]) : null,
+        s.cfgOpen ? h(StartCfgModal, { st: s }) : null,
       ])
     }
 
-    // ---- 6.10 动作弹窗（原「固化」，词随方案）----
-    const FixateModal = ({ t }) => {
-      const s = useStore()
-      const [text, setText] = React.useState(fixateText(t))
-      const doSave = function (withComment) {
-        s.fixateFor = null; emit()
-        if (withComment) flash('✅ 已' + WORD() + '（原型）：本地 .scratch/wayfinder-notes/… + gh issue comment #' + t.number)
-        else flash('✅ 已' + WORD() + '（原型）：仅本地 .scratch/wayfinder-notes/…')
-      }
-      return h('div', { className: 'dsws-modal', onClick: function () { s.fixateFor = null; emit() } }, [
-        h('div', { className: 'dsws-modalbox', onClick: function (e) { e.stopPropagation() } }, [
-          h('div', { style: { fontWeight: 600, marginBottom: 8 } }, WORD() + '讨论 → ' + t.title + ' #' + t.number),
-          h('textarea', { className: 'dsws-ta', value: text, onChange: function (e) { setText(e.target.value) } }),
-          h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', margin: '6px 0' } }, '本地：.scratch/wayfinder-notes/<map>/<n>-<slug>.md 追加　·　GitHub：resolution comment 到 #' + t.number),
-          h('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end' } }, [
-            h('button', { className: 'dsws-btn', onClick: function () { s.fixateFor = null; emit() } }, '取消'),
-            h('button', { className: 'dsws-btn', onClick: function () { doSave(false) } }, '仅本地保存'),
-            h('button', { className: 'dsws-btn primary', onClick: function () { doSave(true) } }, '保存并评论到 Issue'),
-          ]),
-        ]),
-      ])
-    }
-
-    // ---- 6.10b 开始模板配置（#347：/wayfinder 前缀 + 自定义模板）----
-    const StartCfgModal = () => {
-      const s = useStore()
+    // ---- 5.9 开始模板配置 ----
+    const StartCfgModal = ({ st }) => {
       const [wf, setWf] = React.useState(startCfg.withWayfinder)
       const [custom, setCustom] = React.useState(startCfg.custom)
-      const save = function () { startCfg.withWayfinder = wf; startCfg.custom = custom; saveStartCfg(); s.cfgOpen = false; emit(); flash('✅ 开始模板已保存') }
+      const save = function () { startCfg.withWayfinder = wf; startCfg.custom = custom; saveStartCfg(); st.cfgOpen = false; emit(st); flash(st, '开始模板已保存', 'ok') }
       const reset = function () { startCfg.withWayfinder = true; startCfg.custom = ''; saveStartCfg(); setWf(true); setCustom('') }
-      return h('div', { className: 'dsws-modal', onClick: function () { s.cfgOpen = false; emit() } }, [
+      return h('div', { className: 'dsws-modal', onClick: function () { st.cfgOpen = false; emit(st) } }, [
         h('div', { className: 'dsws-modalbox', onClick: function (e) { e.stopPropagation() } }, [
           h('div', { style: { fontWeight: 600, marginBottom: 8 } }, '开始模板配置'),
           h('label', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 8, cursor: 'pointer' } }, [
             h('input', { type: 'checkbox', checked: wf, onChange: function (e) { setWf(e.target.checked) } }),
-            h('span', null, '注入文本带 /wayfinder 前缀（默认开）'),
+            h('span', null, '复制文本带 /wayfinder 前缀（默认开）'),
           ]),
-          h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, '自定义模板（留空用默认；占位符 {number} {url} {title}；设置后整体替换默认文本）：'),
+          h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, '自定义模板（留空用默认；占位符 {number} {url} {title}）：'),
           h('textarea', { className: 'dsws-ta', style: { minHeight: 70 }, placeholder: '/wayfinder\n{url}\n\n请按 wayfinder 流程处理这个 ticket：…', value: custom, onChange: function (e) { setCustom(e.target.value) } }),
           h('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 } }, [
             h('button', { className: 'dsws-btn', onClick: reset }, '恢复默认'),
-            h('button', { className: 'dsws-btn', onClick: function () { s.cfgOpen = false; emit() } }, '取消'),
+            h('button', { className: 'dsws-btn', onClick: function () { st.cfgOpen = false; emit(st) } }, '取消'),
             h('button', { className: 'dsws-btn primary', onClick: save }, '保存'),
           ]),
         ]),
       ])
     }
 
-    // ---- 6.11 turnTail 智能提醒条 ----
-    const TurnTail = () => {
-      const s = useStore()
-      if (s.remindDismissed) return null
-      const groups = compute()
-      const target = groups.length && groups[0].frontier.length ? groups[0].frontier[0] : null
-      return h('div', { className: 'dsws-remind' }, [
-        h('span', null, '本轮讨论已涉及 wayfinder 工作，可' + WORD() + '到' + (target ? '「' + target.title + '」#' + target.number : '某张 ticket') + '：'),
-        h('button', { className: 'dsws-btn', onClick: function () { if (target) { s.fixateFor = target; emit() } } }, WORD()),
-        h('button', { className: 'dsws-btn ghost', onClick: function () { s.remindDismissed = true; emit() } }, '✕'),
-      ])
-    }
-
-    // ---- 6.12 Run 卡控制面板（含外观方案切换）----
-    const RunPanel = () => {
-      const s = useStore()
-      const setIcon = function (id) { s.ui.icon = id; emit() }
-      const setWord = function (w) { s.ui.word = w; emit() }
+    // ---- 5.10 Run 卡控制面板（外观方案切换 · 跟随当前激活会话）----
+    const RunPanel = (props) => {
+      const cur = props.useSessions((x) => x.current)
+      const s = useStore(cur)
+      const setIcon = function (id) { s.ui.icon = id; emit(s) }
+      const setWord = function (w) { s.ui.word = w; emit(s) }
       return h('div', { style: { border: '1px solid var(--dsw-alias-border-l1,#2a2d35)', borderRadius: 8, padding: '10px 12px', background: 'var(--dsw-alias-bg-layer-1,#10131a)', fontFamily: 'var(--dsw-font-family)', fontSize: 13, color: 'var(--dsw-alias-label-primary,#e6edf3)', lineHeight: 1.6 } }, [
         h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } }, [
-          h('strong', null, 'DSH-Waystation 原型'),
-          h('span', { style: { color: '#4ade80', fontSize: 12 } }, '● 已加载（假数据）'),
+          h('strong', null, 'DSH-Waystation'),
+          h('span', { style: { display: 'flex', alignItems: 'center', gap: 4, color: '#4ade80', fontSize: 12 } }, [Ic({ n: 'dot', size: 10 }), h('span', null, '已加载')]),
         ]),
-        h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', margin: '6px 0' } }, '就绪（wf.status · #344）+ 面板（wf.snapshot · #346）均已接真；剩余 UX 细节待 #348 拍板。'),
+        h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', margin: '6px 0' } }, '环境检查（wf.status · #344）+ 面板（wf.snapshot · #346）均已接真。'),
         h('div', { className: 'dsws-uirow' }, [
           h('span', { style: { fontSize: 12 } }, '图标：'),
           ICON_SCHEMES.map(function (ic) {
@@ -804,16 +1046,14 @@ return {
           }),
         ]),
         h('div', { className: 'dsws-uirow' }, [
-          h('button', { className: 'dsws-btn', onClick: function () { s.open = true; emit() } }, '打开面板'),
-          h('button', { className: 'dsws-btn', onClick: function () { s.cfgOpen = true; emit() } }, '开始模板'),
-          h('button', { className: 'dsws-btn', onClick: function () { flash('面板已接 wf.snapshot 真数据（#346）') } }, '数据源：真数据'),
-          h('a', { className: 'dsws-btn', href: 'https://github.com/FeatherHunter/SKILLS/issues/355', target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, 'Ticket #355'),
+          h('button', { className: 'dsws-btn', onClick: function () { s.open = true; emit(s) } }, '打开面板'),
+          h('button', { className: 'dsws-btn', onClick: function () { s.cfgOpen = true; emit(s) } }, '开始模板'),
         ]),
       ])
     }
 
     // ============================================================
-    // 7. 插槽注册
+    // 6. 插槽注册
     // ============================================================
     slots.inject('sidebar.footer.action', function () {
       return slots.register({ name: 'sidebar.footer.action', id: 'dsh-waystation', label: 'Waystation', order: 5 }, SidebarButton)
@@ -824,14 +1064,11 @@ return {
     slots.inject('conversation.input.dock', function () {
       return slots.register({ name: 'conversation.input.dock', id: 'dsh-waystation', order: 40 }, StatusBar)
     })
-    slots.inject('conversation.chat.turnTail', function () {
-      return slots.register({ name: 'conversation.chat.turnTail', select: function () { return {} } }, TurnTail)
-    })
     slots.inject('tool.view.cordis', function () {
       return slots.register({ name: 'tool.view.cordis', key: 'self' }, RunPanel)
     })
 
     // #347：加载真数据快照（repo 链接 + 前置检测兜底），失败静默
-    loadSnapshot()
+    loadSnapshot(shared, false)
   },
 }

@@ -1,6 +1,6 @@
 # npm-publish 坑位表（实测记录）
 
-> 全部来自 2026-08-14 `dsh-opencode-tui-theme@1.0.0` 实盘发布。每条含：现象 → 根因 → 解决。
+> 来自 2026-08-14 `dsh-opencode-tui-theme@1.0.0`（坑 1-7）与 `@1.1.0`（坑 8）实盘发布。每条含：现象 → 根因 → 解决。
 
 ## 坑 1：镜像源拦截登录/发布（CNPM 假象）
 
@@ -91,6 +91,29 @@ Two-factor authentication or granular access token with bypass 2fa enabled is re
 **根因**：npm 政策：超过 72h 只能 `npm deprecate`（标记废弃），不能删除。
 
 **解决**：发布前想清楚；超期后 `npm deprecate <包名>@<版本> "reason"` 标记废弃。
+
+## 坑 8：非交互环境发布必 EOTP · 交互终端走网页审批流（1.1.0 实盘）
+
+**现象**：Agent/脚本代跑 `npm publish`（Start-Process 重定向、后台 job、无 TTY）时，
+npm **不发任何授权 URL**，直接报：
+```
+npm error code EOTP
+npm error This operation requires a one-time password from your authenticator.
+```
+而同一账号在**交互终端**手动跑 `npm publish`，npm 打印：
+```
+Authenticate your account at: https://www.npmjs.com/auth/cli/<uuid>
+Press ENTER to open in the browser...
+```
+回车 → 浏览器完成登录 + 2FA 审批 → 回终端回车 → `+ <包名>@<版本>` 发布成功。
+
+**根因**：npm CLI 检测到非交互（stdin 非 TTY / 输出被重定向）时跳过网页授权分支，直接走 OTP 通道；
+隔空传 6 位 TOTP 码必被 30 秒轮换坑掉（本次实测连败 3 次 EOTP）。
+
+**解决**：
+1. **把命令交给用户在交互终端自己跑**（推荐，零时延）；
+2. 账号没绑认证器 App 时，浏览器 2FA 输入框可填一个**没用过的恢复码**（npm_recovery_codes 文件）；
+3. 网页审批完成后 npm 自动落 token，后续发布仍会要求 2FA 审批（每次都要走一遍）。
 
 ## 环境速查
 

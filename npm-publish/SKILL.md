@@ -85,17 +85,32 @@ npm whoami          # 必须输出用户名，否则回到 0
 ### 4. 发布
 
 ```powershell
-npm publish --registry=https://registry.npmjs.org [--otp=123456]
+npm publish --registry=https://registry.npmjs.org
 ```
 
-- 账号开了 2FA → npm 提示 `Enter one-time password:`，输认证器当前 6 位码；或 `--otp=` 直接带
+- **2FA 首选：交互式网页审批流（2026-08 实测，推荐）**——在**交互终端**（人可直接操作的 PowerShell/CMD）里跑上面的命令，
+  账号开 2FA 时 npm 会打印：
+
+  ```
+  Authenticate your account at: https://www.npmjs.com/auth/cli/<uuid>
+  Press ENTER to open in the browser...
+  ```
+
+  用户按回车 → 浏览器打开授权页 → 完成登录 + 2FA 审批（**无认证器 App 绑定时，2FA 输入框可填一个没用过的恢复码**）→
+  回终端按回车 → 出现 `+ <包名>@<版本>` 即发布成功。**全程无需把码发来发去。**
+- 备选：`--otp=<码>` 直接带（认证器当前 6 位码，30 秒轮换；恢复码也可作 OTP 提交但用一次少一个）
 - 成功标志：`+ <包名>@<版本>`
+
+> **Agent 代跑铁律（本次实战教训）**：非交互环境（`Start-Process` 重定向、后台 job、CI 无 TTY）下 npm **不发 URL、直接报 EOTP**；
+> 也不要隔空让用户把 6 位 TOTP 码发进聊天再代跑——30 秒轮换 + 传递时延 = 必过期。正确做法：
+> **把命令交给用户在交互终端自己跑**，或起一个用户可达的真实 TTY 进程后再走网页审批流。
 
 失败分支（**先读报错码，再动手**）：
 
 | 报错 | 含义 | 处理 |
 |---|---|---|
-| E403 `Two-factor authentication ... required` | 2FA 未开/未输码 | 开 2FA 或用带 OTP 重发 |
+| E403 `Two-factor authentication ... required` | 2FA 未开/未输码 | 走上方「交互式网页审批流」；无认证器 App 用恢复码填 2FA 框 |
+| EOTP（非交互环境） | 无 TTY 时 npm 不发 URL 直接拒绝 | 必须在交互终端跑；或 `--otp=` 带当前码 |
 | E403 `cannot publish over previously published version` | 版本重复 | 升 version 再发 |
 | E401 / ENEEDAUTH | 未登录或令牌失效 | §流程 3 重新登录 |
 | E404 发布路径 404 | 包名被抢 / registry 错 | 查 `npm view`；确认 `--registry` |
@@ -139,6 +154,7 @@ npm unpublish <包名>@<版本> --registry=https://registry.npmjs.org
    - 2027-01 起：bypass-2FA 令牌**不能再直接发布**（只能暂存 + 人工 2FA 批准）
    - → **个人发布一律用交互式 2FA（认证器 OTP）**，不依赖 bypass 令牌
 8. 环境变量 `npm_config_registry` 优先级高于 `.npmrc`——命令行 `--registry=` 永远带上（见坑位 1）
+9. **2FA 发布走「交互式终端 + 浏览器网页审批」**，不隔空传码：非交互环境 npm 不发 URL 直接 EOTP，聊天传 6 位 TOTP 码必过期（2026-08-14 实测）
 
 ## 软规则（心法，非清单）
 
@@ -150,11 +166,14 @@ npm unpublish <包名>@<版本> --registry=https://registry.npmjs.org
 
 ## 坑位表
 
-完整踩坑记录（含报错原文、根因、解决）见 [references/pitfalls.md](./references/pitfalls.md)。高频三条：
+完整踩坑记录（含报错原文、根因、解决）见 [references/pitfalls.md](./references/pitfalls.md)。高频四条：
 
 1. **镜像源拦截登录/发布**：`~/.npmrc` 或环境变量 `npm_config_registry` 指向 npmmirror → `npm login/publish` 报 `Public registration is not allowed`。解决：**命令行 `--registry=https://registry.npmjs.org`**（参数优先级最高，且不动全局镜像配置）。
 2. **2FA 门槛**：npm 强制发布 2FA，`npm publish` 报 `Two-factor authentication ... is required`。解决：官网/CLI 开认证器 2FA，发布输 6 位码。
 3. **令牌泄露**：令牌出现在聊天/日志 = 已泄露，**立即 revoke**，发布能力用 2FA 补上（不要"反正能用就先留着"）。
+4. **非交互环境发布必 EOTP**：Start-Process / 后台 job / CI 跑 `npm publish` 时 npm 跳过网页审批直接报 EOTP（不发 URL）。
+   解决：把命令交给用户在**交互终端**自己跑，npm 会打印 `Authenticate your account at: <URL>` + `Press ENTER to open in the browser...`，
+   浏览器完成 2FA 审批（无认证器 App 时填恢复码）即发布成功。
 
 ## 输出
 
@@ -180,4 +199,7 @@ npm unpublish <包名>@<版本> --registry=https://registry.npmjs.org
 ## 工程记录
 
 - 2026-08-14：技能创建。流程来自 `dsh-opencode-tui-theme@1.0.0` 实盘发布（镜像坑 / 2FA 门槛 / bypass 令牌公告）。
+- 2026-08-14（同日追加）：`dsh-opencode-tui-theme@1.1.0` 实盘发布发现**网页审批流**——交互终端 `npm publish` 会打印
+  `Authenticate your account at: <URL>` 授权链接，浏览器完成 2FA 后回车即发布成功；非交互环境（Agent 重定向/后台）不发 URL
+  直接 EOTP，聊天传码必过期。本技能 §流程 4 已按此更新（硬规则 9 / 坑位 4）。
 - Tested-By: exempt(无 fresh agent + 发布有真实外部副作用不适合黑盒重放 · 详见 备忘录/docs/adr/0005-d-exemptions-and-rituals.md)

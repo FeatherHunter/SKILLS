@@ -6,11 +6,11 @@
 > + GitHub issue 动作注入（诊断 / 修复 / 讨论 / 执行，均带 `/wayfinder` `/triage` 技能命令）
 > + 交接开新会话。
 
-- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.0.1）
+- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.1.0）
 - **动态版 pluginId**: `wfst-1`（v9–v24 迭代产物）
 - **平台**: Client（浏览器页面）+ Host（Node 进程，gh CLI 数据层）
 - **配套**: [mattpocock/skills](https://github.com/mattpocock/skills)（wayfinder / triage / grilling / handoff / ask-matt 等）
-- **两种形态**: ① 动态插件（进程内，会话级）；② 正式安装的本地插件（开机自启，推荐）
+- **两种形态**: ① 正式安装（npm 一条命令，开机自启，推荐）；② 动态加载（进程内，会话级）
 
 ## 功能
 
@@ -27,23 +27,48 @@
 
 ## 使用方式
 
-### 方式一：正式安装（推荐 · 一条命令 · 开机自启 · 无需审批）
+### 方式一：正式安装（推荐 · npm 一条命令 · 装进整个 Harness · 开机自启）
 
-**一条命令完成全部**（装包 + 自动注册到 DSH profile，postinstall 自动写 `cordis.patch.yml`）：
+**这条命令把插件装进 DeepSeek Harness 本体（所有会话、所有工作目录生效），并自动注册**：
 
 ```powershell
-npm install --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org
+cd "$env:USERPROFILE\.dsh\profiles"
+npm install dsh-waystation --registry=https://registry.npmjs.org
 ```
 
-- 装到 `~/.dsh/profiles/node_modules/dsh-waystation/`
-- **postinstall 自动注册**：探测 DSH profile 的 `cordis.patch.yml`，若尚无 dsh-waystation 注册行则自动追加
-  （幂等：重复安装/升级不叠加；非 DSH 环境自动跳过，不影响普通项目使用）
-- 然后**刷新浏览器页面**即生效（无需重启 DSH、无需审批），之后每次 DSH 启动自动加载
+（不想 cd 的等价写法：`npm install --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org`）
 
-卸载：
+**装到哪、为什么是这里**：
+
+```
+C:\Users\<你>\.dsh\            ← DeepSeek Harness 的「家」（DSH_HOME），与你的业务项目无关
+├── profiles\
+│   ├── node_modules\          ← Harness 级插件目录（本插件的安装位）
+│   └── web\cordis.patch.yml   ← Harness 级启动组合（postinstall 自动注册）
+```
+
+- `~/.dsh` 是 DSH 自己的用户根目录，装进 `profiles/node_modules` = **对整个 Harness 生效**：
+  所有会话、所有工作目录都能用；开机自启、无需审批；DSH 本体升级（npx 缓存层）不影响它。
+- 为什么不用 `npm install -g`：`-g` 装到 `%APPDATA%\npm\node_modules`，而 Node 的默认解析链
+  **不包含该目录**（本机实测 `require.resolve` 失败）——DSH 进程 require 不到，装了也白装。
+  独立 CLI 应用（如 `dsh-feishu-bot`）靠 bin 快捷方式运行所以能 `-g`；**插件必须被 DSH 进程
+  解析**，所以装 Harness 自己的插件目录。
+- **postinstall 自动注册**：安装时自动探测 `cordis.patch.yml`，若尚无 dsh-waystation 注册行则
+  自动追加（幂等：重复安装/升级不叠加；非 DSH 环境自动跳过，不打扰普通项目）。
+- 然后**刷新浏览器页面**（http://127.0.0.1:3080）即生效，之后每次 DSH 启动自动加载。
+
+**升级**：
 
 ```powershell
-npm uninstall --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation
+cd "$env:USERPROFILE\.dsh\profiles"
+npm update dsh-waystation --registry=https://registry.npmjs.org
+```
+
+**卸载**：
+
+```powershell
+cd "$env:USERPROFILE\.dsh\profiles"
+npm uninstall dsh-waystation
 # 并手动删除 cordis.patch.yml 里的 dsh-waystation insert 块（或保留，DSH 找不到包会忽略）
 ```
 
@@ -76,9 +101,10 @@ npm uninstall --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation
 
 - `host.js` / `client.js` —— 动态版源码（cordis_define 的 `code.host` / `code.client` 函数体）
 - `package/` —— **可分发插件包**（正式安装用，标准 npm 包结构）
-  - `package.json` —— 包声明：`dsh.client`（platform web / immediately）
+  - `package.json` —— 包声明：`dsh.client`（platform web / immediately）+ `scripts.postinstall`
   - `lib/index.js` —— 宿主半（ESM：gh 数据层 + `/dsws` RPC 通道注册）
   - `lib/client.js` —— 浏览器半 bundle（`window.__ModuleLoader__.load` 注册格式）
+  - `scripts/install-patch.cjs` —— postinstall：自动注册 `cordis.patch.yml`（幂等）
 - `README.md` —— 本说明
 - `issues-checklist.html` —— 迭代需求清单（v9–v24，43+ 项）
 - `DESIGN.md` / `prototype.html` —— 设计定稿与原型

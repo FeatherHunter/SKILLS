@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#330 HELP 模板用户语言修正 · 四项 A/B 对比拍板页</title>
+<style>
+  body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;margin:0;background:#f5f5f7;color:#1d1d1f}
+  header{background:#fff;padding:16px 20px;border-bottom:1px solid #e5e5ea}
+  header h1{font-size:17px;margin:0 0 4px}
+  header p{margin:0;font-size:12px;color:#86868b}
+  main{max-width:860px;margin:0 auto;padding:20px}
+  .card{background:#fff;border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card h2{font-size:14px;margin:0 0 2px}
+  .card .tag{display:inline-block;font-size:10.5px;border-radius:99px;padding:2px 8px;margin:4px 0 10px;background:rgba(0,122,255,.1);color:#007aff}
+  .pair{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.pair{grid-template-columns:1fr}}
+  .side{border:1px solid #f0f0f2;border-radius:10px;padding:12px;background:#fafafc}
+  .side .lbl{font-size:11px;font-weight:700;margin-bottom:8px;color:#6e6e73}
+  .side.a .lbl{color:#ff3b30}
+  .side.b .lbl{color:#34c759}
+  .side .mock{background:#fff;border-radius:8px;padding:10px;border:1px solid #ececf1;font-size:12px;line-height:1.7}
+  .hint{font-size:11.5px;color:#86868b;margin-top:10px;line-height:1.6}
+  .foot{max-width:860px;margin:0 auto;padding:0 20px 40px;font-size:12px;color:#6e6e73;line-height:1.8}
+  .m-step{font-size:11px;color:#6e6e73;font-weight:600}
+  .m-arrow{color:#c7c7cc;margin:0 5px}
+  .badge-m{display:inline-block;padding:1px 7px;border-radius:999px;font-size:9px;font-weight:700;margin-right:4px}
+  .tab-m{display:inline-flex;flex-direction:column;align-items:center;gap:3px;padding:5px 12px 4px;font-size:10px;color:#6e6e73;border-radius:10px 10px 0 0;min-width:60px}
+  .tab-m .dot{width:5px;height:5px;border-radius:50%;background:transparent}
+  .tab-m.on{color:#007aff;background:rgba(0,122,255,.06);border-bottom:2px solid #007aff}
+  .tab-m.on .dot{background:#007aff}
+  .tab-m.old-on{background:#007aff;color:#fff;box-shadow:0 4px 12px rgba(0,122,255,.3)}
+  .tabbar-m{display:flex;background:#fff;border-top:1px solid #ececf1;border-radius:0 0 8px 8px}
+  .lead-m{font-size:12px;color:#6e6e73}
+</style>
+</head>
+<body>
+<header>
+  <h1>#330 · HELP 模板用户语言修正 · 四项 A/B 对比</h1>
+  <p>来源：#313 子项 4 · VLM 视觉审查建议（Base 模板硬编码文案/样式，技能侧零权限）。左 = 现状，右 = 建议方案；看定后在会话中回复「#330 全采纳」或逐项选择（如「#330 采 1 和 3」）。</p>
+</header>
+<main>
+
+  <div class="card">
+    <h2>① 术语：「复制 prompt」→「复制指令」</h2><span class="tag">08 规范 HELP 流程术语同步</span>
+    <div class="pair">
+      <div class="side a"><div class="lbl">现状 · 开发者口吻</div>
+        <div class="mock"><span class="m-step">🔍 找场景</span><span class="m-arrow">→</span><span class="m-step">📋 复制 prompt</span><span class="m-arrow">→</span><span class="m-step">💬 发给 AI</span><br><br><button style="border:none;background:#007aff;color:#fff;border-radius:8px;padding:6px 14px;font-size:11.5px;font-weight:600">复制 prompt</button></div>
+      </div>
+      <div class="side b"><div class="lbl">建议 · 用户语言</div>
+        <div class="mock"><span class="m-step">🔍 找场景</span><span class="m-arrow">→</span><span class="m-step">📋 复制指令</span><span class="m-arrow">→</span><span class="m-step">💬 发给 AI</span><br><br><button style="border:none;background:#007aff;color:#fff;border-radius:8px;padding:6px 14px;font-size:11.5px;font-weight:600">复制指令</button></div>
+      </div>
+    </div>
+    <p class="hint">波及点：hero 步骤条、场景卡复制按钮、空值拦截 toast（「填写完整后再复制指令」）——help_template.html 单点修改全技能生效；08 规范 HELP 流程术语同步修订。</p>
+  </div>
+
+  <div class="card">
+    <h2>② 类型徽章：多色马赛克 → 单色系</h2><span class="tag">默认配色收敛（调用者自定义色仍可用）</span>
+    <div class="pair">
+      <div class="side a"><div class="lbl">现状 · 采集绿/查看蓝/向导青/批量紫</div>
+        <div class="mock">
+          <span class="badge-m" style="background:#e7f8ee;color:#1a7a3a">采集</span>
+          <span class="badge-m" style="background:#e8f2ff;color:#0a63ce">查看</span>
+          <span class="badge-m" style="background:#e2f7f5;color:#00897b">向导</span>
+          <span class="badge-m" style="background:#f3e9fb;color:#8e3fc9">批量</span>
+          <span class="badge-m" style="background:#e7f8ee;color:#1a7a3a">回执</span>
+          <span class="badge-m" style="background:#fff1e2;color:#b25b00">待开发</span><br><br>
+          <div style="font-size:10.5px;color:#86868b">场景列表多类徽章同屏 → 马赛克感</div>
+        </div>
+      </div>
+      <div class="side b"><div class="lbl">建议 · 蓝灰单色层次</div>
+        <div class="mock">
+          <span class="badge-m" style="background:#eef2f7;color:#4a5568">采集</span>
+          <span class="badge-m" style="background:#e8f2ff;color:#0a63ce">查看</span>
+          <span class="badge-m" style="background:#eef2f7;color:#4a5568">向导</span>
+          <span class="badge-m" style="background:#e8f2ff;color:#0a63ce">批量</span>
+          <span class="badge-m" style="background:#eef2f7;color:#4a5568">回执</span>
+          <span class="badge-m" style="background:#fff1e2;color:#b25b00">待开发</span><br><br>
+          <div style="font-size:10.5px;color:#86868b">功能类统一灰阶 + 查看/批量保留蓝 + 待开发橙保留（警示唯一彩色）</div>
+        </div>
+      </div>
+    </div>
+    <p class="hint">方案：TYPE_DEFAULT 中除「待开发」外的功能色收敛为 2 色（蓝=查看系 / 灰=其他）；调用者自定义 {text,bg,fg} 不受影响。</p>
+  </div>
+
+  <div class="card">
+    <h2>③ 底部 Tab 选中态：大蓝色块 → 蓝点/蓝字/描边</h2><span class="tag">轻量化选中反馈</span>
+    <div class="pair">
+      <div class="side a"><div class="lbl">现状 · 选中 Tab 整块蓝底</div>
+        <div class="mock" style="padding:0">
+          <div style="padding:8px;font-size:11px;color:#86868b">场景页内容区（示意）</div>
+          <div class="tabbar-m"><span class="tab-m old-on">🏠<br>首页</span><span class="tab-m">🔍<br>场景</span><span class="tab-m">📊<br>统计</span><span class="tab-m">ℹ️<br>关于</span></div>
+        </div>
+      </div>
+      <div class="side b"><div class="lbl">建议 · 蓝点 + 蓝字 + 下描边</div>
+        <div class="mock" style="padding:0">
+          <div style="padding:8px;font-size:11px;color:#86868b">场景页内容区（示意）</div>
+          <div class="tabbar-m"><span class="tab-m on"><span class="dot"></span>🏠<br>首页</span><span class="tab-m"><span class="dot"></span>🔍<br>场景</span><span class="tab-m"><span class="dot"></span>📊<br>统计</span><span class="tab-m"><span class="dot"></span>ℹ️<br>关于</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="hint">方案：选中 Tab 改透明底 + 蓝字 + 顶部蓝点 + 2px 下描边；阴影去掉。</p>
+  </div>
+
+  <div class="card">
+    <h2>④ 顶部文案：「点卡片看详情」→ 用户视角</h2><span class="tag">hero lead 开发者口吻修正</span>
+    <div class="pair">
+      <div class="side a"><div class="lbl">现状</div>
+        <div class="mock"><span class="lead-m">28 场景 · 点卡片看详情</span></div>
+      </div>
+      <div class="side b"><div class="lbl">建议</div>
+        <div class="mock"><span class="lead-m">28 场景 · 点击卡片查看详情并复制指令</span></div>
+      </div>
+    </div>
+    <p class="hint">备选：<b>「点击卡片，查看场景说明」</b>（更短）或 <b>「点卡片查看详情 · 复制指令发给 AI」</b>（更完整）——三选一拍板。</p>
+  </div>
+
+</main>
+<div class="foot">
+  <b>拍板方式</b>：会话回复「#330 全采纳」即按右侧四项建议实施（术语「复制指令」+ 徽章单色系 + Tab 轻量化 + 顶部文案），或逐项指定。实施 = help_template.html 单点修改 + 08 规范术语同步 + 双端视觉验收。<br>
+  <b>验收视角</b>：手机 390px 下徽章列表噪音是否下降 · Tab 选中态在浅色场景下的可识别性 · 「复制指令」措辞是否顺口。
+</div>
+</body>
+</html>

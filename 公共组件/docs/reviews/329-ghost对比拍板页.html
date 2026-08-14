@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>#329 复制按钮 ghost 样式 · A/B 对比拍板页</title>
+<style>
+  body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;margin:0;background:#f5f5f7;color:#1d1d1f}
+  header{background:#fff;padding:16px 20px;border-bottom:1px solid #e5e5ea}
+  header h1{font-size:17px;margin:0 0 4px}
+  header p{margin:0;font-size:12px;color:#86868b}
+  main{max-width:1000px;margin:0 auto;padding:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+  .panel{background:#fff;border-radius:14px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.06);border-top:3px solid #d2d2d7}
+  .panel.b{background:#fff;border-top-color:#ff9500}
+  .panel.c{background:#fff;border-top-color:#af52de}
+  .panel h2{font-size:14px;margin:0 0 2px}
+  .panel .ver{font-size:11px;color:#86868b;margin-bottom:12px}
+  .panel .badge{display:inline-block;font-size:10.5px;border-radius:99px;padding:2px 8px;margin:4px 0 10px}
+  .panel.a .badge{background:#ececf1;color:#6e6e73}
+  .panel.b .badge{background:rgba(255,149,0,.12);color:#ff9500}
+  .panel.c .badge{background:rgba(175,82,222,.12);color:#af52de}
+  .scene{background:#f8f8fa;border-radius:10px;padding:12px;margin-bottom:10px}
+  .scene .t{font-size:11px;color:#86868b;margin-bottom:8px}
+  .scene .hm-actions{max-width:none;margin:0}
+  /* 方案 B 样式（仅本页模拟, 未改资产）: 描边变浅 + 字号 12px + min-height 40px */
+  .panel.b button.copy.ghost{background:var(--card);color:var(--blue);border:1px solid rgba(0,122,255,.38);min-height:40px;font-size:12px;font-weight:600}
+  /* 方案 C 样式（仅本页模拟）: 折叠进「更多」 */
+  .more-wrap{position:relative;display:inline-flex}
+  .more-btn{background:#fff;color:var(--blue);border:1.5px solid var(--blue);border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:700;cursor:pointer;min-height:44px}
+  .more-menu{display:none;position:absolute;right:0;bottom:calc(100% + 6px);background:#fff;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.14);padding:6px;min-width:150px;z-index:30}
+  .more-menu.show{display:block}
+  .more-menu button{display:block;width:100%;border:none;background:none;text-align:left;padding:10px 12px;font-size:13px;color:var(--fg);border-radius:8px;cursor:pointer}
+  .more-menu button:hover{background:#f2f2f5}
+  .note{font-size:11px;color:#86868b;line-height:1.6;margin-top:10px}
+  .foot{max-width:1000px;margin:0 auto;padding:0 20px 40px;font-size:12px;color:#6e6e73;line-height:1.8}
+  .foot b{color:#1d1d1f}
+  .choice{position:sticky;bottom:12px;margin:16px auto;max-width:640px;background:#fff;border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.18);padding:14px 18px;display:flex;align-items:center;gap:12px;z-index:50}
+  .choice button{border:none;border-radius:999px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}
+  .choice .pick-a{background:#ececf1;color:#1d1d1f}
+  .choice .pick-b{background:#ff9500;color:#fff}
+  .choice .pick-c{background:#af52de;color:#fff}
+  .choice span{font-size:12px;color:#6e6e73;flex:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>#329 · 复制按钮 ghost 样式降权重 · A/B/C 对比拍板页</h1>
+  <p>背景：#313 子项 3 · #299 双端验收 + VLM 视觉审查两轮反馈——「数据与日志」两个 ghost 按钮抢主操作视觉重心。本页三方案同屏对比；看定后在会话里告诉我选哪个（如「#329 选方案①」），公共层即按所选实施。</p>
+</header>
+<main>
+  <div class="panel a">
+    <h2>A · 现状</h2><span class="badge">v1.25 资产当前样式</span>
+    <p class="ver">白底 + 1.5px 主色描边 + min-height 48px + 13.5px 加粗</p>
+    <div class="scene"><div class="t">主场景 · 主操作 + 数据/日志 ghost</div>
+      <div class="hm-actions">
+        <button class="copy primary wide" onclick="toast('已复制 · 粘贴给 AI')">生成方案</button>
+        <button class="copy ghost" onclick="toast('已复制数据 · 粘贴给 AI')">复制数据</button>
+        <button class="copy ghost" onclick="toast('已复制日志 · 粘贴给 AI')">复制日志</button>
+      </div>
+    </div>
+    <p class="note">VLM 反馈：ghost 与主操作同为 48px 高 + 同色描边，视觉重量接近主按钮，主操作被抢戏。</p>
+  </div>
+
+  <div class="panel b">
+    <h2>B · 方案① 降权重不动布局</h2><span class="badge">推荐 · 不依赖布局/规范变更</span>
+    <p class="ver">描边变浅（1px 38% 透明度）+ 字号 12px（600）+ min-height 40px</p>
+    <div class="scene"><div class="t">主场景 · 主操作 + 数据/日志 ghost（同布局）</div>
+      <div class="hm-actions">
+        <button class="copy primary wide" onclick="toast('已复制 · 粘贴给 AI')">生成方案</button>
+        <button class="copy ghost" onclick="toast('已复制数据 · 粘贴给 AI')">复制数据</button>
+        <button class="copy ghost" onclick="toast('已复制日志 · 粘贴给 AI')">复制日志</button>
+      </div>
+    </div>
+    <p class="note">主操作保持 48px 蓝实心；ghost 高度/描边/字号全面降级 → 层次拉开。base.css 单点修改全技能生效，08 规范零改动。</p>
+  </div>
+
+  <div class="panel c">
+    <h2>C · 方案② 折叠进「更多」</h2><span class="badge">需先改 08 规范</span>
+    <p class="ver">复制数据/日志收进「更多」弹出菜单（本页为交互模拟）</p>
+    <div class="scene"><div class="t">主场景 · 主操作 + 「更多」入口</div>
+      <div class="hm-actions" style="grid-template-columns:1fr 1fr">
+        <button class="copy primary wide" onclick="toast('已复制 · 粘贴给 AI')">生成方案</button>
+        <div style="grid-column:1/-1;display:flex;justify-content:center">
+          <div class="more-wrap">
+            <button class="more-btn" onclick="document.querySelector('.more-menu').classList.toggle('show')">更多 ▾</button>
+            <div class="more-menu">
+              <button onclick="document.querySelector('.more-menu').classList.remove('show');toast('已复制数据 · 粘贴给 AI')">复制数据</button>
+              <button onclick="document.querySelector('.more-menu').classList.remove('show');toast('已复制日志 · 粘贴给 AI')">复制日志</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="note">主视觉最干净；但与 08 规范「复制数据/日志独立一行」硬标准冲突，需先改规范再实施；多一次点击成本。</p>
+  </div>
+</main>
+
+<div class="choice">
+  <span>看定后在会话中回复「#329 选 A / B / C」即可（本页按钮仅为本地标注，不会自动写 GitHub）。</span>
+  <button class="pick-a" onclick="pick('A')">选 A 现状</button>
+  <button class="pick-b" onclick="pick('B')">选 B 方案①</button>
+  <button class="pick-c" onclick="pick('C')">选 C 方案②</button>
+</div>
+<div class="foot">
+  <b>验收视角</b>：① 主操作「生成方案」在三种方案下的视觉主导性 ② ghost 按钮可读性（描边过浅是否仍清晰）③ 手机 390px 宽度下两 ghost 并排是否拥挤（B 方案 40px 高更紧凑）④ 与「复制数据/复制日志必须可见可点」的 08 规范张力（C 方案需先改规范）。
+</div>
+
+<script src="../assets/base.js"></script>
+<script>
+function pick(k){
+  var names={A:'现状（不改）',B:'方案① 降权重不动布局（描边变浅+字号12px+min-height40px）',C:'方案② 折叠进「更多」入口（需先改 08 规范）'};
+  toast('已标注：'+names[k]+' · 请在会话中回复 #329 选 A/B/C','',{badge:{text:'备忘',type:'ok'}});
+  window.__pick=k;
+  fetch('https://127.0.0.1:3080/api/noop').catch(function(){});
+}
+</script>
+</body>
+</html>

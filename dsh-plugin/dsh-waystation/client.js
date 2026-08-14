@@ -1,10 +1,12 @@
 /**
- * DSH-Waystation · Client 半（UX v20 · 2026-08-14 第六批执行）
+ * DSH-Waystation · Client 半（UX v21 · 2026-08-14 第七批执行）
  *
- * v20 变更（用户拍板）：
- *   43. 标签「+N」可点击展开全部标签（含颜色），再点「收起」折叠；悬停 +N tooltip 显示全部标签名；
- *       store 新增 expTags（按 issue number 记录展开态）
+ * v21 变更（用户拍板）：
+ *   44. 动作按钮 prompt 精简 + 统一引导句：/triage、/wayfinder + URL +
+ *       「从第一性原理出发推进，优先复用现有技能库；不确定用哪个技能时，用 /ask-matt 路由。」
+ *       （技能内部流程自带，不再重复灌输；自定义模板/前缀开关保留）
  *
+ * v20：标签「+N」点击展开全部标签/收起。
  * v19：grilling→讨论 / 头部 repo 名 / 环境段末尾 / map 详情执行+任务动作 / map 行进度 /
  * 交接时间戳+查最新+复制。
  * v18：可接/占用列表口径 / 按钮去开始（诊断/执行/修复）/ 点击预填输入框。
@@ -286,6 +288,9 @@ return {
       })
       return colorOf
     }
+    // v21：统一引导句 —— 精简 prompt 后保留一句通用思想引导（第一性原理 + 技能库路由），
+    // 技能内部细节由 /wayfinder / /triage 自带，不重复灌输
+    const GUIDE_LINE = '从第一性原理出发推进，优先复用现有技能库；不确定用哪个技能时，用 /ask-matt 路由。'
     // v19：共享 —— 行级动作（列表与 map 详情共用）：按 label 四选一（诊断/修复/讨论/执行），预填输入框；
     // 按钮主体色 = 对应 label 的 GitHub 配置色（YIQ 感知亮度定文字色）
     const mkRowAction = function (st, x, narrow, colorOf) {
@@ -309,9 +314,10 @@ return {
           title: label,
         }, [Ic({ n: icon, size: 10 }), narrow ? null : h('span', null, label)])
       }
-      if (has('needs-triage')) return mk('chat', '诊断', '/triage\n' + url + '\n\n请按 triage 流程为这个 issue 分流：categorise → verify → grill → 写 agent-ready brief。', btnColor('needs-triage', '#f59e0b'))
-      if (has('bug')) return mk('hammer', '修复', '/wayfinder\n' + url + '\n\n请按 wayfinder 流程开始修复这个 bug：对齐所属 map 的 Destination，认领后处理。', btnColor('bug', '#f87171'))
-      if (has('wayfinder:grilling')) return mk('chat', '讨论', '/wayfinder\n' + url + '\n\n请按 wayfinder 流程处理这个 grilling 票：加载所属 map 对齐 Destination，按 grilling 流程穷追不舍地对齐设计问题；完成后以 resolution comment 收尾。', btnColor('wayfinder:grilling', '#d93f0b'))
+      // v21：技能命令 + URL + 统一引导句（不再重复灌输技能内部流程）
+      if (has('needs-triage')) return mk('chat', '诊断', '/triage\n' + url + '\n\n' + GUIDE_LINE, btnColor('needs-triage', '#f59e0b'))
+      if (has('bug')) return mk('hammer', '修复', '/wayfinder\n' + url + '\n\n' + GUIDE_LINE, btnColor('bug', '#f87171'))
+      if (has('wayfinder:grilling')) return mk('chat', '讨论', '/wayfinder\n' + url + '\n\n' + GUIDE_LINE, btnColor('wayfinder:grilling', '#d93f0b'))
       return mk('play', '执行', startText(st, x), '#c084fc')
     }
     // v19：交接文档时间戳文件名（YYYYMMDD-HHMMSS）
@@ -492,7 +498,7 @@ return {
       ? st.snapshot.repo.owner + '/' + st.snapshot.repo.name
       : 'FeatherHunter/SKILLS'
 
-    // 开始 prompt：/wayfinder + URL + 流程指令（v12：点击「开始」直接复制，不再弹窗/开新会话）
+    // v21：开始 prompt 精简 —— /wayfinder + URL + 统一引导句（技能内部细节自带，不再重复灌输）
     const startText = (st, t) => {
       const url = 'https://github.com/' + repoStr(st) + '/issues/' + t.number
       if (startCfg.custom) {
@@ -501,10 +507,7 @@ return {
           .replace(/\{url\}/g, url)
           .replace(/\{title\}/g, t.title)
       }
-      const body = url +
-        '\n\n**本 ticket 应在独立的新会话中执行**（wayfinder 语义：每张 ticket 一个会话，设计者要求彼此独立）。' +
-        '保持当前工作目录；会话命名建议：' + newSessionTitle(t) +
-        '\n\n请按 wayfinder 流程处理这个 ticket：先加载所属 map 的低分辨率视图对齐 Destination，认领该 ticket，再用 Notes 中指定的技能（如 /research）解析它；完成后以 resolution comment 收尾并关闭 issue。本 session 只解析这一个 ticket。'
+      const body = url + '\n\n' + GUIDE_LINE
       return (startCfg.withWayfinder ? '/wayfinder\n' : '') + body
     }
     const SESSION_TITLE_PREFIX = '[dsh-waystation]'
@@ -704,7 +707,7 @@ return {
           h('span', { className: 'dsws-chip dsws-chip-m' }, [Ic({ n: 'map', size: 11 }), h('span', null, 'wayfinder:map')]),
           h('span', { style: { flex: 1 } }),
           // v19-38：顶部「执行」= 整张 map 的执行入口（预填输入框）
-          h('button', { className: 'dsws-btn primary', onClick: function () { inject(st, '/wayfinder\n' + m.url + '\n\n请按 wayfinder 流程执行这张 map：加载低分辨率视图对齐 Destination，按 Notes 指定技能推进；完成后以 resolution comment 收尾并关闭。') }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
+          h('button', { className: 'dsws-btn primary', onClick: function () { inject(st, '/wayfinder\n' + m.url + '\n\n' + GUIDE_LINE) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
             Ic({ n: 'play', size: 10 }),
             h('span', null, '执行'),
           ]),

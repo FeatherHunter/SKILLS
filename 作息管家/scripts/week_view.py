@@ -91,7 +91,7 @@ def _build_ai_questions(total_minutes, day_totals, l1_minutes, sleep_minutes) ->
 
 
 def _build_copy_prompt(meta, records, summary_items, health) -> str:
-    """4 部分复制 prompt(ADR-0002 Q6 · 总纲 §04 原则 10 · 本地构建,不依赖共享映射)"""
+    """3 部分复制 prompt(2026-08-13 用户拍板:技能+唤醒词+参数 · 不写死脚本调用)"""
     from calculations import fmt_dur_short
 
     top3 = summary_items[:3]
@@ -100,13 +100,12 @@ def _build_copy_prompt(meta, records, summary_items, health) -> str:
         for s in top3
     )
     return (
-        f"① 场景: 查看了 {meta['start']} 至 {meta['end']} 作息周视图"
-        f"(7×24 全分类总览,共 {len(records)} 条记录,总时长 {fmt_dur_short(meta['total_minutes'])})\n\n"
-        f"② 数据:\n健康分: {health.get('score', '—')} ({health.get('label', '—')})\n{cat_lines}\n\n"
-        f"③ 期望: 可对某类做区间深挖(render-record-category-range),"
-        f"或对本周单日做复盘(render-replay),或规划下周安排\n\n"
-        f"④ 来源: week_view.html 生成于 {meta['generated_at']},"
-        f"数据来自 schedule_records WHERE date BETWEEN {meta['start']} AND {meta['end']}"
+        f"① 技能与唤醒词: 作息管家 · 「周视图」\n\n"
+        f"② 参数:\n"
+        f"  - 区间: {meta['start']} ~ {meta['end']} · 记录 {len(records)} 条 · "
+        f"总时长 {fmt_dur_short(meta['total_minutes'])}\n"
+        f"  - 健康分: {health.get('score', '—')} ({health.get('label', '—')})\n{cat_lines}\n\n"
+        f"③ 执行: 按「周视图」流程处理后续请求(可区间深挖 / 单日复盘 / 规划下周)"
     )
 
 

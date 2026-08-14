@@ -87,7 +87,7 @@
           }
         },
         "status": { "enum": ["", "【待开发】"], "description": "'' 可用 / 【待开发】禁用" },
-        "prompt_template": { "type": "string", "minLength": 1, "description": "复制 prompt 全文，与技能 scene_data 定稿零差异" },
+        "prompt_template": { "type": "string", "minLength": 1, "description": "复制指令 全文，与技能 scene_data 定稿零差异" },
         "editable_fields": {
           "type": "array",
           "description": "参数化表单字段（复制按钮契约 v2）",

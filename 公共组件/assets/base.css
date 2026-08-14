@@ -65,12 +65,13 @@ button.copy.red {
 button.copy.red:active { background: #c0392b; }
 
 /* ghost: 复制数据/复制日志 = 白底 + 轻主色描边 + 主色文字胶囊（独立一行）
- * v1.26 · #329 降权重: 描边 1px/35% 透明度 + 12px/600 + min-height 40px —— 视觉重心归主操作（VLM 两轮反馈） */
+ * v1.26 · #329 降权重: 描边 1px/38% 透明度 + 12px/600 + min-height 40px —— 视觉重心归主操作（VLM 两轮反馈）
+ * v1.28 · 审查修复: 透明度 35%→38%（与拍板页 329-ghost对比拍板页.html B 方案所见一致） */
 button.copy.ghost {
   background: var(--card);
   color: var(--blue);
   border: 1px solid var(--blue);
-  border-color: color-mix(in srgb, var(--blue) 35%, transparent);
+  border-color: color-mix(in srgb, var(--blue) 38%, transparent);
   min-height: 40px;
   font-size: 12px;
   font-weight: 600;

@@ -249,8 +249,9 @@ function _barMulti(el,items,opt){
   var totals=items.map(function(it){var s=0;it.values.forEach(function(v){s+=_num(v);});return s;});
   var maxTotal=Math.max.apply(null,totals);
   var allMax=0;items.forEach(function(it){it.values.forEach(function(v){if(_num(v)>allMax)allMax=_num(v);});});
-  var allMin=Math.min.apply(null,items.map(function(x){return Math.min.apply(null,x.values);}).concat([0]));
-  var allHi=Math.max.apply(null,items.map(function(x){return Math.max.apply(null,x.values);}));
+  /* yMin/yMax（v1.28 · 审查修复）: grouped 尊重显式 Y 域（对齐单柱语义 L361-364）; stacked 按契约不参与 */
+  var allMin=opt.yMin!==null&&!isNaN(opt.yMin)?_num(opt.yMin):Math.min.apply(null,items.map(function(x){return Math.min.apply(null,x.values);}).concat([0]));
+  var allHi=opt.yMax!==null&&!isNaN(opt.yMax)?_num(opt.yMax):Math.max.apply(null,items.map(function(x){return Math.max.apply(null,x.values);}));
   if(allHi===allMin)allHi=allMin+1;
   var hStyle=opt.height?('style="--c-h:'+opt.height+'px"'):'';
   var plot=items.map(function(it,i){
@@ -852,11 +853,14 @@ window.charts={
     var X=function(v){return _P+(_W-2*_P)*(v-xMin)/(xMax-xMin);};
     var Y=function(v){return _H-_P-(v-yMin)/(yMax-yMin)*(_H-2*_P);};
     var dots='',pts=[];
+    /* dotSize（v1.28 · 审查修复）: 声明即实现——内联覆盖尺寸 + 居中 margin（缺省 9px 与 hm-c-dot 一致） */
+    var ds=opt.dotSize||9;
+    var dsStyle=ds===9?'':'width:'+ds+'px;height:'+ds+'px;margin:-'+(ds/2)+'px 0 0 -'+(ds/2)+'px;';
     items.forEach(function(it,i){
       var px=X(_num(it.x)),py=Y(_num(it.y));
       pts.push([px,py,it]);
       var lx=(px/_W*100).toFixed(2),ty=(py/_H*100).toFixed(2);
-      dots+='<i class="hm-c-dot hm-c-sdot" data-i="'+i+'" style="left:'+lx+'%;top:'+ty+'%;border-color:'+opt.color+'" title="'+_esc(it.label||(it.x+', '+it.y))+'"></i>';
+      dots+='<i class="hm-c-dot hm-c-sdot" data-i="'+i+'" style="left:'+lx+'%;top:'+ty+'%;'+dsStyle+'border-color:'+opt.color+'" title="'+_esc(it.label||(it.x+', '+it.y))+'"></i>';
     });
     /* 回归线（线性最小二乘 y = a + bx; regression:false 关闭） */
     var regHtml='';

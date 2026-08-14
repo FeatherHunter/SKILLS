@@ -50,7 +50,7 @@
   "wake_word": "唤醒词",
   "type": "采集/查看/结果/向导/批量/校验（可选）",
   "status": "'' | 【待开发】",
-  "prompt_template": "复制 prompt 全文（与技能 scene_data 定稿零差异）",
+  "prompt_template": "复制指令 全文（与技能 scene_data 定稿零差异）",
   "editable_fields": [
     {"name": "参数名", "label": "显示标签", "value": "推荐值", "hint": "提示（可选）", "required": false}
   ]
@@ -95,7 +95,7 @@ python 公共组件/injector.py 公共组件/assets/help_template.html \
 ## 7. 与现有资产的关系
 
 - 现有 4 种 HELP 布局家族（居家模板家族源 / 卡路里 4 层独立 / 作息 3 层+工具栏 / 私家大厨 ww-card）→ 技能重构时收敛到 Base help_template.html，各技能传数据
-- 复制 prompt 交互复用 Base P0（copyText/toast）；参数化场景复用「复制按钮契约 v2」（editable_fields）；待开发徽章模板内置 t-dev（对齐 V4.16 定稿视觉）
+- 复制指令 交互复用 Base P0（copyText/toast）；参数化场景复用「复制按钮契约 v2」（editable_fields）；待开发徽章模板内置 t-dev（对齐 V4.16 定稿视觉）
 - **范围：P2（第二版）正式落地**——本契约 v1.2 + scene-data-contract v1 + help_template.html + injector `--help-template` 全部入库（#289）
 
 ---

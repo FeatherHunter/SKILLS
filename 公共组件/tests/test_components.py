@@ -1553,6 +1553,17 @@ def test_line_markpoint_default_absent_byte_identical(chart_page):
     assert n1 == 0 and n2 == 0 and html1 == html2
 
 
+def test_line_markpoint_right_edge_not_clipped(chart_page):
+    """贴边防裁剪（最右）: 末位点长标注不超出容器右边界（v1.28 审查修复补测）"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'a',value:2},{label:'b',value:1},{label:'c',value:9}], {animation:false, markPoint:{index:2,label:'很长很长很长的标注文字'}})")
+    box = chart_page.evaluate("""() => {
+      const svg=document.querySelector('.hm-c-line-svg').getBoundingClientRect();
+      const l=document.querySelector('.hm-c-mp-t').getBoundingClientRect();
+      return {l: l.left-svg.left, r: l.right-svg.left, w: svg.width};
+    }""")
+    assert box['l'] >= 0 and box['r'] <= box['w']
+
+
 def test_line_markpoint_series_main_series(chart_page):
     """series 场景: 标注作用于主序列（series[0]）最大值点, 不取其他序列更大值"""
     chart_page.evaluate("""
@@ -2084,6 +2095,35 @@ def test_ghost_button_downgraded_style(page):
     assert cs['h'] == '40px' and cs['fs'] == '12px' and cs['fw'] == '600' and cs['bw'] == '1px'
     # 浅描边: color-mix 后含透明通道（rgba 或 color-mix 计算的颜色）
     assert 'rgba' in cs['bc'] or 'color' in cs['bc']
+
+
+def test_scatter_dot_size_effective(chart_page):
+    """dotSize 数值: 散点直径生效（内联 width/height/margin 居中; v1.28 声明即实现）"""
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2},{x:2,y:4}], {animation:false, dotSize:16});
+    """)
+    st = chart_page.evaluate("document.querySelector('.hm-c-sdot')?.getAttribute('style')")
+    assert 'width:16px' in st and 'height:16px' in st and 'margin:-8px' in st
+    # 缺省 9px: 无内联尺寸覆盖（与 hm-c-dot 一致）
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2},{x:2,y:4}], {animation:false});
+    """)
+    st2 = chart_page.evaluate("document.querySelector('.hm-c-sdot')?.getAttribute('style')")
+    assert 'width:9px' not in st2
+
+
+def test_bar_grouped_y_min_max_respected(chart_page):
+    """grouped 尊重 yMin/yMax: 显式 Y 域固定子柱高度比例（v1.28 审查修复 · 对齐单柱语义）"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'一月',values:[2,8]}],
+        {grouped:true, yMin:0, yMax:20, animation:false});
+    """)
+    heights = chart_page.evaluate("[...document.querySelectorAll('.hm-c-gb')].map(n=>parseFloat(n.style.height))")
+    # 域 [0,20]: 2→10%, 8→40%（未尊重时是 25%/100%）
+    assert heights == [10.0, 40.0]
 
 
 # ── bar: 参数对齐 ───────────────────────────────────────

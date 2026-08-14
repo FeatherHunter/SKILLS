@@ -77,7 +77,7 @@
 | `wake_word` | string | ✅ | 唤醒词（卡片 chip 展示） |
 | `types` | array | 可选 | **场景类型徽章数组（1~N 个）**；元素 = 字符串（默认配色）或 `{text, bg?, fg?}`（自定义文字+颜色，缺省走默认） |
 | `status` | string | ✅ | `''` 可用 / `【待开发】` 禁用（禁用 = 醒目标注 + 复制按钮仍可点） |
-| `prompt_template` | string | ✅ | **复制 prompt 全文，与技能 scene_data 定稿零差异**（#123 契约） |
+| `prompt_template` | string | ✅ | **复制指令 全文，与技能 scene_data 定稿零差异**（#123 契约） |
 | `editable_fields` | array | 可选 | 参数化表单字段（见 §5） |
 
 ### 3.1 types 徽章（多标签 · 2026-08-12 用户拍板）

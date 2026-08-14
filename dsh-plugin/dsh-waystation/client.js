@@ -293,8 +293,51 @@ return {
           .replace(/\{title\}/g, t.title)
       }
       const body = url +
+        '\n\n⚠️ 本 ticket 应在**独立的新会话**中执行（wayfinder 语义：每张 ticket 一个会话，设计者要求彼此独立）。' +
+        '保持当前工作目录；会话命名建议：' + newSessionTitle(t) +
         '\n\n请按 wayfinder 流程处理这个 ticket：先加载所属 map 的低分辨率视图对齐 Destination，认领该 ticket，再用 Notes 中指定的技能（如 /research）解析它；完成后以 resolution comment 收尾并关闭 issue。本 session 只解析这一个 ticket。'
       return (startCfg.withWayfinder ? '/wayfinder\n' : '') + body
+    }
+    // 会话命名格式（拍板：与插件 DSH-Waystation 同名前缀）
+    const SESSION_TITLE_PREFIX = '[dsh-waystation]'
+    const newSessionTitle = (t) => SESSION_TITLE_PREFIX + ' ' + t.title + ' #' + t.number
+
+    // 一键开新会话（拍板后新增需求）：同 cwd + 自动命名 + 切换；任何一步失败降级为提醒手动
+    const openInNewSession = async function (t) {
+      const sessions = ctx.get('sessions')
+      if (sessions === undefined || typeof sessions.create !== 'function' || typeof sessions.open !== 'function') {
+        flash('⚠️ 无法自动开新会话（sessions 服务不可用）：请手动开新会话，命名「' + newSessionTitle(t) + '」')
+        return false
+      }
+      let cwd = ''
+      try {
+        const st = await host.call('wf.status')
+        if (st && st.cwd) cwd = st.cwd
+      } catch (e) { /* cwd 不可得 → 走 host 默认项目目录 */ }
+      try {
+        const res = await sessions.create(cwd ? { cwd: cwd } : {})
+        const sid = res && res.sessionId
+        if (!sid) {
+          flash('⚠️ 开新会话失败：' + String(((res && res.error) || '未知')).slice(0, 120) + '（可手动开新会话）')
+          return false
+        }
+        let renamed = false
+        try {
+          const scoped = (typeof sessions.scope === 'function') ? sessions.scope(sid) : undefined
+          const face = (scoped && typeof sessions.sessionOf === 'function') ? sessions.sessionOf(scoped) : undefined
+          if (face && typeof face.rename === 'function') {
+            const rr = await face.rename(newSessionTitle(t))
+            renamed = !!(rr && rr.title)
+          }
+        } catch (e2) { renamed = false }
+        if (renamed) flash('✅ 已开新会话并命名：「' + newSessionTitle(t) + '」')
+        else flash('✅ 已开新会话（自动命名不可用，可手动重命名）：' + newSessionTitle(t))
+        try { sessions.open(sid) } catch (e3) { flash('新会话已创建（' + newSessionTitle(t) + '），请从会话列表打开') }
+        return true
+      } catch (e) {
+        flash('⚠️ 开新会话失败：' + String((e && e.message) || e).slice(0, 120) + '（请手动开新会话）')
+        return false
+      }
     }
     const fixateText = (t) => '【' + WORD() + ' ' + nowStr() + '】' + t.title + ' #' + t.number + '\n\n'
     const inject = (text) => {
@@ -576,10 +619,11 @@ return {
       ])
     }
 
-    // ---- 6.9 开始此 Issue 确认框（#347：真实认领 RPC + 前置未就绪黄条）----
+    // ---- 6.9 开始此 Issue 确认框（#347 认领 RPC + 黄条；新会话增强：提醒 + 一键开新会话同 cwd + 自动命名）----
     const StartModal = ({ t }) => {
       const s = useStore()
       const [claim, setClaim] = React.useState(true)
+      const [openInNew, setOpenInNew] = React.useState(true)
       const [warnings, setWarnings] = React.useState([])
       const [busy, setBusy] = React.useState(false)
       const rec = TYPE_SKILLS[t.type] || []
@@ -634,19 +678,38 @@ return {
           t.claimedBy = '已认领'
           flash('⚠️ 无 Host 认领能力：已本地标记（需加载插件 Host 半）')
         }
+        // 2) 开新会话（勾选时：create+rename+open 内部完成；失败自动降级为提醒）
+        let opened = false
+        if (openInNew) { opened = await openInNewSession(t) }
+        // 3) 注入/复制指令（新会话就绪用）：已切走时走剪贴板，否则写入当前输入框
+        const text = startText(t)
+        if (opened) {
+          try {
+            if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(text)
+              flash('✅ 指令已复制，请在新会话中粘贴发送')
+            } else { inject(text) }
+          } catch (e) { inject(text) }
+        } else {
+          inject(text)
+        }
         s.startFor = null
         emit()
-        inject(startText(t))
       }
       return h('div', { className: 'dsws-modal', onClick: function () { if (!busy) { s.startFor = null; emit() } } }, [
         h('div', { className: 'dsws-modalbox', onClick: function (e) { e.stopPropagation() } }, [
           warnings.length ? h('div', { style: { background: 'rgba(245,158,11,.12)', border: '1px solid rgba(245,158,11,.45)', color: '#f59e0b', borderRadius: 6, padding: '6px 10px', fontSize: 12, marginBottom: 10 } }, '⚠️ 前置未就绪：' + warnings.join('；') + '（不阻断，可继续）') : null,
+          h('div', { style: { background: 'rgba(188,140,255,.1)', border: '1px solid rgba(188,140,255,.35)', color: '#c084fc', borderRadius: 6, padding: '6px 10px', fontSize: 12, marginBottom: 10 } }, '⚠️ 每张 ticket 应在**独立的新会话**中完成（wayfinder 语义）。勾选后：保持当前工作目录开新会话 → 自动命名「' + SESSION_TITLE_PREFIX + ' <标题> #号」→ /wayfinder 指令就绪供新会话发送'),
           h('div', { style: { fontWeight: 600, marginBottom: 8 } }, '▶ 开始此 Issue'),
           h('div', { style: { marginBottom: 4 } }, [TypeChip({ type: t.type }), h('span', null, t.title), h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)' } }, ' #' + t.number)]),
           h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', marginBottom: 8 } }, '推荐技能：' + (rec.length ? rec.map(function (r) { return '/' + r }).join(' + ') : '（无）') + '　·　注入后将自动带上 /wayfinder 与流程指令'),
-          h('label', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 12, cursor: 'pointer' } }, [
+          h('label', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 6, cursor: 'pointer' } }, [
             h('input', { type: 'checkbox', checked: claim, disabled: busy, onChange: function (e) { setClaim(e.target.checked) } }),
             h('span', null, '同时认领（assign 给自己 · wayfinder 的 claim 语义）'),
+          ]),
+          h('label', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 12, cursor: 'pointer' } }, [
+            h('input', { type: 'checkbox', checked: openInNew, disabled: busy, onChange: function (e) { setOpenInNew(e.target.checked) } }),
+            h('span', null, '同时在新会话中打开（保持当前工作目录 · 自动命名）'),
           ]),
           h('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end' } }, [
             h('button', { className: 'dsws-btn', disabled: busy, onClick: function () { s.startFor = null; emit() } }, '取消'),

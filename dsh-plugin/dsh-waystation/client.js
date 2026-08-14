@@ -247,6 +247,8 @@ return {
         'env.failFull': '环境检查失败：{err}',
         'env.detecting': '检测中…',
         'env.missingBanner': '{n} 项缺失，先补齐再开始 wayfinder 工作',
+        'env.openUrl': '打开网址',
+        'env.copyUrl': '复制网址',
         'panel.snapErr': '快照异常',
         'panel.loading': '加载中…',
         'panel.tabList': '列表',
@@ -399,6 +401,8 @@ return {
         'env.failFull': 'Environment check failed: {err}',
         'env.detecting': 'Detecting…',
         'env.missingBanner': '{n} missing — fix them before starting wayfinder work',
+        'env.openUrl': 'Open URL',
+        'env.copyUrl': 'Copy URL',
         'panel.snapErr': 'Snapshot error',
         'panel.loading': 'Loading…',
         'panel.tabList': 'List',
@@ -864,7 +868,12 @@ return {
     const envLabel = (st) => { const n = readyCount(st); return n < 0 ? '--/8' : n + '/8' }
     const setupCheck = (st) => (st.checks || []).find(function (c) { return c.id === 2 })
 
-    const blockerNames = (t, m) => t.blockedBy.map(function (b) {
+    // #370：blockerNames 只列「仍 OPEN」的阻塞者（GitHub 依赖边在阻塞者关闭后仍保留，需按状态过滤）
+    const openBlockers = (t, m) => t.blockedBy.filter(function (b) {
+      const bt = m.tickets.find(function (x) { return x.number === b })
+      return bt !== undefined && bt.state === 'OPEN'
+    })
+    const blockerNames = (t, m) => openBlockers(t, m).map(function (b) {
       const bt = m.tickets.find(function (x) { return x.number === b })
       return bt ? bt.title : ('#' + b)
     }).join('；')
@@ -950,7 +959,8 @@ return {
 
     // 快照（#346：面板数据源；force 走 wf.refresh 全量重建；wf.snapshot 侧 5s 缓存）
     const loadSnapshot = function (st, force) {
-      if (st.snapLoading) return Promise.resolve()
+      // #370 次要观察：force 刷新时跳过 snapLoading 守卫（加载中点击「刷新」不再 no-op）
+      if (st.snapLoading && !force) return Promise.resolve()
       if (typeof host === 'undefined' || typeof host.call !== 'function') {
         st.snapMode = 'err'
         st.snapError = tr('err.hostUnavailable')
@@ -1196,7 +1206,8 @@ return {
           ]),
           h('div', { className: 'dsws-tt-sub', style: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } }, [
             t.claimedBy ? subItem('person', '#58a6ff', tr('map.subClaimed', { who: t.claimedBy })) : null,
-            t.blockedBy.length ? subItem('lock', '#f0883e', tr('map.subBlocked', { who: blockerNames(t, g.m) })) : null,
+            // #370：被阻塞 chip 只显示仍 OPEN 的阻塞者（与 compute/主列表/按钮抑制口径一致）
+            blocked ? subItem('lock', '#f0883e', tr('map.subBlocked', { who: blockerNames(t, g.m) })) : null,
             t.state === 'CLOSED' ? subItem('check', '#3fb950', tr('map.subClosed')) : null,
           ]),
         ]),
@@ -1483,8 +1494,15 @@ return {
       const bad = cs.filter(function (c) { return c.level === 'bad' })
       const warn = cs.filter(function (c) { return c.level === 'warn' })
       const ok = cs.filter(function (c) { return c.level === 'ok' })
+      // #373：hint 支持两种形态 —— URL（可打开/复制）或 /命令（「用 /xxx 处理」按钮，保留兼容）
       const actBtn = (c) => {
         const hint = c.hint || ''
+        if (/^https?:\/\//i.test(hint)) {
+          return h('div', { style: { display: 'flex', gap: 6, alignItems: 'center' } }, [
+            h('a', { href: hint, target: '_blank', rel: 'noreferrer', className: 'dsws-btn', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'link', size: 11 }), h('span', null, tr('env.openUrl'))]),
+            h('button', { className: 'dsws-btn', onClick: function () { copyText(st, hint, tr('toast.copied')) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'clipboard', size: 11 }), h('span', null, tr('env.copyUrl'))]),
+          ])
+        }
         const m = hint.match(/\/([a-z0-9-]+)/i)
         if (!m) return null
         return h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + m[1]) } }, tr('skill.treat', { s: m[1] }))

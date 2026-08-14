@@ -404,7 +404,8 @@ export function apply(ctx) {
     return { ok: false, level: 'bad', detail: 'API 请求失败（' + r.kind + '）', hint: '检查网络 / Token 权限', repo: null }
   }
 
-  // 检查 7/8 · 技能双层探测：DSH skills 服务 + 文件系统目录
+  // 检查 7/8 · 技能安装探测（#373 拍板：两态 —— 已安装/未安装；去掉不可靠的「挂载」判定）
+  const SKILL_INSTALL_URL = 'https://github.com/mattpocock/skills'
   async function probeSkill(name) {
     let session = false
     const skills = ctx.get('skills')
@@ -421,11 +422,12 @@ export function apply(ctx) {
         } catch (e) { /* 继续探测下一个目录 */ }
       }
     }
-    if (session && fsFound) return { ok: true, level: 'ok', detail: '会话已挂载 · ' + fsFound, hint: '', repo: null }
-    if (session) return { ok: true, level: 'ok', detail: '会话已挂载（文件层未探测到）', hint: '', repo: null }
-    if (fsFound) return { ok: false, level: 'warn', detail: '已安装但未挂载到当前会话（' + fsFound + '）', hint: '用 /' + name + ' 加载', repo: null }
-    if (home === null) return { ok: false, level: 'bad', detail: '未安装（无法探测用户主目录）', hint: '安装 Matt 技能包', repo: null }
-    return { ok: false, level: 'bad', detail: '未安装（会话层与文件层均无）', hint: '安装 Matt 技能包或放入 ~/.agents/skills/' + name, repo: null }
+    // 两态：#373 —— 任一来源发现 = 已安装（绿 ok）；均无 = 未安装（红 bad + 官方仓库地址）
+    if (session && fsFound) return { ok: true, level: 'ok', detail: '已安装（会话已挂载 · ' + fsFound + '）', hint: '', repo: null }
+    if (session) return { ok: true, level: 'ok', detail: '已安装（会话已挂载）', hint: '', repo: null }
+    if (fsFound) return { ok: true, level: 'ok', detail: '已安装（' + fsFound + '）', hint: '', repo: null }
+    if (home === null) return { ok: false, level: 'bad', detail: '未安装（无法探测用户主目录）', hint: SKILL_INSTALL_URL, repo: null }
+    return { ok: false, level: 'bad', detail: '未安装', hint: SKILL_INSTALL_URL, repo: null }
   }
 
   const CHECK_NAMES = ['仓库定位', 'setup 已执行', 'tracker = GitHub', 'gh CLI 可用', 'gh 已登录', 'API 可达', 'wayfinder 技能', 'ask-matt 技能']

@@ -1,0 +1,62 @@
+{
+  "name": "dsh-feishu-link",
+  "version": "0.1.0",
+  "description": "DSH（DeepSeek Harness）Web 界面插件 — 给 DSH Agent 接入飞书/Lark IM 的能力。仿 MCODE「侧栏 Agent 列表 + 扫码绑飞书机器人 + 长连接实时沟通」体验，落地为路线 A（IM 中心 overlay + 设置页 + input.dock 提示条）。已锁决策见 docs/ADR-GRILLING-UX.md。",
+  "type": "module",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "main": "host.js",
+  "exports": {
+    ".": "./host.js",
+    "./client": "./client.js",
+    "./helper": "./helper/helper.mjs",
+    "./fetch": "./lib/fetch.mjs",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "host.js",
+    "client.js",
+    "lib/",
+    "helper/",
+    "docs/"
+  ],
+  "scripts": {
+    "test:fetch": "node tests/verify-fetch.mjs"
+  },
+  "dependencies": {
+    "@larksuiteoapi/node-sdk": "^1.73.0",
+    "ws": "^8.18.0"
+  },
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "feishu",
+    "lark",
+    "im",
+    "bot",
+    "websocket"
+  ],
+  "author": "FeatherHunter",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/FeatherHunter/SKILLS.git",
+    "directory": "dsh-plugin/dsh-feishu-link"
+  },
+  "homepage": "https://github.com/FeatherHunter/SKILLS/tree/main/dsh-plugin/dsh-feishu-link",
+  "bugs": {
+    "url": "https://github.com/FeatherHunter/SKILLS/issues?q=is%3Aopen+dsh%3Aplugin%3Afeishu-link"
+  },
+  "wayfinder": {
+    "map": "https://github.com/FeatherHunter/SKILLS/issues/387",
+    "tickets": [
+      "https://github.com/FeatherHunter/SKILLS/issues/388",
+      "https://github.com/FeatherHunter/SKILLS/issues/389",
+      "https://github.com/FeatherHunter/SKILLS/issues/390",
+      "https://github.com/FeatherHunter/SKILLS/issues/391",
+      "https://github.com/FeatherHunter/SKILLS/issues/392"
+    ]
+  }
+}

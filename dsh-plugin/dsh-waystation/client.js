@@ -1111,7 +1111,8 @@ return {
     const pipSupported = function () {
       if (pipFailed) return false
       if (typeof window === 'undefined' || !window.documentPictureInPicture || RD === undefined || typeof RD.createRoot !== 'function') return false
-      try { if (/Electron\//i.test(navigator.userAgent)) return false } catch (e) { /* UA 不可读不阻断 */ }
+      // 加宽识别：Electron UA 可能被壳改写（如 dsh-harness-desktop 品牌），多模式匹配防漏判
+      try { if (/Electron\/|dsh-harness-desktop|dsh-desktop/i.test(navigator.userAgent)) return false } catch (e) { /* UA 不可读不阻断 */ }
       return true
     }
     const openPagePanel = function (st) {
@@ -1161,6 +1162,8 @@ return {
       armGuard()
       req.then(function (win) {
         if (settled) { try { win.close() } catch (e) { /* 已被超时接管 */ } return }
+        // 假成功防护：窗口必须真实可用且 500ms 后仍存活（Electron 等环境可能返回即刻关闭/空文档的窗口）
+        if (!win || !win.document || !win.document.body) { try { win && win.close() } catch (e) { /* 忽略 */ } failPip(); return }
         settled = true
         pipWin = win
         // 样式随搬移：复制主文档全部 <style> + <link rel=stylesheet>（面板依赖的注入样式与主题变量）
@@ -1181,6 +1184,16 @@ return {
         win.document.body.appendChild(holder)
         pipRoot = RD.createRoot(holder)
         pipRoot.render(h(OverlayPanel, Object.assign({}, lastOverlayProps, { pip: true })))
+        // 存活看门狗：若窗口在 500ms 内被关闭（Electron 假成功场景）→ 视为失败降级页内
+        const wd = function () {
+          if (pipWin && pipWin.closed) {
+            try { if (pipRoot) { pipRoot.unmount(); pipRoot = null } } catch (e) { /* 忽略 */ }
+            pipWin = null
+            failPip()
+          }
+        }
+        if (timer !== undefined && typeof timer.timeout === 'function') timer.timeout(wd, 500)
+        else setTimeout(wd, 500)
         // 窗口关闭（含页面刷新语义）→ 清理并复位
         win.addEventListener('pagehide', function () {
           try { if (pipRoot) { pipRoot.unmount(); pipRoot = null } } catch (err) { /* 清理期错误忽略 */ }
@@ -1895,14 +1908,16 @@ return {
         h('span', null, label),
       ])
       return h('div', { ref: dockRef, style: { position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'var(--dsw-font-family)', fontSize: 12, color: 'var(--dsw-alias-label-primary,#e6edf3)', background: 'var(--dsw-alias-bg-layer-1,#10131a)' } }, [
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderBottom: '1px solid var(--dsw-alias-border-l1,#2a2d35)', flex: 'none' } }, [
+        // 头部（标题 + 悬浮/关闭）：横线不放在这行，下移到标签行下方与对话/轨迹对齐
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px 6px', flex: 'none' } }, [
           Icon({ scheme: 'compass', size: 15 }),
           h('span', { style: { fontWeight: 600, fontSize: 13 } }, 'Waystation'),
           h('span', { style: { flex: 1 } }),
           h('button', { className: 'dsws-btn', onClick: toFloat, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11 } }, [Ic({ n: 'fog', size: 11 }), h('span', null, tr('act.float'))]),
           h('button', { className: 'dsws-btn ghost', onClick: closeDock, style: { display: 'inline-flex', alignItems: 'center', padding: '2px 6px', fontSize: 11 } }, Ic({ n: 'x', size: 12 })),
         ]),
-        h('div', { className: 'dsws-tabs', style: { padding: '8px 12px 0' } }, [
+        // 标签行下沿 = 与对话/轨迹一致的横线
+        h('div', { className: 'dsws-tabs', style: { padding: '0 12px 7px', borderBottom: '1px solid var(--dsw-alias-border-l1,#2a2d35)', flex: 'none' } }, [
           tabBtn('list', 'list', tr('panel.tabList')),
           tabBtn('skills', 'compass', tr('panel.tabSkills')),
           tabBtn('checks', 'gear', tr('panel.tabChecks')),

@@ -169,7 +169,7 @@ actionBar(p, extra?, opts?) → HTML
 - actionBar 输出：场景按钮（scene.buttons，kind: primary/red）+ **复制数据/复制日志 ghost 按钮**（独立一行，08 规范硬标准）
 - **复制数据/复制日志 = Base 控件**（用户拍板）：按钮文本可配（默认「复制数据」「复制日志」）、复制内容由使用方决定（走 buildDataText/buildLogText）、参数校验拦不规范传参
 - opts 增强：`{ preview: bool(点击前弹预览面板), formatMenu: bool(格式选择菜单), download: bool(导出文件) }`
-- 按钮规范（08 规范）：≤3 色按功能区分；ghost = 白底+主色描边+主色文字胶囊、min-height 48px、独立一行；偶数一行 2 个
+- 按钮规范（08 规范）：≤3 色按功能区分；ghost = 白底+浅主色描边（35% 透明度）+主色文字胶囊、min-height 40px、12px 600、独立一行（v1.26 · #329 降权重：视觉重心归主操作）；偶数一行 2 个
 
 ### 6.3 新控件（P0+P1 · v1.2 新增）
 

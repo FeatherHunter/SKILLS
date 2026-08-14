@@ -19,6 +19,7 @@ BASE_DIR = pathlib.Path(__file__).parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 BASE_JS = (BASE_DIR / 'assets' / 'base.js').read_text(encoding='utf-8')
+BASE_CSS = (BASE_DIR / 'assets' / 'base.css').read_text(encoding='utf-8')
 CHARTS_JS = (BASE_DIR / 'assets' / 'charts.js').read_text(encoding='utf-8')
 
 
@@ -2060,6 +2061,29 @@ def test_scatter_mobile_no_overflow(chart_page):
       });
     }""")
     assert not over
+
+
+# ── 复制按钮 ghost 降权重（v1.26 · #329 用户拍板方案①）──
+
+def test_ghost_button_downgraded_style(page):
+    """ghost 计算样式: min-height 40px + 12px/600 + 1px 浅描边(35% 透明度) —— 不抢主操作视觉重心
+    ⚠️ 不 set_content（module 级 page 共享, 覆盖会清掉 base.js 污染后续测试）——style/button 用 evaluate 注入"""
+    page.evaluate(f"""() => {{
+      const st = document.createElement('style');
+      st.textContent = {BASE_CSS!r};
+      document.head.appendChild(st);
+      const btn = document.createElement('button');
+      btn.className = 'copy ghost';
+      btn.textContent = '复制数据';
+      document.getElementById('root').appendChild(btn);
+    }}""")
+    cs = page.evaluate("""() => {
+      const s = getComputedStyle(document.querySelector('button.copy.ghost'));
+      return {h: s.minHeight, fs: s.fontSize, fw: s.fontWeight, bw: s.borderTopWidth, bc: s.borderColor};
+    }""")
+    assert cs['h'] == '40px' and cs['fs'] == '12px' and cs['fw'] == '600' and cs['bw'] == '1px'
+    # 浅描边: color-mix 后含透明通道（rgba 或 color-mix 计算的颜色）
+    assert 'rgba' in cs['bc'] or 'color' in cs['bc']
 
 
 # ── bar: 参数对齐 ───────────────────────────────────────

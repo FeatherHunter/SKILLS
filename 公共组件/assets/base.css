@@ -64,12 +64,16 @@ button.copy.red {
 }
 button.copy.red:active { background: #c0392b; }
 
-/* ghost: 复制数据/复制日志 = 白底 + 主色描边 + 主色文字胶囊（独立一行） */
+/* ghost: 复制数据/复制日志 = 白底 + 轻主色描边 + 主色文字胶囊（独立一行）
+ * v1.26 · #329 降权重: 描边 1px/35% 透明度 + 12px/600 + min-height 40px —— 视觉重心归主操作（VLM 两轮反馈） */
 button.copy.ghost {
   background: var(--card);
   color: var(--blue);
-  border: 1.5px solid var(--blue);
-  min-height: 48px;
+  border: 1px solid var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 35%, transparent);
+  min-height: 40px;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 /* ── actionBar 网格（偶数一行 2 个; 奇数时重要按钮单独一行由模板控制 wide）── */

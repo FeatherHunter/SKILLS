@@ -1,6 +1,6 @@
-# Base 组件契约 v1.12
+# Base 组件契约 v1.14
 
-> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）+ **v1.9 selectList 行内控件**（2026-08-13 · #327）+ **v1.10 copyText 反馈钩子**（2026-08-13 · #328）+ **v1.11 smartSelect 选择器组件**（2026-08-13 · #312 · 立项 #320）+ **v1.12 smartSelect 候选区折叠**（2026-08-13 · #312 实测反馈）
+> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）+ **v1.9 selectList 行内控件**（2026-08-13 · #327）+ **v1.10 copyText 反馈钩子**（2026-08-13 · #328）+ **v1.11 smartSelect 选择器组件**（2026-08-13 · #312 · 立项 #320）+ **v1.12 smartSelect 候选区折叠**（2026-08-13 · #312 实测反馈）+ **v1.13 line 动画断线修复**（2026-08-14 · #317 验收二轮）+ **v1.14 charts.line connectNulls**（2026-08-14 · #356）
 > 本契约是 Base Skill 组件的**冻结接口**，修改必须走公共层 ISSUE（总纲 09 §92）+ 遵循 §8 版本机制。
 
 ## 0. 版本记录
@@ -17,6 +17,8 @@
 | v1.10 | 2026-08-13 | **#328 copyText 反馈钩子**（非破坏性 · 签名零变更）：①`opts.toast = {ok:{msg,detail,icon?}, fail:{msg,detail,icon?}}` 自定义成功/失败 toast 文案（只覆盖提供字段，缺省回落默认，对齐 08 规范「文案由技能自设计」）②`opts.onOk`/`opts.onFail` 回调（成功/最终失败必触发，互斥；`silent` 时不弹 toast 仍触发）③未传新选项行为与 v1.9 逐字一致。守卫测试 +7 → 169/169 全绿。详见 §6.8 |
 | v1.11 | 2026-08-13 | **#312 smartSelect 选择器组件**（非破坏性 · 新增全局函数 + 新增样式 · 既有接口零变更；立项 #320）：①字段级「复用优先·新建其次」选择器，`smartSelect(el, config)` 一行接入，一页 N 实例互不干扰 ②config 与 `form.selector.<fieldKey>` 对齐（options/inferred/recommended_new/initial{name,source}），零领域词全参数化（texts/theme 外部注入）③初始选中推导 = initial > AI 推断 > 历史预填 > AI 推荐新建 > 空 ④回填协议 input.value + dataset.source + dataset.new + change 事件，prompt 上层自拼 ⑤结构校验违规直接报错 + source 白名单 + 类名全 ss- 命名空间 ⑥options 空数组且无推断/推荐 → 降级普通输入 ⑦全部动态文本 esc 零注入面。守卫测试 +29 → 全量全绿。详见 §6.9 |
 | v1.12 | 2026-08-13 | **#312 实测反馈 · smartSelect 候选区折叠**（非破坏性 · 新可选参数 `maxChips` 缺省 8 · 签名零变更）：①候选 chips 超阈值折叠（前 maxChips 个 + 「展开全部(N)」/「收起」按钮，样式 `.ss-more`）②初始选中项在折叠区时保可见（提前进可见区）③搜索输入全量过滤（跳过折叠，折叠区候选可搜出）④搜索框内容跨渲染保持，清空回折叠态 ⑤展开态点选后保持展开。守卫测试 +8 → 全量全绿。详见 §6.9 |
+| v1.13 | 2026-08-14 | **#317 验收二轮 · line 动画断线修复**（非破坏性 · 内部实现）：动画过渡结束（transitionend + 1.2s 兜底）清除 `stroke-dasharray` 残留，恢复实线（`preserveAspectRatio=none` 拉伸下 dash 按屏幕像素解释导致中段断线）。守卫测试 +2。**本条目为 §0 漏记补录**（CHANGELOG 已有 v1.13） |
+| v1.14 | 2026-08-14 | **#356 charts.line 缺失值连线 connectNulls**（非破坏性 · 新可选参数 `connectNulls` 默认 false · 签名零变更）：跨 null 断点连线（跳过缺失值直连相邻有效点）；缺值日无 dot、首尾 null 不延伸、全 null 仍空路径；与 smooth/step/area/series/avgLine 正交可组合（area 跟随同一开关、avgLine 均线跨 null 连线）。守卫测试 +9 → 全量全绿（tests/ 221/221）。详见 §6.5 |
 
 ## 1. 目录结构
 
@@ -190,14 +192,15 @@ charts.sparkline(el, items[, opt])  // 迷你趋势卡（v1.6 新增）
 charts.gauge(el, pct[, opt])        // 仪表盘（v1.6 新增）
 ```
 
-- **数据形状（统一）**：`items: [{label, value, color?}]`；**value 显式 null = 缺失断点（仅 line 支持，线段断开）**；其余非数字 → 结构校验报错
+- **数据形状（统一）**：`items: [{label, value, color?}]`；**value 显式 null = 缺失断点（仅 line 支持，线段断开；`connectNulls:true` 时跨断点连线）**；其余非数字 → 结构校验报错
 - **结构校验（v1.6 硬行为）**：items 非数组 / 元素缺 label / value 非法 → **直接抛错**（对齐 Base v1.2「违规报错」）；空数组 → emptyState 联动（合法场景）
 - **空态联动**：空数组 → `emptyState`（存在则用之，否则内联兜底）；donut 合计为零同样走空态
+- **connectNulls（v1.14 · #356）**：`line` 可选参数，默认 `false`（行为与 v1.13 逐字节一致）；`true` 时跨 null 断点连线——跳过缺失值直接连接相邻有效点，数据点仍只在有值日渲染，首尾 null 不向图外延伸，全 null 系列仍空路径；与 `smooth`/`step`/`area`/`series`/`avgLine` 正交可组合（area 跨 null 连续填充、avgLine 均线跨 null 连线）
 - **全参数（不传 = 默认）**：
 
 | 接口 | 参数 |
 |---|---|
-| `line` | `height/compact/width` · `color/lineWidth/dashed` · `smooth`（Catmull-Rom，点在线）· `showDots/dotSize/dotStyle` · `area/areaOpacity` · `labels('edge'/'all'/'none'/'select')` · `showValues/labelRotate` · `yMin/yMax/grid` · `format` · `tooltip` · `markLine{value,label}` · `markPoint` · `step` · `animation` · `series[{name,items,color,dashed,smooth,area}]` · `avgLine(n)` · `legend` · `highlightLast` · `onclick/ondrill` · `emptyText` |
+| `line` | `height/compact/width` · `color/lineWidth/dashed` · `smooth`（Catmull-Rom，点在线）· `showDots/dotSize/dotStyle` · `area/areaOpacity` · `labels('edge'/'all'/'none'/'select')` · `showValues/labelRotate` · `yMin/yMax/grid` · `format` · `tooltip` · `markLine{value,label}` · `markPoint` · `step` · `animation` · `series[{name,items,color,dashed,smooth,area}]` · `avgLine(n)` · `legend` · `highlightLast` · `onclick/ondrill` · `emptyText` · `connectNulls`（跨缺失断点连线，默认 false · v1.14） |
 | `bar` | `format` · `colors/singleColor` · `height/compact` · `labels('all'/'none'/'select')` · `showValues` · `yMin/yMax/grid` · `tooltip/animation` · `onclick` |
 | `donut` | `format` · `colors` · `size/ringWidth` · `legend('right'/'bottom'/'none')` · `showPercent` · `centerLabel/centerValue` · `animation` |
 | `progress` | `color/gradient` · `height(轨道px)` · `showPct` · `animation`（pct 非数报错，超界收敛 0~100） |

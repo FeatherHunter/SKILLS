@@ -1244,6 +1244,101 @@ def test_line_validate_throws(chart_page):
     err2 = chart_page.evaluate("""() => { try { window.charts.line(document.getElementById('root'), [{value:1}]); return ''; } catch(e) { return e.message; } }""")
     assert 'label' in err2
 
+# ── line: connectNulls 缺失值连线（v1.14 · #356）────────────────
+
+def test_line_connect_nulls_connects(chart_page):
+    """connectNulls:true: 跨 null 连线（单段 M）、缺值日无 dot"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), "
+        "[{label:'d1',value:62.7},{label:'d2',value:null},{label:'d3',value:64.2},"
+        "{label:'d4',value:null},{label:'d5',value:63.5}], "
+        "{animation:false, connectNulls:true})")
+    path_d = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    assert path_d == 'M14.0 91.6L160.0 18.4L306.0 52.6'  # 跨两个 null 直连（点位置与断线模式一致）
+    dots = chart_page.evaluate("document.querySelectorAll('.hm-c-dot').length")
+    assert dots == 3  # 缺值日不画点
+
+
+def test_line_connect_nulls_false_byte_identical(chart_page):
+    """connectNulls 未传/false: 断线行为与默认逐字节一致（回归）"""
+    items = "[{label:'a',value:1},{label:'b',value:null},{label:'c',value:3}]"
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), " + items + ", {animation:false})")
+    d_default = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), " + items + ", {animation:false, connectNulls:false})")
+    d_false = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    assert d_false == d_default
+    assert d_default.count('M') == 2  # 既有断线语义保持
+
+
+def test_line_connect_nulls_edges_not_extended(chart_page):
+    """首尾 null 不向图外延伸: 路径从首个有效点起、到最后一个有效点止"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), "
+        "[{label:'a',value:null},{label:'b',value:1},{label:'c',value:2},{label:'d',value:null}], "
+        "{animation:false, connectNulls:true})")
+    path_d = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    assert path_d == 'M111.3 91.6L208.7 18.4'
+
+
+def test_line_connect_nulls_all_null_empty(chart_page):
+    """全 null 系列 + connectNulls:true: 仍空路径, 无 dot, 不报错"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), "
+        "[{label:'a',value:null},{label:'b',value:null}], {animation:false, connectNulls:true})")
+    path_d = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    dots = chart_page.evaluate("document.querySelectorAll('.hm-c-dot').length")
+    assert path_d == '' and dots == 0
+
+
+def test_line_connect_nulls_smooth(chart_page):
+    """smooth + connectNulls:true: 曲线跨 null 单段连续（不切段）"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), "
+        "[{label:'a',value:1},{label:'b',value:null},{label:'c',value:3},{label:'d',value:null},{label:'e',value:5}], "
+        "{animation:false, connectNulls:true, smooth:true})")
+    path_d = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    assert path_d.count('M') == 1 and 'C' in path_d
+
+
+def test_line_connect_nulls_step(chart_page):
+    """step + connectNulls:true: 阶梯线跨 null 连续"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), "
+        "[{label:'a',value:1},{label:'b',value:null},{label:'c',value:3}], "
+        "{animation:false, connectNulls:true, step:true})")
+    path_d = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    assert path_d.count('M') == 1 and 'L' in path_d
+
+
+def test_line_connect_nulls_area(chart_page):
+    """area + connectNulls:true: 面积跨 null 连续填充（单段 M + Z 闭合）; 默认面积断两段"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), "
+        "[{label:'a',value:1},{label:'b',value:null},{label:'c',value:3}], "
+        "{animation:false, connectNulls:true, area:true})")
+    area_d = chart_page.evaluate("document.querySelector('.hm-c-line-svg path[fill]').getAttribute('d')")
+    assert area_d.count('M') == 1 and area_d.endswith('Z')
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), "
+        "[{label:'a',value:1},{label:'b',value:null},{label:'c',value:3}], "
+        "{animation:false, area:true})")
+    area_d2 = chart_page.evaluate("document.querySelector('.hm-c-line-svg path[fill]').getAttribute('d')")
+    assert area_d2.count('M') == 2
+
+
+def test_line_connect_nulls_avgline(chart_page):
+    """avgLine + connectNulls:true: 均线跨 null 连线（显式断言）; 默认均线断段"""
+    items = "[{label:'a',value:10},{label:'b',value:null},{label:'c',value:null},{label:'d',value:null},{label:'e',value:30}]"
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), " + items + ", {animation:false, connectNulls:true, avgLine:3})")
+    avg_d = chart_page.evaluate('document.querySelectorAll(".hm-c-line-svg path[fill=\'none\']")[1].getAttribute(\'d\')')
+    assert avg_d.count('M') == 1  # 均线跨 null 连线
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), " + items + ", {animation:false, avgLine:3})")
+    avg_d2 = chart_page.evaluate('document.querySelectorAll(".hm-c-line-svg path[fill=\'none\']")[1].getAttribute(\'d\')')
+    assert avg_d2.count('M') == 2  # 默认均线断段
+
+
+def test_line_connect_nulls_series(chart_page):
+    """series 多序列 + connectNulls:true: 每序列独立跨 null 连线"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'a',value:1}], "
+        "{animation:false, connectNulls:true, "
+        "series:[{name:'A',items:[{label:'a',value:1},{label:'b',value:null},{label:'c',value:3}]},"
+        "{name:'B',items:[{label:'a',value:2},{label:'b',value:4},{label:'c',value:null}]}]})")
+    ds = chart_page.evaluate('[...document.querySelectorAll(".hm-c-line-svg path[fill=\'none\']")].map(p => p.getAttribute(\'d\'))')
+    assert len(ds) == 2 and all(d.count('M') == 1 for d in ds)
+
 
 # ── bar: 参数对齐 ───────────────────────────────────────
 

@@ -135,21 +135,33 @@ function _linePoints(items,yMin,yMax){
   });
 }
 function _polyPath(pts){var segs=[];var cur=[];pts.forEach(function(p,i){if(p[2]){if(cur.length)segs.push(cur);cur=[];}else{cur.push(p);}});if(cur.length)segs.push(cur);return segs.map(function(s){return s.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join('');}).join('');}
-function _linePath(pts){
+function _linePath(pts,connect){
+  if(connect){
+    /* connectNulls: 跳过 null 点不切段, 相邻有效点直接相连（首尾 null 不延伸） */
+    var cur=[];
+    pts.forEach(function(p){if(!p[2])cur.push(p);});
+    return cur.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join('');
+  }
   /* 分段: null 断点处断开, 每段独立 M/L（缺失值不跨空连线） */
-  var segs=[],cur=[];
-  pts.forEach(function(p){if(p[2]){if(cur.length)segs.push(cur);cur=[];}else{cur.push(p);}});
-  if(cur.length)segs.push(cur);
+  var segs=[],cur2=[];
+  pts.forEach(function(p){if(p[2]){if(cur2.length)segs.push(cur2);cur2=[];}else{cur2.push(p);}});
+  if(cur2.length)segs.push(cur2);
   return segs.map(function(s){
     return s.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join('');
   }).join('');
 }
-function _areaPath(pts){if(!pts.length)return '';var ys=pts.filter(function(p){return !p[2];});if(!ys.length)return '';var lastX=ys[ys.length-1][0],firstX=ys[0][0];return _linePath(pts)+' L'+lastX.toFixed(1)+' '+( _H-_P)+' L'+firstX.toFixed(1)+' '+(_H-_P)+' Z';}
+function _areaPath(pts,connect){if(!pts.length)return '';var ys=pts.filter(function(p){return !p[2];});if(!ys.length)return '';var lastX=ys[ys.length-1][0],firstX=ys[0][0];return _linePath(pts,connect)+' L'+lastX.toFixed(1)+' '+( _H-_P)+' L'+firstX.toFixed(1)+' '+(_H-_P)+' Z';}
 /* Catmull-Rom → 三次贝塞尔平滑（数据点仍经过真实位置） */
-function _smoothPath(pts){
+function _smoothPath(pts,connect){
   var segs=[],cur=[];
-  pts.forEach(function(p,i){if(p[2]){if(cur.length)segs.push(cur);cur=[];}else cur.push(p);});
-  if(cur.length)segs.push(cur);
+  if(connect){
+    /* connectNulls: 跳过 null 点, 单段平滑（跨空连续） */
+    pts.forEach(function(p){if(!p[2])cur.push(p);});
+    segs.push(cur);
+  }else{
+    pts.forEach(function(p,i){if(p[2]){if(cur.length)segs.push(cur);cur=[];}else cur.push(p);});
+    if(cur.length)segs.push(cur);
+  }
   return segs.map(function(s){
     if(s.length<3)return s.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join('');
     var d='M'+s[0][0].toFixed(1)+' '+s[0][1].toFixed(1);
@@ -259,7 +271,7 @@ window.charts={
   },
 
   /* ═══ 折线图: charts.line(el, items[, opt]) ═══
-   * items:[{label,value,color?}] value 可 null（断线）· opt 全参数（见清单 16 项 + avgLine/legend/highlightLast/markLine/markPoint/series） */
+   * items:[{label,value,color?}] value 可 null（断线）· opt 全参数（见清单 16 项 + avgLine/legend/highlightLast/markLine/markPoint/series + connectNulls 跨缺失连线） */
   line:function(el,items,opt){
     if(!el)return;
     _validate(items,'line',true); /* 允许 null 断点 */
@@ -267,7 +279,7 @@ window.charts={
     opt=_merge({color:'var(--blue,#007aff)',lineWidth:2.2,dashed:false,smooth:false,showDots:true,dotSize:null,
       area:false,areaOpacity:0.12,labels:'edge',showValues:false,labelRotate:0,yMin:null,yMax:null,grid:true,
       format:null,tooltip:false,markLine:null,markPoint:false,step:false,animation:true,height:null,
-      series:null,avgLine:null,legend:false,highlightLast:false,onclick:null,ondrill:null,emptyText:null},opt);
+      series:null,avgLine:null,legend:false,highlightLast:false,onclick:null,ondrill:null,emptyText:null,connectNulls:false},opt);
     var hStyle=opt.height?('style="--c-h:'+opt.height+'px"'):'';
     /* 多序列: series = [{name,items,color?,dashed?,smooth?,area?}] */
     var seriesList=[];
@@ -307,12 +319,12 @@ window.charts={
       var sw=opt.lineWidth;
       var strokeDash=s.dashed?' stroke-dasharray="6 5"':'';
       var path;
-      if(opt.step){path=_linePath(pts);}
-      else if(s.smooth){path=_smoothPath(pts);}
-      else{path=_linePath(pts);}
+      if(opt.step){path=_linePath(pts,opt.connectNulls);}
+      else if(s.smooth){path=_smoothPath(pts,opt.connectNulls);}
+      else{path=_linePath(pts,opt.connectNulls);}
       if(s.area&&path){
         var areaPts=pts.map(function(p){return [p[0],p[2]?null:p[1],p[2]];});
-        var ap=_areaPath(areaPts);
+        var ap=_areaPath(areaPts,opt.connectNulls);
         pathsHtml+='<path d="'+ap+'" fill="'+color+'" opacity="'+opt.areaOpacity+'" stroke="none"/>';
       }
       pathsHtml+='<path d="'+path+'" fill="none" stroke="'+color+'" stroke-width="'+sw+'" stroke-linejoin="round" stroke-linecap="round"'+strokeDash+(_PALETTE[si]?'':'')+'/>';

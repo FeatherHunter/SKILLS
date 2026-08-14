@@ -23,11 +23,11 @@ from html_paths import html_path  # noqa
 # 中文消息常量(纯字符串,不含嵌套引号)
 NO_GOAL = "尚{\u672a}{\u8bbe}{\u7f6e}{\u4f53}{\u91cd}{\u76ee}{\u6807}{\u3002}"
 SUG_SET = "建议通过\"设体重目标\"添加目标"
-GOOD_FRESH_FMT = "今日({0})已记录饮食 {1} 卡,饮水 {2[today_water]}ml,{2[today_exercise]} 次运动。完整 {\u2713}"
+GOOD_FRESH_FMT = "今日({0})已记录饮食 {1} 卡,饮水 {2[today_water]}ml,{2[today_exercise]} 次运动。完整 ✓"
 BAD_FRESH_FMT = "今日({0})完全无记录 — 体重/饮食/运动全缺。"
 WARN_FRESH_FMT = "今日({0})未记录:{1}。其他项 OK。"
 WARN_WEIGHT_FMT = "目标 {0} kg(截至 {1}),但尚未记录当前体重。"
-GOOD_WEIGHT_FMT = "目标 {0} kg(截至 {1}) — 当前 {2} kg 已达成 {\u2713}"
+GOOD_WEIGHT_FMT = "目标 {0} kg(截至 {1}) — 当前 {2} kg 已达成 ✓"
 BAD_WEIGHT_FMT = "目标 {0} kg(截至 {1}) — 当前 {2} kg,差 {3} kg,**已逾期**。"
 WARN_PROGRESS_FMT = "当前 {0} kg → 目标 {1} kg(差 {2} kg)。剩余 {3} 天,日均需减重 {4} kg/天。"
 SUG_PROGRESS_FMT = "当前减重速率需 ~{0} 卡/天热量缺口。建议:① 微调每日摄入 -200 卡 ② 或增加运动消耗 +200 卡。"
@@ -35,10 +35,10 @@ OK_CALORIE_FMT = "近 {0} 天热量摄入在合理范围内(平均 {1} 卡,目�
 BAD_TREND_FMT = "近 {0} 天,{1} 实际超目标 {2} 卡(/天),连续 {3} 天摄入偏高(平均 {4} 卡)。"
 SUG_TREND = "{\u26a0} 热量持续高于目标 - 建议从今日起:① 减每餐主食 30% ② 加 30 分钟有氧 ③ 监控下周缺口能否回正。"
 WARN_TREND_FMT = "近 {0} 天有 {1} 天摄入超目标 +5% 以上(平均 {2} 卡)。"
-GOOD_DEFICIT_FMT = "近 {0} 天累计缺口 +{1} 卡(实际摄入 {2},实际消耗 {3})。缺口方向正确(正向=减重方向 {\u2713})。"
+GOOD_DEFICIT_FMT = "近 {0} 天累计缺口 +{1} 卡(实际摄入 {2},实际消耗 {3})。缺口方向正确(正向=减重方向 ✓)。"
 WARN_DEFICIT_FMT = "近 {0} 天缺口 {1} 卡,摄入略高于消耗(盈余 {2} 卡)。"
 BAD_DEFICIT_FMT = "近 {0} 天严重盈余 {1} 卡,摄入远超消耗。"
-GOOD_EXERCISE_FMT = "近 {0} 天运动 {1} 天,频次优秀 {\u2713}"
+GOOD_EXERCISE_FMT = "近 {0} 天运动 {1} 天,频次优秀 ✓"
 WARN_EXERCISE_FMT = "近 {0} 天运动 {1} 天,有 {2} 天未运动。"
 BAD_EXERCISE_FMT = "近 {0} 天运动仅 {1} 天,严重不足。"
 SUG_BAD_EXERCISE = "{\u26a0} 急需提升运动频次:① 每周至少 3 次 ② 每次 ≥ 30 分钟 ③ 从散步/快走等低强度开始,避免受伤。"
@@ -73,9 +73,9 @@ def _check_freshness(conn, today):
     cur = conn.cursor()
     cur.execute("SELECT COUNT(*) FROM weight_log WHERE date=?", (today,))
     items["today_weight"] = cur.fetchone()[0]
-    cur.execute("SELECT COALESCE(SUM(calorie),0) FROM food_log WHERE date=?", (today,))
+    cur.execute("SELECT COALESCE(SUM(calories),0) FROM food_log WHERE date=?", (today,))
     cal = items["today_calorie"] = cur.fetchone()[0]
-    cur.execute("SELECT COALESCE(SUM(calorie),0) FROM food_log WHERE date=? AND food_name='\U0001F4A7水'", (today,))
+    cur.execute("SELECT COALESCE(SUM(calories),0) FROM food_log WHERE date=? AND food_name='\U0001F4A7水'", (today,))
     items["today_water"] = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM exercise_log WHERE date=?", (today,))
     items["today_exercise"] = cur.fetchone()[0]
@@ -93,7 +93,7 @@ def _check_freshness(conn, today):
 def _check_weight_goal(conn, today):
     """体重目标进度"""
     cur = conn.cursor()
-    cur.execute("SELECT weight_kg, deadline FROM weight_goal ORDER BY id DESC LIMIT 1")
+    cur.execute("SELECT weight_goal, goal_deadline FROM daily_goal WHERE id = 1")
     g = cur.fetchone()
     if not g:
         return "warn", NO_GOAL, SUG_SET
@@ -117,9 +117,9 @@ def _check_calorie_trend(conn, today, days=7):
     """热量趋势"""
     start = (date.fromisoformat(today) - timedelta(days=days-1)).isoformat()
     cur = conn.cursor()
-    cur.execute("SELECT date, COALESCE(SUM(calorie),0) FROM food_log WHERE date BETWEEN ? AND ? GROUP BY date", (start, today))
+    cur.execute("SELECT date, COALESCE(SUM(calories),0) FROM food_log WHERE date BETWEEN ? AND ? GROUP BY date", (start, today))
     daily = dict(cur.fetchall())
-    cur.execute("SELECT calorie FROM daily_goal ORDER BY id DESC LIMIT 1")
+    cur.execute("SELECT calorie_goal FROM daily_goal ORDER BY id DESC LIMIT 1")
     g = cur.fetchone() or (1800,)
     target = g[0]
     over_days = sum(1 for c in daily.values() if c > target * 1.05)
@@ -136,11 +136,13 @@ def _check_deficit(conn, today, days=7):
     """热量缺口"""
     start = (date.fromisoformat(today) - timedelta(days=days-1)).isoformat()
     cur = conn.cursor()
-    cur.execute("SELECT COALESCE(SUM(calorie),0) FROM food_log WHERE date BETWEEN ? AND ?", (start, today))
+    cur.execute("SELECT COALESCE(SUM(calories),0) FROM food_log WHERE date BETWEEN ? AND ?", (start, today))
     intake = cur.fetchone()[0]
-    cur.execute("SELECT COALESCE(SUM(calorie),0) FROM exercise_log WHERE date BETWEEN ? AND ?", (start, today))
+    cur.execute("SELECT COALESCE(SUM(calories_burned),0) FROM exercise_log WHERE date BETWEEN ? AND ?", (start, today))
     burn = cur.fetchone()[0]
-    tdee = 1700 * days
+    # TDEE 默认读档案(与 series.py 同一真相源 · ADR-0013)
+    from analysis.series import _load_profile_tdee
+    tdee = _load_profile_tdee() * days
     total_burn = tdee + burn
     diff = total_burn - intake
     if diff > 0:

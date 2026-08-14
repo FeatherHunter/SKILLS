@@ -118,6 +118,7 @@ def _strat(series: list[dict], mode: str, a: str, b: str) -> dict:
             elif mode == 'protein':
                 is_cond = (s.get('protein') or 0) >= (s.get('calorie_goal') or 0) / 10 * 0.4
             elif mode == 'deficit':
+                # 热量缺口 = 消耗 − 摄入 (正=缺口 · ADR-0013): deficit>0 = 有缺口日
                 is_cond = (s.get('deficit') or 0) > 0
             elif mode == 'water':
                 is_cond = (s.get('water_ml') or 0) >= (s.get('water_goal') or 2000)
@@ -165,7 +166,8 @@ def _strat(series: list[dict], mode: str, a: str, b: str) -> dict:
             {'label': '日均运动', 'days': len(ex), 'a_delta': None, 'b_avg': ex_avg, 'note': ''},
         ]
         if cal_avg and tdee:
-            extra.append(f'缺口构成:摄入 {cal_avg} − TDEE {tdee} − 运动 {ex_avg or 0} = 日均缺口 {cal_avg - tdee - (ex_avg or 0):+.0f} 卡')
+            # 热量缺口 = 消耗 − 摄入 (正=缺口 · ADR-0013): 缺口 = (TDEE + 运动) − 摄入
+            extra.append(f'缺口构成:(TDEE {tdee} + 运动 {ex_avg or 0}) − 摄入 {cal_avg} = 日均缺口 {tdee + (ex_avg or 0) - cal_avg:+.0f} 卡')
     elif mode == 'divergence':
         wv = [s['weight_kg'] for s in series if s.get('weight_kg') is not None]
         bv = [s['body_fat_pct'] for s in series if s.get('body_fat_pct') is not None]
@@ -285,22 +287,22 @@ def analyze_pair(series: list[dict], pair: str, window: str = '30d') -> dict:
         over_limit_days = [s['date'] for s in series
                            if s.get('calories') is not None and s['calories'] > goal * 1.3]
 
-    # 缺口大小分桶(看体重 vs 缺口)
+    # 缺口大小分桶(看体重 vs 缺口 · 正=缺口 ADR-0013)
     deficit_buckets = []
     if pair == 'weight_deficit':
-        buckets = {'深缺口(<-500卡)': 0, '标准缺口(-500~-100)': 0, '小幅盈余(-100~+100)': 0, '盈余(>100)': 0}
+        buckets = {'深缺口(>500卡)': 0, '标准缺口(100~500)': 0, '小幅盈余(-100~100)': 0, '盈余(<-100)': 0}
         for s in series:
             d = s.get('deficit')
             if d is None:
                 continue
-            if d < -500:
-                buckets['深缺口(<-500卡)'] += 1
-            elif d < -100:
-                buckets['标准缺口(-500~-100)'] += 1
-            elif d <= 100:
-                buckets['小幅盈余(-100~+100)'] += 1
+            if d > 500:
+                buckets['深缺口(>500卡)'] += 1
+            elif d > 100:
+                buckets['标准缺口(100~500)'] += 1
+            elif d >= -100:
+                buckets['小幅盈余(-100~100)'] += 1
             else:
-                buckets['盈余(>100)'] += 1
+                buckets['盈余(<-100)'] += 1
         deficit_buckets = [{'label': k, 'days': v} for k, v in buckets.items() if v > 0]
 
     av = [s[fa] for s in series if s.get(fa) is not None]

@@ -35,7 +35,11 @@ def _load_data(input_path):
     return raw
 
 
-def build_data(start, end, mode='distribution', tdee=1700):
+def build_data(start, end, mode='distribution', tdee=None):
+    # TDEE 默认读档案(与 series.py 同一真相源 · ADR-0013);显式 --tdee 可覆盖
+    if tdee is None:
+        from analysis.series import _load_profile_tdee
+        tdee = _load_profile_tdee()
     from db import find_db_path
     import sqlite3
     db_path = find_db_path(SKILL_DIR)
@@ -123,7 +127,7 @@ def main():
     p.add_argument('--days', type=int)
     p.add_argument('--mode', choices=['distribution','contribution'], default='distribution')
     p.add_argument('--mock', help='mock JSON 文件(代替 DB 查询)')
-    p.add_argument('--tdee', type=int, default=1700)
+    p.add_argument('--tdee', type=int, default=None, help='TDEE 覆盖(默认读档案)')
     p.add_argument('--chain', help='AI 思考链(必填·强制规则 · 2026-08-02 ticket #5)')
     p.add_argument('--output')
     args = p.parse_args()

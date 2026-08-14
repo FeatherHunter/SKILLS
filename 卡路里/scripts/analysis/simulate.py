@@ -245,9 +245,9 @@ def calorie_deficit_eta(series: list[dict], title: str, kind: str = 'calorie_def
         'kind': kind, 'title': title, 'degraded': False,
         'start': series[0]['date'], 'end': series[-1]['date'], 'days': len(series),
         'avg_deficit': round(avg_df, 0), 'weekly_loss': round(weekly, 2),
-        'assumption': '缺口 = 摄入 - (TDEE + 运动消耗);每 7700 卡 ≈ 1 kg',
+        'assumption': '缺口 = (TDEE + 运动消耗) − 摄入;每 7700 卡 ≈ 1 kg',
         'insight': f'日均缺口 {avg_df:+.0f} 卡 → 每周约 {weekly:+.2f} kg'
-                   f'({"健康范围内" if 0.3 <= weekly <= 1.2 else "⚠️ 缺口过大或不足,建议调整到 -300~-500 卡/天"})。',
+                   f'({"健康范围内" if 0.3 <= weekly <= 1.2 else "⚠️ 缺口过大或不足,建议调整到 +300~+500 卡/天"})。',
     }
 
 

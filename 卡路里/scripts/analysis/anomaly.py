@@ -609,7 +609,7 @@ def _common_overall(series: list[dict], kind: str, title: str) -> dict:
     if df:
         out['findings'].append({
             'cause': '缺口',
-            'evidence': f'日均缺口 {df:+.0f} 卡(减重需要每日 -300~-500)',
+            'evidence': f'日均缺口 {df:+.0f} 卡(减重需要每日 +300~+500)',
             'confidence': '中',
             'action': '',
         })
@@ -621,12 +621,12 @@ def _diag_why_not_losing(series: list[dict]) -> dict:
     if len(_weight_vals(series)) < MIN_DAYS:
         return _degrade(out, '体重数据不足,先连续记录 1 周以上再诊断。')
     df = series_avg(series, 'deficit')
-    if df is None or df > -100:
+    if df is None or df < 100:
         out['findings'].append({
-            'cause': '缺口几乎为零或为正',
-            'evidence': f'日均缺口 {df or 0:+.0f} 卡(减重需 -300~-500)',
+            'cause': '缺口不足或为负',
+            'evidence': f'日均缺口 {df or 0:+.0f} 卡(减重需 +300~+500)',
             'confidence': '高',
-            'action': '先恢复缺口:摄入 - (TDEE + 运动) ≥ 300 卡。常见偷吃:液体热量/酱料/坚果',
+            'action': '先恢复缺口:(TDEE + 运动) − 摄入 ≥ 300 卡。常见偷吃:液体热量/酱料/坚果',
         })
     else:
         out['findings'].append({
@@ -641,7 +641,7 @@ def _diag_why_not_losing(series: list[dict]) -> dict:
         'confidence': '高',
         'action': '按优先级逐项排查,别同时改 5 个变量',
     })
-    out['insight'] = '核心先看日均缺口是否真的为负;缺口为负仍不动再看平台期/水分。'
+    out['insight'] = '核心先看日均缺口是否真的为正;缺口为正仍不动再看平台期/水分。'
     return out
 
 
@@ -703,12 +703,12 @@ def _diag_strategy_check(series: list[dict]) -> dict:
     p = series_avg(series, 'protein')
     ex = series_avg(series, 'exercise_kcal')
     ok_checks = []
-    if df is not None and -500 <= df <= -100:
+    if df is not None and 100 <= df <= 500:
         ok_checks.append('缺口策略合理')
-    elif df is not None and df < -800:
+    elif df is not None and df > 800:
         ok_checks.append('⚠️ 缺口过大(>800 卡):可持续性差')
     else:
-        ok_checks.append('⚠️ 缺口不足(需 -300~-500 卡)')
+        ok_checks.append('⚠️ 缺口不足(需 +300~+500 卡)')
     weight = _weight_vals(series)[-1]
     if p and weight:
         ok_checks.append('蛋白达标' if p >= weight * 1.2 else '⚠️ 蛋白不足(建议 ≥1.2g/kg)')
@@ -818,7 +818,7 @@ def _diag_overall(series: list[dict]) -> dict:
         scores.append('体重维度 ⚠️ 在上升')
     else:
         scores.append('体重维度 ➖ 基本持平')
-    scores.append('缺口维度 ✅ 在缺口' if (df or 0) < 0 else '缺口维度 ⚠️ 无缺口')
+    scores.append('缺口维度 ✅ 在缺口' if (df or 0) > 0 else '缺口维度 ⚠️ 无缺口')
     scores.append('运动维度 ✅ 有规律运动' if ex >= 50 else '运动维度 ⚠️ 运动偏少')
     p = series_avg(series, 'protein')
     scores.append('蛋白维度 ✅ 充足' if p and p >= 70 else '蛋白维度 ⚠️ 偏低')

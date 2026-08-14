@@ -19,7 +19,7 @@ A4(自动分析)/ A5(营养分析)/ A6(预测模拟) 的数据地基。
     body_fat_pct   当日体脂率(%)
     waist_cm       当日腰围(cm)
     tdee           当日 TDEE(静态值:档案 BMR × 活动系数)
-    deficit        热量缺口 = 摄入 - (TDEE + 运动消耗)(负数 = 盈余)
+    deficit        热量缺口 = (TDEE + 运动消耗) − 摄入(正=缺口 · ADR-0013)
     calorie_goal   当日热量目标(静态值)
 
 窗口选择器 resolve_window:统一解析 7d/15d/30d/60d/90d/180d/365d/本周/上周/
@@ -186,7 +186,8 @@ def build_series(start: str, end: str) -> list[dict]:
             deficit = None
             if calories is not None:
                 exp = tdee + (exercise_kcal or 0)
-                deficit = round(calories - exp, 1)
+                # 热量缺口 = 消耗 − 摄入 (正=缺口=减重潜力 · ADR-0013)
+                deficit = round(exp - calories, 1)
 
             series.append({
                 'date':           d,

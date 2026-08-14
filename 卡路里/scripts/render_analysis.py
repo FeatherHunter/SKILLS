@@ -285,7 +285,7 @@ def _anomaly_days(series: list[dict]) -> list[dict]:
         notes = []
         if s.get('calories') is not None and s['calories'] > goal * 1.3:
             notes.append(f'摄入超标 {s["calories"]}/{goal}')
-        if s.get('deficit') is not None and s['deficit'] < -900:
+        if s.get('deficit') is not None and s['deficit'] > 900:
             notes.append(f'缺口过大 {s["deficit"]:.0f}')
         if s.get('weight_kg') is not None:
             pass
@@ -358,9 +358,9 @@ def view_report(args) -> dict:
         return {'view': 'report', 'kind': 'tdee', 'window': args.window,
                 'start': start, 'end': end, 'days': len(series),
                 'tdee': tdee, 'factor': factor, 'cal_avg': cal_avg,
-                'deficit': round((cal_avg or 0) - (tdee or 1800), 0),
+                'deficit': round((tdee or 1800) - (cal_avg or 0), 0),
                 'insight': f'TDEE ≈ {tdee} 卡(BMR × {factor});实际日均摄入 {cal_avg or "-"} 卡,'
-                           f'静态缺口 {round((cal_avg or 0) - (tdee or 1800), 0):+.0f} 卡(不含运动)。'}
+                           f'静态缺口 {round((tdee or 1800) - (cal_avg or 0), 0):+.0f} 卡(不含运动)。'}
     if kind == 'bmr':
         tdee = series[0].get('tdee')
         factor = get_activity_factor()
@@ -515,11 +515,11 @@ def view_trend(args) -> dict:
                                    for f, _ in fields}}
                    for m, rows in sorted(by_month.items())]
 
-    # 异常日标注(摄入 > 目标×1.3 或缺口 < -900)
+    # 异常日标注(摄入 > 目标×1.3 或缺口 > 900)
     goal = series[0].get('calorie_goal') or 1800
     anomaly = [s['date'] for s in series
                if (s.get('calories') or 0) > goal * 1.3
-               or (s.get('deficit') is not None and s['deficit'] < -900)]
+               or (s.get('deficit') is not None and s['deficit'] > 900)]
 
     period = args.period
     period_compare = None

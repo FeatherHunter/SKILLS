@@ -149,9 +149,9 @@
       + kpi('达成状态', D.on_target ? '✅ 在目标内' : '⚠️ 偏离', '±10% 判定');
   } else if (D.kind === 'calorie_deficit') {
     kpiBox.innerHTML = kpi('日均缺口', (D.avg_deficit >= 0 ? '+' : '') + esc(D.avg_deficit) + ' 卡', '')
-      + kpi('每周预估', (D.weekly_loss >= 0 ? '+' : '-') + esc(Math.abs(D.weekly_loss)) + ' kg', '7700 卡/kg')
-      + kpi('健康范围', '-300 ~ -500 卡/天', '')
-      + kpi('判定', (D.weekly_loss > -0.3 && D.weekly_loss < 0) || (D.avg_deficit < 0 && D.avg_deficit >= -500) ? '✅ 合理' : '⚠️ 需调整', '');
+      + kpi('每周预估', (D.weekly_loss >= 0 ? '-' : '+') + esc(Math.abs(D.weekly_loss)) + ' kg', '7700 卡/kg')
+      + kpi('健康范围', '+300 ~ +500 卡/天', '')
+      + kpi('判定', (D.weekly_loss > 0 && D.weekly_loss < 0.5) || (D.avg_deficit > 0 && D.avg_deficit <= 500) ? '✅ 合理' : '⚠️ 需调整', '');
   } else if (D.kind === 'calorie_stability') {
     kpiBox.innerHTML = kpi('日均摄入', esc(D.avg) + ' 卡', '')
       + kpi('波动 σ', esc(D.sigma) + ' 卡', 'σ>300 = 不稳定')

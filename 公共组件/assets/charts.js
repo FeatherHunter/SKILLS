@@ -1,4 +1,4 @@
-/* Base Skill 图表组件 v1.20（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.21（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
@@ -285,7 +285,7 @@ window.charts={
     opt=_merge({color:'var(--blue,#007aff)',lineWidth:2.2,dashed:false,smooth:false,showDots:true,dotSize:null,
       area:false,areaOpacity:0.12,labels:'edge',showValues:false,labelRotate:0,yMin:null,yMax:null,grid:true,
       format:null,tooltip:false,markLine:null,markPoint:false,step:false,animation:true,height:null,
-      series:null,avgLine:null,legend:false,highlightLast:false,onclick:null,ondrill:null,emptyText:null,connectNulls:false,yTicks:false,band:null},opt);
+      series:null,avgLine:null,legend:false,highlightLast:false,onclick:null,ondrill:null,emptyText:null,connectNulls:false,yTicks:false,band:null,fillBetween:null},opt);
     var hStyle=opt.height?('style="--c-h:'+opt.height+'px"'):'';
     /* 多序列: series = [{name,items,color?,dashed?,smooth?,area?}] */
     var seriesList=[];
@@ -345,6 +345,33 @@ window.charts={
         return d;
       }).join('');
       if(bandHtml)bandHtml='<path class="hm-c-band" d="'+bandHtml+'" fill="'+bColor+'" opacity="0.15" stroke="none"/>';
+    }
+    /* fillBetween 线间填充（v1.21 · #338）: a/b = series[] 索引, 两线之间区域半透明填充（透明度对齐 areaOpacity）;
+     * 任一序列该点 null → 该段断开不填充; a/b 越界/相同/非数字 → 直接报错; 一次一组, 不支持多组叠加 */
+    var fbHtml='';
+    if(opt.fillBetween){
+      var fb=opt.fillBetween;
+      if(!_isNum(fb.a)||!_isNum(fb.b))throw new Error('charts.line: fillBetween.a/b 必须为系列索引数字');
+      var fa=Math.round(_num(fb.a)),fb2=Math.round(_num(fb.b));
+      if(fa<0||fa>=seriesList.length||fb2<0||fb2>=seriesList.length)throw new Error('charts.line: fillBetween.a/b 越界 (系列数 '+seriesList.length+', a='+fa+' b='+fb2+')');
+      if(fa===fb2)throw new Error('charts.line: fillBetween.a/b 不能相同');
+      var pa=seriesPts[fa],pb=seriesPts[fb2];
+      if(pa.length!==pb.length)throw new Error('charts.line: fillBetween 两系列 items 长度不一致');
+      var fbSegs=[],fbCur=[];
+      pa.forEach(function(p,i){
+        if(p[2]||pb[i][2]){if(fbCur.length)fbSegs.push(fbCur);fbCur=[];}
+        else{fbCur.push([p[0],p[1],pb[i][1]]);}
+      });
+      if(fbCur.length)fbSegs.push(fbCur);
+      var fbColor=fb.color||'var(--blue,#007aff)';
+      fbHtml=fbSegs.map(function(s){
+        var d=s.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join('');
+        d+='L'+s[s.length-1][0].toFixed(1)+' '+s[s.length-1][2].toFixed(1);
+        for(var i2=s.length-1;i2>=1;i2--){d+='L'+s[i2-1][0].toFixed(1)+' '+s[i2-1][2].toFixed(1);}
+        d+='Z';
+        return d;
+      }).join('');
+      if(fbHtml)fbHtml='<path class="hm-c-fillbetween" d="'+fbHtml+'" fill="'+fbColor+'" opacity="'+opt.areaOpacity+'" stroke="none"/>';
     }
     /* grid */
     var grid='';if(opt.grid){for(var g=0;g<3;g++){var gy=_H-_P-(_H-2*_P)*g/2;grid+='<line x1="'+_P+'" y1="'+gy.toFixed(1)+'" x2="'+(_W-_P)+'" y2="'+gy.toFixed(1)+'" stroke="#ececf1" stroke-width="1"/>';}}
@@ -476,7 +503,7 @@ window.charts={
     var rotStyle=opt.labelRotate?(' style="transform:rotate('+opt.labelRotate+'deg);transform-origin:top center" '):'';
     el.innerHTML='<div class="hm-c-line-wrap" '+hStyle+'>'
       +(opt.legend&&legendsHtml?'<div class="hm-c-legend">'+legendsHtml+'</div>':'')
-      +'<div class="hm-c-line-svg"><svg viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none">'+grid+bandHtml+tickLines+markHtml+pathsHtml+'</svg>'+dotsHtml+valuesHtml+tickLabels+markLbl+mpHtml+'</div>'
+      +'<div class="hm-c-line-svg"><svg viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none">'+grid+bandHtml+fbHtml+tickLines+markHtml+pathsHtml+'</svg>'+dotsHtml+valuesHtml+tickLabels+markLbl+mpHtml+'</div>'
       +(xLabels?'<div class="hm-c-line-x"'+rotStyle+'>'+xLabels+'</div>':'')
       +'</div>';
     if(opt.animation){

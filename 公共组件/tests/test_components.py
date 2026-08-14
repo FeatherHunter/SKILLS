@@ -1694,6 +1694,72 @@ def test_line_markline_xvalue_edge_not_clipped(chart_page):
     assert box['l'] >= 0 and box['r'] <= box['w']
 
 
+# ── line: fillBetween 线间填充（v1.21 · #338）────────────────
+
+def test_line_fillbetween_renders(chart_page):
+    """fillBetween:{a,b}: 两系列之间出现填充 path（透明度 = areaOpacity）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:1}], {animation:false,
+        series:[{name:'摄入',items:[{label:'a',value:10},{label:'b',value:20},{label:'c',value:15}]},
+                {name:'消耗',items:[{label:'a',value:25},{label:'b',value:30},{label:'c',value:28}]}],
+        fillBetween:{a:0,b:1}})
+    """)
+    fb = chart_page.evaluate("document.querySelector('.hm-c-fillbetween')?.getAttribute('d')")
+    opacity = chart_page.evaluate("document.querySelector('.hm-c-fillbetween')?.getAttribute('opacity')")
+    assert fb and fb.startswith('M') and fb.endswith('Z') and opacity == '0.12'
+
+
+def test_line_fillbetween_default_absent_byte_identical(chart_page):
+    """缺省: 无 .hm-c-fillbetween 元素; fillBetween:null 与未传渲染逐字节一致"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    n1 = chart_page.evaluate("document.querySelectorAll('.hm-c-fillbetween').length")
+    html1 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, fillBetween:null})', LINE_ITEMS)
+    n2 = chart_page.evaluate("document.querySelectorAll('.hm-c-fillbetween').length")
+    html2 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    assert n1 == 0 and n2 == 0 and html1 == html2
+
+
+def test_line_fillbetween_null_breaks(chart_page):
+    """任一侧 null 断点: 该段断开不填充（两个独立封闭区）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:1}], {animation:false,
+        series:[{name:'A',items:[{label:'a',value:10},{label:'b',value:20},{label:'c',value:15},{label:'d',value:12}]},
+                {name:'B',items:[{label:'a',value:25},{label:'b',value:null},{label:'c',value:28},{label:'d',value:26}]}],
+        fillBetween:{a:0,b:1}})
+    """)
+    d = chart_page.evaluate("document.querySelector('.hm-c-fillbetween')?.getAttribute('d')")
+    assert d.count('M') == 2
+
+
+def test_line_fillbetween_out_of_range_throws(chart_page):
+    """a/b 越界 → 直接报错"""
+    err = chart_page.evaluate("""() => { try {
+      window.charts.line(document.getElementById('root'), [{label:'x',value:1}], {animation:false,
+        series:[{name:'A',items:[{label:'a',value:1}]},{name:'B',items:[{label:'a',value:2}]}],
+        fillBetween:{a:0,b:5}});
+      return ''; } catch(e) { return e.message; } }""")
+    assert 'fillBetween.a/b 越界' in err
+
+
+def test_line_fillbetween_single_series_throws(chart_page):
+    """无 series（单序列）: b=1 越界 → 报错（fillBetween 需要两系列）"""
+    err = chart_page.evaluate('(items) => { try { window.charts.line(document.getElementById("root"), items, {animation:false, fillBetween:{a:0,b:1}}); return ""; } catch(e) { return e.message; } }', LINE_ITEMS)
+    assert 'fillBetween.a/b 越界' in err
+
+
+def test_line_fillbetween_color_override(chart_page):
+    """fillBetween.color 覆盖填充色"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:1}], {animation:false,
+        series:[{name:'A',items:[{label:'a',value:10},{label:'b',value:20}]},
+                {name:'B',items:[{label:'a',value:25},{label:'b',value:30}]}],
+        fillBetween:{a:0,b:1,color:'#ff9500'}})
+    """)
+    fill = chart_page.evaluate("document.querySelector('.hm-c-fillbetween')?.getAttribute('fill')")
+    assert fill == '#ff9500'
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

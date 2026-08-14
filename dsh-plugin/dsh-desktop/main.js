@@ -433,7 +433,10 @@ function createWindow() {
 // 关键点：transform 作用于 body 而非 #root —— body 的 transform 会建立新的
 // 包含块，使 body 内【所有】fixed 元素（含 createPortal 到 body 的 Modal /
 // 菜单 / Popover 浮层）都统一下移，不会漏掉浮层导致与右上角按钮重叠。
-// 顶部条带可拖拽移动窗口（top 用负值抵消 body 位移）。
+// 窗口移动用「手动拖拽」：不用 -webkit-app-region（它会在合成器层截胡
+// 事件，导致顶部区域的面板手柄永远抢不到鼠标）。事件走正常 DOM 通道，
+// 按 mousedown 的目标元素区分：空白带（条带/body）拖窗口，
+// 面板/浮层命中时是面板元素 → 面板自己的拖拽，互不冲突。
 function polishTargetPage() {
   if (!mainWindow || mainWindow.isDestroyed()) return;
   const js = `(() => {
@@ -448,19 +451,54 @@ function polishTargetPage() {
       if (!strip) {
         strip = document.createElement('div');
         strip.id = 'dshDesktopDrag';
-        // z-index 用中间值（高于静态内容、低于页面浮层面板 100+）：
-        // 命中测试只把事件交给最上层元素——空白带命中条带拖窗口，
-        // 面板/浮层覆盖的区域命中面板，互不冲突（勿改回最高层）
+        // 普通元素（无 -webkit-app-region）：事件走 DOM 命中测试。
+        // z-index 中间值：空白带命中条带，浮层面板（z-index 100+）覆盖区命中面板。
         strip.style.cssText =
           'position:fixed;top:-' + BAR_H + 'px;left:0;right:0;height:' + BAR_H + 'px;' +
-          'z-index:10;-webkit-app-region:drag;';
+          'z-index:10;';
         document.body.appendChild(strip);
       }
       return true;
     };
-    if (apply()) return true;
+    const installDrag = () => {
+      if (window.__dshDesktopDragInstalled) return;
+      window.__dshDesktopDragInstalled = true;
+      const api = window.dshDesktop;
+      const strip = document.getElementById('dshDesktopDrag');
+      // 空白带判定：命中条带本身 / body / 根容器。
+      // 页面内容已下移，0-40px 内除浮层面板外无其他元素；
+      // 面板命中时 target 是面板元素 → 不拖窗口，面板自己处理。
+      const isBlank = (el) => el === strip || el === document.body || el.id === 'root';
+      let drag = null;
+      document.addEventListener('mousedown', (e) => {
+        if (e.button !== 0 || e.clientY >= BAR_H || !isBlank(e.target)) return;
+        drag = { sx: e.screenX, sy: e.screenY, moved: false };
+        e.preventDefault();
+        api.dragStart();
+      });
+      document.addEventListener('mousemove', (e) => {
+        if (!drag) return;
+        const dx = e.screenX - drag.sx;
+        const dy = e.screenY - drag.sy;
+        if (!drag.moved && Math.abs(dx) + Math.abs(dy) < 3) return; // 防误触阈值
+        drag.moved = true;
+        api.dragMove(dx, dy);
+      });
+      const endDrag = () => {
+        if (drag) { drag = null; api.dragEnd(); }
+      };
+      document.addEventListener('mouseup', endDrag);
+      window.addEventListener('blur', endDrag); // 鼠标拖出窗口时兜底
+      document.addEventListener('dblclick', (e) => {
+        if (e.clientY < BAR_H && isBlank(e.target)) api.toggleMaximize();
+      });
+    };
+    if (apply()) { installDrag(); return true; }
     let n = 0;
-    const t = setInterval(() => { if (apply() || ++n > 20) clearInterval(t); }, 500);
+    const t = setInterval(() => {
+      if (apply()) { clearInterval(t); installDrag(); }
+      else if (++n > 20) clearInterval(t);
+    }, 500);
     return true;
   })()`;
   mainWindow.webContents.executeJavaScript(js).catch(() => {});
@@ -527,6 +565,27 @@ ipcMain.handle('dsh-desktop:restart', () => {
   startup();
 });
 ipcMain.handle('dsh-desktop:quit', () => app.quit());
+
+// ---------- IPC（手动窗口拖拽，页面注入 → 主进程） ----------
+// 手动拖拽替代 -webkit-app-region：事件走 DOM 通道，与页面浮层零冲突。
+let dragOrigin = null; // 拖拽起点的窗口位置
+ipcMain.on('dsh-desktop:drag-start', () => {
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) return;
+  const [x, y] = win.getPosition();
+  dragOrigin = { x, y };
+});
+ipcMain.on('dsh-desktop:drag-move', (_e, dx, dy) => {
+  const win = mainWindow;
+  if (!win || win.isDestroyed() || !dragOrigin) return;
+  win.setPosition(Math.round(dragOrigin.x + dx), Math.round(dragOrigin.y + dy));
+});
+ipcMain.on('dsh-desktop:drag-end', () => { dragOrigin = null; });
+ipcMain.handle('dsh-desktop:toggle-maximize', () => {
+  const win = mainWindow;
+  if (!win || win.isDestroyed()) return;
+  if (win.isMaximized()) win.unmaximize(); else win.maximize();
+});
 
 // ---------- 应用生命周期 ----------
 // 单实例锁：同一 userData（%APPDATA%/dsh-desktop，dev 与打包版共用）只允许一个实例。

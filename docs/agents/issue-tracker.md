@@ -15,6 +15,8 @@
 - `[智剪工坊] 模板 `健身vlog` 渲染失败`
 - `[作息管家] 帮助页 73 场景首次打开报错`
 - `[SKILL开发总纲] 待开发章节的占位规则`
+- `[dsh-waystation] 列表 label 过滤不全 · 200 条截断`（DSH 生态沿用同规则：前缀 = 项目名）
+- `[dsh-desktop] 零丢失快照 · 托盘常驻与升级机制`
 
 ### Label 命名空间
 
@@ -22,6 +24,18 @@
 - 分类：`bug` / `enhancement`
 - 状态：`needs-triage` / `needs-info` / `ready-for-agent` / `ready-for-human` / `wontfix`
 - 自定义（如跨技能主题）：`cross-skill` / `docs` / `infra`
+
+### DSH 生态标签规则（`dsh:` 家族 · 2026-08-14 确立）
+
+`dsh-plugin/` 目录下的应用与插件（非「技能」，是 DSH 生态工程产物）统一用 `dsh:` 前缀命名空间，与技能系 `skill:` 并列，互不冲突：
+
+- **规则**：`dsh:<类型>:<名称>` ——
+  - 插件（cordis 插件）：`dsh:plugin:<插件名>`
+  - 独立应用 / 桌面壳 / 工具：`dsh:<应用名>`
+- **已登记**：
+  - `dsh:plugin:waystation`（DSH 动态插件 · dsh-waystation，wayfinder 实施地图/票务命名空间 · 2026-08-14 补登记，实为既有 label）
+  - `dsh:desktop`（DSH 桌面壳 · dsh-harness-desktop，Electron 应用 · 托盘常驻/检查更新/升级机制 · 2026-08-14 新建）
+- 对应 issue 标题前缀：`[dsh-waystation]` / `[dsh-desktop]` / `[dsh-opencode-tui-theme]` 等（项目名，无 `:`）
 
 每个被处理的 issue 同时携带 1 个技能 label、1 个分类 label、1 个状态 label。
 

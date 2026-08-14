@@ -38,14 +38,14 @@
 
 ### 快速开始（全新用户）
 
-1. 双击 `dsh-harness-desktop-1.0.1-x64.exe`（或 `npm start` 开发模式）
+1. 双击 `dsh-harness-desktop-1.0.2-x64.exe`（或 `npm start` 开发模式）
 2. 首次运行：启动页显示「正在下载并安装 DSH 运行时…」，等几分钟
 3. 自动进入 DSH 界面 —— 完成！之后双击即秒开
 
 **想要桌面快捷方式？** 在 exe 所在目录执行一条命令即可（应用自动创建，无需手动右键）：
 
 ```powershell
-.\dsh-harness-desktop-1.0.1-x64.exe --install-shortcut
+.\dsh-harness-desktop-1.0.2-x64.exe --install-shortcut
 # 桌面出现「桌面版」图标，以后双击它直接打开
 ```
 
@@ -78,7 +78,7 @@
 5. **（可选）打包自己的便携 exe**：
    ```bash
    npm run dist
-   # Windows → dist/dsh-harness-desktop-1.0.1-x64.exe
+   # Windows → dist/dsh-harness-desktop-1.0.2-x64.exe
    ```
 
 > 提示：首次启动会联网自动下载安装 DSH 运行时（几分钟），装好后**离线秒开**；
@@ -105,7 +105,7 @@ npm start        # 启动桌面版
 ### 打包成双击即用的安装包
 
 ```bash
-npm run dist     # Windows → dist/dsh-harness-desktop-1.0.1-x64.exe（便携版，双击即用）
+npm run dist     # Windows → dist/dsh-harness-desktop-1.0.2-x64.exe（便携版，双击即用）
 ```
 
 - Windows 出便携 exe；在 Linux 上执行同一命令出 AppImage（各自平台构建各自的包）。

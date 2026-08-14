@@ -1248,11 +1248,11 @@ return {
         type: 'button',
         // #376：打开统一走 openPanel（未就绪/过期自动 force 加载）
         onClick: function (e) { e.stopPropagation(); openPanel(s) },
-        style: { display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: 'var(--dsw-alias-label-primary,#e6edf3)', fontSize: 12, cursor: 'pointer', padding: '4px 6px', borderRadius: 6 },
+        style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '2px 6px', background: 'transparent', border: 'none', color: 'var(--dsw-alias-label-primary,#e6edf3)', fontSize: 12, cursor: 'pointer', padding: '4px 6px', borderRadius: 6, lineHeight: 1.4, minWidth: 0 },
       }, [
-        h('span', { style: { color: n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b' } }, Icon({ scheme: s.ui.icon, size: 15 })),
-        h('span', null, 'Waystation'),
-        h('span', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 11 } }, (n < 0 ? '--/8' : n + '/8') + ' · ' + frontierCount(s) + ' 可接'),
+        h('span', { style: { display: 'inline-flex', alignItems: 'center', color: n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b' } }, Icon({ scheme: s.ui.icon, size: 15 })),
+        h('span', { style: { whiteSpace: 'nowrap' } }, 'Waystation'),
+        h('span', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 11, whiteSpace: 'nowrap' } }, (n < 0 ? '--/8' : n + '/8') + ' · ' + frontierCount(s) + ' 可接'),
       ])
     }
 

@@ -473,6 +473,15 @@ export function apply(ctx) {
   const connection = ctx.get('connection')
   if (connection === undefined || connection.rpc === undefined) return
 
+  // 错误对象 → 可读文本：fetchMaps/buildSnapshot 抛出的是 {kind, error} 对象，String() 会变 [object Object]
+  const errText = function (e) {
+    if (e === undefined || e === null) return '未知错误'
+    if (typeof e === 'string') return e
+    if (typeof e.message === 'string') return e.message
+    if (typeof e.error === 'string') return e.error
+    try { return JSON.stringify(e) } catch (err) { return String(e) }
+  }
+
   const dispatch = async function (endpoint, args) {
     const cwd = (args && args.cwd) || DEFAULT_CWD
     switch (endpoint) {
@@ -485,8 +494,8 @@ export function apply(ctx) {
           statusCache = { ts: Date.now(), status: status, error: null, cwd: cwd }
           return status
         } catch (e) {
-          statusCache = { ts: Date.now(), status: null, error: String((e && e.message) || e), cwd: cwd }
-          return { ok: false, error: String((e && e.message) || e), checks: [], ready: 0, total: CHECK_NAMES.length }
+          statusCache = { ts: Date.now(), status: null, error: errText(e), cwd: cwd }
+          return { ok: false, error: errText(e), checks: [], ready: 0, total: CHECK_NAMES.length }
         }
       }
       case 'snapshot': {
@@ -497,8 +506,8 @@ export function apply(ctx) {
           cache = { ts: Date.now(), snapshot: snap, error: null, cwd: cwd }
           return snap
         } catch (e) {
-          cache = { ts: Date.now(), snapshot: null, error: String((e && e.message) || e), cwd: cwd }
-          return { ok: false, error: String((e && e.message) || e), env: { ghError: ghPathError } }
+          cache = { ts: Date.now(), snapshot: null, error: errText(e), cwd: cwd }
+          return { ok: false, error: errText(e), env: { ghError: ghPathError } }
         }
       }
       case 'refresh': {
@@ -507,8 +516,8 @@ export function apply(ctx) {
           cache = { ts: Date.now(), snapshot: snap, error: null, cwd: cwd }
           return snap
         } catch (e) {
-          cache = { ts: Date.now(), snapshot: null, error: String((e && e.message) || e), cwd: cwd }
-          return { ok: false, error: String((e && e.message) || e) }
+          cache = { ts: Date.now(), snapshot: null, error: errText(e), cwd: cwd }
+          return { ok: false, error: errText(e) }
         }
       }
       case 'cwd': {

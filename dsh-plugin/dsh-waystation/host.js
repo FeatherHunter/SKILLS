@@ -487,6 +487,15 @@ return {
 
     // v13：按 sessionId 反查会话工作目录（client 切换对话时用；宿主 sessions.meta 是权威字段，
     // 不再依赖 client 猜测 ConversationSnapshot 字段名）
+    // 错误对象 → 可读文本：fetchMaps/buildSnapshot 抛出的是 {kind, error} 对象，String() 会变 [object Object]
+    const errText = function (e) {
+      if (e === undefined || e === null) return '未知错误'
+      if (typeof e === 'string') return e
+      if (typeof e.message === 'string') return e.message
+      if (typeof e.error === 'string') return e.error
+      try { return JSON.stringify(e) } catch (err) { return String(e) }
+    }
+
     harness.handle('wf.cwd', async function (args) {
       const sid = args && args.sessionId
       if (!sid) return { ok: false, error: '缺少 sessionId' }
@@ -499,7 +508,7 @@ return {
         if (typeof cwd === 'string' && cwd) return { ok: true, cwd: cwd }
         return { ok: false, error: '会话无 cwd 信息' }
       } catch (e) {
-        return { ok: false, error: String((e && e.message) || e) }
+        return { ok: false, error: errText(e) }
       }
     })
 
@@ -512,8 +521,8 @@ return {
         cache = { ts: Date.now(), snapshot: snap, error: null, cwd: cwd }
         return snap
       } catch (e) {
-        cache = { ts: Date.now(), snapshot: null, error: String((e && e.message) || e), cwd: cwd }
-        return { ok: false, error: String((e && e.message) || e), env: { ghError: ghPathError } }
+        cache = { ts: Date.now(), snapshot: null, error: errText(e), cwd: cwd }
+        return { ok: false, error: errText(e), env: { ghError: ghPathError } }
       }
     })
 
@@ -524,8 +533,8 @@ return {
         cache = { ts: Date.now(), snapshot: snap, error: null, cwd: cwd }
         return snap
       } catch (e) {
-        cache = { ts: Date.now(), snapshot: null, error: String((e && e.message) || e), cwd: cwd }
-        return { ok: false, error: String((e && e.message) || e) }
+        cache = { ts: Date.now(), snapshot: null, error: errText(e), cwd: cwd }
+        return { ok: false, error: errText(e) }
       }
     })
 

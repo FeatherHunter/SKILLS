@@ -1,5 +1,5 @@
 /**
- * dsh-waystation 浏览器半（Client bundle · v1.0.1 = 动态版 v24 同源）
+ * dsh-waystation 浏览器半（Client bundle · v1.2.0-dev = 动态版 v25 同源）
  *
  * 格式：DSH client-modules 的惰性 CJS bundle —— 经典脚本执行时只注册 factory，
  * 由浏览器内核（vendored Cordis Loader）在挂载该插件条目时物化执行。
@@ -14,8 +14,9 @@
  *      ctx.connection.rpc.call('/dsws', endpoint, args) → RpcResult 解包
  *   4. timer 服务不可用时 setTimeout 兜底（动态版 runner 必注入 timer）
  *
- * 功能同动态版 v24：状态栏胶囊 / 面板三视图 / 行级动作（诊断/修复/讨论/执行）/
- * map 详情 / 交接两段 prompt（时间戳记忆）/ 引导句「从第一性原理出发完成任务，并对抗式审查。」
+ * 功能同动态版 v25：状态栏胶囊 / 面板三视图 / 行级动作（诊断/修复/讨论/执行）/
+ * map 详情 / 交接两段 prompt（时间戳记忆）/ 引导句「从第一性原理出发完成任务，并对抗式审查。」/
+ * 配置页（settings.plugins.tab「Waystation」：面板高度三档 + 开始模板 + 外观，dsws.cfg 持久化 + 旧 startCfg 迁移）
  */
 window.__ModuleLoader__.load({
   id: 'dsh-waystation',
@@ -105,6 +106,48 @@ window.__ModuleLoader__.load({
       '.dsws-shade{position:absolute;inset:0;background:rgba(8,10,14,.55);display:flex;align-items:center;justify-content:center;gap:8px;z-index:7;border-radius:12px}',
       '.dsws-spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.18);border-top-color:#c084fc;animation:dsws-spin .8s linear infinite;flex:none}',
       '@keyframes dsws-spin{to{transform:rotate(360deg)}}',
+      // v25 · T2b：配置页（settings.plugins.tab）专用样式
+      '.dsws-cfg{max-width:720px;display:flex;flex-direction:column;gap:16px;padding:2px 2px 18px}',
+      '.dsws-cfg-head{display:flex;align-items:center;gap:10px}',
+      '.dsws-cfg-head .t{font-size:15px;font-weight:700;letter-spacing:.2px}',
+      '.dsws-cfg-head .s{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:12px}',
+      '.dsws-cfg-sub{font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);line-height:1.7}',
+      '.dsws-cfg-group{border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;background:var(--dsw-alias-bg-layer-1,#10131a);padding:14px 16px}',
+      '.dsws-cfg-gtitle{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:650;margin-bottom:4px}',
+      '.dsws-cfg-gdesc{font-size:11.5px;color:var(--dsw-alias-label-caption,#8b8b95);margin-bottom:10px;line-height:1.65}',
+      '.dsws-cfg-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0}',
+      '.dsws-cfg-label{font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);flex:none}',
+      '.dsws-cfg-seg{display:inline-flex;border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;background:var(--dsw-alias-bg-layer-2,#16181d);padding:3px;gap:2px}',
+      '.dsws-cfg-seg button{border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);font-size:12px;padding:4px 14px;border-radius:6px;cursor:pointer;font-family:var(--dsw-font-family)}',
+      '.dsws-cfg-seg button:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08))}',
+      '.dsws-cfg-seg button.on{background:#c084fc;color:#140a1e;font-weight:600}',
+      '.dsws-cfg-sw{display:inline-flex;align-items:center;gap:8px;cursor:pointer;user-select:none;font-size:12px}',
+      '.dsws-cfg-sw input{display:none}',
+      '.dsws-cfg-sw .tr{width:34px;height:19px;border-radius:99px;background:var(--dsw-alias-bg-layer-3,#0c0e12);border:1px solid var(--dsw-alias-border-l1,#2a2d35);position:relative;flex:none;transition:background .15s,border-color .15s}',
+      '.dsws-cfg-sw .tr::after{content:"";position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:var(--dsw-alias-label-caption,#8b8b95);transition:transform .15s,background .15s}',
+      '.dsws-cfg-sw input:checked + .tr{background:rgba(192,132,252,.22);border-color:rgba(192,132,252,.55)}',
+      '.dsws-cfg-sw input:checked + .tr::after{transform:translateX(15px);background:#c084fc}',
+      '.dsws-cfg-ta{width:100%;min-height:64px;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;color:var(--dsw-alias-label-primary,#e6edf3);font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:12px;line-height:1.7;padding:8px 10px;box-sizing:border-box;resize:vertical}',
+      '.dsws-cfg-ta:focus{outline:none;border-color:rgba(192,132,252,.6)}',
+      '.dsws-cfg-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0}',
+      '.dsws-cfg-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;font-size:11px;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);cursor:pointer;background:rgba(188,140,255,.14);color:#bc8cff;border:1px solid rgba(188,140,255,.35);transition:background .12s}',
+      '.dsws-cfg-chip:hover{background:rgba(188,140,255,.26)}',
+      '.dsws-cfg-chip.req{background:rgba(248,113,113,.14);color:#f87171;border-color:rgba(248,113,113,.45)}',
+      '.dsws-cfg-chip.req:hover{background:rgba(248,113,113,.26)}',
+      '.dsws-cfg-chip .must{font-family:var(--dsw-font-family);font-size:10px;opacity:.85}',
+      '.dsws-cfg-legend{font-size:11px;color:var(--dsw-alias-label-caption,#8b8b95);display:flex;align-items:center;gap:12px;margin-top:2px}',
+      '.dsws-cfg-card{border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;background:var(--dsw-alias-bg-layer-2,#16181d);padding:12px 14px;margin-bottom:10px}',
+      '.dsws-cfg-card-head{display:flex;align-items:center;gap:8px;margin-bottom:2px}',
+      '.dsws-cfg-card-name{font-size:13px;font-weight:650}',
+      '.dsws-cfg-card-desc{font-size:11.5px;color:var(--dsw-alias-label-caption,#8b8b95);margin-bottom:4px;line-height:1.6}',
+      '.dsws-cfg-preview{border:1px dashed var(--dsw-alias-border-l2,#3a3f4a);border-radius:8px;background:var(--dsw-alias-bg-layer-3,#0c0e12);padding:7px 10px;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:11px;line-height:1.7;color:var(--dsw-alias-label-secondary,#a1a1aa);white-space:pre-wrap;word-break:break-all;max-height:132px;overflow:auto;margin-top:6px}',
+      '.dsws-cfg-preview .pv-label{display:block;font-family:var(--dsw-font-family);font-size:10px;letter-spacing:.5px;color:var(--dsw-alias-label-caption,#8b8b95);margin-bottom:3px}',
+      '.dsws-cfg-err{border:1px solid rgba(248,113,113,.5);background:rgba(248,113,113,.1);border-radius:10px;padding:10px 12px;font-size:12px;color:#f87171;line-height:1.7}',
+      '.dsws-cfg-err .t{font-weight:650;display:flex;align-items:center;gap:6px;margin-bottom:2px}',
+      '.dsws-cfg-save{align-self:flex-end;background:#c084fc;color:#140a1e;border:none;border-radius:8px;font-size:13px;font-weight:650;padding:8px 28px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}',
+      '.dsws-cfg-save:hover{filter:brightness(1.08)}',
+      '.dsws-cfg-btn{background:transparent;border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:7px;color:var(--dsw-alias-label-secondary,#a1a1aa);font-size:11.5px;padding:3px 10px;cursor:pointer}',
+      '.dsws-cfg-btn:hover{border-color:var(--dsw-alias-border-l2,#3a3f4a);color:var(--dsw-alias-label-primary,#e6edf3)}',
     ].join('')
 
     exports.inject = ['connection', 'slots', 'locale', 'workspaces']
@@ -234,18 +277,124 @@ window.__ModuleLoader__.load({
       }
 
       // ============================================================
+      // 2.5 配置模型（v25 · T2a：dsws.cfg + dsws.templates；旧 dsws.startCfg 自动迁移）
+      // 必须位于 §3 store 之前（DEFAULT_PANEL_H 依赖 cfg.panelHeight）
+      // ============================================================
+      // v22：统一引导句（T1 拍板：普通静态文本，用户可改；不是占位符）
+      const GUIDE_LINE = '从第一性原理出发完成任务，并对抗式审查。'
+      // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认模板文本，T2b 可编辑）
+      const FIXATE_PROMPT = '里程碑固化点。暂停推进，执行「零丢失快照」，从第一性原理出发：\n' +
+        '\n' +
+        '1. 全量复述：把我从会话开始到现在说过的全部信息，按「目的地 / 约束与偏好 / 已确认的决定 / 待决问题 / 雾区（隐约可见但还不清晰）」五类，逐条列出——不压缩、不合并，宁可啰嗦不可省略。\n' +
+        '2. 每条后面标注出处：用我的原话引用，让我知道它来自我哪句话。\n' +
+        '3. 单独列一节「可疑遗漏」：凡是我提过、但你觉得与主线无关、太模糊或像执行细节而没纳入的，全部摆出来，写明你当初不纳入的理由，由我裁决。\n' +
+        '4. 列完后停下等我逐条核对。我确认或修正完毕后，你再把清单落盘：已有地图就写进 map 正文和对应 ISSUE；还没建图就先生成一份快照笔记并告诉我存哪，等建图时搬入。'
+
+      const CFG_KEY = 'dsws.cfg'
+      // 功能配置（用户拍板 2026-08-14：外观图标/动作词由设计定死，不提供配置项）
+      const cfg = (function () {
+        const d = { withWayfinder: true, panelHeight: 'half' }
+        try {
+          const raw = localStorage.getItem(CFG_KEY)
+          if (raw) return Object.assign(d, JSON.parse(raw))
+        } catch (e) { /* 存储不可用用默认 */ }
+        return d
+      })()
+      const saveCfg = function () { try { localStorage.setItem(CFG_KEY, JSON.stringify(cfg)) } catch (e) {} }
+      // 模板存储（T2b 扩展全部动作；T2a 先承载 execute = 旧 custom）
+      const TPL_KEY = 'dsws.templates'
+      const templates = (function () {
+        const d = { diagnose: '', fix: '', discuss: '', execute: '', handoff1: '', handoff2: '', fixate: '' }
+        try {
+          const raw = localStorage.getItem(TPL_KEY)
+          if (raw) return Object.assign(d, JSON.parse(raw))
+        } catch (e) { /* 存储不可用用默认 */ }
+        return d
+      })()
+      const saveTemplates = function () { try { localStorage.setItem(TPL_KEY, JSON.stringify(templates)) } catch (e) {} }
+      // 迁移：旧 dsws.startCfg（{withWayfinder, custom}）→ cfg.withWayfinder + templates.execute，成功后清旧 key
+      const migrateStartCfg = function () {
+        try {
+          const raw = localStorage.getItem('dsws.startCfg')
+          if (!raw) return
+          const old = JSON.parse(raw)
+          if (old && typeof old === 'object') {
+            if (typeof old.withWayfinder === 'boolean') cfg.withWayfinder = old.withWayfinder
+            if (typeof old.custom === 'string' && old.custom) templates.execute = old.custom
+            saveCfg(); saveTemplates()
+          }
+          localStorage.removeItem('dsws.startCfg')
+        } catch (e) { /* 迁移失败保留旧 key，下次再试 */ }
+      }
+      migrateStartCfg()
+
+      // ---- v25 · T2b：动作模板引擎（T1 规格 §2-§4）----
+      // 占位符全集：{url} {number} {title} {ts} {file}（引导句是普通静态文本，不是占位符）
+      const PH = ['url', 'number', 'title', 'ts', 'file']
+      // 各模板可用占位符（编辑器 chips 展示）
+      const TPL_PH = {
+        diagnose: ['url'], fix: ['url'], discuss: ['url'], execute: ['number', 'url', 'title'],
+        handoff1: ['ts'], handoff2: ['file'], fixate: [],
+      }
+      // 强制占位符表（T1 规格 §3）：缺失拒绝保存
+      const TPL_REQUIRED = {
+        diagnose: ['url'], fix: ['url'], discuss: ['url'], execute: ['url'],
+        handoff1: ['ts'], handoff2: ['file'], fixate: [],
+      }
+      // 默认模板文本（空 = 用默认；T1 规格 §3 默认文本 = 现状代码文本）
+      const TPL_DEFAULT = {
+        diagnose: '/triage\n{url}\n\n' + GUIDE_LINE,
+        fix: '/wayfinder\n{url}\n\n' + GUIDE_LINE,
+        discuss: '/wayfinder\n{url}\n\n' + GUIDE_LINE,
+        execute: '{url}\n\n' + GUIDE_LINE,
+        handoff1: '/handoff\n\n请把当前会话生成交接文档，写到 .scratch/handoff/{ts}.md（相对当前工作目录），包含三部分：\n' +
+          '1. 结论：本次会话已确认的决定与成果；\n2. 未完成事项：下一步要继续的事；\n3. 建议 skill：新会话接手时建议加载的技能。\n\n' + GUIDE_LINE,
+        handoff2: '/read .scratch/handoff/{file}\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后' + GUIDE_LINE,
+        fixate: FIXATE_PROMPT,
+      }
+      const tplText = (id) => templates[id] || TPL_DEFAULT[id] || ''
+      // 渲染：转义 {{x}} → 字面 {x}（先替换哨兵防误替换），再替换已知占位符；未知占位符保留原样（保存层已拦截）
+      const renderTemplate = function (id, values) {
+        let text = String(tplText(id))
+        const esc = []
+        text = text.replace(/\{\{([a-zA-Z][a-zA-Z0-9]*)\}\}/g, function (m, name) { esc.push('{' + name + '}'); return '\u0001' + (esc.length - 1) + '\u0001' })
+        text = text.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/g, function (m, name) {
+          return Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : m
+        })
+        esc.forEach(function (s, i) { text = text.replace('\u0001' + i + '\u0001', s) })
+        return text
+      }
+      // 校验：转义预处理 → 未知占位符检测 → 强制占位符缺失检测（T1 规格 §4 顺序）
+      const validateTemplate = function (id, text) {
+        const found = []
+        const scrubbed = String(text || '').replace(/\{\{[a-zA-Z][a-zA-Z0-9]*\}\}/g, '')
+        const re = /\{([a-zA-Z][a-zA-Z0-9]*)\}/g
+        let m
+        while ((m = re.exec(scrubbed)) !== null) found.push(m[1])
+        const unknown = []
+        found.forEach(function (n) { if (PH.indexOf(n) < 0 && unknown.indexOf(n) < 0) unknown.push(n) })
+        const missing = []
+        ;(TPL_REQUIRED[id] || []).forEach(function (n) { if (found.indexOf(n) < 0 && missing.indexOf(n) < 0) missing.push(n) })
+        return { ok: unknown.length === 0 && missing.length === 0, unknown: unknown, missing: missing }
+      }
+      const fixateText = () => tplText('fixate')
+
+      // ============================================================
       // 3. store（按会话隔离；无 sid 时用 shared）
       // ============================================================
-      // 面板默认高度 = 屏幕约 1/2（内容内部滚动，可拖手柄拉长）
+      // v25：面板默认高度三档可配置（dsws.cfg.panelHeight: quarter/half/twothirds）
+      const PANEL_RATIOS = { quarter: 0.25, half: 0.5, twothirds: 2 / 3 }
       const DEFAULT_PANEL_H = (function () {
-        try { return Math.max(240, Math.round((window.innerHeight || 800) * 0.5)) } catch (e) { return 400 }
+        const r = PANEL_RATIOS[cfg.panelHeight] || 0.5
+        try { return Math.max(240, Math.round((window.innerHeight || 800) * r)) } catch (e) { return 400 }
       })()
       const makeStore = () => ({
         open: false, tab: 'list', activeMap: null,
         notice: null, injector: null, tick: 0,
         pos: null, size: { w: 460, h: DEFAULT_PANEL_H },
+        // 外观定死（用户拍板：图标/动作词不可配置）
         ui: { icon: 'compass', word: '沉淀' },
-        snapshot: null, cfgOpen: false,
+        snapshot: null,
         cwd: '', lblFilter: null, skillView: 'list',
         checks: null, checksUpdatedAt: '', checksMode: 'loading', checksError: null, checking: false,
         snapMode: 'loading', snapError: null, snapLoading: false,
@@ -321,11 +470,9 @@ window.__ModuleLoader__.load({
         })
         return colorOf
       }
-      // 统一引导句 —— 精简 prompt 后保留一句通用思想引导（第一性原理 + 对抗式审查），
-      // 技能内部细节由 /wayfinder / /triage / /handoff 自带，不重复灌输
-      const GUIDE_LINE = '从第一性原理出发完成任务，并对抗式审查。'
       // 共享 —— 行级动作（列表与 map 详情共用）：按 label 四选一（诊断/修复/讨论/执行），预填输入框；
       // 按钮主体色 = 对应 label 的 GitHub 配置色（YIQ 感知亮度定文字色）
+      // v25 · T2b：诊断/修复/讨论走模板渲染（用户可自定义静态文本，{url} 注入）
       const mkRowAction = function (st, x, narrow, colorOf) {
         const url = 'https://github.com/' + repoStr(st) + '/issues/' + x.number
         const has = function (nm) { return (x.labels || []).some(function (l) { return (typeof l === 'string') ? l === nm : l.name === nm }) }
@@ -348,9 +495,10 @@ window.__ModuleLoader__.load({
           }, [Ic({ n: icon, size: 10 }), narrow ? null : h('span', null, label)])
         }
         // 技能命令 + URL + 统一引导句（不再重复灌输技能内部流程）
-        if (has('needs-triage')) return mk('chat', '诊断', '/triage\n' + url + '\n\n' + GUIDE_LINE, btnColor('needs-triage', '#f59e0b'))
-        if (has('bug')) return mk('hammer', '修复', '/wayfinder\n' + url + '\n\n' + GUIDE_LINE, btnColor('bug', '#f87171'))
-        if (has('wayfinder:grilling')) return mk('chat', '讨论', '/wayfinder\n' + url + '\n\n' + GUIDE_LINE, btnColor('wayfinder:grilling', '#d93f0b'))
+        // v25 · T2b：诊断/修复/讨论走模板渲染
+        if (has('needs-triage')) return mk('chat', '诊断', renderTemplate('diagnose', { url: url }), btnColor('needs-triage', '#f59e0b'))
+        if (has('bug')) return mk('hammer', '修复', renderTemplate('fix', { url: url }), btnColor('bug', '#f87171'))
+        if (has('wayfinder:grilling')) return mk('chat', '讨论', renderTemplate('discuss', { url: url }), btnColor('wayfinder:grilling', '#d93f0b'))
         return mk('play', '执行', startText(st, x), '#c084fc')
       }
       // 交接文档时间戳文件名（YYYYMMDD-HHMMSS）
@@ -471,17 +619,20 @@ window.__ModuleLoader__.load({
           return String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
         } catch (e) { return '' }
       }
-      // 开始模板配置（localStorage 持久化）
-      const START_CFG_KEY = 'dsws.startCfg'
-      const startCfg = (function () {
-        const d = { withWayfinder: true, custom: '' }
-        try {
-          const raw = localStorage.getItem(START_CFG_KEY)
-          if (raw) return Object.assign(d, JSON.parse(raw))
-        } catch (e) { /* 存储不可用用默认 */ }
-        return d
-      })()
-      const saveStartCfg = function () { try { localStorage.setItem(START_CFG_KEY, JSON.stringify(startCfg)) } catch (e) {} }
+      // ============================================================
+      // 4. 配置广播（v25：配置保存后同步所有会话 store 的面板尺寸；外观定死不广播）
+      //    cfg/templates 定义见 §2.5（在 store 之前）
+      // ============================================================
+      const broadcastCfg = function () {
+        const applyTo = function (st) {
+          if (!st) return
+          const r = PANEL_RATIOS[cfg.panelHeight] || 0.5
+          st.size = { w: st.size ? st.size.w : 460, h: Math.max(240, Math.round((window.innerHeight || 800) * r)) }
+          emit(st)
+        }
+        applyTo(shared)
+        Object.keys(stores).forEach(function (k) { applyTo(stores[k]) })
+      }
 
       // 快照（面板数据源；force 走 refresh 全量重建；snapshot 侧 5s 缓存）
       const loadSnapshot = function (st, force) {
@@ -531,50 +682,44 @@ window.__ModuleLoader__.load({
         ? st.snapshot.repo.owner + '/' + st.snapshot.repo.name
         : 'FeatherHunter/SKILLS'
 
-      // 开始 prompt 精简 —— /wayfinder + URL + 统一引导句（技能内部细节自带，不再重复灌输）
+      // v25 · T2b：execute 走模板渲染（templates.execute 或默认），前缀开关 = cfg.withWayfinder
       const startText = (st, t) => {
         const url = 'https://github.com/' + repoStr(st) + '/issues/' + t.number
-        if (startCfg.custom) {
-          return startCfg.custom
-            .replace(/\{number\}/g, String(t.number))
-            .replace(/\{url\}/g, url)
-            .replace(/\{title\}/g, t.title)
-        }
-        const body = url + '\n\n' + GUIDE_LINE
-        return (startCfg.withWayfinder ? '/wayfinder\n' : '') + body
+        const body = renderTemplate('execute', { number: String(t.number), url: url, title: t.title })
+        return (cfg.withWayfinder ? '/wayfinder\n' : '') + body
       }
 
-      // 沉淀 = 会话级动作 —— 注入「零丢失快照」prompt，用户回车即发给 AI
-      const FIXATE_PROMPT = '里程碑固化点。暂停推进，执行「零丢失快照」，从第一性原理出发：\n' +
-        '\n' +
-        '1. 全量复述：把我从会话开始到现在说过的全部信息，按「目的地 / 约束与偏好 / 已确认的决定 / 待决问题 / 雾区（隐约可见但还不清晰）」五类，逐条列出——不压缩、不合并，宁可啰嗦不可省略。\n' +
-        '2. 每条后面标注出处：用我的原话引用，让我知道它来自我哪句话。\n' +
-        '3. 单独列一节「可疑遗漏」：凡是我提过、但你觉得与主线无关、太模糊或像执行细节而没纳入的，全部摆出来，写明你当初不纳入的理由，由我裁决。\n' +
-        '4. 列完后停下等我逐条核对。我确认或修正完毕后，你再把清单落盘：已有地图就写进 map 正文和对应 ISSUE；还没建图就先生成一份快照笔记并告诉我存哪，等建图时搬入。'
-      const injectFixate = (st) => { inject(st, FIXATE_PROMPT) }
+      // 沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认文本见 §2.5 FIXATE_PROMPT，T2b 可编辑）
+      const injectFixate = (st) => { inject(st, fixateText()) }
 
       // 交接 —— 第一击自动注入 /handoff 模板（带时间戳文件名 + 引导句）并记忆该时间戳；
       // 第二击优先读「第一击模板里的同一个文件」（模板写什么名就读什么名，不再查目录导致旧文件名）；
       // 仅当未点过第一击（如刷新后）才回退 host 查最新实际文档；+ 复制 + 开新空白会话
+      // v25 · T2b（F1 修正）：交接两击走模板渲染；{ts} 第一击注入时生成并记忆；
+      //   {file} = 第一击模板渲染后解析出的实际文件名（用户改文件名结构也一致），解析失败兜底 handoffTs + '.md'
       const HANDOFF_READ = '/read .scratch/handoff/latest.md'
       let handoffTs = null  // 第一击模板使用的时间戳（第二击优先复用同一文件名）
+      let handoffFile = null  // v25 F1：第一击渲染后解析出的实际交接文件名（含用户自定义结构）
       const handoffPrompt = function (ts) {
-        return '/handoff\n\n' +
-          '请把当前会话生成交接文档，写到 .scratch/handoff/' + ts + '.md（相对当前工作目录），包含三部分：\n' +
-          '1. 结论：本次会话已确认的决定与成果；\n' +
-          '2. 未完成事项：下一步要继续的事；\n' +
-          '3. 建议 skill：新会话接手时建议加载的技能。\n\n' +
-          GUIDE_LINE
+        return renderTemplate('handoff1', { ts: ts })
+      }
+      // 从第一击注入文本解析 .scratch/handoff/<name>.md 的实际文件名（T1 规格 §2 发现 1）
+      const extractHandoffFile = function (text) {
+        const m = String(text || '').match(/\.scratch\/handoff\/([^\s"'`]+\.md)/)
+        return m ? m[1] : null
       }
       const handoffReadText = function (file) {
-        return (file ? '/read .scratch/handoff/' + file : HANDOFF_READ) + '\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后' + GUIDE_LINE
+        if (file) return renderTemplate('handoff2', { file: file })
+        return HANDOFF_READ + '\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后' + GUIDE_LINE
       }
       let pendingDraft = null  // 跨会话预填（新会话 dock 挂载后消费）
       const doHandoff = function (st) {
         if (!st.handoffReady) {
           st.handoffReady = true
           handoffTs = timeStampStr()
-          inject(st, handoffPrompt(handoffTs))
+          const text = handoffPrompt(handoffTs)
+          handoffFile = extractHandoffFile(text) || (handoffTs + '.md')
+          inject(st, text)
           flash(st, '已注入 /handoff 交接模板（含时间戳文件名），确认后发送', 'ok')
           return
         }
@@ -590,9 +735,9 @@ window.__ModuleLoader__.load({
             pendingDraft = null
           }
         }
-        // 第一击模板指定的时间戳文件名优先（与模板完全一致）
-        if (handoffTs) {
-          finish(handoffTs + '.md', '已复制交接文档指令：' + handoffTs + '.md')
+        // v24：第一击模板指定的时间戳文件名优先（与模板完全一致）；v25 F1：用解析出的实际文件名
+        if (handoffFile) {
+          finish(handoffFile, '已复制交接文档指令：' + handoffFile)
           return
         }
         if (conn === undefined || conn.rpc === undefined) {
@@ -758,7 +903,11 @@ window.__ModuleLoader__.load({
             h('span', { className: 'dsws-chip dsws-chip-m' }, [Ic({ n: 'map', size: 11 }), h('span', null, 'wayfinder:map')]),
             h('span', { style: { flex: 1 } }),
             // 顶部「执行」= 整张 map 的执行入口（预填输入框）
-            h('button', { className: 'dsws-btn primary', onClick: function () { inject(st, '/wayfinder\n' + m.url + '\n\n' + GUIDE_LINE) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
+          // v25 T2b：顶部「执行」= 整张 map 的执行入口，走 execute 模板
+          h('button', { className: 'dsws-btn primary', onClick: function () {
+            const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
+            inject(st, (cfg.withWayfinder ? '/wayfinder\n' : '') + body)
+          }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
               Ic({ n: 'play', size: 10 }),
               h('span', null, '执行'),
             ]),
@@ -1145,40 +1294,177 @@ window.__ModuleLoader__.load({
             Ic({ n: noticeIcon(s.notice.kind), size: 13, color: NOTICE_COLOR[s.notice.kind] || '#4ade80' }),
             h('span', null, s.notice.text),
           ]) : null,
-          s.cfgOpen ? h(StartCfgModal, { st: s }) : null,
         ])
       }
 
-      // ---- 5.9 开始模板配置 ----
-      const StartCfgModal = ({ st }) => {
-        const [wf, setWf] = React.useState(startCfg.withWayfinder)
-        const [custom, setCustom] = React.useState(startCfg.custom)
-        const save = function () { startCfg.withWayfinder = wf; startCfg.custom = custom; saveStartCfg(); st.cfgOpen = false; emit(st); flash(st, '开始模板已保存', 'ok') }
-        const reset = function () { startCfg.withWayfinder = true; startCfg.custom = ''; saveStartCfg(); setWf(true); setCustom('') }
-        return h('div', { className: 'dsws-modal', onClick: function () { st.cfgOpen = false; emit(st) } }, [
-          h('div', { className: 'dsws-modalbox', onClick: function (e) { e.stopPropagation() } }, [
-            h('div', { style: { fontWeight: 600, marginBottom: 8 } }, '开始模板配置'),
-            h('label', { style: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, marginBottom: 8, cursor: 'pointer' } }, [
-              h('input', { type: 'checkbox', checked: wf, onChange: function (e) { setWf(e.target.checked) } }),
-              h('span', null, '复制文本带 /wayfinder 前缀（默认开）'),
+      // ---- 5.9 配置页（v25 · settings.plugins.tab「Waystation」：功能配置 + 动作模板编辑器）----
+      // 面板默认高度三档 / 开始模板（前缀开关 + execute 模板）/ 动作模板编辑器（其余 6 动作）
+      const PANEL_HEIGHT_LABELS = { quarter: '1/4', half: '1/2', twothirds: '2/3' }
+      const TPL_NAMES = {
+        diagnose: '诊断', fix: '修复', discuss: '讨论', handoff1: '交接第一击', handoff2: '交接第二击', fixate: '沉淀',
+      }
+      const TPL_DESC = {
+        diagnose: 'needs-triage 票的行级动作',
+        fix: 'bug 票的行级动作',
+        discuss: 'wayfinder:grilling 票的行级动作',
+        handoff1: '生成交接文档（含时间戳，两击文件名一致）',
+        handoff2: '读取交接文档',
+        fixate: '零丢失快照 prompt',
+      }
+      const TPL_EDIT_IDS = ['diagnose', 'fix', 'discuss', 'handoff1', 'handoff2', 'fixate']  // execute 在「开始模板」节
+      const PREVIEW_VALUES = { url: 'https://github.com/FeatherHunter/SKILLS/issues/365', number: '365', title: '示例 issue 标题', ts: '20260814-172113', file: '20260814-172113.md' }
+      const SettingsPage = (props) => {
+        const [height, setHeight] = React.useState(cfg.panelHeight)
+        const [wf, setWf] = React.useState(cfg.withWayfinder)
+        const [tpls, setTpls] = React.useState(function () {
+          const o = {}
+          o.execute = templates.execute || ''
+          TPL_EDIT_IDS.forEach(function (id) { o[id] = templates[id] || '' })
+          return o
+        })
+        const [saved, setSaved] = React.useState(false)
+        const [errs, setErrs] = React.useState([])
+        const taRefs = React.useRef({})
+        // 校验全部 7 个模板（生效文本 = 自定义 || 默认）
+        const validateAll = function (executeText) {
+          const errList = []
+          const check = function (id, text) {
+            const v = validateTemplate(id, text || TPL_DEFAULT[id] || '')
+            if (!v.ok) {
+              const bits = []
+              if (v.missing.length) bits.push('缺少强制占位符 ' + v.missing.map(function (n) { return '{' + n + '}' }).join('、'))
+              if (v.unknown.length) bits.push('未知占位符 ' + v.unknown.map(function (n) { return '{' + n + '}' }).join('、'))
+              errList.push('「' + (TPL_NAMES[id] || id) + '」' + bits.join('；'))
+            }
+          }
+          check('execute', executeText)
+          TPL_EDIT_IDS.forEach(function (id) { check(id, tpls[id]) })
+          return errList
+        }
+        const save = function () {
+          const errList = validateAll(custom)
+          if (errList.length) { setErrs(errList); return }
+          setErrs([])
+          cfg.panelHeight = height
+          cfg.withWayfinder = wf
+          templates.execute = custom
+          TPL_EDIT_IDS.forEach(function (id) { templates[id] = tpls[id] })
+          saveCfg(); saveTemplates(); broadcastCfg()
+          setSaved(true)
+          later(function () { setSaved(false) }, 2000)
+        }
+        const setTpl = function (id, val) { setTpls(function (p) { const o = Object.assign({}, p); o[id] = val; return o }) }
+        const resetExecute = function () { setTpl('execute', ''); setErrs([]) }
+        const resetTpl = function (id) { setTpl(id, ''); setErrs([]) }
+        // 页面级恢复全部默认（T1 规格 §5：清空 = 注入时走内置默认文本）
+        const resetAll = function () {
+          const o = {}
+          o.execute = ''
+          TPL_EDIT_IDS.forEach(function (id) { o[id] = '' })
+          setTpls(o)
+          setHeight('half')
+          setWf(true)
+          setErrs([])
+        }
+        // 点击占位符 chip 在光标处插入
+        const insertPh = function (id, name) {
+          const ta = taRefs.current[id]
+          const cur = tpls[id] || ''
+          if (!ta) { setTpl(id, cur + '{' + name + '}'); return }
+          const start = (ta.selectionStart != null) ? ta.selectionStart : cur.length
+          const end = (ta.selectionEnd != null) ? ta.selectionEnd : cur.length
+          const next = cur.slice(0, start) + '{' + name + '}' + cur.slice(end)
+          setTpl(id, next)
+          const pos = start + name.length + 2
+          setTimeout(function () { try { ta.focus(); ta.setSelectionRange(pos, pos) } catch (e) { /* 忽略 */ } }, 0)
+        }
+        const chip = function (id, n, req) {
+          return h('span', { key: n, className: 'dsws-cfg-chip' + (req ? ' req' : ''), title: req ? '必填占位符：删除后无法保存' : '点击插入到光标处', onClick: function () { insertPh(id, n) } }, [
+            h('span', null, '{' + n + '}'),
+            req ? h('span', { className: 'must' }, '必填') : null,
+          ])
+        }
+        const tplCard = function (id) {
+          const val = tpls[id] || ''
+          const preview = renderTemplate(id, PREVIEW_VALUES)
+          const req = (TPL_REQUIRED[id] || []).slice()
+          return h('div', { key: id, className: 'dsws-cfg-card' }, [
+            h('div', { className: 'dsws-cfg-card-head' }, [
+              h('span', { className: 'dsws-cfg-card-name' }, TPL_NAMES[id]),
+              h('span', { style: { flex: 1 } }),
+              h('button', { className: 'dsws-cfg-btn', onClick: function () { resetTpl(id) } }, '恢复默认'),
             ]),
-            h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, '自定义模板（留空用默认；占位符 {number} {url} {title}）：'),
-            h('textarea', { className: 'dsws-ta', style: { minHeight: 70 }, placeholder: '/wayfinder\n{url}\n\n请按 wayfinder 流程处理这个 ticket：…', value: custom, onChange: function (e) { setCustom(e.target.value) } }),
-            h('div', { style: { display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 } }, [
-              h('button', { className: 'dsws-btn', onClick: reset }, '恢复默认'),
-              h('button', { className: 'dsws-btn', onClick: function () { st.cfgOpen = false; emit(st) } }, '取消'),
-              h('button', { className: 'dsws-btn primary', onClick: save }, '保存'),
+            h('div', { className: 'dsws-cfg-card-desc' }, TPL_DESC[id]),
+            h('div', { className: 'dsws-cfg-chips' }, (TPL_PH[id] || []).map(function (n) { return chip(id, n, req.indexOf(n) >= 0) })),
+            h('textarea', { ref: function (el) { taRefs.current[id] = el }, className: 'dsws-cfg-ta', placeholder: TPL_DEFAULT[id] || '', value: val, onChange: function (e) { setTpl(id, e.target.value) } }),
+            h('div', { className: 'dsws-cfg-preview' }, [h('span', { className: 'pv-label' }, '效果预览'), preview]),
+          ])
+        }
+        const custom = tpls.execute || ''
+        return h('div', { className: 'dsws-cfg' }, [
+          h('div', { className: 'dsws-cfg-head' }, [
+            Icon({ scheme: 'compass', size: 20 }),
+            h('span', { className: 't' }, 'DSH-Waystation'),
+            h('span', { className: 's', style: { color: saved ? 'var(--dsw-alias-state-success-primary,#4ade80)' : 'var(--dsw-alias-label-caption,#8b8b95)' } }, [
+              Ic({ n: saved ? 'check' : 'dot', size: 12 }),
+              h('span', null, saved ? '已保存' : '配置'),
             ]),
+          ]),
+          h('div', { className: 'dsws-cfg-sub' }, '配置面板与动作提示词：静态文本可自由编辑，占位符（{…}）由系统注入真值，点击即可插入。'),
+          // 1. 面板默认高度三档
+          h('div', { className: 'dsws-cfg-group' }, [
+            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'target', size: 13 }), h('span', null, '面板默认高度')]),
+            h('div', { className: 'dsws-cfg-gdesc' }, '打开面板时使用的初始高度，可随时拖拽调整。'),
+            h('div', { className: 'dsws-cfg-row' }, [
+              h('span', { className: 'dsws-cfg-label' }, '默认高度'),
+              h('div', { className: 'dsws-cfg-seg' }, Object.keys(PANEL_HEIGHT_LABELS).map(function (k) {
+                return h('button', { key: k, className: height === k ? 'on' : '', onClick: function () { setHeight(k) } }, PANEL_HEIGHT_LABELS[k])
+              })),
+            ]),
+          ]),
+          // 2. 开始模板（execute 唯一编辑点；id 供动作模板编辑器锚点跳转）
+          h('div', { id: 'dsws-cfg-exec-group', className: 'dsws-cfg-group' }, [
+            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'play', size: 13 }), h('span', null, '开始模板（执行动作）')]),
+            h('div', { className: 'dsws-cfg-gdesc' }, '「执行」按钮注入的提示词；留空使用默认模板。'),
+            h('div', { className: 'dsws-cfg-row' }, [
+              h('label', { className: 'dsws-cfg-sw' }, [
+                h('input', { type: 'checkbox', checked: wf, onChange: function (e) { setWf(e.target.checked) } }),
+                h('span', { className: 'tr' }),
+                h('span', null, '带 /wayfinder 前缀'),
+              ]),
+            ]),
+            h('textarea', { ref: function (el) { taRefs.current.execute = el }, className: 'dsws-cfg-ta', placeholder: TPL_DEFAULT.execute || '', value: custom, onChange: function (e) { setTpl('execute', e.target.value) } }),
+            h('div', { className: 'dsws-cfg-chips' }, [
+              (TPL_PH.execute || []).map(function (n) { return chip('execute', n, (TPL_REQUIRED.execute || []).indexOf(n) >= 0) }),
+              h('button', { className: 'dsws-cfg-btn', style: { marginLeft: 'auto' }, onClick: resetExecute }, '恢复默认'),
+            ]),
+            h('div', { className: 'dsws-cfg-preview' }, [h('span', { className: 'pv-label' }, '效果预览'), renderTemplate('execute', PREVIEW_VALUES)]),
+          ]),
+          // 3. 动作模板编辑器（其余 6 动作）
+          h('div', { className: 'dsws-cfg-group' }, [
+            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'note', size: 13 }), h('span', null, '动作模板编辑器')]),
+            h('div', { className: 'dsws-cfg-gdesc' }, [
+              h('span', null, '「执行」外的六个动作按钮注入的提示词。点击下方占位符插入到光标处；红色「必填」占位符删除后无法保存。'),
+              h('a', { href: 'javascript:void(0)', onClick: function () { const el = document.getElementById('dsws-cfg-exec-group'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, style: { color: '#bc8cff', cursor: 'pointer', flex: 'none', textDecoration: 'none' } }, '「执行」模板在开始模板节编辑 →'),
+            ]),
+            TPL_EDIT_IDS.map(tplCard),
+          ]),
+          // 校验错误提示
+          errs.length ? h('div', { className: 'dsws-cfg-err' }, [
+            h('div', { className: 't' }, [Ic({ n: 'alert', size: 13 }), h('span', null, '保存被拒绝')]),
+            errs.map(function (e, i) { return h('div', { key: i }, '· ' + e) }),
+          ]) : null,
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, alignSelf: 'flex-end' } }, [
+            h('button', { className: 'dsws-cfg-btn', onClick: resetAll }, '恢复全部默认'),
+            h('button', { className: 'dsws-cfg-save', onClick: save }, [Ic({ n: 'check', size: 13 }), h('span', null, '保存全部')]),
           ]),
         ])
       }
 
-      // ---- 5.10 Run 卡控制面板（外观方案切换 · 跟随当前激活会话）----
+      // ---- 5.10 Run 卡控制面板（v25：状态展示 + 快捷打开配置页；外观切换已迁入设置页）----
       const RunPanel = (props) => {
         const cur = props.useSessions((x) => x.current)
         const s = useStore(cur)
-        const setIcon = function (id) { s.ui.icon = id; emit(s) }
-        const setWord = function (w) { s.ui.word = w; emit(s) }
         return h('div', { style: { border: '1px solid var(--dsw-alias-border-l1,#2a2d35)', borderRadius: 8, padding: '10px 12px', background: 'var(--dsw-alias-bg-layer-1,#10131a)', fontFamily: 'var(--dsw-font-family)', fontSize: 13, color: 'var(--dsw-alias-label-primary,#e6edf3)', lineHeight: 1.6 } }, [
           h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } }, [
             h('strong', null, 'DSH-Waystation'),
@@ -1186,20 +1472,9 @@ window.__ModuleLoader__.load({
           ]),
           h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', margin: '6px 0' } }, '环境检查（status）+ 面板（snapshot）均已接真。'),
           h('div', { className: 'dsws-uirow' }, [
-            h('span', { style: { fontSize: 12 } }, '图标：'),
-            ICON_SCHEMES.map(function (ic) {
-              return h('button', { key: ic.id, className: 'dsws-btn' + (s.ui.icon === ic.id ? ' on' : ''), onClick: function () { setIcon(ic.id) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Icon({ scheme: ic.id, size: 13 }), h('span', null, ic.label)])
-            }),
-          ]),
-          h('div', { className: 'dsws-uirow' }, [
-            h('span', { style: { fontSize: 12 } }, '动作词：'),
-            WORD_SCHEMES.map(function (w) {
-              return h('button', { key: w, className: 'dsws-btn' + (s.ui.word === w ? ' on' : ''), onClick: function () { setWord(w) } }, w)
-            }),
-          ]),
-          h('div', { className: 'dsws-uirow' }, [
             h('button', { className: 'dsws-btn', onClick: function () { s.open = true; emit(s) } }, '打开面板'),
-            h('button', { className: 'dsws-btn', onClick: function () { s.cfgOpen = true; emit(s) } }, '开始模板'),
+            // v25：设置面板为 shell 组件本地状态、无公开打开 API（已查证）→ 按钮引导路径（偏离记录见 T2a resolution）
+            h('button', { className: 'dsws-btn', onClick: function () { flash(s, '配置页：设置 → 插件 → Waystation', 'info') } }, '打开配置'),
           ]),
         ])
       }
@@ -1216,6 +1491,10 @@ window.__ModuleLoader__.load({
         }),
         slots.inject('conversation.input.dock', function () {
           return slots.register({ name: 'conversation.input.dock', id: 'dsh-waystation', order: 40 }, StatusBar)
+        }),
+        // v25-50：配置页（设置 → 插件 → Waystation；与 opencode 主题同模式）
+        slots.inject('settings.plugins.tab', function () {
+          return slots.register({ name: 'settings.plugins.tab', id: 'dsws-settings', order: 40, label: function () { return 'Waystation' } }, SettingsPage)
         }),
       ]
       ctx.effect(function () {

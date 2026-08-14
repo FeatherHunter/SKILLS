@@ -94,6 +94,11 @@ npm run pack                # 快速验证：不打安装包，直接跑 win-unp
 
 > 内部调试变量（`DSH_DESKTOP_SMOKE` / `DSH_DESKTOP_SHOT` / `DSH_DESKTOP_SIZE`）见 `main.js` 顶部注释。
 
+**开发文档索引**：
+
+- `docs/里程碑/20260814-零丢失快照.md` —— 会话里程碑快照（目的地/约束/决策/待决/雾区/可疑遗漏，2026-08-14）
+- 会话交接文档：`.scratch/handoff/`（本地，gitignore，仅本机）
+
 ## ❓ 常见问题
 
 - **双击没反应 / 提示"已保护你的电脑"？** → SmartScreen 拦截，点「更多信息 → 仍要运行」。

@@ -26,12 +26,16 @@
 
 ### 方式一：正式安装（推荐 · 开机自启 · 一次性）
 
-把 `package/` 目录作为标准 npm 包安装进 DSH profile（本机已装好）：
+用 DSH 官方插件命令安装（跨平台，`~/.dsh` 即 `$DSH_HOME`）：
 
-1. 复制 `package/` 全部内容到 `~/.dsh/profiles/node_modules/dsh-opencode-tui-theme/`
-   （`~/.dsh` 即 `$DSH_HOME`；新用户在自己的机器上做同样一步）。
-2. 在 `~/.dsh/profiles/web/cordis.patch.yml` 追加注册行（**无需重启 DSH**，
-   配置文件热加载；刷新浏览器页面即生效）：
+1. 安装：
+
+   ```bash
+   npx --yes @deepseek-ai/dsh plugin --profile web add dsh-opencode-tui-theme
+   ```
+
+2. 在 `~/.dsh/profiles/web/cordis.patch.yml` 追加注册行（本包无 postinstall，需手动；
+   **无需重启 DSH**，配置文件热加载；刷新浏览器页面即生效）：
 
    ```yaml
    - insert:
@@ -40,7 +44,13 @@
    ```
 
 3. 刷新浏览器页面。之后每次 DSH 启动主题自动生效，**无需任何审批**。
-4. 卸载：删掉 patch 里的 insert 行 + 删除 `node_modules/dsh-opencode-tui-theme/`。
+4. 卸载：删掉 patch 里的 insert 行 + `npx --yes @deepseek-ai/dsh plugin --profile web remove dsh-opencode-tui-theme`。
+
+> ⛔ 不要手动复制到 `~/.dsh/profiles/node_modules/`：那是 DSH 的**扁平回退软链区**
+> （启动时 `healProfilesModuleFallback` 自动重建），手动放进去会被清理/覆盖；
+> `npm install --prefix ~/.dsh/profiles` 更会把未声明包 prune 掉（2026-08-14 曾因此
+> 一次删掉 511 个包导致插件全部加载失败）。插件正确安装位 = `profiles/web/node_modules`，
+> 注册写 `web/cordis.patch.yml`。
 
 > **v1.1.0 起正式安装版自带控制面板**：设置 → 插件 → 「Opencode 主题」标签页，
 > 提供 ● 已启用/○ 已停用 状态、启用/停用开关、正文模式/字号/代码字体调节，
@@ -105,7 +115,7 @@
   安装版面板可实时调节，无需改文件。
 - 若动态版（方式二）与正式安装版同时生效，两者 token 层不同源、互不冲突，
   视觉一致；建议保留正式安装版即可，动态版 `cordis_stop` 掉。
-- pnpm 下次重装 profile 依赖时可能清理 `node_modules` 下手动放入的包，
-  届时按「方式一」第 1 步重新复制即可（或把 `package/` 加入 workspace）。
+- 正式安装版由官方命令（`dsh plugin --profile web add`）装进 pnpm workspace 管理，
+  不会被重装清理；不要手动复制到 `profiles/node_modules`（回退软链区，会被重建覆盖）。
 - 选择器均为通用 HTML 元素级（h1/h2/code/body），未触碰产品私有 DOM class。
 - 配色基准来自用户提供的 opencode TUI 截图（mmx 视觉分析）+ One Dark 语法高亮。

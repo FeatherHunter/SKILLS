@@ -22,11 +22,14 @@ DSH（DeepSeek Harness）Web 界面的 **opencode TUI 风格主题**（Client �
 
 ## 安装（正式 · 开机自启）
 
+用 DSH 官方插件命令：
+
 ```bash
-npm install dsh-opencode-tui-theme
+npx --yes @deepseek-ai/dsh plugin --profile web add dsh-opencode-tui-theme
 ```
 
-然后在本机 DSH profile 的 `cordis.patch.yml` 追加：
+然后**手动**在 `~/.dsh/profiles/web/cordis.patch.yml` 追加注册行（本包无 postinstall，
+官方命令不代写注册行；且其内部 pnpm 默认忽略 build scripts）：
 
 ```yaml
 - insert:
@@ -36,8 +39,10 @@ npm install dsh-opencode-tui-theme
 
 刷新浏览器页面即可生效（配置热加载，无需重启 DSH）。之后每次启动自动生效，无需审批。
 
-> 注意：npm 安装的包要能被 DSH 找到，需装在 DSH profile 的依赖树里
-> （`~/.dsh/profiles` 下执行 `npm install`，或在 profile 的 package.json 中声明）。
+> ⛔ 不要用 `npm install --prefix ~/.dsh/profiles` 安装，也不要手动复制到
+> `profiles/node_modules`：那是 DSH 的**扁平回退软链区**（启动时自动重建），
+> npm --prefix 会把它当新项目 prune 掉未声明包——2026-08-14 曾因此一次删掉 511 个包，
+> 导致 DSH 插件全部加载失败。插件正确安装位 = `profiles/web/node_modules`。
 
 ## 启停与验证
 
@@ -49,7 +54,11 @@ npm install dsh-opencode-tui-theme
 
 ## 卸载
 
-删除 `cordis.patch.yml` 中的 insert 行，然后 `npm uninstall dsh-opencode-tui-theme`。
+删除 `cordis.patch.yml` 中的 insert 行，然后：
+
+```bash
+npx --yes @deepseek-ai/dsh plugin --profile web remove dsh-opencode-tui-theme
+```
 
 ## 工作原理
 

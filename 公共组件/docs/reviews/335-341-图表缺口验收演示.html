@@ -94,7 +94,8 @@
     <div class="chart" id="c-sc1"></div>
     <div class="chart" id="c-sc2"></div>
     <div class="chart" id="c-sc3"></div>
-    <p class="note">用例：①正相关回归 ②负相关回归 ③散乱数据 + tooltip 悬停最近点</p>
+    <div class="chart" id="c-sc4"></div>
+    <p class="note">用例：①正相关回归 ②负相关回归 ③散乱数据 + tooltip 悬停最近点 ④dotSize 14px 大散点（v1.28）</p>
   </div>
 </main>
 
@@ -174,6 +175,9 @@ window.addEventListener('load',function(){
   charts.scatter(document.getElementById('c-sc3'),
     [{x:1,y:3,label:'a'},{x:2,y:8,label:'b'},{x:3,y:2,label:'c'},{x:4,y:9,label:'d'},{x:5,y:5,label:'e'},{x:6,y:7,label:'f'},{x:7,y:4,label:'g'},{x:8,y:6,label:'h'}],
     {tooltip:true});
+  charts.scatter(document.getElementById('c-sc4'),
+    [{x:1,y:4,label:'a'},{x:2,y:6,label:'b'},{x:3,y:5,label:'c'},{x:4,y:8,label:'d'},{x:5,y:7,label:'e'},{x:6,y:9,label:'f'}],
+    {dotSize:14, yTicks:4, tooltip:true});
 });
 </script>
 </body>

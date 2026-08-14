@@ -448,9 +448,12 @@ function polishTargetPage() {
       if (!strip) {
         strip = document.createElement('div');
         strip.id = 'dshDesktopDrag';
+        // z-index 用中间值（高于静态内容、低于页面浮层面板 100+）：
+        // 命中测试只把事件交给最上层元素——空白带命中条带拖窗口，
+        // 面板/浮层覆盖的区域命中面板，互不冲突（勿改回最高层）
         strip.style.cssText =
           'position:fixed;top:-' + BAR_H + 'px;left:0;right:0;height:' + BAR_H + 'px;' +
-          'z-index:2147483646;-webkit-app-region:drag;';
+          'z-index:10;-webkit-app-region:drag;';
         document.body.appendChild(strip);
       }
       return true;

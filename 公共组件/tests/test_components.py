@@ -1901,6 +1901,24 @@ def test_bar_stacked_total_label(chart_page):
     assert v == '100%'
 
 
+def test_bar_stacked_segments_render_height(chart_page):
+    """实际渲染高度（v1.29 · #379 验收修复）: stack 铺满柱列高度、段高度 > 5px——百分比高度不塌陷（style 字符串断言抓不到的盲区）"""
+    chart_page.evaluate("""
+      window.charts.bar(document.getElementById('root'),
+        [{label:'周一',values:[30,50,20]},{label:'周二',values:[40,40,20]}],
+        {stacked:true, animation:false});
+    """)
+    m = chart_page.evaluate("""() => {
+      const col = document.querySelectorAll('.hm-c-col')[0].getBoundingClientRect();
+      const stack = document.querySelectorAll('.hm-c-stack')[0].getBoundingClientRect();
+      const segs = [...document.querySelectorAll('.hm-c-sg')].map(n=>n.getBoundingClientRect().height);
+      return {colH: col.height, stackH: stack.height, segs};
+    }""")
+    assert m['stackH'] >= m['colH'] - 25         # stack 撑满柱列（柱顶合计 label 约 17px 余量）
+    assert all(h > 5 for h in m['segs'])         # 段真实可见高度（修复前 ≈2px）
+    assert max(m['segs']) > 30                   # 最大段（50%）显著高于最小段
+
+
 def test_bar_stacked_default_byte_identical(chart_page):
     """缺省（不传 stacked/grouped）: 既有单柱渲染逐字节不变"""
     chart_page.evaluate('(items) => window.charts.bar(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)

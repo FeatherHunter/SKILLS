@@ -1,4 +1,4 @@
-/* Base Skill 图表组件 v1.25（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.29（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge / scatter（v1.25 · #337）
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
@@ -55,7 +55,7 @@ if(!document.getElementById(_styleId)){
   +'.hm-c-bar .hm-c-v{font-size:10px;color:var(--fg3,#86868b);margin-bottom:3px;white-space:nowrap}'
   +'.hm-c-bar .hm-c-b{width:100%;max-width:34px;border-radius:6px 6px 2px 2px;background:var(--blue,#007aff);min-height:2px;cursor:pointer;transition:filter .15s,height .6s cubic-bezier(.22,1,.36,1)}'
   /* bar 多值模式（v1.23 · #336/#339）: 堆叠段 + 分组子柱 */
-  +'.hm-c-stack{width:100%;max-width:34px;border-radius:6px 6px 2px 2px;overflow:hidden;min-height:2px;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer}'
+  +'.hm-c-stack{width:100%;flex:1;max-width:34px;border-radius:6px 6px 2px 2px;overflow:hidden;min-height:2px;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer}' /* v1.29 #379: flex:1 撑满柱列(label 之外的剩余空间) —— 修复段百分比高度相对 auto 父容器塌陷成 2px */
   +'.hm-c-sg{width:100%;min-height:2px;transition:height .6s cubic-bezier(.22,1,.36,1)}'
   +'.hm-c-col-grouped{flex-direction:row;align-items:flex-end;justify-content:center;gap:3px}'
   +'.hm-c-gw{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;flex:1;min-width:0;max-width:18px}'

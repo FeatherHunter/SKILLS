@@ -143,24 +143,31 @@
     const s = D.series || [];
     const fields = [
       { name: '摄入', field: 'calories', color: '#0071e3' },
-      { name: '运动', field: 'exercise_kcal', color: '#ff9500' },
+      { name: '运动', field: 'exercise_kcal', color: '#ff9500', zeroFill: true },
       { name: '体重', field: 'weight_kg', color: '#34c759' },
       { name: '饮水', field: 'water_ml', color: '#af52de' },
       { name: '缺口', field: 'deficit', color: '#ff3b30' },
     ];
     const series = fields.map(f => {
-      const vals = s.map(p => p[f.field]).filter(v => v !== null && v !== undefined);
+      const vals = f.zeroFill
+        ? s.map(p => (p[f.field] === null || p[f.field] === undefined) ? 0 : p[f.field])
+        : s.map(p => p[f.field]).filter(v => v !== null && v !== undefined);
       if (vals.length < 2) return null;
       const mn = Math.min(...vals), mx = Math.max(...vals);
       // #317 验收修复: 数据恒定(mx==mn)时归一化给 50(居中水平线), 否则全 0 贴底视觉"线消失"
       const range = (mx - mn) || 1;
       const flat = mx === mn;
+      const flat50 = flat && !(f.zeroFill && mx === 0);
       return {
         name: f.name, color: f.color,
-        items: s.map(p => ({
-          label: p.date.slice(5),
-          value: (p[f.field] === null || p[f.field] === undefined) ? null : (flat ? 50 : (p[f.field] - mn) / range * 100),
-        })),
+        items: s.map(p => {
+          const v = p[f.field];
+          const raw = (v === null || v === undefined) ? (f.zeroFill ? 0 : null) : v;
+          return {
+            label: p.date.slice(5),
+            value: raw === null ? null : (flat50 ? 50 : (raw - mn) / range * 100),
+          };
+        }),
       };
     }).filter(Boolean);
     if (series.length) {
@@ -169,6 +176,7 @@
         yMin: 0, yMax: 100,
         labels: 'select',
         tooltip: true,
+        connectNulls: true,
         series,
       });
     } else {
@@ -194,7 +202,7 @@
       if (h.length >= 2) {
         window.charts.line(document.getElementById('singleChart'),
           h.map(p => ({ label: p.date.slice(5), value: p.bmi })),
-          { height: 220, labels: 'select', format: v => Number(v).toFixed(1), tooltip: true });
+          { height: 220, labels: 'select', format: v => Number(v).toFixed(1), tooltip: true, connectNulls: true });
       }
       document.getElementById('milestoneSection').style.display = (D.milestones || []).length ? '' : 'none';
       document.getElementById('milestoneList').innerHTML = (D.milestones || []).map(m => `· ${m.date}: ${m.from} → ${m.to}`).join('<br>');
@@ -229,7 +237,7 @@
       if (vals.length >= 2) {
         window.charts.line(document.getElementById('singleChart'),
           s.map(p => ({ label: p.date.slice(5), value: p.protein })),
-          { height: 220, labels: 'select', format: v => v + ' g', tooltip: true,
+          { height: 220, labels: 'select', format: v => v + ' g', tooltip: true, connectNulls: true,
             markLine: { value: D.target, label: `目标 ${D.target} g` } });
       }
     }
@@ -244,7 +252,7 @@
       if (vals.length >= 2) {
         window.charts.line(document.getElementById('singleChart'),
           s.map(p => ({ label: p.date.slice(5), value: p.water_ml })),
-          { height: 220, labels: 'select', format: v => v + ' ml', tooltip: true,
+          { height: 220, labels: 'select', format: v => v + ' ml', tooltip: true, connectNulls: true,
             markLine: { value: D.goal, label: `目标 ${D.goal} ml` } });
       }
     }
@@ -265,7 +273,7 @@
       if (vals.length >= 2) {
         window.charts.line(document.getElementById('singleChart'),
           h.map(p => ({ label: p.date.slice(5), value: p.score })),
-          { height: 220, labels: 'select', format: v => v + ' 分', tooltip: true,
+          { height: 220, labels: 'select', format: v => v + ' 分', tooltip: true, connectNulls: true,
             color: '#34c759' });
       }
     }
@@ -280,7 +288,7 @@
       if (vals.length >= 2) {
         window.charts.line(document.getElementById('singleChart'),
           h.map(p => ({ label: p.date.slice(5), value: p.score })),
-          { height: 220, labels: 'select', format: v => v + ' 分', tooltip: true });
+          { height: 220, labels: 'select', format: v => v + ' 分', tooltip: true, connectNulls: true });
       }
     }
     if (D.kind === 'compare') {

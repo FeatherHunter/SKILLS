@@ -110,26 +110,34 @@
   // #317 迁 Base charts.line 多序列: 各指标独立 min-max 归一化 → 共享 0-100 域近似
   // (charts.line 无双轴独立刻度; Y 轴刻度文字缺失 — 均记偏离)
   const wk = D.week || [];
-  const norm = (field) => {
-    const vals = wk.map(p => p[field]).filter(v => v !== null && v !== undefined);
+  // #356 connectNulls: 量型(摄入/饮水/体重)跨缺记录日连线; 运动=事件型 → 缺日 0 归一(休息日 0 基线, 不伪装成连续运动)
+  const norm = (field, zeroFill) => {
+    const vals = zeroFill
+      ? wk.map(p => (p[field] === null || p[field] === undefined) ? 0 : p[field])
+      : wk.map(p => p[field]).filter(v => v !== null && v !== undefined);
     if (vals.length === 0) return null;
     const mn = Math.min(...vals), mx = Math.max(...vals);
     // #317 验收修复: 数据恒定(mx==mn)时归一化给 50(居中水平线), 否则全 0 贴底视觉"线消失"
     const range = (mx - mn) || 1;
     const flat = mx === mn;
-    return wk.map(p => ({
-      label: (p.date || '').slice(5),
-      value: (p[field] === null || p[field] === undefined) ? null : (flat ? 50 : (p[field] - mn) / range * 100),
-    }));
+    const flat50 = flat && !(zeroFill && mx === 0);
+    return wk.map(p => {
+      const v = p[field];
+      const raw = (v === null || v === undefined) ? (zeroFill ? 0 : null) : v;
+      return {
+        label: (p.date || '').slice(5),
+        value: raw === null ? null : (flat50 ? 50 : (raw - mn) / range * 100),
+      };
+    });
   };
   const seriesDefs = [
     { name: '摄入', field: 'calories', color: '#0071e3' },
-    { name: '运动', field: 'exercise_kcal', color: '#ff9500' },
+    { name: '运动', field: 'exercise_kcal', color: '#ff9500', zeroFill: true },
     { name: '饮水', field: 'water_ml', color: '#af52de' },
     { name: '体重', field: 'weight_kg', color: '#34c759' },
   ];
   const series = seriesDefs.map(sd => {
-    const items = norm(sd.field);
+    const items = norm(sd.field, sd.zeroFill);
     return items ? { name: sd.name, items, color: sd.color } : null;
   }).filter(Boolean);
   if (series.length && series[0].items.length >= 2) {
@@ -138,6 +146,7 @@
       yMin: 0, yMax: 100,
       labels: 'edge',
       tooltip: true,
+      connectNulls: true,
       series,
     });
   } else if (wk.length === 0) {

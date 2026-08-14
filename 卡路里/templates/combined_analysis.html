@@ -120,6 +120,7 @@
   const D = ((window.__P__ && typeof window.__P__ === 'object' && window.__P__.data) ? window.__P__.data : window.__P__);
   if (!window.__P__ || window.__P__.status !== 'ok') { document.body.innerHTML = window.errorReceipt({message: '数据未注入或状态非 ok'}); return; }
   const A = D.labels.a, B = D.labels.b;
+  const pair = D.pair || '';
   document.getElementById('metaLeft').textContent = `${D.start} ~ ${D.end} · 共 ${D.days} 天`;
   document.getElementById('title').textContent = `看 ${A.replace('(kg)','').replace('(卡)','').replace('(g)','').replace('(ml)','').replace('(%)','')} vs ${B.replace('(kg)','').replace('(卡)','').replace('(g)','').replace('(ml)','').replace('(%)','')}`;
   document.getElementById('sub').textContent = `${A} vs ${B} · ${D.window} 窗口`;
@@ -142,21 +143,28 @@
   if (line.length === 0) {
     document.getElementById('dualChart').innerHTML = '<div style="text-align:center;color:#86868b;padding:40px">窗口内无数据</div>';
   } else {
+    // #356 connectNulls: 量型侧(体重/摄入/蛋白/缺口/饮水/体脂/腰围)跨缺记录日连线
+    // 运动侧(weight_exercise/calorie_exercise 的 B = exercise_kcal)为事件型 → 缺日 0 归一(休息日 0 基线)
+    const bExercise = pair === 'weight_exercise' || pair === 'calorie_exercise';
     const aVals = line.map(p => p.a).filter(v => v !== null && v !== undefined);
-    const bVals = line.map(p => p.b).filter(v => v !== null && v !== undefined);
-    const norm = (vals, get) => {
+    const bVals = bExercise
+      ? line.map(p => (p.b === null || p.b === undefined) ? 0 : p.b)
+      : line.map(p => p.b).filter(v => v !== null && v !== undefined);
+    const norm = (vals, get, zeroFill) => {
       if (!vals.length) return null;
       const mn = Math.min(...vals), mx = Math.max(...vals);
       // #317 验收修复: 数据恒定(mx==mn)时归一化给 50(居中水平线), 否则全 0 贴底视觉"线消失"
       const range = (mx - mn) || 1;
       const flat = mx === mn;
+      const flat50 = flat && !(zeroFill && mx === 0);
       return line.map(p => {
         const v = get(p);
-        return { label: p.date.slice(5), value: (v === null || v === undefined) ? null : (flat ? 50 : (v - mn) / range * 100) };
+        const raw = (v === null || v === undefined) ? (zeroFill ? 0 : null) : v;
+        return { label: p.date.slice(5), value: raw === null ? null : (flat50 ? 50 : (raw - mn) / range * 100) };
       });
     };
     const aItems = norm(aVals, p => p.a);
-    const bItems = norm(bVals, p => p.b);
+    const bItems = norm(bVals, p => p.b, bExercise);
     const first = aItems || bItems;
     if (first) {
       const series = [];
@@ -167,6 +175,7 @@
         yMin: 0, yMax: 100,
         labels: 'select',
         tooltip: true,
+        connectNulls: true,
         series,
       });
     }

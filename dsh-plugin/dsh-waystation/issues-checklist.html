@@ -373,5 +373,12 @@
   <div class="src">来源：2026-08-14 用户反馈；v24 已解决。</div>
 </div>
 
+<div class="item">
+  <span class="no">50</span><span class="title">发布到 NPM（支持 npm 安装）</span><span class="badge b-done">已解决</span>
+  <div class="desc">学习 dsh-opencode-tui-theme 参考包 + npm-publish 技能，把 DSH-Waystation 打包发布到 npm 官方源，支持 npm 安装。</div>
+  <div class="plan">已发布 dsh-waystation@1.0.0（registry.npmjs.org，MIT）：package/ 标准 npm 包结构（package.json dsh.client 声明 + lib/index.js 宿主半 ESM + lib/client.js 浏览器 bundle + README）。静态版改造要点：harness.handle/host.call → ctx.connection.rpc（/dsws 通道，loopback 权威）；styles.insert → 手动 &lt;style&gt; + ctx.effect 清理；React → require('react')；timer 兜底 setTimeout。npm pack dry-run 干净（4 文件）；npm view 验证 1.0.0 已上线；主页 https://www.npmjs.com/package/dsh-waystation。</div>
+  <div class="src">来源：2026-08-14 用户需求；已解决（发布成功）。</div>
+</div>
+
 </body>
 </html>

@@ -1,0 +1,32 @@
+{
+  "name": "dsh-waystation",
+  "version": "1.0.0",
+  "description": "DSH Web 的 Waystation 控制面板（Client + Host 插件）：GitHub issue 地图/列表/技能/环境检查四视图、输入区状态栏胶囊、/triage /wayfinder /handoff 动作注入、交接开新会话。",
+  "type": "module",
+  "main": "lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib"
+  ],
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "plugin",
+    "wayfinder",
+    "github",
+    "issue-tracker",
+    "waystation"
+  ],
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
+  },
+  "license": "MIT"
+}

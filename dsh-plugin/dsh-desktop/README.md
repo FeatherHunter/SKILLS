@@ -56,34 +56,52 @@
 
 > npm 包是**源码形态**：不含打包好的 exe（双击即用的便携版见下方「打包」）。
 > 安装后以开发模式运行，体验与 exe 一致（后台运行、无终端窗口、关窗即停，
-> 首次启动自动安装 DSH 运行时）。
+> 首次启动自动安装 DSH 运行时）。**此流程已实测跑通**（2026-08-14）。
 
-1. **安装**（在任意项目目录）：
+**完整步骤（复制粘贴即可）：**
+
+1. **建一个文件夹并进入**：
+   ```bash
+   mkdir dsh-app && cd dsh-app
+   ```
+2. **安装我们的包**（走 npm 源，国内镜像也快）：
    ```bash
    npm install dsh-harness-desktop
    ```
-2. **进入包目录，补齐构建依赖**（electron 属于开发工具链，作为依赖安装时不会自动带）：
+   看到 `added 1 package` 即成功。
+3. **进入包目录，补装 electron 运行时**（必做！npm 默认不装对方包的开发工具，
+   electron 是 110MB 的开发工具链，不会随包自动装）：
    ```bash
    cd node_modules/dsh-harness-desktop
    npm install
    ```
-3. **启动**：
+   > ⚠️ **国内网络大概率报 `TypeError: fetch failed`**（electron 二进制从 GitHub
+   > 下载被挡，2026-08-14 实测必踩）。解决：设镜像后重装：
+   > ```powershell
+   > $env:ELECTRON_MIRROR='https://npmmirror.com/mirrors/electron/'
+   > npm install
+   > ```
+   > 如果已经报错，设完镜像后执行 `node node_modules/electron/install.js` 即可补下成功。
+4. **启动**（首次会自动下载安装 DSH 本体，几分钟；之后离线秒开）：
    ```bash
    npm start
    ```
-4. **（可选）创建桌面快捷方式**——以后双击桌面「桌面版」图标直接打开，不用开终端：
+5. **（可选）创建桌面快捷方式**——以后双击桌面「桌面版」图标直接打开，不用开终端：
    ```bash
    npx dsh-harness-desktop shortcut
    ```
-5. **（可选）打包自己的便携 exe**：
+6. **（可选）打包自己的便携 exe**（把 87MB 的绿色单文件发给别人，对方双击即用，
+   无需 Node/npm）：
    ```bash
    npm run dist
    # Windows → dist/dsh-harness-desktop-1.0.2-x64.exe
    ```
 
-> 提示：首次启动会联网自动下载安装 DSH 运行时（几分钟），装好后**离线秒开**；
-> 升级 DSH 见「常见问题 · 如何升级 DSH」。npm 包不捆绑 electron 二进制
-> （110MB 属开发工具链），所以第 2 步需要在本目录补一次 `npm install`。
+**日常使用**：启动 = 进入 `dsh-app` 后执行 `cd node_modules/dsh-harness-desktop && npm start`
+（或直接双击桌面快捷方式）。关窗即停、首次自动装 DSH、离线秒开——与 exe 体验一致。
+
+> 其他提示：升级 DSH 见「常见问题 · 如何升级 DSH」；npm 包不捆绑 electron 二进制，
+> 所以第 3 步需要在本目录补一次 `npm install`。
 
 ### 开发 / 日常运行
 

@@ -1239,23 +1239,6 @@ return {
       ])
     }
 
-    // ---- 5.1 侧栏脚部入口（跟随当前激活会话）----
-    const SidebarButton = (props) => {
-      const cur = props.useSessions((x) => x.current)
-      const s = useStore(cur)
-      const n = readyCount(s)
-      return h('button', {
-        type: 'button',
-        // #376：打开统一走 openPanel（未就绪/过期自动 force 加载）
-        onClick: function (e) { e.stopPropagation(); openPanel(s) },
-        style: { display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: '2px 6px', background: 'transparent', border: 'none', color: 'var(--dsw-alias-label-primary,#e6edf3)', fontSize: 12, cursor: 'pointer', padding: '4px 6px', borderRadius: 6, lineHeight: 1.4, minWidth: 0 },
-      }, [
-        h('span', { style: { display: 'inline-flex', alignItems: 'center', color: n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b' } }, Icon({ scheme: s.ui.icon, size: 15 })),
-        h('span', { style: { whiteSpace: 'nowrap' } }, 'Waystation'),
-        h('span', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 11, whiteSpace: 'nowrap' } }, (n < 0 ? '--/8' : n + '/8') + ' · ' + frontierCount(s) + ' 可接'),
-      ])
-    }
-
     // ---- 5.2 输入区状态栏（定稿 1A 居中胶囊 · 反馈不进状态栏 · cwd 关联 · v14 数字区等宽 + 交接段）----
     const StatusBar = (props) => {
       const sid = props && props.sessionId
@@ -2096,9 +2079,6 @@ return {
     // ============================================================
     // 6. 插槽注册
     // ============================================================
-    slots.inject('sidebar.footer.action', function () {
-      return slots.register({ name: 'sidebar.footer.action', id: 'dsh-waystation', label: 'Waystation', order: 5 }, SidebarButton)
-    })
     slots.inject('shell.overlay', function () {
       return slots.register({ name: 'shell.overlay', id: 'dsws-overlay-v5', order: 10 }, OverlayPanel)
     })

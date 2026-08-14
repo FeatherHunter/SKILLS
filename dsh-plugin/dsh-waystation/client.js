@@ -422,8 +422,10 @@ return {
         g.claimed.map(function (t) { return h(TicketRow, { key: t.number, g: g, t: t }) }),
         h('div', { className: 'dsws-grp' }, [h('span', { className: 'dsws-dot', style: { background: '#f0883e' } }), h('span', null, '🔒 被阻塞（' + g.blocked.length + '）')]),
         g.blocked.map(function (t) { return h(TicketRow, { key: t.number, g: g, t: t }) }),
-        h('div', { className: 'dsws-grp' }, [h('span', { className: 'dsws-dot', style: { background: '#52525b' } }), h('span', null, '✅ 已关闭（' + g.closed.length + '）')]),
-        g.closed.map(function (t) { return h(TicketRow, { key: t.number, g: g, t: t }) }),
+        h('details', { style: { marginTop: 8 } }, [
+          h('summary', { className: 'dsws-grp', style: { margin: '6px 0 2px', cursor: 'pointer' } }, [h('span', { className: 'dsws-dot', style: { background: '#52525b' } }), h('span', null, '✅ 已关闭（' + g.closed.length + '）')]),
+          h('div', null, g.closed.map(function (t) { return h(TicketRow, { key: t.number, g: g, t: t }) })),
+        ]),
       ])
     }
 

@@ -28,7 +28,6 @@ return {
     const GH_FALLBACK = 'D:\\0Tools\\GitHubCLI\\gh.exe'   // 本仓库实测 gh 不在 PATH（docs/agents/issue-tracker.md）
     const DEFAULT_CWD = 'D:\\2Study\\StudyNotes\\SKILLS'  // 默认工作区；可被 wf.snapshot args.cwd 覆盖
     const TIMEOUT_MS = 30000
-    const POLL_MS = 60000
     const CACHE_MS = 5000
     const STATUS_CACHE_MS = 30000  // 前置检查结果缓存（#344）
     const SKILL_PROBE_DIRS = ['.agents\\skills', '.minimax\\skills', '.claude\\skills']  // 技能文件层探测目录（相对用户主目录）
@@ -40,8 +39,6 @@ return {
     let ghPathError = null
     let repoKey = null
     let cache = { ts: 0, snapshot: null, error: null, cwd: null }
-    let lastStats = null
-    let polling = false
     let statusCache = { ts: 0, status: null, error: null, cwd: null }  // wf.status 30s 缓存（按 cwd 区分）
     let userHome = null                                     // 用户主目录（cmd 探测，缓存）
 
@@ -480,29 +477,8 @@ return {
       return { ok: true, number: n, assignedTo: assignedTo, url: 'https://github.com/' + repo.owner + '/' + repo.name + '/issues/' + String(n) }
     })
 
-    // ============ 轮询（60s）+ diff 预留 ============
-    ctx.effect(function () {
-      return timer.interval(function () {
-        if (polling) return
-        polling = true
-        buildSnapshot(DEFAULT_CWD).then(function (snap) {
-          polling = false
-          if (!snap.ok) return
-          // P2 toast 预留：stats 变化 diff（新 closed / 新 frontier）
-          if (lastStats) {
-            const cur = {}
-            snap.maps.forEach(function (m) { cur[m.number] = m.stats })
-            const changed = []
-            Object.keys(cur).forEach(function (n) {
-              const p = lastStats[n]
-              if (p && (p.closed !== cur[n].closed || p.frontier !== cur[n].frontier)) changed.push(n)
-            })
-            if (changed.length) console.log('[waystation] 快照变化 maps:', changed.join(','))
-          }
-          lastStats = {}
-          snap.maps.forEach(function (m) { lastStats[m.number] = m.stats })
-        }).catch(function (e) { polling = false; console.error('[waystation] poll error', String((e && e.message) || e)) })
-      }, POLL_MS)
-    })
+    // ============ 轮询：已按 #348 拍板 Q3 关闭（60s 全量 × 8 map ≈ 2400-4800 GraphQL points/h 贴 5000 限额）============
+    // 刷新策略 = 纯手动（状态条/面板按钮 wf.refresh）+ 打开面板即刷（client 侧 loadSnapshot）。
+    // P1 若做状态变化 toast 提醒，再考虑低频自动（届时恢复本块并观察配额）。
   },
 }

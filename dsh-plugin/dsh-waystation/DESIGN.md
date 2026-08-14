@@ -409,3 +409,4 @@ Round 3（原型实操评审 → 全部定稿，2026-08-14）：
 - 2026-08-14 制图：目录改小写 `dsh-waystation`；创建标签 `dsh:plugin:waystation`；按 wayfinder 规范创建地图 **#342** 与子票 #343–#348（research×1 / task×4 / grilling×1），原生阻塞接线完成，frontier = #343；触发 T1 研究子代理。
 - 2026-08-14 对齐：grill 两轮（Q1–Q18）全部按推荐采纳，用户总方针「五大块先原型后定细节」；T1 子代理两轮无产出，改父会话实测完成并收尾 #343（RESEARCH-NOTES.md：GraphQL 单查询方案 / inputActions.setDraft / approval 结论 / PowerShell 引号坑）；新增原型票 **#355**（wayfinder:prototype，阻塞 #348）并已认领，当前工作中。
 - 2026-08-14 定稿：HTML 原型（`dsh-plugin/dsh-waystation/prototype.html`，10 模块）实操评审三轮，全部定稿（见 §12.2 Round 3 表）；#355 原型票收尾（resolution comment + close）。后续实现按定稿组合：1A+2A+3A+4A+5A+6A+7A + 显式当前任务 + 定向交接 + 感知中心。
+- 2026-08-14 拍板（#348 · 问卷 5 题全按推荐采纳）：① 票务分组 ✅已关闭默认折叠（操作面常显、历史面点开展开）；② 地图详情折叠块保持现状（Decisions 查阅型）；③ **关闭 60s 自动轮询**（480 GraphQL/h ≈ 2400–4800 points/h 贴 5000 限额），刷新 = 纯手动 + 打开面板即刷；④ 注入模板默认带 /wayfinder 前缀（可设置关闭）；⑤ 已关闭票显示「✅ 已关闭」，决议摘要留 P2（避免 N+1 评论查询拖慢快照）。

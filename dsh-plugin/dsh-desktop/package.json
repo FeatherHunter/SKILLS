@@ -1,9 +1,27 @@
 {
-  "name": "dsh-desktop",
+  "name": "dsh-harness-desktop",
   "version": "1.0.0",
-  "description": "DSH 桌面版：双击启动 DSH Web，后台运行无终端窗口，关闭窗口即停止后台服务。",
+  "description": "DeepSeek Harness 桌面版：双击启动 DSH Web，后台运行无终端窗口，关闭窗口即停止后台服务。内置运行时，无需安装 Node.js。",
   "main": "main.js",
   "license": "MIT",
+  "author": "feather_wch",
+  "keywords": [
+    "deepseek",
+    "dsh",
+    "deepseek-harness",
+    "desktop",
+    "electron"
+  ],
+  "files": [
+    "main.js",
+    "preload.js",
+    "boot.html",
+    "build/",
+    "runtime-resources/npm",
+    "tools/",
+    "test/",
+    "README.md"
+  ],
   "scripts": {
     "start": "electron .",
     "icon": "electron tools/rasterize-icon.js",
@@ -22,6 +40,7 @@
       "preload.js",
       "boot.html",
       "build/icon.png",
+      "build/after-pack.js",
       "package.json"
     ],
     "extraResources": [
@@ -30,7 +49,7 @@
         "to": "runtime/npm"
       }
     ],
-    "artifactName": "dsh-desktop-${version}-${arch}.${ext}",
+    "artifactName": "dsh-harness-desktop-${version}-${arch}.${ext}",
     "win": {
       "target": [
         {

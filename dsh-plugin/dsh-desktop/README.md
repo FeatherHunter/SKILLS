@@ -5,7 +5,7 @@
 > 关掉窗口，后台服务和命令**随之关闭**。
 > **零依赖**：无需安装 Node.js / npm —— 应用内置运行时，双击即用。
 
-- **包名**: `dsh-desktop`（目录 `dsh-plugin/dsh-desktop/`）
+- **包名**: `dsh-harness-desktop`（npm 包；源码目录 `dsh-plugin/dsh-desktop/`）
 - **显示名**: 桌面版
 - **平台**: Windows / Linux / macOS（Electron 跨平台）
 - **技术**: Electron 主进程 = 进程管家 + 内嵌浏览器窗口 + 内置 DSH 运行时
@@ -38,7 +38,7 @@
 
 ### 快速开始（全新用户）
 
-1. 双击 `dsh-desktop-1.0.0-x64.exe`（或 `npm start` 开发模式）
+1. 双击 `dsh-harness-desktop-1.0.0-x64.exe`（或 `npm start` 开发模式）
 2. 首次运行：启动页显示「正在下载并安装 DSH 运行时…」，等几分钟
 3. 自动进入 DSH 界面 —— 完成！之后双击即秒开
 
@@ -65,7 +65,7 @@ npm start        # 启动桌面版
 ### 打包成双击即用的安装包
 
 ```bash
-npm run dist     # Windows → dist/dsh-desktop-1.0.0-x64.exe（便携版，双击即用）
+npm run dist     # Windows → dist/dsh-harness-desktop-1.0.0-x64.exe（便携版，双击即用）
 ```
 
 - Windows 出便携 exe；在 Linux 上执行同一命令出 AppImage（各自平台构建各自的包）。

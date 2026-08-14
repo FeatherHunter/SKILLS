@@ -39,10 +39,10 @@ return {
     let ghPath = null
     let ghPathError = null
     let repoKey = null
-    let cache = { ts: 0, snapshot: null, error: null }
+    let cache = { ts: 0, snapshot: null, error: null, cwd: null }
     let lastStats = null
     let polling = false
-    let statusCache = { ts: 0, status: null, error: null }  // wf.status 30s 缓存
+    let statusCache = { ts: 0, status: null, error: null, cwd: null }  // wf.status 30s 缓存（按 cwd 区分）
     let userHome = null                                     // 用户主目录（cmd 探测，缓存）
 
     // ============ gh 封装 ============
@@ -420,13 +420,13 @@ return {
       const cwd = (args && args.cwd) || DEFAULT_CWD
       const force = !!(args && args.force)
       const now = Date.now()
-      if (!force && statusCache.status && now - statusCache.ts < STATUS_CACHE_MS) return statusCache.status
+      if (!force && statusCache.status && statusCache.cwd === cwd && now - statusCache.ts < STATUS_CACHE_MS) return statusCache.status
       try {
         const status = await buildStatus(cwd)
-        statusCache = { ts: Date.now(), status: status, error: null }
+        statusCache = { ts: Date.now(), status: status, error: null, cwd: cwd }
         return status
       } catch (e) {
-        statusCache = { ts: Date.now(), status: null, error: String((e && e.message) || e) }
+        statusCache = { ts: Date.now(), status: null, error: String((e && e.message) || e), cwd: cwd }
         return { ok: false, error: String((e && e.message) || e), checks: [], ready: 0, total: CHECK_NAMES.length }
       }
     })
@@ -438,13 +438,13 @@ return {
     harness.handle('wf.snapshot', async function (args) {
       const cwd = (args && args.cwd) || DEFAULT_CWD
       const now = Date.now()
-      if (cache.snapshot && now - cache.ts < CACHE_MS) return cache.snapshot
+      if (cache.snapshot && cache.cwd === cwd && now - cache.ts < CACHE_MS) return cache.snapshot
       try {
         const snap = await buildSnapshot(cwd)
-        cache = { ts: Date.now(), snapshot: snap, error: null }
+        cache = { ts: Date.now(), snapshot: snap, error: null, cwd: cwd }
         return snap
       } catch (e) {
-        cache = { ts: Date.now(), snapshot: null, error: String((e && e.message) || e) }
+        cache = { ts: Date.now(), snapshot: null, error: String((e && e.message) || e), cwd: cwd }
         return { ok: false, error: String((e && e.message) || e), env: { ghError: ghPathError } }
       }
     })
@@ -453,10 +453,10 @@ return {
       const cwd = (args && args.cwd) || DEFAULT_CWD
       try {
         const snap = await buildSnapshot(cwd)
-        cache = { ts: Date.now(), snapshot: snap, error: null }
+        cache = { ts: Date.now(), snapshot: snap, error: null, cwd: cwd }
         return snap
       } catch (e) {
-        cache = { ts: Date.now(), snapshot: null, error: String((e && e.message) || e) }
+        cache = { ts: Date.now(), snapshot: null, error: String((e && e.message) || e), cwd: cwd }
         return { ok: false, error: String((e && e.message) || e) }
       }
     })

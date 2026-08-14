@@ -1,7 +1,7 @@
 {
   "name": "dsh-waystation",
-  "version": "1.0.0",
-  "description": "DSH Web 的 Waystation 控制面板（Client + Host 插件）：GitHub issue 地图/列表/技能/环境检查四视图、输入区状态栏胶囊、/triage /wayfinder /handoff 动作注入、交接开新会话。",
+  "version": "1.0.1",
+  "description": "DSH（DeepSeek Harness）上的 Waystation 控制面板插件，配合 Matt Pocock skills（github.com/mattpocock/skills）的 wayfinder / triage / grilling / handoff 等技能使用：GitHub issue 地图/列表/技能/环境检查四视图、输入区状态栏胶囊、动作注入与交接开新会话。",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -17,6 +17,8 @@
     "deepseek-harness",
     "plugin",
     "wayfinder",
+    "mattpocock",
+    "skills",
     "github",
     "issue-tracker",
     "waystation"
@@ -27,6 +29,11 @@
       "immediately": true,
       "inject": []
     }
+  },
+  "homepage": "https://github.com/FeatherHunter/SKILLS/tree/main/dsh-plugin/dsh-waystation",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/FeatherHunter/SKILLS.git"
   },
   "license": "MIT"
 }

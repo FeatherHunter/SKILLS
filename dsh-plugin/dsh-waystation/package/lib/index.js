@@ -19,6 +19,9 @@
  */
 export const name = 'dsh-waystation'
 
+// 服务依赖声明（loader 等待就绪后再 apply；connection 依赖 webServer，显式声明避免静默失效）
+export const inject = ['subprocess', 'timer', 'connection']
+
 export function apply(ctx) {
   const subprocess = ctx.get('subprocess')
   const timer = ctx.get('timer')

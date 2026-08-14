@@ -1,13 +1,15 @@
 # dsh-waystation
 
 > DSH（DeepSeek Harness）Web 界面的 **Waystation 控制面板**插件（Client + Host 双端），
-> 面向 Matt Pocock 的 wayfinder 巨型项目决策地图工作流：
+> **配合 [Matt Pocock skills](https://github.com/mattpocock/skills) 的 wayfinder / triage / grilling / handoff 等技能使用**：
 > 输入区状态栏胶囊（可接/占用/沉淀/交接/环境/更新）+ 自由悬浮面板（列表 / 技能 / 环境检查三视图）
-> + GitHub issue 动作注入（诊断 / 修复 / 讨论 / 执行）+ 交接开新会话。
+> + GitHub issue 动作注入（诊断 / 修复 / 讨论 / 执行，均带 `/wayfinder` `/triage` 技能命令）
+> + 交接开新会话。
 
-- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.0.0）
+- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.0.1）
 - **动态版 pluginId**: `wfst-1`（v9–v24 迭代产物）
 - **平台**: Client（浏览器页面）+ Host（Node 进程，gh CLI 数据层）
+- **配套**: [mattpocock/skills](https://github.com/mattpocock/skills)（wayfinder / triage / grilling / handoff / ask-matt 等）
 - **两种形态**: ① 动态插件（进程内，会话级）；② 正式安装的本地插件（开机自启，推荐）
 
 ## 功能

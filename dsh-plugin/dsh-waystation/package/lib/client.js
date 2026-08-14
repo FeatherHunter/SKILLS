@@ -1,5 +1,5 @@
 /**
- * dsh-waystation 浏览器半（Client bundle · v1.0.0 = 动态版 v24 同源）
+ * dsh-waystation 浏览器半（Client bundle · v1.0.1 = 动态版 v24 同源）
  *
  * 格式：DSH client-modules 的惰性 CJS bundle —— 经典脚本执行时只注册 factory，
  * 由浏览器内核（vendored Cordis Loader）在挂载该插件条目时物化执行。
@@ -107,7 +107,7 @@ window.__ModuleLoader__.load({
       '@keyframes dsws-spin{to{transform:rotate(360deg)}}',
     ].join('')
 
-    exports.inject = ['slots', 'locale', 'workspaces']
+    exports.inject = ['connection', 'slots', 'locale', 'workspaces']
 
     exports.apply = function (ctx) {
       const slots = ctx.get('slots')
@@ -1205,20 +1205,24 @@ window.__ModuleLoader__.load({
       }
 
       // ============================================================
-      // 6. 插槽注册
+      // 6. 插槽注册（收集 disposer，热卸载时统一清理；静态插件无 Run 卡，不注册 tool.view.cordis）
       // ============================================================
-      slots.inject('sidebar.footer.action', function () {
-        return slots.register({ name: 'sidebar.footer.action', id: 'dsh-waystation', label: 'Waystation', order: 5 }, SidebarButton)
-      })
-      slots.inject('shell.overlay', function () {
-        return slots.register({ name: 'shell.overlay', id: 'dsws-overlay-v5', order: 10 }, OverlayPanel)
-      })
-      slots.inject('conversation.input.dock', function () {
-        return slots.register({ name: 'conversation.input.dock', id: 'dsh-waystation', order: 40 }, StatusBar)
-      })
-      slots.inject('tool.view.cordis', function () {
-        return slots.register({ name: 'tool.view.cordis', key: 'self' }, RunPanel)
-      })
+      const disposeSlots = [
+        slots.inject('sidebar.footer.action', function () {
+          return slots.register({ name: 'sidebar.footer.action', id: 'dsh-waystation', label: 'Waystation', order: 5 }, SidebarButton)
+        }),
+        slots.inject('shell.overlay', function () {
+          return slots.register({ name: 'shell.overlay', id: 'dsws-overlay-v5', order: 10 }, OverlayPanel)
+        }),
+        slots.inject('conversation.input.dock', function () {
+          return slots.register({ name: 'conversation.input.dock', id: 'dsh-waystation', order: 40 }, StatusBar)
+        }),
+      ]
+      ctx.effect(function () {
+        return function () {
+          disposeSlots.forEach(function (d) { try { if (d) d() } catch (e) { /* 忽略清理期错误 */ } })
+        }
+      }, 'dsh-waystation: slots')
 
       // 加载真数据快照（repo 链接 + 前置检测兜底），失败静默
       loadSnapshot(shared, false)

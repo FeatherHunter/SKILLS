@@ -364,7 +364,17 @@ window.charts={
       animPaths.forEach(function(p){
         var len=p.getTotalLength?p.getTotalLength():1000;
         p.style.strokeDasharray=len;p.style.strokeDashoffset=len;
-        (function(pth,l){requestAnimationFrame(function(){requestAnimationFrame(function(){pth.style.transition='stroke-dashoffset 1s cubic-bezier(.22,1,.36,1)';pth.style.strokeDashoffset='0';});});})(p,len);
+        (function(pth,l){
+          requestAnimationFrame(function(){requestAnimationFrame(function(){
+            pth.style.transition='stroke-dashoffset 1s cubic-bezier(.22,1,.36,1)';
+            pth.style.strokeDashoffset='0';
+            /* #317 验收修复: 动画结束清 dasharray(style 内 dasharray 按屏幕像素解释,
+             * 与 preserveAspectRatio=none 拉伸后的路径实长不符 → 中段断线; 过渡完清除即恢复实线) */
+            var clean=function(){pth.style.strokeDasharray='none';pth.removeEventListener('transitionend',clean);};
+            pth.addEventListener('transitionend',clean);
+            setTimeout(clean,1200); /* 兜底: transitionend 未触发时(如无过渡)也清理 */
+          });});
+        })(p,len);
       });
     }
     /* 交互 */

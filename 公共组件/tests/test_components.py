@@ -1059,6 +1059,31 @@ def test_charts_donut_center_text_can_be_empty(chart_page):
     assert texts == [], f'中心文字未关闭: {texts}'
 
 
+def test_charts_line_animation_clears_dasharray(chart_page):
+    """line 动画结束后 stroke-dasharray 必须清空（回归 #317 验收: style 内 dasharray 按屏幕像素解释,
+    preserveAspectRatio=none 拉伸后与路径实长不符 → 中段断线; 过渡完须清除恢复实线）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'),
+        [{label:'周一',value:2},{label:'周二',value:5},{label:'周三',value:3},{label:'周四',value:4},{label:'周五',value:6}],
+        {height:220, animation:true});
+    """)
+    # 动画 1s, 等待 1.5s 后 dasharray 应为 none
+    chart_page.wait_for_timeout(1500)
+    dash = chart_page.evaluate("getComputedStyle(document.querySelector('.hm-c-line-svg path[fill=\\'none\\']')).strokeDasharray")
+    assert dash in ('none', 'initial', ''), f'动画后 dasharray 未清除: {dash}'
+
+
+def test_charts_line_animation_off_no_dash(chart_page):
+    """line animation:false 时不应设置 dasharray（无动画路径直接实线）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'),
+        [{label:'A',value:1},{label:'B',value:3}],
+        {animation:false});
+    """)
+    dash = chart_page.evaluate("getComputedStyle(document.querySelector('.hm-c-line-svg path[fill=\\'none\\']')).strokeDasharray")
+    assert dash in ('none', 'initial', ''), f'animation:false 不应有 dasharray: {dash}'
+
+
 # ── v1.4 全参数测试 ──────────────────────────────────────
 
 @pytest.fixture(autouse=True)

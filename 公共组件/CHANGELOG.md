@@ -2,6 +2,16 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.13（2026-08-14 · line 动画断线修复 · #317 验收二轮）
+
+**charts.line 动画残留导致中段断线**（非破坏性 · 签名零变更 · 内部实现修复）。
+
+- **现象**：所有 `charts.line`（animation 默认 true）页面出现"点与点之间断线"——线只画前半段，中段 40%+ 消失，尾段又出现
+- **根因**：动画实现 `p.style.strokeDasharray = getTotalLength()`（SVG 用户单位长度）写入 CSS style，浏览器按**屏幕像素**解释；而 svg 是 `preserveAspectRatio="none"` 非等比拉伸（viewBox 320×110 → 屏幕 690×198，X 方向 2.16 倍）→ dash 图案长度与路径实际屏幕长度不匹配：dash 只覆盖路径前 ~47%，中段落入 gap 不可见，动画结束后 dasharray 残留
+- **修复**：动画过渡（stroke-dashoffset → 0）结束后 `transitionend` + 1.2s 兜底清空 `stroke-dasharray`，恢复实线
+- **验证**：像素级沿 path 采样（body_composition 修复前缺 26/61 点 → 修复后 61/61 全命中）；守卫测试 +2（动画后 dasharray 清空 / animation:false 无 dash）
+- **遗留**：多序列线完全重合时后画线覆盖先画线（数据巧合，非渲染 bug，SVG 语义如此）
+
 ## v1.12（2026-08-13 · 图表两处视觉 bug 修复 · #317 验收）
 
 **charts.js 两处视觉缺陷修复**（非破坏性 · 签名零变更 · 纯内部实现/样式）。

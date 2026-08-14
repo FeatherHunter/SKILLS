@@ -192,7 +192,7 @@
 </div>
 
 <!-- 公共组件注入管线 -->
-<script id="help-data" type="application/json">{"skill_name": "饼干记账", "title": "饼干记账 · 使用手册(HELP)", "subtitle": "7 功能域 · 71 场景 · 版本 2.0 · 更新于 2026-08-13 22:50", "meta_blocks": [{"id": "help_summary", "title": "HELP 汇总", "html": "<p>7 功能域 · 71 场景 · 版本 2.0 · 更新于 2026-08-13 22:50<\/p>"}, {"id": "help_wake_words", "title": "HELP 唤醒词", "html": "<p>饼干记账 HELP / 饼干记账 帮助 / 查帮助 / 能做什么<\/p>"}], "contact": {"items": [{"label": "邮箱", "value": "975559549@qq.com"}, {"label": "GitHub", "value": "https://github.com/FeatherHunter/SKILLS", "url": true}, {"label": "Issues", "value": "https://github.com/FeatherHunter/SKILLS/issues", "url": true}], "copy_all": true}, "version": "2.0", "groups": [{"id": "write", "icon": "✏️", "label": "写入", "subgroups": [{"id": "write_1", "label": "记账", "scenes": [{"id": "write_expense", "title": "记一笔支出", "wake_word": "记支出", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔支出(唤醒词:记支出):\n\n  金  额: ____\n  分类/名目: ____ (如:房租 / 午饭 / 打车)\n  备  注: ____ (选填)\n  时  间: ____ (选填,默认现在;补记昨天写「昨天」)\n  账  户: ____ (选填,如:支付宝 / 微信)\n  账  本: ____ (选填,如:旅行 / 生活)\n  币  种: ____ (选填,默认人民币;外币如:USD)\n", "types": ["采集"]}, {"id": "write_income", "title": "记一笔收入", "wake_word": "记收入", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔收入(唤醒词:记收入):\n\n  金  额: ____\n  分类/名目: ____ (如:工资 / 退款 / 卖闲置)\n  备  注: ____ (选填)\n  时  间: ____ (选填,默认现在)\n  账  户: ____ (选填,如:银行卡 / 微信)\n  币  种: ____ (选填,默认人民币;外币如:USD)\n", "types": ["采集"]}, {"id": "write_bill_photo", "title": "拍账单记账(图片识别)", "wake_word": "拍账单", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我拍账单记账(唤醒词:拍账单):\n", "types": ["采集"]}, {"id": "write_batch", "title": "批量录入多笔", "wake_word": "批量录入", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我批量记几笔账(唤醒词:批量录入):\n\n  条  目: ____ (每行一笔,如:午饭35 / 奶茶25 / 打车20)\n  账  本: ____ (选填,如:旅行)\n", "types": ["采集"]}]}, {"id": "write_2", "label": "特殊收支", "scenes": [{"id": "write_refund", "title": "记一笔退款(冲销原支出)", "wake_word": "记退款", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔退款(唤醒词:记退款):\n\n  金  额: ____\n  原支出: ____ (描述哪一笔,如:昨天那笔午饭 / 5月1日买的衣服)\n  退款原因: ____ (选填,如:退货/取消订单/差价)\n", "types": ["采集"]}, {"id": "write_reimburse", "title": "记一笔报销支出(#待报销)", "wake_word": "记报销", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔报销支出(唤醒词:记报销):\n\n  金  额: ____\n  分  类: ____ (选填,如:餐饮 / 差旅)\n  备  注: ____ (选填,自动加 #待报销)\n  时  间: ____ (选填,默认现在)\n", "types": ["采集"]}, {"id": "write_reimburse_done", "title": "报销到账(记收入 + 流转标签)", "wake_word": "报销到账", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记录报销到账(唤醒词:报销到账):\n\n  金  额: ____\n  关  联: ____ (选填,如:哪一笔 #待报销)\n", "types": ["采集"]}, {"id": "write_lend", "title": "借给别人钱", "wake_word": "记借出", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔借出(唤醒词:记借出):\n\n  金  额: ____\n  对  象: ____ (借给谁)\n  期  限: ____ (选填,如:月底还)\n", "types": ["采集"]}, {"id": "write_borrow", "title": "向别人借钱", "wake_word": "记借入", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔借入(唤醒词:记借入):\n\n  金  额: ____\n  对  象: ____ (向谁借)\n  期  限: ____ (选填)\n", "types": ["采集"]}, {"id": "write_collect", "title": "收回借出的钱", "wake_word": "记收回", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔收回(唤醒词:记收回):\n\n  哪一笔: ____ (对象/金额/描述,如:小明还我那 500)\n", "types": ["采集"]}, {"id": "write_payback", "title": "偿还借入的钱", "wake_word": "记偿还", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔偿还(唤醒词:记偿还):\n\n  哪一笔: ____ (对象/金额/描述,如:还小明那 500)\n", "types": ["采集"]}, {"id": "write_installment", "title": "记一笔分期(平摊预写)", "wake_word": "记分期", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔分期(唤醒词:记分期):\n\n  名  目: ____ (如:手机 / 电脑)\n  总  价: ____\n  期  数: ____ (如:24)\n  首期日: ____ (选填,默认今天,每月固定这一天)\n  账  户: ____ (选填)\n  账  本: ____ (选填)\n", "types": ["向导"]}]}, {"id": "write_3", "label": "修正", "scenes": [{"id": "write_update", "title": "修改已有记录", "wake_word": "改记录", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我改一条记录(唤醒词:改记录):\n\n  目  标: ____ (如:最近一笔 / 某天的某条 / ID)\n  要改的字段: ____ (如:金额改成 38 / 分类改成交通 / 备注加牛奶)\n", "types": ["选择"]}, {"id": "write_undo", "title": "撤销一条记录(软删)", "wake_word": "撤销", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我撤销一条记录(唤醒词:撤销):\n\n  目  标: ____ (默认最近一笔;或描述某条)\n", "types": ["选择"]}, {"id": "write_restore", "title": "恢复已撤销记录", "wake_word": "恢复", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我恢复一条已撤销的记录(唤醒词:恢复):\n\n  目  标: ____ (描述被撤销的记录,如:昨天撤销的午饭)\n", "types": ["选择"]}]}]}, {"id": "query", "icon": "🔍", "label": "查询", "subgroups": [{"id": "query_1", "label": "按时间", "scenes": [{"id": "query_today", "title": "查今天收支", "wake_word": "查今天", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看今天的收支(唤醒词:查今天):\n", "types": ["查看"]}, {"id": "query_yesterday", "title": "查昨天收支", "wake_word": "查昨天", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看昨天的收支(唤醒词:查昨天):\n", "types": ["查看"]}, {"id": "query_date", "title": "查某一天的账", "wake_word": "查某天", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某天的账(唤醒词:查某天):\n\n  日  期: ____ (如:5月1号 / 上周五 / 2026-05-01)\n", "types": ["查看"]}, {"id": "query_recent", "title": "查最近记录", "wake_word": "查最近", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看最近的记录(唤醒词:查最近):\n\n  条  数: ____ (选填,默认 10)\n  排  序: ____ (选填,如:金额从大到小)\n  近几天: ____ (选填,如:近7天 / 近30天;与条数二选一)\n", "types": ["查看"]}, {"id": "query_week", "title": "查某周的账", "wake_word": "查周", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某周的账(唤醒词:查周):\n\n  周: ____ (如:本周 / 上周 / 5月第2周 / 2026-05-11那一周)\n", "types": ["查看"]}, {"id": "query_month", "title": "查某个月的账", "wake_word": "查月", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某个月的账(唤醒词:查月):\n\n  月: ____ (如:本月 / 上月 / 3月 / 2026-03)\n", "types": ["查看"]}, {"id": "query_range", "title": "查任意时间段", "wake_word": "查区间", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某段时间的账(唤醒词:查区间):\n\n  开始日期: ____ (如:5月1号 / 2026-05-01)\n  结束日期: ____ (如:5月10号 / 2026-05-10;某年填 12月31日)\n", "types": ["查看"]}]}, {"id": "query_2", "label": "按条件", "scenes": [{"id": "query_category", "title": "查某分类的账", "wake_word": "查分类", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某分类的账(唤醒词:查分类):\n\n  分  类: ____ (如:餐饮 / 出行 / 奶茶)\n  时  间: ____ (选填,如:本月 / 5月 / 5月1到10号)\n  账  户: ____ (选填,如:支付宝)\n  账  本: ____ (选填)\n  收  支: ____ (选填,支出/收入/全部,默认全部)\n", "types": ["查看"]}, {"id": "query_search", "title": "搜索备注关键词", "wake_word": "搜备注", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我搜备注关键词(唤醒词:搜备注):\n\n  关键词: ____\n", "types": ["查看"]}, {"id": "query_tag", "title": "查标签(#tag 聚合)", "wake_word": "查标签", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查标签(唤醒词:查标签):\n\n  标  签: ____ (如:#旅行 / #待报销)\n", "types": ["查看"]}, {"id": "query_account", "title": "查某账户流水", "wake_word": "查账户", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某账户的流水(唤醒词:查账户):\n\n  账  户: ____ (如:支付宝 / 微信 / 招行)\n  时  间: ____ (选填,如:本月 / 上月)\n", "types": ["查看"]}, {"id": "query_ledger", "title": "查某账本的记录", "wake_word": "查账本", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某账本的记录(唤醒词:查账本):\n\n  账  本: ____ (如:生活 / 旅行 / 借贷)\n  时  间: ____ (选填)\n", "types": ["查看"]}]}, {"id": "query_3", "label": "按状态", "scenes": [{"id": "query_debt", "title": "查未还欠款(借贷状态)", "wake_word": "查欠款", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查欠款(唤醒词:查欠款):\n\n  对  象: ____ (选填,如:小明;不填查全部)\n", "types": ["查看"]}, {"id": "query_pending_reimburse", "title": "查待报销", "wake_word": "查待报销", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查待报销(唤醒词:查待报销):\n", "types": ["查看"]}, {"id": "query_installment", "title": "查进行中的分期", "wake_word": "查分期", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查分期(唤醒词:查分期):\n\n  名  目: ____ (选填,如:手机;不填查全部)\n", "types": ["查看"]}]}]}, {"id": "analysis", "icon": "📊", "label": "分析", "subgroups": [{"id": "analysis_1", "label": "汇总", "scenes": [{"id": "monthly_summary", "title": "某月收支汇总", "wake_word": "看月度", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看某个月的收支汇总(唤醒词:看月度):\n\n  月: ____ (如:本月 / 上月 / 3月 / 2026-03)\n", "types": ["查看"]}, {"id": "yearly_summary", "title": "年度收支汇总", "wake_word": "看年度", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看某年的收支汇总(唤醒词:看年度):\n\n  年: ____ (如:今年 / 2026 / 去年)\n", "types": ["查看"]}, {"id": "range_overview", "title": "时间段收支总览", "wake_word": "看总览", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看某段时间的收支总览(唤醒词:看总览):\n\n  开始日期: ____ (选填,默认本月1号)\n  结束日期: ____ (选填,默认今天)\n", "types": ["查看"]}, {"id": "week_brief", "title": "本周简报(对比上周)", "wake_word": "看周报", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看本周简报(唤醒词:看周报):\n\n  周: ____ (选填,本周 / 上周)\n", "types": ["查看"]}]}, {"id": "analysis_2", "label": "结构", "scenes": [{"id": "category_breakdown", "title": "钱花在哪些分类", "wake_word": "看分类", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看钱花在哪些分类(唤醒词:看分类):\n\n  时  间: ____ (选填,如:本月 / 5月 / 5月1到10号)\n  账  户: ____ (选填,如:支付宝)\n  收  支: ____ (选填,支出/收入/全部,默认支出)\n", "types": ["查看"]}, {"id": "account_breakdown", "title": "各账户花销情况", "wake_word": "看账户", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看各账户的花销情况(唤醒词:看账户):\n\n  时  间: ____ (选填,如:本月 / 上月)\n", "types": ["查看"]}, {"id": "ledger_summary", "title": "各账本收支汇总", "wake_word": "看账本", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看各账本的收支汇总(唤醒词:看账本):\n\n  时  间: ____ (选填,如:本月)\n", "types": ["查看"]}, {"id": "income_expense_structure", "title": "收入支出来源去向", "wake_word": "看结构", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看收入和支出的结构(唤醒词:看结构):\n\n  时  间: ____ (选填,如:本月 / 5月)\n", "types": ["查看"]}]}, {"id": "analysis_3", "label": "对比", "scenes": [{"id": "period_compare", "title": "本期和上期对比", "wake_word": "看对比", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看本期和上期对比(唤醒词:看对比):\n\n  周  期: ____ (如:本周vs上周 / 本月vs上月 / 今年vs去年)\n", "types": ["查看"]}, {"id": "range_compare", "title": "两段时间对比", "wake_word": "看双区间", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我对比两段时间(唤醒词:看双区间):\n\n  区间一: ____ (如:5月 / 5月1到10号)\n  区间二: ____ (如:6月 / 6月1到10号)\n", "types": ["查看"]}, {"id": "year_over_year", "title": "今年和去年同比", "wake_word": "看同比", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看同比对比(唤醒词:看同比):\n\n  月: ____ (如:本月 / 6月)\n", "types": ["查看"]}, {"id": "category_compare", "title": "两段时间分类差异", "wake_word": "看分类对比", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看两段时间的分类差异(唤醒词:看分类对比):\n\n  区间一: ____ (如:5月)\n  区间二: ____ (如:6月)\n", "types": ["查看"]}]}, {"id": "analysis_4", "label": "趋势", "scenes": [{"id": "monthly_trend", "title": "每月收支走势", "wake_word": "看趋势", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看每月的收支走势(唤醒词:看趋势):\n\n  月  数: ____ (选填,近 6 / 12 个月,默认 12)\n", "types": ["查看"]}, {"id": "category_trend", "title": "某分类的月度变化", "wake_word": "看分类趋势", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看某分类的月度变化(唤醒词:看分类趋势):\n\n  分  类: ____ (如:餐饮 / 出行)\n  月  数: ____ (选填,近 6 / 12 个月,默认 12)\n", "types": ["查看"]}]}, {"id": "analysis_5", "label": "金额", "scenes": [{"id": "top_expense", "title": "大额支出排行", "wake_word": "看大额", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看大额支出排行(唤醒词:看大额):\n\n  条  数: ____ (选填,默认 10)\n  时  间: ____ (选填,如:本月 / 5月)\n", "types": ["查看"]}, {"id": "top_frequency", "title": "高频消费排行", "wake_word": "看高频", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看高频消费排行(唤醒词:看高频):\n\n  时  间: ____ (选填,如:本月 / 近30天)\n  条  数: ____ (选填,默认 10)\n", "types": ["查看"]}, {"id": "amount_distribution", "title": "金额区间分布", "wake_word": "看分布", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看金额区间分布(唤醒词:看分布):\n\n  时  间: ____ (选填,如:本月 / 5月)\n  收  支: ____ (选填,支出/收入,默认支出)\n", "types": ["查看"]}]}, {"id": "analysis_6", "label": "统计洞察", "scenes": [{"id": "stats", "title": "记账情况统计", "wake_word": "做统计", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看记账情况统计(唤醒词:做统计):\n", "types": ["查看"]}, {"id": "activity", "title": "记账活跃度", "wake_word": "看活跃", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看记账活跃度(唤醒词:看活跃):\n", "types": ["查看"]}, {"id": "insight", "title": "AI 消费洞察", "wake_word": "看洞察", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看 AI 消费洞察(唤醒词:看洞察):\n\n  时  间: ____ (选填,如:本月 / 近90天,默认近30天)\n", "types": ["查看"]}, {"id": "anomaly", "title": "异常波动检测", "wake_word": "看异常", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看异常波动(唤醒词:看异常):\n\n  时  间: ____ (选填,近 N 个月,默认 6)\n", "types": ["查看"]}]}, {"id": "analysis_7", "label": "状态聚合", "scenes": [{"id": "debt_summary", "title": "借贷总览", "wake_word": "看借贷", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看借贷总览(唤醒词:看借贷):\n", "types": ["查看"]}, {"id": "reimburse_summary", "title": "报销汇总", "wake_word": "看报销", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看报销汇总(唤醒词:看报销):\n\n  时  间: ____ (选填,如:本月)\n", "types": ["查看"]}, {"id": "installment_summary", "title": "分期总览", "wake_word": "看分期", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看分期总览(唤醒词:看分期):\n", "types": ["查看"]}, {"id": "refund_summary", "title": "退款统计", "wake_word": "看退款", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看退款统计(唤醒词:看退款):\n\n  时  间: ____ (选填,如:本月)\n", "types": ["查看"]}]}]}, {"id": "goal", "icon": "🎯", "label": "目标", "subgroups": [{"id": "goal_1", "label": "预算", "scenes": [{"id": "goal_set_budget", "title": "设定月度预算", "wake_word": "设定预算", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我设定月度预算(唤醒词:设定预算):\n\n  金  额: ____ (如:3000)\n  月  份: ____ (选填,如:本月 / 8月;默认本月起)\n  分  类: ____ (选填,如:餐饮;不填 = 总预算)\n", "types": ["采集"]}, {"id": "goal_budget_status", "title": "查看预算执行", "wake_word": "看预算", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看预算执行情况(唤醒词:看预算):\n\n  月  份: ____ (选填,如:本月 / 8月)\n", "types": ["查看"]}]}, {"id": "goal_2", "label": "目标", "scenes": [{"id": "goal_set_saving", "title": "设定储蓄目标", "wake_word": "设定目标", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我设定储蓄目标(唤醒词:设定目标):\n\n  目  标: ____ (如:换手机 / 旅行基金)\n  金  额: ____ (如:10000)\n  截止日期: ____ (选填,如:12月底)\n", "types": ["采集"]}, {"id": "goal_saving_status", "title": "查看目标进度", "wake_word": "看目标", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看储蓄目标进度(唤醒词:看目标):\n", "types": ["查看"]}]}]}, {"id": "account", "icon": "💳", "label": "账户", "subgroups": [{"id": "account_1", "label": "账户管理", "scenes": [{"id": "account_add", "title": "新增账户", "wake_word": "新增账户", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我新增账户(唤醒词:新增账户):\n\n  账户名: ____ (如:招行卡 / 花呗)\n  类  型: ____ (选填,如:银行卡 / 支付 / 信用)\n", "types": ["采集"]}, {"id": "account_update", "title": "修改账户", "wake_word": "改账户", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我修改账户(唤醒词:改账户):\n\n  账  户: ____ (如:招行卡)\n  改成什么: ____ (如:改名「招行工资卡」 / 停用)\n", "types": ["选择"]}, {"id": "account_transfer", "title": "账户间转账", "wake_word": "账户转账", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我做账户间转账(唤醒词:账户转账):\n\n  金  额: ____\n  从账户: ____ (如:支付宝)\n  到账户: ____ (如:招行卡)\n  时  间: ____ (选填,默认现在)\n", "types": ["采集"]}, {"id": "account_summary", "title": "查看账户汇总", "wake_word": "看账户汇总", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看账户汇总(唤醒词:看账户汇总):\n", "types": ["查看"]}]}]}, {"id": "link", "icon": "🔗", "label": "联动", "subgroups": [{"id": "link_1", "label": "联动", "scenes": [{"id": "link_purchase", "title": "买东西联动(记账 + 录物品)", "wake_word": "买东西", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔买东西的账并联动录入(唤醒词:买东西):\n\n  金  额: ____\n  物  品: ____ (如:空气炸锅)\n  分  类: ____ (选填,默认居家/家电)\n", "types": ["采集"]}, {"id": "link_meal", "title": "吃饭联动(记账 + 记卡路里)", "wake_word": "吃饭", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔吃饭的账并联动卡路里(唤醒词:吃饭):\n\n  金  额: ____\n  吃  了: ____ (如:午饭 鸡腿饭)\n  分  类: ____ (选填,默认餐饮)\n", "types": ["采集"]}]}]}, {"id": "setup", "icon": "🚀", "label": "开始使用", "subgroups": [{"id": "setup_1", "label": "初始化", "scenes": [{"id": "setup_init_wizard", "title": "首次使用向导(4 步零决策)", "wake_word": "初始化", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我开始使用饼干记账(唤醒词:初始化):\n", "types": ["向导"]}, {"id": "setup_init_status", "title": "初始化状态(是否已就绪)", "wake_word": "初始化状态", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看看饼干记账初始化了没有(唤醒词:初始化状态):\n", "types": ["查看"]}]}, {"id": "setup_2", "label": "备份恢复", "scenes": [{"id": "setup_backup_create", "title": "一键备份", "wake_word": "备份", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我备份饼干记账的数据(唤醒词:备份):\n", "types": ["回执"]}, {"id": "setup_backup_list", "title": "查看备份", "wake_word": "备份", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看看有哪些备份(唤醒词:备份):\n", "types": ["查看"]}, {"id": "setup_restore", "title": "从备份恢复", "wake_word": "恢复备份", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我从备份恢复数据(唤醒词:恢复备份):\n\n  备  份: ____ (选填,默认最新备份)\n", "types": ["向导"]}]}, {"id": "setup_3", "label": "导入", "scenes": [{"id": "setup_import", "title": "导入 CSV 账单(列映射向导)", "wake_word": "导入", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我导入 CSV 账单(唤醒词:导入):\n\n  文件路径: ____\n  列映射: ____ (选填,自动识别,如:日期=第1列,金额=第3列)\n", "types": ["向导"]}]}]}]}</script>
+<script id="help-data" type="application/json">{"skill_name": "饼干记账", "title": "饼干记账 · 使用手册(HELP)", "subtitle": "7 功能域 · 71 场景 · 版本 2.0 · 更新于 2026-08-14 09:42", "meta_blocks": [{"id": "help_summary", "title": "HELP 汇总", "html": "<p>7 功能域 · 71 场景 · 版本 2.0 · 更新于 2026-08-14 09:42<\/p>"}, {"id": "help_wake_words", "title": "HELP 唤醒词", "html": "<p>饼干记账 HELP / 饼干记账 帮助 / 查帮助 / 能做什么<\/p>"}], "contact": {"items": [{"label": "邮箱", "value": "975559549@qq.com"}, {"label": "GitHub", "value": "https://github.com/FeatherHunter/SKILLS", "url": true}, {"label": "Issues", "value": "https://github.com/FeatherHunter/SKILLS/issues", "url": true}], "copy_all": true}, "version": "2.0", "groups": [{"id": "write", "icon": "✏️", "label": "写入", "subgroups": [{"id": "write_1", "label": "记账", "scenes": [{"id": "write_expense", "title": "记一笔支出", "wake_word": "记支出", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔支出(唤醒词:记支出):\n\n  金  额: ____\n  分类/名目: ____ (如:房租 / 午饭 / 打车)\n  备  注: ____ (选填)\n  时  间: ____ (选填,默认现在;补记昨天写「昨天」)\n  账  户: ____ (选填,如:支付宝 / 微信)\n  账  本: ____ (选填,如:旅行 / 生活)\n  币  种: ____ (选填,默认人民币;外币如:USD)\n", "types": ["采集"]}, {"id": "write_income", "title": "记一笔收入", "wake_word": "记收入", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔收入(唤醒词:记收入):\n\n  金  额: ____\n  分类/名目: ____ (如:工资 / 退款 / 卖闲置)\n  备  注: ____ (选填)\n  时  间: ____ (选填,默认现在)\n  账  户: ____ (选填,如:银行卡 / 微信)\n  币  种: ____ (选填,默认人民币;外币如:USD)\n", "types": ["采集"]}, {"id": "write_bill_photo", "title": "拍账单记账(图片识别)", "wake_word": "拍账单", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我拍账单记账(唤醒词:拍账单):\n", "types": ["采集"]}, {"id": "write_batch", "title": "批量录入多笔", "wake_word": "批量录入", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我批量记几笔账(唤醒词:批量录入):\n\n  条  目: ____ (每行一笔,如:午饭35 / 奶茶25 / 打车20)\n  账  本: ____ (选填,如:旅行)\n", "types": ["采集"]}]}, {"id": "write_2", "label": "特殊收支", "scenes": [{"id": "write_refund", "title": "记一笔退款(冲销原支出)", "wake_word": "记退款", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔退款(唤醒词:记退款):\n\n  金  额: ____\n  原支出: ____ (描述哪一笔,如:昨天那笔午饭 / 5月1日买的衣服)\n  退款原因: ____ (选填,如:退货/取消订单/差价)\n", "types": ["采集"]}, {"id": "write_reimburse", "title": "记一笔报销支出(#待报销)", "wake_word": "记报销", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔报销支出(唤醒词:记报销):\n\n  金  额: ____\n  分  类: ____ (选填,如:餐饮 / 差旅)\n  备  注: ____ (选填,自动加 #待报销)\n  时  间: ____ (选填,默认现在)\n", "types": ["采集"]}, {"id": "write_reimburse_done", "title": "报销到账(记收入 + 流转标签)", "wake_word": "报销到账", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记录报销到账(唤醒词:报销到账):\n\n  金  额: ____\n  关  联: ____ (选填,如:哪一笔 #待报销)\n", "types": ["采集"]}, {"id": "write_lend", "title": "借给别人钱", "wake_word": "记借出", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔借出(唤醒词:记借出):\n\n  金  额: ____\n  对  象: ____ (借给谁)\n  期  限: ____ (选填,如:月底还)\n", "types": ["采集"]}, {"id": "write_borrow", "title": "向别人借钱", "wake_word": "记借入", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔借入(唤醒词:记借入):\n\n  金  额: ____\n  对  象: ____ (向谁借)\n  期  限: ____ (选填)\n", "types": ["采集"]}, {"id": "write_collect", "title": "收回借出的钱", "wake_word": "记收回", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔收回(唤醒词:记收回):\n\n  哪一笔: ____ (对象/金额/描述,如:小明还我那 500)\n", "types": ["采集"]}, {"id": "write_payback", "title": "偿还借入的钱", "wake_word": "记偿还", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔偿还(唤醒词:记偿还):\n\n  哪一笔: ____ (对象/金额/描述,如:还小明那 500)\n", "types": ["采集"]}, {"id": "write_installment", "title": "记一笔分期(平摊预写)", "wake_word": "记分期", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔分期(唤醒词:记分期):\n\n  名  目: ____ (如:手机 / 电脑)\n  总  价: ____\n  期  数: ____ (如:24)\n  首期日: ____ (选填,默认今天,每月固定这一天)\n  账  户: ____ (选填)\n  账  本: ____ (选填)\n", "types": ["向导"]}]}, {"id": "write_3", "label": "修正", "scenes": [{"id": "write_update", "title": "修改已有记录", "wake_word": "改记录", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我改一条记录(唤醒词:改记录):\n\n  目  标: ____ (如:最近一笔 / 某天的某条 / ID)\n  要改的字段: ____ (如:金额改成 38 / 分类改成交通 / 备注加牛奶)\n", "types": ["选择"]}, {"id": "write_undo", "title": "撤销一条记录(软删)", "wake_word": "撤销", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我撤销一条记录(唤醒词:撤销):\n\n  目  标: ____ (默认最近一笔;或描述某条)\n", "types": ["选择"]}, {"id": "write_restore", "title": "恢复已撤销记录", "wake_word": "恢复", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我恢复一条已撤销的记录(唤醒词:恢复):\n\n  目  标: ____ (描述被撤销的记录,如:昨天撤销的午饭)\n", "types": ["选择"]}]}]}, {"id": "query", "icon": "🔍", "label": "查询", "subgroups": [{"id": "query_1", "label": "按时间", "scenes": [{"id": "query_today", "title": "查今天收支", "wake_word": "查今天", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看今天的收支(唤醒词:查今天):\n", "types": ["查看"]}, {"id": "query_yesterday", "title": "查昨天收支", "wake_word": "查昨天", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看昨天的收支(唤醒词:查昨天):\n", "types": ["查看"]}, {"id": "query_date", "title": "查某一天的账", "wake_word": "查某天", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某天的账(唤醒词:查某天):\n\n  日  期: ____ (如:5月1号 / 上周五 / 2026-05-01)\n", "types": ["查看"]}, {"id": "query_recent", "title": "查最近记录", "wake_word": "查最近", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看最近的记录(唤醒词:查最近):\n\n  条  数: ____ (选填,默认 10)\n  排  序: ____ (选填,如:金额从大到小)\n  近几天: ____ (选填,如:近7天 / 近30天;与条数二选一)\n", "types": ["查看"]}, {"id": "query_week", "title": "查某周的账", "wake_word": "查周", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某周的账(唤醒词:查周):\n\n  周: ____ (如:本周 / 上周 / 5月第2周 / 2026-05-11那一周)\n", "types": ["查看"]}, {"id": "query_month", "title": "查某个月的账", "wake_word": "查月", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某个月的账(唤醒词:查月):\n\n  月: ____ (如:本月 / 上月 / 3月 / 2026-03)\n", "types": ["查看"]}, {"id": "query_range", "title": "查任意时间段", "wake_word": "查区间", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某段时间的账(唤醒词:查区间):\n\n  开始日期: ____ (如:5月1号 / 2026-05-01)\n  结束日期: ____ (如:5月10号 / 2026-05-10;某年填 12月31日)\n", "types": ["查看"]}]}, {"id": "query_2", "label": "按条件", "scenes": [{"id": "query_category", "title": "查某分类的账", "wake_word": "查分类", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某分类的账(唤醒词:查分类):\n\n  分  类: ____ (如:餐饮 / 出行 / 奶茶)\n  时  间: ____ (选填,如:本月 / 5月 / 5月1到10号)\n  账  户: ____ (选填,如:支付宝)\n  账  本: ____ (选填)\n  收  支: ____ (选填,支出/收入/全部,默认全部)\n", "types": ["查看"]}, {"id": "query_search", "title": "搜索备注关键词", "wake_word": "搜备注", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我搜备注关键词(唤醒词:搜备注):\n\n  关键词: ____\n", "types": ["查看"]}, {"id": "query_tag", "title": "查标签(#tag 聚合)", "wake_word": "查标签", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查标签(唤醒词:查标签):\n\n  标  签: ____ (如:#旅行 / #待报销)\n", "types": ["查看"]}, {"id": "query_account", "title": "查某账户流水", "wake_word": "查账户", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某账户的流水(唤醒词:查账户):\n\n  账  户: ____ (如:支付宝 / 微信 / 招行)\n  时  间: ____ (选填,如:本月 / 上月)\n", "types": ["查看"]}, {"id": "query_ledger", "title": "查某账本的记录", "wake_word": "查账本", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查某账本的记录(唤醒词:查账本):\n\n  账  本: ____ (如:生活 / 旅行 / 借贷)\n  时  间: ____ (选填)\n", "types": ["查看"]}]}, {"id": "query_3", "label": "按状态", "scenes": [{"id": "query_debt", "title": "查未还欠款(借贷状态)", "wake_word": "查欠款", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查欠款(唤醒词:查欠款):\n\n  对  象: ____ (选填,如:小明;不填查全部)\n", "types": ["查看"]}, {"id": "query_pending_reimburse", "title": "查待报销", "wake_word": "查待报销", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查待报销(唤醒词:查待报销):\n", "types": ["查看"]}, {"id": "query_installment", "title": "查进行中的分期", "wake_word": "查分期", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我查分期(唤醒词:查分期):\n\n  名  目: ____ (选填,如:手机;不填查全部)\n", "types": ["查看"]}]}]}, {"id": "analysis", "icon": "📊", "label": "分析", "subgroups": [{"id": "analysis_1", "label": "汇总", "scenes": [{"id": "monthly_summary", "title": "某月收支汇总", "wake_word": "看月度", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看某个月的收支汇总(唤醒词:看月度):\n\n  月: ____ (如:本月 / 上月 / 3月 / 2026-03)\n", "types": ["查看"]}, {"id": "yearly_summary", "title": "年度收支汇总", "wake_word": "看年度", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看某年的收支汇总(唤醒词:看年度):\n\n  年: ____ (如:今年 / 2026 / 去年)\n", "types": ["查看"]}, {"id": "range_overview", "title": "时间段收支总览", "wake_word": "看总览", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看某段时间的收支总览(唤醒词:看总览):\n\n  开始日期: ____ (选填,默认本月1号)\n  结束日期: ____ (选填,默认今天)\n", "types": ["查看"]}, {"id": "week_brief", "title": "本周简报(对比上周)", "wake_word": "看周报", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看本周简报(唤醒词:看周报):\n\n  周: ____ (选填,本周 / 上周)\n", "types": ["查看"]}]}, {"id": "analysis_2", "label": "结构", "scenes": [{"id": "category_breakdown", "title": "钱花在哪些分类", "wake_word": "看分类", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看钱花在哪些分类(唤醒词:看分类):\n\n  时  间: ____ (选填,如:本月 / 5月 / 5月1到10号)\n  账  户: ____ (选填,如:支付宝)\n  收  支: ____ (选填,支出/收入/全部,默认支出)\n", "types": ["查看"]}, {"id": "account_breakdown", "title": "各账户花销情况", "wake_word": "看账户", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看各账户的花销情况(唤醒词:看账户):\n\n  时  间: ____ (选填,如:本月 / 上月)\n", "types": ["查看"]}, {"id": "ledger_summary", "title": "各账本收支汇总", "wake_word": "看账本", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看各账本的收支汇总(唤醒词:看账本):\n\n  时  间: ____ (选填,如:本月)\n", "types": ["查看"]}, {"id": "income_expense_structure", "title": "收入支出来源去向", "wake_word": "看结构", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看收入和支出的结构(唤醒词:看结构):\n\n  时  间: ____ (选填,如:本月 / 5月)\n", "types": ["查看"]}]}, {"id": "analysis_3", "label": "对比", "scenes": [{"id": "period_compare", "title": "本期和上期对比", "wake_word": "看对比", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看本期和上期对比(唤醒词:看对比):\n\n  周  期: ____ (如:本周vs上周 / 本月vs上月 / 今年vs去年)\n", "types": ["查看"]}, {"id": "range_compare", "title": "两段时间对比", "wake_word": "看双区间", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我对比两段时间(唤醒词:看双区间):\n\n  区间一: ____ (如:5月 / 5月1到10号)\n  区间二: ____ (如:6月 / 6月1到10号)\n", "types": ["查看"]}, {"id": "year_over_year", "title": "今年和去年同比", "wake_word": "看同比", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看同比对比(唤醒词:看同比):\n\n  月: ____ (如:本月 / 6月)\n", "types": ["查看"]}, {"id": "category_compare", "title": "两段时间分类差异", "wake_word": "看分类对比", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看两段时间的分类差异(唤醒词:看分类对比):\n\n  区间一: ____ (如:5月)\n  区间二: ____ (如:6月)\n", "types": ["查看"]}]}, {"id": "analysis_4", "label": "趋势", "scenes": [{"id": "monthly_trend", "title": "每月收支走势", "wake_word": "看趋势", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看每月的收支走势(唤醒词:看趋势):\n\n  月  数: ____ (选填,近 6 / 12 个月,默认 12)\n", "types": ["查看"]}, {"id": "category_trend", "title": "某分类的月度变化", "wake_word": "看分类趋势", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看某分类的月度变化(唤醒词:看分类趋势):\n\n  分  类: ____ (如:餐饮 / 出行)\n  月  数: ____ (选填,近 6 / 12 个月,默认 12)\n", "types": ["查看"]}]}, {"id": "analysis_5", "label": "金额", "scenes": [{"id": "top_expense", "title": "大额支出排行", "wake_word": "看大额", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看大额支出排行(唤醒词:看大额):\n\n  条  数: ____ (选填,默认 10)\n  时  间: ____ (选填,如:本月 / 5月)\n", "types": ["查看"]}, {"id": "top_frequency", "title": "高频消费排行", "wake_word": "看高频", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看高频消费排行(唤醒词:看高频):\n\n  时  间: ____ (选填,如:本月 / 近30天)\n  条  数: ____ (选填,默认 10)\n", "types": ["查看"]}, {"id": "amount_distribution", "title": "金额区间分布", "wake_word": "看分布", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看金额区间分布(唤醒词:看分布):\n\n  时  间: ____ (选填,如:本月 / 5月)\n  收  支: ____ (选填,支出/收入,默认支出)\n", "types": ["查看"]}]}, {"id": "analysis_6", "label": "统计洞察", "scenes": [{"id": "stats", "title": "记账情况统计", "wake_word": "做统计", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看记账情况统计(唤醒词:做统计):\n", "types": ["查看"]}, {"id": "activity", "title": "记账活跃度", "wake_word": "看活跃", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看记账活跃度(唤醒词:看活跃):\n", "types": ["查看"]}, {"id": "insight", "title": "AI 消费洞察", "wake_word": "看洞察", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看 AI 消费洞察(唤醒词:看洞察):\n\n  时  间: ____ (选填,如:本月 / 近90天,默认近30天)\n", "types": ["查看"]}, {"id": "anomaly", "title": "异常波动检测", "wake_word": "看异常", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看异常波动(唤醒词:看异常):\n\n  时  间: ____ (选填,近 N 个月,默认 6)\n", "types": ["查看"]}]}, {"id": "analysis_7", "label": "状态聚合", "scenes": [{"id": "debt_summary", "title": "借贷总览", "wake_word": "看借贷", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看借贷总览(唤醒词:看借贷):\n", "types": ["查看"]}, {"id": "reimburse_summary", "title": "报销汇总", "wake_word": "看报销", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看报销汇总(唤醒词:看报销):\n\n  时  间: ____ (选填,如:本月)\n", "types": ["查看"]}, {"id": "installment_summary", "title": "分期总览", "wake_word": "看分期", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看分期总览(唤醒词:看分期):\n", "types": ["查看"]}, {"id": "refund_summary", "title": "退款统计", "wake_word": "看退款", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看退款统计(唤醒词:看退款):\n\n  时  间: ____ (选填,如:本月)\n", "types": ["查看"]}]}]}, {"id": "goal", "icon": "🎯", "label": "目标", "subgroups": [{"id": "goal_1", "label": "预算", "scenes": [{"id": "goal_set_budget", "title": "设定月度预算", "wake_word": "设定预算", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我设定月度预算(唤醒词:设定预算):\n\n  金  额: ____ (如:3000)\n  月  份: ____ (选填,如:本月 / 8月;默认本月起)\n  分  类: ____ (选填,如:餐饮;不填 = 总预算)\n", "types": ["采集"]}, {"id": "goal_budget_status", "title": "查看预算执行", "wake_word": "看预算", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看预算执行情况(唤醒词:看预算):\n\n  月  份: ____ (选填,如:本月 / 8月)\n", "types": ["查看"]}]}, {"id": "goal_2", "label": "目标", "scenes": [{"id": "goal_set_saving", "title": "设定储蓄目标", "wake_word": "设定目标", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我设定储蓄目标(唤醒词:设定目标):\n\n  目  标: ____ (如:换手机 / 旅行基金)\n  金  额: ____ (如:10000)\n  截止日期: ____ (选填,如:12月底)\n", "types": ["采集"]}, {"id": "goal_saving_status", "title": "查看目标进度", "wake_word": "看目标", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看储蓄目标进度(唤醒词:看目标):\n", "types": ["查看"]}]}]}, {"id": "account", "icon": "💳", "label": "账户", "subgroups": [{"id": "account_1", "label": "账户管理", "scenes": [{"id": "account_add", "title": "新增账户", "wake_word": "新增账户", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我新增账户(唤醒词:新增账户):\n\n  账户名: ____ (如:招行卡 / 花呗)\n  类  型: ____ (选填,如:银行卡 / 支付 / 信用)\n", "types": ["采集"]}, {"id": "account_update", "title": "修改账户", "wake_word": "改账户", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我修改账户(唤醒词:改账户):\n\n  账  户: ____ (如:招行卡)\n  改成什么: ____ (如:改名「招行工资卡」 / 停用)\n", "types": ["选择"]}, {"id": "account_transfer", "title": "账户间转账", "wake_word": "账户转账", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我做账户间转账(唤醒词:账户转账):\n\n  金  额: ____\n  从账户: ____ (如:支付宝)\n  到账户: ____ (如:招行卡)\n  时  间: ____ (选填,默认现在)\n", "types": ["采集"]}, {"id": "account_summary", "title": "查看账户汇总", "wake_word": "看账户汇总", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看账户汇总(唤醒词:看账户汇总):\n", "types": ["查看"]}]}]}, {"id": "link", "icon": "🔗", "label": "联动", "subgroups": [{"id": "link_1", "label": "联动", "scenes": [{"id": "link_purchase", "title": "买东西联动(记账 + 录物品)", "wake_word": "买东西", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔买东西的账并联动录入(唤醒词:买东西):\n\n  金  额: ____\n  物  品: ____ (如:空气炸锅)\n  分  类: ____ (选填,默认居家/家电)\n", "types": ["采集"]}, {"id": "link_meal", "title": "吃饭联动(记账 + 记卡路里)", "wake_word": "吃饭", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我记一笔吃饭的账并联动卡路里(唤醒词:吃饭):\n\n  金  额: ____\n  吃  了: ____ (如:午饭 鸡腿饭)\n  分  类: ____ (选填,默认餐饮)\n", "types": ["采集"]}]}]}, {"id": "setup", "icon": "🚀", "label": "开始使用", "subgroups": [{"id": "setup_1", "label": "初始化", "scenes": [{"id": "setup_init_wizard", "title": "首次使用向导(4 步零决策)", "wake_word": "初始化", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我开始使用饼干记账(唤醒词:初始化):\n", "types": ["向导"]}, {"id": "setup_init_status", "title": "初始化状态(是否已就绪)", "wake_word": "初始化状态", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看看饼干记账初始化了没有(唤醒词:初始化状态):\n", "types": ["查看"]}]}, {"id": "setup_2", "label": "备份恢复", "scenes": [{"id": "setup_backup_create", "title": "一键备份", "wake_word": "备份", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我备份饼干记账的数据(唤醒词:备份):\n", "types": ["回执"]}, {"id": "setup_backup_list", "title": "查看备份", "wake_word": "备份", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我看看有哪些备份(唤醒词:备份):\n", "types": ["查看"]}, {"id": "setup_restore", "title": "从备份恢复", "wake_word": "恢复备份", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我从备份恢复数据(唤醒词:恢复备份):\n\n  备  份: ____ (选填,默认最新备份)\n", "types": ["向导"]}]}, {"id": "setup_3", "label": "导入", "scenes": [{"id": "setup_import", "title": "导入 CSV 账单(列映射向导)", "wake_word": "导入", "status": "", "prompt_template": "请加载「饼干记账」技能,帮我导入 CSV 账单(唤醒词:导入):\n\n  文件路径: ____\n  列映射: ____ (选填,自动识别,如:日期=第1列,金额=第3列)\n", "types": ["向导"]}]}]}], "init_banner": {"title": "🚀 第一次用饼干记账?", "subtitle": "从「初始化」开始 — 自动检测环境、确认数据目录、建库、验证,全程零决策。完成初始化后,本区域将不再出现。", "button_text": "📋 复制初始化 prompt", "prompt": "请加载「饼干记账」技能,帮我开始使用饼干记账(唤醒词:初始化):\n", "closable": true}}</script>
 <script>
 /* Base Skill 控件库 v1.2（唯一真相源 · 跨技能 · 领域无关）
  * 契约: docs/component-contract.md v1.2
@@ -846,13 +846,312 @@ function errorReceipt(cfg){
   if(btns) html += '<div class="hm-actions">'+btns+'</div>';
   return html + '</div>';
 }
+
+/* ── smartSelect 选择器组件（v1.12 · #312 · 复用优先·新建其次）──
+ * smartSelect(inputEl, config) → { getState, getValue }
+ * 字段级组件: 一页 N 实例, 每字段一容器一 config 一隐藏 input, 互不干扰。
+ * 定位: 与 copyText/actionBar 同级 Base 组件; 账户/分类/账本/运动类型等
+ *   「复用优先·新建其次」字段通用; 零领域词, label/文案/选项/prompt 全由外部注入。
+ * config（snake_case, 与数据契约 form.selector.<fieldKey> 对齐）:
+ *   options:         [{name, disabled}] 已有项(含停用态); 缺省 [] 且无推断/推荐/initial → 降级普通输入
+ *   inferred:        string|null  AI 推断最可能的已有项
+ *   recommended_new: string|null  AI 推荐新建项(不在 options 中)
+ *   initial:         {name, source}|null  显式初始选中; source 白名单 = _SS_SOURCES
+ *   maxChips:        number|null  候选区折叠阈值(v1.12 · 缺省 8; 非正整数=不折叠;
+ *                   折叠态只显前 maxChips 个 + 「展开全部(N)」, 选中项保可见; 搜索时全量过滤)
+ *   texts:           {candTitle, search, newPlaceholder, newButton, emptyButton,
+ *                     badgeInferred, badgeRecommendedNew, badgeExisting, badgeHistory, badgeCustom,
+ *                     cardSrc:{inferred, recommended_new, existing, history, custom, empty}}
+ *   theme:           {brand, brandSoft, onBrand, deep}  缺省账本藏蓝 #123A63
+ * 初始选中推导（initial 缺省时）: AI 推断 > 历史预填(input.value) > AI 推荐新建 > 空
+ * 行为: 已选卡片(chips 顶部, SVG ✓+来源徽章) + 候选 chips(超限折叠) + 搜索过滤(全量) + 自定义新建
+ *       (重名自动选中已有) + 相似提示 + 留空按钮; 停用划线置灰不可点; 绝不静默填错
+ * 回填协议: input.value + dataset.source + dataset.new('1'=新建) + change 事件(bubbles)
+ * 安全: 所有动态文本经 esc; 类名全 ss- 命名空间（封装纪律, 防宿主同名类冲突）
+ * 校验: 结构违规直接报错（对齐 Base v1.2「违规直接报错」）
+ */
+var _SS_SOURCES = ['inferred','recommended_new','existing','history','custom','empty'];
+var _SS_THEME = { brand:'#123a63', brandSoft:'#e9f0f7', onBrand:'#ffffff', deep:'#0b1f3b' };
+var _SS_TEXTS = {
+  candTitle:'候选(点击更换 · 输入过滤)',
+  search:'输入过滤候选',
+  newPlaceholder:'输入新名称',
+  newButton:'＋ 新建',
+  emptyButton:'留空(不填)',
+  badgeInferred:'AI 推断',
+  badgeRecommendedNew:'AI 推荐·新建',
+  badgeExisting:'已有',
+  badgeHistory:'历史',
+  badgeCustom:'自定义',
+  cardSrc:{
+    inferred:'AI 推断 · 识别到相关信息',
+    recommended_new:'AI 推荐新建 · 提交时创建',
+    existing:'从已有项中选',
+    history:'沿用历史记录',
+    custom:'自定义新建 · 提交时创建',
+    empty:'不填该字段'
+  }
+};
+function smartSelect(inputEl, config){
+  /* ── 结构校验（违规直接报错）── */
+  if(!inputEl || inputEl.tagName !== 'INPUT'){
+    throw new Error('smartSelect 违规: inputEl 必须是 <input> 元素');
+  }
+  if(!config || typeof config !== 'object' || Array.isArray(config)){
+    throw new Error('smartSelect 违规: config 必须是对象');
+  }
+  var options = config.options === undefined ? [] : config.options;
+  if(!Array.isArray(options)){
+    throw new Error('smartSelect 违规: options 必须是数组');
+  }
+  options.forEach(function(o, i){
+    if(!o || typeof o !== 'object' || typeof o.name !== 'string' || !o.name.trim()){
+      throw new Error('smartSelect 违规: options['+i+'] 必须含非空 name(字符串)');
+    }
+    if(o.disabled !== undefined && typeof o.disabled !== 'boolean'){
+      throw new Error('smartSelect 违规: options['+i+'].disabled 必须是布尔');
+    }
+  });
+  ['inferred','recommended_new'].forEach(function(k){
+    var v = config[k];
+    if(v !== undefined && v !== null && typeof v !== 'string'){
+      throw new Error('smartSelect 违规: '+k+' 必须是字符串或 null');
+    }
+  });
+  if(config.initial !== undefined && config.initial !== null){
+    var ini = config.initial;
+    if(!ini || typeof ini !== 'object' || typeof ini.name !== 'string'
+       || _SS_SOURCES.indexOf(ini.source) < 0){
+      throw new Error('smartSelect 违规: initial 必须含 name(字符串) + source(白名单 '+_SS_SOURCES.join('|')+')');
+    }
+  }
+  if(config.texts !== undefined && (typeof config.texts !== 'object' || Array.isArray(config.texts))){
+    throw new Error('smartSelect 违规: texts 必须是对象');
+  }
+  if(config.theme !== undefined && (typeof config.theme !== 'object' || Array.isArray(config.theme))){
+    throw new Error('smartSelect 违规: theme 必须是对象');
+  }
+
+  var texts = Object.assign({}, _SS_TEXTS, config.texts || {});
+  texts.cardSrc = Object.assign({}, _SS_TEXTS.cardSrc, (config.texts && config.texts.cardSrc) || {});
+  var theme = Object.assign({}, _SS_THEME, config.theme || {});
+  var custom = [];
+  /* 候选区折叠(v1.12): maxChips 可配(缺省 8, 0/负数/非数字=不折叠) · 搜索时全量过滤 */
+  var maxChips = (config.maxChips === undefined || config.maxChips === null)
+    ? 8
+    : ((typeof config.maxChips === 'number' && config.maxChips > 0)
+       ? Math.floor(config.maxChips) : null);
+  var searchRaw = '';
+  var searchQ = '';
+  var expanded = false;
+
+  /* ── 降级模式: 无选项/无推断/无推荐/无 initial → 普通输入 ── */
+  var degraded = !options.length && !config.inferred && !config.recommended_new && !config.initial;
+  if(degraded){
+    inputEl.classList.add('ss-plain');
+    inputEl.style.display = '';
+    inputEl.removeAttribute('hidden');
+    var syncDegraded = function(){
+      var v = inputEl.value;
+      inputEl.dataset.source = v ? 'custom' : 'empty';
+      inputEl.dataset.new = v ? '1' : '0';
+    };
+    syncDegraded();
+    inputEl.addEventListener('input', syncDegraded);
+    return {
+      getState: function(){ var v = inputEl.value; return { name: v || null, mode: v ? 'custom' : 'empty' }; },
+      getValue: function(){ return inputEl.value; }
+    };
+  }
+
+  /* ── 初始选中推导: initial > AI 推断 > 历史预填(input.value) > AI 推荐新建 > 空 ── */
+  var state;
+  if(config.initial){
+    state = { name: config.initial.name, mode: config.initial.source };
+  } else if(config.inferred){
+    state = { name: config.inferred, mode: 'inferred' };
+  } else if(inputEl.value){
+    state = { name: inputEl.value, mode: 'history' };
+  } else if(config.recommended_new){
+    state = { name: config.recommended_new, mode: 'recommended_new' };
+  } else {
+    state = { name: null, mode: 'empty' };
+  }
+
+  inputEl.style.display = 'none';
+  var root = document.createElement('div');
+  root.className = 'ss-root';
+  root.style.setProperty('--ss-brand', theme.brand);
+  root.style.setProperty('--ss-brand-soft', theme.brandSoft);
+  root.style.setProperty('--ss-on-brand', theme.onBrand);
+  root.style.setProperty('--ss-deep', theme.deep);
+  inputEl.parentNode.insertBefore(root, inputEl.nextSibling);
+
+  var CHECK_SVG = '<svg viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  var CIRCLE_SVG = '<svg viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7" stroke="#8b949e" stroke-width="2"/><path d="M7 10h6" stroke="#8b949e" stroke-width="2" stroke-linecap="round"/></svg>';
+
+  function badgeHtml(mode){
+    if(mode === 'inferred') return '<span class="ss-badge ss-badge-ai">'+esc(texts.badgeInferred)+'</span>';
+    if(mode === 'recommended_new') return '<span class="ss-badge ss-badge-new">'+esc(texts.badgeRecommendedNew)+'</span>';
+    if(mode === 'custom') return '<span class="ss-badge ss-badge-plain">'+esc(texts.badgeCustom)+'</span>';
+    if(mode === 'history') return '<span class="ss-badge ss-badge-plain">'+esc(texts.badgeHistory)+'</span>';
+    if(mode === 'existing') return '<span class="ss-badge ss-badge-plain">'+esc(texts.badgeExisting)+'</span>';
+    return '';
+  }
+
+  function writeBack(){
+    inputEl.value = state.name || '';
+    inputEl.dataset.source = state.mode || 'empty';
+    inputEl.dataset.new = (state.mode === 'recommended_new' || state.mode === 'custom') ? '1' : '0';
+    inputEl.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  function setSel(name, mode){
+    state.name = name;
+    state.mode = mode;
+    render();
+    writeBack();
+  }
+
+  function allNames(){
+    var names = options.map(function(o){ return o.name; });
+    return names.concat(custom);
+  }
+
+  function similarHint(v){
+    if(!v) return '';
+    var s = allNames().filter(function(n){
+      return n !== v && (n.indexOf(v) >= 0 || v.indexOf(n) >= 0);
+    });
+    return s.length ? '已有相似「'+s[0]+'」, 是否使用已有的?(点候选即选)' : '';
+  }
+
+  function render(){
+    function isSel(n, m){ return state.name === n && state.mode === m; }
+    var card = state.name
+      ? '<div class="ss-card"><div class="ss-ic">'+CHECK_SVG+'</div>'
+        + '<div class="ss-body"><div class="ss-nm">'+esc(state.name)+'</div>'
+        + '<div class="ss-src">'+esc(texts.cardSrc[state.mode] || '')+'</div></div>'
+        + badgeHtml(state.mode) + '</div>'
+      : '<div class="ss-card ss-card-empty"><div class="ss-ic">'+CIRCLE_SVG+'</div>'
+        + '<div class="ss-body"><div class="ss-nm">'+esc(texts.emptyButton)+'</div>'
+        + '<div class="ss-src">'+esc(texts.cardSrc.empty || '')+'</div></div></div>';
+    function chip(n, m, dis, badge){
+      var sel = !dis && isSel(n, m);
+      return '<button type="button" class="ss-chip'+(dis?' ss-chip-dis':'')+(sel?' ss-chip-sel':'')+'"'
+        + (dis ? ' disabled' : ' data-n="'+esc(n)+'" data-m="'+m+'"')
+        + '>'+(sel?'✓ ':'')+esc(n)+badge+(dis?' · 停用':'')+'</button>';
+    }
+    var chips = [];       // chip HTML
+    var chipsMeta = [];   // 对齐元信息 {name, sel}（折叠保可见/搜索过滤用）
+    function pushChip(n, m, dis, badge){
+      var sel = !dis && isSel(n, m);
+      chipsMeta.push({ name: n, sel: sel });
+      chips.push(chip(n, m, dis, badge));
+    }
+    if(config.inferred){
+      pushChip(config.inferred, 'inferred', false, '<span class="ss-badge ss-badge-ai">'+esc(texts.badgeInferred)+'</span>');
+    }
+    if(config.recommended_new){
+      pushChip(config.recommended_new, 'recommended_new', false, '<span class="ss-badge ss-badge-new">'+esc(texts.badgeRecommendedNew)+'</span>');
+    }
+    options.forEach(function(o){
+      if(o.name === config.inferred || o.name === config.recommended_new) return;
+      pushChip(o.name, 'existing', !!o.disabled, '');
+    });
+    custom.forEach(function(n){
+      pushChip(n, 'custom', false, '<span class="ss-badge ss-badge-plain">'+esc(texts.badgeCustom)+'</span>');
+    });
+
+    /* 候选区折叠(v1.12): 折叠态只显前 maxChips 个, 选中项保可见; 搜索时全量过滤 */
+    var showAll = !maxChips || expanded || !!searchQ || chips.length <= maxChips;
+    var list = chips;
+    var listMeta = chipsMeta;
+    if(!showAll){
+      var selIdx = -1;
+      for(var i = 0; i < chipsMeta.length; i++){
+        if(chipsMeta[i].sel){ selIdx = i; break; }
+      }
+      list = chips.slice(0, maxChips);
+      listMeta = chipsMeta.slice(0, maxChips);
+      if(selIdx >= maxChips){
+        list[maxChips - 1] = chips[selIdx];
+        listMeta[maxChips - 1] = chipsMeta[selIdx];
+      }
+    }
+    var out = [];
+    for(var j = 0; j < list.length; j++){
+      if(searchQ && listMeta[j].name.toLowerCase().indexOf(searchQ) < 0) continue;
+      out.push(list[j]);
+    }
+    var moreBtn = '';
+    if(!showAll){
+      moreBtn = '<button type="button" class="ss-more" data-more="1">展开全部('+chips.length+')</button>';
+    } else if(expanded && maxChips && chips.length > maxChips && !searchQ){
+      moreBtn = '<button type="button" class="ss-more" data-more="0">收起</button>';
+    }
+
+    root.innerHTML =
+      card
+      + '<div class="ss-title">'+esc(texts.candTitle)+'</div>'
+      + '<input class="ss-search" placeholder="'+esc(texts.search)+'">'
+      + '<div class="ss-chips">'+out.join('')+moreBtn+'</div>'
+      + '<div class="ss-new"><input placeholder="'+esc(texts.newPlaceholder)+'"><button type="button">'+esc(texts.newButton)+'</button></div>'
+      + '<div class="ss-hint"></div>'
+      + '<button type="button" class="ss-empty">'+esc(texts.emptyButton)+'</button>';
+
+    /* 搜索框内容跨 render 保持(过滤状态不丢, 输入框不空) */
+    if(searchRaw) root.querySelector('.ss-search').value = searchRaw;
+    root.querySelector('.ss-search').addEventListener('input', function(e){
+      searchRaw = e.target.value;
+      searchQ = searchRaw.trim().toLowerCase();
+      render();
+    });
+    root.querySelectorAll('.ss-more').forEach(function(el){
+      el.addEventListener('click', function(){
+        expanded = el.getAttribute('data-more') === '1';
+        render();
+      });
+    });
+    root.querySelectorAll('.ss-chip[data-n]').forEach(function(el){
+      el.addEventListener('click', function(){ setSel(el.getAttribute('data-n'), el.getAttribute('data-m')); });
+    });
+    var newIn = root.querySelector('.ss-new input');
+    var doNew = function(){
+      var v = newIn.value.trim();
+      if(!v) return;
+      if(allNames().indexOf(v) >= 0){ setSel(v, 'existing'); return; }
+      custom.unshift(v);
+      setSel(v, 'custom');
+    };
+    root.querySelector('.ss-new button').addEventListener('click', doNew);
+    newIn.addEventListener('keydown', function(e){ if(e.key === 'Enter') doNew(); });
+    newIn.addEventListener('input', function(){
+      var h = root.querySelector('.ss-hint');
+      var s = similarHint(newIn.value.trim());
+      h.textContent = s;
+      h.style.display = s ? '' : 'none';
+    });
+    root.querySelector('.ss-empty').addEventListener('click', function(){ setSel(null, 'empty'); });
+  }
+
+  render();
+  writeBack();
+
+  return {
+    getState: function(){ return { name: state.name, mode: state.mode }; },
+    getValue: function(){ return inputEl.value; }
+  };
+}
 </script>
 <style>
-/* Base Skill token A 组 + 控件样式 v1.9（唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill token A 组 + 控件样式 v1.11（唯一真相源 · 跨技能 · 领域无关）
  * 来源: 居家管家模板 :root token（对齐 #248/08-HTML交互规范.md 按钮规范）
  * v1.2: 新增新控件样式（formPrompt/selectList/confirm/foldBox/statusBadge/emptyState/errorReceipt/复制预览面板）
  * v1.7: .hm-actions 自约束 max-width 520px 居中（#322 · 修复复制按钮被容器拉伸成半屏宽, 胶囊语义恢复）
  * v1.9: selectList 行内控件样式（.sl-widget* · #327 · 样式走 token A 组）
+ * v1.11: smartSelect 选择器组件样式（.ss-* · #312 · 主题色经 .ss-root 内联 CSS 变量覆盖, 缺省账本藏蓝）
+ * v1.12: smartSelect 候选区折叠按钮（.ss-more · #312 实测反馈: 大量候选时折叠+展开）
  * 注入点: 由 injector.py 的 SHARED-CSS 占位符注入（模板声明点, 勿含闭合标签字样）
  */
 
@@ -1153,6 +1452,188 @@ button.copy.ghost {
   .sl-batchbar { flex-direction: column; align-items: stretch; }
   .sl-count { margin-left: 0; }
   .hm-confirm-panel { padding: 20px 18px; }
+}
+
+/* ── smartSelect 选择器组件（v1.11 · #312 · 复用优先·新建其次）──
+ * 类名全 ss- 命名空间（封装纪律, 防宿主同名类冲突）; 主题色 = .ss-root 内联 CSS 变量,
+ * 缺省账本藏蓝 #123A63（deep #0B1F3B / soft #E9F0F7）, 每实例可独立覆盖
+ */
+.ss-root {
+  --ss-brand: #123a63;
+  --ss-brand-soft: #e9f0f7;
+  --ss-on-brand: #ffffff;
+  --ss-deep: #0b1f3b;
+  margin-top: 6px;
+}
+.ss-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 2px solid var(--ss-brand);
+  background: var(--ss-brand-soft);
+}
+.ss-card .ss-ic {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ss-brand);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ss-card .ss-ic svg { width: 18px; height: 18px; }
+.ss-body { flex: 1; min-width: 0; }
+.ss-nm { font-size: 16px; font-weight: 700; color: var(--fg); word-break: break-word; }
+.ss-src { font-size: 11px; color: var(--fg3); margin-top: 2px; }
+.ss-card.ss-card-empty { border: 2px dashed var(--line); background: transparent; }
+.ss-card.ss-card-empty .ss-ic { background: transparent; border: 2px solid var(--fg3); }
+.ss-card.ss-card-empty .ss-nm { color: var(--fg3); }
+.ss-badge {
+  display: inline-block;
+  font-size: 10px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.ss-badge-ai { background: var(--ss-brand-soft); color: var(--ss-brand); }
+.ss-badge-new { background: #fff8c5; color: #9a6700; }
+.ss-badge-plain { background: #eef; color: var(--fg3); }
+.ss-title { font-size: 11px; color: var(--fg3); margin: 10px 0 6px; }
+.ss-search {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 40px;
+}
+.ss-search:focus { outline: none; border-color: var(--ss-brand); box-shadow: 0 0 0 3px rgba(18, 58, 99, .12); }
+.ss-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.ss-chip {
+  padding: 6px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 16px;
+  font-size: 13px;
+  background: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  color: var(--fg);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.ss-chip:hover { border-color: var(--ss-brand); }
+.ss-chip.ss-chip-sel {
+  background: var(--ss-brand);
+  border-color: var(--ss-brand);
+  color: var(--ss-on-brand);
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .18);
+}
+.ss-chip.ss-chip-sel .ss-badge-ai { background: rgba(255, 255, 255, .2); color: #fff; }
+.ss-chip.ss-chip-sel .ss-badge-new { background: rgba(255, 255, 255, .25); color: #ffe9a8; }
+.ss-chip.ss-chip-sel .ss-badge-plain { background: rgba(255, 255, 255, .18); color: #fff; }
+.ss-chip.ss-chip-dis {
+  color: var(--fg3);
+  text-decoration: line-through;
+  cursor: not-allowed;
+  background: var(--bg);
+  border-color: var(--line);
+}
+/* 候选区折叠按钮（v1.12 · #312 实测反馈: 分类几十上百时 chips 全量平铺过长） */
+.ss-more {
+  padding: 6px 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: 16px;
+  font-size: 12.5px;
+  background: var(--bg);
+  color: var(--fg2);
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.ss-more:hover { border-color: var(--ss-brand); color: var(--ss-brand); background: #fff; }
+.ss-new { display: flex; gap: 8px; margin-top: 10px; }
+.ss-new input {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 40px;
+}
+.ss-new input:focus { outline: none; border-color: var(--ss-brand); }
+.ss-new button {
+  padding: 0 14px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--fg);
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  min-height: 40px;
+}
+.ss-new button:hover { border-color: var(--ss-brand); color: var(--ss-brand); }
+.ss-hint { margin-top: 6px; font-size: 12px; color: #b25b00; display: none; }
+.ss-empty {
+  margin-top: 8px;
+  width: 100%;
+  padding: 8px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fg3);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  min-height: 36px;
+}
+.ss-empty:hover { border-color: var(--ss-brand); color: var(--ss-brand); }
+/* 降级模式（options 空数组等 → 普通输入） */
+.ss-plain {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--fg);
+  background: #fff;
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 44px;
+}
+.ss-plain:focus { outline: none; border-color: var(--ss-brand); box-shadow: 0 0 0 3px rgba(18, 58, 99, .12); }
+@media (max-width: 820px) {
+  .ss-new { flex-direction: column; align-items: stretch; }
+  .ss-new button { min-height: 44px; }
+  .ss-chip { min-height: 38px; }
 }
 </style>
 

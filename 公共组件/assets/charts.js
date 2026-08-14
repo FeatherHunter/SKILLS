@@ -1,4 +1,4 @@
-/* Base Skill 图表组件 v1.18（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.19（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
@@ -285,7 +285,7 @@ window.charts={
     opt=_merge({color:'var(--blue,#007aff)',lineWidth:2.2,dashed:false,smooth:false,showDots:true,dotSize:null,
       area:false,areaOpacity:0.12,labels:'edge',showValues:false,labelRotate:0,yMin:null,yMax:null,grid:true,
       format:null,tooltip:false,markLine:null,markPoint:false,step:false,animation:true,height:null,
-      series:null,avgLine:null,legend:false,highlightLast:false,onclick:null,ondrill:null,emptyText:null,connectNulls:false,yTicks:false},opt);
+      series:null,avgLine:null,legend:false,highlightLast:false,onclick:null,ondrill:null,emptyText:null,connectNulls:false,yTicks:false,band:null},opt);
     var hStyle=opt.height?('style="--c-h:'+opt.height+'px"'):'';
     /* 多序列: series = [{name,items,color?,dashed?,smooth?,area?}] */
     var seriesList=[];
@@ -302,6 +302,13 @@ window.charts={
     /* 共享 Y 域（非 ownScale 序列 + markLine; ownScale 序列独立归一化, 不参与共享域 → 不污染主轴刻度/网格） */
     var anyOwnScale=false;seriesList.forEach(function(s){if(s.ownScale)anyOwnScale=true;});
     var allItems=[];seriesList.forEach(function(s){if(s.ownScale)return;s.items.forEach(function(it){allItems.push(it);});});
+    /* band 置信带（v1.19 · #335）: hi/lo 数组并入共享域计算（防区间超出裁剪; 显式 yMin/yMax 优先）; 长度必须与主序列 items 等长 */
+    if(opt.band&&opt.band.hi&&opt.band.lo){
+      var _bandN=seriesList[0].items.length;
+      if(opt.band.hi.length!==_bandN||opt.band.lo.length!==_bandN)throw new Error('charts.line: band.hi/lo 长度必须与 items 等长 ('+_bandN+'), 收到 hi='+opt.band.hi.length+' lo='+opt.band.lo.length);
+      opt.band.hi.forEach(function(v){if(v!==null&&v!==undefined)allItems.push({value:v});});
+      opt.band.lo.forEach(function(v){if(v!==null&&v!==undefined)allItems.push({value:v});});
+    }
     var lo=null,hi=null;
     if(opt.yMin!==null)lo=_num(opt.yMin);if(opt.yMax!==null)hi=_num(opt.yMax);
     allItems.forEach(function(it){if(it.value===null||it.value===undefined)return;var v=_num(it.value);if(lo===null||v<lo)lo=v;if(hi===null||v>hi)hi=v;});
@@ -312,6 +319,33 @@ window.charts={
     var Y=function(v){return _H-_P-(v-lo)/(hi-lo)*(_H-2*_P);};
     var ptsOf=function(list,lo2,hi2){var Y2=(lo2===lo&&hi2===hi)?Y:function(v){return _H-_P-(v-lo2)/(hi2-lo2)*(_H-2*_P);};return list.map(function(it,i){var v=it.value;return [(_P+(_W-2*_P)*i/(Math.max(1,list.length-1))),(v===null||v===undefined)?null:Y2(_num(v)),v===null||v===undefined];});};
     var seriesPts=seriesList.map(function(s,i){var d=ownDoms[i];return ptsOf(s.items,d?d[0]:lo,d?d[1]:hi);});
+    /* band 置信带路径（v1.19 · #335）: 主序列 hi/lo 区间半透明填充（fill-opacity 0.15）; 任一侧 null → 该段断开;
+     * 域 = 主序列所在域（ownScale 序列跟随自身域）; 不参与 tooltip/图例; 绘制在折线下方 */
+    var bandHtml='';
+    if(opt.band&&opt.band.hi&&opt.band.lo){
+      var dom0=ownDoms[0]||[lo,hi];
+      var Y0=function(v){return _H-_P-(v-dom0[0])/(dom0[1]-dom0[0])*(_H-2*_P);};
+      var n0=seriesList[0].items.length;
+      var hiPts=[],loPts=[];
+      for(var bi=0;bi<n0;bi++){
+        var bx=_P+(_W-2*_P)*bi/(Math.max(1,n0-1));
+        var hv=opt.band.hi[bi],lv=opt.band.lo[bi];
+        hiPts.push([bx,(hv===null||hv===undefined)?null:Y0(_num(hv)),hv===null||hv===undefined]);
+        loPts.push([bx,(lv===null||lv===undefined)?null:Y0(_num(lv)),lv===null||lv===undefined]);
+      }
+      var bSegs=[],bCur=[];
+      hiPts.forEach(function(p,i){if(p[2]||loPts[i][2]){if(bCur.length)bSegs.push(bCur);bCur=[];}else{bCur.push([p[0],p[1],loPts[i][1]]);}});
+      if(bCur.length)bSegs.push(bCur);
+      var bColor=seriesList[0].color||opt.color||'var(--blue,#007aff)';
+      bandHtml=bSegs.map(function(s){
+        var d=s.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join('');
+        d+='L'+s[s.length-1][0].toFixed(1)+' '+s[s.length-1][2].toFixed(1);
+        for(var i2=s.length-1;i2>=1;i2--){d+='L'+s[i2-1][0].toFixed(1)+' '+s[i2-1][2].toFixed(1);}
+        d+='Z';
+        return d;
+      }).join('');
+      if(bandHtml)bandHtml='<path class="hm-c-band" d="'+bandHtml+'" fill="'+bColor+'" opacity="0.15" stroke="none"/>';
+    }
     /* grid */
     var grid='';if(opt.grid){for(var g=0;g<3;g++){var gy=_H-_P-(_H-2*_P)*g/2;grid+='<line x1="'+_P+'" y1="'+gy.toFixed(1)+'" x2="'+(_W-_P)+'" y2="'+gy.toFixed(1)+'" stroke="#ececf1" stroke-width="1"/>';}}
     /* yTicks: Y 轴刻度（v1.15 · #333; 数字=刻度数收敛 2-6, false 关闭 → 既有渲染逐字节不变）
@@ -421,7 +455,7 @@ window.charts={
     var rotStyle=opt.labelRotate?(' style="transform:rotate('+opt.labelRotate+'deg);transform-origin:top center" '):'';
     el.innerHTML='<div class="hm-c-line-wrap" '+hStyle+'>'
       +(opt.legend&&legendsHtml?'<div class="hm-c-legend">'+legendsHtml+'</div>':'')
-      +'<div class="hm-c-line-svg"><svg viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none">'+grid+tickLines+markHtml+pathsHtml+'</svg>'+dotsHtml+valuesHtml+tickLabels+markLbl+mpHtml+'</div>'
+      +'<div class="hm-c-line-svg"><svg viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none">'+grid+bandHtml+tickLines+markHtml+pathsHtml+'</svg>'+dotsHtml+valuesHtml+tickLabels+markLbl+mpHtml+'</div>'
       +(xLabels?'<div class="hm-c-line-x"'+rotStyle+'>'+xLabels+'</div>':'')
       +'</div>';
     if(opt.animation){

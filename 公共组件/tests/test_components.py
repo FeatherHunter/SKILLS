@@ -1564,6 +1564,80 @@ def test_line_markpoint_series_main_series(chart_page):
     assert mp is not None and abs((mp['x'] + mp['width']/2) - dots[1]) < 2  # B 值更大但标注在 A 序列 max(9) 点中心
 
 
+# ── line: band 置信带（v1.19 · #335）────────────────
+
+def test_line_band_renders(chart_page):
+    """band:{hi,lo}: DOM 出现 .hm-c-band 面积路径（半透明 0.15）, 覆盖 hi/lo 区间"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'),
+        [{label:'a',value:5},{label:'b',value:6},{label:'c',value:4}],
+        {animation:false, band:{hi:[7,8,6], lo:[3,4,2]}})
+    """)
+    band = chart_page.evaluate("document.querySelector('.hm-c-band')?.getAttribute('d')")
+    opacity = chart_page.evaluate("document.querySelector('.hm-c-band')?.getAttribute('opacity')")
+    assert band and band.startswith('M') and band.endswith('Z') and opacity == '0.15'
+
+
+def test_line_band_default_absent_byte_identical(chart_page):
+    """缺省: 无 .hm-c-band 元素; band:null 与未传渲染逐字节一致"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    n1 = chart_page.evaluate("document.querySelectorAll('.hm-c-band').length")
+    html1 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, band:null})', LINE_ITEMS)
+    n2 = chart_page.evaluate("document.querySelectorAll('.hm-c-band').length")
+    html2 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    assert n1 == 0 and n2 == 0 and html1 == html2
+
+
+def test_line_band_null_breaks_segments(chart_page):
+    """hi/lo 含 null 断点: 该段断开（两个独立封闭区）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'),
+        [{label:'a',value:5},{label:'b',value:6},{label:'c',value:4},{label:'d',value:5}],
+        {animation:false, band:{hi:[7,8,null,7], lo:[3,4,null,3]}})
+    """)
+    d = chart_page.evaluate("document.querySelector('.hm-c-band')?.getAttribute('d')")
+    segs = d.count('M')
+    assert segs == 2
+
+
+def test_line_band_length_mismatch_throws(chart_page):
+    """band.hi/lo 长度与 items 不等 → 直接报错"""
+    err = chart_page.evaluate("""() => { try {
+      window.charts.line(document.getElementById('root'),
+        [{label:'a',value:5},{label:'b',value:6}],
+        {animation:false, band:{hi:[7,8,9], lo:[3,4,5]}});
+      return ''; } catch(e) { return e.message; } }""")
+    assert 'band.hi/lo 长度必须与 items 等长' in err
+
+
+def test_line_band_expands_domain(chart_page):
+    """band 值并入共享域: hi 超出主线最大值 → yTicks 顶刻度随之扩展（不裁剪）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'),
+        [{label:'a',value:2},{label:'b',value:8}],
+        {animation:false, yTicks:4, band:{hi:[10,10], lo:[0,0]}})
+    """)
+    labels = chart_page.evaluate("[...document.querySelectorAll('.hm-c-yt')].map(n=>n.textContent)")
+    # 域 min=0 max=10 range=10 pad=0.6 → [−0.6, 10.6], 顶刻度 10.6
+    assert labels[-1] == '10.6'
+
+
+def test_line_band_under_line(chart_page):
+    """绘制顺序: band 在折线路径之前（区间不遮挡主线）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'),
+        [{label:'a',value:5},{label:'b',value:6},{label:'c',value:4}],
+        {animation:false, band:{hi:[7,8,6], lo:[3,4,2]}})
+    """)
+    order = chart_page.evaluate("""() => {
+      const svg = document.querySelector('.hm-c-line-svg svg');
+      const kids = [...svg.children];
+      return kids.indexOf(svg.querySelector('.hm-c-band')) < kids.indexOf(svg.querySelector('path[fill="none"]'));
+    }""")
+    assert order
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

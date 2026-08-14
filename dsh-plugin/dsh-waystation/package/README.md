@@ -27,60 +27,47 @@
 
 ## 使用方式
 
-### 方式一：正式安装（推荐 · npm 一条命令 · 装进整个 Harness · 开机自启）
+### 方式一：正式安装（推荐 · 一条命令 · 装进整个 Harness · 开机自启）
 
-**这条命令把插件装进 DeepSeek Harness 本体（所有会话、所有工作目录生效），并自动注册**。
-三种平台写法任选（`~/.dsh` = DSH 的家；`DSH_HOME` 自定义过就换成它的路径）：
-
-**Windows · PowerShell**
-
-```powershell
-npm install --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org
-```
-
-**Windows · cmd**（注意：cmd 用 `%USERPROFILE%`，`$env:` 是 PowerShell 语法，cmd 里不展开）
-
-```cmd
-npm install --prefix "%USERPROFILE%\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org
-```
-
-**Linux / macOS**
+用 DSH 官方插件命令（跨平台，Windows / macOS / Linux 同一句；`~/.dsh` = DSH 的家，
+`DSH_HOME` 自定义过就换成它的路径）：
 
 ```bash
-npm install --prefix "$HOME/.dsh/profiles" dsh-waystation --registry=https://registry.npmjs.org
+npx --yes @deepseek-ai/dsh plugin --profile web add dsh-waystation
 ```
 
-> 三种写法等价（`--prefix` 直接指定 Harness 插件目录，免 cd）；postinstall 跨平台自动注册。
+- 命令把插件装进 **web profile**（`~/.dsh/profiles/web/node_modules`），同步 `web/package.json`
+  并自动 reconcile 注册。装完**刷新浏览器页面**（http://127.0.0.1:3080）即生效，之后每次 DSH 启动自动加载。
+- ⚠️ **装完必查注册**：官方命令内部走 pnpm，默认**忽略 build scripts** → 本包的 postinstall
+  （自动注册 `cordis.patch.yml`）可能不执行。检查 `~/.dsh/profiles/web/cordis.patch.yml`
+  是否已有 dsh-waystation 注册行；没有就手动追加：
 
-**装到哪、为什么是这里**：
+  ```yaml
+  - insert:
+      - id: dsh-waystation
+        name: 'dsh-waystation'
+  ```
 
-```
-C:\Users\<你>\.dsh\            ← DeepSeek Harness 的「家」（DSH_HOME），与你的业务项目无关
-├── profiles\
-│   ├── node_modules\          ← Harness 级插件目录（本插件的安装位）
-│   └── web\cordis.patch.yml   ← Harness 级启动组合（postinstall 自动注册）
-```
-
-- `~/.dsh` 是 DSH 自己的用户根目录，装进 `profiles/node_modules` = **对整个 Harness 生效**：
-  所有会话、所有工作目录都能用；开机自启、无需审批；DSH 本体升级（npx 缓存层）不影响它。
+- ⛔ **千万不要用 `npm install --prefix ~/.dsh/profiles` 安装**：`profiles/node_modules` 是 DSH 的
+  **扁平回退软链区**（启动时 `healProfilesModuleFallback` 自动重建，装的是 npx 全家桶），
+  npm `--prefix` 会把它当新项目，把 package.json 未声明的包（含你的插件）**全部 prune 掉**。
+  **2026-08-14 实测事故**：一次安装插件连带删掉 511 个包，DSH 插件全部加载失败。
+  插件正确安装位 = `profiles/web/node_modules`（官方命令负责），注册写 `web/cordis.patch.yml`。
 - 为什么不用 `npm install -g`：`-g` 装到 `%APPDATA%\npm\node_modules`，而 Node 的默认解析链
   **不包含该目录**（本机实测 `require.resolve` 失败）——DSH 进程 require 不到，装了也白装。
   独立 CLI 应用（如 `dsh-feishu-bot`）靠 bin 快捷方式运行所以能 `-g`；**插件必须被 DSH 进程
-  解析**，所以装 Harness 自己的插件目录。
-- **postinstall 自动注册**：安装时自动探测 `cordis.patch.yml`，若尚无 dsh-waystation 注册行则
-  自动追加（幂等：重复安装/升级不叠加；非 DSH 环境自动跳过，不打扰普通项目）。
-- 然后**刷新浏览器页面**（http://127.0.0.1:3080）即生效，之后每次 DSH 启动自动加载。
+  解析**，所以装 Harness 自己的 profile。
 
-**升级**（同上，把 `install` 换 `update`；`~/.dsh/profiles` 的写法按平台变量替换）：
+**升级**：
 
-```powershell
-npm update --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org
+```bash
+npx --yes @deepseek-ai/dsh plugin --profile web update dsh-waystation
 ```
 
 **卸载**：
 
-```powershell
-npm uninstall --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation
+```bash
+npx --yes @deepseek-ai/dsh plugin --profile web remove dsh-waystation
 # 并手动删除 cordis.patch.yml 里的 dsh-waystation insert 块（或保留，DSH 找不到包会忽略）
 ```
 

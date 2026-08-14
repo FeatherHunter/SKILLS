@@ -1195,6 +1195,22 @@ def test_line_markline(chart_page):
     assert mark is not None and lbl == '目标 7'
 
 
+def test_line_markline_label_html_not_stretched(chart_page):
+    """markLine 标签为 HTML 覆盖层（不在 SVG 内）: preserveAspectRatio=none 拉伸不作用于文字（v1.16 · #333 验收修复）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, markLine:{value:7,label:"目标 7"}})', LINE_ITEMS)
+    in_svg = chart_page.evaluate("document.querySelector('.hm-c-line-svg svg .hm-c-markline-t') !== null")
+    tag = chart_page.evaluate("document.querySelector('.hm-c-markline-t').tagName")
+    fs = chart_page.evaluate("getComputedStyle(document.querySelector('.hm-c-markline-t')).fontSize")
+    assert not in_svg and tag == 'I' and fs == '10px'
+
+
+def test_line_markline_label_on_top(chart_page):
+    """markLine 标签最后插入（在 area/线/刻度之上）: 不被路径遮挡（v1.16 · #333 验收发现）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, markLine:{value:7,label:"目标 7"}, area:true})', LINE_ITEMS)
+    last = chart_page.evaluate("document.querySelector('.hm-c-line-svg').lastElementChild.className")
+    assert 'hm-c-markline-t' in last
+
+
 def test_line_avg_line(chart_page):
     """移动均线叠加为虚线"""
     chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, avgLine:3})', LINE_ITEMS)

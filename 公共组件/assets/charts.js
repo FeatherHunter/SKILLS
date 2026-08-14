@@ -1,4 +1,4 @@
-/* Base Skill 图表组件 v1.15（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.16（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
@@ -74,9 +74,9 @@ if(!document.getElementById(_styleId)){
   +'.hm-c-cross{position:absolute;z-index:10;background:rgba(0,0,0,.18);pointer-events:none;display:none}'
   +'.hm-c-cross.show{display:block}'
   /* markLine 阈值线 */
-  +'.hm-c-markline-t{font-size:10px;fill:var(--fg3,#86868b)}'
+  +'.hm-c-markline-t{font-size:10px;line-height:1;color:var(--fg3,#86868b);position:absolute;transform:translate(-100%,-100%);white-space:nowrap;pointer-events:none;font-style:normal}' /* v1.16: SVG text → HTML 覆盖层(拉伸/遮挡修复, #333 验收发现) */
   /* yTicks 轴刻度文字（HTML 覆盖层不占位 → 既有渲染逐字节不变; pointer-events:none 不挡 tooltip） */
-  +'.hm-c-yt{position:absolute;left:2px;transform:translateY(-50%);font-size:9.5px;color:var(--fg3,#86868b);white-space:nowrap;pointer-events:none;font-style:normal;font-variant-numeric:tabular-nums}'
+  +'.hm-c-yt{position:absolute;left:2px;transform:translateY(-50%);font-size:9.5px;line-height:1;color:var(--fg3,#86868b);white-space:nowrap;pointer-events:none;font-style:normal;font-variant-numeric:tabular-nums}'
   /* sparkline */
   +'.hm-c-spark{display:inline-flex;align-items:center;gap:8px}'
   +'.hm-c-spark svg{display:block}'
@@ -322,11 +322,11 @@ window.charts={
         tickLabels+='<i class="hm-c-yt" style="top:'+(ty/_H*100).toFixed(2)+'%">'+_esc(tText)+'</i>';
       }
     }
-    /* markLine 阈值线 */
-    var markHtml='';if(opt.markLine!==null&&opt.markLine!==undefined&&_isNum(opt.markLine.value)){
+    /* markLine 阈值线（v1.16: 标签 SVG text → HTML 覆盖层, 修 preserveAspectRatio=none 拉伸变形 + 被 area/线路径遮挡 · #333 验收发现） */
+    var markHtml='',markLbl='';if(opt.markLine!==null&&opt.markLine!==undefined&&_isNum(opt.markLine.value)){
       var my=Y(_num(opt.markLine.value));
-      markHtml='<line x1="'+_P+'" y1="'+my.toFixed(1)+'" x2="'+(_W-_P)+'" y2="'+my.toFixed(1)+'" stroke="#ff9500" stroke-width="1.5" stroke-dasharray="5 4"/>'
-        +'<text class="hm-c-markline-t" x="'+(_W-_P-2)+'" y="'+(my-4).toFixed(1)+'" text-anchor="end">'+_esc(opt.markLine.label||String(opt.markLine.value))+'</text>';
+      markHtml='<line x1="'+_P+'" y1="'+my.toFixed(1)+'" x2="'+(_W-_P)+'" y2="'+my.toFixed(1)+'" stroke="#ff9500" stroke-width="1.5" stroke-dasharray="5 4"/>';
+      markLbl='<i class="hm-c-markline-t" style="left:'+((_W-_P-2)/_W*100).toFixed(2)+'%;top:'+((my-4)/_H*100).toFixed(2)+'%">'+_esc(opt.markLine.label||String(opt.markLine.value))+'</i>';
     }
     /* 每条线绘制 */
     var pathsHtml='',dotsHtml='',valuesHtml='',legendsHtml='';
@@ -385,7 +385,7 @@ window.charts={
     var rotStyle=opt.labelRotate?(' style="transform:rotate('+opt.labelRotate+'deg);transform-origin:top center" '):'';
     el.innerHTML='<div class="hm-c-line-wrap" '+hStyle+'>'
       +(opt.legend&&legendsHtml?'<div class="hm-c-legend">'+legendsHtml+'</div>':'')
-      +'<div class="hm-c-line-svg"><svg viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none">'+grid+tickLines+markHtml+pathsHtml+'</svg>'+dotsHtml+valuesHtml+tickLabels+'</div>'
+      +'<div class="hm-c-line-svg"><svg viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none">'+grid+tickLines+markHtml+pathsHtml+'</svg>'+dotsHtml+valuesHtml+tickLabels+markLbl+'</div>'
       +(xLabels?'<div class="hm-c-line-x"'+rotStyle+'>'+xLabels+'</div>':'')
       +'</div>';
     if(opt.animation){

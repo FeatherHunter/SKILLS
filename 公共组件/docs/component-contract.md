@@ -1,6 +1,6 @@
-# Base 组件契约 v1.15
+# Base 组件契约 v1.16
 
-> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）+ **v1.9 selectList 行内控件**（2026-08-13 · #327）+ **v1.10 copyText 反馈钩子**（2026-08-13 · #328）+ **v1.11 smartSelect 选择器组件**（2026-08-13 · #312 · 立项 #320）+ **v1.12 smartSelect 候选区折叠**（2026-08-13 · #312 实测反馈）+ **v1.13 line 动画断线修复**（2026-08-14 · #317 验收二轮）+ **v1.14 charts.line connectNulls**（2026-08-14 · #356）+ **v1.15 charts.line yTicks 轴刻度**（2026-08-14 · #333）
+> 来源：v1.3（#288 图表组件落地）+ v1.4（#290 状态层加固）+ v1.5（#289 HELP 参数化）+ **v1.6 图表全参数化**（2026-08-12：方向 A 定稿，四形态全参数 + 复合形态）+ **v1.9 selectList 行内控件**（2026-08-13 · #327）+ **v1.10 copyText 反馈钩子**（2026-08-13 · #328）+ **v1.11 smartSelect 选择器组件**（2026-08-13 · #312 · 立项 #320）+ **v1.12 smartSelect 候选区折叠**（2026-08-13 · #312 实测反馈）+ **v1.13 line 动画断线修复**（2026-08-14 · #317 验收二轮）+ **v1.14 charts.line connectNulls**（2026-08-14 · #356）+ **v1.15 charts.line yTicks 轴刻度**（2026-08-14 · #333）+ **v1.16 markLine 标签拉伸/遮挡修复**（2026-08-14 · #333 验收）
 > 本契约是 Base Skill 组件的**冻结接口**，修改必须走公共层 ISSUE（总纲 09 §92）+ 遵循 §8 版本机制。
 
 ## 0. 版本记录
@@ -20,6 +20,7 @@
 | v1.13 | 2026-08-14 | **#317 验收二轮 · line 动画断线修复**（非破坏性 · 内部实现）：动画过渡结束（transitionend + 1.2s 兜底）清除 `stroke-dasharray` 残留，恢复实线（`preserveAspectRatio=none` 拉伸下 dash 按屏幕像素解释导致中段断线）。守卫测试 +2。**本条目为 §0 漏记补录**（CHANGELOG 已有 v1.13） |
 | v1.14 | 2026-08-14 | **#356 charts.line 缺失值连线 connectNulls**（非破坏性 · 新可选参数 `connectNulls` 默认 false · 签名零变更）：跨 null 断点连线（跳过缺失值直连相邻有效点）；缺值日无 dot、首尾 null 不延伸、全 null 仍空路径；与 smooth/step/area/series/avgLine 正交可组合（area 跟随同一开关、avgLine 均线跨 null 连线）。守卫测试 +9 → 全量全绿（tests/ 221/221）。详见 §6.5 |
 | v1.15 | 2026-08-14 | **#333 charts.line Y 轴刻度文字 yTicks**（非破坏性 · 新可选参数 `yTicks` 数字=刻度数收敛 2-6 / false 关闭 · 签名零变更）：左侧刻度短线（SVG）+ 刻度文字（HTML 覆盖层不占位）；值域 = 共享 Y 域（含 padding）均分，文字走 `format`，首尾贴边防裁剪；默认关闭既有渲染逐字节不变；与 series/grid:false/tooltip 正交。守卫测试 +9 → 全量全绿（tests/ 230/230）。详见 §6.5 |
+| v1.16 | 2026-08-14 | **#333 验收 · markLine 标签拉伸/遮挡修复**（非破坏性 · 签名零变更 · 内部实现）：标签从 SVG `<text>` 改为 HTML 覆盖层（`preserveAspectRatio="none"` 拉伸不再作用于文字；绘制顺序调整到最上层不被 area/折线遮挡；位置语义不变）。守卫测试 +2 → 全量全绿（tests/ 232/232）。详见 §6.5 |
 
 ## 1. 目录结构
 
@@ -202,7 +203,7 @@ charts.gauge(el, pct[, opt])        // 仪表盘（v1.6 新增）
 
 | 接口 | 参数 |
 |---|---|
-| `line` | `height/compact/width` · `color/lineWidth/dashed` · `smooth`（Catmull-Rom，点在线）· `showDots/dotSize/dotStyle` · `area/areaOpacity` · `labels('edge'/'all'/'none'/'select')` · `showValues/labelRotate` · `yMin/yMax/grid` · `format` · `tooltip` · `markLine{value,label}` · `markPoint` · `step` · `animation` · `series[{name,items,color,dashed,smooth,area}]` · `avgLine(n)` · `legend` · `highlightLast` · `onclick/ondrill` · `emptyText` · `connectNulls`（跨缺失断点连线，默认 false · v1.14）· `yTicks`（Y 轴刻度数量 2-6 / false 关闭，默认 false · v1.15） |
+| `line` | `height/compact/width` · `color/lineWidth/dashed` · `smooth`（Catmull-Rom，点在线）· `showDots/dotSize/dotStyle` · `area/areaOpacity` · `labels('edge'/'all'/'none'/'select')` · `showValues/labelRotate` · `yMin/yMax/grid` · `format` · `tooltip` · `markLine{value,label}`（标签为 HTML 覆盖层 · v1.16）· `markPoint` · `step` · `animation` · `series[{name,items,color,dashed,smooth,area}]` · `avgLine(n)` · `legend` · `highlightLast` · `onclick/ondrill` · `emptyText` · `connectNulls`（跨缺失断点连线，默认 false · v1.14）· `yTicks`（Y 轴刻度数量 2-6 / false 关闭，默认 false · v1.15） |
 | `bar` | `format` · `colors/singleColor` · `height/compact` · `labels('all'/'none'/'select')` · `showValues` · `yMin/yMax/grid` · `tooltip/animation` · `onclick` |
 | `donut` | `format` · `colors` · `size/ringWidth` · `legend('right'/'bottom'/'none')` · `showPercent` · `centerLabel/centerValue` · `animation` |
 | `progress` | `color/gradient` · `height(轨道px)` · `showPct` · `animation`（pct 非数报错，超界收敛 0~100） |

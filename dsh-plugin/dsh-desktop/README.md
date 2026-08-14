@@ -5,7 +5,7 @@
 > 关掉窗口，后台服务和命令**随之关闭**。
 > **零依赖**：无需安装 Node.js / npm —— 应用内置运行时，双击即用。
 
-- **包名**: `dsh-harness-desktop`（npm 包；源码目录 `dsh-plugin/dsh-desktop/`）
+- **包名**: `dsh-harness-desktop`（[npm 主页](https://www.npmjs.com/package/dsh-harness-desktop)；源码目录 `dsh-plugin/dsh-desktop/`）
 - **显示名**: 桌面版
 - **平台**: Windows / Linux / macOS（Electron 跨平台）
 - **技术**: Electron 主进程 = 进程管家 + 内嵌浏览器窗口 + 内置 DSH 运行时
@@ -44,6 +44,35 @@
 
 > 和官方 `npx @deepseek-ai/dsh web` 完全等价（DSH 官方 Run from npm 前提），
 > 只是这一步被桌面版自动完成，不需要命令行。
+
+### 通过 npm 安装（源码版 · 适合开发者）
+
+> npm 包是**源码形态**：不含打包好的 exe（双击即用的便携版见下方「打包」）。
+> 安装后以开发模式运行，体验与 exe 一致（后台运行、无终端窗口、关窗即停，
+> 首次启动自动安装 DSH 运行时）。
+
+1. **安装**（在任意项目目录）：
+   ```bash
+   npm install dsh-harness-desktop
+   ```
+2. **进入包目录，补齐构建依赖**（electron 属于开发工具链，作为依赖安装时不会自动带）：
+   ```bash
+   cd node_modules/dsh-harness-desktop
+   npm install
+   ```
+3. **启动**：
+   ```bash
+   npm start
+   ```
+4. **（可选）打包自己的便携 exe**：
+   ```bash
+   npm run dist
+   # Windows → dist/dsh-harness-desktop-1.0.0-x64.exe
+   ```
+
+> 提示：首次启动会联网自动下载安装 DSH 运行时（几分钟），装好后**离线秒开**；
+> 升级 DSH 见「常见问题 · 如何升级 DSH」。npm 包不捆绑 electron 二进制
+> （110MB 属开发工具链），所以第 2 步需要在本目录补一次 `npm install`。
 
 ### 开发 / 日常运行
 

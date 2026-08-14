@@ -755,7 +755,7 @@ return {
     const makeStore = () => ({
       open: false, tab: 'list', activeMap: null,
       notice: null, injector: null, tick: 0,
-      pos: null, size: { w: 460, h: DEFAULT_PANEL_H },
+      pos: null, size: { w: 460, h: DEFAULT_PANEL_H }, pipMode: false,
       // 外观定死（用户拍板：图标/动作词不可配置）
       ui: { icon: 'compass', word: '沉淀' },
       snapshot: null,
@@ -1057,7 +1057,61 @@ return {
       if (!st.snapshot || !st.snapshot.generatedMs) return false
       try { return (Date.now() - st.snapshot.generatedMs) <= SNAP_FRESH_MS } catch (e) { return false }
     }
+    // #372：Document PiP 独立小窗（主面板脱离网页；状态栏胶囊保留页内）
+    //   能力判定：documentPictureInPicture + ReactDOM（动态 runner 只注入 React，无 ReactDOM → 自动降级页内面板；
+    //   npm bundle 经 require('react-dom') 获得，完整支持）。PiP 窗口与主页面同源共享 JS 上下文（store/回调/配置全沿用）。
+    let pipWin = null          // 当前 PiP 窗口（复用/聚焦）
+    let pipRoot = null         // PiP 文档内 React 根
+    let lastOverlayProps = null // 最近一次 OverlayPanel 渲染的 props（PiP 重建用；含 useSessions 等 slot 标准座）
+    const RD = (typeof ReactDOM !== 'undefined') ? ReactDOM : (typeof window !== 'undefined' ? window.ReactDOM : undefined)
+    const pipSupported = function () {
+      return typeof window !== 'undefined' && !!window.documentPictureInPicture && RD !== undefined && typeof RD.createRoot === 'function'
+    }
+    const openPipWindow = function (st) {
+      if (pipWin && !pipWin.closed) { pipWin.focus(); return }
+      st.open = true; st.pipMode = true
+      st.snapMode = 'loading'
+      emit(st)
+      loadSnapshot(st, true)
+      const iw = window.innerWidth || 1000, ih = window.innerHeight || 800
+      documentPictureInPicture.requestWindow({
+        width: Math.round(Math.max(400, Math.min(760, iw - 80))),
+        height: Math.round(Math.max(360, Math.min(860, ih - 120))),
+      }).then(function (win) {
+        pipWin = win
+        // 样式随搬移：复制主文档全部 <style> + <link rel=stylesheet>（面板依赖的注入样式与主题变量）
+        const els = document.querySelectorAll('style, link[rel="stylesheet"]')
+        for (let i = 0; i < els.length; i++) {
+          try {
+            const n = els[i]
+            if (n.tagName === 'STYLE') { const s = win.document.createElement('style'); s.textContent = n.textContent; win.document.head.appendChild(s) }
+            else { const l = win.document.createElement('link'); l.rel = 'stylesheet'; l.href = n.href; win.document.head.appendChild(l) }
+          } catch (err) { /* 样式复制失败不阻塞搬移 */ }
+        }
+        win.document.body.style.margin = '0'
+        win.document.body.style.background = 'var(--dsw-alias-bg-layer-1,#10131a)'
+        const holder = win.document.createElement('div')
+        holder.style.width = '100vw'
+        holder.style.height = '100vh'
+        holder.style.position = 'relative'
+        win.document.body.appendChild(holder)
+        pipRoot = RD.createRoot(holder)
+        pipRoot.render(h(OverlayPanel, Object.assign({}, lastOverlayProps, { pip: true })))
+        // 窗口关闭（含页面刷新语义）→ 清理并复位
+        win.addEventListener('pagehide', function () {
+          try { if (pipRoot) { pipRoot.unmount(); pipRoot = null } } catch (err) { /* 清理期错误忽略 */ }
+          pipWin = null
+          st.open = false; st.pipMode = false; emit(st)
+        })
+      }).catch(function () {
+        // 用户取消 / API 不可用 → 降级页内悬浮面板（同一打开动作内回退）
+        pipWin = null
+        st.open = false; st.pipMode = false; emit(st)
+        openPanel(st)
+      })
+    }
     const openPanel = function (st) {
+      if (pipSupported()) { openPipWindow(st); return }
       st.open = true
       if (st.snapMode !== 'real' || !snapFresh(st)) {
         st.snapMode = 'loading'
@@ -1685,11 +1739,14 @@ return {
 
     // ---- 5.8 主面板（可拖动 · 8 向缩放 · 三视图 · v14 跟随当前会话 + 刷新遮罩）----
     const OverlayPanel = (props) => {
+      // #372：记录最近一次渲染的 props（PiP 窗口重建用：含 useSessions 等 slot 标准座，可跨文档复用）
+      lastOverlayProps = props
       const cur = props.useSessions((x) => x.current)
       const s = useStore(cur)
       const panelRef = React.useRef(null)
       // #376：加载由 openPanel 统一分派（未就绪/过期 force，新鲜直接展示）；此处不再重复加载
-      if (!s.open) return null
+      // #372：页内实例在 PiP 模式下不渲染（面板本体已在独立小窗）；PiP 实例（props.pip）照常渲染
+      if (!s.open || (s.pipMode && !props.pip)) return null
       const groups = compute(s)
       const active = s.activeMap !== null ? groups.find(function (x) { return x.m.number === s.activeMap }) : null
       // v14-19：窄屏阈值（面板宽 <380px 时动作按钮折叠为纯图标）
@@ -1743,7 +1800,10 @@ return {
         }
       }
 
-      const panelStyle = { width: s.size.w, ...(s.size.h ? { height: s.size.h } : {}), ...(s.pos ? { left: s.pos.x, top: s.pos.y, right: 'auto' } : { left: 16, top: 76, right: 'auto' }) }
+      // #372：PiP 模式下面板铺满独立窗口（拖动/缩放由 OS 窗口承担）；页内模式维持现有 fixed 定位与尺寸
+      const panelStyle = props.pip
+        ? { left: 0, top: 0, right: 0, bottom: 0, width: 'auto', height: 'auto', maxHeight: '100vh' }
+        : { width: s.size.w, ...(s.size.h ? { height: s.size.h } : {}), ...(s.pos ? { left: s.pos.x, top: s.pos.y, right: 'auto' } : { left: 16, top: 76, right: 'auto' }) }
       return h('div', { ref: panelRef, className: 'dsws-panel', style: panelStyle }, [
         h('div', { className: 'dsws-head', onMouseDown: startDrag }, [
           h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } }, Icon({ scheme: s.ui.icon, size: 17 }), 'DSH-Waystation'),

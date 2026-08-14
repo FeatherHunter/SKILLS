@@ -651,7 +651,7 @@ function errorReceipt(cfg){
   return html + '</div>';
 }
 
-/* ── smartSelect 选择器组件（v1.11 · #312 · 复用优先·新建其次）──
+/* ── smartSelect 选择器组件（v1.12 · #312 · 复用优先·新建其次）──
  * smartSelect(inputEl, config) → { getState, getValue }
  * 字段级组件: 一页 N 实例, 每字段一容器一 config 一隐藏 input, 互不干扰。
  * 定位: 与 copyText/actionBar 同级 Base 组件; 账户/分类/账本/运动类型等
@@ -661,12 +661,14 @@ function errorReceipt(cfg){
  *   inferred:        string|null  AI 推断最可能的已有项
  *   recommended_new: string|null  AI 推荐新建项(不在 options 中)
  *   initial:         {name, source}|null  显式初始选中; source 白名单 = _SS_SOURCES
+ *   maxChips:        number|null  候选区折叠阈值(v1.12 · 缺省 8; 非正整数=不折叠;
+ *                   折叠态只显前 maxChips 个 + 「展开全部(N)」, 选中项保可见; 搜索时全量过滤)
  *   texts:           {candTitle, search, newPlaceholder, newButton, emptyButton,
  *                     badgeInferred, badgeRecommendedNew, badgeExisting, badgeHistory, badgeCustom,
  *                     cardSrc:{inferred, recommended_new, existing, history, custom, empty}}
  *   theme:           {brand, brandSoft, onBrand, deep}  缺省账本藏蓝 #123A63
  * 初始选中推导（initial 缺省时）: AI 推断 > 历史预填(input.value) > AI 推荐新建 > 空
- * 行为: 已选卡片(chips 顶部, SVG ✓+来源徽章) + 候选 chips + 搜索过滤 + 自定义新建
+ * 行为: 已选卡片(chips 顶部, SVG ✓+来源徽章) + 候选 chips(超限折叠) + 搜索过滤(全量) + 自定义新建
  *       (重名自动选中已有) + 相似提示 + 留空按钮; 停用划线置灰不可点; 绝不静默填错
  * 回填协议: input.value + dataset.source + dataset.new('1'=新建) + change 事件(bubbles)
  * 安全: 所有动态文本经 esc; 类名全 ss- 命名空间（封装纪律, 防宿主同名类冲突）
@@ -738,6 +740,14 @@ function smartSelect(inputEl, config){
   texts.cardSrc = Object.assign({}, _SS_TEXTS.cardSrc, (config.texts && config.texts.cardSrc) || {});
   var theme = Object.assign({}, _SS_THEME, config.theme || {});
   var custom = [];
+  /* 候选区折叠(v1.12): maxChips 可配(缺省 8, 0/负数/非数字=不折叠) · 搜索时全量过滤 */
+  var maxChips = (config.maxChips === undefined || config.maxChips === null)
+    ? 8
+    : ((typeof config.maxChips === 'number' && config.maxChips > 0)
+       ? Math.floor(config.maxChips) : null);
+  var searchRaw = '';
+  var searchQ = '';
+  var expanded = false;
 
   /* ── 降级模式: 无选项/无推断/无推荐/无 initial → 普通输入 ── */
   var degraded = !options.length && !config.inferred && !config.recommended_new && !config.initial;
@@ -836,34 +846,75 @@ function smartSelect(inputEl, config){
         + (dis ? ' disabled' : ' data-n="'+esc(n)+'" data-m="'+m+'"')
         + '>'+(sel?'✓ ':'')+esc(n)+badge+(dis?' · 停用':'')+'</button>';
     }
-    var chips = [];
+    var chips = [];       // chip HTML
+    var chipsMeta = [];   // 对齐元信息 {name, sel}（折叠保可见/搜索过滤用）
+    function pushChip(n, m, dis, badge){
+      var sel = !dis && isSel(n, m);
+      chipsMeta.push({ name: n, sel: sel });
+      chips.push(chip(n, m, dis, badge));
+    }
     if(config.inferred){
-      chips.push(chip(config.inferred, 'inferred', false, '<span class="ss-badge ss-badge-ai">'+esc(texts.badgeInferred)+'</span>'));
+      pushChip(config.inferred, 'inferred', false, '<span class="ss-badge ss-badge-ai">'+esc(texts.badgeInferred)+'</span>');
     }
     if(config.recommended_new){
-      chips.push(chip(config.recommended_new, 'recommended_new', false, '<span class="ss-badge ss-badge-new">'+esc(texts.badgeRecommendedNew)+'</span>'));
+      pushChip(config.recommended_new, 'recommended_new', false, '<span class="ss-badge ss-badge-new">'+esc(texts.badgeRecommendedNew)+'</span>');
     }
     options.forEach(function(o){
       if(o.name === config.inferred || o.name === config.recommended_new) return;
-      chips.push(chip(o.name, 'existing', !!o.disabled, ''));
+      pushChip(o.name, 'existing', !!o.disabled, '');
     });
     custom.forEach(function(n){
-      chips.push(chip(n, 'custom', false, '<span class="ss-badge ss-badge-plain">'+esc(texts.badgeCustom)+'</span>'));
+      pushChip(n, 'custom', false, '<span class="ss-badge ss-badge-plain">'+esc(texts.badgeCustom)+'</span>');
     });
+
+    /* 候选区折叠(v1.12): 折叠态只显前 maxChips 个, 选中项保可见; 搜索时全量过滤 */
+    var showAll = !maxChips || expanded || !!searchQ || chips.length <= maxChips;
+    var list = chips;
+    var listMeta = chipsMeta;
+    if(!showAll){
+      var selIdx = -1;
+      for(var i = 0; i < chipsMeta.length; i++){
+        if(chipsMeta[i].sel){ selIdx = i; break; }
+      }
+      list = chips.slice(0, maxChips);
+      listMeta = chipsMeta.slice(0, maxChips);
+      if(selIdx >= maxChips){
+        list[maxChips - 1] = chips[selIdx];
+        listMeta[maxChips - 1] = chipsMeta[selIdx];
+      }
+    }
+    var out = [];
+    for(var j = 0; j < list.length; j++){
+      if(searchQ && listMeta[j].name.toLowerCase().indexOf(searchQ) < 0) continue;
+      out.push(list[j]);
+    }
+    var moreBtn = '';
+    if(!showAll){
+      moreBtn = '<button type="button" class="ss-more" data-more="1">展开全部('+chips.length+')</button>';
+    } else if(expanded && maxChips && chips.length > maxChips && !searchQ){
+      moreBtn = '<button type="button" class="ss-more" data-more="0">收起</button>';
+    }
 
     root.innerHTML =
       card
       + '<div class="ss-title">'+esc(texts.candTitle)+'</div>'
       + '<input class="ss-search" placeholder="'+esc(texts.search)+'">'
-      + '<div class="ss-chips">'+chips.join('')+'</div>'
+      + '<div class="ss-chips">'+out.join('')+moreBtn+'</div>'
       + '<div class="ss-new"><input placeholder="'+esc(texts.newPlaceholder)+'"><button type="button">'+esc(texts.newButton)+'</button></div>'
       + '<div class="ss-hint"></div>'
       + '<button type="button" class="ss-empty">'+esc(texts.emptyButton)+'</button>';
 
+    /* 搜索框内容跨 render 保持(过滤状态不丢, 输入框不空) */
+    if(searchRaw) root.querySelector('.ss-search').value = searchRaw;
     root.querySelector('.ss-search').addEventListener('input', function(e){
-      var q = e.target.value.toLowerCase();
-      root.querySelectorAll('.ss-chip[data-n]').forEach(function(el){
-        el.style.display = el.getAttribute('data-n').toLowerCase().indexOf(q) >= 0 ? '' : 'none';
+      searchRaw = e.target.value;
+      searchQ = searchRaw.trim().toLowerCase();
+      render();
+    });
+    root.querySelectorAll('.ss-more').forEach(function(el){
+      el.addEventListener('click', function(){
+        expanded = el.getAttribute('data-more') === '1';
+        render();
       });
     });
     root.querySelectorAll('.ss-chip[data-n]').forEach(function(el){

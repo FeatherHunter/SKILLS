@@ -1589,16 +1589,13 @@ def test_smart_select_multi_instance_independent(page):
 
 
 def test_smart_select_search_filter(page):
-    """搜索过滤候选（按名称过滤, 不命中徽章文案）"""
+    """搜索过滤候选（按名称过滤, 不命中徽章文案; 非匹配 chip 不渲染 + 输入框内容保持）"""
     _mount_ss(page, BASE_SS_CFG)
     page.fill('.ss-search', '微信')
-    st = page.evaluate("""() => {
-      const chips = [...document.querySelectorAll('.ss-chip[data-n]')];
-      const mt = chips.find(x => x.getAttribute('data-n') === '美团');
-      const wx = chips.find(x => x.getAttribute('data-n') === '微信');
-      return { mt: mt ? mt.style.display : 'missing', wx: wx ? wx.style.display : 'missing' };
-    }""")
-    assert st == {'mt': 'none', 'wx': ''}
+    names = _visible_chip_names(page)
+    assert names == ['微信']
+    # 搜索框内容跨 render 保持（过滤状态不丢）
+    assert page.evaluate("document.querySelector('.ss-search').value") == '微信'
 
 
 def test_smart_select_theme_override(page):
@@ -1615,3 +1612,82 @@ def test_smart_select_get_state(page):
     assert page.evaluate("window.__ss.getValue()") == '美团'
     page.locator('.ss-chip', has_text='微信').click()
     assert page.evaluate("window.__ss.getState()") == {'name': '微信', 'mode': 'existing'}
+
+
+# ── 候选区折叠（v1.12 · #312 实测反馈: 大量候选时 chips 全量平铺过长）────────────
+
+MANY_OPTIONS = [{'name': '分类' + str(i)} for i in range(1, 13)]  # 12 个
+
+
+def _visible_chip_names(page):
+    return page.evaluate(
+        "[...document.querySelectorAll('.ss-root .ss-chip[data-n]')].map(x => x.getAttribute('data-n'))")
+
+
+def test_smart_select_collapse_default(page):
+    """超 maxChips(默认 8) → 折叠: 只显前 8 个 + 「展开全部(12)」按钮"""
+    _mount_ss(page, {'options': MANY_OPTIONS})
+    names = _visible_chip_names(page)
+    assert len(names) == 8 and names[0] == '分类1'
+    more = page.evaluate("document.querySelector('.ss-more')?.textContent")
+    assert more == '展开全部(12)'
+
+
+def test_smart_select_expand_and_collapse(page):
+    """展开全部 → 12 个可见 + 收起按钮; 点收起 → 回折叠"""
+    _mount_ss(page, {'options': MANY_OPTIONS})
+    page.click('.ss-more')
+    names = _visible_chip_names(page)
+    assert len(names) == 12
+    assert page.evaluate("document.querySelector('.ss-more')?.textContent") == '收起'
+    page.click('.ss-more')
+    assert len(_visible_chip_names(page)) == 8
+
+
+def test_smart_select_collapse_keeps_selected_visible(page):
+    """折叠时选中项保可见: initial 选中第 10 个 → 出现在可见区"""
+    _mount_ss(page, {'options': MANY_OPTIONS, 'initial': {'name': '分类10', 'source': 'existing'}})
+    names = _visible_chip_names(page)
+    assert '分类10' in names and len(names) == 8
+
+
+def test_smart_select_collapse_selected_chip_highlighted(page):
+    """折叠保可见的选中 chip 带选中态(ss-chip-sel)"""
+    _mount_ss(page, {'options': MANY_OPTIONS, 'initial': {'name': '分类10', 'source': 'existing'}})
+    sel = page.evaluate("[...document.querySelectorAll('.ss-chip.ss-chip-sel')].map(x => x.getAttribute('data-n'))")
+    assert sel == ['分类10']
+
+
+def test_smart_select_search_passes_collapse(page):
+    """折叠态搜索 → 全量过滤（第 10 个也能搜出, 不受折叠限制）"""
+    _mount_ss(page, {'options': MANY_OPTIONS})
+    page.fill('.ss-search', '分类10')
+    names = _visible_chip_names(page)
+    assert names == ['分类10']
+
+
+def test_smart_select_search_clear_returns_collapsed(page):
+    """清空搜索 → 回到折叠态（前 8 个 + 展开按钮）"""
+    _mount_ss(page, {'options': MANY_OPTIONS})
+    page.fill('.ss-search', '分类10')
+    page.fill('.ss-search', '')
+    names = _visible_chip_names(page)
+    assert len(names) == 8
+    assert page.evaluate("document.querySelector('.ss-more')?.textContent") == '展开全部(12)'
+
+
+def test_smart_select_expand_keeps_after_select(page):
+    """展开态点选 chip 后保持展开（不自动收起, 便于连续改选）"""
+    _mount_ss(page, {'options': MANY_OPTIONS})
+    page.click('.ss-more')
+    page.locator('.ss-chip', has_text='分类9').click()
+    assert len(_visible_chip_names(page)) == 12
+
+
+def test_smart_select_max_chips_configurable(page):
+    """maxChips 可配: 3 → 只显 3 个; 0/非正整数/缺省行为各异"""
+    _mount_ss(page, {'options': MANY_OPTIONS, 'maxChips': 3})
+    assert len(_visible_chip_names(page)) == 3
+    _mount_ss(page, {'options': MANY_OPTIONS, 'maxChips': 0})
+    assert len(_visible_chip_names(page)) == 12
+    assert page.evaluate("document.querySelector('.ss-more')") is None

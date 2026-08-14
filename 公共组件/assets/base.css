@@ -4,6 +4,7 @@
  * v1.7: .hm-actions 自约束 max-width 520px 居中（#322 · 修复复制按钮被容器拉伸成半屏宽, 胶囊语义恢复）
  * v1.9: selectList 行内控件样式（.sl-widget* · #327 · 样式走 token A 组）
  * v1.11: smartSelect 选择器组件样式（.ss-* · #312 · 主题色经 .ss-root 内联 CSS 变量覆盖, 缺省账本藏蓝）
+ * v1.12: smartSelect 候选区折叠按钮（.ss-more · #312 实测反馈: 大量候选时折叠+展开）
  * 注入点: 由 injector.py 的 SHARED-CSS 占位符注入（模板声明点, 勿含闭合标签字样）
  */
 
@@ -404,6 +405,24 @@ button.copy.ghost {
   background: var(--bg);
   border-color: var(--line);
 }
+/* 候选区折叠按钮（v1.12 · #312 实测反馈: 分类几十上百时 chips 全量平铺过长） */
+.ss-more {
+  padding: 6px 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: 16px;
+  font-size: 12.5px;
+  background: var(--bg);
+  color: var(--fg2);
+  cursor: pointer;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.ss-more:hover { border-color: var(--ss-brand); color: var(--ss-brand); background: #fff; }
 .ss-new { display: flex; gap: 8px; margin-top: 10px; }
 .ss-new input {
   flex: 1;

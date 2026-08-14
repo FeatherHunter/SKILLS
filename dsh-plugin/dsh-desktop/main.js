@@ -135,7 +135,8 @@ function makeShortcut() {
 // 生命周期模型（2026-08-14 用户拍板）：关窗 = 隐藏到托盘，后台 DSH 继续运行；
 // 真正退出只走 quitting（托盘「退出」确认弹窗 / 应用退出），before-quit 统一杀子进程。
 // 托盘创建失败（部分 Linux 桌面无托盘）→ trayEnabled=false → 自动退回「关窗即退」老行为。
-const SETTINGS_FILE = path.join(logDir, 'settings.json');
+// 设置挂 userData 而非 appData：DSH_DESKTOP_USER_DATA 重定向 userData 时设置一并隔离（测试不碰真实设置）
+const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 let tray = null;
 let trayEnabled = false;
 
@@ -184,7 +185,7 @@ function setAutoStart(on) {
       args: on ? ['--hidden'] : [],
     });
     saveSettings({ autoStart: on });
-    log('开机自启 ' + (on ? '开启' : '关闭'));
+    log('开机自启 ' + (on ? '开启' : '关闭') + ' → ' + (process.env.PORTABLE_EXECUTABLE_FILE || process.execPath));
   } catch (e) { log('开机自启设置失败: ' + e.message); }
 }
 
@@ -314,6 +315,7 @@ function onChildGone(message) {
   if (!mainWindow.isVisible()) {
     log('DSH 异常退出，窗口隐藏中 → 自动弹出窗口');
     mainWindow.show(); // 后台模式也要让用户看到错误，不能无声失败
+    mainWindow.focus(); // 弹到最前，防被其它窗口遮挡
   }
   const hint = errorHint(tailLog(30));
   log('进入错误页: ' + message + (hint ? ' [' + hint + ']' : ''));
@@ -695,7 +697,7 @@ function createWindow() {
     minWidth: 940, minHeight: 600,
     title: 'DSH 桌面版',
     backgroundColor: '#0a0a0a',
-    show: !HIDDEN_START, // 隐藏启动（服务化）：窗口建好但不显示，托盘常驻
+    show: !HIDDEN_START || SHOT, // 隐藏启动（服务化）：窗口建好但不显示，托盘常驻；SHOT 截图模式强制显示
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: {
@@ -973,7 +975,9 @@ if (!gotLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    showMainWindow(); // 已运行：恢复/新建窗口（托盘隐藏中也生效）
+    // 已运行：恢复窗口（托盘隐藏中也生效）。窗口尚未创建（启动早期）时忽略——
+    // 正常启动流程自己会亮窗，避免 createWindow+startup 重复拉起 DSH 的竞态。
+    if (mainWindow && !mainWindow.isDestroyed()) showMainWindow();
   });
 
   app.whenReady().then(() => {

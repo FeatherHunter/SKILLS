@@ -89,6 +89,7 @@ npm run pack                # 快速验证：不打安装包，直接跑 win-unp
 | `DSH_DESKTOP_REGISTRY` | 自动测速选源 | 安装 DSH 时的 npm 源；默认并发测速官方源与 npmmirror 选快者，设置后强制用它 |
 | `DSH_DESKTOP_REINSTALL=1` | 关 | 强制重装 DSH 运行时（升级用） |
 | `DSH_DESKTOP_HIDDEN=1` | 关 | 隐藏启动：窗口不显示，右下角托盘常驻（服务化；`--hidden` 同效） |
+| `DSH_DESKTOP_USER_DATA` | 默认 | 独立 userData 目录（测试隔离：单实例锁/设置按目录隔离，普通用户不需要） |
 
 > 内部调试变量（`DSH_DESKTOP_SMOKE` / `DSH_DESKTOP_SHOT` / `DSH_DESKTOP_SIZE`）见 `main.js` 顶部注释。
 

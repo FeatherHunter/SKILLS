@@ -1390,10 +1390,11 @@ return {
         seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
         // v19-36：环境段移至末尾（更新左侧），用户少点
         seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
-        // 原型：右侧停靠（details 列）
+        // 右侧停靠（details 列）：打开时顺带保证数据新鲜（过期即刷）
         seg('map', tr('nav.dock'), '#bc8cff', function () {
           const ls = ctx.get('layout')
           if (ls && typeof ls.openDetails === 'function') ls.openDetails()
+          if (s.snapMode !== 'real' || !snapFresh(s)) loadSnapshot(s, true)
         }, tr('nav.dockTitle')),
         h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, tr('nav.refresh') + ' ' + timeStr),
       ])
@@ -1835,19 +1836,39 @@ return {
       ])
     }
 
-    // ---- 5.8b 右侧停靠原型（details 槽位 · 验证三列布局/开合/悬浮切换）----
+    // ---- 5.8b 右侧停靠（details 槽位 · 三视图完整内容；开合/拖拽/宽度记忆由壳管理）----
     // 契约：details 槽 = 壳右侧第三列（AppFrame grid），scope session；关闭 = ctx.layout.closeDetails()
     //   （占位者 props 亦注入 closeDetails）；宽度 300-520px 可拖拽；关闭时子树不卸载（状态保留）。
     const DetailsDock = (props) => {
       const s = useStore(props && props.sessionId)
       const layoutSvc = ctx.get('layout')
+      const dockRef = React.useRef(null)
+      const [dw, setDw] = React.useState(460)
+      // 列宽感知：details 列 300-520px；窄于 380 时动作按钮折叠为纯图标（与悬浮面板同阈值）
+      React.useEffect(function () {
+        if (!dockRef.current) return
+        const el = dockRef.current
+        const ro = new ResizeObserver(function (entries) {
+          try { setDw(entries[0].contentRect.width) } catch (e) { /* 忽略 */ }
+        })
+        ro.observe(el)
+        return function () { try { ro.disconnect() } catch (e) { /* 忽略 */ } }
+      }, [])
+      // 初始数据（与状态栏同款：快照 + 环境检查）；壳保持子树常挂载，后续刷新走「更新」/停靠段
+      React.useEffect(function () { loadSnapshot(s, false); loadChecks(s, false) }, [])
       const closeDock = function () {
         if (props && typeof props.closeDetails === 'function') props.closeDetails()
         else if (layoutSvc && typeof layoutSvc.closeDetails === 'function') layoutSvc.closeDetails()
       }
       const toFloat = function () { closeDock(); openPanel(s) }
-      const n = readyCount(s)
-      return h('div', { style: { display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'var(--dsw-font-family)', fontSize: 12, color: 'var(--dsw-alias-label-primary,#e6edf3)', background: 'var(--dsw-alias-bg-layer-1,#10131a)' } }, [
+      const groups = compute(s)
+      const active = s.activeMap !== null ? groups.find(function (x) { return x.m.number === s.activeMap }) : null
+      const narrow = dw < 380
+      const tabBtn = (id, icon, label) => h('button', { className: 'dsws-tab' + (s.tab === id ? ' on' : ''), onClick: function () { s.tab = id; emit(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
+        Ic({ n: icon, size: 12 }),
+        h('span', null, label),
+      ])
+      return h('div', { ref: dockRef, style: { position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'var(--dsw-font-family)', fontSize: 12, color: 'var(--dsw-alias-label-primary,#e6edf3)', background: 'var(--dsw-alias-bg-layer-1,#10131a)' } }, [
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderBottom: '1px solid var(--dsw-alias-border-l1,#2a2d35)', flex: 'none' } }, [
           Icon({ scheme: 'compass', size: 15 }),
           h('span', { style: { fontWeight: 600, fontSize: 13 } }, 'Waystation'),
@@ -1855,11 +1876,20 @@ return {
           h('button', { className: 'dsws-btn', onClick: toFloat, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11 } }, [Ic({ n: 'fog', size: 11 }), h('span', null, tr('act.float'))]),
           h('button', { className: 'dsws-btn ghost', onClick: closeDock, style: { display: 'inline-flex', alignItems: 'center', padding: '2px 6px', fontSize: 11 } }, Ic({ n: 'x', size: 12 })),
         ]),
-        h('div', { style: { padding: '12px', flex: 1, overflowY: 'auto' } }, [
-          h('div', { style: { fontSize: 12, marginBottom: 8 } }, '右侧停靠原型 · 就绪 ' + (n < 0 ? '--/8' : n + '/8')),
-          h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', lineHeight: 1.7 } }, '验证点：① 三列布局（聊天区应收缩）② 关闭/重开与拖拽宽度 ③ 点工具卡片的行为 ④ 悬浮/停靠切换。'),
-          h('button', { className: 'dsws-btn', onClick: function () { openPanel(s) }, style: { marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'compass', size: 11 }), h('span', null, tr('run.openPanel'))]),
+        h('div', { className: 'dsws-tabs', style: { padding: '8px 12px 0' } }, [
+          tabBtn('list', 'list', tr('panel.tabList')),
+          tabBtn('skills', 'compass', tr('panel.tabSkills')),
+          tabBtn('checks', 'gear', tr('panel.tabChecks')),
         ]),
+        h('div', { className: 'dsws-body', style: { flex: 1, overflowY: 'auto', padding: '10px 12px' } }, [
+          s.tab === 'list' ? (active ? h(MapDetail, { st: s, g: active }) : h(ListTab, { st: s, narrow: narrow })) : null,
+          s.tab === 'skills' ? h(SkillsTab, { st: s }) : null,
+          s.tab === 'checks' ? h(ChecksTab, { st: s }) : null,
+        ]),
+        s.notice ? h('div', { className: 'dsws-note', style: { display: 'flex', alignItems: 'center', gap: 6 } }, [
+          Ic({ n: noticeIcon(s.notice.kind), size: 13, color: NOTICE_COLOR[s.notice.kind] || '#4ade80' }),
+          h('span', null, s.notice.text),
+        ]) : null,
       ])
     }
 
@@ -2176,8 +2206,9 @@ return {
       return slots.register({ name: 'settings.plugins.tab', id: 'dsws-settings', order: 40, label: function () { return 'Waystation' } }, SettingsPage)
     })
     // 原型：右侧停靠（details 槽位 · 替换内置工具详情面板；single 槽动态注册优先级低 → 胜出）
+    // priority: -1 低于内置详情面板的默认 0 → 无冲突且「低者胜出」替换内置面板
     slots.inject('details', function () {
-      return slots.register({ name: 'details', id: 'dsws-details', order: 10 }, DetailsDock)
+      return slots.register({ name: 'details', id: 'dsws-details', order: 10, priority: -1 }, DetailsDock)
     })
 
     // #347：加载真数据快照（repo 链接 + 前置检测兜底），失败静默

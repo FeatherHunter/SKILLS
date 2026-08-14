@@ -1,0 +1,56 @@
+{
+  "name": "dsh-desktop",
+  "version": "1.0.0",
+  "description": "DSH 桌面版：双击启动 DSH Web，后台运行无终端窗口，关闭窗口即停止后台服务。",
+  "main": "main.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "icon": "electron tools/rasterize-icon.js",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "appId": "com.dsh.desktop",
+    "productName": "桌面版",
+    "afterPack": "build/after-pack.js",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "boot.html",
+      "build/icon.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "runtime-resources/npm",
+        "to": "runtime/npm"
+      }
+    ],
+    "artifactName": "dsh-desktop-${version}-${arch}.${ext}",
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Development",
+      "maintainer": "dsh"
+    }
+  },
+  "devDependencies": {
+    "electron": "^43.4.0",
+    "electron-builder": "^26.15.3"
+  }
+}

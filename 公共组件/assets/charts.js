@@ -1,4 +1,4 @@
-/* Base Skill 图表组件 v1.17（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.18（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
@@ -75,6 +75,9 @@ if(!document.getElementById(_styleId)){
   +'.hm-c-cross.show{display:block}'
   /* markLine 阈值线 */
   +'.hm-c-markline-t{font-size:10px;line-height:1;color:var(--fg3,#86868b);position:absolute;transform:translate(-100%,-100%);white-space:nowrap;pointer-events:none;font-style:normal}' /* v1.16: SVG text → HTML 覆盖层(拉伸/遮挡修复, #333 验收发现) */
+  /* markPoint 峰谷点标注（v1.18 · #319）: 高亮点 + 上方文字, 贴边防裁剪(clamp) */
+  +'.hm-c-mp{position:absolute;width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.14);pointer-events:none;box-sizing:border-box}'
+  +'.hm-c-mp-t{position:absolute;font-size:10.5px;font-weight:700;line-height:1;transform:translateX(-50%);white-space:nowrap;pointer-events:none;font-style:normal;font-variant-numeric:tabular-nums}'
   /* yTicks 轴刻度文字（HTML 覆盖层不占位 → 既有渲染逐字节不变; pointer-events:none 不挡 tooltip） */
   +'.hm-c-yt{position:absolute;left:2px;transform:translateY(-50%);font-size:9.5px;line-height:1;color:var(--fg3,#86868b);white-space:nowrap;pointer-events:none;font-style:normal;font-variant-numeric:tabular-nums}'
   /* sparkline */
@@ -381,6 +384,34 @@ window.charts={
         }
       }
     }
+    /* markPoint 峰谷点标注（v1.18 · #319）: 默认 = 主序列最大值点; 可传 {index|value, label, color} 覆盖
+     * 高亮点 + 上方文字标注（HTML 覆盖层）; 贴边防裁剪: left clamp(40px, 点位置, calc(100% - 40px)) 防最左/最右点裁剪
+     * 缺省(false) → 无任何标注元素, 既有渲染逐字节不变 */
+    var mpHtml='';
+    if(opt.markPoint){
+      var mp=(opt.markPoint===true)?{}:opt.markPoint;
+      var mainItems=seriesList[0].items,mpIdx=null;
+      if(mp.index!==undefined&&mp.index!==null&&_isNum(mp.index)){
+        mpIdx=Math.round(_num(mp.index));
+        if(mpIdx<0||mpIdx>=mainItems.length)mpIdx=null; /* 越界 index 忽略不报错 */
+      }else if(mp.value!==undefined&&mp.value!==null&&_isNum(mp.value)){
+        var mv=_num(mp.value);
+        for(var mi2=0;mi2<mainItems.length;mi2++){if(mainItems[mi2].value!==null&&mainItems[mi2].value!==undefined&&_num(mainItems[mi2].value)===mv){mpIdx=mi2;break;}}
+      }else{
+        var mMax=null;
+        mainItems.forEach(function(it,i){if(it.value!==null&&it.value!==undefined&&(mMax===null||_num(it.value)>mMax)){mMax=_num(it.value);mpIdx=i;}});
+      }
+      if(mpIdx!==null&&seriesPts[0][mpIdx]&&!seriesPts[0][mpIdx][2]){
+        var mpp=seriesPts[0][mpIdx];
+        var mlx=mpp[0]/_W*100,mty=mpp[1]/_H*100;
+        var mpColor=mp.color||seriesList[0].color||opt.color||'var(--blue,#007aff)';
+        mpHtml+='<i class="hm-c-mp" style="left:'+mlx.toFixed(2)+'%;top:'+mty.toFixed(2)+'%;background:'+mpColor+'"></i>';
+        var mpLabel=mp.label!==undefined&&mp.label!==null?String(mp.label):_fmt(mainItems[mpIdx].value,opt.format);
+        /* 贴边防裁剪: 点落在左右 18% 区域时锚定内侧边缘(左对齐/右对齐), 中间居中 → 任意长度标注不裁剪 */
+        var mpLft=(mlx<18)?'20px;transform:translateX(0)':((mlx>82)?'calc(100% - 20px);transform:translateX(-100%)':mlx.toFixed(2)+'%;transform:translateX(-50%)');
+        mpHtml+='<i class="hm-c-mp-t" style="left:'+mpLft+';top:'+Math.max(2,mty-22).toFixed(2)+'%;color:'+mpColor+'">'+_esc(mpLabel)+'</i>';
+      }
+    }
     /* X 轴标签 */
     var xLabels='';
     if(opt.labels==='all'){xLabels=items.map(function(it){return '<span>'+_esc(it.label)+'</span>';}).join('');}
@@ -390,7 +421,7 @@ window.charts={
     var rotStyle=opt.labelRotate?(' style="transform:rotate('+opt.labelRotate+'deg);transform-origin:top center" '):'';
     el.innerHTML='<div class="hm-c-line-wrap" '+hStyle+'>'
       +(opt.legend&&legendsHtml?'<div class="hm-c-legend">'+legendsHtml+'</div>':'')
-      +'<div class="hm-c-line-svg"><svg viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none">'+grid+tickLines+markHtml+pathsHtml+'</svg>'+dotsHtml+valuesHtml+tickLabels+markLbl+'</div>'
+      +'<div class="hm-c-line-svg"><svg viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none">'+grid+tickLines+markHtml+pathsHtml+'</svg>'+dotsHtml+valuesHtml+tickLabels+markLbl+mpHtml+'</div>'
       +(xLabels?'<div class="hm-c-line-x"'+rotStyle+'>'+xLabels+'</div>':'')
       +'</div>';
     if(opt.animation){

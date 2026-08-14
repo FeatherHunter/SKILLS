@@ -1505,6 +1505,65 @@ def test_line_ownscale_single_series_noop(chart_page):
     assert d1 == d2
 
 
+# ── line: markPoint 峰谷点标注（v1.18 · #319）────────────────
+
+def test_line_markpoint_default_max(chart_page):
+    """markPoint:true: 主序列最大值点出现高亮标记 + 文字标注（值走 format）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, markPoint:true, format:"¥{v}"})', LINE_ITEMS)
+    dots = chart_page.evaluate("document.querySelectorAll('.hm-c-mp').length")
+    lbl = chart_page.evaluate("document.querySelector('.hm-c-mp-t')?.textContent")
+    assert dots == 1 and lbl == '¥8'  # LINE_ITEMS 最大值 8（index 3）
+
+
+def test_line_markpoint_index_override(chart_page):
+    """markPoint:{index}: 指定点标注 + 自定义 label"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'a',value:1},{label:'b',value:5},{label:'c',value:3}], {animation:false, markPoint:{index:1,label:'峰值'}})")
+    lbl = chart_page.evaluate("document.querySelector('.hm-c-mp-t')?.textContent")
+    assert lbl == '峰值'
+
+
+def test_line_markpoint_value_match(chart_page):
+    """markPoint:{value}: 按值匹配首个点"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'a',value:3},{label:'b',value:5},{label:'c',value:5}], {animation:false, markPoint:{value:5}})")
+    mp = chart_page.evaluate("document.querySelector('.hm-c-mp')?.getBoundingClientRect()")
+    dot1 = chart_page.evaluate("[...document.querySelectorAll('.hm-c-dot')].map(n=>(n.getBoundingClientRect().x + n.getBoundingClientRect().width/2))")
+    assert mp is not None and abs((mp['x'] + mp['width']/2) - dot1[1]) < 2  # 与第 2 个数据点中心对齐（首个 value=5）
+
+
+def test_line_markpoint_edge_not_clipped(chart_page):
+    """贴边防裁剪: index 0（最左）长标注不超出容器左边界"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'a',value:9},{label:'b',value:1},{label:'c',value:2}], {animation:false, markPoint:{index:0,label:'很长很长很长的标注文字'}})")
+    box = chart_page.evaluate("""() => {
+      const svg=document.querySelector('.hm-c-line-svg').getBoundingClientRect();
+      const l=document.querySelector('.hm-c-mp-t').getBoundingClientRect();
+      return {l: l.left-svg.left, r: l.right-svg.left, w: svg.width};
+    }""")
+    assert box['l'] >= 0 and box['r'] <= box['w']
+
+
+def test_line_markpoint_default_absent_byte_identical(chart_page):
+    """缺省: 无 .hm-c-mp 元素; markPoint:false 与未传渲染逐字节一致"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    n1 = chart_page.evaluate("document.querySelectorAll('.hm-c-mp,.hm-c-mp-t').length")
+    html1 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, markPoint:false})', LINE_ITEMS)
+    n2 = chart_page.evaluate("document.querySelectorAll('.hm-c-mp,.hm-c-mp-t').length")
+    html2 = chart_page.evaluate("document.getElementById('root').innerHTML")
+    assert n1 == 0 and n2 == 0 and html1 == html2
+
+
+def test_line_markpoint_series_main_series(chart_page):
+    """series 场景: 标注作用于主序列（series[0]）最大值点, 不取其他序列更大值"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:1}], {animation:false, markPoint:true,
+        series:[{name:'A',items:[{label:'a',value:2},{label:'b',value:9},{label:'c',value:4}]},
+                {name:'B',items:[{label:'a',value:50},{label:'b',value:60},{label:'c',value:70}]}]})
+    """)
+    mp = chart_page.evaluate("document.querySelector('.hm-c-mp')?.getBoundingClientRect()")
+    dots = chart_page.evaluate("[...document.querySelectorAll('.hm-c-dot')].map(n=>(n.getBoundingClientRect().x + n.getBoundingClientRect().width/2))")
+    assert mp is not None and abs((mp['x'] + mp['width']/2) - dots[1]) < 2  # B 值更大但标注在 A 序列 max(9) 点中心
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

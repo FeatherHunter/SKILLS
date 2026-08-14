@@ -2,6 +2,18 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.18（2026-08-14 · charts.line markPoint 峰谷点标注 · #319）
+
+**charts.line `markPoint` 参数补齐实现**（非破坏性 · 新可选字段 · 契约 §6.5 参数表早已声明该参数但无渲染代码, 本次真正实现; 缺省 false 行为逐字节不变）。
+
+- **`markPoint: true`**: 默认在主序列（items / series[0]）最大值点渲染高亮数据点（白边 + 阴影圈）+ 上方文字标注（标注文字 = 该点值, 走 `format`）
+- **`{index: n}`**: 指定 items 索引点（越界忽略不报错）; **`{value: v}`**: 按值匹配首个点
+- **`{label, color}` 覆盖**: 自定义标注文字 / 标注色（缺省 = 序列色）
+- **贴边防裁剪**: 点落左右 18% 区域时标注文字锚定内侧边缘（左对齐/右对齐）, 中间区域居中——任意长度标注不裁出界（对齐饼干记账旧实现 text-anchor 贴边经验, #300 验收修复 91b1a1a）
+- **正交**: 与 series（作用于主序列）/ showValues / markLine / highlightLast 可组合; 不影响 tooltip / 动画
+- **向后兼容**: markPoint 未传/false 时渲染与 v1.17 逐字节一致（显式断言 innerHTML 全等）
+- 契约 §6.5 markPoint 条目 + §0 版本记录 + CHANGELOG 同步; 守卫测试 +6 → 全量全绿
+
 ## v1.17（2026-08-14 · charts.line 系列独立刻度 series[].ownScale · #334）
 
 **charts.line 新增可选参数 `series[].ownScale: true`**（非破坏性 · 新可选字段 · 签名零变更；缺省行为逐字节不变）。

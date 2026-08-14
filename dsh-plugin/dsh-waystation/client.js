@@ -8,7 +8,8 @@
  *   3. 面板可拖动（头部）、可调大小（右下角手柄），不再固定右侧遮挡
  *   4. 外观方案（Run 卡内可切换）：4 套 SVG 图标（罗盘/灯塔/雷达/图钉）+ 4 个动作词（沉淀/落纸/存档/快照）
  *
- * 数据源仍为假数据 fixture；接口抽象，T3 后换 host.call('wf.snapshot') 接真。
+ * 数据源（#344/#346 已接真）：就绪检查走 host.call('wf.status')；面板/地图/票务走
+ * host.call('wf.snapshot' | 'wf.refresh')。FIX 仅保留就绪检查兜底；FIX.maps 假地图已移除。
  *
  * 本文件内容 = cordis_define 的 code.client（纯 JS 函数体，返回 Cordis Plugin）。
  */
@@ -87,41 +88,6 @@ return {
         { id: 7, name: 'wayfinder 技能', level: 'warn', detail: '已安装但未挂载到当前会话', hint: '用 /wayfinder 加载' },
         { id: 8, name: 'ask-matt 技能', level: 'warn', detail: '已安装但未挂载到当前会话', hint: '用 /ask-matt 加载' },
       ],
-      maps: [
-        {
-          number: 200, title: '[私家大厨] 实施编排 map · v4.0 落地',
-          destination: '10 域场景 + 08 对齐 + 数据层 + 开源落地（世界第一私家大厨）',
-          notes: '每会话必查 research / grilling；standing preference：决策先落纸',
-          decisions: [
-            { title: '决策：菜谱数据层放哪', url: '#805', gist: '单账本多分类，SQLite 独立文件' },
-            { title: '决策：错误提示文案', url: '#809', gist: '统一 toast + 行内双通道' },
-          ],
-          fog: ['多端同步的冲突策略还没法问清楚，等数据层定稿'],
-          outOfScope: ['AI 买菜清单（目的地未包含）'],
-          tickets: [
-            { number: 801, title: '研究外部 API 认证方式', type: 'research', state: 'OPEN', claimedBy: '', blockedBy: [], blocks: [802], resolution: '' },
-            { number: 802, title: '原型：录入表单交互', type: 'prototype', state: 'OPEN', claimedBy: '', blockedBy: [801], blocks: [], resolution: '' },
-            { number: 803, title: 'Grill：食材单位体系', type: 'grilling', state: 'OPEN', claimedBy: 'FeatherHunter', blockedBy: [], blocks: [804], resolution: '' },
-            { number: 804, title: 'Task：迁移存量菜谱数据', type: 'task', state: 'OPEN', claimedBy: '', blockedBy: [803], blocks: [], resolution: '' },
-            { number: 805, title: '决策：菜谱数据层放哪', type: 'grilling', state: 'CLOSED', claimedBy: 'FeatherHunter', blockedBy: [], blocks: [], resolution: '单账本多分类，SQLite 独立文件' },
-          ],
-        },
-        {
-          number: 163, title: '[饼干记账] v2.0 实施 · wayfinder 实施地图',
-          destination: 'v2.0 全量落地（多账本 + 月度视图 + 开源）',
-          notes: '数据层见私家大厨 #805；用 code-review 收尾',
-          decisions: [
-            { title: '决策：账本结构', url: '#808', gist: '单账本多分类' },
-          ],
-          fog: ['导出格式是否要支持 CSV 之外的格式'],
-          outOfScope: [],
-          tickets: [
-            { number: 806, title: '研究：导出格式规范', type: 'research', state: 'OPEN', claimedBy: '', blockedBy: [], blocks: [807], resolution: '' },
-            { number: 807, title: 'Task：月度视图重写', type: 'task', state: 'OPEN', claimedBy: '', blockedBy: [806], blocks: [], resolution: '' },
-            { number: 808, title: '决策：账本结构', type: 'grilling', state: 'CLOSED', claimedBy: '', blockedBy: [], blocks: [], resolution: '单账本多分类' },
-          ],
-        },
-      ],
     }
 
     // ============================================================
@@ -192,6 +158,7 @@ return {
       ui: { icon: 'compass', word: '沉淀' },
       snapshot: null, cfgOpen: false,
       checks: null, checksUpdatedAt: '', checksMode: 'loading', checksError: null, checking: false,
+      snapMode: 'loading', snapError: null, snapLoading: false,
     }
     const subs = []
     const emit = () => { S.tick++; subs.forEach(function (f) { f(S.tick) }) }
@@ -207,17 +174,20 @@ return {
     }
     const WORD = () => S.ui.word
 
-    // 派生：票务分组（frontier/claimed/blocked/closed）
-    const compute = () => FIX.maps.map(function (m) {
-      const byNum = {}; m.tickets.forEach(function (t) { byNum[t.number] = t })
-      const openBlocker = (b) => { const t = byNum[b]; return t !== undefined && t.state === 'OPEN' }
-      const open = m.tickets.filter(function (t) { return t.state === 'OPEN' })
-      const closed = m.tickets.filter(function (t) { return t.state === 'CLOSED' })
-      const frontier = open.filter(function (t) { return !t.claimedBy && !t.blockedBy.some(openBlocker) })
-      const claimed = open.filter(function (t) { return t.claimedBy })
-      const blocked = open.filter(function (t) { return !t.claimedBy && t.blockedBy.some(openBlocker) })
-      return { m: m, open: open, closed: closed, frontier: frontier, claimed: claimed, blocked: blocked }
-    })
+    // 派生：票务分组（frontier/claimed/blocked/closed · #346 接真快照）
+    const compute = () => {
+      const maps = (S.snapshot && Array.isArray(S.snapshot.maps)) ? S.snapshot.maps : []
+      return maps.map(function (m) {
+        const byNum = {}; m.tickets.forEach(function (t) { byNum[t.number] = t })
+        const openBlocker = (b) => { const t = byNum[b]; return t !== undefined && t.state === 'OPEN' }
+        const open = m.tickets.filter(function (t) { return t.state === 'OPEN' })
+        const closed = m.tickets.filter(function (t) { return t.state === 'CLOSED' })
+        const frontier = open.filter(function (t) { return !t.claimedBy && !t.blockedBy.some(openBlocker) })
+        const claimed = open.filter(function (t) { return t.claimedBy })
+        const blocked = open.filter(function (t) { return !t.claimedBy && t.blockedBy.some(openBlocker) })
+        return { m: m, open: open, closed: closed, frontier: frontier, claimed: claimed, blocked: blocked }
+      })
+    }
     const frontierAll = () => compute().reduce(function (n, g) { return n + g.frontier.length }, 0)
 
     // ---- 就绪检查（#344 · host.call('wf.status') 真数据；host 侧 30s 缓存 / force 重查）----
@@ -278,13 +248,36 @@ return {
     })()
     const saveStartCfg = function () { try { localStorage.setItem(START_CFG_KEY, JSON.stringify(startCfg)) } catch (e) {} }
 
-    // 真数据快照（#347：用 repo 生成正确链接 + 前置检测兜底；面板数据源整体切换属 #346）
-    const loadSnapshot = function () {
-      if (typeof host === 'undefined' || typeof host.call !== 'function') return
-      host.call('wf.snapshot').then(function (snap) {
-        if (snap && snap.ok === false) return
-        S.snapshot = snap; emit()
-      }).catch(function () { /* 快照不可用：保持 null，各功能自行兜底 */ })
+    // 真数据快照（#346：面板数据源；force 走 wf.refresh 全量重建；wf.snapshot 侧 5s 缓存）
+    const loadSnapshot = function (force) {
+      if (S.snapLoading) return
+      if (typeof host === 'undefined' || typeof host.call !== 'function') {
+        S.snapMode = 'err'
+        S.snapError = 'host.call 不可用（Host 半未加载）'
+        emit()
+        return
+      }
+      S.snapLoading = true
+      S.snapMode = 'loading'
+      emit()
+      const p = force ? host.call('wf.refresh', {}) : host.call('wf.snapshot', {})
+      p.then(function (snap) {
+        S.snapLoading = false
+        if (snap && snap.ok === true && Array.isArray(snap.maps)) {
+          S.snapshot = snap
+          S.snapMode = 'real'
+          S.snapError = null
+        } else {
+          S.snapMode = 'err'
+          S.snapError = (snap && snap.error) ? String(snap.error).slice(0, 160) : 'wf.snapshot 返回异常'
+        }
+        emit()
+      }).catch(function (e) {
+        S.snapLoading = false
+        S.snapMode = 'err'
+        S.snapError = String((e && e.message) || e).slice(0, 160)
+        emit()
+      })
     }
 
     const repoStr = () => (S.snapshot && S.snapshot.repo)
@@ -340,13 +333,14 @@ return {
       React.useEffect(function () {
         if (props && props.inputActions && typeof props.inputActions.setDraft === 'function') s.injector = props.inputActions.setDraft
       }, [props])
-      React.useEffect(function () { loadChecks(false) }, [])
+      React.useEffect(function () { loadChecks(false); loadSnapshot(false) }, [])
       const fr = frontierAll()
       const blk = compute().reduce(function (n, g) { return n + g.blocked.length + g.claimed.length }, 0)
       const cs = activeChecks()
       const toggle = function () { s.open = !s.open; emit() }
-      const refresh = function () { loadChecks(true) }
-      const modeTag = s.checksMode === 'real' ? ' · 就绪真数据' : s.checksMode === 'err' ? ' · 就绪异常' : s.checksMode === 'loading' ? ' · 检测中…' : (FIX.mode === 'fake' ? ' · 假数据' : '')
+      const refresh = function () { loadChecks(true); loadSnapshot(true) }
+      const modeTag = (s.checksMode === 'real' && S.snapMode === 'real') ? ' · 真数据' : s.checksMode === 'real' ? ' · 就绪真数据' : s.checksMode === 'err' ? ' · 就绪异常' : s.checksMode === 'loading' ? ' · 检测中…' : (FIX.mode === 'fake' ? ' · 假数据' : '')
+      const timeStr = (S.snapshot && S.snapshot.updatedAt) ? String(S.snapshot.updatedAt).slice(11, 16) : (s.checksUpdatedAt || FIX.updatedAt)
       const setup = setupCheck()
       const amber = s.checksMode === 'real' && setup && setup.level !== 'ok'
       const row = h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4, fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '2px 4px', flexWrap: 'wrap' } }, [
@@ -355,7 +349,7 @@ return {
         h('span', { className: 'dsws-seg', onClick: toggle, style: { color: readyCount() === cs.length ? '#4ade80' : '#f59e0b' } }, '● 就绪 ' + readyCount() + '/' + cs.length),
         h('span', { className: 'dsws-seg', onClick: toggle, style: { color: '#4ade80' } }, '🟢 可接 ' + fr),
         h('span', { className: 'dsws-seg', onClick: toggle, style: { color: '#f0883e' } }, '🔒 占用 ' + blk),
-        h('span', { className: 'dsws-timebtn', onClick: refresh, title: '点击重新检查' }, '更新 ' + (s.checksUpdatedAt || FIX.updatedAt) + modeTag),
+        h('span', { className: 'dsws-timebtn', onClick: refresh, title: '点击重新检查（就绪 + 面板快照）' }, '更新 ' + timeStr + modeTag),
         s.notice ? h('span', { style: { color: 'var(--dsw-alias-state-success-primary,#4ade80)' } }, s.notice) : null,
       ])
       if (!amber) return row
@@ -384,7 +378,7 @@ return {
           h('div', { className: 'dsws-tt-sub' }, [
             t.claimedBy ? h('span', { style: { color: '#58a6ff' } }, '🔵 已认领 ' + t.claimedBy + '　') : null,
             t.blockedBy.length ? h('span', { style: { color: '#f0883e' } }, '🔒 被阻塞：' + blockerNames(t, g.m)) : null,
-            t.state === 'CLOSED' && t.resolution ? h('span', { style: { color: '#3fb950' } }, '✅ ' + t.resolution) : null,
+            t.state === 'CLOSED' ? h('span', { style: { color: '#3fb950' } }, '✅ 已关闭' + (t.resolution ? ' · ' + t.resolution : '')) : null,
           ]),
         ]),
         t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4 } }, [
@@ -405,7 +399,8 @@ return {
           h('span', { className: 'dsws-chip dsws-chip-m' }, 'wayfinder:map'),
         ]),
         h('div', { className: 'dsws-mtitle' }, m.title),
-        h('div', { className: 'dsws-mdest' }, '🎯 ' + m.destination),
+        m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6 } }, '⚠️ ' + String((m.error && m.error.error) || '加载失败').slice(0, 160)) : null,
+        h('div', { className: 'dsws-mdest' }, '🎯 ' + (m.destination || '（未填写 Destination）')),
         h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, '📝 Notes：' + m.notes),
         h('details', { style: { marginBottom: 4 } }, [
           h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, 'Decisions so far（' + m.decisions.length + '）'),
@@ -432,24 +427,35 @@ return {
       ])
     }
 
-    // ---- 6.5 地图列表 ----
+    // ---- 6.5 地图列表（#346：真快照 + 刷新/加载/错误态）----
     const MapList = () => {
       const s = useStore()
       const groups = compute()
-      return h('div', null, groups.map(function (g) {
-        const m = g.m
-        const pct = Math.round(g.closed.length / m.tickets.length * 100)
-        return h('div', { key: m.number, className: 'dsws-maprow', onClick: function () { s.activeMap = m.number; emit() } }, [
-          h('div', { className: 'dsws-mtitle' }, m.title),
-          h('div', { className: 'dsws-mdest' }, '🎯 ' + m.destination),
-          h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [
-            h('span', null, '进度 ' + g.closed.length + '/' + m.tickets.length),
-            h('span', { style: { color: '#4ade80' } }, '🟢 可接 ' + g.frontier.length),
-            h('span', { style: { color: '#f0883e' } }, '🔒 ' + (g.blocked.length + g.claimed.length)),
-          ]),
-          h('div', { className: 'dsws-prog' }, [h('i', { style: { width: pct + '%' } })]),
-        ])
-      }))
+      const repoTag = (S.snapshot && S.snapshot.repo) ? S.snapshot.repo.owner + '/' + S.snapshot.repo.name : ''
+      return h('div', null, [
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12 } }, [
+          h('span', { className: 'dsws-grp', style: { margin: 0 } }, '🗺 地图 ' + groups.length + ' 张' + (repoTag ? ' · ' + repoTag : '')),
+          h('span', { style: { flex: 1 } }),
+          h('button', { className: 'dsws-btn', onClick: function () { loadSnapshot(true) }, style: { fontSize: 11, padding: '2px 8px' } }, '↻ 刷新'),
+        ]),
+        S.snapMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, '加载中…（拉取全部 wayfinder:map 与子票）') : null,
+        S.snapMode === 'err' ? h('div', { style: { color: '#f87171', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, '⚠️ 快照加载失败：' + s.snapError) : null,
+        groups.map(function (g) {
+          const m = g.m
+          const pct = m.tickets.length ? Math.round(g.closed.length / m.tickets.length * 100) : 0
+          return h('div', { key: m.number, className: 'dsws-maprow', onClick: function () { s.activeMap = m.number; emit() } }, [
+            h('div', { className: 'dsws-mtitle' }, m.title),
+            h('div', { className: 'dsws-mdest' }, '🎯 ' + (m.destination || '（未填写 Destination）')),
+            m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 4 } }, '⚠️ ' + String((m.error && m.error.error) || '加载失败').slice(0, 120)) : null,
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [
+              h('span', null, '进度 ' + g.closed.length + '/' + m.tickets.length),
+              h('span', { style: { color: '#4ade80' } }, '🟢 可接 ' + g.frontier.length),
+              h('span', { style: { color: '#f0883e' } }, '🔒 ' + (g.blocked.length + g.claimed.length)),
+            ]),
+            h('div', { className: 'dsws-prog' }, [h('i', { style: { width: pct + '%' } })]),
+          ])
+        }),
+      ])
     }
 
     // ---- 6.6 技能雷达 ----
@@ -517,6 +523,7 @@ return {
     const OverlayPanel = () => {
       const s = useStore()
       const dragRef = React.useRef(null)
+      React.useEffect(function () { if (s.open) loadSnapshot(false) }, [s.open])
       if (!s.open) return null
       const groups = compute()
       const active = s.activeMap !== null ? groups.find(function (x) { return x.m.number === s.activeMap }) : null
@@ -549,7 +556,7 @@ return {
       return h('div', { className: 'dsws-panel', style: panelStyle }, [
         h('div', { className: 'dsws-head', onMouseDown: onHeaderDown }, [
           h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } }, Icon({ scheme: s.ui.icon, size: 17 }), 'DSH-Waystation'),
-          h('span', { className: 'dsws-chip dsws-chip-m' }, FIX.mode === 'fake' ? '原型 · 假数据' : '真数据'),
+          h('span', { className: 'dsws-chip ' + (S.snapMode === 'err' ? 'dsws-chip-t' : 'dsws-chip-m') }, S.snapMode === 'real' ? '真数据' : S.snapMode === 'err' ? '快照异常' : S.snapMode === 'loading' ? '加载中…' : '原型 · 假数据'),
           h('span', { style: { flex: 1 } }),
           h('button', { className: 'dsws-btn ghost', onClick: function () { s.open = false; emit() } }, '✕'),
         ]),
@@ -718,7 +725,7 @@ return {
           h('strong', null, 'DSH-Waystation 原型'),
           h('span', { style: { color: '#4ade80', fontSize: 12 } }, '● 已加载（假数据）'),
         ]),
-        h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', margin: '6px 0' } }, '就绪检查已接真（wf.status · #344）；地图/票务数据待 #346 接入 wf.snapshot。'),
+        h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', margin: '6px 0' } }, '就绪（wf.status · #344）+ 面板（wf.snapshot · #346）均已接真；剩余 UX 细节待 #348 拍板。'),
         h('div', { className: 'dsws-uirow' }, [
           h('span', { style: { fontSize: 12 } }, '图标：'),
           ICON_SCHEMES.map(function (ic) {
@@ -734,7 +741,7 @@ return {
         h('div', { className: 'dsws-uirow' }, [
           h('button', { className: 'dsws-btn', onClick: function () { s.open = true; emit() } }, '打开面板'),
           h('button', { className: 'dsws-btn', onClick: function () { s.cfgOpen = true; emit() } }, '开始模板'),
-          h('button', { className: 'dsws-btn', onClick: function () { flash('就绪检查已接真；地图数据待 #346 接入 wf.snapshot') } }, '数据源：就绪真/地图假'),
+          h('button', { className: 'dsws-btn', onClick: function () { flash('面板已接 wf.snapshot 真数据（#346）') } }, '数据源：真数据'),
           h('a', { className: 'dsws-btn', href: 'https://github.com/FeatherHunter/SKILLS/issues/355', target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, 'Ticket #355'),
         ]),
       ])

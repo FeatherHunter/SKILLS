@@ -1,11 +1,14 @@
 /**
- * DSH-Waystation · Client 半（UX v23 · 2026-08-14 第九批执行）
+ * DSH-Waystation · Client 半（UX v24 · 2026-08-14 第十批执行）
  *
- * v23 变更（用户反馈）：
- *   47. 面板默认高度 = 屏幕约 1/4（不再被内容撑满整屏；内容内部滚动，用户可拖手柄拉长）
+ * v24 变更（用户反馈）：
+ *   48. 交接第二击文件名修复：记忆第一击模板的时间戳，第二击读同一个文件
+ *       （模板写什么名就读什么名；不再因目录无文档而兜底旧 latest.md；未点第一击才回退查最新）
+ *   49. 面板默认高度 1/4 → 1/2（用户反馈 1/4 太小）
  *
- * v22 变更：引导句更新「从第一性原理出发完成任务，并对抗式审查。」；
- * 交接第一击恢复注入时间戳模板；第二击预填优化+复制。
+ * v23：面板默认高度 = 屏幕约 1/4。
+ * v22：引导句「从第一性原理出发完成任务，并对抗式审查。」；交接第一击恢复注入时间戳模板；
+ * 第二击预填优化+复制。
  * v21：动作按钮 prompt 精简 + 统一引导句。
  * v20：标签「+N」点击展开全部标签/收起。
  * v19：grilling→讨论 / 头部 repo 名 / 环境段末尾 / map 详情执行+任务动作 / map 行进度 /
@@ -208,9 +211,9 @@ return {
     // ============================================================
     // 3. store（v14：按会话隔离；无 sid 时用 shared）
     // ============================================================
-    // v23-47：面板默认高度 = 屏幕约 1/4（不占满整屏；内容内部滚动，用户可拖手柄拉长）
+    // v24-48：面板默认高度 = 屏幕约 1/2（用户反馈 1/4 太小；内容内部滚动，可拖手柄拉长）
     const DEFAULT_PANEL_H = (function () {
-      try { return Math.max(240, Math.round((window.innerHeight || 800) * 0.25)) } catch (e) { return 240 }
+      try { return Math.max(240, Math.round((window.innerHeight || 800) * 0.5)) } catch (e) { return 400 }
     })()
     const makeStore = () => ({
       open: false, tab: 'list', activeMap: null,
@@ -527,13 +530,14 @@ return {
       '4. 列完后停下等我逐条核对。我确认或修正完毕后，你再把清单落盘：已有地图就写进 map 正文和对应 ISSUE；还没建图就先生成一份快照笔记并告诉我存哪，等建图时搬入。'
     const injectFixate = (st) => { inject(st, FIXATE_PROMPT) }
 
-    // v22-45：交接（M9 定向传递）—— 第一击自动注入 /handoff 模板（带时间戳文件名 + 引导句）；
-    // 文案变「交接给新会话」；第二击 = host 查最新时间戳交接文档 → 预填「/read + 复述确认」完整 prompt
-    // + 复制到剪贴板 + workspaces.startSession 新开空白会话（非 fork，避免复制旧上下文）
+    // v24-48：交接 —— 第一击自动注入 /handoff 模板（带时间戳文件名 + 引导句）并记忆该时间戳；
+    // 第二击优先读「第一击模板里的同一个文件」（模板写什么名就读什么名，不再查目录导致旧文件名）；
+    // 仅当未点过第一击（如刷新后）才回退 host 查最新实际文档；+ 复制 + 开新空白会话
     const HANDOFF_READ = '/read .scratch/handoff/latest.md'
-    const handoffPrompt = function () {
+    let handoffTs = null  // v24：第一击模板使用的时间戳（第二击优先复用同一文件名）
+    const handoffPrompt = function (ts) {
       return '/handoff\n\n' +
-        '请把当前会话生成交接文档，写到 .scratch/handoff/' + timeStampStr() + '.md（相对当前工作目录），包含三部分：\n' +
+        '请把当前会话生成交接文档，写到 .scratch/handoff/' + ts + '.md（相对当前工作目录），包含三部分：\n' +
         '1. 结论：本次会话已确认的决定与成果；\n' +
         '2. 未完成事项：下一步要继续的事；\n' +
         '3. 建议 skill：新会话接手时建议加载的技能。\n\n' +
@@ -546,7 +550,8 @@ return {
     const doHandoff = function (st) {
       if (!st.handoffReady) {
         st.handoffReady = true
-        inject(st, handoffPrompt())
+        handoffTs = timeStampStr()
+        inject(st, handoffPrompt(handoffTs))
         flash(st, '已注入 /handoff 交接模板（含时间戳文件名），确认后发送', 'ok')
         return
       }
@@ -561,6 +566,11 @@ return {
         } else {
           pendingDraft = null
         }
+      }
+      // v24：第一击模板指定的时间戳文件名优先（与模板完全一致）
+      if (handoffTs) {
+        finish(handoffTs + '.md', '已复制交接文档指令：' + handoffTs + '.md')
+        return
       }
       if (typeof host === 'undefined' || typeof host.call !== 'function') {
         finish(null, '已复制交接文档指令（无法查询最新文档，兜底）')

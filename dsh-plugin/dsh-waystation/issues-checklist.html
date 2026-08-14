@@ -355,8 +355,22 @@
 <div class="item">
   <span class="no">47</span><span class="title">面板默认高度 = 屏幕约 1/4</span><span class="badge b-done">已解决</span>
   <div class="desc">点开面板时高度太长了（被内容撑满整屏从上到下），用户希望默认是屏幕约 1/4 大小的悬浮窗，想拖长再拖。</div>
-  <div class="plan">v23 已落实：store 默认 height = max(240, innerHeight × 0.25)，内容在面板内滚动，8 向手柄可拖长。</div>
-  <div class="src">来源：2026-08-14 用户反馈；v23 已解决。</div>
+  <div class="plan">v23 已落实：store 默认 height = max(240, innerHeight × 0.25)，内容在面板内滚动，8 向手柄可拖长。v24 用户反馈 1/4 太小 → 改为 1/2。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v23/v24 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">48</span><span class="title">交接第二击文件名不对（还是老版本）</span><span class="badge b-done">已解决</span>
+  <div class="desc">点「交接给新会话」后，新会话预填 prompt 里的文件名是老的（.scratch/handoff/latest.md）——因目录尚无文档时 wf.handoffLatest 返回 null 走了 latest.md 兜底。</div>
+  <div class="plan">v24 已落实：记忆第一击模板注入的时间戳（handoffTs），第二击优先读「第一击模板里的同一个文件」（模板写什么名就读什么名）；仅当未点过第一击（如刷新后）才回退 host 查最新实际文档。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v24 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">49</span><span class="title">面板默认高度 1/4 → 1/2</span><span class="badge b-done">已解决</span>
+  <div class="desc">1/4 太小，改成屏幕约 1/2。</div>
+  <div class="plan">v24 已落实：DEFAULT_PANEL_H = max(240, innerHeight × 0.5)。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v24 已解决。</div>
 </div>
 
 </body>

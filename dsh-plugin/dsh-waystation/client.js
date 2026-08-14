@@ -196,6 +196,7 @@ return {
         'act.execute': '执行',
         'act.view': '查看',
         'act.load': '加载',
+        'act.done': '完成',
         'type.research': '研究',
         'type.prototype': '原型',
         'type.grilling': '对齐',
@@ -221,6 +222,8 @@ return {
         'list.tagsCollapseTitle': '收起标签',
         'list.copyLinkTitle': '复制链接',
         'list.mapTitle': '查看地图详情',
+        'list.state.all': '全部', 'list.state.open': 'Open', 'list.state.closed': '已关闭',
+        'list.sort.updatedAt': '更新', 'list.sort.createdAt': '创建', 'list.sort.number': '编号', 'list.sort.title': '标题',
         'map.decisions': 'Decisions so far（{n}）',
         'map.fog': 'Not yet specified（战雾 {n}）',
         'map.outOfScope': 'Out of scope（{n}）',
@@ -350,6 +353,7 @@ return {
         'act.execute': 'Execute',
         'act.view': 'View',
         'act.load': 'Load',
+        'act.done': 'Complete',
         'type.research': 'Research',
         'type.prototype': 'Prototype',
         'type.grilling': 'Align',
@@ -375,6 +379,8 @@ return {
         'list.tagsCollapseTitle': 'Collapse labels',
         'list.copyLinkTitle': 'Copy link',
         'list.mapTitle': 'View map details',
+        'list.state.all': 'All', 'list.state.open': 'Open', 'list.state.closed': 'Closed',
+        'list.sort.updatedAt': 'Updated', 'list.sort.createdAt': 'Created', 'list.sort.number': 'Number', 'list.sort.title': 'Title',
         'map.decisions': 'Decisions so far ({n})',
         'map.fog': 'Not yet specified (fog {n})',
         'map.outOfScope': 'Out of scope ({n})',
@@ -600,6 +606,24 @@ return {
     // ============================================================
     // v22：统一引导句（T1 拍板：普通静态文本，用户可改；不是占位符）
     const GUIDE_LINE = '从第一性原理出发完成任务，并对抗式审查。'
+    // #371：map 100% 完成收尾确认 prompt（注入内容保持中文；{n}/{total}/{closed} 点击时替换）
+    const COMPLETE_PROMPT = '## 完成确认 · MAP #{n}\n' +
+      '\n' +
+      '当前地图已完成 100%：共 {total} 个 issue，已关闭 {closed} 个，未关闭 0 个。\n' +
+      '\n' +
+      '请按以下流程处理：\n' +
+      '\n' +
+      '1. 确认收尾：向用户复述上面的完成状态，并询问：「该地图的全部工作是否已完成，需要做收尾吗？」\n' +
+      '\n' +
+      '2. 用户确认完成 → 执行收尾：与用户一起收尾，例如把最终结果/决定追加进 map 的「Decisions so far」（每个 closed ticket 一行 gist）、确认没有遗留雾区，必要时关闭 map 本体。\n' +
+      '\n' +
+      '3. 用户认为不能算完成 → 不要收尾，先做异常排查：向用户说明「当前显示 100% 完成，可能与实际不符」，并检查以下原因：\n' +
+      '   - 是否有属于该 map 的 issue 没有挂进来（未建立父子/sub-issue 关系，或挂在了别的 map 下）；\n' +
+      '   - 是否有 issue 被直接关闭但内容并未真正交付；\n' +
+      '   - map 正文的票索引与 GitHub 子议题是否一致（漏挂/错挂）。\n' +
+      '   把排查结论与补救建议（补挂 issue / 重开 issue）反馈给用户，等用户决定后再行动。\n' +
+      '\n' +
+      GUIDE_LINE
     // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认模板文本，T2b 可编辑）
     const FIXATE_PROMPT = '里程碑固化点。暂停推进，执行「零丢失快照」，从第一性原理出发：\n' +
       '\n' +
@@ -707,6 +731,27 @@ return {
       const r = PANEL_RATIOS[cfg.panelHeight] || 0.5
       try { return Math.max(240, Math.round((window.innerHeight || 800) * r)) } catch (e) { return 400 }
     })()
+    // #374：主列表偏好（排序/状态过滤）持久化（localStorage 不可用时降级默认值）
+    const LIST_PREFS_KEY = 'dsws.listPrefs'
+    const listPrefs = (function () {
+      const d = { sortKey: 'updatedAt', sortDir: 'desc', stateFilter: 'all' }
+      try {
+        const raw = localStorage.getItem(LIST_PREFS_KEY)
+        if (raw) return Object.assign(d, JSON.parse(raw))
+      } catch (e) { /* 存储不可用用默认 */ }
+      return d
+    })()
+    const saveListPrefs = function () { try { localStorage.setItem(LIST_PREFS_KEY, JSON.stringify(listPrefs)) } catch (e) {} }
+    // #375：label 点击记忆（次数 + 最近点击时间，双键排序）
+    const LABEL_CLICKS_KEY = 'dsws.labelClicks'
+    const labelClicks = (function () {
+      try {
+        const raw = localStorage.getItem(LABEL_CLICKS_KEY)
+        if (raw) { const o = JSON.parse(raw); return (o && typeof o === 'object') ? o : {} }
+      } catch (e) { /* 存储不可用降级纯频次 */ }
+      return {}
+    })()
+    const saveLabelClicks = function () { try { localStorage.setItem(LABEL_CLICKS_KEY, JSON.stringify(labelClicks)) } catch (e) {} }
     const makeStore = () => ({
       open: false, tab: 'list', activeMap: null,
       notice: null, injector: null, tick: 0,
@@ -714,7 +759,9 @@ return {
       // 外观定死（用户拍板：图标/动作词不可配置）
       ui: { icon: 'compass', word: '沉淀' },
       snapshot: null,
-      cwd: '', lblFilter: null, skillView: 'list',
+      cwd: '', lblFilter: null, skillView: 'list', expLabels: false,
+      // #374：状态过滤 + 排序（默认 更新时间↓，与现状一致）
+      stateFilter: listPrefs.stateFilter, sortKey: listPrefs.sortKey, sortDir: listPrefs.sortDir,
       checks: null, checksUpdatedAt: '', checksMode: 'loading', checksError: null, checking: false,
       snapMode: 'loading', snapError: null, snapLoading: false,
       refreshing: false, handoffReady: false, expTags: {}, subs: [],
@@ -1002,6 +1049,29 @@ return {
       })
     }
 
+    // #376：打开面板即保证新鲜 —— 未就绪/失败 → force 加载（有「加载中」反馈）；
+    //   已就绪但过期（>60s）→ 触发加载；已就绪且新鲜（≤60s）→ 直接展示不重复请求（配额友好）。
+    //   force 不被 snapLoading 守卫丢弃（#370 已修），加载中打开面板最终也会完成并展示。
+    const SNAP_FRESH_MS = 60000
+    const snapFresh = function (st) {
+      if (!st.snapshot || !st.snapshot.generatedMs) return false
+      try { return (Date.now() - st.snapshot.generatedMs) <= SNAP_FRESH_MS } catch (e) { return false }
+    }
+    const openPanel = function (st) {
+      st.open = true
+      if (st.snapMode !== 'real' || !snapFresh(st)) {
+        st.snapMode = 'loading'
+        emit(st)
+        loadSnapshot(st, true)
+      } else {
+        emit(st)
+      }
+    }
+    const togglePanel = function (st) {
+      if (st.open) { st.open = false; emit(st); return }
+      openPanel(st)
+    }
+
     const repoStr = (st) => (st.snapshot && st.snapshot.repo)
       ? st.snapshot.repo.owner + '/' + st.snapshot.repo.name
       : 'FeatherHunter/SKILLS'
@@ -1110,7 +1180,8 @@ return {
       const n = readyCount(s)
       return h('button', {
         type: 'button',
-        onClick: function (e) { e.stopPropagation(); s.open = true; emit(s) },
+        // #376：打开统一走 openPanel（未就绪/过期自动 force 加载）
+        onClick: function (e) { e.stopPropagation(); openPanel(s) },
         style: { display: 'flex', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: 'var(--dsw-alias-label-primary,#e6edf3)', fontSize: 12, cursor: 'pointer', padding: '4px 6px', borderRadius: 6 },
       }, [
         h('span', { style: { color: n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b' } }, Icon({ scheme: s.ui.icon, size: 15 })),
@@ -1158,15 +1229,15 @@ return {
       const timeStr = timeOf(s.snapshot) || (s.checksUpdatedAt ? s.checksUpdatedAt.slice(5, 16) : '') || '-- --:--'
       const setup = setupCheck(s)
       const amber = s.checksMode === 'real' && setup && setup.level !== 'ok'
-      const go = function (tab) { s.tab = tab; s.open = true; emit(s) }
+      const go = function (tab) { s.tab = tab; openPanel(s) }
       // v14-22：数字区固定两位数等宽（环境 5ch 容 '98/99'；可接/占用 2ch）
       const num = (txt, minW) => h('span', { className: 'dsws-num', style: minW ? { minWidth: minW } : null }, txt)
       const seg = (icon, label, color, onGo, title) => h('span', { className: 'dsws-seg', onClick: function (e) { e.stopPropagation(); onGo() }, title: title || '', style: { display: 'inline-flex', alignItems: 'center', gap: 4, color: color } }, [
         Ic({ n: icon, size: 12 }),
         label,
       ])
-      const capsule = h('div', { className: 'dsws-capsule', onClick: function () { s.open = true; emit(s) } }, [
-        h('span', { className: 'dsws-capsule-word', onClick: function (e) { e.stopPropagation(); s.open = !s.open; emit(s) } }, [
+      const capsule = h('div', { className: 'dsws-capsule', onClick: function () { openPanel(s) } }, [
+        h('span', { className: 'dsws-capsule-word', onClick: function (e) { e.stopPropagation(); togglePanel(s) } }, [
           Icon({ scheme: s.ui.icon, size: 14 }),
           h('span', null, 'Waystation'),
         ]),
@@ -1231,13 +1302,26 @@ return {
           h('span', { className: 'dsws-chip dsws-chip-m' }, [Ic({ n: 'map', size: 11 }), h('span', null, 'wayfinder:map')]),
           h('span', { style: { flex: 1 } }),
           // v19-38：顶部「执行」= 整张 map 的执行入口（预填输入框）；v25 T2b：走 execute 模板
-          h('button', { className: 'dsws-btn primary', onClick: function () {
-            const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
-            inject(st, (cfg.withWayfinder ? '/wayfinder\n' : '') + body)
-          }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
-            Ic({ n: 'play', size: 10 }),
-            h('span', null, tr('act.execute')),
-          ]),
+          // #371：子票全关（stats.total>0 且 closed===total）→ 按钮切「完成」（绿），注入收尾确认 prompt；
+          //   空 map（total=0）不误判为完成，维持「执行」
+          (m.stats && m.stats.total > 0 && m.stats.closed === m.stats.total)
+            ? h('button', { className: 'dsws-btn primary', onClick: function () {
+                const text = COMPLETE_PROMPT
+                  .split('{n}').join(String(m.number || ''))
+                  .split('{total}').join(String(m.stats.total))
+                  .split('{closed}').join(String(m.stats.closed))
+                inject(st, text)
+              }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11, background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [
+                Ic({ n: 'check', size: 10 }),
+                h('span', null, tr('act.done')),
+              ])
+            : h('button', { className: 'dsws-btn primary', onClick: function () {
+                const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
+                inject(st, (cfg.withWayfinder ? '/wayfinder\n' : '') + body)
+              }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
+                Ic({ n: 'play', size: 10 }),
+                h('span', null, tr('act.execute')),
+              ]),
         ]),
         h('div', { className: 'dsws-mtitle dsws-ellip', title: m.title }, m.title),
         m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, String((m.error && m.error.error) || tr('list.loadFail')).slice(0, 160))]) : null,
@@ -1275,13 +1359,26 @@ return {
       const issues = (st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []
       const openIssues = issues.filter(function (x) { return x.state !== 'CLOSED' })
       const closedIssues = issues.filter(function (x) { return x.state === 'CLOSED' })
-      // v15-25：open 列表 map 优先置顶（map 内部按 updatedAt 倒序），其余按 updatedAt 倒序；已关闭行保持纯时间序
-      openIssues.sort(function (a, b) {
-        const am = (a.labels || []).some(function (l) { return l.name === 'wayfinder:map' }) ? 0 : 1
-        const bm = (b.labels || []).some(function (l) { return l.name === 'wayfinder:map' }) ? 0 : 1
-        if (am !== bm) return am - bm
-        return String(b.updatedAt).localeCompare(String(a.updatedAt))
-      })
+      // #374：多维排序 —— map 行恒置顶，map 组与普通组各自按所选维度排序；默认 更新时间↓（与现状一致）
+      const sortIssues = function (arr) {
+        const dir = st.sortDir === 'asc' ? 1 : -1
+        return arr.slice().sort(function (a, b) {
+          let c
+          if (st.sortKey === 'number') { c = a.number - b.number; if (c !== 0) return dir * c }
+          else if (st.sortKey === 'title') {
+            c = String(a.title).toLowerCase().localeCompare(String(b.title).toLowerCase())
+            if (c !== 0) return dir * c
+          } else {
+            c = String(a[st.sortKey] || '').localeCompare(String(b[st.sortKey] || ''))
+            if (c !== 0) return dir * c
+          }
+          return a.number - b.number  // 同键兜底：编号升序（稳定）
+        })
+      }
+      const isMapIssue = function (x) { return (x.labels || []).some(function (l) { return l.name === 'wayfinder:map' }) }
+      const sortedMaps = sortIssues(openIssues.filter(isMapIssue))
+      const sortedOpen = sortIssues(openIssues.filter(function (x) { return !isMapIssue(x) }))
+      const closedSorted = sortIssues(closedIssues)
       const groups = compute(st)
       const occ = groups.reduce(function (n, g) { return n + g.blocked.length + g.claimed.length }, 0)
       const cs = activeChecks(st)
@@ -1296,7 +1393,27 @@ return {
         })
       })
       const tagNames = Object.keys(stat).sort(function (a, b) { return stat[b] - stat[a] })
-      const filtered = st.lblFilter ? openIssues.filter(function (x) { return (x.labels || []).some(function (l) { return l.name === st.lblFilter }) }) : openIssues
+      // #375：全量 label（快照 labels 字段优先；旧快照无该字段降级 issue 统计）；配色并入 label 列表色
+      const snapLabels = (st.snapshot && Array.isArray(st.snapshot.labels)) ? st.snapshot.labels : null
+      if (snapLabels) snapLabels.forEach(function (l) { if (l.color && !colorOf[l.name]) colorOf[l.name] = l.color })
+      const labelNames = snapLabels ? snapLabels.map(function (l) { return l.name }) : tagNames.slice()
+      // 点击记忆双键排序：次数降序 → 最近点击降序 → 出现频次降序 → 名称序
+      const sortedLabels = labelNames.slice().sort(function (a, b) {
+        const ca = labelClicks[a], cb = labelClicks[b]
+        const na = ca ? ca.n : 0, nb = cb ? cb.n : 0
+        if (na !== nb) return nb - na
+        const ta = ca ? ca.ts : 0, tb = cb ? cb.ts : 0
+        if (ta !== tb) return tb - ta
+        const fa = stat[a] || 0, fb = stat[b] || 0
+        if (fa !== fb) return fb - fa
+        return String(a).localeCompare(String(b))
+      })
+      // #374：状态过滤（全部/Open/已关闭）与 label 过滤叠加
+      const showOpen = st.stateFilter !== 'closed'
+      const showClosedList = st.stateFilter === 'closed'
+      const byLabel = function (x) { return (x.labels || []).some(function (l) { return l.name === st.lblFilter }) }
+      const filteredOpen = showOpen ? (st.lblFilter ? sortedMaps.concat(sortedOpen).filter(byLabel) : sortedMaps.concat(sortedOpen)) : []
+      const filteredClosed = showClosedList ? (st.lblFilter ? closedSorted.filter(byLabel) : closedSorted) : []
       const has = function (x, nm) { return (x.labels || []).some(function (l) { return l.name === nm }) }
       const findMap = function (num) { return (st.snapshot && st.snapshot.maps || []).find(function (m) { return m.number === num }) }
       // v15-26：主列表关联 map 子票阻塞信息（open 阻塞者才算阻塞；数据来自快照 maps.tickets.blockedBy，无需额外请求）
@@ -1320,7 +1437,17 @@ return {
           key: nm,
           className: 'dsws-chip',
           // v14-1：「全部」恒清空过滤并保持选中，与普通标签 toggle 语义分离
-          onClick: function (e) { e.stopPropagation(); st.lblFilter = isAll ? null : ((st.lblFilter === nm) ? null : nm); emit(st) },
+          // #375：点选即记点击记忆（次数 + 最近点击时间，双键排序）
+          onClick: function (e) {
+            e.stopPropagation()
+            st.lblFilter = isAll ? null : ((st.lblFilter === nm) ? null : nm)
+            if (!isAll) {
+              const c = labelClicks[nm] || { n: 0, ts: 0 }
+              labelClicks[nm] = { n: c.n + 1, ts: Date.now() }
+              saveLabelClicks()
+            }
+            emit(st)
+          },
           style: {
             cursor: 'pointer', marginRight: 4, marginBottom: 3, fontSize: 10,
             background: isAll ? 'rgba(255,255,255,.08)' : (hexA(c, 0.18) || 'rgba(188,140,255,.16)'),
@@ -1395,21 +1522,43 @@ return {
           Ic({ n: 'alert', size: 13 }),
           h('span', null, tr('list.envWarn', { n: nBad })),
         ]) : null,
-        // 标签过滤 chips（动态统计 · GitHub 配置色 · v14-18 深边框）
+        // #374/#375：状态过滤 + 排序 + label 过滤 chips（全部小号紧凑同排，窄屏换行不增高；展开态点选 label 不收起）
         h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0, marginBottom: 6 } }, [
+          ['all', 'open', 'closed'].map(function (k) {
+            const on = st.stateFilter === k
+            return h('span', { key: 'stf-' + k, className: 'dsws-chip', onClick: function (e) {
+              e.stopPropagation(); st.stateFilter = k; listPrefs.stateFilter = k; saveListPrefs(); emit(st)
+            }, style: { cursor: 'pointer', marginRight: 4, marginBottom: 3, fontSize: 10, background: on ? 'rgba(188,140,255,.18)' : 'rgba(255,255,255,.06)', color: on ? '#c084fc' : 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid ' + (on ? 'rgba(188,140,255,.6)' : 'rgba(255,255,255,.15)') } }, tr('list.state.' + k))
+          }),
+          h('span', { style: { width: 1, height: 12, background: 'var(--dsw-alias-border-l1,#2a2d35)', margin: '0 4px 3px', flex: 'none' } }),
+          ['updatedAt', 'createdAt', 'number', 'title'].map(function (k) {
+            const on = st.sortKey === k
+            const arrow = on ? (st.sortDir === 'asc' ? '↑' : '↓') : ''
+            return h('span', { key: 'srt-' + k, className: 'dsws-chip', onClick: function (e) {
+              e.stopPropagation()
+              if (st.sortKey === k) { st.sortDir = st.sortDir === 'asc' ? 'desc' : 'asc' }
+              else { st.sortKey = k; st.sortDir = (k === 'title') ? 'asc' : 'desc' }
+              listPrefs.sortKey = st.sortKey; listPrefs.sortDir = st.sortDir; saveListPrefs(); emit(st)
+            }, style: { cursor: 'pointer', marginRight: 4, marginBottom: 3, fontSize: 10, background: on ? 'rgba(88,166,255,.16)' : 'rgba(255,255,255,.06)', color: on ? '#58a6ff' : 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid ' + (on ? 'rgba(88,166,255,.55)' : 'rgba(255,255,255,.15)') } }, tr('list.sort.' + k) + arrow)
+          }),
+          h('span', { style: { width: 1, height: 12, background: 'var(--dsw-alias-border-l1,#2a2d35)', margin: '0 4px 3px', flex: 'none' } }),
           chip(tr('list.all'), false, st.lblFilter === null, true),
-          tagNames.slice(0, 9).map(function (nm) { return chip(nm, true, st.lblFilter === nm, false) }),
+          (st.expLabels ? sortedLabels : sortedLabels.slice(0, 9)).map(function (nm) { return chip(nm, true, st.lblFilter === nm, false) }),
+          (!st.expLabels && sortedLabels.length > 9) ? h('span', { key: 'lbl-more', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = true; emit(st) }, title: tr('list.tagsTitle', { names: sortedLabels.join('、') }), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + (sortedLabels.length - 9)) : null,
+          st.expLabels ? h('span', { key: 'lbl-less', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = false; emit(st) }, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
         ]),
         st.snapMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, tr('list.loading')) : null,
         st.snapMode === 'err' ? h('div', { style: { color: '#f87171', fontSize: 12, padding: '14px 0', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 12 }), h('span', null, tr('list.errFull', { err: st.snapError }))]) : null,
-        filtered.length === 0 ? h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '14px 0', textAlign: 'center' } }, tr('list.none')) : filtered.map(function (x) { return issueRow(x, true, narrow) }),
-        // v14-4⑤：列表底部「已关闭 (N)」折叠行（默认收起，只占一行，展开可见）
-        closedIssues.length ? h('details', { style: { marginTop: 8 } }, [
+        // #374：状态过滤渲染 —— open 主体 / closed 列表 / 「全部」态保留已关闭折叠行
+        showOpen ? (filteredOpen.length === 0 ? h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '14px 0', textAlign: 'center' } }, tr('list.none')) : filteredOpen.map(function (x) { return issueRow(x, true, narrow) })) : null,
+        showClosedList ? (filteredClosed.length === 0 ? h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '14px 0', textAlign: 'center' } }, tr('list.none')) : filteredClosed.map(function (x) { return issueRow(x, false, narrow) })) : null,
+        // v14-4⑤：列表底部「已关闭 (N)」折叠行（仅「全部」状态显示；默认收起，只占一行，展开可见）
+        (st.stateFilter === 'all' && closedIssues.length) ? h('details', { style: { marginTop: 8 } }, [
           h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: '4px 2px', userSelect: 'none' } }, [
             Ic({ n: 'check', size: 11 }),
             h('span', null, tr('list.closedN', { n: closedIssues.length })),
           ]),
-          h('div', null, closedIssues.map(function (x) { return issueRow(x, false, narrow) })),
+          h('div', null, closedSorted.map(function (x) { return issueRow(x, false, narrow) })),
         ]) : null,
       ])
     }
@@ -1539,7 +1688,7 @@ return {
       const cur = props.useSessions((x) => x.current)
       const s = useStore(cur)
       const panelRef = React.useRef(null)
-      React.useEffect(function () { if (s.open) loadSnapshot(s, false) }, [s.open])
+      // #376：加载由 openPanel 统一分派（未就绪/过期 force，新鲜直接展示）；此处不再重复加载
       if (!s.open) return null
       const groups = compute(s)
       const active = s.activeMap !== null ? groups.find(function (x) { return x.m.number === s.activeMap }) : null
@@ -1808,7 +1957,7 @@ return {
         ]),
         h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', margin: '6px 0' } }, tr('run.desc')),
         h('div', { className: 'dsws-uirow' }, [
-          h('button', { className: 'dsws-btn', onClick: function () { s.open = true; emit(s) } }, tr('run.openPanel')),
+          h('button', { className: 'dsws-btn', onClick: function () { openPanel(s) } }, tr('run.openPanel')),
           // v25：设置面板为 shell 组件本地状态、无公开打开 API（已查证）→ 按钮引导路径（偏离记录见 T2a resolution）
           h('button', { className: 'dsws-btn', onClick: function () { flash(s, tr('run.cfgGuide'), 'info') } }, tr('run.openCfg')),
         ]),

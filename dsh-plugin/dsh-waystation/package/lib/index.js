@@ -234,7 +234,8 @@ export function apply(ctx) {
   // 按 updatedAt 倒序；labels 带 name + color（GitHub 配置色）；state 区分 open/closed；
   // assignees 带出（状态栏「占用」按列表 issue 口径：已认领 + 被阻塞）
   async function fetchIssues(cwd) {
-    const r = await runGh(['issue', 'list', '--state', 'all', '--limit', '200', '--json', 'number,title,labels,state,assignees,updatedAt'], cwd)
+    // #374/#375：--limit 500 覆盖仓库全量（2026-08-14 实测 349 issue），并带出 createdAt（排序维度）
+    const r = await runGh(['issue', 'list', '--state', 'all', '--limit', '500', '--json', 'number,title,labels,state,assignees,updatedAt,createdAt'], cwd)
     if (!r.ok) return { ok: false, error: r }
     try {
       const all = JSON.parse(r.text)
@@ -246,6 +247,7 @@ export function apply(ctx) {
           assignees: (x.assignees || []).map(function (a) { return a.login }),
           labels: (x.labels || []).map(function (l) { return { name: l.name, color: l.color || '' } }),
           updatedAt: x.updatedAt,
+          createdAt: x.createdAt,
         }
       })
       issues.sort(function (a, b) { return String(b.updatedAt).localeCompare(String(a.updatedAt)) })
@@ -280,6 +282,15 @@ export function apply(ctx) {
     if (!fm.ok) throw fm.error
     const fi = await fetchIssues(cwd)
     const issues = fi.ok ? fi.issues : []
+    // #375：全量 label 列表（含空 label；获取失败容错置空，不阻塞快照构建，client 降级）
+    let labels = []
+    const fl = await runGh(['label', 'list', '--json', 'name,color'], cwd)
+    if (fl.ok) {
+      try {
+        const ls = JSON.parse(fl.text)
+        if (Array.isArray(ls)) labels = ls.map(function (l) { return { name: l.name, color: l.color || '' } })
+      } catch (err) { labels = [] }
+    }
     // 并行拉取各 map 详情（Promise.all 保序输出；实测串行 7 map ≈ 10s → 并行 ≈ 3s）
     const details = await Promise.all(fm.maps.map(function (m) { return fetchMapDetail(m.number, cwd) }))
     const maps = []
@@ -311,6 +322,7 @@ export function apply(ctx) {
       env: { ghPath: ghPath, ghError: ghPathError },
       maps: maps,
       issues: issues,
+      labels: labels,
     }
   }
 

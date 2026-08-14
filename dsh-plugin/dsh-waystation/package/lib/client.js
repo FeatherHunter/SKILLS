@@ -210,6 +210,10 @@ window.__ModuleLoader__.load({
           'nav.handoffReady': '交接给新会话',
           'nav.handoffTitle': '交接：发送 /handoff 生成交接文档',
           'nav.handoffReadyTitle': '开新会话并预填交接文档路径',
+          'nav.dock': '停靠',
+          'nav.dockTitle': '在右侧停靠打开（details 列 · 原型）',
+          'act.dockTitle': '停靠到右侧（details 列 · 原型）',
+          'act.float': '悬浮',
           'banner.setup': 'setup 未执行',
           'banner.setupBtn': '帮我执行 /setup-matt-pocock-skills',
           'act.diagnose': '诊断',
@@ -370,6 +374,10 @@ window.__ModuleLoader__.load({
           'nav.handoffReady': 'Handoff · new session',
           'nav.handoffTitle': 'Handoff: send /handoff to generate the handoff doc',
           'nav.handoffReadyTitle': 'Open a new session with the handoff doc path prefilled',
+          'nav.dock': 'Dock',
+          'nav.dockTitle': 'Open docked on the right (details column · prototype)',
+          'act.dockTitle': 'Dock to the right (details column · prototype)',
+          'act.float': 'Float',
           'banner.setup': 'setup not run yet',
           'banner.setupBtn': 'Run /setup-matt-pocock-skills for me',
           'act.diagnose': 'Diagnose',
@@ -1401,6 +1409,11 @@ window.__ModuleLoader__.load({
           seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
           // v19-36：环境段移至末尾（更新左侧），用户少点
           seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
+          // 原型：右侧停靠（details 列）
+          seg('map', tr('nav.dock'), '#bc8cff', function () {
+            const ls = ctx.get('layout')
+            if (ls && typeof ls.openDetails === 'function') ls.openDetails()
+          }, tr('nav.dockTitle')),
           h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, tr('nav.refresh') + ' ' + timeStr),
         ])
         if (!amber) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
@@ -1841,6 +1854,34 @@ window.__ModuleLoader__.load({
         ])
       }
 
+      // ---- 5.8b 右侧停靠原型（details 槽位 · 验证三列布局/开合/悬浮切换）----
+      // 契约：details 槽 = 壳右侧第三列（AppFrame grid），scope session；关闭 = ctx.layout.closeDetails()
+      //   （占位者 props 亦注入 closeDetails）；宽度 300-520px 可拖拽；关闭时子树不卸载（状态保留）。
+      const DetailsDock = (props) => {
+        const s = useStore(props && props.sessionId)
+        const layoutSvc = ctx.get('layout')
+        const closeDock = function () {
+          if (props && typeof props.closeDetails === 'function') props.closeDetails()
+          else if (layoutSvc && typeof layoutSvc.closeDetails === 'function') layoutSvc.closeDetails()
+        }
+        const toFloat = function () { closeDock(); openPanel(s) }
+        const n = readyCount(s)
+        return h('div', { style: { display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'var(--dsw-font-family)', fontSize: 12, color: 'var(--dsw-alias-label-primary,#e6edf3)', background: 'var(--dsw-alias-bg-layer-1,#10131a)' } }, [
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderBottom: '1px solid var(--dsw-alias-border-l1,#2a2d35)', flex: 'none' } }, [
+            Icon({ scheme: 'compass', size: 15 }),
+            h('span', { style: { fontWeight: 600, fontSize: 13 } }, 'Waystation'),
+            h('span', { style: { flex: 1 } }),
+            h('button', { className: 'dsws-btn', onClick: toFloat, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11 } }, [Ic({ n: 'fog', size: 11 }), h('span', null, tr('act.float'))]),
+            h('button', { className: 'dsws-btn ghost', onClick: closeDock, style: { display: 'inline-flex', alignItems: 'center', padding: '2px 6px', fontSize: 11 } }, Ic({ n: 'x', size: 12 })),
+          ]),
+          h('div', { style: { padding: '12px', flex: 1, overflowY: 'auto' } }, [
+            h('div', { style: { fontSize: 12, marginBottom: 8 } }, '右侧停靠原型 · 就绪 ' + (n < 0 ? '--/8' : n + '/8')),
+            h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', lineHeight: 1.7 } }, '验证点：① 三列布局（聊天区应收缩）② 关闭/重开与拖拽宽度 ③ 点工具卡片的行为 ④ 悬浮/停靠切换。'),
+            h('button', { className: 'dsws-btn', onClick: function () { openPanel(s) }, style: { marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'compass', size: 11 }), h('span', null, tr('run.openPanel'))]),
+          ]),
+        ])
+      }
+
       // ---- 5.8 主面板（可拖动 · 8 向缩放 · 三视图 · v14 跟随当前会话 + 刷新遮罩）----
       const OverlayPanel = (props) => {
         // #372：记录最近一次渲染的 props（PiP 窗口重建用：含 useSessions 等 slot 标准座，可跨文档复用）
@@ -1917,6 +1958,12 @@ window.__ModuleLoader__.load({
               h('span', { className: 'dsws-ellip', title: repoStr(s) }, s.snapMode === 'err' ? tr('panel.snapErr') : s.snapMode === 'loading' ? tr('panel.loading') : repoStr(s)),
             ]),
             h('span', { style: { flex: 1 } }),
+            // 原型：悬浮面板 → 停靠到右侧 details 列
+            h('button', { className: 'dsws-btn ghost', onClick: function () {
+              const ls = ctx.get('layout')
+              if (ls && typeof ls.openDetails === 'function') ls.openDetails()
+              s.open = false; emit(s)
+            }, title: tr('act.dockTitle'), style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'map', size: 12 })),
             h('button', { className: 'dsws-btn ghost', onClick: function () { s.open = false; emit(s) }, style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'x', size: 12 })),
           ]),
           h('div', { className: 'dsws-tabs' }, [tabBtn('list', 'list', tr('panel.tabList')), tabBtn('skills', 'compass', tr('panel.tabSkills')), tabBtn('checks', 'gear', tr('panel.tabChecks'))]),
@@ -2144,6 +2191,10 @@ window.__ModuleLoader__.load({
         // v25-50：配置页（设置 → 插件 → Waystation；与 opencode 主题同模式）
         slots.inject('settings.plugins.tab', function () {
           return slots.register({ name: 'settings.plugins.tab', id: 'dsws-settings', order: 40, label: function () { return 'Waystation' } }, SettingsPage)
+        }),
+        // 原型：右侧停靠（details 槽位 · 替换内置工具详情面板）
+        slots.inject('details', function () {
+          return slots.register({ name: 'details', id: 'dsws-details', order: 10 }, DetailsDock)
         }),
       ]
       ctx.effect(function () {

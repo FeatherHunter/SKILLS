@@ -44,7 +44,7 @@ const check = function (file) {
   })
   // 动态版注册 5 个插槽（含 Run 卡 tool.view.cordis）；静态 bundle 4 个（无 Run 卡，disposeSlots 形态）
   const n = (src.match(/slots\.inject\('/g) || []).length
-  const expectInject = file.indexOf('package/') >= 0 ? 4 : 5
+  const expectInject = file.indexOf('package/') >= 0 ? 5 : 6  // 动态 6（含 details 原型）/ bundle 5
   if (n !== expectInject) problems.push('slots.inject 注册数异常 ' + n + '（期望 ' + expectInject + '）')
   if (problems.length) { console.log('  FAIL', file, problems.join('；')); failed = true }
   else console.log('  PASS', file, '(' + zh.size + ' 键 × zh/en，' + used.size + ' 处引用)')

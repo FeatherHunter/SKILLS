@@ -17,7 +17,7 @@
 //   DSH_DESKTOP_PORT        服务端口，默认 3080
 //   DSH_DESKTOP_COMMAND     自定义启动命令（整行，按 shell 解析；设置后跳过内置运行时）
 //   DSH_DESKTOP_REGISTRY    npm 镜像源（默认 registry.npmjs.org，国内可设 npmmirror）
-//   DSH_DESKTOP_REINSTALL=1 强制重装 DSH 运行时（升级用）
+//   DSH_DESKTOP_REINSTALL=1 强制重装/升级 DSH 运行时（走 @latest 显式版本，否则 npm 判 up-to-date 不升级）
 //   DSH_DESKTOP_HIDDEN=1    隐藏启动：窗口不显示，右下角托盘常驻（服务化；--hidden 同效）
 //   DSH_DESKTOP_USER_DATA    独立 userData 目录（测试隔离：单实例锁/会话按目录隔离）
 //   DSH_DESKTOP_SMOKE=1     冒烟测试模式：页面就绪后自动退出（自动化验证）
@@ -26,6 +26,7 @@
 
 const { app, BrowserWindow, ipcMain, shell, nativeTheme, Tray, Menu, nativeImage, dialog } = require('electron');
 const { spawn, spawnSync } = require('child_process');
+const { checkForUpdate } = require('./update-check'); // 升级检测（纯逻辑，可单测）
 const http = require('http');
 const https = require('https');
 const net = require('net');
@@ -236,6 +237,8 @@ let currentPhase = 'starting';
 let lastStatus = { phase: 'starting', message: '', log: '' };
 let smokeDone = false;
 let shotDone = false;
+let updateChecking = false; // 升级检查进行中（防重入）
+let lastUpdateResult = null;
 
 // ---------- 子进程管理 ----------
 // 自定义命令（高级用户）优先；否则走内置运行时
@@ -503,11 +506,14 @@ function copyDirAsync(src, dst, onProgress) {
 // 顺序：已有 DSH_BIN → 直接可用；本机 npx 缓存有 DSH → 复制复用（免联网）；
 //      否则 npm install（自动测速选源 + 真实进度 + 停滞检测）。
 function ensureRuntime(onDone, opts = {}) {
+  // force（升级/强制重装）：跳过「已安装」直接装，且必须 @latest 显式版本——
+  // 实测 npm install <pkg>（无版本号）在 spec 已满足时判 up-to-date 不升级（2026-08-14 实证）
+  const force = opts.force === true || process.env.DSH_DESKTOP_REINSTALL === '1';
   if (runtimeBusy) {
     log('runtime: 已有安装进行中，忽略重复请求');
     return;
   }
-  if (process.env.DSH_DESKTOP_REINSTALL !== '1' && fs.existsSync(DSH_BIN)) {
+  if (!force && fs.existsSync(DSH_BIN)) {
     log('runtime: DSH 已安装 ' + DSH_BIN);
     return onDone(true);
   }
@@ -517,8 +523,8 @@ function ensureRuntime(onDone, opts = {}) {
     return onDone(false);
   }
 
-  // ① 复用检测：npx 缓存有现成 DSH → 直接复制（秒级，免几百 MB 下载）
-  if (!opts.skipReuse && process.env.DSH_DESKTOP_REINSTALL !== '1') {
+  // ① 复用检测：npx 缓存有现成 DSH → 直接复制（秒级，免几百 MB 下载）。force 时跳过（缓存可能是旧版）
+  if (!opts.skipReuse && !force) {
     const src = tryReuseNpxCache();
     if (src) {
       log('runtime: 发现 npm 缓存中的 DSH，复制复用（免联网下载）← ' + src);
@@ -548,14 +554,17 @@ function ensureRuntime(onDone, opts = {}) {
   // ② 联网安装：先测速选源，再 npm install（真实进度 + 停滞检测）
   const doInstall = (registry) => {
     const installStartedAt = Date.now();
-    log('runtime: 开始安装 DSH（npm install @deepseek-ai/dsh → ' + RUNTIME_DIR + '，源=' + registry.name + '）');
+    const spec = force ? '@deepseek-ai/dsh@latest' : '@deepseek-ai/dsh'; // force 必须显式 @latest 才能真升级
+    log('runtime: 开始安装 DSH（npm install ' + spec + ' → ' + RUNTIME_DIR + '，源=' + registry.name + '，force=' + force + '）');
     sendStatus('installing',
-      `首次使用：正在下载并安装 DSH 运行时…\n当前源：${registry.name}（自动测速选择，装好后即可离线使用）`,
-      tailLog(4));
+      force
+        ? `正在升级 DSH 运行时…\n当前源：${registry.name}（需联网下载新版，几分钟；升级完成后自动重启 DSH）`
+        : `首次使用：正在下载并安装 DSH 运行时…\n当前源：${registry.name}（自动测速选择，装好后即可离线使用）`,
+      tailLog(4), force ? { updating: true } : undefined);
     runtimeBusy = true;
     installProc = spawn(process.execPath, [
       NPM_CLI, 'install', '--prefix', RUNTIME_DIR, '--no-audit', '--no-fund',
-      '--loglevel', 'error', '--registry', registry.url, '@deepseek-ai/dsh',
+      '--loglevel', 'error', '--registry', registry.url, spec,
     ], {
       windowsHide: true,
       detached: process.platform !== 'win32',
@@ -816,6 +825,76 @@ function polishTargetPage() {
         document.body.appendChild(wc);
       }
 
+      // 「检查更新」按钮（标题栏左上角；z-index 低于窗口控制按钮）
+      // 页面加载后静默检查一次：有新版亮绿色「升级至 x.y.z」，无新版保持低调；
+      // 点击：已发现新版 → 直接确认升级；否则现查现报（已最新/检查失败弹窗）。
+      let ub = document.getElementById('dshdUpdateBtn');
+      if (!ub) {
+        ub = document.createElement('button');
+        ub.id = 'dshdUpdateBtn';
+        ub.style.cssText = 'position:fixed;top:-' + BAR_H + 'px;left:12px;height:40px;border:0;background:0 0;' +
+          'color:#8b8b95;font:12px/1 system-ui,sans-serif;cursor:pointer;padding:0 10px;' +
+          'z-index:2147483646;display:flex;align-items:center;';
+        const setState = (label, color, busy) => {
+          ub.textContent = label;
+          ub.style.color = color;
+          ub.disabled = !!busy;
+          ub.style.cursor = busy ? 'default' : 'pointer';
+        };
+        const onResult = (r) => {
+          if (!r) { setState('检查更新', '#8b8b95', false); return; }
+          if (!r.ok) {
+            setState('检查更新', '#8b8b95', false);
+            api.message({ type: 'warning', title: '检查更新失败', message: r.error || '未知错误', detail: '请检查网络或镜像源后重试。' });
+            return;
+          }
+          if (r.hasUpdate) {
+            setState('升级至 ' + r.latest, '#4ade80', false);
+            ub.dataset.update = '1';
+          } else {
+            setState('检查更新', '#8b8b95', false);
+            api.message({ message: '已是最新版本（' + r.current + '）' });
+          }
+        };
+        const doCheck = (silent) => {
+          setState('检查中…', '#8b8b95', true);
+          api.checkUpdate().then((r) => {
+            if (!r) { setState('检查更新', '#8b8b95', false); return; }
+            if (r.ok && r.hasUpdate) {
+              setState('升级至 ' + r.latest, '#4ade80', false);
+              ub.dataset.update = '1';
+              if (!silent) {
+                api.confirmUpdate({ current: r.current, latest: r.latest }).then((res) => {
+                  if (res && res.confirmed) api.updateRuntime();
+                });
+              }
+            } else if (!silent) { onResult(r); }
+            else { setState('检查更新', '#8b8b95', false); }
+          }).catch(() => { setState('检查更新', '#8b8b95', false); });
+        };
+        ub.addEventListener('mouseenter', () => { if (!ub.disabled) ub.style.color = '#d4d4d4'; });
+        ub.addEventListener('mouseleave', () => {
+          if (!ub.disabled) ub.style.color = (ub.dataset.update === '1') ? '#4ade80' : '#8b8b95';
+        });
+        ub.addEventListener('click', () => {
+          if (ub.disabled) return;
+          if (ub.dataset.update === '1') {
+            // 已发现新版：复查后直接进确认
+            api.checkUpdate().then((r) => {
+              if (r && r.ok && r.hasUpdate) {
+                api.confirmUpdate({ current: r.current, latest: r.latest }).then((res) => {
+                  if (res && res.confirmed) api.updateRuntime();
+                });
+              } else { onResult(r); }
+            }).catch(() => { setState('检查更新', '#8b8b95', false); });
+          } else {
+            doCheck(false);
+          }
+        });
+        document.body.appendChild(ub);
+        doCheck(true); // 静默检查：有新版本才亮按钮，失败无打扰
+      }
+
       const strip = document.getElementById('dshDesktopDrag');
       // 空白带判定：命中条带本身 / body / 根容器。
       // 页面内容已下移，0-40px 内除浮层面板外无其他元素；
@@ -907,6 +986,78 @@ function showBoot(phase, message) {
   mainWindow.loadFile(path.join(__dirname, 'boot.html'));
   sendStatus(phase, message, tailLog(20));
 }
+
+// ---------- IPC（检查更新 / 升级） ----------
+function installedDshVersion() {
+  try {
+    const p = path.join(RUNTIME_DIR, 'node_modules', '@deepseek-ai', 'dsh', 'package.json');
+    return JSON.parse(fs.readFileSync(p, 'utf8')).version || null;
+  } catch { return null; }
+}
+
+// 检查更新：环境变量指定源 > 官方源，失败再试 npmmirror；只读不弹窗，结果供页面按钮渲染
+ipcMain.handle('dsh-desktop:check-update', async () => {
+  if (updateChecking) return lastUpdateResult || { ok: false, error: '正在检查中' };
+  updateChecking = true;
+  try {
+    const forced = process.env.DSH_DESKTOP_REGISTRY;
+    const registries = forced ? [forced] : REGISTRIES.map((r) => r.url);
+    let result = null;
+    for (const reg of registries) {
+      result = await checkForUpdate({ registry: reg, installedVersion: installedDshVersion(), timeoutMs: 8000 });
+      if (result.ok) break; // 第一个可用源出结果即止
+    }
+    lastUpdateResult = result;
+    log('检查更新: ' + JSON.stringify(result));
+    return result;
+  } finally { updateChecking = false; }
+});
+
+// 确认升级弹窗（页面按钮 → 主进程原生对话框；默认「稍后」防误点）
+ipcMain.handle('dsh-desktop:confirm-update', (_e, info) => {
+  return dialog.showMessageBox({
+    type: 'question',
+    title: '升级 DSH',
+    message: '检测到 DSH 新版本：' + (info && info.latest ? info.latest : '') ,
+    detail: '当前版本：' + (info && info.current || '未知') + '\n最新版本：' + (info && info.latest || '未知') +
+      '\n\n升级会停止当前 DSH 服务并自动重启（需联网下载，约几分钟）。',
+    buttons: ['升级并重启', '稍后'],
+    defaultId: 1, cancelId: 1, noLink: true,
+  }).then(({ response }) => ({ confirmed: response === 0 }));
+});
+
+// 执行升级：亮窗（若隐藏）→ boot 进度页 → 强制重装 @latest → 重启 DSH
+ipcMain.handle('dsh-desktop:update-runtime', () => {
+  if (runtimeBusy) { log('update: 已有安装/升级进行中，忽略'); return { started: false }; }
+  log('用户确认升级 DSH 运行时');
+  if (mainWindow && !mainWindow.isDestroyed() && !mainWindow.isVisible()) {
+    mainWindow.show(); // 升级要展示 boot 进度页：窗口隐藏时先亮出
+  }
+  killAllChildren();
+  showBoot('updating', '正在升级 DSH 运行时…（需联网下载新版，几分钟）');
+  ensureRuntime((ok) => {
+    if (!ok) {
+      onChildGone('DSH 运行时升级失败。\n请检查网络后点「重新启动」重试；\n或点「切换镜像重试」换源。');
+      return;
+    }
+    log('runtime: 升级完成，重新启动 DSH');
+    startup();
+  }, { force: true });
+  return { started: true };
+});
+
+// 简单消息框（检查结果提示：已是最新/检查失败）
+ipcMain.handle('dsh-desktop:message', (_e, info) => {
+  dialog.showMessageBox({
+    type: (info && info.type) || 'info',
+    title: (info && info.title) || 'DSH 桌面版',
+    message: (info && info.message) || '',
+    detail: (info && info.detail) || '',
+    buttons: ['确定'],
+    noLink: true,
+  });
+  return true;
+});
 
 // ---------- IPC（boot 页按钮 → 主进程） ----------
 ipcMain.handle('dsh-desktop:status', () => lastStatus);

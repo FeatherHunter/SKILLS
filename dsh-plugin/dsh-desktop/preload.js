@@ -16,4 +16,9 @@ contextBridge.exposeInMainWorld('dshDesktop', {
   toggleMaximize: () => ipcRenderer.invoke('dsh-desktop:toggle-maximize'),
   minimize: () => ipcRenderer.invoke('dsh-desktop:minimize'),
   close: () => ipcRenderer.invoke('dsh-desktop:close'),
+  // 检查更新 / 升级（标题栏按钮 → 主进程）
+  checkUpdate: () => ipcRenderer.invoke('dsh-desktop:check-update'),
+  confirmUpdate: (info) => ipcRenderer.invoke('dsh-desktop:confirm-update', info),
+  updateRuntime: () => ipcRenderer.invoke('dsh-desktop:update-runtime'),
+  message: (info) => ipcRenderer.invoke('dsh-desktop:message', info),
 });

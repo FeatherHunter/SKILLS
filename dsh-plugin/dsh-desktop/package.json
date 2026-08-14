@@ -1,6 +1,6 @@
 {
   "name": "dsh-harness-desktop",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "DeepSeek Harness 桌面版：双击启动 DSH Web，后台运行无终端窗口，关闭窗口即停止后台服务。内置运行时，无需安装 Node.js。",
   "main": "main.js",
   "bin": {
@@ -17,6 +17,7 @@
   ],
   "files": [
     "main.js",
+    "update-check.js",
     "preload.js",
     "boot.html",
     "bin/",
@@ -41,6 +42,7 @@
     },
     "files": [
       "main.js",
+      "update-check.js",
       "preload.js",
       "boot.html",
       "build/icon.png",

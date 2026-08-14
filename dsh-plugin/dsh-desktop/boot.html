@@ -104,7 +104,7 @@
         $('meta').style.display = 'none';
       } else if (s.phase === 'installing') {
         document.body.className = s.stalled ? 'installing stalled' : 'installing';
-        $('title').textContent = '正在安装 DSH 运行时';
+        $('title').textContent = s.updating ? '正在升级 DSH 运行时' : '正在安装 DSH 运行时';
         $('msg').textContent = s.message || '正在下载并安装 DSH 运行时…';
         $('log').textContent = s.log || '';
         // 真实进度：复制模式有 done/total；下载模式用字节数估百分比

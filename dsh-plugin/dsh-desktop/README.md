@@ -14,6 +14,7 @@
 - ✅ **关窗不退出**——关闭窗口，DSH 继续在后台运行（右下角托盘常驻），随时点开秒回
 - ✅ **退出才停**——托盘菜单「退出」（带确认弹窗）才会真正停止后台服务
 - ✅ **开机自启（可选）**——登录后自动后台常驻，双击图标即开（托盘右键勾选）
+- ✅ **一键升级 DSH**——页面左上角「检查更新」按钮：发现新版 → 确认 → 自动下载安装并重启
 - ✅ 沉浸式无边框界面 + DeepSeek 官方鱼形图标
 - ✅ 一条命令生成**桌面快捷方式**
 - ✅ 你手动开着的 DSH **不会被误杀**（识别到已有实例就直接连上）
@@ -87,7 +88,7 @@ npm run pack                # 快速验证：不打安装包，直接跑 win-unp
 | `DSH_DESKTOP_PORT` | `3080` | DSH 服务端口 |
 | `DSH_DESKTOP_COMMAND` | 内置运行时 | 自定义启动命令（整行，shell 解析；设置后跳过内置运行时） |
 | `DSH_DESKTOP_REGISTRY` | 自动测速选源 | 安装 DSH 时的 npm 源；默认并发测速官方源与 npmmirror 选快者，设置后强制用它 |
-| `DSH_DESKTOP_REINSTALL=1` | 关 | 强制重装 DSH 运行时（升级用） |
+| `DSH_DESKTOP_REINSTALL=1` | 关 | 强制重装/升级 DSH 运行时（走 `@latest` 显式版本） |
 | `DSH_DESKTOP_HIDDEN=1` | 关 | 隐藏启动：窗口不显示，右下角托盘常驻（服务化；`--hidden` 同效） |
 | `DSH_DESKTOP_USER_DATA` | 默认 | 独立 userData 目录（测试隔离：单实例锁/设置按目录隔离，普通用户不需要） |
 
@@ -106,8 +107,9 @@ npm run pack                # 快速验证：不打安装包，直接跑 win-unp
 - **怎么真正退出？** → 右下角托盘图标右键 → 「退出（停止后台 DSH）」→ 确认。
 - **怎么开机自启？** → 托盘图标右键勾选「开机自启（登录时后台常驻）」；
   下次开机 DSH 自动后台运行（窗口不显示），双击图标即开。
-- **怎么升级 DSH？** → 删除 `%APPDATA%\dsh-desktop\runtime` 目录后重新打开，
-  或设置 `DSH_DESKTOP_REINSTALL=1` 启动。
+- **怎么升级 DSH？** → 打开应用后点左上角「检查更新」→「升级并重启」即可（自动下载新版并重启）。
+  备选：删除 `%APPDATA%\dsh-desktop\runtime` 目录后重新打开，或设置 `DSH_DESKTOP_REINSTALL=1` 启动
+  （重装走 `@latest` 显式版本，确保真的拉到新版）。
 - **需要装 Node.js 吗？** → exe 方式不需要（内置运行时）；npm 方式需要。
 - **Linux 双击没反应？** → 桌面环境 PATH 可能不含所需命令，
   用 `DSH_DESKTOP_COMMAND` 指定完整启动方式。
@@ -120,6 +122,8 @@ npm run pack                # 快速验证：不打安装包，直接跑 win-unp
   托盘不可用（如部分 Linux 桌面无托盘）时自动退回「关窗即退」老行为。
 - **内置运行时（零依赖）**：Electron 自带完整 Node（`ELECTRON_RUN_AS_NODE`）+ 捆绑
   npm（11MB）→ 首次运行自动安装 DSH 到 `%APPDATA%/dsh-desktop/runtime`，之后离线可用。
+- **检查更新**：页面左上角按钮查 npm registry（`DSH_DESKTOP_REGISTRY` 可指定源）比对 semver，
+  发现新版经确认后强制重装 `@latest` 并自动重启；REINSTALL 环境变量同路径。
 - **首次安装三优先**：① 本机 npm 缓存（`%LOCALAPPDATA%/npm-cache/_npx`）已有 DSH →
   直接复制复用（免联网下载）；② 否则并发测速官方源与 npmmirror，自动选快者下载；
   ③ 安装页显示真实进度（字节/包数/百分比），90 秒无进展提示可「切换镜像重试」。

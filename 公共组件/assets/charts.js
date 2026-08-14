@@ -1,4 +1,4 @@
-/* Base Skill 图表组件 v1.21（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.22（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
@@ -66,6 +66,8 @@ if(!document.getElementById(_styleId)){
   +'.hm-c-line-svg svg{width:100%;height:100%;display:block;overflow:visible}'
   +'.hm-c-line-svg polyline,.hm-c-line-svg path,.hm-c-line-svg line{vector-effect:non-scaling-stroke}'
   +'.hm-c-dot{position:absolute;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:var(--card,#fff);border:2px solid var(--blue,#007aff);pointer-events:none;box-sizing:border-box}'
+  /* v1.22 · #341: 异常点警示色(内联 style 染红) + 拐点/交点圈选环 */
+  +'.hm-c-dot-hl{width:13px;height:13px;margin:-6.5px 0 0 -6.5px;border-width:2.5px;background:transparent;box-shadow:0 0 0 3px rgba(0,0,0,.06)}'
   +'.hm-c-line-x{display:flex;justify-content:space-between;font-size:10px;color:var(--fg3,#86868b);margin-top:6px}'
   /* tooltip 浮层 */
   +'.hm-c-tip{position:absolute;z-index:20;background:rgba(28,28,30,.94);color:#f0f0f0;border-radius:10px;padding:7px 11px;font-size:11.5px;line-height:1.5;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.25)}'
@@ -285,7 +287,7 @@ window.charts={
     opt=_merge({color:'var(--blue,#007aff)',lineWidth:2.2,dashed:false,smooth:false,showDots:true,dotSize:null,
       area:false,areaOpacity:0.12,labels:'edge',showValues:false,labelRotate:0,yMin:null,yMax:null,grid:true,
       format:null,tooltip:false,markLine:null,markPoint:false,step:false,animation:true,height:null,
-      series:null,avgLine:null,legend:false,highlightLast:false,onclick:null,ondrill:null,emptyText:null,connectNulls:false,yTicks:false,band:null,fillBetween:null},opt);
+      series:null,avgLine:null,legend:false,highlightLast:false,onclick:null,ondrill:null,emptyText:null,connectNulls:false,yTicks:false,band:null,fillBetween:null,highlightPoints:null},opt);
     var hStyle=opt.height?('style="--c-h:'+opt.height+'px"'):'';
     /* 多序列: series = [{name,items,color?,dashed?,smooth?,area?}] */
     var seriesList=[];
@@ -438,20 +440,59 @@ window.charts={
         pts.forEach(function(p,i){
           if(p[2])return;
           var lx=(p[0]/_W*100).toFixed(2),ty=(p[1]/_H*100).toFixed(2);
-          dotsHtml+='<i class="hm-c-dot" data-s="'+si+'" data-i="'+i+'" style="left:'+lx+'%;top:'+ty+'%;border-color:'+color+'" title="'+_esc(s.items[i].label)+'"></i>';
+          /* v1.22 · #341: 异常点变色 — items 每点 anomaly:true → 警示红(默认 #ff3b30), 可被点级 color 覆盖 */
+          var dotCls='hm-c-dot',dotExtra='border-color:'+color;
+          if(s.items[i].anomaly){dotCls+=' hm-c-dot-anomaly';dotExtra='border-color:#ff3b30;background:#ff3b30;box-shadow:0 0 0 3px rgba(255,59,48,.18)';}
+          dotsHtml+='<i class="'+dotCls+'" data-s="'+si+'" data-i="'+i+'" style="left:'+lx+'%;top:'+ty+'%;'+dotExtra+'" title="'+_esc(s.items[i].label)+'"></i>';
         });
       }
       if(opt.showValues){
+        /* v1.22 · #341: showValues:'edge' 只标首尾有效点; 密集值标签碰撞避让(相邻中心距 <26 viewBox 单位跳过) */
+        var lastVX=-1e9,firstValid=-1,lastValid=-1;
+        pts.forEach(function(p,i){if(!p[2]){if(firstValid<0)firstValid=i;lastValid=i;}});
         pts.forEach(function(p,i){
           if(p[2])return;
+          if(opt.showValues==='edge'&&i!==firstValid&&i!==lastValid)return;
+          if(opt.showValues!=='edge'&&(p[0]-lastVX)<26)return;
           var lx=(p[0]/_W*100).toFixed(2),ty=(p[1]/_H*100).toFixed(2);
           valuesHtml+='<i class="hm-c-vt" style="position:absolute;left:'+lx+'%;top:'+(parseFloat(ty)-12)+'%;transform:translateX(-50%);font-size:10px;color:var(--fg3,#86868b);pointer-events:none;font-style:normal">'+_esc(_fmt(s.items[i].value,opt.format))+'</i>';
+          lastVX=p[0];
+        });
+      }
+      /* v1.22 · #341: 拐点圈选 — 方向变化点(dy 符号反转)渲染圈选环 */
+      if(opt.highlightPoints==='turns'){
+        pts.forEach(function(p,i){
+          if(i===0||i===pts.length-1||p[2]||pts[i-1][2]||pts[i+1][2])return;
+          var dy1=p[1]-pts[i-1][1],dy2=pts[i+1][1]-p[1];
+          if(dy1*dy2<0){
+            var hlx=(p[0]/_W*100).toFixed(2),hly=(p[1]/_H*100).toFixed(2);
+            dotsHtml+='<i class="hm-c-dot hm-c-dot-hl" data-s="'+si+'" data-i="'+i+'" style="left:'+hlx+'%;top:'+hly+'%;border-color:'+color+'"></i>';
+          }
         });
       }
       if(opt.legend&&s.name){
         legendsHtml+='<span class="hm-c-lg"><span class="hm-c-lg-dot" style="background:'+color+'"></span>'+_esc(s.name)+'</span>';
       }
     });
+    /* v1.22 · #341: 交点圈选 — 多序列线相交点(相邻段符号反转)渲染圈选环（仅两序列同点有效时参与判定） */
+    if(opt.highlightPoints==='crossings'){
+      for(var ci2=0;ci2<seriesList.length;ci2++){
+        for(var cj2=ci2+1;cj2<seriesList.length;cj2++){
+          var pa2=seriesPts[ci2],pb2=seriesPts[cj2];
+          var n2=Math.min(pa2.length,pb2.length);
+          for(var k2=0;k2<n2-1;k2++){
+            if(pa2[k2][2]||pb2[k2][2]||pa2[k2+1][2]||pb2[k2+1][2])continue;
+            var dk0=pa2[k2][1]-pb2[k2][1],dk1=pa2[k2+1][1]-pb2[k2+1][1];
+            var hit2=(dk0===0)?k2:((dk0*dk1<0)?k2+1:-1);
+            if(hit2>=0){
+              var hpx2=pa2[hit2][0]/_W*100,hpy2=pa2[hit2][1]/_H*100;
+              var hColor2=seriesList[ci2].color||opt.color||_PALETTE[ci2%_PALETTE.length];
+              dotsHtml+='<i class="hm-c-dot hm-c-dot-hl" data-i="'+hit2+'" style="left:'+hpx2.toFixed(2)+'%;top:'+hpy2.toFixed(2)+'%;border-color:'+hColor2+'"></i>';
+            }
+          }
+        }
+      }
+    }
     /* ownScale 图例注明「各指标独立刻度」（v1.17 · #334） */
     if(opt.legend&&anyOwnScale){legendsHtml+='<span class="hm-c-lg"><span class="hm-c-lg-dot" style="background:repeating-linear-gradient(90deg,var(--fg3,#86868b) 0 4px,transparent 4px 8px)"></span>各指标独立刻度</span>';}
     /* highlightLast: 最后一个有效点高亮 */

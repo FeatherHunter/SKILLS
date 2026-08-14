@@ -1760,6 +1760,74 @@ def test_line_fillbetween_color_override(chart_page):
     assert fill == '#ff9500'
 
 
+# ── line: 小缺口（v1.22 · #341）异常点/拐点圈选/首尾标签避让 ──
+
+def test_line_anomaly_dot_red(chart_page):
+    """items 每点 anomaly:true → 该点数据点染警示红; 正常点不变"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'),
+        [{label:'a',value:3,anomaly:true},{label:'b',value:5},{label:'c',value:4}],
+        {animation:false})
+    """)
+    styles = chart_page.evaluate("[...document.querySelectorAll('.hm-c-dot')].map(n=>n.getAttribute('style'))")
+    assert 'ff3b30' in styles[0] and 'ff3b30' not in styles[1]
+
+
+def test_line_anomaly_default_absent(chart_page):
+    """缺省: 无 anomaly 染红; 渲染与未传 anomaly 时一致（无 .hm-c-dot-anomaly）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    n = chart_page.evaluate("document.querySelectorAll('.hm-c-dot-anomaly').length")
+    assert n == 0
+
+
+def test_line_highlight_turns(chart_page):
+    """highlightPoints:'turns': 方向变化点出现圈选环（[2,5,3,8,6] → 拐点 index 1,2,3 共 3 个）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'),
+        [{label:'a',value:2},{label:'b',value:5},{label:'c',value:3},{label:'d',value:8},{label:'e',value:6}],
+        {animation:false, highlightPoints:'turns'})
+    """)
+    rings = chart_page.evaluate("[...document.querySelectorAll('.hm-c-dot-hl')].map(n=>n.getAttribute('data-i'))")
+    assert rings == ['1', '2', '3']
+
+
+def test_line_highlight_crossings(chart_page):
+    """highlightPoints:'crossings': 双线相交点出现圈选环（A[0,10,10] vs B[10,0,0] → 仅段 0-1 相交 → 交点 index 1）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:1}], {animation:false, highlightPoints:'crossings',
+        series:[{name:'A',items:[{label:'a',value:0},{label:'b',value:10},{label:'c',value:10}]},
+                {name:'B',items:[{label:'a',value:10},{label:'b',value:0},{label:'c',value:0}]}]})
+    """)
+    rings = chart_page.evaluate("[...document.querySelectorAll('.hm-c-dot-hl')].map(n=>n.getAttribute('data-i'))")
+    assert rings == ['1']
+
+
+def test_line_show_values_edge(chart_page):
+    """showValues:'edge': 只标首尾有效点（LINE_ITEMS → 2 个标签: 首 2 / 末值）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, showValues:"edge"})', LINE_ITEMS)
+    labels = chart_page.evaluate("[...document.querySelectorAll('.hm-c-vt')].map(n=>n.textContent)")
+    assert len(labels) == 2 and labels[0] == '2'
+
+
+def test_line_show_values_collision_avoid(chart_page):
+    """密集数据(30 点) showValues:true: 重叠标签被跳过一个 → 标签数 < 点数（避让生效）"""
+    chart_page.evaluate("""() => {
+      const items = [];
+      for (let i = 0; i < 30; i++) items.push({label:'p'+i, value: i % 7 + 1});
+      window.charts.line(document.getElementById('root'), items, {animation:false, showValues:true});
+      return [...document.querySelectorAll('.hm-c-vt')].length;
+    }""")
+    n = chart_page.evaluate("[...document.querySelectorAll('.hm-c-vt')].length")
+    assert 0 < n < 30
+
+
+def test_line_show_values_sparse_all_kept(chart_page):
+    """稀疏数据(间距 ≥26 单位) showValues:true: 全部标签保留（避让阈值不过度跳标）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, showValues:true})', LINE_ITEMS)
+    labels = chart_page.evaluate("[...document.querySelectorAll('.hm-c-vt')].map(n=>n.textContent)")
+    assert len(labels) == len(LINE_ITEMS)
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

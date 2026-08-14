@@ -2,6 +2,16 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.22（2026-08-14 · charts.line 小缺口三能力 · #341）
+
+**charts.line 三个小能力落地**（非破坏性 · 新可选字段 · 签名零变更；缺省行为逐字节不变）。
+
+1. **异常点变色**: items 每点 `anomaly: true` → 该点数据点染警示红（默认 #ff3b30 + 光晕）——超标数据点（如卡路里超目标）提示恢复（calorie_trend / long_trend）
+2. **拐点/交点圈选**: `highlightPoints: 'turns'`（方向变化点）/ `'crossings'`（多序列线相交段）→ 圈选环（.hm-c-dot-hl 透明大环）——health_report 拐点/双线交点视觉恢复
+3. **首尾数值标签 + 碰撞避让**: `showValues: 'edge'` 只标首尾有效点; `showValues: true` 密集数据相邻标签中心距 <26 viewBox 单位时跳过（静态避让）——weight_compare / exercise_review 首尾标注恢复、30+ 点标签不再重叠
+- **向后兼容**: 三项缺省时渲染与 v1.21 逐字节一致（全量回归通过; 稀疏数据 showValues:true 标签全保留不过度跳标）
+- 契约 §6.5 三能力条目 + §0 版本记录 + CHANGELOG 同步; 守卫测试 +7 → 全量全绿
+
 ## v1.21（2026-08-14 · charts.line fillBetween 线间填充 · #338）
 
 **charts.line 新增可选参数 `fillBetween: {a, b, color?}`**（非破坏性 · 新可选参数 · 签名零变更；缺省 `null` 行为逐字节不变）。

@@ -191,5 +191,40 @@
   <div class="src">2026-08-14；待用户 UI 实操复核。</div>
 </div>
 
+<div class="item">
+  <span class="no">24</span><span class="title">状态栏中文换行（环境→环/境）</span><span class="badge b-done">已解决</span>
+  <div class="desc">状态栏中文出现换行，如「环境」变第一行「环」、第二行「境」。v14 加了交接段 + 等宽数字区后胶囊内容变多，flex 空间不足导致文字被压缩换行。</div>
+  <div class="plan">v15 已修复：胶囊整体 white-space:nowrap；capsule-word/seg/timebtn 全部 flex:none 不收缩；宽度适配内容（width:fit-content，上限放宽 min(92vw,640px)）。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v15 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">25</span><span class="title">列表 map 项置顶</span><span class="badge b-done">已解决</span>
+  <div class="desc">列表目前按 updatedAt 倒序混排，wayfinder:map 行不突出；用户希望 map 项优先置顶。</div>
+  <div class="plan">v15 已修复（用户拍板：仅 open 列表）：open 列表排序 = map 优先（map 内部按 updatedAt 倒序），其余按 updatedAt 倒序；已关闭折叠行保持纯时间序。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v15 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">26</span><span class="title">被阻塞 issue 的显示与交互</span><span class="badge b-done">已解决</span>
+  <div class="desc">列表中被阻塞的 issue 无任何指示（主列表 issues 来自 gh issue list，本身不带 blockedBy）。用户要求：(a) 显示为「阻塞状态」；(b) 不能有「开始执行」按钮；(c) 有按钮/小标签让用户主动查看被谁阻塞。</div>
+  <div class="plan">v15 已落实（无需改 host）：blockOf 关联快照 maps.tickets.blockedBy（open 阻塞者才算）；被阻塞行 → 红色「被阻塞」标签（tooltip 列阻塞来源 #号，点击跳所属 map 详情「被阻塞」分组）；该行动作按钮全部隐藏（分流/开始修复/开始执行）。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v15 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">27</span><span class="title">切换会话后 GitHub 状态仍是 skills 目录</span><span class="badge b-done">已解决</span>
+  <div class="desc">切到其他会话，页面刷新后 GitHub 状态仍显示 skills 目录的状态；怀疑 cwd 解析被写死。</div>
+  <div class="plan">根因（已核实 DSH 运行时源码）：SessionSummary.cwd 是宿主权威字段（会话列表工作区标题同源），原探测链「猜 ConversationSnapshot 字段名 + host sessions.meta 反查」拿不到时 cwd 保持旧值。v15 已修复：StatusBar 直接用 useSessions(s => s.byId[sid].cwd) 读取，替换脆弱链；props.session 直取 + wf.cwd 保留兜底。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v15 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">28</span><span class="title">v15 第二批上线</span><span class="badge b-done">已解决</span>
+  <div class="desc">2026-08-14 用户报 4 个问题（24-27），拍板后一次性落地。</div>
+  <div class="plan">产出：client.js v15（胶囊 nowrap+fit-content / open 列表 map 置顶 / blockOf 被阻塞标签+跳详情+隐藏动作 / SessionSummary.cwd）。pkg-15 已定义并更新运行（run-11 成功）；host 未变；ACCEPTANCE.md 待补 v15 小节。</div>
+  <div class="src">2026-08-14；待用户 UI 实操复核。</div>
+</div>
+
 </body>
 </html>

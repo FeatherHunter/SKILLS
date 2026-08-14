@@ -1,28 +1,17 @@
 /**
- * DSH-Waystation · Client 半（UX v14 · 2026-08-14 全部开始执行批次）
+ * DSH-Waystation · Client 半（UX v15 · 2026-08-14 第二批执行）
  *
- * v14 变更（用户拍板后执行）：
- *   1. 「全部」chip 恒清空过滤，不再进入空过滤态
- *   2. 地图行视觉突出：紫色竖条 + 浅紫底 + 图标放大 + 标题加粗
- *   3. 分流/开始修复/开始执行按钮缩至 80%（padding 1px 6px / 11px）
- *   4. 行级动作按 label 三选一（needs-triage→分流 / bug→开始修复 / 其余 open→开始执行），
- *      全部改为「复制 prompt」；map 行保留点击进详情 + 加「开始执行」；
- *      列表底部加「已关闭 (N)」折叠行（默认收起，展开可见）
- *   5. 主色按钮不再依赖 var(--dsw-alias-button-primary-fill)（当前主题解析为深色 → 黑底黑字），
- *      改固定 #c084fc 底 + #140a1e 字
- *   15. client store 按会话隔离（cwd/快照/筛选/视图各自独立；面板跟随当前激活会话）
- *   17. 刷新加载态：手动刷新（更新/刷新/重新检查）→ 全面板遮罩 + spinner + 禁点；
- *       会话切换自动刷新 → 轻量（不遮罩）
- *   18. 标签 chips 全部加边框：边框色 = 该 label 色加深一档（HSL 亮度 -16%）
- *   19. 窄屏（面板宽 <380px）：行内双栏固定（左列截断 / 右列按钮组 flex:none 不换行），
- *       动作按钮折叠为纯图标
- *   20. 胶囊第 5 段「交接」（M9 定向传递）：第一击注入 /handoff 模板（要求写
- *       .scratch/handoff/latest.md）→ 文案变「交接给新会话」→ 第二击新开空白会话
- *       （workspaces.startSession，非 fork 避免复制旧上下文）+ 输入框预填
- *       /read .scratch/handoff/latest.md（跨会话 pendingDraft 机制）
- *   22. 状态栏数字区固定两位数等宽（tabular-nums + min-width 5ch / 2ch），
- *       6/8 ↔ --/8 ↔ 98/99 均不改变状态栏宽度
+ * v15 变更（用户拍板后执行）：
+ *   24. 状态栏中文换行修复：胶囊 white-space:nowrap + 各段 flex:none + 宽度适配内容
+ *       （fit-content，上限放宽 min(92vw,640px)）
+ *   25. 列表 map 项优先置顶（open 列表；map 内部按 updatedAt 倒序；已关闭行保持纯时间序）
+ *   26. 被阻塞 issue 显示：主列表关联快照 maps.tickets.blockedBy（open 阻塞者才算）——
+ *       (a) 红色「被阻塞」标签；(b) 该行动作按钮全部隐藏；(c) 点击标签跳所属 map 详情被阻塞分组
+ *   27. 会话工作目录改用宿主权威字段 SessionSummary.cwd（useSessions.byId[sid].cwd），
+ *       替换「猜 ConversationSnapshot 字段名 + host wf.cwd 反查」的脆弱链；wf.cwd 保留兜底
  *
+ * v14 变更：全部执行批次（三选一动作 / map 行突出 / 已关闭折叠 / chips 深边框 / 窄屏折叠 /
+ * 刷新遮罩 / 主题安全色 / 交接按钮 / 状态栏等宽 / 按会话 store）。
  * v13：cwd 权威反查（wf.cwd）+ sessionId 变化重探测。v12：repoKey 按 cwd 缓存 /
  * 失败不兜假数据 / 三视图收敛 / 开始=复制 prompt / 沉淀=注入快照模板。
  * v11：label 颜色 = GitHub 配置色。v10：cwd 关联 / 标签视图 / 圆形技能环。
@@ -90,15 +79,18 @@ return {
       '.dsws-skill .dsws-tt{flex:1;min-width:0}',
       '.dsws-seg{cursor:pointer;padding:2px 7px;border-radius:99px;border:1px solid transparent;display:inline-flex;align-items:center;gap:4px}',
       '.dsws-seg:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08));border-color:var(--dsw-alias-border-l1,#2a2d35)}',
-      '.dsws-timebtn{cursor:pointer;padding:2px 7px;border-radius:99px;border:1px dashed transparent;color:var(--dsw-alias-label-caption,#8b8b95);white-space:nowrap;font-variant-numeric:tabular-nums}',
+      '.dsws-timebtn{cursor:pointer;padding:2px 7px;border-radius:99px;border:1px dashed transparent;color:var(--dsw-alias-label-caption,#8b8b95);white-space:nowrap;font-variant-numeric:tabular-nums;flex:none}',
       '.dsws-timebtn:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08));border-color:var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3)}',
       '.dsws-uirow{display:flex;align-items:center;gap:6px;margin:4px 0;flex-wrap:wrap}',
       '.dsws-uirow .dsws-btn.on{border-color:var(--dsw-alias-state-success-primary,#4ade80);color:var(--dsw-alias-state-success-primary,#4ade80)}',
       // v14-22：数字区固定两位数等宽（98/99 5 字符；--/8 等宽；未来 9/10 不变宽）
-      '.dsws-num{display:inline-block;min-width:5ch;text-align:center;font-variant-numeric:tabular-nums;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:11px;line-height:1.5}',
-      '.dsws-capsule{max-width:560px;margin:0 auto;display:flex;align-items:center;gap:2px;background:var(--dsw-alias-bg-layer-1,#10131a);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:999px;padding:3px 6px;font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer;user-select:none}',
-      '.dsws-capsule .dsws-capsule-word{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:99px;font-weight:600;color:var(--dsw-alias-label-primary,#e6edf3)}',
+      '.dsws-num{display:inline-block;min-width:5ch;text-align:center;font-variant-numeric:tabular-nums;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:11px;line-height:1.5;white-space:nowrap}',
+      // v15-24：胶囊宽度适配内容（fit-content 不压缩不换行；上限放宽）
+      '.dsws-capsule{max-width:min(92vw,640px);width:fit-content;margin:0 auto;display:flex;align-items:center;gap:2px;background:var(--dsw-alias-bg-layer-1,#10131a);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:999px;padding:3px 6px;font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer;user-select:none;white-space:nowrap}',
+      '.dsws-capsule .dsws-capsule-word{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:99px;font-weight:600;color:var(--dsw-alias-label-primary,#e6edf3);flex:none}',
       '.dsws-capsule .dsws-capsule-word:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08))}',
+      '.dsws-capsule .dsws-seg{flex:none}',
+      '.dsws-capsule .dsws-timebtn{flex:none}',
       '.dsws-banner{display:flex;align-items:center;gap:8px;border-radius:8px;padding:6px 10px;font-size:12px;margin:6px 0;cursor:pointer}',
       '.dsws-banner.bad{background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.45);color:#f87171}',
       '.dsws-banner.warn{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);color:#fbbf24}',
@@ -530,6 +522,10 @@ return {
     const StatusBar = (props) => {
       const sid = props && props.sessionId
       const s = useStore(sid)
+      // v15-27：宿主权威 cwd —— SessionSummary.cwd（会话列表工作区标题同源），替换字段名猜测链
+      const summaryCwd = props.useSessions(function (x) {
+        return (sid && x.byId && x.byId[sid]) ? x.byId[sid].cwd : undefined
+      })
       React.useEffect(function () {
         if (props && props.inputActions && typeof props.inputActions.setDraft === 'function') {
           s.injector = props.inputActions.setDraft
@@ -538,12 +534,13 @@ return {
         }
       }, [props])
       // v13：会话工作目录探测 —— 依赖 sessionId 变化重跑（切换对话必触发）。
-      // 先读 props.session 直取；拿不到则走 host wf.cwd（宿主 sessions.meta 权威反查）。
+      // v15-27：优先 SessionSummary.cwd（宿主权威）；次选 props.session 直取；最后 host wf.cwd 兜底。
       // cwd 变化后主动重拉快照与检查（否则面板/状态栏仍显示旧仓库数据）。
       React.useEffect(function () {
         const apply = function (cwd) {
           if (cwd && cwd !== s.cwd) { s.cwd = cwd; emit(s); loadChecks(s, false); loadSnapshot(s, false) }
         }
+        if (summaryCwd) { apply(summaryCwd); return }
         const cwd0 = detectCwd(props && props.session)
         if (cwd0) { apply(cwd0); return }
         if (sid && typeof host !== 'undefined' && typeof host.call === 'function') {
@@ -551,7 +548,7 @@ return {
             if (res && res.ok && res.cwd) apply(res.cwd)
           }).catch(function () { /* 保持现有 cwd */ })
         }
-      }, [sid])
+      }, [sid, summaryCwd])
       React.useEffect(function () { loadChecks(s, false); loadSnapshot(s, false) }, [])
       const fr = frontierAll(s)
       const blk = compute(s).reduce(function (n, g) { return n + g.blocked.length + g.claimed.length }, 0)
@@ -668,6 +665,13 @@ return {
       const issues = (st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []
       const openIssues = issues.filter(function (x) { return x.state !== 'CLOSED' })
       const closedIssues = issues.filter(function (x) { return x.state === 'CLOSED' })
+      // v15-25：open 列表 map 优先置顶（map 内部按 updatedAt 倒序），其余按 updatedAt 倒序；已关闭行保持纯时间序
+      openIssues.sort(function (a, b) {
+        const am = (a.labels || []).some(function (l) { return l.name === 'wayfinder:map' }) ? 0 : 1
+        const bm = (b.labels || []).some(function (l) { return l.name === 'wayfinder:map' }) ? 0 : 1
+        if (am !== bm) return am - bm
+        return String(b.updatedAt).localeCompare(String(a.updatedAt))
+      })
       const groups = compute(st)
       const occ = groups.reduce(function (n, g) { return n + g.blocked.length + g.claimed.length }, 0)
       const cs = activeChecks(st)
@@ -685,6 +689,18 @@ return {
       const filtered = st.lblFilter ? openIssues.filter(function (x) { return (x.labels || []).some(function (l) { return l.name === st.lblFilter }) }) : openIssues
       const has = function (x, nm) { return (x.labels || []).some(function (l) { return l.name === nm }) }
       const findMap = function (num) { return (st.snapshot && st.snapshot.maps || []).find(function (m) { return m.number === num }) }
+      // v15-26：主列表关联 map 子票阻塞信息（open 阻塞者才算阻塞；数据来自快照 maps.tickets.blockedBy，无需额外请求）
+      const blockOf = {}
+      ;(st.snapshot && st.snapshot.maps || []).forEach(function (m) {
+        const byNum = {}
+        m.tickets.forEach(function (t) { byNum[t.number] = t })
+        m.tickets.forEach(function (t) {
+          if (!t.blockedBy || !t.blockedBy.length) return
+          const openBlockers = t.blockedBy.filter(function (b) { const bt = byNum[b]; return bt && bt.state === 'OPEN' })
+          if (openBlockers.length) blockOf[t.number] = { map: m.number, mapTitle: m.title, by: openBlockers }
+        })
+      })
+      const openBlocked = function (blk) { st.activeMap = blk.map; emit(st) }
       // v14-18：chips 常显深一档边框（边框色 = label 色 HSL 亮度 -16%）
       const chip = (nm, withCount, on, isAll) => {
         const c = colorOf[nm]
@@ -722,10 +738,13 @@ return {
       const issueRow = function (x, isOpen, narrow) {
         const isMap = has(x, 'wayfinder:map')
         const mapObj = isMap ? findMap(x.number) : null
+        // v15-26：被阻塞判定（open 阻塞者）→ 隐藏动作按钮 + 红色「被阻塞」标签（点击跳所属 map 详情）
+        const blk = blockOf[x.number]
+        const blocked = !!(blk && blk.by && blk.by.length)
         const shown = (x.labels || []).slice(0, 2)
         const rest = (x.labels || []).length - shown.length
         const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
-          isOpen ? rowAction(x, narrow) : null,
+          isOpen && !blocked ? rowAction(x, narrow) : null,
           h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: '复制链接', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
           h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
         ])
@@ -743,11 +762,12 @@ return {
               h('span', { className: 'dsws-ellip', style: { flex: 1, fontWeight: isMap ? 600 : undefined }, title: x.title }, x.title),
               h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + x.number),
             ]),
-            shown.length ? h('div', { style: { marginTop: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 } }, [
+            (shown.length || blocked) ? h('div', { style: { marginTop: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 } }, [
               shown.map(function (l, i) {
                 return h('span', { key: i, className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, background: hexA(l.color, 0.18) || 'rgba(188,140,255,.16)', color: l.color ? '#' + l.color : '#bc8cff', border: '1px solid ' + (darken(l.color, 0.16) || 'rgba(188,140,255,.6)') } }, l.name)
               }),
               rest > 0 ? h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)' } }, '+' + rest) : null,
+              blocked ? h('span', { key: 'blk', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: '被 ' + blk.by.map(function (b) { return '#' + b }).join('、') + ' 阻塞（点击查看地图详情）', style: { fontSize: 10, marginRight: 0, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, '被阻塞')]) : null,
             ]) : null,
           ]),
           rightCol,

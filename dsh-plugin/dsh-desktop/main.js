@@ -4,26 +4,34 @@
 // DSH 桌面版 · Electron 主进程（进程管家）
 //
 // 职责：
-//   1. 后台拉起 DSH Web 服务（无终端窗口，windowsHide）
+//   1. 后台拉起 DSH Web 服务（无终端窗口）
 //   2. 等待服务就绪后，把页面嵌进桌面窗口（只看到页面，看不到命令）
-//   3. 关闭窗口 / 退出应用时，把整个子进程树一并杀掉（taskkill /T）
+//   3. 关闭窗口 / 退出应用时，把后台进程（DSH / npm 安装）一并杀掉
+//
+// 零依赖设计：
+//   - 不要求系统安装 Node.js：Electron 自带完整 Node（ELECTRON_RUN_AS_NODE）
+//   - 捆绑 npm（11MB，resources/runtime/npm）负责首次自动安装 DSH
+//   - 装好后用内置 Node 直接运行 DSH（--expose-internals 是 HMR 插件要求）
 //
 // 环境变量（可选）：
-//   DSH_DESKTOP_PORT      服务端口，默认 3080
-//   DSH_DESKTOP_COMMAND   自定义启动命令（整行，按 shell 解析），
-//                         默认 `npx --yes @deepseek-ai/dsh web --port <PORT>`
-//   DSH_DESKTOP_SMOKE=1   冒烟测试模式：页面就绪后自动退出（供自动化验证）
+//   DSH_DESKTOP_PORT        服务端口，默认 3080
+//   DSH_DESKTOP_COMMAND     自定义启动命令（整行，按 shell 解析；设置后跳过内置运行时）
+//   DSH_DESKTOP_REGISTRY    npm 镜像源（默认 registry.npmjs.org，国内可设 npmmirror）
+//   DSH_DESKTOP_REINSTALL=1 强制重装 DSH 运行时（升级用）
+//   DSH_DESKTOP_SMOKE=1     冒烟测试模式：页面就绪后自动退出（自动化验证）
+//   DSH_DESKTOP_SHOT=1      截图模式：布局自检 + 存 PNG 后退出
 // ============================================================
 
 const { app, BrowserWindow, ipcMain, shell, nativeTheme } = require('electron');
 const { spawn, spawnSync } = require('child_process');
 const http = require('http');
+const net = require('net');
 const path = require('path');
 const fs = require('fs');
 
 // ---------- 配置 ----------
 const DEFAULT_PORT = 3080;
-const START_TIMEOUT_MS = 10 * 60 * 1000; // 首次 npx 要下载 DSH 包（数百 MB），放宽到 10 分钟
+const START_TIMEOUT_MS = 10 * 60 * 1000; // 首次安装/启动 DSH 包（数百 MB），放宽到 10 分钟
 const POLL_INTERVAL_MS = 600;
 const TITLEBAR_H = 40; // 顶部标题栏带高度：页面内容下移量 = WCO 按钮悬浮区高度
 
@@ -64,9 +72,12 @@ function tailLog(n = 20) {
 }
 
 // ---------- 状态 ----------
-let child = null;        // DSH 子进程（shell 包装进程）
+let child = null;        // DSH 子进程
+let installProc = null;  // npm install 子进程（同样纳入「关窗即杀」）
+let runtimeBusy = false; // npm 安装进行中（防重入）
 let startedByUs = false; // 本次是否由我们拉起（决定退出时杀不杀）
 let quitting = false;
+let aborting = false;    // 主动清理中（restart/quit）：忽略子进程退出回调，防错误页闪现
 let mainWindow = null;
 let currentPhase = 'starting';
 let lastStatus = { phase: 'starting', message: '', log: '' };
@@ -113,9 +124,8 @@ function spawnDsh() {
 }
 
 // 杀掉整棵进程树：Windows 用 taskkill /T（递归），Unix 杀整个进程组
-function killChildTree() {
-  const pid = child && child.pid;
-  child = null;
+function killTree(procRef) {
+  const pid = procRef && procRef.pid;
   if (!pid) return;
   try {
     if (process.platform === 'win32') {
@@ -130,12 +140,24 @@ function killChildTree() {
   }
 }
 
+// 退出/重启时统一清理：DSH + npm 安装进程（承诺：关窗即停，无孤儿进程）
+function killAllChildren() {
+  aborting = true; // 抑制被杀进程的 exit 回调（防错误页闪现）
+  killTree(child);
+  child = null;
+  if (installProc) { killTree(installProc); installProc = null; }
+  // 给子进程 exit 事件留出传播窗口，之后恢复正常回调
+  setTimeout(() => { aborting = false; }, 800).unref();
+}
+
 // 子进程没了（意外退出 / 启动超时）：窗口还开着就回落到错误页
 function onChildGone(message) {
+  if (aborting || quitting) return; // 主动清理中，忽略
   const wasOurs = startedByUs;
+  const deadChild = child; // 先抓引用再置空：超时场景需要真正杀掉残留 DSH
   child = null;
   startedByUs = false;
-  if (wasOurs) killChildTree();
+  if (wasOurs && deadChild) killTree(deadChild);
   if (quitting || !mainWindow || mainWindow.isDestroyed()) return;
   const hint = errorHint(tailLog(30));
   log('进入错误页: ' + message + (hint ? ' [' + hint + ']' : ''));
@@ -145,11 +167,14 @@ function onChildGone(message) {
 // 把常见底层报错翻译成人类能懂的原因（供错误页展示）
 function errorHint(logTail) {
   if (!logTail) return '';
-  if (/ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EAI_AGAIN|fetch failed|network request failed/i.test(logTail)) {
-    return '推测原因：网络问题 —— 无法访问 npm 源下载/连接 DSH。请检查网络或代理后点「重新启动」。';
+  if (/EADDRINUSE|address already in use/i.test(logTail)) {
+    return `推测原因：端口 ${PORT} 已被其他程序占用。请关闭占用程序，或用环境变量 DSH_DESKTOP_PORT 换一个端口。`;
   }
-  if (/不是内部或外部命令|not recognized|'npx'.*not found|ENOENT/i.test(logTail)) {
-    return '推测原因：未检测到 Node.js / npx 命令。请先安装 Node.js（见上方提示）后再启动。';
+  if (/ENOTFOUND|ECONNREFUSED|ECONNRESET|ETIMEDOUT|EAI_AGAIN|fetch failed|network request failed/i.test(logTail)) {
+    return '推测原因：网络问题 —— 无法访问 npm 源下载 DSH。请检查网络或代理后点「重新启动」。';
+  }
+  if (/不是内部或外部命令|not recognized|ENOENT/i.test(logTail)) {
+    return '推测原因：启动命令不可用（自定义命令配置可能有误，或命令路径不存在）。';
   }
   return '';
 }
@@ -173,11 +198,15 @@ function checkDsh(cb) {
   req.on('error', () => finish(false));
 }
 
-// 端口上「有没有任何 HTTP 服务」（不区分是不是 DSH）
+// 端口上「有没有任何服务在听」（TCP 探测，覆盖纯 TCP 服务）
 function checkPort(cb) {
-  const req = http.get(TARGET_URL, { timeout: 1500 }, (res) => { res.resume(); cb(true); });
-  req.on('timeout', () => { req.destroy(); cb(false); });
-  req.on('error', () => cb(false));
+  const sock = net.connect({ port: PORT, host: '127.0.0.1' });
+  sock.setTimeout(1500);
+  let done = false;
+  const finish = (ok) => { if (!done) { done = true; sock.destroy(); cb(ok); } };
+  sock.once('connect', () => finish(true));
+  sock.once('timeout', () => finish(false));
+  sock.once('error', () => finish(false));
 }
 
 function waitForServer(deadline, onReady, onTimeout) {
@@ -195,6 +224,10 @@ function waitForServer(deadline, onReady, onTimeout) {
 
 // 确保 DSH 运行时已安装（内置 npm 自动安装，首次联网下载，之后离线可用）
 function ensureRuntime(onDone) {
+  if (runtimeBusy) {
+    log('runtime: 已有安装进行中，忽略重复请求');
+    return;
+  }
   if (process.env.DSH_DESKTOP_REINSTALL !== '1' && fs.existsSync(DSH_BIN)) {
     log('runtime: DSH 已安装 ' + DSH_BIN);
     return onDone(true);
@@ -207,7 +240,8 @@ function ensureRuntime(onDone) {
   const registry = process.env.DSH_DESKTOP_REGISTRY || 'https://registry.npmjs.org';
   log('runtime: 开始安装 DSH（npm install @deepseek-ai/dsh → ' + RUNTIME_DIR + '）');
   sendStatus('installing', '首次使用：正在下载并安装 DSH 运行时…\n需要联网，大包下载约几分钟；装好后即可离线使用。');
-  const npm = spawn(process.execPath, [
+  runtimeBusy = true;
+  installProc = spawn(process.execPath, [
     NPM_CLI, 'install', '--prefix', RUNTIME_DIR, '--no-audit', '--no-fund',
     '--loglevel', 'error', '--registry', registry, '@deepseek-ai/dsh',
   ], {
@@ -216,23 +250,27 @@ function ensureRuntime(onDone) {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: NODE_ENV,
   });
-  npm.stdout.on('data', (d) => log('[npm] ' + String(d).trim()));
-  npm.stderr.on('data', (d) => log('[npm] ' + String(d).trim()));
+  installProc.stdout.on('data', (d) => log('[npm] ' + String(d).trim()));
+  installProc.stderr.on('data', (d) => log('[npm] ' + String(d).trim()));
   let ticks = 0;
   const progress = setInterval(() => {
     ticks += 1;
     sendStatus('installing', `正在下载并安装 DSH 运行时…（已进行 ${ticks * 3}s，首次大包下载需要几分钟）`, tailLog(4));
   }, 3000);
-  npm.on('error', (err) => {
+  const settled = (ok) => {
     clearInterval(progress);
+    runtimeBusy = false;
+    installProc = null;
+    onDone(ok);
+  };
+  installProc.on('error', (err) => {
     log('npm 启动失败: ' + err.message);
-    onDone(false);
+    settled(false);
   });
-  npm.on('exit', (code) => {
-    clearInterval(progress);
+  installProc.on('exit', (code) => {
     const ok = code === 0 && fs.existsSync(DSH_BIN);
     log('npm install 结束 code=' + code + ' ok=' + ok);
-    onDone(ok);
+    settled(ok);
   });
 }
 
@@ -441,7 +479,7 @@ function showBoot(phase, message) {
 ipcMain.handle('dsh-desktop:status', () => lastStatus);
 ipcMain.handle('dsh-desktop:restart', () => {
   log('用户点击重新启动');
-  if (startedByUs) killChildTree();
+  killAllChildren(); // 清掉 DSH 与（若有）残留的安装进程
   showBoot('starting', '正在重新启动 DSH…');
   startup();
 });
@@ -468,13 +506,13 @@ if (!gotLock) {
     startup();
   });
 
-  // 关窗即退出；退出前把后台 DSH 进程树一起带走（需求 2）
+  // 关窗即退出；退出前把后台进程（DSH / npm 安装）一起带走（需求 2）
   app.on('window-all-closed', () => app.quit());
   app.on('before-quit', () => {
     quitting = true;
-    if (startedByUs) killChildTree();
+    killAllChildren();
   });
   process.on('exit', () => {
-    if (startedByUs) killChildTree();
+    killAllChildren();
   });
 }

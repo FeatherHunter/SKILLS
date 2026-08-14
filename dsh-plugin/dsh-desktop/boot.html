@@ -58,9 +58,6 @@
       <button id="restart">重新启动</button>
       <button id="quit">退出</button>
     </div>
-    <div id="fixNode" style="display:none;margin-top:14px">
-      <button id="installNode">⬇ 打开 nodejs.org 安装 Node.js</button>
-    </div>
   </div>
   <script>
     var api = window.dshDesktop;
@@ -71,7 +68,6 @@
         $('title').textContent = '启动遇到问题';
         $('msg').textContent = s.message || '未知错误';
         $('log').textContent = s.log || '';
-        $('fixNode').style.display = s.needNode ? 'block' : 'none';
       } else if (s.phase === 'ready') {
         $('msg').textContent = 'DSH 已就绪，正在打开…';
       } else {
@@ -82,8 +78,6 @@
     api.onStatus(render);
     $('restart').addEventListener('click', function () { api.restart(); });
     $('quit').addEventListener('click', function () { api.quit(); });
-    // 打开 Node.js 官网（主进程会交给系统浏览器打开）
-    $('installNode').addEventListener('click', function () { window.open('https://nodejs.org/zh-cn'); });
   </script>
 </body>
 </html>

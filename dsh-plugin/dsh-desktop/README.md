@@ -95,6 +95,7 @@ npm run dist     # Windows → dist/dsh-desktop-1.0.0-x64.exe（便携版，双�
 
 - **生命周期耦合**：窗口 = 应用的唯一存在形式。`window-all-closed` 即退出，
   `before-quit`/`process.exit` 兜底杀进程树，没有托盘、没有残留。
+  **安装阶段的 npm 子进程同样纳入「关窗即杀」**，任何状态下关窗都不会留下孤儿进程。
 - **杀得干净**：Windows 用 `taskkill /T`（递归杀子进程）；Unix 用独立进程组
   `kill(-pid)` 整组击杀（内置运行时是单进程，更干净）。
 - **不误杀**：只有「本次由桌面版拉起的 DSH」才在退出时被杀；

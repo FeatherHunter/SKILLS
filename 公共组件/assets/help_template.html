@@ -327,8 +327,8 @@ function getMissing(s, v){
 /* ===== 渲染主页面 ===== */
 var screen = document.getElementById('screen');
 var h = '<div class="app"><div class="app-inner">' +
-  '<header class="hero"><div class="h-left"><div class="eyebrow">' + esc(SKILL_NAME) + '</div><h1>' + esc(TITLE) + '</h1><div class="lead">' + ALL.length + ' 场景 · 点卡片看详情</div></div><span class="h-badge">' + ALL.length + ' 场景</span>' +
-  '<div class="hero-steps"><span class="step">🔍 找场景</span><span class="arrow">→</span><span class="step">📋 复制 prompt</span><span class="arrow">→</span><span class="step">💬 发给 AI</span></div>' +
+  '<header class="hero"><div class="h-left"><div class="eyebrow">' + esc(SKILL_NAME) + '</div><h1>' + esc(TITLE) + '</h1><div class="lead">' + ALL.length + ' 场景 · 点击卡片查看详情并复制指令</div></div><span class="h-badge">' + ALL.length + ' 场景</span>' +
+  '<div class="hero-steps"><span class="step">🔍 找场景</span><span class="arrow">→</span><span class="step">📋 复制指令</span><span class="arrow">→</span><span class="step">💬 发给 AI</span></div>' +
   '</header>' +
   (INIT_BANNER && !INIT_BANNER.hidden ? '<div class="init-banner" id="initBanner"><div class="ib-text"><div class="ib-title">' + esc(INIT_BANNER.title) + '</div><div class="ib-sub">' + esc(INIT_BANNER.subtitle) + '</div></div><button class="copy-btn" data-c="' + esc(INIT_BANNER.prompt) + '">' + esc(INIT_BANNER.button_text) + '</button>' + (INIT_BANNER.closable === false ? '' : '<button class="ib-close" id="initClose" aria-label="关闭">✕</button>') +
     (INIT_BANNER.steps && INIT_BANNER.steps.length ? '<div class="init-steps">' + INIT_BANNER.steps.map(function(st, i){ return '<div class="init-step"><div class="s-n">' + (i+1) + '</div><div class="s-t">' + esc(st.title) + '</div>' + (st.desc ? '<div class="s-d">' + esc(st.desc) + '</div>' : '') + '</div>'; }).join('') + '</div>' : '') +
@@ -519,7 +519,7 @@ function showToast(){
   toast('已复制', '粘贴给 AI,技能会自动执行,完成后你会拿到结果 HTML。', {icon:'copy'});
 }
 function toastMsg(msg){
-  toast('请先填写: ' + msg, '填写完整后再复制 prompt', {icon:'warn', badge:{text:'未完成', type:'warn'}});
+  toast('请先填写: ' + msg, '填写完整后再复制指令', {icon:'warn', badge:{text:'未完成', type:'warn'}});
 }
 function doCopy(text){
   var ta = document.createElement('textarea');

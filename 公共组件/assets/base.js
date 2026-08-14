@@ -368,7 +368,7 @@ function formPrompt(fields, template){
     html += '</div>';
   });
   html += '<div class="fp-preview"><div class="fp-preview-label">Prompt 预览</div><pre class="fp-preview-body" id="'+uid+'-preview"></pre></div>';
-  html += '<div class="fp-actions"><button class="copy primary" id="'+uid+'-btn">复制 prompt</button></div>';
+  html += '<div class="fp-actions"><button class="copy primary" id="'+uid+'-btn">复制指令</button></div>';
   html += '</div>';
 
   function renderPreview(){
@@ -386,7 +386,7 @@ function formPrompt(fields, template){
       btn.textContent = '请填写必填项';
     } else {
       btn.disabled = false;
-      btn.textContent = '复制 prompt';
+      btn.textContent = '复制指令';
     }
   }
 

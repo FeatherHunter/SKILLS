@@ -200,6 +200,10 @@ class TestRenderEndToEnd:
         assert '添加单条作息记录' in html     # scene title
         assert '请帮我记一条作息' in html     # prompt
         assert '"types"' in html             # types 数组注入（多标签契约）
+        # v1.27 · #330 用户语言（用户拍板采纳 ①+④）: hero 步骤条/顶部 lead 用「复制指令」, 无「复制 prompt」残留
+        assert '复制指令' in html
+        assert '点击卡片查看详情并复制指令' in html
+        assert '复制 prompt' not in html
         assert INJECT not in html            # 占位符 0 残留
         assert SHARED not in html
         assert SHARED_CSS not in html

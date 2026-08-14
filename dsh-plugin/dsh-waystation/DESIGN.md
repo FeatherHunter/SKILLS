@@ -339,7 +339,7 @@ dsh-plugin/dsh-waystation/
   - [#344 task](https://github.com/FeatherHunter/SKILLS/issues/344) 前置检查绿点模块（被 #343 阻塞 → 已解锁）
   - [#345 task](https://github.com/FeatherHunter/SKILLS/issues/345) gh 数据层 + 快照 + 轮询 + wf.snapshot（被 #343 阻塞 → 已解锁）
   - [#346 task](https://github.com/FeatherHunter/SKILLS/issues/346) Client 面板 UI（被 #343/#344/#345 阻塞）
-  - [#347 task](https://github.com/FeatherHunter/SKILLS/issues/347) 开始此 Issue 流程（被 #343/#345 阻塞）
+  - [#347 task](https://github.com/FeatherHunter/SKILLS/issues/347) 开始此 Issue 流程 ← **✅ 已关闭**（"wf.claim" RPC："gh issue edit --add-assignee @me" 实测可用 + 缓存失效；确认框真实认领 + inputActions 注入 + 模板配置 + 前置黄条；顺带修复 #345 QUERY 少一个 "}" 致 map 详情全挂的 bug）
   - [#348 grilling](https://github.com/FeatherHunter/SKILLS/issues/348) P0 验收与 UX 细节拍板（被 #344–#347/#355 阻塞）
   - [#355 prototype](https://github.com/FeatherHunter/SKILLS/issues/355) UX 原型 · 假数据可交互面板（评审后定稿 UX）← **已认领（FeatherHunter），当前工作中**，阻塞 #348
 - 已核实事实（供 T1 参考）：`gh issue view --json subIssues/blockedBy/blocking` 返回 connection 对象（`.nodes[]` 含 id/number/state/title/url + totalCount）；地图 progress 由 GitHub 原生子议题进度条维护。

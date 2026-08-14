@@ -388,7 +388,7 @@ return {
           ]),
         ]),
         t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4 } }, [
-          canStart ? h('button', { className: 'dsws-btn primary', onClick: function () { s.startFor = t; emit() } }, '▶ 开始') : null,
+          canStart ? h('button', { className: 'dsws-btn primary', onClick: function () { s.startFor = t; emit() } }, '▶ 开始此 Issue') : null,
           h('button', { className: 'dsws-btn', onClick: function () { s.fixateFor = t; emit() } }, WORD()),
           h('a', { className: 'dsws-btn ghost', href: 'https://github.com/FeatherHunter/SKILLS/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, '🔗'),
         ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/FeatherHunter/SKILLS/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, '查看'),

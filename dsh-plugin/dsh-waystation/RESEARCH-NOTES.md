@@ -119,7 +119,7 @@ interface ApprovalRequest {
 
 ## 5. 遗留
 
-- `gh issue edit --add-assignee @me` 首次实测（构建 T5 时顺带做，失败率低）。
+- ✅ ~~`gh issue edit --add-assignee @me` 首次实测~~（T5 #347 完成）：语法可用；⚠️ PowerShell 直调会吞掉 `@me`（报 flag needs an argument），需引号包裹；host 侧 spawn argv 数组无此问题。
 - 60s 轮询的 API 配额观察（P1）。
 
 ---
@@ -132,7 +132,7 @@ interface ApprovalRequest {
 
 - **gh 封装**：`subprocess.resolveExecutable('gh')` → 兜底 `fs.lstat('D:\0Tools\GitHubCLI\gh.exe')`；30s 超时（`Promise.race` done × `timer.timeout` + `handle.terminate()`）；错误归一化 `auth / network / notfound / exit / spawn`。
 - **数据流**：`gh issue list --state open --label wayfinder:map --json ...` 枚举 → 每 map 一次 GraphQL（`subIssues + labels + assignees + blockedBy + blocking`，`-F` 变量直传，Node spawn 无引号坑）→ `parseMapBody` 五区块解析（Destination/Notes/Decisions so far/Not yet specified/Out of scope）→ `groupTickets` 分组（frontier = open + 无 open blocker + 未认领）。
-- **RPC**：`wf.ping` / `wf.snapshot`（5s 缓存，`args.cwd` 可覆盖）/ `wf.refresh`。
+- **RPC**：`wf.ping` / `wf.snapshot`（5s 缓存，`args.cwd` 可覆盖）/ `wf.refresh` / `wf.claim`（#347：`gh issue edit <n> --add-assignee @me` + 缓存失效 + 返回 assignedTo/url）。
 - **轮询**：`timer.interval` 60s + 与上次 stats diff（新 closed / 新 frontier，P2 toast 预留）。
 
 ### 6.2 验证（verify.js + 真实 gh 数据）

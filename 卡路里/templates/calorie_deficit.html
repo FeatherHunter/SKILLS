@@ -139,7 +139,7 @@
   document.getElementById('kBurnE').textContent = `TDEE ${target.tdee.toLocaleString()} · 运动 ${summary.avg_exercise_burn}`;
   const def = summary.avg_deficit;
   document.getElementById('kDef').textContent = (def >= 0 ? '+' : '') + def.toLocaleString();
-  document.getElementById('kDefE').textContent = def >= 0 ? '摄入 > 消耗 → 减重方向' : '摄入 < 消耗 → 增重方向';
+  document.getElementById('kDefE').textContent = def >= 0 ? '消耗 > 摄入 → 减重方向' : '消耗 < 摄入 → 增重方向';
   document.getElementById('kDefE').className = 'extra ' + (def > 0 ? 'good' : 'bad');
   document.getElementById('kLoss').textContent = (summary.predicted_loss_kg >= 0 ? '+' : '') + summary.predicted_loss_kg.toFixed(2) + ' kg';
   document.getElementById('kLossE').textContent = `7 天累计 · ${summary.weekly_deficit >= 0 ? '+' : ''}${summary.weekly_deficit} 卡`;
@@ -192,7 +192,7 @@
     `<td colspan="2"></td></tr>`;
 
   document.getElementById('srcLine').textContent =
-    `📊 数据来源:diet_deficit_analysis · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${series.length} 天`;})();
+    `📊 数据来源:analysis.series(build_series · TDEE 口径 · ADR-0013) · ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · ${series.length} 天`;})();
 
   
 </script>

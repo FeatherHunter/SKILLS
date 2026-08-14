@@ -4373,11 +4373,15 @@ TRIGGERS = [
         'fill_hints': [],
             'variants': []},
     {
-            'category': "分析",     'wake_word': "查热量缺口",     'desc': "热量缺口分析(摄入 vs 运动 vs TDEE)",
+            'category': '分析',     'wake_word': '查热量缺口',     'desc': '热量缺口分析(摄入 vs 运动 vs TDEE)',
             'main_prompt': {
-        'cli': "python scripts/render_calorie_deficit.py --days 7", 'text': "请你加载技能 卡路里,执行唤醒词「查热量缺口」。\n\n我想看摄入 vs 运动消耗的缺口(默认 7 天)。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。"},
-        'fill_hints': [],
-            'variants': []},
+        'cli': 'python scripts/render_calorie_deficit.py --days 7', 'text': '请你加载技能 卡路里,执行唤醒词「查热量缺口」。\n\n我想看热量缺口:摄入 vs 运动消耗 vs TDEE 的每日构成与累计缺口。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。'},
+        'fill_hints': ['时间范围(选填,默认最近 7 天):____'],
+            'variants': [],
+            'key': 'deficit_analysis', 'name': '查热量缺口', 'subfunction': '缺口分析', 'output_type': 'result',
+            'html_template': 'templates/calorie_deficit.html', 'data_source': 'python scripts/render_calorie_deficit.py --days 7', 'prompt_template': '请你加载技能 卡路里,执行唤醒词「查热量缺口」。\n\n我想看热量缺口:摄入 vs 运动消耗 vs TDEE 的每日构成与累计缺口。交付 HTML 时,文字只回复精简而全面概括的信息,文字不允许超过三句话。',
+            'user_intent': '热量缺口分析(摄入 vs 运动 vs TDEE 构成与累计)', 'data_fields': ['avg_intake', 'avg_burn', 'avg_exercise_burn', 'avg_deficit', 'weekly_deficit', 'predicted_loss_kg', 'trend', 'target_intake', 'series'],
+            'depends_on_external': False, 'order': 200},
     {
             'category': "分析",     'wake_word': "查热量趋势",     'desc': "热量摄入趋势",
             'main_prompt': {

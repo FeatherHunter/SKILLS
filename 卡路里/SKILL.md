@@ -155,7 +155,7 @@ metadata: { "openclaw": { "emoji": "🍎", "version": "2.4.19", "requires": { "p
 | `templates/today_water.html` | 看今日喝水 | `food_log` 中 `food_name='💧水'` 的 grams 聚合 + `daily_goal.water_goal` | `scripts/render_today_water.py [--date YYYY-MM-DD] [--mock <json>]` |
 | `templates/calorie_trend.html` | 查热量趋势 | `analysis.diet_calorie_trend(as_dict=True)` | `scripts/render_calorie_trend.py` |
 | `templates/nutrition_ratio.html` | 查营养结构 | `analysis.diet_nutrition_ratio(as_dict=True)` | `scripts/render_nutrition_ratio.py` |
-| `templates/calorie_deficit.html` | 查热量缺口 | `analysis.diet_deficit_analysis(as_dict=True)` | `scripts/render_calorie_deficit.py` |
+| `templates/calorie_deficit.html` | 查热量缺口 | `analysis.series.build_series`(TDEE 口径 · ADR-0013) | `scripts/render_calorie_deficit.py --days <N>` |
 | `templates/food_ranking.html` | 看高热量榜 / 看低热量榜 / 看频繁吃榜 / 看高碳水榜 / 看高蛋白榜 / 看高热量榜（最近 30 天）/ 看高热量榜（本月）/ 看高热量榜（自定义）/ 看低热量榜（最近 30 天）/ 看低热量榜（本月）/ 看低热量榜（自定义）/ 看频繁吃榜（最近 30 天）/ 看频繁吃榜（本月）/ 看频繁吃榜（自定义）/ 看高碳水榜（最近 30 天）/ 看高碳水榜（本月）/ 看高碳水榜（自定义）/ 看高蛋白榜（最近 30 天）/ 看高蛋白榜（本月）/ 看高蛋白榜（自定义） | `analysis.diet_food_ranking(as_dict=True)` × 5 | `scripts/render_food_ranking.py --category / --all` |
 | `templates/food_search.html` | 查食品 | `nutrition_products` LIKE 搜索 | `scripts/render_food_search.py --query "<term>"` |
 | `templates/food_library.html` | 查食品（按分类） | `nutrition_products` 列表 + 客户端搜索/分页 | `scripts/render_food_library.py [--limit 200 | --all]` |
@@ -633,10 +633,10 @@ DB 查找顺序(跨平台 · v2.4.19 修):
 | 看动作完成率 | 动作 TOP 榜 | `python scripts/render_workout_plan.py --mode movement --days <N>` |
 | 扫禁忌 | 禁忌动作扫描(腰/膝/肩)+ 替代建议 | `python scripts/render_contraindication.py [--part {腰\|膝\|肩}]` |
 
-### 📊 分析(154 场景 · 2026-08-02 ticket #11 落地)
+### 📊 分析(155 场景 · 2026-08-02 ticket #11 落地 · 2026-08-13 补「缺口分析」)
 
 > 场景数量与场景名已定稿;prompt 定稿见 `docs/scene-prompts/10-分析.md`(修改须重新用户确认)。
-> 旧版分析唤醒词(查热量趋势 / 查营养结构 / 查热量缺口 / 查食物排行 / 查健康报告 / 查卡路里数据 等 13 条)已被本分类取代,legacy 流程见 §AI 触发场景详述旧段(过渡期可用)。
+> 旧版分析唤醒词(查热量趋势 / 查营养结构 / 查食物排行 / 查健康报告 / 查卡路里数据 等 12 条)已被本分类取代,legacy 流程见 §AI 触发场景详述旧段(过渡期可用)。「查热量缺口」已于 2026-08-13 升级为正式场景(缺口分析子功能,155 场景),不再属 legacy。
 
 **A1 组合分析(60)**:看体重 vs 摄入(最近 7/15/30/60/90/180/365 天 · 本周 · 本月 · 自定义)、看体重 vs 运动(同 10 窗)、看体重 vs 蛋白(同 10 窗)、看体重 vs 缺口(同 10 窗)、看摄入 vs 运动(最近 7/30/90/180/365 天 · 自定义)、看体重 vs 体脂(同 6 窗)、看体重 vs 围度(同 6 窗)、看饮水 vs 体重(最近 30 天 · 自定义)
 **A2 健康报告(19)**:看健康报告(本周 / 上周 / 最近 7/30/90/180/365 天 / 本月 / 上月 / 今年 / 自定义)、看BMI报告、看TDEE报告、看BMR报告、看蛋白质摄入报告、看水分摄入报告、看综合评分、看健康趋势、看健康报告(含对比)
@@ -644,6 +644,7 @@ DB 查找顺序(跨平台 · v2.4.19 修):
 **A4 自动分析(23)**:诊断体重波动原因 / 诊断体重停滞(含平台期判断) / 诊断体重反弹 / 诊断体重下降原因 / 诊断体重异常点 / 诊断体重vs体脂围度背离 / 诊断饮食超标 / 诊断饮食不足 / 诊断营养不均衡(含均衡判断) / 诊断饮食结构问题 / 诊断运动不足 / 诊断运动过量 / 诊断运动类型失衡 / 诊断运动效率(含有效判断) / 诊断运动建议(含类型推荐) / 为什么我没瘦 / 为什么我瘦太快 / 我的减重速度合理吗 / 我的减肥策略对吗 / 我距离目标还差什么 / 我这个月做得好的 / 我这个月需要改的 / 综合健康评估
 **A5 营养分析(16)**:看蛋白 vs 碳水(最近 7/30/90 天 · 自定义)、看蛋白 vs 脂肪(最近 30/90 天 · 自定义)、看碳水 vs 脂肪(同 3 窗)、看三大营养交叉(最近 30/90 天 · 自定义)、看钠糖纤维趋势、看钠糖纤维综合、看营养建议
 **A6 预测模拟(20)**:预测体重(1 周 / 1 月 / 3 月 / 6 月后 · 自定义时间 · 自定义目标)、模拟减重(每天-300/-500/-700卡 · 30/60/90天减Xkg · 自定义天数减Xkg)、摄入预测(按当前速率 1 周 / 1 月 / 3 月 · 自定义 · 营养目标达成 · 卡路里缺口 · 摄入稳定性)
+**缺口分析(1 · 2026-08-13 新增)**:查热量缺口(摄入 vs 运动消耗 vs TDEE 的每日构成与累计缺口 · 不要求体重数据 · 数据源 series.py TDEE 口径 ADR-0013)
 **单点(1)**:看每日 6 因素综合
 
 **交互规则(2026-08-02 用户拍板 · 规则落地本段,不写进 prompt)**:
@@ -925,13 +926,12 @@ review_cli.py archive --html-path <html>  → 飞书 URL
 
 ---
 
-###### 查热量缺口 / 查运动分布 / 查运动贡献(待实现)
+###### 查热量缺口 / 查运动分布 / 查运动贡献
 
-> ⏳ **占位说明**:这三个 trigger 的 renderer 待 Phase H.4-H.6 实现。
-> AI 路由表里已标注支持任意日期区间,但 CLI 层 renderer 尚未交付。
-> 当前用户询问时 AI 应回答"该功能正在开发,完成后可支持任意区间"。
+> **查热量缺口已实现**(2026-08-13 · T5 落地, 155 场景正式成员):`render_calorie_deficit.py --start --end --days`,数据源 series.py(TDEE 口径 · ADR-0013)。
+> **查运动分布/查运动贡献**:已实现(Phase H.4-H.6),CLI 如下。
 
-预计 CLI:
+CLI:
 - `查热量缺口` → `render_calorie_deficit.py --start --end --days`
 - `查运动分布` → `render_exercise_distribution.py --start --end --days`
 - `查运动贡献` → `render_exercise_distribution.py --type contribution --start --end --days`
@@ -2093,7 +2093,7 @@ AI 看到错误时按此表处理:
 
 - **查热量趋势**:`diet_analysis(start, end, 'calorie_trend')` - 工作日 vs 周末 / 合规率
 - **查营养结构**:`diet_analysis(start, end, 'macro_ratio')` - 蛋白/碳水/脂肪占比
-- **查热量缺口**:`diet_analysis(start, end, 'deficit_analysis')` - 饮食 vs 运动贡献
+- **查热量缺口**:`render_calorie_deficit.py --days <N>` - 摄入 vs 运动 vs TDEE 构成(数据源 series.py · TDEE 口径 · ADR-0013 · 155 场景正式成员)
 - **查食物排行**:`diet_food_ranking(start, end, category)` - category 可选:high_calorie / low_calorie / frequent / high_carb / high_protein
 - **查运动分布**:`exercise_analysis(start, end, 'type_breakdown')` - 消耗/频次/时长占比
 - **查运动贡献**:`exercise_analysis(start, end, 'deficit_contribution')` - 运动对缺口贡献

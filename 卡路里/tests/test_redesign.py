@@ -255,7 +255,11 @@ class TestHelpCenterErgonomics:
         assert 'help_center.html' not in renderer, 'render_help_center 仍引用旧模板'
 
     def test_help_center_gap_disposal(self, tmp_path):
-        """#316 缺口处置: 技能协同 36 不迁入; legacy 23 保留(分析/既有唤醒词 22 + 饮食/既有唤醒词 1)"""
+        """#316 缺口处置: 技能协同 36 不迁入; legacy 保留(分析/既有唤醒词 21 + 饮食/既有唤醒词 1)
+
+        2026-08-13 T5(map #349): 「查热量缺口」从 legacy 升级为正式场景(缺口分析子功能),
+        分析/既有唤醒词 22 → 21。
+        """
         html = self._render(tmp_path)
         m = re.search(r'<script id="help-data"[^>]*>(.*?)</script>', html, re.DOTALL)
         data = json.loads(m.group(1).replace('<\\/', '</'))
@@ -268,8 +272,13 @@ class TestHelpCenterErgonomics:
         analysis = next(g for g in data["groups"] if g["id"] == "analysis")
         legacy_sub = next((sg for sg in analysis["subgroups"] if sg["label"] == "既有唤醒词"), None)
         assert legacy_sub is not None, "分析 组缺 既有唤醒词 子功能"
-        assert len(legacy_sub["scenes"]) == 22, \
-            f"分析/既有唤醒词 应为 22(查榜 13 + 复盘 9), 实际 {len(legacy_sub['scenes'])}"
+        assert len(legacy_sub["scenes"]) == 21, \
+            f"分析/既有唤醒词 应为 21(查热量缺口已升级为正式场景), 实际 {len(legacy_sub['scenes'])}"
+        # 「查热量缺口」应已在正式子功能「缺口分析」中
+        formal = next((sg for sg in analysis["subgroups"] if sg["label"] == "缺口分析"), None)
+        assert formal is not None, "分析 组缺 缺口分析 子功能"
+        assert any(s["wake_word"] == "查热量缺口" for s in formal["scenes"]), \
+            "查热量缺口 应在 缺口分析 子功能(非 legacy)"
 
     def test_triggers_have_fill_hints_field(self):
         """每个 TRIGGER 都有 fill_hints 字段(默认空 list)

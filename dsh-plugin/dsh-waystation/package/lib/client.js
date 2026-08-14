@@ -649,15 +649,16 @@ window.__ModuleLoader__.load({
         '\n' +
         '请按以下流程处理：\n' +
         '\n' +
-        '1. 确认收尾：向用户复述上面的完成状态，并询问：「该地图的全部工作是否已完成，需要做收尾吗？」\n' +
+        '1. 确认收尾：向用户复述上面的完成状态，并逐条核对：「这 {total} 个 issue 是否都已真正完成并标记为 CLOSED？有没有实际已完成却漏标 CLOSED 的？」然后询问：「该地图的全部工作是否已完成，需要做收尾吗？」\n' +
         '\n' +
         '2. 用户确认完成 → 执行收尾：与用户一起收尾，例如把最终结果/决定追加进 map 的「Decisions so far」（每个 closed ticket 一行 gist）、确认没有遗留雾区，必要时关闭 map 本体。\n' +
         '\n' +
         '3. 用户认为不能算完成 → 不要收尾，先做异常排查：向用户说明「当前显示 100% 完成，可能与实际不符」，并检查以下原因：\n' +
         '   - 是否有属于该 map 的 issue 没有挂进来（未建立父子/sub-issue 关系，或挂在了别的 map 下）；\n' +
+        '   - 是否有 issue 实际已完成却没有标记为 CLOSED（漏关/误开）——逐个核对 {total} 个 ticket 的完成状态与关闭状态是否一致，并向用户问清楚「为什么这些 issue 已经完成了，却没有标记为 close 的完成状态？」；\n' +
         '   - 是否有 issue 被直接关闭但内容并未真正交付；\n' +
         '   - map 正文的票索引与 GitHub 子议题是否一致（漏挂/错挂）。\n' +
-        '   把排查结论与补救建议（补挂 issue / 重开 issue）反馈给用户，等用户决定后再行动。\n' +
+        '   把排查结论与补救建议（补挂 issue / 重开 issue / 补标记 CLOSED）反馈给用户，等用户决定后再行动。\n' +
         '\n' +
         GUIDE_LINE
       // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认模板文本，T2b 可编辑）
@@ -788,10 +789,22 @@ window.__ModuleLoader__.load({
         return {}
       })()
       const saveLabelClicks = function () { try { localStorage.setItem(LABEL_CLICKS_KEY, JSON.stringify(labelClicks)) } catch (e) {} }
+      // 面板打开模式记忆（用户习惯：最近用停靠就默认停靠，最近用悬浮就默认悬浮）
+      const PANEL_MODE_KEY = 'dsws.panelMode'
+      const panelModeInit = (function () {
+        try { const v = localStorage.getItem(PANEL_MODE_KEY); if (v === 'dock' || v === 'float') return v } catch (e) { /* 存储不可用 */ }
+        return 'float'
+      })()
+      const setPanelMode = function (st, mode) {
+        st.panelMode = mode
+        try { localStorage.setItem(PANEL_MODE_KEY, mode) } catch (e) { /* 存储不可用 */ }
+        emit(st)
+      }
       const makeStore = () => ({
         open: false, tab: 'list', activeMap: null,
         notice: null, injector: null, tick: 0,
         pos: null, size: { w: 460, h: DEFAULT_PANEL_H }, pipMode: false,
+        panelMode: panelModeInit,
         // 外观定死（用户拍板：图标/动作词不可配置）
         ui: { icon: 'compass', word: '沉淀' },
         snapshot: null,
@@ -1201,7 +1214,19 @@ window.__ModuleLoader__.load({
           failPip()
         })
       }
+      // 打开面板按最近使用模式分派：dock（右侧停靠）/ float（悬浮，含浏览器 PiP）
+      const openDockPanel = function (st) {
+        const ls = ctx.get('layout')
+        if (ls && typeof ls.openDetails === 'function') {
+          ls.openDetails()
+          if (st.snapMode !== 'real' || !snapFresh(st)) loadSnapshot(st, true)
+          else emit(st)
+          return
+        }
+        openPagePanel(st)  // layout 服务不可用 → 退回悬浮
+      }
       const openPanel = function (st) {
+        if (st.panelMode === 'dock') { openDockPanel(st); return }
         if (pipSupported()) { openPipWindow(st); return }
         openPagePanel(st)
       }
@@ -1409,11 +1434,10 @@ window.__ModuleLoader__.load({
           seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
           // v19-36：环境段移至末尾（更新左侧），用户少点
           seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
-          // 右侧停靠（details 列）：打开时顺带保证数据新鲜（过期即刷）
+          // 右侧停靠（details 列）：显式选择即记忆模式，之后所有打开动作默认走停靠
           seg('map', tr('nav.dock'), '#bc8cff', function () {
-            const ls = ctx.get('layout')
-            if (ls && typeof ls.openDetails === 'function') ls.openDetails()
-            if (s.snapMode !== 'real' || !snapFresh(s)) loadSnapshot(s, true)
+            setPanelMode(s, 'dock')
+            openDockPanel(s)
           }, tr('nav.dockTitle')),
           h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, tr('nav.refresh') + ' ' + timeStr),
         ])

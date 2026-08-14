@@ -27,30 +27,25 @@
 
 ## 使用方式
 
-### 方式一：正式安装（推荐 · 开机自启 · 一次性）
+### 方式一：正式安装（推荐 · 一条命令 · 开机自启 · 无需审批）
 
-把本包作为标准 npm 包安装进 DSH profile：
+**一条命令完成全部**（装包 + 自动注册到 DSH profile，postinstall 自动写 `cordis.patch.yml`）：
 
-1. 安装包（发布后）：
+```powershell
+npm install --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org
+```
 
-   ```powershell
-   npm install dsh-waystation --registry=https://registry.npmjs.org
-   ```
+- 装到 `~/.dsh/profiles/node_modules/dsh-waystation/`
+- **postinstall 自动注册**：探测 DSH profile 的 `cordis.patch.yml`，若尚无 dsh-waystation 注册行则自动追加
+  （幂等：重复安装/升级不叠加；非 DSH 环境自动跳过，不影响普通项目使用）
+- 然后**刷新浏览器页面**即生效（无需重启 DSH、无需审批），之后每次 DSH 启动自动加载
 
-   或本地源码安装：把 `package/` 全部内容复制到 `~/.dsh/profiles/node_modules/dsh-waystation/`
-   （`~/.dsh` 即 `$DSH_HOME`；新用户在自己的机器上做同样一步）。
+卸载：
 
-2. 在 `~/.dsh/profiles/web/cordis.patch.yml` 追加注册行（**无需重启 DSH**，
-   配置文件热加载；刷新浏览器页面即生效）：
-
-   ```yaml
-   - insert:
-       - id: dsh-waystation
-         name: 'dsh-waystation'
-   ```
-
-3. 刷新浏览器页面。之后每次 DSH 启动插件自动生效，**无需任何审批**。
-4. 卸载：删掉 patch 里的 insert 行 + 删除 `node_modules/dsh-waystation/`。
+```powershell
+npm uninstall --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation
+# 并手动删除 cordis.patch.yml 里的 dsh-waystation insert 块（或保留，DSH 找不到包会忽略）
+```
 
 > 原理：DSH 的 `dsh.client` 插件机制（`dsh-client-modules`）会扫描组合里声明了
 > `dsh.client: { platform: 'web' }` 的包，把 `exports["./client"]` 指向的 bundle

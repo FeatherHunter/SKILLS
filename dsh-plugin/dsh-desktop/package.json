@@ -1,8 +1,11 @@
 {
   "name": "dsh-harness-desktop",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "DeepSeek Harness 桌面版：双击启动 DSH Web，后台运行无终端窗口，关闭窗口即停止后台服务。内置运行时，无需安装 Node.js。",
   "main": "main.js",
+  "bin": {
+    "dsh-harness-desktop": "bin/dsh-harness-desktop.js"
+  },
   "license": "MIT",
   "author": "feather_wch",
   "keywords": [
@@ -16,6 +19,7 @@
     "main.js",
     "preload.js",
     "boot.html",
+    "bin/",
     "build/",
     "runtime-resources/npm",
     "tools/",

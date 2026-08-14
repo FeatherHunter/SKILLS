@@ -71,6 +71,46 @@ function tailLog(n = 20) {
   } catch { return ''; }
 }
 
+// ---------- 命令行工具模式：创建桌面快捷方式 ----------
+// 用法：dsh-harness-desktop-1.0.0-x64.exe --install-shortcut
+// 在桌面创建指向本 exe 的「桌面版」快捷方式后立即退出。
+// 便携版：electron-builder 注入 PORTABLE_EXECUTABLE_FILE 指向用户放置的原始 exe。
+// 实现：Electron 原生 shell.writeShortcutLink（Windows .lnk，无 COM/编码坑）。
+const INSTALL_SHORTCUT = process.argv.includes('--install-shortcut');
+
+function makeShortcut() {
+  const target = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+  if (!fs.existsSync(target)) {
+    log('SHORTCUT_FAIL: 目标不存在 ' + target);
+    console.log('SHORTCUT_FAIL target missing: ' + target);
+    app.exit(1);
+    return;
+  }
+  const lnkPath = path.join(app.getPath('desktop'), '桌面版.lnk');
+  try {
+    const ok = shell.writeShortcutLink(lnkPath, 'create', {
+      target,
+      cwd: path.dirname(target),
+      description: 'DSH 桌面版',
+      icon: target,
+      iconIndex: 0,
+    });
+    if (ok) {
+      log('已创建桌面快捷方式 → ' + lnkPath);
+      console.log('SHORTCUT_OK ' + lnkPath);
+      app.exit(0);
+    } else {
+      log('SHORTCUT_FAIL: writeShortcutLink 返回 false');
+      console.log('SHORTCUT_FAIL writeShortcutLink=false');
+      app.exit(1);
+    }
+  } catch (e) {
+    log('SHORTCUT_FAIL: ' + e.message);
+    console.log('SHORTCUT_FAIL ' + e.message);
+    app.exit(1);
+  }
+}
+
 // ---------- 状态 ----------
 let child = null;        // DSH 子进程
 let installProc = null;  // npm install 子进程（同样纳入「关窗即杀」）
@@ -502,6 +542,7 @@ if (!gotLock) {
 
   app.whenReady().then(() => {
     nativeTheme.themeSource = 'dark'; // 原生对话框/菜单跟随深色
+    if (INSTALL_SHORTCUT) { makeShortcut(); return; } // 工具模式：建完即退
     createWindow();
     startup();
   });

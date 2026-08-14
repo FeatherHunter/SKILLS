@@ -42,6 +42,13 @@
 2. 首次运行：启动页显示「正在下载并安装 DSH 运行时…」，等几分钟
 3. 自动进入 DSH 界面 —— 完成！之后双击即秒开
 
+**想要桌面快捷方式？** 在 exe 所在目录执行一条命令即可（应用自动创建，无需手动右键）：
+
+```powershell
+.\dsh-harness-desktop-1.0.0-x64.exe --install-shortcut
+# 桌面出现「桌面版」图标，以后双击它直接打开
+```
+
 > 和官方 `npx @deepseek-ai/dsh web` 完全等价（DSH 官方 Run from npm 前提），
 > 只是这一步被桌面版自动完成，不需要命令行。
 
@@ -64,7 +71,11 @@
    ```bash
    npm start
    ```
-4. **（可选）打包自己的便携 exe**：
+4. **（可选）创建桌面快捷方式**——以后双击桌面「桌面版」图标直接打开，不用开终端：
+   ```bash
+   npx dsh-harness-desktop shortcut
+   ```
+5. **（可选）打包自己的便携 exe**：
    ```bash
    npm run dist
    # Windows → dist/dsh-harness-desktop-1.0.0-x64.exe

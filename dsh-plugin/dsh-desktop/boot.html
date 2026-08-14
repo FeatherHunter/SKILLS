@@ -14,6 +14,17 @@
     font: 13px/1.6 "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
   }
   #app { width: min(680px, 86vw); text-align: center; }
+  /* 自绘窗口控制按钮（frame:false 无系统按钮） */
+  #winControls {
+    position: fixed; top: 0; right: 0; height: 40px; display: flex; align-items: center;
+    z-index: 2147483647;
+  }
+  #winControls button {
+    width: 46px; height: 40px; border: 0; background: 0 0; color: #a1a1aa;
+    font-size: 12px; cursor: pointer; display: grid; place-items: center; padding: 0;
+  }
+  #winControls button:hover { background: rgba(255,255,255,0.08); color: #d4d4d4; }
+  #winControls #wcClose:hover { background: rgba(232,17,35,0.85); color: #fff; }
   .brand { margin: 0 auto 20px; }
   .brand svg { display: block; margin: 0 auto; opacity: 0.92; }
   .spinner {
@@ -44,6 +55,11 @@
 </style>
 </head>
 <body>
+  <div id="winControls">
+    <button id="wcMin" title="最小化">─</button>
+    <button id="wcMax" title="最大化">□</button>
+    <button id="wcClose" title="关闭">✕</button>
+  </div>
   <div id="app">
     <div class="brand" aria-hidden="true">
       <svg width="52" height="52" viewBox="0 0 50 50" fill="none">
@@ -78,6 +94,10 @@
     api.onStatus(render);
     $('restart').addEventListener('click', function () { api.restart(); });
     $('quit').addEventListener('click', function () { api.quit(); });
+    // 自绘窗口控制按钮
+    $('wcMin').addEventListener('click', function () { api.minimize(); });
+    $('wcMax').addEventListener('click', function () { api.toggleMaximize(); });
+    $('wcClose').addEventListener('click', function () { api.close(); });
   </script>
 </body>
 </html>

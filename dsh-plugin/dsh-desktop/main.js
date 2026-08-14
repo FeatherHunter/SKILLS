@@ -393,10 +393,11 @@ function createWindow() {
     },
   };
   if (process.platform === 'win32') {
-    // 无原生标题栏。页面内容整体下移 TITLEBAR_H 后，右上角三个按钮
-    // 悬浮在空白标题栏带上，不遮挡任何页面内容（见 polishTargetPage）
-    winOpts.titleBarStyle = 'hidden';
-    winOpts.titleBarOverlay = { color: '#0a0a0a', symbolColor: '#a1a1aa', height: TITLEBAR_H };
+    // frame:false —— 整个窗口都是客户区，顶部所有鼠标事件都进页面。
+    // 之前用 titleBarStyle hidden + WCO：顶部 40px 是系统非客户区（标题栏），
+    // 页面永远收不到那里的点击，插件面板拖到顶部后会被系统吞掉事件。
+    // 窗口控制按钮（最小化/最大化/关闭）改为页面自绘（见 polishTargetPage / boot.html）。
+    winOpts.frame = false;
   } else if (process.platform === 'darwin') {
     winOpts.titleBarStyle = 'hiddenInset';
   }
@@ -464,6 +465,33 @@ function polishTargetPage() {
       if (window.__dshDesktopDragInstalled) return;
       window.__dshDesktopDragInstalled = true;
       const api = window.dshDesktop;
+
+      // 自绘窗口控制按钮（frame:false 后系统按钮不存在）
+      let wc = document.getElementById('dshdWinControls');
+      if (!wc) {
+        wc = document.createElement('div');
+        wc.id = 'dshdWinControls';
+        wc.style.cssText = 'position:fixed;top:-' + BAR_H + 'px;right:0;height:40px;display:flex;align-items:center;z-index:2147483647;';
+        const mkBtn = (glyph, onClick, hoverBg) => {
+          const b = document.createElement('button');
+          b.textContent = glyph;
+          b.style.cssText = 'width:46px;height:40px;border:0;background:0 0;color:#a1a1aa;' +
+            'font-size:12px;font-family:system-ui,sans-serif;cursor:pointer;display:grid;place-items:center;padding:0;';
+          b.addEventListener('mouseenter', () => { b.style.background = hoverBg; });
+          b.addEventListener('mouseleave', () => { b.style.background = '0 0'; });
+          b.addEventListener('click', onClick);
+          return b;
+        };
+        wc.appendChild(mkBtn('─', () => api.minimize(), 'rgba(255,255,255,0.08)'));
+        wc.appendChild(mkBtn('□', () => api.toggleMaximize(), 'rgba(255,255,255,0.08)'));
+        const closeBtn = mkBtn('✕', () => api.close(), 'rgba(232,17,35,0.85)');
+        closeBtn.style.color = '#d4d4d4';
+        closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
+        closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#d4d4d4'; });
+        wc.appendChild(closeBtn);
+        document.body.appendChild(wc);
+      }
+
       const strip = document.getElementById('dshDesktopDrag');
       // 空白带判定：命中条带本身 / body / 根容器。
       // 页面内容已下移，0-40px 内除浮层面板外无其他元素；
@@ -585,6 +613,13 @@ ipcMain.handle('dsh-desktop:toggle-maximize', () => {
   const win = mainWindow;
   if (!win || win.isDestroyed()) return;
   if (win.isMaximized()) win.unmaximize(); else win.maximize();
+});
+ipcMain.handle('dsh-desktop:minimize', () => {
+  const win = mainWindow;
+  if (win && !win.isDestroyed()) win.minimize();
+});
+ipcMain.handle('dsh-desktop:close', () => {
+  app.quit();
 });
 
 // ---------- 应用生命周期 ----------

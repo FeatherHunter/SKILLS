@@ -8,9 +8,11 @@ contextBridge.exposeInMainWorld('dshDesktop', {
   onStatus: (cb) => ipcRenderer.on('dsh-desktop:status', (_event, status) => cb(status)),
   restart: () => ipcRenderer.invoke('dsh-desktop:restart'),
   quit: () => ipcRenderer.invoke('dsh-desktop:quit'),
-  // 手动窗口拖拽（页面注入的标题栏带使用；send 通道，低延迟）
+  // 手动窗口拖拽 + 窗口控制（页面注入的标题栏带/自绘按钮使用；send 通道低延迟）
   dragStart: () => ipcRenderer.send('dsh-desktop:drag-start'),
   dragMove: (dx, dy) => ipcRenderer.send('dsh-desktop:drag-move', dx, dy),
   dragEnd: () => ipcRenderer.send('dsh-desktop:drag-end'),
   toggleMaximize: () => ipcRenderer.invoke('dsh-desktop:toggle-maximize'),
+  minimize: () => ipcRenderer.invoke('dsh-desktop:minimize'),
+  close: () => ipcRenderer.invoke('dsh-desktop:close'),
 });

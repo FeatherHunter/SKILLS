@@ -728,7 +728,7 @@ return {
       ;(TPL_REQUIRED[id] || []).forEach(function (n) { if (found.indexOf(n) < 0 && missing.indexOf(n) < 0) missing.push(n) })
       return { ok: unknown.length === 0 && missing.length === 0, unknown: unknown, missing: missing }
     }
-    const fixateText = () => tplTextr('fixate')
+    const fixateText = () => tplText('fixate')
 
     // ============================================================
     // 3. store（v14：按会话隔离；无 sid 时用 shared）
@@ -2112,20 +2112,20 @@ return {
     // ============================================================
     // 6. 插槽注册
     // ============================================================
-    slots.injectr('sidebar.footer.action', function () {
+    slots.inject('sidebar.footer.action', function () {
       return slots.register({ name: 'sidebar.footer.action', id: 'dsh-waystation', label: 'Waystation', order: 5 }, SidebarButton)
     })
-    slots.injectr('shell.overlay', function () {
+    slots.inject('shell.overlay', function () {
       return slots.register({ name: 'shell.overlay', id: 'dsws-overlay-v5', order: 10 }, OverlayPanel)
     })
-    slots.injectr('conversation.input.dock', function () {
+    slots.inject('conversation.input.dock', function () {
       return slots.register({ name: 'conversation.input.dock', id: 'dsh-waystation', order: 40 }, StatusBar)
     })
-    slots.injectr('tool.view.cordis', function () {
+    slots.inject('tool.view.cordis', function () {
       return slots.register({ name: 'tool.view.cordis', key: 'self' }, RunPanel)
     })
     // v25-50：配置页（设置 → 插件 → Waystation；与 opencode 主题同模式）
-    slots.injectr('settings.plugins.tab', function () {
+    slots.inject('settings.plugins.tab', function () {
       return slots.register({ name: 'settings.plugins.tab', id: 'dsws-settings', order: 40, label: function () { return 'Waystation' } }, SettingsPage)
     })
 

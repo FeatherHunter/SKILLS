@@ -747,7 +747,7 @@ window.__ModuleLoader__.load({
         ;(TPL_REQUIRED[id] || []).forEach(function (n) { if (found.indexOf(n) < 0 && missing.indexOf(n) < 0) missing.push(n) })
         return { ok: unknown.length === 0 && missing.length === 0, unknown: unknown, missing: missing }
       }
-      const fixateText = () => tplTextr('fixate')
+      const fixateText = () => tplText('fixate')
 
       // ============================================================
       // 3. store（v14：按会话隔离；无 sid 时用 shared）

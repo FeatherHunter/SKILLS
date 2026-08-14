@@ -38,6 +38,14 @@ const check = function (file) {
       if (!ok) problems.push('动态前缀无键 ' + prefix)
     } else if (!zh.has(k) || !en.has(k)) problems.push('引用缺失 ' + k)
   })
+  // 完整性：历史改名连带误伤防护（t('→tr(' 全局替换曾误伤 tplText( → tplTextr(、slots.inject( → slots.injectr(）
+  ;['tplTextr(', 'injectr(', 'getr(', 'setHeightr(', 'Heig\u0072('].forEach(function (bad) {
+    if (src.includes(bad)) problems.push('改名误伤残留 ' + bad)
+  })
+  // 动态版注册 5 个插槽（含 Run 卡 tool.view.cordis）；静态 bundle 4 个（无 Run 卡，disposeSlots 形态）
+  const n = (src.match(/slots\.inject\('/g) || []).length
+  const expectInject = file.indexOf('package/') >= 0 ? 4 : 5
+  if (n !== expectInject) problems.push('slots.inject 注册数异常 ' + n + '（期望 ' + expectInject + '）')
   if (problems.length) { console.log('  FAIL', file, problems.join('；')); failed = true }
   else console.log('  PASS', file, '(' + zh.size + ' 键 × zh/en，' + used.size + ' 处引用)')
 }

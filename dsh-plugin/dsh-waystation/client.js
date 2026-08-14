@@ -1,11 +1,11 @@
 /**
- * DSH-Waystation · Client 半（UX v22 · 2026-08-14 第八批执行）
+ * DSH-Waystation · Client 半（UX v23 · 2026-08-14 第九批执行）
  *
- * v22 变更（用户拍板）：
- *   45. 统一引导句更新为「从第一性原理出发完成任务，并对抗式审查。」（全部动作按钮 + map 顶部执行）；
- *       交接第一击恢复自动注入 /handoff 模板（时间戳文件名 + 三部分 + 引导句）；
- *       交接第二击预填「/read + 复述确认理解」完整 prompt（+ 引导句），并复制到剪贴板
+ * v23 变更（用户反馈）：
+ *   47. 面板默认高度 = 屏幕约 1/4（不再被内容撑满整屏；内容内部滚动，用户可拖手柄拉长）
  *
+ * v22 变更：引导句更新「从第一性原理出发完成任务，并对抗式审查。」；
+ * 交接第一击恢复注入时间戳模板；第二击预填优化+复制。
  * v21：动作按钮 prompt 精简 + 统一引导句。
  * v20：标签「+N」点击展开全部标签/收起。
  * v19：grilling→讨论 / 头部 repo 名 / 环境段末尾 / map 详情执行+任务动作 / map 行进度 /
@@ -208,10 +208,14 @@ return {
     // ============================================================
     // 3. store（v14：按会话隔离；无 sid 时用 shared）
     // ============================================================
+    // v23-47：面板默认高度 = 屏幕约 1/4（不占满整屏；内容内部滚动，用户可拖手柄拉长）
+    const DEFAULT_PANEL_H = (function () {
+      try { return Math.max(240, Math.round((window.innerHeight || 800) * 0.25)) } catch (e) { return 240 }
+    })()
     const makeStore = () => ({
       open: false, tab: 'list', activeMap: null,
       notice: null, injector: null, tick: 0,
-      pos: null, size: { w: 460, h: null },
+      pos: null, size: { w: 460, h: DEFAULT_PANEL_H },
       ui: { icon: 'compass', word: '沉淀' },
       snapshot: null, cfgOpen: false,
       cwd: '', lblFilter: null, skillView: 'list',

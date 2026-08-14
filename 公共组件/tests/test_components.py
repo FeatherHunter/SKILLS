@@ -1445,6 +1445,66 @@ def test_line_yticks_grid_off_still_marks(chart_page):
     assert lines == 4 and labels == 4
 
 
+# ── line: series[].ownScale 独立刻度（v1.17 · #334）────────────────
+
+def test_line_ownscale_fills_height(chart_page):
+    """ownScale:true: 每系列独立归一化各自铺满图高（量级差 100 倍不压平）; 缺省共享域小量级被压扁"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:50}], {animation:false,
+        series:[{name:'A',items:[{label:'a',value:10},{label:'b',value:20}]},
+                {name:'B',items:[{label:'a',value:100},{label:'b',value:110}]}]})
+    """)
+    ds_shared = chart_page.evaluate('[...document.querySelectorAll(".hm-c-line-svg path[fill=\'none\']")].map(p => p.getAttribute(\'d\'))')
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:50}], {animation:false,
+        series:[{name:'A',items:[{label:'a',value:10},{label:'b',value:20}],ownScale:true},
+                {name:'B',items:[{label:'a',value:100},{label:'b',value:110}],ownScale:true}]})
+    """)
+    ds_own = chart_page.evaluate('[...document.querySelectorAll(".hm-c-line-svg path[fill=\'none\']")].map(p => p.getAttribute(\'d\'))')
+    # 共享域: 全域 [4, 116] → A 压缩贴底(91.6/84.3), B 压平贴顶(25.7/18.4)
+    assert ds_shared == ['M14.0 91.6L306.0 84.3', 'M14.0 25.7L306.0 18.4']
+    # ownScale: 各自域 [9.4,20.6]/[99.4,110.6] → 两系列同样铺满图高(91.6 → 18.4)
+    assert ds_own == ['M14.0 91.6L306.0 18.4', 'M14.0 91.6L306.0 18.4']
+
+
+def test_line_ownscale_does_not_pollute_axis(chart_page):
+    """ownScale 序列不参与共享域: yTicks/网格仍以主序列域为准（极端量级序列不污染主轴刻度）"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:5}], {animation:false, yTicks:4,
+        series:[{name:'A',items:[{label:'a',value:2},{label:'b',value:5},{label:'c',value:8}]},
+                {name:'B',items:[{label:'a',value:0},{label:'b',value:5000},{label:'c',value:10000}],ownScale:true}]})
+    """)
+    labels = chart_page.evaluate("[...document.querySelectorAll('.hm-c-yt')].map(n=>n.textContent)")
+    assert labels == ['1.64', '3.88', '6.12', '8.36']  # 仅 A 的域 [1.64, 8.36]
+
+
+def test_line_ownscale_legend_note(chart_page):
+    """ownScale + legend:true: 图例注明「各指标独立刻度」; 缺省无此注记"""
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:50}], {animation:false, legend:true,
+        series:[{name:'A',items:[{label:'a',value:10},{label:'b',value:20}],ownScale:true},
+                {name:'B',items:[{label:'a',value:100},{label:'b',value:110}],ownScale:true}]})
+    """)
+    lg1 = chart_page.evaluate("[...document.querySelectorAll('.hm-c-lg')].map(n=>n.textContent)")
+    chart_page.evaluate("""
+      window.charts.line(document.getElementById('root'), [{label:'x',value:50}], {animation:false, legend:true,
+        series:[{name:'A',items:[{label:'a',value:10},{label:'b',value:20}]},
+                {name:'B',items:[{label:'a',value:100},{label:'b',value:110}]}]})
+    """)
+    lg2 = chart_page.evaluate("[...document.querySelectorAll('.hm-c-lg')].map(n=>n.textContent)")
+    assert '各指标独立刻度' in lg1 and lg1 == ['A', 'B', '各指标独立刻度']
+    assert lg2 == ['A', 'B'] and '各指标独立刻度' not in lg2
+
+
+def test_line_ownscale_single_series_noop(chart_page):
+    """单序列 ownScale:true: 与单序列共享域渲染一致（单系列本就按自身域铺满, 无行为差异）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, series:[{name:"A",items:items}]})', LINE_ITEMS)
+    d1 = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, series:[{name:"A",items:items,ownScale:true}]})', LINE_ITEMS)
+    d2 = chart_page.evaluate('document.querySelector(".hm-c-line-svg path[fill=\'none\']").getAttribute(\'d\')')
+    assert d1 == d2
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

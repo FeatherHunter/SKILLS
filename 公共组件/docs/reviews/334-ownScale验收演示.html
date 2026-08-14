@@ -1,3 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>series.ownScale 独立刻度 v1.17 · 验收演示（#334）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{max-width:100%;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#f5f5f7;color:#1d1d1f;line-height:1.7;-webkit-font-smoothing:antialiased;padding:28px 16px 70px}
+.page-head{max-width:960px;margin:0 auto 14px;text-align:center}
+.page-head h1{font-size:22px;letter-spacing:-.02em}
+.page-head .sub{color:#6e6e73;font-size:13px;margin-top:4px}
+.card{background:#fff;border-radius:18px;padding:18px 20px;margin:0 auto 14px;box-shadow:0 1px 2px rgba(0,0,0,.04),0 12px 36px rgba(0,0,0,.06);max-width:960px}
+.c-title{font-size:15px;font-weight:800;margin-bottom:2px}
+.c-sub{font-size:12px;color:#86868b;margin-bottom:4px}
+.c-sub code{background:#f2f2f5;border-radius:5px;padding:1px 6px;font-size:11.5px}
+.chart{margin-top:10px}
+.chk{font-size:11.5px;color:#34c759;margin-top:8px;font-weight:700}
+.chk.no{color:#ff3b30}
+@media(max-width:720px){
+  body{padding:20px 12px 60px;background:#f2f2f5}
+  .page-head h1{font-size:19px}
+}
+</style>
+</head>
+<body>
+
+<div class="page-head">
+<h1>📊 charts.line · 系列独立刻度 ownScale（v1.17 · #334）</h1>
+<div class="sub">桌面 1280×900 / 手机 ≤720px 双端验收 · 量级差 100 倍系列同图不再压平 · 缺省行为逐字节不变</div>
+</div>
+
+<div class="card">
+<div class="c-title">① 缺省共享域对照（问题复现）</div>
+<div class="c-sub">摄入 kcal（2000-3000） vs 运动 kcal（100-300）同图共享域 → 小量级系列被压成贴底平线</div>
+<div id="c1" class="chart"></div>
+<div class="chk no">✗ 运动曲线贴底压平（这就是 #334 要解决的问题）</div>
+</div>
+
+<div class="card">
+<div class="c-title">② ownScale:true · 量级差 100 倍各自铺满</div>
+<div class="c-sub">同一数据，两系列各按自身 min-max 归一化 → 形状与幅度各自可读</div>
+<div id="c2" class="chart"></div>
+<div class="chk">✓ 运动曲线铺满图高 · 与摄入曲线同高度可比</div>
+</div>
+
+<div class="card">
+<div class="c-title">③ ownScale + yTicks（主轴刻度不被污染）</div>
+<div class="c-sub">运动序列 ownScale（0-300），摄入序列共享域（2000-3000）→ 左侧刻度仍显示摄入域（2000 量级）</div>
+<div id="c3" class="chart"></div>
+<div class="chk">✓ 刻度 = 非 ownScale 序列域 [2169.2, 2930.8]</div>
+</div>
+
+<div class="card">
+<div class="c-title">④ ownScale + legend 图例注明</div>
+<div class="c-sub">图例末尾追加「各指标独立刻度」注记（虚线样式区分）</div>
+<div id="c4" class="chart"></div>
+<div class="chk">✓ 图例含「各指标独立刻度」</div>
+</div>
+
+<div class="card">
+<div class="c-title">⑤ six_factors 风格 · 6 个量级各异的指标全 ownScale</div>
+<div class="c-sub">久坐小时(2-9) / 步数(3000-12000) / 热量(1800-2600) / 饮水(0.8-2.5) / 睡眠(5-8.5) / 屏幕时间(3-10) 同图各铺满</div>
+<div id="c5" class="chart"></div>
+<div class="chk">✓ 六条曲线形状各自可读</div>
+</div>
+
+<div class="card">
+<div class="c-title">⑥ ownScale + area 面积跟随所属系列域</div>
+<div class="c-sub">运动曲线 ownScale + area:true → 面积按自身域铺满</div>
+<div id="c6" class="chart"></div>
+</div>
+
+<div class="card">
+<div class="c-title">⑦ 混合模式 · 主序列共享域 + 副序列 ownScale</div>
+<div class="c-sub">摄入(共享域+yTicks) vs 运动(ownScale)：主轴刻度属于摄入，运动独立铺满</div>
+<div id="c7" class="chart"></div>
+</div>
+
+<script>
+/* ═══ charts.js v1.17 快照（#334 验收 · 与 assets 同源）═══ */
 /* Base Skill 图表组件 v1.17（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
@@ -571,3 +653,34 @@ window.charts={
   }
 };
 })();
+
+/* ═══ 验收用例 ═══ */
+(function(){
+var root=function(id){return document.getElementById(id);};
+var days=['周一','周二','周三','周四','周五','周六','周日'];
+var intake=[2350,2620,2480,2890,2210,2740,2530];
+var exercise=[180,120,260,90,210,150,300];
+function mk(vals){return vals.map(function(v,i){return {label:days[i],value:v};});}
+var ei=[{name:'摄入 kcal',items:mk(intake),color:'#007aff'},{name:'运动 kcal',items:mk(exercise),color:'#ff9500'}];
+var eio=[{name:'摄入 kcal',items:mk(intake),color:'#007aff'},{name:'运动 kcal',items:mk(exercise),color:'#ff9500',ownScale:true}];
+window.charts.line(root('c1'),mk(intake),{animation:false,legend:true,series:ei});
+window.charts.line(root('c2'),mk(intake),{animation:false,legend:true,series:eio});
+window.charts.line(root('c3'),mk(intake),{animation:false,yTicks:4,legend:true,series:eio});
+window.charts.line(root('c4'),mk(intake),{animation:false,legend:true,series:eio});
+window.charts.line(root('c5'),mk([6,4,8,5,7,3,9]),{animation:false,legend:true,
+  series:[
+    {name:'久坐 h',items:mk([2,3,4,9,3,5,6]),ownScale:true},
+    {name:'步数',items:mk([3000,5000,12000,8000,6000,9000,4000]),ownScale:true},
+    {name:'热量 kcal',items:mk([1800,2100,2600,2400,2200,2500,1900]),ownScale:true},
+    {name:'饮水 L',items:mk([0.8,1.2,2.5,1.5,1.8,2.0,1.0]),ownScale:true},
+    {name:'睡眠 h',items:mk([5.0,6.5,8.5,7.0,6.0,7.5,5.5]),ownScale:true},
+    {name:'屏幕 h',items:mk([3,5,10,7,4,8,6]),ownScale:true}
+  ]});
+window.charts.line(root('c6'),mk(intake),{animation:false,area:true,legend:true,
+  series:[{name:'摄入 kcal',items:mk(intake),color:'#007aff'},{name:'运动 kcal',items:mk(exercise),color:'#ff9500',ownScale:true,area:true}]});
+window.charts.line(root('c7'),mk(intake),{animation:false,yTicks:4,legend:true,
+  series:[{name:'摄入 kcal',items:mk(intake),color:'#007aff'},{name:'运动 kcal',items:mk(exercise),color:'#ff9500',ownScale:true}]});
+})();
+</script>
+</body>
+</html>

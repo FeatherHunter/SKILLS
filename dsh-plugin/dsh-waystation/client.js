@@ -1,17 +1,12 @@
 /**
- * DSH-Waystation · Client 半（UX v19 · 2026-08-14 第五批执行）
+ * DSH-Waystation · Client 半（UX v20 · 2026-08-14 第六批执行）
  *
- * v19 变更（用户拍板）：
- *   34. wayfinder:grilling →「讨论」按钮（颜色动态取该 label 配置色 #d93f0b）
- *   35. 面板头部「真数据」→ 显示 repo 名（异常时红色「快照异常」）
- *   36. 状态栏「环境」段移至末尾（更新左侧）
- *   37. 共分屏幕：研究结论不做（shell 布局不开放第三方 dock），保持自由悬浮
- *   38. map 详情：顶部「执行」按钮（整 map）+ 任务按 label 给 诊断/修复/讨论/执行（blocked 无动作）；
- *       rowAction 抽为模块级共享 mkRowAction（列表与详情同逻辑）
- *   40. map 行显示子 issue 进度（closed/total + 进度条，如 13/14）
- *   41. 交接：第一击只提示（不再注入模板）；文档名带时间戳（YYYYMMDD-HHMMSS）；
- *       第二击 host wf.handoffLatest 查最新文档 → 预填 + 复制到剪贴板 + 开新会话
+ * v20 变更（用户拍板）：
+ *   43. 标签「+N」可点击展开全部标签（含颜色），再点「收起」折叠；悬停 +N tooltip 显示全部标签名；
+ *       store 新增 expTags（按 issue number 记录展开态）
  *
+ * v19：grilling→讨论 / 头部 repo 名 / 环境段末尾 / map 详情执行+任务动作 / map 行进度 /
+ * 交接时间戳+查最新+复制。
  * v18：可接/占用列表口径 / 按钮去开始（诊断/执行/修复）/ 点击预填输入框。
  * v17：isLight 改 YIQ 感知亮度。v16：按钮色 = label 配置色。
  * v15：状态栏防换行自适应 / map 置顶 / 被阻塞标签 / 会话 cwd 改 SessionSummary.cwd。
@@ -219,7 +214,7 @@ return {
       cwd: '', lblFilter: null, skillView: 'list',
       checks: null, checksUpdatedAt: '', checksMode: 'loading', checksError: null, checking: false,
       snapMode: 'loading', snapError: null, snapLoading: false,
-      refreshing: false, handoffReady: false, subs: [],
+      refreshing: false, handoffReady: false, expTags: {}, subs: [],
     })
     const shared = makeStore()
     const stores = {}
@@ -814,8 +809,12 @@ return {
         // v15-26：被阻塞判定（open 阻塞者）→ 隐藏动作按钮 + 红色「被阻塞」标签（点击跳所属 map 详情）
         const blk = blockOf[x.number]
         const blocked = !!(blk && blk.by && blk.by.length)
-        const shown = (x.labels || []).slice(0, 2)
-        const rest = (x.labels || []).length - shown.length
+        // v20-43：展开态（st.expTags[num]）→ 显示全部标签；默认只显示前 2 个，「+N」可点击展开
+        const expanded = !!(st.expTags && st.expTags[x.number])
+        const shown = expanded ? (x.labels || []) : (x.labels || []).slice(0, 2)
+        const rest = expanded ? 0 : (x.labels || []).length - shown.length
+        const allNames = (x.labels || []).map(function (l) { return l.name }).join('、')
+        const toggleTags = function (e) { e.stopPropagation(); st.expTags[x.number] = !expanded; emit(st) }
         const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
           isOpen && !blocked ? mkRowAction(st, x, narrow, colorOf) : null,
           h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: '复制链接', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
@@ -839,7 +838,8 @@ return {
               shown.map(function (l, i) {
                 return h('span', { key: i, className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, background: hexA(l.color, 0.18) || 'rgba(188,140,255,.16)', color: l.color ? '#' + l.color : '#bc8cff', border: '1px solid ' + (darken(l.color, 0.16) || 'rgba(188,140,255,.6)') } }, l.name)
               }),
-              rest > 0 ? h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)' } }, '+' + rest) : null,
+              rest > 0 ? h('span', { key: 'more', className: 'dsws-chip', onClick: toggleTags, title: '全部标签：' + allNames + '（点击展开）', style: { fontSize: 10, marginRight: 0, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + rest) : null,
+              expanded ? h('span', { key: 'less', className: 'dsws-chip', onClick: toggleTags, title: '收起标签', style: { fontSize: 10, marginRight: 0, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, '收起') : null,
               blocked ? h('span', { key: 'blk', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: '被 ' + blk.by.map(function (b) { return '#' + b }).join('、') + ' 阻塞（点击查看地图详情）', style: { fontSize: 10, marginRight: 0, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, '被阻塞')]) : null,
             ]) : null,
             // v19-40：map 行进度（已完成/总数 + 进度条，如 13/14）

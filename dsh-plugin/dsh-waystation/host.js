@@ -226,9 +226,10 @@ return {
     }
 
     // 全部 issue（open + closed，Client 列表 open 常显、底部「已关闭」折叠行），
-    // 按 updatedAt 倒序；labels 带 name + color（GitHub 配置色）；state 区分 open/closed
+    // 按 updatedAt 倒序；labels 带 name + color（GitHub 配置色）；state 区分 open/closed；
+    // v18：assignees 带出（状态栏「占用」按列表 issue 口径：已认领 + 被阻塞）
     async function fetchIssues(cwd) {
-      const r = await runGh(['issue', 'list', '--state', 'all', '--limit', '200', '--json', 'number,title,labels,state,updatedAt'], cwd)
+      const r = await runGh(['issue', 'list', '--state', 'all', '--limit', '200', '--json', 'number,title,labels,state,assignees,updatedAt'], cwd)
       if (!r.ok) return { ok: false, error: r }
       try {
         const all = JSON.parse(r.text)
@@ -237,6 +238,7 @@ return {
             number: x.number,
             title: x.title,
             state: x.state,
+            assignees: (x.assignees || []).map(function (a) { return a.login }),
             labels: (x.labels || []).map(function (l) { return { name: l.name, color: l.color || '' } }),
             updatedAt: x.updatedAt,
           }

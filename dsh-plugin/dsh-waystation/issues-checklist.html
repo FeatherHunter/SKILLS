@@ -226,5 +226,40 @@
   <div class="src">2026-08-14；待用户 UI 实操复核。</div>
 </div>
 
+<div class="item">
+  <span class="no">29</span><span class="title">按钮颜色动态取 label 色 + 「开始执行」改名「开始诊断」</span><span class="badge b-todo">待执行</span>
+  <div class="desc">① 按钮颜色与对应 label 的 GitHub 配置色一致：开始修复=bug 色（红），分流=needs-triage 色（偏黄），色值动态查询（colorOf 已含配置色）；② 「开始执行」文案改「开始诊断」。</div>
+  <div class="plan">v16：rowAction 按钮背景 = colorOf[label]（fallback：bug #f87171 / needs-triage #f59e0b / 其余 #c084fc）；文字色按背景亮度自适应（L&gt;0.62 深字 #140a1e，否则白字）；「开始执行」→「开始诊断」（图标保持 play）。</div>
+  <div class="src">来源：2026-08-14 用户需求；随 v16 执行。</div>
+</div>
+
+<div class="item">
+  <span class="no">30</span><span class="title">状态栏可接/占用与面板列表不一致（可接 0 但列表大量可执行）</span><span class="badge b-done">已解决</span>
+  <div class="desc">状态栏「可接」显示 0、「占用」2，但面板列表有大量可执行内容。根因：状态栏统计的是 map 子票，列表显示的是全部 open issue——统计口径不同。</div>
+  <div class="plan">v18 已落实（用户拍板：列表 issue 口径 + 认领）：可接 = open issue 中未认领且未被 open 阻塞；占用 = 已认领 + 被阻塞；两者之和 = 全部 open issue。host fetchIssues 带出 assignees；状态栏与列表 KPI 同口径。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v18 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">31</span><span class="title">三个动作按钮文案重命名</span><span class="badge b-done">已解决</span>
+  <div class="desc">用户调整：分流 →「开始诊断」；v16 误改的「开始诊断」→ 恢复「开始执行」；修复 →「开始修复」。命名方案 (a) 四字统一 / (b) 去「开始」。</div>
+  <div class="plan">v18 已落实（用户拍板：方案 b 去开始）：needs-triage→「诊断」（黄，needs-triage 配置色 #fbca04 深字）/ 其余→「执行」（紫 #c084fc 深字）/ bug→「修复」（红 #d73a4a 白字）。</div>
+  <div class="src">来源：2026-08-14 用户需求；v18 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">32</span><span class="title">行级动作点击改为预填输入框（不再复制）</span><span class="badge b-done">已解决</span>
+  <div class="desc">用户要求：无论点击哪个按钮（诊断/执行/修复），都自动把对应 prompt 预填到对话框。</div>
+  <div class="plan">v18 已落实：rowAction 与地图详情「开始」均改 inject（优先预填输入框，输入框不可用时兜底复制）。</div>
+  <div class="src">来源：2026-08-14 用户需求；v18 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">33</span><span class="title">v18 上线 + 进程重启重建</span><span class="badge b-done">已解决</span>
+  <div class="desc">2026-08-14 用户拍板 v18 三项（30/31/32）并执行；期间 DSH 进程重启导致动态插件丢失，已用磁盘最新源码重建（wfst-1/pkg-1，run-1 批准运行成功）。</div>
+  <div class="plan">产出：host.js（fetchIssues 带 assignees）+ client.js v18（列表口径可接/占用 / 诊断·执行·修复 / 预填输入框）。ACCEPTANCE.md 已回填 v18；tests 21/21 + 22/22 PASS。</div>
+  <div class="src">2026-08-14；待用户 UI 复核。</div>
+</div>
+
 </body>
 </html>

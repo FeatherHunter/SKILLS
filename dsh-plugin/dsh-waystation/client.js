@@ -1,15 +1,16 @@
 /**
- * DSH-Waystation · Client 半（UX v15 · 2026-08-14 第二批执行）
+ * DSH-Waystation · Client 半（UX v18 · 2026-08-14 第四批执行）
  *
- * v15 变更（用户拍板后执行）：
- *   24. 状态栏中文换行修复：胶囊 white-space:nowrap + 各段 flex:none + 宽度适配内容
- *       （fit-content，上限放宽 min(92vw,640px)）
- *   25. 列表 map 项优先置顶（open 列表；map 内部按 updatedAt 倒序；已关闭行保持纯时间序）
- *   26. 被阻塞 issue 显示：主列表关联快照 maps.tickets.blockedBy（open 阻塞者才算）——
- *       (a) 红色「被阻塞」标签；(b) 该行动作按钮全部隐藏；(c) 点击标签跳所属 map 详情被阻塞分组
- *   27. 会话工作目录改用宿主权威字段 SessionSummary.cwd（useSessions.byId[sid].cwd），
- *       替换「猜 ConversationSnapshot 字段名 + host wf.cwd 反查」的脆弱链；wf.cwd 保留兜底
+ * v18 变更（用户拍板）：
+ *   30. 状态栏可接/占用改用「列表 open issue」口径：可接 = open 未认领且未被 open 阻塞；
+ *       占用 = 已认领 + 被阻塞（host fetchIssues 带出 assignees）；与面板列表口径一致
+ *   31. 动作按钮文案去「开始」：needs-triage→「诊断」/ 其余→「执行」/ bug→「修复」
+ *       （颜色保持 label 配置色：黄/紫/红）
+ *   32. 行级动作点击改为预填输入框（inject，不再复制到剪贴板；输入框不可用时兜底复制）
  *
+ * v17：isLight 改 YIQ 感知亮度。v16：按钮色 = label 配置色 +「开始执行」改名。
+ * v15 变更：状态栏防换行自适应 / map 置顶 / 被阻塞标签+跳详情+隐藏动作 /
+ * 会话 cwd 改 SessionSummary.cwd。
  * v14 变更：全部执行批次（三选一动作 / map 行突出 / 已关闭折叠 / chips 深边框 / 窄屏折叠 /
  * 刷新遮罩 / 主题安全色 / 交接按钮 / 状态栏等宽 / 按会话 store）。
  * v13：cwd 权威反查（wf.cwd）+ sessionId 变化重探测。v12：repoKey 按 cwd 缓存 /
@@ -254,6 +255,28 @@ return {
       })
     }
     const frontierAll = (st) => compute(st).reduce(function (n, g) { return n + g.frontier.length }, 0)
+
+    // v18-30：状态栏可接/占用改用「列表 open issue」口径（与面板列表一致）：
+    //   可接 = open issue 中未认领且未被 open 阻塞；占用 = 已认领 + 被阻塞；两者之和 = 全部 open issue
+    const openIssuesOf = (st) => ((st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []).filter(function (x) { return x.state !== 'CLOSED' })
+    const isOccupied = function (st, x) {
+      if (x.assignees && x.assignees.length) return true
+      const maps = (st.snapshot && st.snapshot.maps) || []
+      for (let mi = 0; mi < maps.length; mi++) {
+        const m = maps[mi]
+        if (!m.tickets || !m.tickets.length) continue
+        const byNum = {}
+        m.tickets.forEach(function (t) { byNum[t.number] = t })
+        const t = byNum[x.number]
+        if (t && t.blockedBy && t.blockedBy.length) {
+          const openBlockers = t.blockedBy.filter(function (b) { const bt = byNum[b]; return bt && bt.state === 'OPEN' })
+          if (openBlockers.length) return true
+        }
+      }
+      return false
+    }
+    const occCount = (st) => openIssuesOf(st).filter(function (x) { return isOccupied(st, x) }).length
+    const frontierCount = (st) => openIssuesOf(st).length - occCount(st)
 
     // ---- 环境检查（#344 · host.call('wf.status')；host 侧 30s 缓存 / force 重查）----
     // v12：失败不再兜假数据 —— 非 real 状态一律视为未知（--/8），不展示假绿点
@@ -514,7 +537,7 @@ return {
       }, [
         h('span', { style: { color: n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b' } }, Icon({ scheme: s.ui.icon, size: 15 })),
         h('span', null, 'Waystation'),
-        h('span', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 11 } }, (n < 0 ? '--/8' : n + '/8') + ' · ' + frontierAll(s) + ' 可接'),
+        h('span', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 11 } }, (n < 0 ? '--/8' : n + '/8') + ' · ' + frontierCount(s) + ' 可接'),
       ])
     }
 
@@ -550,8 +573,9 @@ return {
         }
       }, [sid, summaryCwd])
       React.useEffect(function () { loadChecks(s, false); loadSnapshot(s, false) }, [])
-      const fr = frontierAll(s)
-      const blk = compute(s).reduce(function (n, g) { return n + g.blocked.length + g.claimed.length }, 0)
+      // v18-30：可接/占用 = 列表 open issue 口径（与面板列表一致）
+      const fr = frontierCount(s)
+      const blk = occCount(s)
       const n = readyCount(s)
       const timeStr = timeOf(s.snapshot) || (s.checksUpdatedAt ? s.checksUpdatedAt.slice(5, 16) : '') || '-- --:--'
       const setup = setupCheck(s)
@@ -609,7 +633,7 @@ return {
           ]),
         ]),
         t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4, alignItems: 'center', flex: 'none' } }, [
-          canStart ? h('button', { className: 'dsws-btn primary', onClick: function () { copyText(st, startText(st, t), '已复制开始指令，请粘贴到新会话发送') }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
+          canStart ? h('button', { className: 'dsws-btn primary', onClick: function () { inject(st, startText(st, t)) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
             Ic({ n: 'play', size: 10 }),
             h('span', null, '开始'),
           ]) : null,
@@ -720,19 +744,32 @@ return {
         }, nm + (withCount ? ' · ' + stat[nm] : ''))
       }
       const copyUrl = function (x) { copyText(st, 'https://github.com/' + repoStr(st) + '/issues/' + x.number, '已复制链接 #' + x.number) }
-      // v14-4：行级动作按 label 三选一（分流 / 开始修复 / 开始执行），全部复制 prompt；
-      // v14-3：按钮 80%（padding 1px 6px / 11px）；v14-19：窄屏折叠为纯图标
+      // v14-4：行级动作按 label 三选一（诊断 / 执行 / 修复），全部预填输入框（v18-32：不再复制）；
+      // v18-31：按钮文案去「开始」（诊断 / 执行 / 修复）；v14-3：按钮 80%；v14-19：窄屏折叠为纯图标
+      // v16-17：按钮主体色 = 对应 label 的 GitHub 配置色（动态查询 colorOf）；文字色按 YIQ 感知亮度自适应
+      const isLight = function (hex) {
+        try {
+          const hh = String(hex || '').replace('#', '')
+          if (!/^[0-9a-fA-F]{6}$/.test(hh)) return false
+          const r = parseInt(hh.slice(0, 2), 16), g = parseInt(hh.slice(2, 4), 16), b = parseInt(hh.slice(4, 6), 16)
+          return (299 * r + 587 * g + 114 * b) / 1000 > 160
+        } catch (e) { return false }
+      }
+      const btnColor = function (nm, fb) { const c = colorOf[nm]; return c ? '#' + c : fb }
       const rowAction = function (x, narrow) {
         const url = 'https://github.com/' + repoStr(st) + '/issues/' + x.number
-        const mk = (icon, label, text) => h('button', {
-          className: 'dsws-btn primary',
-          onClick: function (e) { e.stopPropagation(); copyText(st, text, '已复制开始指令，请粘贴到新会话发送') },
-          style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none' },
-          title: label,
-        }, [Ic({ n: icon, size: 10 }), narrow ? null : h('span', null, label)])
-        if (has(x, 'needs-triage')) return mk('chat', '分流', '/triage\n' + url + '\n\n请按 triage 流程为这个 issue 分流：categorise → verify → grill → 写 agent-ready brief。')
-        if (has(x, 'bug')) return mk('hammer', '开始修复', '/wayfinder\n' + url + '\n\n请按 wayfinder 流程开始修复这个 bug：对齐所属 map 的 Destination，认领后处理。')
-        return mk('play', '开始执行', startText(st, x))
+        const mk = (icon, label, text, colorHex) => {
+          const light = isLight(colorHex)
+          return h('button', {
+            className: 'dsws-btn primary',
+            onClick: function (e) { e.stopPropagation(); inject(st, text) },
+            style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: colorHex, borderColor: 'transparent', color: light ? '#140a1e' : '#ffffff' },
+            title: label,
+          }, [Ic({ n: icon, size: 10 }), narrow ? null : h('span', null, label)])
+        }
+        if (has(x, 'needs-triage')) return mk('chat', '诊断', '/triage\n' + url + '\n\n请按 triage 流程为这个 issue 分流：categorise → verify → grill → 写 agent-ready brief。', btnColor('needs-triage', '#f59e0b'))
+        if (has(x, 'bug')) return mk('hammer', '修复', '/wayfinder\n' + url + '\n\n请按 wayfinder 流程开始修复这个 bug：对齐所属 map 的 Destination，认领后处理。', btnColor('bug', '#f87171'))
+        return mk('play', '执行', startText(st, x), '#c084fc')
       }
       // v14-19：行 = 左列(flex:1 截断) + 右列按钮组(flex:none 不换行)
       const issueRow = function (x, isOpen, narrow) {
@@ -775,10 +812,10 @@ return {
       }
       const kpi = (num, lab, icon, color) => h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [Ic({ n: icon, size: 11, color: color }), h('span', null, String(num) + ' ' + lab)])
       return h('div', null, [
-        // KPI 行 + 环境提示
+        // KPI 行 + 环境提示（v18-30：可接/占用 = 列表 open issue 口径）
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' } }, [
-          kpi(frontierAll(st), '可接', 'target', '#4ade80'),
-          kpi(occ, '占用', 'lock', '#f0883e'),
+          kpi(frontierCount(st), '可接', 'target', '#4ade80'),
+          kpi(occCount(st), '占用', 'lock', '#f0883e'),
           kpi(closedIssues.length, '已关闭', 'check', '#52525b'),
           h('span', { style: { flex: 1 } }),
           h('button', { className: 'dsws-btn', onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, '刷新')]),

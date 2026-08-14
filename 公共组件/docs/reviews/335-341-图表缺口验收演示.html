@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>公共组件 charts 缺口验收演示 v1.18-v1.25（#319/#335/#340/#338/#341/#336/#339/#337）</title>
+<style>
+  body{font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;margin:0;background:#f5f5f7;color:#1d1d1f}
+  header{background:#fff;padding:16px 20px;border-bottom:1px solid #e5e5ea;position:sticky;top:0;z-index:10}
+  header h1{font-size:17px;margin:0 0 4px}
+  header p{margin:0;font-size:12px;color:#86868b}
+  main{max-width:960px;margin:0 auto;padding:20px}
+  .card{background:#fff;border-radius:14px;padding:16px 18px;margin-bottom:16px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card h2{font-size:14px;margin:0 0 2px}
+  .card .tag{display:inline-block;font-size:10.5px;color:#007aff;background:rgba(0,122,255,.1);border-radius:99px;padding:2px 8px;margin:4px 0 10px}
+  .card .desc{font-size:12px;color:#6e6e73;margin:0 0 12px}
+  .chart{background:#fff;border-radius:10px;padding:8px 10px;border:1px solid #f0f0f2}
+  .chart+.chart{margin-top:10px}
+  .note{font-size:11px;color:#86868b;margin:6px 0 0}
+  .switch{display:inline-flex;gap:8px;margin-bottom:12px}
+  .switch button{border:1px solid #d2d2d7;background:#fff;border-radius:99px;padding:6px 14px;font-size:12px;cursor:pointer}
+  .switch button.on{background:#007aff;color:#fff;border-color:#007aff}
+</style>
+</head>
+<body>
+<header>
+  <h1>公共组件 charts 接口缺口验收演示 · v1.18 → v1.25（#319 #335 #340 #338 #341 #336 #339 #337）</h1>
+  <p>验收点：双端切换（DevTools 设备模拟 390×844 手机 / 1280×900 桌面）逐卡核对 · 全部用例 0 报错 · 与既有图表（v1.17 及以前）混排不冲突</p>
+</header>
+<main>
+  <div class="switch"><button id="btnD" class="on" onclick="setView(1280,900)">桌面 1280×900</button><button id="btnM" onclick="setView(390,844)">手机 390×844</button></div>
+
+  <div class="card">
+    <h2>① markPoint 峰谷点标注</h2><span class="tag">v1.18 · #319</span>
+    <p class="desc">高亮点 + 文字标注；峰值默认自动；最左/最右极端位置贴边不裁剪</p>
+    <div class="chart" id="c-mp1"></div>
+    <div class="chart" id="c-mp2"></div>
+    <div class="chart" id="c-mp3"></div>
+    <p class="note">用例：①默认峰值（¥8）②index 指定+自定义 label ③最左点长标注不裁出界</p>
+  </div>
+
+  <div class="card">
+    <h2>② band 置信带</h2><span class="tag">v1.19 · #335</span>
+    <p class="desc">预测主线 hi/lo 半透明区间（fill-opacity 0.15），区间不覆盖主线/数据点</p>
+    <div class="chart" id="c-band1"></div>
+    <div class="chart" id="c-band2"></div>
+    <p class="note">用例：①连续置信带 ②hi 侧含 null 断点分段</p>
+  </div>
+
+  <div class="card">
+    <h2>③ markLine 竖线（xValue）</h2><span class="tag">v1.20 · #340</span>
+    <p class="desc">里程碑日期竖线 + 顶部标注；与水平阈值线可同传</p>
+    <div class="chart" id="c-mlv1"></div>
+    <div class="chart" id="c-mlv2"></div>
+    <p class="note">用例：①xValue 索引 + label「最高点」②value 水平线 + xValue 竖线同传</p>
+  </div>
+
+  <div class="card">
+    <h2>④ fillBetween 线间填充</h2><span class="tag">v1.21 · #338</span>
+    <p class="desc">摄入 vs 消耗双线之间缺口阴影（热量缺口），交叉处不穿帮</p>
+    <div class="chart" id="c-fb1"></div>
+    <div class="chart" id="c-fb2"></div>
+    <p class="note">用例：①双线缺口阴影 ②含 null 断点分段</p>
+  </div>
+
+  <div class="card">
+    <h2>⑤ 小缺口三能力</h2><span class="tag">v1.22 · #341</span>
+    <p class="desc">异常点变色 / 拐点·交点圈选 / 首尾数值标签 + 碰撞避让</p>
+    <div class="chart" id="c-a1"></div>
+    <div class="chart" id="c-a2"></div>
+    <div class="chart" id="c-a3"></div>
+    <p class="note">用例：①超标红点（anomaly）②拐点圈选 turns + 双线交点 crossings ③30 点密集数据标签避让</p>
+  </div>
+
+  <div class="card">
+    <h2>⑥ 堆叠柱 stacked</h2><span class="tag">v1.23 · #336</span>
+    <p class="desc">三大营养素每日占比堆叠（percent 合计 100%）；图例/段级 tooltip</p>
+    <div class="chart" id="c-st1"></div>
+    <div class="chart" id="c-st2"></div>
+    <p class="note">用例：①percent 三段堆叠 + 图例 ②absolute 模式 + 柱顶合计</p>
+  </div>
+
+  <div class="card">
+    <h2>⑦ 分组双柱 grouped</h2><span class="tag">v1.24 · #339</span>
+    <p class="desc">实做 vs 计划并排子柱（复用 #336 多值结构）；子柱数值标签 + 图例</p>
+    <div class="chart" id="c-gr1"></div>
+    <div class="chart" id="c-gr2"></div>
+    <p class="note">用例：①双柱并排（>8 分类不重叠）②showValues 子柱标签 + segNames 图例</p>
+  </div>
+
+  <div class="card">
+    <h2>⑧ 散点图 scatter（含回归线）</h2><span class="tag">v1.25 · #337</span>
+    <p class="desc">双变量相关散点 + 线性回归线（虚线）；yTicks 缺省 4 条</p>
+    <div class="chart" id="c-sc1"></div>
+    <div class="chart" id="c-sc2"></div>
+    <div class="chart" id="c-sc3"></div>
+    <p class="note">用例：①正相关回归 ②负相关回归 ③散乱数据 + tooltip 悬停最近点</p>
+  </div>
+</main>
+
+<script src="../../assets/base.js"></script>
+<script src="../../assets/charts.js"></script>
+<script>
+function setView(w,h){window.resizeTo(w,h);document.getElementById('btnD').className=(w===1280)?'on':'';document.getElementById('btnM').className=(w===390)?'on':'';}
+window.addEventListener('load',function(){
+  /* ① markPoint */
+  charts.line(document.getElementById('c-mp1'),
+    [{label:'1月',value:52},{label:'2月',value:61},{label:'3月',value:58},{label:'4月',value:79},{label:'5月',value:66},{label:'6月',value:71}],
+    {markPoint:true,format:'¥{v}kg',yTicks:4});
+  charts.line(document.getElementById('c-mp2'),
+    [{label:'1月',value:52},{label:'2月',value:61},{label:'3月',value:79},{label:'4月',value:58},{label:'5月',value:66},{label:'6月',value:71}],
+    {markPoint:{index:4,label:'目标月'},color:'#ff9500',yTicks:4});
+  charts.line(document.getElementById('c-mp3'),
+    [{label:'1月',value:79},{label:'2月',value:61},{label:'3月',value:58},{label:'4月',value:52},{label:'5月',value:66},{label:'6月',value:71}],
+    {markPoint:{index:0,label:'最左点很长很长很长的标注'},yTicks:4});
+  /* ② band */
+  charts.line(document.getElementById('c-band1'),
+    [{label:'1月',value:60},{label:'2月',value:62},{label:'3月',value:65},{label:'4月',value:68},{label:'5月',value:70}],
+    {band:{hi:[64,67,70,73,76],lo:[56,57,60,63,64]},yTicks:4});
+  charts.line(document.getElementById('c-band2'),
+    [{label:'1月',value:60},{label:'2月',value:62},{label:'3月',value:65},{label:'4月',value:68},{label:'5月',value:70}],
+    {band:{hi:[64,67,null,73,76],lo:[56,57,null,63,64]},yTicks:4});
+  /* ③ markLine 竖线 */
+  charts.line(document.getElementById('c-mlv1'),
+    [{label:'1月',value:52},{label:'2月',value:61},{label:'3月',value:58},{label:'4月',value:79},{label:'5月',value:66},{label:'6月',value:71}],
+    {markLine:{xValue:3,label:'最高点'},yTicks:4,showValues:'edge'});
+  charts.line(document.getElementById('c-mlv2'),
+    [{label:'1月',value:52},{label:'2月',value:61},{label:'3月',value:58},{label:'4月',value:79},{label:'5月',value:66},{label:'6月',value:71}],
+    {markLine:{value:65,label:'目标 65',xValue:0,label2:''},yTicks:4});
+  /* ④ fillBetween */
+  charts.line(document.getElementById('c-fb1'),
+    [{label:'x',value:0}],
+    {series:[{name:'摄入',items:[{label:'1月',value:2100},{label:'2月',value:2050},{label:'3月',value:2150},{label:'4月',value:2000},{label:'5月',value:2200},{label:'6月',value:2080}]},
+            {name:'消耗',items:[{label:'1月',value:2400},{label:'2月',value:2450},{label:'3月',value:2350},{label:'4月',value:2500},{label:'5月',value:2400},{label:'6月',value:2460}]}],
+    fillBetween:{a:0,b:1},legend:true,yTicks:4});
+  charts.line(document.getElementById('c-fb2'),
+    [{label:'x',value:0}],
+    {series:[{name:'A',items:[{label:'1月',value:2100},{label:'2月',value:2050},{label:'3月',value:2150},{label:'4月',value:2000},{label:'5月',value:2200},{label:'6月',value:2080}]},
+            {name:'B',items:[{label:'1月',value:2400},{label:'2月',value:null},{label:'3月',value:2350},{label:'4月',value:2500},{label:'5月',value:2400},{label:'6月',value:2460}]}],
+    fillBetween:{a:0,b:1,color:'#ff9500'},legend:true,yTicks:4});
+  /* ⑤ 小缺口 */
+  charts.line(document.getElementById('c-a1'),
+    [{label:'1月',value:55},{label:'2月',value:61},{label:'3月',value:58},{label:'4月',value:85,anomaly:true},{label:'5月',value:66},{label:'6月',value:71}],
+    {yTicks:4,showValues:'edge'});
+  charts.line(document.getElementById('c-a2'),
+    [{label:'x',value:0}],
+    {series:[{name:'A',items:[{label:'1月',value:50},{label:'2月',value:70},{label:'3月',value:55},{label:'4月',value:80},{label:'5月',value:60}]},
+            {name:'B',items:[{label:'1月',value:60},{label:'2月',value:55},{label:'3月',value:75},{label:'4月',value:60},{label:'5月',value:80}]}],
+    highlightPoints:'crossings',legend:true,yTicks:4});
+  charts.line(document.getElementById('c-a3'),
+    (function(){var a=[];for(var i=0;i<30;i++)a.push({label:'d'+i,value:i%7+2});return a;})(),
+    {showValues:true,yTicks:4});
+  /* ⑥ stacked */
+  charts.bar(document.getElementById('c-st1'),
+    [{label:'周一',values:[32,44,24]},{label:'周二',values:[28,50,22]},{label:'周三',values:[35,40,25]},{label:'周四',values:[30,45,25]},{label:'周五',values:[33,42,25]},{label:'周六',values:[25,48,27]},{label:'周日',values:[29,46,25]}],
+    {stacked:true,segNames:['蛋白质','脂肪','碳水'],legend:true,showValues:true,format:'{v}%'});
+  charts.bar(document.getElementById('c-st2'),
+    [{label:'周一',values:[320,440,240]},{label:'周二',values:[280,500,220]},{label:'周三',values:[350,400,250]}],
+    {stacked:true,stackMode:'absolute',segNames:['蛋白质','脂肪','碳水'],legend:true,showValues:true,format:'{v}g'});
+  /* ⑦ grouped */
+  charts.bar(document.getElementById('c-gr1'),
+    (function(){var a=[];for(var i=1;i<=10;i++)a.push({label:i+'月',values:[i*3+2,i*4+1]});return a;})(),
+    {grouped:true,segNames:['实做','计划'],legend:true,showValues:true});
+  charts.bar(document.getElementById('c-gr2'),
+    [{label:'Q1',values:[82,70]},{label:'Q2',values:[91,85]},{label:'Q3',values:[78,80]},{label:'Q4',values:[95,88]}],
+    {grouped:true,segNames:['实做','计划'],legend:true,showValues:true,format:'{v}件'});
+  /* ⑧ scatter */
+  charts.scatter(document.getElementById('c-sc1'),
+    [{x:1,y:2.1,label:'a'},{x:2,y:3.9,label:'b'},{x:3,y:6.2,label:'c'},{x:4,y:7.8,label:'d'},{x:5,y:10.1,label:'e'},{x:6,y:12.2,label:'f'}],
+    {tooltip:true,format:'{v}'});
+  charts.scatter(document.getElementById('c-sc2'),
+    [{x:1,y:12.2,label:'a'},{x:2,y:10.1,label:'b'},{x:3,y:7.8,label:'c'},{x:4,y:6.2,label:'d'},{x:5,y:3.9,label:'e'},{x:6,y:2.1,label:'f'}],
+    {tooltip:true});
+  charts.scatter(document.getElementById('c-sc3'),
+    [{x:1,y:3,label:'a'},{x:2,y:8,label:'b'},{x:3,y:2,label:'c'},{x:4,y:9,label:'d'},{x:5,y:5,label:'e'},{x:6,y:7,label:'f'},{x:7,y:4,label:'g'},{x:8,y:6,label:'h'}],
+    {tooltip:true});
+});
+</script>
+</body>
+</html>

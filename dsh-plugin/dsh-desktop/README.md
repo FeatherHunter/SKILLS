@@ -20,7 +20,10 @@
 
 ### 方式 A：便携 exe（普通用户，推荐）
 
-1. 拿到 `dsh-harness-desktop-1.0.2-x64.exe`（87MB 单文件）
+1. **下载** `dsh-harness-desktop-1.0.2-x64.exe`（87MB 单文件）：
+   - 官方下载页：[GitHub Releases](https://github.com/FeatherHunter/SKILLS/releases)
+     （直接链接：https://github.com/FeatherHunter/SKILLS/releases/download/v1.0.2/dsh-harness-desktop-1.0.2-x64.exe ）
+   - 或向维护者索取；也可以自己打包（见开发者专区）
 2. **双击**它 → 首次等待几分钟（自动下载安装 DSH 本体）→ 自动进入界面
 3. 之后**双击即秒开**；关掉窗口，后台服务一起停
 

@@ -1,4 +1,4 @@
-/* Base Skill 图表组件 v1.19（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.20（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
@@ -363,10 +363,31 @@ window.charts={
       }
     }
     /* markLine 阈值线（v1.16: 标签 SVG text → HTML 覆盖层, 修 preserveAspectRatio=none 拉伸变形 + 被 area/线路径遮挡 · #333 验收发现） */
-    var markHtml='',markLbl='';if(opt.markLine!==null&&opt.markLine!==undefined&&_isNum(opt.markLine.value)){
+    var markHtml='',markLbl='';
+    if(opt.markLine!==null&&opt.markLine!==undefined&&_isNum(opt.markLine.value)){
       var my=Y(_num(opt.markLine.value));
-      markHtml='<line x1="'+_P+'" y1="'+my.toFixed(1)+'" x2="'+(_W-_P)+'" y2="'+my.toFixed(1)+'" stroke="#ff9500" stroke-width="1.5" stroke-dasharray="5 4"/>';
+      markHtml='<line x1="'+_P+'" y1="'+my.toFixed(1)+'" x2="'+(_W-_P)+'" y2="'+my.toFixed(1)+'" stroke="'+((opt.markLine.color)||'#ff9500')+'" stroke-width="1.5" stroke-dasharray="5 4"/>';
       markLbl='<i class="hm-c-markline-t" style="left:'+((_W-_P-2)/_W*100).toFixed(2)+'%;top:'+((my-4)/_H*100).toFixed(2)+'%">'+_esc(opt.markLine.label||String(opt.markLine.value))+'</i>';
+    }
+    /* markLine 竖线类型（v1.20 · #340）: xValue = items 索引或 label 匹配 → 垂直里程碑线 + 顶部标注
+     * 与 {value}（水平阈值）按字段区分, 可同传分别渲染; 越界 index 忽略不报错; 标签贴边防裁剪(同 markPoint 机制) */
+    if(opt.markLine!==null&&opt.markLine!==undefined&&opt.markLine.xValue!==undefined&&opt.markLine.xValue!==null){
+      var mvIdx=null;
+      if(_isNum(opt.markLine.xValue)){
+        mvIdx=Math.round(_num(opt.markLine.xValue));
+        if(mvIdx<0||mvIdx>=items.length)mvIdx=null;
+      }else{
+        var mvLbl=String(opt.markLine.xValue);
+        for(var mli=0;mli<items.length;mli++){if(String(items[mli].label)===mvLbl){mvIdx=mli;break;}}
+      }
+      if(mvIdx!==null){
+        var mxx=_P+(_W-2*_P)*mvIdx/(Math.max(1,items.length-1));
+        var mxColor=opt.markLine.color||'#ff9500';
+        var mxPct=mxx/_W*100;
+        var mxLft=(mxPct<18)?'20px;transform:translate(0,0)':((mxPct>82)?'calc(100% - 20px);transform:translate(-100%,0)':mxPct.toFixed(2)+'%;transform:translate(-50%,0)');
+        markHtml+='<line class="hm-c-markline-v" x1="'+mxx.toFixed(1)+'" y1="'+(_P-2)+'" x2="'+mxx.toFixed(1)+'" y2="'+(_H-_P)+'" stroke="'+mxColor+'" stroke-width="1.5" stroke-dasharray="5 4"/>';
+        markLbl+='<i class="hm-c-markline-t" style="left:'+mxLft+';top:1%;color:'+mxColor+'">'+_esc(opt.markLine.label||items[mvIdx].label)+'</i>';
+      }
     }
     /* 每条线绘制 */
     var pathsHtml='',dotsHtml='',valuesHtml='',legendsHtml='';

@@ -1638,6 +1638,62 @@ def test_line_band_under_line(chart_page):
     assert order
 
 
+# ── line: markLine 竖线 xValue（v1.20 · #340）────────────────
+
+def test_line_markline_xvalue_index(chart_page):
+    """markLine:{xValue: 索引}: 竖线元素（x1==x2）+ 顶部标注"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, markLine:{xValue:3,label:"里程碑"}})', LINE_ITEMS)
+    vline = chart_page.evaluate("document.querySelector('.hm-c-markline-v')")
+    lbl = chart_page.evaluate("document.querySelector('.hm-c-markline-t')?.textContent")
+    assert vline is not None and lbl == '里程碑'
+    x1 = chart_page.evaluate("document.querySelector('.hm-c-markline-v')?.getAttribute('x1')")
+    x2 = chart_page.evaluate("document.querySelector('.hm-c-markline-v')?.getAttribute('x2')")
+    assert x1 == x2  # 竖线
+
+
+def test_line_markline_xvalue_label_match(chart_page):
+    """markLine:{xValue: label}: 按 items label 匹配; 缺省标注文字 = 该点 label"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'一月',value:3},{label:'二月',value:6},{label:'三月',value:4}], {animation:false, markLine:{xValue:'二月'}})")
+    lbl = chart_page.evaluate("document.querySelector('.hm-c-markline-t')?.textContent")
+    assert lbl == '二月'
+
+
+def test_line_markline_xvalue_out_of_range_ignored(chart_page):
+    """xValue 越界索引: 忽略不报错, 无竖线元素"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, markLine:{xValue:99}})', LINE_ITEMS)
+    n = chart_page.evaluate("document.querySelectorAll('.hm-c-markline-v').length")
+    assert n == 0
+
+
+def test_line_markline_horizontal_unchanged(chart_page):
+    """既有 {value} 水平阈值线行为不变: 横线 + 右侧标注; 无竖线"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, markLine:{value:5,label:"目标"}})', LINE_ITEMS)
+    vn = chart_page.evaluate("document.querySelectorAll('.hm-c-markline-v').length")
+    x1 = chart_page.evaluate("document.querySelector('.hm-c-line-svg line:not(.hm-c-markline-v):not(.hm-c-yt-l)')?.getAttribute('x1')")
+    x2 = chart_page.evaluate("document.querySelector('.hm-c-line-svg line:not(.hm-c-markline-v):not(.hm-c-yt-l)')?.getAttribute('x2')")
+    lbl = chart_page.evaluate("document.querySelector('.hm-c-markline-t')?.textContent")
+    assert vn == 0 and x1 == '14' and x2 == '306' and lbl == '目标'
+
+
+def test_line_markline_both_horizontal_vertical(chart_page):
+    """value + xValue 同传: 横线 + 竖线同时渲染"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, markLine:{value:5, xValue:1}})', LINE_ITEMS)
+    vn = chart_page.evaluate("document.querySelectorAll('.hm-c-markline-v').length")
+    lines = chart_page.evaluate("document.querySelectorAll('.hm-c-line-svg line').length")
+    assert vn == 1 and lines >= 2  # 竖线 + 横线（另有网格线）
+
+
+def test_line_markline_xvalue_edge_not_clipped(chart_page):
+    """xValue 0（最左）: 标注不超出容器左边界"""
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), [{label:'一月',value:9},{label:'二月',value:1},{label:'三月',value:2}], {animation:false, markLine:{xValue:0,label:'很长很长很长的标注文字'}})")
+    box = chart_page.evaluate("""() => {
+      const svg=document.querySelector('.hm-c-line-svg').getBoundingClientRect();
+      const l=document.querySelector('.hm-c-markline-t').getBoundingClientRect();
+      return {l: l.left-svg.left, r: l.right-svg.left, w: svg.width};
+    }""")
+    assert box['l'] >= 0 and box['r'] <= box['w']
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

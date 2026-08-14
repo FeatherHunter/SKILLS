@@ -109,7 +109,8 @@ function makeShortcut() {
   }
   const lnkPath = path.join(app.getPath('desktop'), '桌面版.lnk');
   try {
-    const ok = shell.writeShortcutLink(lnkPath, 'create', {
+    // replace：覆盖旧快捷方式（旧 exe 残留的 .lnk 会被重指到新 exe）
+    const ok = shell.writeShortcutLink(lnkPath, 'replace', {
       target,
       cwd: path.dirname(target),
       description: 'DSH 桌面版',
@@ -1120,7 +1121,9 @@ ipcMain.handle('dsh-desktop:close', () => {
 // ---------- 应用生命周期 ----------
 // 单实例锁：同一 userData（%APPDATA%/dsh-desktop，dev 与打包版共用）只允许一个实例。
 // SMOKE/SHOT 为自动化测试模式，跳过锁，避免与正在运行的实例互斥。
-const gotLock = SMOKE || SHOT ? true : app.requestSingleInstanceLock();
+// INSTALL_SHORTCUT 是工具模式：与运行中的实例并存安全（只写 .lnk 后即退），跳过锁——
+// 否则托盘常驻（关窗不退出）后 --install-shortcut 永远被锁挡（2026-08-14 实测）
+const gotLock = SMOKE || SHOT || INSTALL_SHORTCUT ? true : app.requestSingleInstanceLock();
 if (!gotLock) {
   log('检测到 DSH 桌面版已在运行，本实例退出（单实例锁）');
   app.quit();

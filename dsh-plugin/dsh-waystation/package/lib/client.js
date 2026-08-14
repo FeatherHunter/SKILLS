@@ -14,11 +14,13 @@
  *      ctx.connection.rpc.call('/dsws', endpoint, args) → RpcResult 解包
  *   4. timer 服务不可用时 setTimeout 兜底（动态版 runner 必注入 timer）
  *
- * 功能同动态版 v25：状态栏胶囊 / 面板三视图 / 行级动作（诊断/修复/讨论/执行）/
- * map 详情 / 交接两段 prompt（时间戳记忆）/ 引导句「从第一性原理出发完成任务，并对抗式审查。」/
- * 配置页（settings.plugins.tab「Waystation」：面板高度三档 + 开始模板 + 动作模板编辑器，
- * dsws.cfg/dsws.templates 持久化 + 旧 startCfg 迁移）/ 中英双语（dsws locale 命名空间 zh/en，跟随 harness 语言）/
- * Document PiP 独立小窗（#372：require('react-dom') 完整支持；动态版无 ReactDOM 自动降级页内面板）
+ * 功能同动态版 v26：状态栏胶囊 / 右侧 details 列面板（唯一打开形式 · 三视图）/
+ * 行级动作（诊断/修复/讨论/执行）/ map 详情 / 交接两段 prompt（时间戳记忆）/
+ * 引导句「从第一性原理出发完成任务，并对抗式审查。」/ 配置页（settings.plugins.tab「Waystation」：
+ * 面板高度三档 + 开始模板 + 动作模板编辑器，dsws.cfg/dsws.templates 持久化 + 旧 startCfg 迁移）/
+ * 中英双语（dsws locale 命名空间 zh/en，跟随 harness 语言）
+ * v26（#373 用户拍板 2026-08-14）：打开形式收敛为仅右侧 details 列 —— 移除 Document PiP
+ * 独立小窗（Electron 不可用）、停靠/悬浮双模式记忆、状态栏「停靠」seg、右栏「悬浮」按钮。
  */
 window.__ModuleLoader__.load({
   id: 'dsh-waystation',
@@ -28,9 +30,6 @@ window.__ModuleLoader__.load({
     Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' })
 
     let React = require('react')
-    // #372：Document PiP 需要 ReactDOM.createRoot（动态版 runner 不提供，此处 bundle 具备）
-    let ReactDOM = undefined
-    try { ReactDOM = require('react-dom') } catch (e) { ReactDOM = undefined }
 
     // ── 样式（动态版 styles.insert 的等价内容）──
     const STYLE_TEXT = [
@@ -93,7 +92,7 @@ window.__ModuleLoader__.load({
       // #372 修复（2026-08-14 英文态溢出）：原上限 min(92vw,640px) 在英文长文案（如「Handoff · new session」）下触顶，
       //   内容从背景右缘溢出。放宽到 min(96vw,1400px)：width:fit-content + margin:0 auto → 胶囊始终
       //   以状态栏中心为轴向两边生长（背景完整包裹内容），不再截断/溢出。
-      '.dsws-capsule{max-width:min(96vw,1400px);width:fit-content;margin:0 auto;display:flex;align-items:center;gap:2px;background:var(--dsw-alias-bg-layer-1,#10131a);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:999px;padding:3px 6px;font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer;user-select:none;white-space:nowrap}',
+      '.dsws-capsule{max-width:min(96vw,1400px);width:fit-content;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 6px;background:var(--dsw-alias-bg-layer-1,#10131a);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:14px;padding:3px 6px;font-size:12px;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer;user-select:none}',
       '.dsws-capsule .dsws-capsule-word{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:99px;font-weight:600;color:var(--dsw-alias-label-primary,#e6edf3);flex:none}',
       '.dsws-capsule .dsws-capsule-word:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.08))}',
       '.dsws-capsule .dsws-seg{flex:none}',
@@ -210,10 +209,6 @@ window.__ModuleLoader__.load({
           'nav.handoffReady': '交接给新会话',
           'nav.handoffTitle': '交接：发送 /handoff 生成交接文档',
           'nav.handoffReadyTitle': '开新会话并预填交接文档路径',
-          'nav.dock': '停靠',
-          'nav.dockTitle': '在右侧停靠打开（details 列 · 原型）',
-          'act.dockTitle': '停靠到右侧（details 列 · 原型）',
-          'act.float': '悬浮',
           'banner.setup': 'setup 未执行',
           'banner.setupBtn': '帮我执行 /setup-matt-pocock-skills',
           'act.diagnose': '诊断',
@@ -374,10 +369,6 @@ window.__ModuleLoader__.load({
           'nav.handoffReady': 'Handoff · new session',
           'nav.handoffTitle': 'Handoff: send /handoff to generate the handoff doc',
           'nav.handoffReadyTitle': 'Open a new session with the handoff doc path prefilled',
-          'nav.dock': 'Dock',
-          'nav.dockTitle': 'Open docked on the right (details column · prototype)',
-          'act.dockTitle': 'Dock to the right (details column · prototype)',
-          'act.float': 'Float',
           'banner.setup': 'setup not run yet',
           'banner.setupBtn': 'Run /setup-matt-pocock-skills for me',
           'act.diagnose': 'Diagnose',
@@ -789,22 +780,10 @@ window.__ModuleLoader__.load({
         return {}
       })()
       const saveLabelClicks = function () { try { localStorage.setItem(LABEL_CLICKS_KEY, JSON.stringify(labelClicks)) } catch (e) {} }
-      // 面板打开模式记忆（用户习惯：最近用停靠就默认停靠，最近用悬浮就默认悬浮）
-      const PANEL_MODE_KEY = 'dsws.panelMode'
-      const panelModeInit = (function () {
-        try { const v = localStorage.getItem(PANEL_MODE_KEY); if (v === 'dock' || v === 'float') return v } catch (e) { /* 存储不可用 */ }
-        return 'float'
-      })()
-      const setPanelMode = function (st, mode) {
-        st.panelMode = mode
-        try { localStorage.setItem(PANEL_MODE_KEY, mode) } catch (e) { /* 存储不可用 */ }
-        emit(st)
-      }
       const makeStore = () => ({
         open: false, tab: 'list', activeMap: null,
         notice: null, injector: null, tick: 0,
-        pos: null, size: { w: 460, h: DEFAULT_PANEL_H }, pipMode: false,
-        panelMode: panelModeInit,
+        pos: null, size: { w: 460, h: DEFAULT_PANEL_H },
         // 外观定死（用户拍板：图标/动作词不可配置）
         ui: { icon: 'compass', word: '沉淀' },
         snapshot: null,
@@ -940,7 +919,7 @@ window.__ModuleLoader__.load({
         if (st.checking) return Promise.resolve()
         if (conn === undefined || conn.rpc === undefined) {
           st.checksMode = 'err'
-          st.checksError = tr('err.connUnavailable')
+          st.checksError = tr('err.hostUnavailable')
           emit(st)
           return Promise.resolve()
         }
@@ -1068,7 +1047,7 @@ window.__ModuleLoader__.load({
         if (st.snapLoading && !force) return Promise.resolve()
         if (conn === undefined || conn.rpc === undefined) {
           st.snapMode = 'err'
-          st.snapError = tr('err.connUnavailable')
+          st.snapError = tr('err.hostUnavailable')
           emit(st)
           return Promise.resolve()
         }
@@ -1115,25 +1094,10 @@ window.__ModuleLoader__.load({
         if (!st.snapshot || !st.snapshot.generatedMs) return false
         try { return (Date.now() - st.snapshot.generatedMs) <= SNAP_FRESH_MS } catch (e) { return false }
       }
-      // #372：Document PiP 独立小窗（主面板脱离网页；状态栏胶囊保留页内）
-      //   能力判定：documentPictureInPicture + ReactDOM（动态 runner 只注入 React，无 ReactDOM → 自动降级页内面板；
-      //   npm bundle 经 require('react-dom') 获得，完整支持）。PiP 窗口与主页面同源共享 JS 上下文（store/回调/配置全沿用）。
-      // #372 修复（2026-08-14 桌面卡死事故）：Electron 的 Chromium 暴露 documentPictureInPicture 对象但无法真正创建
-      //   PiP 窗口（requestWindow 拒绝/挂起）——原 .catch 递归 openPanel 会无限循环卡死。修复：
-      //   ① Electron 直接跳过 PiP（页内面板即桌面预期形态）；② 失败一次即 pipFailed 本会话禁用（一次性失败锁）；
-      //   ③ 非递归降级 openPagePanel；④ requestWindow 超时保护（3.5s 未决视为失败）；⑤ 同步异常 try/catch。
-      let pipWin = null          // 当前 PiP 窗口（复用/聚焦）
-      let pipRoot = null         // PiP 文档内 React 根
-      let pipFailed = false      // PiP 失败锁（本会话内禁用以防递归死循环）
-      let lastOverlayProps = null // 最近一次 OverlayPanel 渲染的 props（PiP 重建用；含 useSessions 等 slot 标准座）
-      const RD = (typeof ReactDOM !== 'undefined') ? ReactDOM : (typeof window !== 'undefined' ? window.ReactDOM : undefined)
-      const pipSupported = function () {
-        if (pipFailed) return false
-        if (typeof window === 'undefined' || !window.documentPictureInPicture || RD === undefined || typeof RD.createRoot !== 'function') return false
-        // 加宽识别：Electron UA 可能被壳改写（如 dsh-harness-desktop 品牌），多模式匹配防漏判
-        try { if (/Electron\/|dsh-harness-desktop|dsh-desktop/i.test(navigator.userAgent)) return false } catch (e) { /* UA 不可读不阻断 */ }
-        return true
-      }
+      // 打开形式（#373 用户拍板 2026-08-14）：仅右侧 details 列（停靠）一种形式。
+      //   已移除：① Document PiP 独立小窗（Electron 无法创建 PiP 窗口、曾致桌面卡死 —— 代码不再含 pip 形态）；
+      //   ② 停靠/悬浮双模式记忆（PANEL_MODE_KEY）；③ 状态栏「停靠」seg 与右栏「悬浮」按钮。
+      //   打开一律走 layout.openDetails()；layout 服务不可用时退回页内悬浮面板（仅兜底，无任何入口按钮）。
       const openPagePanel = function (st) {
         st.open = true
         if (st.snapMode !== 'real' || !snapFresh(st)) {
@@ -1144,90 +1108,7 @@ window.__ModuleLoader__.load({
           emit(st)
         }
       }
-      const openPipWindow = function (st) {
-        if (pipWin && !pipWin.closed) { pipWin.focus(); return }
-        st.open = true; st.pipMode = true
-        st.snapMode = 'loading'
-        emit(st)
-        loadSnapshot(st, true)
-        // 失败处理：一次性失败锁 + 非递归降级页内面板（绝不回绕 openPanel）
-        const failPip = function () {
-          pipFailed = true
-          pipWin = null
-          st.pipMode = false
-          emit(st)
-          openPagePanel(st)
-        }
-        const iw = window.innerWidth || 1000, ih = window.innerHeight || 800
-        let req = null
-        try {
-          req = window.documentPictureInPicture.requestWindow({
-            width: Math.round(Math.max(400, Math.min(760, iw - 80))),
-            height: Math.round(Math.max(360, Math.min(860, ih - 120))),
-          })
-        } catch (err) { failPip(); return }
-        // 超时保护：部分环境 requestWindow 永不 resolve/reject（挂起）→ 3.5s 视为失败（settled 防双重处理）
-        let settled = false
-        const armGuard = function () {
-          const fn = function () {
-            if (settled) return
-            settled = true
-            try { if (pipRoot) { pipRoot.unmount(); pipRoot = null } } catch (e) { /* 忽略 */ }
-            failPip()
-          }
-          if (timer !== undefined && typeof timer.timeout === 'function') timer.timeout(fn, 3500)
-          else setTimeout(fn, 3500)
-        }
-        armGuard()
-        req.then(function (win) {
-          if (settled) { try { win.close() } catch (e) { /* 已被超时接管 */ } return }
-          // 假成功防护：窗口必须真实可用且 500ms 后仍存活（Electron 等环境可能返回即刻关闭/空文档的窗口）
-          if (!win || !win.document || !win.document.body) { try { win && win.close() } catch (e) { /* 忽略 */ } failPip(); return }
-          settled = true
-          pipWin = win
-          // 样式随搬移：复制主文档全部 <style> + <link rel=stylesheet>（面板依赖的注入样式与主题变量）
-          const els = document.querySelectorAll('style, link[rel="stylesheet"]')
-          for (let i = 0; i < els.length; i++) {
-            try {
-              const n = els[i]
-              if (n.tagName === 'STYLE') { const s = win.document.createElement('style'); s.textContent = n.textContent; win.document.head.appendChild(s) }
-              else { const l = win.document.createElement('link'); l.rel = 'stylesheet'; l.href = n.href; win.document.head.appendChild(l) }
-            } catch (err) { /* 样式复制失败不阻塞搬移 */ }
-          }
-          win.document.body.style.margin = '0'
-          win.document.body.style.background = 'var(--dsw-alias-bg-layer-1,#10131a)'
-          const holder = win.document.createElement('div')
-          holder.style.width = '100vw'
-          holder.style.height = '100vh'
-          holder.style.position = 'relative'
-          win.document.body.appendChild(holder)
-          pipRoot = RD.createRoot(holder)
-          pipRoot.render(h(OverlayPanel, Object.assign({}, lastOverlayProps, { pip: true })))
-          // 存活看门狗：若窗口在 500ms 内被关闭（Electron 假成功场景）→ 视为失败降级页内
-          const wd = function () {
-            if (pipWin && pipWin.closed) {
-              try { if (pipRoot) { pipRoot.unmount(); pipRoot = null } } catch (e) { /* 忽略 */ }
-              pipWin = null
-              failPip()
-            }
-          }
-          if (timer !== undefined && typeof timer.timeout === 'function') timer.timeout(wd, 500)
-          else setTimeout(wd, 500)
-          // 窗口关闭（含页面刷新语义）→ 清理并复位
-          win.addEventListener('pagehide', function () {
-            try { if (pipRoot) { pipRoot.unmount(); pipRoot = null } } catch (err) { /* 清理期错误忽略 */ }
-            pipWin = null
-            st.open = false; st.pipMode = false; emit(st)
-          })
-        }).catch(function () {
-          // 用户取消 / API 不可用 → 一次性失败锁 + 非递归降级页内面板（修复：原递归 openPanel 在
-          // requestWindow 反复拒绝时无限循环卡死 —— 桌面 Electron 实测事故）
-          if (settled) return
-          settled = true
-          failPip()
-        })
-      }
-      // 打开面板按最近使用模式分派：dock（右侧停靠）/ float（悬浮，含浏览器 PiP）
+      // 打开面板：一律右侧停靠（details 列）；layout 服务不可用 → 页内兜底
       const openDockPanel = function (st) {
         const ls = ctx.get('layout')
         if (ls && typeof ls.openDetails === 'function') {
@@ -1239,9 +1120,7 @@ window.__ModuleLoader__.load({
         openPagePanel(st)  // layout 服务不可用 → 退回悬浮
       }
       const openPanel = function (st) {
-        if (st.panelMode === 'dock') { openDockPanel(st); return }
-        if (pipSupported()) { openPipWindow(st); return }
-        openPagePanel(st)
+        openDockPanel(st)
       }
       const togglePanel = function (st) {
         if (st.open) { st.open = false; emit(st); return }
@@ -1447,11 +1326,6 @@ window.__ModuleLoader__.load({
           seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
           // v19-36：环境段移至末尾（更新左侧），用户少点
           seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
-          // 右侧停靠（details 列）：显式选择即记忆模式，之后所有打开动作默认走停靠
-          seg('map', tr('nav.dock'), '#bc8cff', function () {
-            setPanelMode(s, 'dock')
-            openDockPanel(s)
-          }, tr('nav.dockTitle')),
           h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, tr('nav.refresh') + ' ' + timeStr),
         ])
         if (!amber) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
@@ -1918,7 +1792,6 @@ window.__ModuleLoader__.load({
           if (props && typeof props.closeDetails === 'function') props.closeDetails()
           else if (layoutSvc && typeof layoutSvc.closeDetails === 'function') layoutSvc.closeDetails()
         }
-        const toFloat = function () { closeDock(); openPanel(s) }
         const groups = compute(s)
         const active = s.activeMap !== null ? groups.find(function (x) { return x.m.number === s.activeMap }) : null
         const narrow = dw < 380
@@ -1927,12 +1800,11 @@ window.__ModuleLoader__.load({
           h('span', null, label),
         ])
         return h('div', { ref: dockRef, style: { position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'var(--dsw-font-family)', fontSize: 12, color: 'var(--dsw-alias-label-primary,#e6edf3)', background: 'var(--dsw-alias-bg-layer-1,#10131a)' } }, [
-          // 头部（标题 + 悬浮/关闭）：横线不放在这行，下移到标签行下方与对话/轨迹对齐
+          // 头部（标题 + 关闭）：横线不放在这行，下移到标签行下方与对话/轨迹对齐
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px 6px', flex: 'none' } }, [
             Icon({ scheme: 'compass', size: 15 }),
             h('span', { style: { fontWeight: 600, fontSize: 13 } }, 'Waystation'),
             h('span', { style: { flex: 1 } }),
-            h('button', { className: 'dsws-btn', onClick: toFloat, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11 } }, [Ic({ n: 'fog', size: 11 }), h('span', null, tr('act.float'))]),
             h('button', { className: 'dsws-btn ghost', onClick: closeDock, style: { display: 'inline-flex', alignItems: 'center', padding: '2px 6px', fontSize: 11 } }, Ic({ n: 'x', size: 12 })),
           ]),
           // 标签行下沿 = 与对话/轨迹一致的横线
@@ -1955,14 +1827,11 @@ window.__ModuleLoader__.load({
 
       // ---- 5.8 主面板（可拖动 · 8 向缩放 · 三视图 · v14 跟随当前会话 + 刷新遮罩）----
       const OverlayPanel = (props) => {
-        // #372：记录最近一次渲染的 props（PiP 窗口重建用：含 useSessions 等 slot 标准座，可跨文档复用）
-        lastOverlayProps = props
         const cur = props.useSessions((x) => x.current)
         const s = useStore(cur)
         const panelRef = React.useRef(null)
         // #376：加载由 openPanel 统一分派（未就绪/过期 force，新鲜直接展示）；此处不再重复加载
-        // #372：页内实例在 PiP 模式下不渲染（面板本体已在独立小窗）；PiP 实例（props.pip）照常渲染
-        if (!s.open || (s.pipMode && !props.pip)) return null
+        if (!s.open) return null
         const groups = compute(s)
         const active = s.activeMap !== null ? groups.find(function (x) { return x.m.number === s.activeMap }) : null
         // v14-19：窄屏阈值（面板宽 <380px 时动作按钮折叠为纯图标）
@@ -2016,10 +1885,7 @@ window.__ModuleLoader__.load({
           }
         }
 
-        // #372：PiP 模式下面板铺满独立窗口（拖动/缩放由 OS 窗口承担）；页内模式维持现有 fixed 定位与尺寸
-        const panelStyle = props.pip
-          ? { left: 0, top: 0, right: 0, bottom: 0, width: 'auto', height: 'auto', maxHeight: '100vh' }
-          : { width: s.size.w, ...(s.size.h ? { height: s.size.h } : {}), ...(s.pos ? { left: s.pos.x, top: s.pos.y, right: 'auto' } : { left: 16, top: 76, right: 'auto' }) }
+        const panelStyle = { width: s.size.w, ...(s.size.h ? { height: s.size.h } : {}), ...(s.pos ? { left: s.pos.x, top: s.pos.y, right: 'auto' } : { left: 16, top: 76, right: 'auto' }) }
         return h('div', { ref: panelRef, className: 'dsws-panel', style: panelStyle }, [
           h('div', { className: 'dsws-head', onMouseDown: startDrag }, [
             h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } }, Icon({ scheme: s.ui.icon, size: 17 }), 'DSH-Waystation'),
@@ -2029,12 +1895,6 @@ window.__ModuleLoader__.load({
               h('span', { className: 'dsws-ellip', title: repoStr(s) }, s.snapMode === 'err' ? tr('panel.snapErr') : s.snapMode === 'loading' ? tr('panel.loading') : repoStr(s)),
             ]),
             h('span', { style: { flex: 1 } }),
-            // 原型：悬浮面板 → 停靠到右侧 details 列
-            h('button', { className: 'dsws-btn ghost', onClick: function () {
-              const ls = ctx.get('layout')
-              if (ls && typeof ls.openDetails === 'function') ls.openDetails()
-              s.open = false; emit(s)
-            }, title: tr('act.dockTitle'), style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'map', size: 12 })),
             h('button', { className: 'dsws-btn ghost', onClick: function () { s.open = false; emit(s) }, style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'x', size: 12 })),
           ]),
           h('div', { className: 'dsws-tabs' }, [tabBtn('list', 'list', tr('panel.tabList')), tabBtn('skills', 'compass', tr('panel.tabSkills')), tabBtn('checks', 'gear', tr('panel.tabChecks'))]),

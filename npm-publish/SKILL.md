@@ -105,6 +105,29 @@ npm publish --registry=https://registry.npmjs.org
 > 也不要隔空让用户把 6 位 TOTP 码发进聊天再代跑——30 秒轮换 + 传递时延 = 必过期。正确做法：
 > **把命令交给用户在交互终端自己跑**，或起一个用户可达的真实 TTY 进程后再走网页审批流。
 
+> **Agent 启动发布窗口（2026-08-14 实测 · 推荐做法）**：Agent 不能代跑 2FA，但可以
+> **把发布窗口启动到用户桌面**——用户只负责「看 + 按回车 + 浏览器审批」，不用自己开终端：
+>
+> ```powershell
+> # ① Agent：创建交互式计划任务（窗口将出现在用户交互桌面）
+> schtasks /create /tn "DSHPublish" /tr "<powershell.exe 完整路径> -NoProfile -ExecutionPolicy Bypass -File "<npm-publish/scripts/publish-window.ps1>" -PackageDir "<包目录>" /sc once /st 23:59 /it /f
+> # ② Agent：启动窗口
+> schtasks /run /tn "DSHPublish"
+> # ③ 用户：看窗口 → 按回车开浏览器 → 2FA 审批 → 再按回车 → 看到 + <包名>@<版本>
+> # ④ Agent：收尾
+> schtasks /delete /tn "DSHPublish" /f
+> ```
+>
+> 脚本 `npm-publish/scripts/publish-window.ps1`（**UTF-8 BOM 保存**；参数 `-PackageDir` 必填，
+> `-Preview` 只预览不真发）。设计理念三条：
+> 1. **2FA 铁律不变**：网页审批流必须真实 TTY + 用户本人，Agent 只负责把窗口送到用户桌面；
+> 2. **窗口怎么送到用户桌面**：Agent 直接 `Start-Process` 的窗口开在用户不可见的会话
+>    （实测 `MainWindowHandle=0`）；必须用 `schtasks /it`（交互式任务）启动
+>    `powershell.exe` 到用户交互桌面；
+> 3. **编码适配**：系统代码页可能是 65001（UTF-8）——GBK 编码的 bat 中文必乱码；
+>    脚本一律 UTF-8(BOM) + 脚本内显式 `[Console]::OutputEncoding = UTF8`；
+>    脚本与参数路径避免中文（放仓库无中文路径下）。
+
 失败分支（**先读报错码，再动手**）：
 
 | 报错 | 含义 | 处理 |
@@ -174,6 +197,13 @@ npm unpublish <包名>@<版本> --registry=https://registry.npmjs.org
 4. **非交互环境发布必 EOTP**：Start-Process / 后台 job / CI 跑 `npm publish` 时 npm 跳过网页审批直接报 EOTP（不发 URL）。
    解决：把命令交给用户在**交互终端**自己跑，npm 会打印 `Authenticate your account at: <URL>` + `Press ENTER to open in the browser...`，
    浏览器完成 2FA 审批（无认证器 App 时填恢复码）即发布成功。
+   - **输出重定向也会触发 EOTP**（2026-08-14 实测）：`npm publish > result.txt 2>&1` 让 stdout 非 TTY → npm 跳过网页审批直接要 OTP。
+     发布命令**绝不重定向输出**。
+   - **Agent 启动发布窗口**：见 §流程 4「Agent 启动发布窗口」——schtasks /it 把窗口送到用户桌面，用户只按回车 + 浏览器审批。
+   - **编码坑**（2026-08-14 实测）：系统代码页 65001（UTF-8）时 GBK 编码 bat 中文全乱码；窗口脚本一律
+     UTF-8(BOM) + `[Console]::OutputEncoding=UTF8`，用 powershell.exe 执行（cmd/bat 慎用中文）。
+   - **查发布状态必须指定官方源**（2026-08-14 实测）：全局 registry 是 npmmirror 时，`npm view` 走镜像，
+     镜像同步有延迟 → 刚发布的版本查不到被误判失败。**验证一律 `--registry=https://registry.npmjs.org --prefer-online`**。
 
 ## 输出
 
@@ -202,4 +232,7 @@ npm unpublish <包名>@<版本> --registry=https://registry.npmjs.org
 - 2026-08-14（同日追加）：`dsh-opencode-tui-theme@1.1.0` 实盘发布发现**网页审批流**——交互终端 `npm publish` 会打印
   `Authenticate your account at: <URL>` 授权链接，浏览器完成 2FA 后回车即发布成功；非交互环境（Agent 重定向/后台）不发 URL
   直接 EOTP，聊天传码必过期。本技能 §流程 4 已按此更新（硬规则 9 / 坑位 4）。
+- 2026-08-14（同日追加）：`dsh-harness-desktop@1.0.2` 实盘发布落地**发布窗口方案**——Agent 用 `schtasks /it` 把
+  powershell.exe 窗口启动到用户交互桌面（直接 Start-Process 的窗口用户不可见）；脚本 UTF-8(BOM) 适配 65001 代码页；
+  记录「输出重定向触发 EOTP」「镜像同步延迟导致验证误判」两个新坑。新增 `scripts/publish-window.ps1`（§流程 4）。
 - Tested-By: exempt(无 fresh agent + 发布有真实外部副作用不适合黑盒重放 · 详见 备忘录/docs/adr/0005-d-exemptions-and-rituals.md)

@@ -18,11 +18,13 @@
 //   DSH_DESKTOP_COMMAND     自定义启动命令（整行，按 shell 解析；设置后跳过内置运行时）
 //   DSH_DESKTOP_REGISTRY    npm 镜像源（默认 registry.npmjs.org，国内可设 npmmirror）
 //   DSH_DESKTOP_REINSTALL=1 强制重装 DSH 运行时（升级用）
+//   DSH_DESKTOP_HIDDEN=1    隐藏启动：窗口不显示，右下角托盘常驻（服务化；--hidden 同效）
+//   DSH_DESKTOP_USER_DATA    独立 userData 目录（测试隔离：单实例锁/会话按目录隔离）
 //   DSH_DESKTOP_SMOKE=1     冒烟测试模式：页面就绪后自动退出（自动化验证）
 //   DSH_DESKTOP_SHOT=1      截图模式：布局自检 + 存 PNG 后退出
 // ============================================================
 
-const { app, BrowserWindow, ipcMain, shell, nativeTheme } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, nativeTheme, Tray, Menu, nativeImage, dialog } = require('electron');
 const { spawn, spawnSync } = require('child_process');
 const http = require('http');
 const https = require('https');
@@ -31,6 +33,12 @@ const path = require('path');
 const fs = require('fs');
 
 // ---------- 配置 ----------
+// 测试隔离：DSH_DESKTOP_USER_DATA 指定独立 userData 目录。
+// 单实例锁与会话存储按 userData 隔离，允许并行实例做自动化验证，
+// 不影响正在运行的真实实例（自动化测试用，普通用户不需要设置）。
+if (process.env.DSH_DESKTOP_USER_DATA) {
+  app.setPath('userData', process.env.DSH_DESKTOP_USER_DATA);
+}
 const DEFAULT_PORT = 3080;
 const START_TIMEOUT_MS = 10 * 60 * 1000; // 首次安装/启动 DSH 包（数百 MB），放宽到 10 分钟
 const POLL_INTERVAL_MS = 600;
@@ -49,6 +57,7 @@ const ESTIMATED_DOWNLOAD_MB = 600;  // 进度条估算总量（DSH 全依赖树�
 const PORT = Number(process.env.DSH_DESKTOP_PORT || DEFAULT_PORT);
 const TARGET_URL = `http://127.0.0.1:${PORT}`;
 const SMOKE = process.env.DSH_DESKTOP_SMOKE === '1';
+const HIDDEN_START = process.argv.includes('--hidden') || process.env.DSH_DESKTOP_HIDDEN === '1'; // 隐藏启动（开机自启/服务化）：窗口不显示，托盘常驻
 const SHOT = process.env.DSH_DESKTOP_SHOT === '1'; // 截图调试模式：页面就绪后存 PNG 再退出
 const [SHOT_W, SHOT_H] = (process.env.DSH_DESKTOP_SIZE || '1280x820').split('x').map(Number);
 
@@ -119,6 +128,97 @@ function makeShortcut() {
     log('SHORTCUT_FAIL: ' + e.message);
     console.log('SHORTCUT_FAIL ' + e.message);
     app.exit(1);
+  }
+}
+
+// ---------- 系统托盘（Windows 右下角 · 常驻后台） ----------
+// 生命周期模型（2026-08-14 用户拍板）：关窗 = 隐藏到托盘，后台 DSH 继续运行；
+// 真正退出只走 quitting（托盘「退出」确认弹窗 / 应用退出），before-quit 统一杀子进程。
+// 托盘创建失败（部分 Linux 桌面无托盘）→ trayEnabled=false → 自动退回「关窗即退」老行为。
+const SETTINGS_FILE = path.join(logDir, 'settings.json');
+let tray = null;
+let trayEnabled = false;
+
+function loadSettings() {
+  try { return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf8')); } catch { return {}; }
+}
+
+function saveSettings(patch) {
+  const next = { ...loadSettings(), ...patch };
+  try { fs.writeFileSync(SETTINGS_FILE, JSON.stringify(next, null, 2)); } catch (e) { log('设置保存失败: ' + e.message); }
+  return next;
+}
+
+// 恢复/新建主窗口（托盘点击、二次实例、macOS activate 统一入口）
+function showMainWindow() {
+  if (!mainWindow || mainWindow.isDestroyed()) { createWindow(); startup(); return; }
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.show();
+  mainWindow.focus();
+}
+
+// 托盘「退出」：确认弹窗防误退（默认焦点在「取消」）
+function confirmQuit() {
+  dialog.showMessageBox({
+    type: 'question',
+    title: '退出 DSH 桌面版',
+    message: '确定退出 DSH 桌面版？',
+    detail: '退出后后台 DSH 服务将停止，下次使用需要重新启动。',
+    buttons: ['退出', '取消'],
+    defaultId: 1, cancelId: 1, noLink: true,
+  }).then(({ response }) => {
+    if (response === 0) { quitting = true; app.quit(); }
+  }).catch(() => {});
+}
+
+function setAutoStart(on) {
+  if (process.platform !== 'win32' && process.platform !== 'darwin') {
+    log('开机自启：当前平台不支持（仅 Windows/macOS）');
+    return;
+  }
+  try {
+    // 便携版：exe 每次自解压到临时目录，必须登记用户放置的原始 exe 路径
+    app.setLoginItemSettings({
+      openAtLogin: on,
+      path: process.env.PORTABLE_EXECUTABLE_FILE || process.execPath,
+      args: on ? ['--hidden'] : [],
+    });
+    saveSettings({ autoStart: on });
+    log('开机自启 ' + (on ? '开启' : '关闭'));
+  } catch (e) { log('开机自启设置失败: ' + e.message); }
+}
+
+// 开机自启开启时，每次启动重新登记登录项（便携 exe 移动/换路径后仍生效）
+function ensureAutoStart() {
+  if (loadSettings().autoStart) setAutoStart(true);
+}
+
+function createTray() {
+  try {
+    const icon = nativeImage.createFromPath(path.join(__dirname, 'build', 'icon.png')).resize({ width: 32, height: 32 });
+    if (process.platform === 'darwin') icon.setTemplateImage(true); // 菜单栏单色图标
+    tray = new Tray(icon);
+    tray.setToolTip('DSH 桌面版');
+    tray.setContextMenu(Menu.buildFromTemplate([
+      { label: '打开 DSH 桌面版', click: showMainWindow },
+      { type: 'separator' },
+      {
+        label: '开机自启（登录时后台常驻）', type: 'checkbox',
+        checked: !!loadSettings().autoStart,
+        click: (item) => setAutoStart(item.checked),
+      },
+      { type: 'separator' },
+      { label: '退出（停止后台 DSH）', click: confirmQuit },
+    ]));
+    tray.on('click', showMainWindow); // Windows：左键单击恢复窗口
+    trayEnabled = true;
+    log('托盘已创建：关窗后隐藏到托盘，后台 DSH 继续运行');
+  } catch (e) {
+    trayEnabled = false;
+    log('托盘创建失败，退回「关窗即退」行为: ' + e.message);
+    if (HIDDEN_START && mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show(); // 要求隐藏启动但托盘不可用：必须亮出窗口，否则用户无入口
+    }
   }
 }
 
@@ -211,6 +311,10 @@ function onChildGone(message) {
   startedByUs = false;
   if (wasOurs && deadChild) killTree(deadChild);
   if (quitting || !mainWindow || mainWindow.isDestroyed()) return;
+  if (!mainWindow.isVisible()) {
+    log('DSH 异常退出，窗口隐藏中 → 自动弹出窗口');
+    mainWindow.show(); // 后台模式也要让用户看到错误，不能无声失败
+  }
   const hint = errorHint(tailLog(30));
   log('进入错误页: ' + message + (hint ? ' [' + hint + ']' : ''));
   sendStatus('error', message + (hint ? '\n\n' + hint : ''), tailLog(30));
@@ -576,6 +680,12 @@ function sendStatus(phase, message, logTail, extra) {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('dsh-desktop:status', lastStatus);
   }
+  if (tray) {
+    const tip = phase === 'ready' ? 'DSH 桌面版 · 运行中（点击打开）'
+      : phase === 'error' ? 'DSH 桌面版 · 启动出错（点击查看）'
+      : 'DSH 桌面版 · ' + (message || phase);
+    tray.setToolTip(tip);
+  }
 }
 
 function createWindow() {
@@ -585,6 +695,7 @@ function createWindow() {
     minWidth: 940, minHeight: 600,
     title: 'DSH 桌面版',
     backgroundColor: '#0a0a0a',
+    show: !HIDDEN_START, // 隐藏启动（服务化）：窗口建好但不显示，托盘常驻
     autoHideMenuBar: true,
     icon: path.join(__dirname, 'build', 'icon.png'),
     webPreferences: {
@@ -604,6 +715,15 @@ function createWindow() {
   }
   mainWindow = new BrowserWindow(winOpts);
   mainWindow.on('closed', () => { mainWindow = null; });
+  // 关窗 = 隐藏到托盘（托盘可用时）；真正退出只走 quitting（托盘「退出」/ app.quit）
+  mainWindow.on('close', (e) => {
+    if (trayEnabled && !quitting) {
+      e.preventDefault();
+      mainWindow.hide();
+      log('窗口关闭 → 隐藏到托盘（后台 DSH 继续运行）');
+    }
+  });
+  if (HIDDEN_START) log('隐藏启动模式：窗口不显示，右下角托盘常驻');
 
   // 页面里的外链一律交给系统浏览器，避免产生脱离生命周期的孤儿窗口
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -686,6 +806,7 @@ function polishTargetPage() {
         wc.appendChild(mkBtn('─', () => api.minimize(), 'rgba(255,255,255,0.08)'));
         wc.appendChild(mkBtn('□', () => api.toggleMaximize(), 'rgba(255,255,255,0.08)'));
         const closeBtn = mkBtn('✕', () => api.close(), 'rgba(232,17,35,0.85)');
+        closeBtn.title = '关闭（后台继续运行）';
         closeBtn.style.color = '#d4d4d4';
         closeBtn.addEventListener('mouseenter', () => { closeBtn.style.color = '#ffffff'; });
         closeBtn.addEventListener('mouseleave', () => { closeBtn.style.color = '#d4d4d4'; });
@@ -838,7 +959,9 @@ ipcMain.handle('dsh-desktop:minimize', () => {
   if (win && !win.isDestroyed()) win.minimize();
 });
 ipcMain.handle('dsh-desktop:close', () => {
-  app.quit();
+  // 走窗口 close 事件：托盘可用时 = 隐藏到托盘；退出路径由 quitting 控制
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
+  else app.quit();
 });
 
 // ---------- 应用生命周期 ----------
@@ -850,21 +973,27 @@ if (!gotLock) {
   app.quit();
 } else {
   app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-    }
+    showMainWindow(); // 已运行：恢复/新建窗口（托盘隐藏中也生效）
   });
 
   app.whenReady().then(() => {
     nativeTheme.themeSource = 'dark'; // 原生对话框/菜单跟随深色
+    if (process.platform === 'win32') app.setAppUserModelId('com.dsh.desktop'); // 通知/任务栏分组
     if (INSTALL_SHORTCUT) { makeShortcut(); return; } // 工具模式：建完即退
+    if (!(SMOKE || SHOT)) { ensureAutoStart(); } // 自启设置开启时重新登记登录项
     createWindow();
+    if (!(SMOKE || SHOT)) {
+      createTray();
+      if (HIDDEN_START && !trayEnabled) showMainWindow(); // 隐藏启动但托盘不可用：亮出窗口
+    }
     startup();
   });
+  app.on('activate', () => showMainWindow()); // macOS：Dock 点击恢复窗口
 
-  // 关窗即退出；退出前把后台进程（DSH / npm 安装）一起带走（需求 2）
-  app.on('window-all-closed', () => app.quit());
+  // 关窗不退出（托盘常驻模式）；真正退出走托盘「退出」→ app.quit() → before-quit 杀后台
+  app.on('window-all-closed', () => {
+    if (!trayEnabled) app.quit(); // 托盘不可用（如无托盘环境）时保持老行为：关窗即退
+  });
   app.on('before-quit', () => {
     quitting = true;
     killAllChildren();

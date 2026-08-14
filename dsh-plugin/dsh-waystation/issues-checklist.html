@@ -334,8 +334,22 @@
 <div class="item">
   <span class="no">44</span><span class="title">动作按钮 prompt 精简 + 统一引导句</span><span class="badge b-done">已解决</span>
   <div class="desc">审查「执行/讨论/修复/诊断」按钮 prompt：内容需简略（按钮=技能调用入口，技能自带详细介绍），避免冗余；可加一句通用引导思想。</div>
-  <div class="plan">v21 已落实（用户拍板引导句）：四按钮统一为「技能命令 + URL + 从第一性原理出发推进，优先复用现有技能库；不确定用哪个技能时，用 /ask-matt 路由。」；去掉重复灌输的技能流程文案；自定义模板/前缀开关保留。</div>
-  <div class="src">来源：2026-08-14 用户审查；v21 已解决。</div>
+  <div class="plan">v21 已落实（用户拍板引导句）：四按钮统一为「技能命令 + URL + 从第一性原理出发推进，优先复用现有技能库；不确定用哪个技能时，用 /ask-matt 路由。」；去掉重复灌输的技能流程文案；自定义模板/前缀开关保留。v22 引导句更新为「从第一性原理出发完成任务，并对抗式审查。」。</div>
+  <div class="src">来源：2026-08-14 用户审查；v21/v22 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">45</span><span class="title">交接两段 prompt（第一击注入 / 第二击预填优化）</span><span class="badge b-done">已解决</span>
+  <div class="desc">① 点「交接」后 prompt 提示丢失——应从第一性原理自动写 /handoff + 该说的话；② 「交接给新会话」的预填内容需要优化。</div>
+  <div class="plan">v22 已落实：第一击自动注入 /handoff 模板（时间戳文件名 + 结论/未完成事项/建议 skill 三部分 + 新引导句）；第二击预填「/read .scratch/handoff/&lt;最新&gt;.md + 请先阅读并复述确认理解 + 引导句」完整 prompt，并复制到剪贴板 + 开新会话。</div>
+  <div class="src">来源：2026-08-14 用户反馈；v22 已解决。</div>
+</div>
+
+<div class="item">
+  <span class="no">46</span><span class="title">控件中英双语 + 插件配置页</span><span class="badge b-ask">待确认</span>
+  <div class="desc">① 控件基本文字支持中英双语（跟随 harness 语言设置）；② 插件配置页（只放有意义配置）。</div>
+  <div class="plan">双语方案已确认（原生 locale 服务，dsws 命名空间字典 zh/en，跟随设置语言切换即生效）；配置页方案待用户确认配置项增减（用户选了「调整配置项」但未给具体内容）。</div>
+  <div class="src">来源：2026-08-14 用户需求。双语已确认，配置项待补充。</div>
 </div>
 
 </body>

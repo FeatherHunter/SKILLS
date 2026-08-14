@@ -1,11 +1,12 @@
 /**
- * DSH-Waystation · Client 半（UX v21 · 2026-08-14 第七批执行）
+ * DSH-Waystation · Client 半（UX v22 · 2026-08-14 第八批执行）
  *
- * v21 变更（用户拍板）：
- *   44. 动作按钮 prompt 精简 + 统一引导句：/triage、/wayfinder + URL +
- *       「从第一性原理出发推进，优先复用现有技能库；不确定用哪个技能时，用 /ask-matt 路由。」
- *       （技能内部流程自带，不再重复灌输；自定义模板/前缀开关保留）
+ * v22 变更（用户拍板）：
+ *   45. 统一引导句更新为「从第一性原理出发完成任务，并对抗式审查。」（全部动作按钮 + map 顶部执行）；
+ *       交接第一击恢复自动注入 /handoff 模板（时间戳文件名 + 三部分 + 引导句）；
+ *       交接第二击预填「/read + 复述确认理解」完整 prompt（+ 引导句），并复制到剪贴板
  *
+ * v21：动作按钮 prompt 精简 + 统一引导句。
  * v20：标签「+N」点击展开全部标签/收起。
  * v19：grilling→讨论 / 头部 repo 名 / 环境段末尾 / map 详情执行+任务动作 / map 行进度 /
  * 交接时间戳+查最新+复制。
@@ -288,9 +289,9 @@ return {
       })
       return colorOf
     }
-    // v21：统一引导句 —— 精简 prompt 后保留一句通用思想引导（第一性原理 + 技能库路由），
-    // 技能内部细节由 /wayfinder / /triage 自带，不重复灌输
-    const GUIDE_LINE = '从第一性原理出发推进，优先复用现有技能库；不确定用哪个技能时，用 /ask-matt 路由。'
+    // v22：统一引导句 —— 精简 prompt 后保留一句通用思想引导（第一性原理 + 对抗式审查），
+    // 技能内部细节由 /wayfinder / /triage / /handoff 自带，不重复灌输
+    const GUIDE_LINE = '从第一性原理出发完成任务，并对抗式审查。'
     // v19：共享 —— 行级动作（列表与 map 详情共用）：按 label 四选一（诊断/修复/讨论/执行），预填输入框；
     // 按钮主体色 = 对应 label 的 GitHub 配置色（YIQ 感知亮度定文字色）
     const mkRowAction = function (st, x, narrow, colorOf) {
@@ -522,22 +523,35 @@ return {
       '4. 列完后停下等我逐条核对。我确认或修正完毕后，你再把清单落盘：已有地图就写进 map 正文和对应 ISSUE；还没建图就先生成一份快照笔记并告诉我存哪，等建图时搬入。'
     const injectFixate = (st) => { inject(st, FIXATE_PROMPT) }
 
-    // v14-20 + v19-41：交接（M9 定向传递）—— 第一击只提示（不再注入模板，文档名带时间戳）；
-    // 文案变「交接给新会话」；第二击 = host 查最新时间戳交接文档 → 预填 + 复制到剪贴板
-    // + workspaces.startSession 新开空白会话（非 fork，避免复制旧上下文）
+    // v22-45：交接（M9 定向传递）—— 第一击自动注入 /handoff 模板（带时间戳文件名 + 引导句）；
+    // 文案变「交接给新会话」；第二击 = host 查最新时间戳交接文档 → 预填「/read + 复述确认」完整 prompt
+    // + 复制到剪贴板 + workspaces.startSession 新开空白会话（非 fork，避免复制旧上下文）
     const HANDOFF_READ = '/read .scratch/handoff/latest.md'
+    const handoffPrompt = function () {
+      return '/handoff\n\n' +
+        '请把当前会话生成交接文档，写到 .scratch/handoff/' + timeStampStr() + '.md（相对当前工作目录），包含三部分：\n' +
+        '1. 结论：本次会话已确认的决定与成果；\n' +
+        '2. 未完成事项：下一步要继续的事；\n' +
+        '3. 建议 skill：新会话接手时建议加载的技能。\n\n' +
+        GUIDE_LINE
+    }
+    const handoffReadText = function (file) {
+      return (file ? '/read .scratch/handoff/' + file : HANDOFF_READ) + '\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后' + GUIDE_LINE
+    }
     let pendingDraft = null  // 跨会话预填（新会话 dock 挂载后消费）
     const doHandoff = function (st) {
       if (!st.handoffReady) {
         st.handoffReady = true
-        flash(st, '交接：发送 /handoff 生成交接文档（建议命名 .scratch/handoff/' + timeStampStr() + '.md）；再点「交接给新会话」开新会话接手', 'ok')
+        inject(st, handoffPrompt())
+        flash(st, '已注入 /handoff 交接模板（含时间戳文件名），确认后发送', 'ok')
         return
       }
       const ws = ctx.get('workspaces')
       const cwdArg = st.cwd ? { cwd: st.cwd } : {}
-      const finish = function (readPath, msg) {
-        pendingDraft = readPath
-        copyText(st, readPath, msg || '已复制交接文档路径')
+      const finish = function (file, msg) {
+        const text = handoffReadText(file)
+        pendingDraft = text
+        copyText(st, text, msg || '已复制交接文档指令')
         if (ws && typeof ws.startSession === 'function') {
           ws.startSession()
         } else {
@@ -545,15 +559,15 @@ return {
         }
       }
       if (typeof host === 'undefined' || typeof host.call !== 'function') {
-        finish(HANDOFF_READ, '已复制交接文档路径（无法查询最新文档，兜底）')
+        finish(null, '已复制交接文档指令（无法查询最新文档，兜底）')
         return
       }
       host.call('wf.handoffLatest', cwdArg).then(function (res) {
         const file = (res && res.ok && res.file) ? res.file : null
-        if (file) finish('/read .scratch/handoff/' + file, '已复制交接文档路径：' + file)
-        else finish(HANDOFF_READ, '未找到交接文档，已复制默认路径；可先发送 /handoff 生成')
+        if (file) finish(file, '已复制交接文档指令：' + file)
+        else finish(null, '未找到交接文档，已复制默认路径；可先发送 /handoff 生成')
       }).catch(function () {
-        finish(HANDOFF_READ, '已复制交接文档路径（查询失败兜底）')
+        finish(null, '已复制交接文档指令（查询失败兜底）')
       })
     }
 

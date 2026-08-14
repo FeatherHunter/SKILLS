@@ -6,7 +6,7 @@
 > + GitHub issue 动作注入（诊断 / 修复 / 讨论 / 执行，均带 `/wayfinder` `/triage` 技能命令）
 > + 交接开新会话。
 
-- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.1.0）
+- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.2.0 · v25 配置页 + 模板编辑器 + 中英双语 + PiP）
 - **动态版 pluginId**: `wfst-1`（v9–v24 迭代产物）
 - **平台**: Client（浏览器页面）+ Host（Node 进程，gh CLI 数据层）
 - **配套**: [mattpocock/skills](https://github.com/mattpocock/skills)（wayfinder / triage / grilling / handoff / ask-matt 等）

@@ -29,14 +29,28 @@
 
 ### 方式一：正式安装（推荐 · npm 一条命令 · 装进整个 Harness · 开机自启）
 
-**这条命令把插件装进 DeepSeek Harness 本体（所有会话、所有工作目录生效），并自动注册**：
+**这条命令把插件装进 DeepSeek Harness 本体（所有会话、所有工作目录生效），并自动注册**。
+三种平台写法任选（`~/.dsh` = DSH 的家；`DSH_HOME` 自定义过就换成它的路径）：
+
+**Windows · PowerShell**
 
 ```powershell
-cd "$env:USERPROFILE\.dsh\profiles"
-npm install dsh-waystation --registry=https://registry.npmjs.org
+npm install --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org
 ```
 
-（不想 cd 的等价写法：`npm install --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org`）
+**Windows · cmd**（注意：cmd 用 `%USERPROFILE%`，`$env:` 是 PowerShell 语法，cmd 里不展开）
+
+```cmd
+npm install --prefix "%USERPROFILE%\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org
+```
+
+**Linux / macOS**
+
+```bash
+npm install --prefix "$HOME/.dsh/profiles" dsh-waystation --registry=https://registry.npmjs.org
+```
+
+> 三种写法等价（`--prefix` 直接指定 Harness 插件目录，免 cd）；postinstall 跨平台自动注册。
 
 **装到哪、为什么是这里**：
 
@@ -57,18 +71,16 @@ C:\Users\<你>\.dsh\            ← DeepSeek Harness 的「家」（DSH_HOME）�
   自动追加（幂等：重复安装/升级不叠加；非 DSH 环境自动跳过，不打扰普通项目）。
 - 然后**刷新浏览器页面**（http://127.0.0.1:3080）即生效，之后每次 DSH 启动自动加载。
 
-**升级**：
+**升级**（同上，把 `install` 换 `update`；`~/.dsh/profiles` 的写法按平台变量替换）：
 
 ```powershell
-cd "$env:USERPROFILE\.dsh\profiles"
-npm update dsh-waystation --registry=https://registry.npmjs.org
+npm update --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation --registry=https://registry.npmjs.org
 ```
 
 **卸载**：
 
 ```powershell
-cd "$env:USERPROFILE\.dsh\profiles"
-npm uninstall dsh-waystation
+npm uninstall --prefix "$env:USERPROFILE\.dsh\profiles" dsh-waystation
 # 并手动删除 cordis.patch.yml 里的 dsh-waystation insert 块（或保留，DSH 找不到包会忽略）
 ```
 

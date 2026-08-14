@@ -25,6 +25,7 @@
 const { app, BrowserWindow, ipcMain, shell, nativeTheme } = require('electron');
 const { spawn, spawnSync } = require('child_process');
 const http = require('http');
+const https = require('https');
 const net = require('net');
 const path = require('path');
 const fs = require('fs');
@@ -34,6 +35,16 @@ const DEFAULT_PORT = 3080;
 const START_TIMEOUT_MS = 10 * 60 * 1000; // 首次安装/启动 DSH 包（数百 MB），放宽到 10 分钟
 const POLL_INTERVAL_MS = 600;
 const TITLEBAR_H = 40; // 顶部标题栏带高度：页面内容下移量 = WCO 按钮悬浮区高度
+
+// 安装镜像候选：官方源 + 国内镜像（首次安装自动测速选快，避免「下载很久像卡死」）
+const REGISTRIES = [
+  { name: '官方源', url: 'https://registry.npmjs.org' },
+  { name: '国内镜像 npmmirror', url: 'https://registry.npmmirror.com' },
+];
+const PING_TIMEOUT_MS = 5000;       // 每个源的测速超时
+const PROGRESS_INTERVAL_MS = 1500;  // 安装进度轮询间隔
+const STALL_SECONDS = 90;           // 连续多久无字节增长判定「下载停滞」，提示用户可换镜像
+const ESTIMATED_DOWNLOAD_MB = 600;  // 进度条估算总量（DSH 全依赖树约几百 MB，仅用于百分比显示）
 
 const PORT = Number(process.env.DSH_DESKTOP_PORT || DEFAULT_PORT);
 const TARGET_URL = `http://127.0.0.1:${PORT}`;
@@ -115,6 +126,7 @@ function makeShortcut() {
 let child = null;        // DSH 子进程
 let installProc = null;  // npm install 子进程（同样纳入「关窗即杀」）
 let runtimeBusy = false; // npm 安装进行中（防重入）
+let copyStartTs = 0;     // 复用复制开始时间戳（进度显示用）
 let startedByUs = false; // 本次是否由我们拉起（决定退出时杀不杀）
 let quitting = false;
 let aborting = false;    // 主动清理中（restart/quit）：忽略子进程退出回调，防错误页闪现
@@ -262,8 +274,129 @@ function waitForServer(deadline, onReady, onTimeout) {
   tick();
 }
 
+// ---------- 安装辅助：测速 / 进度 / 复用检测 ----------
+
+// 探测一个 npm 镜像源的可达性与延迟（返回 ms；不可达返回 -1）
+function pingRegistry(url) {
+  return new Promise((resolve) => {
+    const start = Date.now();
+    const mod = url.startsWith('https:') ? require('https') : http;
+    const req = mod.get(url + '/-/ping', { timeout: PING_TIMEOUT_MS }, (res) => {
+      res.resume();
+      resolve(res.statusCode >= 200 && res.statusCode < 500 ? Date.now() - start : -1);
+    });
+    req.on('timeout', () => { req.destroy(); resolve(-1); });
+    req.on('error', () => resolve(-1));
+  });
+}
+
+// 挑选安装源：环境变量指定 > 并发测速选快 > 默认官方源
+async function pickRegistry() {
+  const forced = process.env.DSH_DESKTOP_REGISTRY;
+  if (forced) return { name: '环境变量指定', url: forced };
+  const results = await Promise.all(REGISTRIES.map(async (r) => ({ ...r, ms: await pingRegistry(r.url) })));
+  const reachable = results.filter((r) => r.ms >= 0);
+  if (reachable.length === 0) {
+    log('runtime: 所有源测速均不可达，退回官方源');
+    return REGISTRIES[0];
+  }
+  reachable.sort((a, b) => a.ms - b.ms);
+  log('runtime: 测速 ' + reachable.map((r) => `${r.name}=${r.ms}ms`).join('，') + ' → 选用 ' + reachable[0].name);
+  return reachable[0];
+}
+
+// 真实进度：统计 runtime 下已落地的包数（node_modules 顶层 + @scope 子包）与总字节数
+function runtimeProgress() {
+  let packages = 0, bytes = 0;
+  const nm = path.join(RUNTIME_DIR, 'node_modules');
+  try {
+    for (const e of fs.readdirSync(nm, { withFileTypes: true })) {
+      const p = path.join(nm, e.name);
+      if (e.isDirectory()) {
+        if (e.name.startsWith('@')) {
+          let sub = 0;
+          for (const s of fs.readdirSync(p, { withFileTypes: true })) if (s.isDirectory()) sub++;
+          packages += Math.max(sub, 1);
+        } else packages += 1;
+        bytes += dirSize(p);
+      } else if (e.name === '.package-lock.json') {
+        try { bytes += fs.statSync(p).size; } catch { /* 忽略 */ }
+      }
+    }
+  } catch { /* 安装中目录可能还不存在 */ }
+  return { packages, bytes };
+}
+
+function dirSize(dir) {
+  let total = 0;
+  try {
+    for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+      const p = path.join(dir, e.name);
+      if (e.isDirectory()) total += dirSize(p);
+      else {
+        try { total += fs.statSync(p).size; } catch { /* 忽略 */ }
+      }
+    }
+  } catch { /* 忽略 */ }
+  return total;
+}
+
+// 复用检测：本机 npm 缓存（_npx）里已有 DSH 就直接复制，跳过联网下载（老用户/开发者秒开）
+function tryReuseNpxCache() {
+  const npxRoot = process.env.LOCALAPPDATA
+    ? path.join(process.env.LOCALAPPDATA, 'npm-cache', '_npx')
+    : null;
+  if (!npxRoot || !fs.existsSync(npxRoot)) return null;
+  try {
+    for (const entry of fs.readdirSync(npxRoot, { withFileTypes: true })) {
+      if (!entry.isDirectory()) continue;
+      const cand = path.join(npxRoot, entry.name, 'node_modules', '@deepseek-ai', 'dsh', 'lib', 'bin.js');
+      if (fs.existsSync(cand)) return path.join(npxRoot, entry.name, 'node_modules');
+    }
+  } catch { /* 忽略 */ }
+  return null;
+}
+
+// 异步复制目录（分片 + setImmediate 让出事件循环，主进程不阻塞、UI 能持续刷新进度）
+function copyDirAsync(src, dst, onProgress) {
+  return new Promise((resolve, reject) => {
+    const items = [];
+    const walk = (dir) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const s = path.join(dir, e.name);
+        const d = path.join(dst, path.relative(src, s));
+        if (e.isDirectory()) { items.push({ s, d, dir: true }); walk(s); }
+        else items.push({ s, d, dir: false });
+      }
+    };
+    try { walk(src); } catch (err) { reject(err); return; }
+    const total = items.length;
+    let done = 0;
+    const queue = items.slice();
+    const step = () => {
+      try {
+        const batch = queue.splice(0, 200);
+        for (const it of batch) {
+          if (it.dir) fs.mkdirSync(it.d, { recursive: true });
+          else {
+            fs.mkdirSync(path.dirname(it.d), { recursive: true });
+            fs.copyFileSync(it.s, it.d);
+          }
+          done++;
+        }
+        onProgress(done, total);
+        if (queue.length > 0) setImmediate(step);
+        else resolve();
+      } catch (err) { reject(err); }
+    };
+    step();
+  });
+}
+
 // 确保 DSH 运行时已安装（内置 npm 自动安装，首次联网下载，之后离线可用）
-function ensureRuntime(onDone) {
+// 顺序：已有 DSH_BIN → 直接可用；本机 npx 缓存有 DSH → 复制复用（免联网）；
+//      否则 npm install（自动测速选源 + 真实进度 + 停滞检测）。
+function ensureRuntime(onDone, opts = {}) {
   if (runtimeBusy) {
     log('runtime: 已有安装进行中，忽略重复请求');
     return;
@@ -277,44 +410,125 @@ function ensureRuntime(onDone) {
     sendStatus('error', '应用组件缺失（内置 npm 未找到），请重新下载完整版应用。', tailLog(10));
     return onDone(false);
   }
-  const registry = process.env.DSH_DESKTOP_REGISTRY || 'https://registry.npmjs.org';
-  log('runtime: 开始安装 DSH（npm install @deepseek-ai/dsh → ' + RUNTIME_DIR + '）');
-  sendStatus('installing', '首次使用：正在下载并安装 DSH 运行时…\n需要联网，大包下载约几分钟；装好后即可离线使用。');
-  runtimeBusy = true;
-  installProc = spawn(process.execPath, [
-    NPM_CLI, 'install', '--prefix', RUNTIME_DIR, '--no-audit', '--no-fund',
-    '--loglevel', 'error', '--registry', registry, '@deepseek-ai/dsh',
-  ], {
-    windowsHide: true,
-    detached: process.platform !== 'win32',
-    stdio: ['ignore', 'pipe', 'pipe'],
-    env: NODE_ENV,
-  });
-  installProc.stdout.on('data', (d) => log('[npm] ' + String(d).trim()));
-  installProc.stderr.on('data', (d) => log('[npm] ' + String(d).trim()));
-  let ticks = 0;
-  const progress = setInterval(() => {
-    ticks += 1;
-    sendStatus('installing', `正在下载并安装 DSH 运行时…（已进行 ${ticks * 3}s，首次大包下载需要几分钟）`, tailLog(4));
-  }, 3000);
-  const settled = (ok) => {
-    clearInterval(progress);
-    runtimeBusy = false;
-    installProc = null;
-    onDone(ok);
+
+  // ① 复用检测：npx 缓存有现成 DSH → 直接复制（秒级，免几百 MB 下载）
+  if (!opts.skipReuse && process.env.DSH_DESKTOP_REINSTALL !== '1') {
+    const src = tryReuseNpxCache();
+    if (src) {
+      log('runtime: 发现 npm 缓存中的 DSH，复制复用（免联网下载）← ' + src);
+      sendStatus('installing', '发现本机已有 DSH，正在复制（免联网下载）…', tailLog(4));
+      runtimeBusy = true;
+      copyStartTs = Date.now();
+      const dst = path.join(RUNTIME_DIR, 'node_modules');
+      copyDirAsync(src, dst, (done, total) => {
+        const secs = Math.round((Date.now() - copyStartTs) / 1000);
+        const { packages, bytes } = runtimeProgress();
+        sendStatus('installing',
+          `正在复制本机已有的 DSH（${done}/${total} 项，已 ${secs}s）…\n比联网下载快得多，马上就好。`,
+          tailLog(4), { progress: { packages, bytes, secs, total, done } });
+      }).then(() => {
+        runtimeBusy = false;
+        log('runtime: 复用复制完成，DSH_BIN=' + DSH_BIN + ' exists=' + fs.existsSync(DSH_BIN));
+        onDone(fs.existsSync(DSH_BIN));
+      }).catch((err) => {
+        runtimeBusy = false;
+        log('runtime: 复用复制失败（' + err.message + '），回退联网安装');
+        ensureRuntime(onDone, { ...opts, skipReuse: true });
+      });
+      return;
+    }
+  }
+
+  // ② 联网安装：先测速选源，再 npm install（真实进度 + 停滞检测）
+  const doInstall = (registry) => {
+    const installStartedAt = Date.now();
+    log('runtime: 开始安装 DSH（npm install @deepseek-ai/dsh → ' + RUNTIME_DIR + '，源=' + registry.name + '）');
+    sendStatus('installing',
+      `首次使用：正在下载并安装 DSH 运行时…\n当前源：${registry.name}（自动测速选择，装好后即可离线使用）`,
+      tailLog(4));
+    runtimeBusy = true;
+    installProc = spawn(process.execPath, [
+      NPM_CLI, 'install', '--prefix', RUNTIME_DIR, '--no-audit', '--no-fund',
+      '--loglevel', 'error', '--registry', registry.url, '@deepseek-ai/dsh',
+    ], {
+      windowsHide: true,
+      detached: process.platform !== 'win32',
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: NODE_ENV,
+    });
+    installProc.stdout.on('data', (d) => log('[npm] ' + String(d).trim()));
+    installProc.stderr.on('data', (d) => log('[npm] ' + String(d).trim()));
+    let lastBytes = -1;
+    let stallSince = null;
+    let stalled = false;
+    const progress = setInterval(() => {
+      const { packages, bytes } = runtimeProgress();
+      const secs = Math.round((Date.now() - installStartedAt) / 1000);
+      // 停滞检测：字节数长时间不增长 → 提示换镜像
+      if (bytes === lastBytes) {
+        if (stallSince === null) stallSince = Date.now();
+        else if (!stalled && Date.now() - stallSince > STALL_SECONDS * 1000) {
+          stalled = true;
+          log('runtime: 检测到下载停滞 ' + STALL_SECONDS + 's（源 ' + registry.name + '），提示用户换镜像');
+          sendStatus('installing',
+            `下载似乎停滞了 ${STALL_SECONDS}s（可能是网络原因）。\n可以点下方「切换镜像重试」，或再等等看。`,
+            tailLog(4), { stalled: true, registry: registry.name });
+          return;
+        }
+      } else { stallSince = null; stalled = false; }
+      lastBytes = bytes;
+      const pct = Math.min(100, Math.round(bytes / 1048576 / ESTIMATED_DOWNLOAD_MB * 100));
+      sendStatus('installing',
+        `正在下载并安装 DSH 运行时…（已进行 ${secs}s，首次大包下载需要几分钟）\n当前源：${registry.name} · 已下载约 ${(bytes / 1048576).toFixed(0)} MB（${packages} 个包，约 ${pct}%）`,
+        tailLog(4), { progress: { packages, bytes, secs }, registry: registry.name });
+    }, PROGRESS_INTERVAL_MS);
+    const settled = (ok) => {
+      clearInterval(progress);
+      runtimeBusy = false;
+      installProc = null;
+      onDone(ok);
+    };
+    installProc.on('error', (err) => {
+      log('npm 启动失败: ' + err.message);
+      settled(false);
+    });
+    installProc.on('exit', (code) => {
+      const ok = code === 0 && fs.existsSync(DSH_BIN);
+      log('npm install 结束 code=' + code + ' ok=' + ok);
+      settled(ok);
+    });
   };
-  installProc.on('error', (err) => {
-    log('npm 启动失败: ' + err.message);
-    settled(false);
-  });
-  installProc.on('exit', (code) => {
-    const ok = code === 0 && fs.existsSync(DSH_BIN);
-    log('npm install 结束 code=' + code + ' ok=' + ok);
-    settled(ok);
-  });
+
+  const run = async () => {
+    let registry;
+    try {
+      registry = opts.registry || (await pickRegistry());
+    } catch (err) {
+      log('runtime: 测速失败，退回官方源：' + err.message);
+      registry = REGISTRIES[0];
+    }
+    doInstall(registry);
+  };
+  run();
 }
 
 // ---------- 启动流程 ----------
+// 拉起 DSH 服务并等待就绪（startup 与「切换镜像重试」共用）
+function launchDsh() {
+  startedByUs = true;
+  spawnDsh();
+  const deadline = Date.now() + START_TIMEOUT_MS;
+  sendStatus('waiting', '正在启动 DSH 服务…');
+  waitForServer(deadline, () => {
+    log('DSH 就绪: ' + TARGET_URL);
+    sendStatus('ready', 'DSH 已就绪');
+    loadTarget();
+  }, () => {
+    log('等待 DSH 就绪超时');
+    onChildGone(`启动超时：${START_TIMEOUT_MS / 60000} 分钟内 DSH 未就绪，可点「重新启动」再试`);
+  });
+}
+
 function startup() {
   checkDsh((isDsh) => {
     if (isDsh) {
@@ -334,26 +548,13 @@ function startup() {
           tailLog(10), { needPort: true });
         return;
       }
-      const launch = () => {
-        startedByUs = true;
-        spawnDsh();
-        const deadline = Date.now() + START_TIMEOUT_MS;
-        sendStatus('waiting', '正在启动 DSH 服务…');
-        waitForServer(deadline, () => {
-          log('DSH 就绪: ' + TARGET_URL);
-          sendStatus('ready', 'DSH 已就绪');
-          loadTarget();
-        }, () => {
-          log('等待 DSH 就绪超时');
-          onChildGone(`启动超时：${START_TIMEOUT_MS / 60000} 分钟内 DSH 未就绪，可点「重新启动」再试`);
-        });
-      };
+      const launch = () => launchDsh();
       if (customCommand()) {
         launch(); // 高级模式：用户自定义命令（无需内置运行时）
       } else {
         ensureRuntime((ok) => {
           if (!ok) {
-            onChildGone('DSH 运行时安装失败。\n请检查网络后点「重新启动」重试；\n国内网络可设环境变量 DSH_DESKTOP_REGISTRY=https://registry.npmmirror.com 使用镜像。');
+            onChildGone('DSH 运行时安装失败。\n请检查网络后点「重新启动」重试；\n或点下方「切换镜像重试」换国内镜像；\n也可以设环境变量 DSH_DESKTOP_REGISTRY 指定可用源。');
             return;
           }
           launch();
@@ -591,6 +792,24 @@ ipcMain.handle('dsh-desktop:restart', () => {
   killAllChildren(); // 清掉 DSH 与（若有）残留的安装进程
   showBoot('starting', '正在重新启动 DSH…');
   startup();
+});
+ipcMain.handle('dsh-desktop:retry-install', () => {
+  log('用户点击「切换镜像重试」');
+  // 停掉当前安装进程，用国内镜像（npmmirror）重装；用户也可通过 DSH_DESKTOP_REGISTRY 指定其它源
+  const mirror = REGISTRIES.find((r) => /npmmirror/i.test(r.url)) || REGISTRIES[1] || REGISTRIES[0];
+  if (installProc) {
+    try { killTree(installProc); } catch { /* 忽略 */ }
+    installProc = null;
+  }
+  runtimeBusy = false;
+  sendStatus('installing', `正在用「${mirror.name}」重新安装 DSH 运行时…`, tailLog(4));
+  ensureRuntime((ok) => {
+    if (!ok) {
+      onChildGone('镜像重装仍失败。\n请检查网络，或设置环境变量 DSH_DESKTOP_REGISTRY 指定可用源后点「重新启动」。');
+      return;
+    }
+    launchDsh();
+  }, { registry: mirror, skipReuse: true });
 });
 ipcMain.handle('dsh-desktop:quit', () => app.quit());
 

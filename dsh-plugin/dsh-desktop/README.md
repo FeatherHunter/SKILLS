@@ -81,7 +81,7 @@ npm run pack                # 快速验证：不打安装包，直接跑 win-unp
 |---|---|---|
 | `DSH_DESKTOP_PORT` | `3080` | DSH 服务端口 |
 | `DSH_DESKTOP_COMMAND` | 内置运行时 | 自定义启动命令（整行，shell 解析；设置后跳过内置运行时） |
-| `DSH_DESKTOP_REGISTRY` | `registry.npmjs.org` | 安装 DSH 时的 npm 源（国内可设 `https://registry.npmmirror.com`） |
+| `DSH_DESKTOP_REGISTRY` | 自动测速选源 | 安装 DSH 时的 npm 源；默认并发测速官方源与 npmmirror 选快者，设置后强制用它 |
 | `DSH_DESKTOP_REINSTALL=1` | 关 | 强制重装 DSH 运行时（升级用） |
 
 > 内部调试变量（`DSH_DESKTOP_SMOKE` / `DSH_DESKTOP_SHOT` / `DSH_DESKTOP_SIZE`）见 `main.js` 顶部注释。
@@ -90,7 +90,8 @@ npm run pack                # 快速验证：不打安装包，直接跑 win-unp
 
 - **双击没反应 / 提示"已保护你的电脑"？** → SmartScreen 拦截，点「更多信息 → 仍要运行」。
 - **首次启动等很久？** → 正在下载 DSH 本体（数百 MB），几分钟正常；装好后离线秒开。
-  国内网络慢可设 `DSH_DESKTOP_REGISTRY=https://registry.npmmirror.com` 后重新启动。
+  安装页会显示**真实进度**（已下载 MB / 包数 / 百分比）与当前源；若长时间无进展可点
+  「切换镜像重试」（自动换 npmmirror 重装）。本机 npm 缓存里已有 DSH 时直接复制复用，免下载。
 - **提示"端口 3080 被其他程序占用"？** → 有别的程序占了 3080，关掉它，
   或用 `DSH_DESKTOP_PORT` 换一个端口。
 - **怎么升级 DSH？** → 删除 `%APPDATA%\dsh-desktop\runtime` 目录后重新打开，
@@ -105,6 +106,9 @@ npm run pack                # 快速验证：不打安装包，直接跑 win-unp
   任何状态关窗都不留孤儿进程；只有"本次由桌面版拉起的 DSH"才会被杀，不误伤手动实例。
 - **内置运行时（零依赖）**：Electron 自带完整 Node（`ELECTRON_RUN_AS_NODE`）+ 捆绑
   npm（11MB）→ 首次运行自动安装 DSH 到 `%APPDATA%/dsh-desktop/runtime`，之后离线可用。
+- **首次安装三优先**：① 本机 npm 缓存（`%LOCALAPPDATA%/npm-cache/_npx`）已有 DSH →
+  直接复制复用（免联网下载）；② 否则并发测速官方源与 npmmirror，自动选快者下载；
+  ③ 安装页显示真实进度（字节/包数/百分比），90 秒无进展提示可「切换镜像重试」。
 - **标题栏带**：页面整体下移 40px 形成无边框标题区，窗口控制按钮悬浮其上；
   顶部事件走 DOM 层（面板/浮层拖拽不被吞），空白带手动拖拽移动窗口。
 - **日志**：`%APPDATA%/dsh-desktop/dsh.log`（Linux/macOS 为 `~/.config/dsh-desktop/dsh.log`），

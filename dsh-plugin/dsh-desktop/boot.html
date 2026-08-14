@@ -35,6 +35,11 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   h1 { font-size: 17px; color: #c084fc; margin-bottom: 8px; font-weight: 600; }
   p#msg { color: #a1a1aa; margin-bottom: 16px; white-space: pre-wrap; }
+  /* 安装进度条：真实字节/包数进度（不再是无感知的假计时） */
+  .bar-wrap { display: none; width: min(460px, 78%); margin: 0 auto 12px; height: 6px; border-radius: 3px; background: #1c1c1f; overflow: hidden; }
+  .bar { height: 100%; width: 0%; border-radius: 3px; background: #4ade80; transition: width .6s ease; }
+  body.stalled .bar { background: #f59e0b; }
+  p#meta { display: none; color: #8b8b95; font-size: 12px; margin-bottom: 14px; white-space: pre-wrap; }
   pre#log {
     display: none; text-align: left; max-height: 200px; overflow: auto;
     background: #131316; border: 1px solid #1f1f24; border-radius: 8px;
@@ -42,7 +47,8 @@
     font: 11px/1.5 Consolas, "Cascadia Mono", monospace;
     color: #8b8b95; white-space: pre-wrap; word-break: break-all;
   }
-  #actions { display: none; gap: 10px; justify-content: center; }
+  #actions { display: none; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  #actions .primary { background: #1d3a2a; border-color: #4ade80; color: #4ade80; }
   button {
     background: #19191d; color: #d4d4d4; border: 1px solid #2c2c33;
     padding: 8px 22px; border-radius: 8px; font-size: 13px; cursor: pointer;
@@ -52,6 +58,8 @@
   body.error pre#log { display: block; }
   body.error #actions { display: flex; }
   body.error p#msg { color: #f87171; }
+  body.installing .bar-wrap { display: block; }
+  body.stalled p#msg { color: #f59e0b; }
 </style>
 </head>
 <body>
@@ -68,9 +76,12 @@
     </div>
     <div class="spinner"></div>
     <h1 id="title">DSH 桌面版</h1>
+    <div class="bar-wrap"><div class="bar" id="bar"></div></div>
     <p id="msg">正在启动…</p>
+    <p id="meta"></p>
     <pre id="log"></pre>
     <div id="actions">
+      <button id="retryMirror" class="primary">切换镜像重试</button>
       <button id="restart">重新启动</button>
       <button id="quit">退出</button>
     </div>
@@ -78,21 +89,50 @@
   <script>
     var api = window.dshDesktop;
     var $ = function (id) { return document.getElementById(id); };
+    function fmtMB(b) { return (b / 1048576).toFixed(0) + ' MB'; }
     function render(s) {
       if (s.phase === 'error') {
-        document.body.classList.add('error');
+        document.body.className = 'error';
         $('title').textContent = '启动遇到问题';
         $('msg').textContent = s.message || '未知错误';
         $('log').textContent = s.log || '';
+        $('meta').style.display = 'none';
+        $('retryMirror').style.display = (s.needPort ? 'none' : 'inline-block');
       } else if (s.phase === 'ready') {
+        document.body.className = '';
         $('msg').textContent = 'DSH 已就绪，正在打开…';
+        $('meta').style.display = 'none';
+      } else if (s.phase === 'installing') {
+        document.body.className = s.stalled ? 'installing stalled' : 'installing';
+        $('title').textContent = '正在安装 DSH 运行时';
+        $('msg').textContent = s.message || '正在下载并安装 DSH 运行时…';
+        $('log').textContent = s.log || '';
+        // 真实进度：复制模式有 done/total；下载模式用字节数估百分比
+        var pct = 0;
+        if (s.progress && s.progress.total) pct = Math.round(s.progress.done / s.progress.total * 100);
+        else if (s.progress && s.progress.bytes) pct = Math.min(100, Math.round(s.progress.bytes / 1048576 / 600 * 100));
+        $('bar').style.width = Math.max(pct, 3) + '%';
+        var meta = [];
+        if (s.progress) {
+          if (s.progress.packages) meta.push(s.progress.packages + ' 个包');
+          if (s.progress.bytes) meta.push('已下载 ' + fmtMB(s.progress.bytes));
+          if (s.progress.secs) meta.push('已进行 ' + s.progress.secs + 's');
+          if (s.progress.total) meta.push(s.progress.done + '/' + s.progress.total + ' 项');
+        }
+        if (s.registry) meta.push('当前源：' + s.registry);
+        $('meta').textContent = meta.join(' · ');
+        $('meta').style.display = 'block';
+        $('retryMirror').style.display = s.stalled ? 'inline-block' : 'none';
       } else {
+        document.body.className = '';
         $('msg').textContent = s.message || '正在启动…';
+        $('meta').style.display = 'none';
       }
     }
     api.getStatus().then(render).catch(function () {});
     api.onStatus(render);
     $('restart').addEventListener('click', function () { api.restart(); });
+    $('retryMirror').addEventListener('click', function () { api.retryInstall(); });
     $('quit').addEventListener('click', function () { api.quit(); });
     // 自绘窗口控制按钮
     $('wcMin').addEventListener('click', function () { api.minimize(); });

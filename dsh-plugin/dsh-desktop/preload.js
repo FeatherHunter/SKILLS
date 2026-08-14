@@ -7,6 +7,7 @@ contextBridge.exposeInMainWorld('dshDesktop', {
   getStatus: () => ipcRenderer.invoke('dsh-desktop:status'),
   onStatus: (cb) => ipcRenderer.on('dsh-desktop:status', (_event, status) => cb(status)),
   restart: () => ipcRenderer.invoke('dsh-desktop:restart'),
+  retryInstall: () => ipcRenderer.invoke('dsh-desktop:retry-install'),
   quit: () => ipcRenderer.invoke('dsh-desktop:quit'),
   // 手动窗口拖拽 + 窗口控制（页面注入的标题栏带/自绘按钮使用；send 通道低延迟）
   dragStart: () => ipcRenderer.send('dsh-desktop:drag-start'),

@@ -1788,6 +1788,11 @@ return {
           s.tab === 'skills' ? h(SkillsTab, { st: s }) : null,
           s.tab === 'checks' ? h(ChecksTab, { st: s }) : null,
         ]),
+        // v26：刷新遮罩（与悬浮面板同款；期间禁点）
+        s.refreshing ? h('div', { className: 'dsws-shade' }, [
+          h('div', { className: 'dsws-spinner' }),
+          h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, tr('panel.refreshing')),
+        ]) : null,
         s.notice ? h('div', { className: 'dsws-note', style: { display: 'flex', alignItems: 'center', gap: 6 } }, [
           Ic({ n: noticeIcon(s.notice.kind), size: 13, color: NOTICE_COLOR[s.notice.kind] || '#4ade80' }),
           h('span', null, s.notice.text),

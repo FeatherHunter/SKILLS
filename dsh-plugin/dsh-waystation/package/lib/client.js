@@ -1094,12 +1094,30 @@ window.__ModuleLoader__.load({
       // #372：Document PiP 独立小窗（主面板脱离网页；状态栏胶囊保留页内）
       //   能力判定：documentPictureInPicture + ReactDOM（动态 runner 只注入 React，无 ReactDOM → 自动降级页内面板；
       //   npm bundle 经 require('react-dom') 获得，完整支持）。PiP 窗口与主页面同源共享 JS 上下文（store/回调/配置全沿用）。
+      // #372 修复（2026-08-14 桌面卡死事故）：Electron 的 Chromium 暴露 documentPictureInPicture 对象但无法真正创建
+      //   PiP 窗口（requestWindow 拒绝/挂起）——原 .catch 递归 openPanel 会无限循环卡死。修复：
+      //   ① Electron 直接跳过 PiP（页内面板即桌面预期形态）；② 失败一次即 pipFailed 本会话禁用（一次性失败锁）；
+      //   ③ 非递归降级 openPagePanel；④ requestWindow 超时保护（3.5s 未决视为失败）；⑤ 同步异常 try/catch。
       let pipWin = null          // 当前 PiP 窗口（复用/聚焦）
       let pipRoot = null         // PiP 文档内 React 根
+      let pipFailed = false      // PiP 失败锁（本会话内禁用以防递归死循环）
       let lastOverlayProps = null // 最近一次 OverlayPanel 渲染的 props（PiP 重建用；含 useSessions 等 slot 标准座）
       const RD = (typeof ReactDOM !== 'undefined') ? ReactDOM : (typeof window !== 'undefined' ? window.ReactDOM : undefined)
       const pipSupported = function () {
-        return typeof window !== 'undefined' && !!window.documentPictureInPicture && RD !== undefined && typeof RD.createRoot === 'function'
+        if (pipFailed) return false
+        if (typeof window === 'undefined' || !window.documentPictureInPicture || RD === undefined || typeof RD.createRoot !== 'function') return false
+        try { if (/Electron\//i.test(navigator.userAgent)) return false } catch (e) { /* UA 不可读不阻断 */ }
+        return true
+      }
+      const openPagePanel = function (st) {
+        st.open = true
+        if (st.snapMode !== 'real' || !snapFresh(st)) {
+          st.snapMode = 'loading'
+          emit(st)
+          loadSnapshot(st, true)
+        } else {
+          emit(st)
+        }
       }
       const openPipWindow = function (st) {
         if (pipWin && !pipWin.closed) { pipWin.focus(); return }
@@ -1107,11 +1125,38 @@ window.__ModuleLoader__.load({
         st.snapMode = 'loading'
         emit(st)
         loadSnapshot(st, true)
+        // 失败处理：一次性失败锁 + 非递归降级页内面板（绝不回绕 openPanel）
+        const failPip = function () {
+          pipFailed = true
+          pipWin = null
+          st.pipMode = false
+          emit(st)
+          openPagePanel(st)
+        }
         const iw = window.innerWidth || 1000, ih = window.innerHeight || 800
-        documentPictureInPicture.requestWindow({
-          width: Math.round(Math.max(400, Math.min(760, iw - 80))),
-          height: Math.round(Math.max(360, Math.min(860, ih - 120))),
-        }).then(function (win) {
+        let req = null
+        try {
+          req = window.documentPictureInPicture.requestWindow({
+            width: Math.round(Math.max(400, Math.min(760, iw - 80))),
+            height: Math.round(Math.max(360, Math.min(860, ih - 120))),
+          })
+        } catch (err) { failPip(); return }
+        // 超时保护：部分环境 requestWindow 永不 resolve/reject（挂起）→ 3.5s 视为失败（settled 防双重处理）
+        let settled = false
+        const armGuard = function () {
+          const fn = function () {
+            if (settled) return
+            settled = true
+            try { if (pipRoot) { pipRoot.unmount(); pipRoot = null } } catch (e) { /* 忽略 */ }
+            failPip()
+          }
+          if (timer !== undefined && typeof timer.timeout === 'function') timer.timeout(fn, 3500)
+          else setTimeout(fn, 3500)
+        }
+        armGuard()
+        req.then(function (win) {
+          if (settled) { try { win.close() } catch (e) { /* 已被超时接管 */ } return }
+          settled = true
           pipWin = win
           // 样式随搬移：复制主文档全部 <style> + <link rel=stylesheet>（面板依赖的注入样式与主题变量）
           const els = document.querySelectorAll('style, link[rel="stylesheet"]')
@@ -1138,22 +1183,16 @@ window.__ModuleLoader__.load({
             st.open = false; st.pipMode = false; emit(st)
           })
         }).catch(function () {
-          // 用户取消 / API 不可用 → 降级页内悬浮面板（同一打开动作内回退）
-          pipWin = null
-          st.open = false; st.pipMode = false; emit(st)
-          openPanel(st)
+          // 用户取消 / API 不可用 → 一次性失败锁 + 非递归降级页内面板（修复：原递归 openPanel 在
+          // requestWindow 反复拒绝时无限循环卡死 —— 桌面 Electron 实测事故）
+          if (settled) return
+          settled = true
+          failPip()
         })
       }
       const openPanel = function (st) {
         if (pipSupported()) { openPipWindow(st); return }
-        st.open = true
-        if (st.snapMode !== 'real' || !snapFresh(st)) {
-          st.snapMode = 'loading'
-          emit(st)
-          loadSnapshot(st, true)
-        } else {
-          emit(st)
-        }
+        openPagePanel(st)
       }
       const togglePanel = function (st) {
         if (st.open) { st.open = false; emit(st); return }

@@ -2,6 +2,17 @@
 
 > Base Skill 公共组件版本变更记录。**签名变更 = 破坏性变更**（必须全技能同步 + 一次性完成 + 本文件记录）;非破坏性变更（内部实现/样式细节）可独立发布。任何变更先开公共层 ISSUE（总纲 09 §92）。
 
+## v1.25（2026-08-14 · 新增 charts.scatter 散点图 · #337）
+
+**新增接口 `charts.scatter(el, items[, opt])`**（非破坏性 · 新增接口 · 既有接口零变更）。
+
+- **items: `[{x, y, label?}]`** 双数值坐标——非法 x/y 直接报错、空数组 → emptyState（对齐其他接口结构校验语义）; 双变量相关散点（combined_analysis 文字行降级）恢复
+- **回归线（线性最小二乘）**: n≥2 时渲染（`regression: false` 关闭; `regressionColor` 缺省 #ff3b30 虚线）——回归方程 + r 值文字行可回切图形
+- **Y 轴刻度复用 line 的 yTicks 机制**（不重复实现）: 数字 2-6 / false 关闭; **scatter 缺省 4 条**——读轴是散点核心用途（与 line 默认关闭不同, 契约注明）
+- **X 轴标签**: `labels: 'edge'`（缺省, 首尾）/ `'all'` / `'none'`; `format` 同其他接口（刻度/tooltip 同一格式化器）; tooltip 最近点命中（label + x · y）
+- **动画**: 点淡入（交错 0.02s）; 坐标唯一性同 line（容器零 padding, viewBox 留白）; 双端自适应沿用 line 语义（≤720px 点 8px）
+- 契约 §6.5 scatter 条目 + §0 版本记录 + CHANGELOG 同步; 守卫测试 +6 → 全量全绿
+
 ## v1.24（2026-08-14 · charts.bar 分组双柱 grouped · #339）
 
 **charts.bar 新增可选参数 `grouped`**（非破坏性 · 新可选参数 · 签名零变更 · #336 原生阻塞解除）。

@@ -1964,6 +1964,104 @@ def test_bar_grouped_default_byte_identical(chart_page):
     assert html1 == html2
 
 
+# ── scatter: 散点图（v1.25 · #337）────────────────
+
+def test_scatter_renders_dots(chart_page):
+    """scatter: 散点元素数 = items 数; 非法 x/y 报错; 空数组 → emptyState"""
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2,label:'a'},{x:2,y:4,label:'b'},{x:3,y:6,label:'c'}],
+        {animation:false});
+    """)
+    dots = chart_page.evaluate("document.querySelectorAll('.hm-c-sdot').length")
+    assert dots == 3
+    err = chart_page.evaluate("""() => { try { window.charts.scatter(document.getElementById('root'), [{x:1,y:'x'}]); return ''; } catch(e) { return e.message; } }""")
+    assert 'x/y 无效' in err
+    chart_page.evaluate("window.charts.scatter(document.getElementById('root'), [])")
+    # base.js 可能被前置 standalone 测试移除 → 接受 emptyState 或内联兜底两种空态
+    text = chart_page.evaluate("document.querySelector('.hm-empty-text')?.textContent || document.querySelector('.hm-c-empty')?.textContent")
+    assert '暂无数据' in text  # emptyState 或内联兜底两种空态
+
+
+def test_scatter_regression_line(chart_page):
+    """回归线: 缺省渲染（n≥2）; regression:false 关闭"""
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2},{x:2,y:4},{x:3,y:6}], {animation:false});
+    """)
+    n1 = chart_page.evaluate("document.querySelectorAll('.hm-c-sreg').length")
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2},{x:2,y:4},{x:3,y:6}], {animation:false, regression:false});
+    """)
+    n2 = chart_page.evaluate("document.querySelectorAll('.hm-c-sreg').length")
+    assert n1 == 1 and n2 == 0
+
+
+def test_scatter_regression_direction(chart_page):
+    """正相关数据: 回归线斜率 > 0（像素 y2 < y1, Y 轴向下）; 负相关 → y2 > y1"""
+    pos = chart_page.evaluate("""() => {
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:1},{x:2,y:2},{x:3,y:3},{x:4,y:4}], {animation:false});
+      const l = document.querySelector('.hm-c-sreg');
+      return Number(l.getAttribute('y1')) - Number(l.getAttribute('y2'));
+    }""")
+    neg = chart_page.evaluate("""() => {
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:4},{x:2,y:3},{x:3,y:2},{x:4,y:1}], {animation:false});
+      const l = document.querySelector('.hm-c-sreg');
+      return Number(l.getAttribute('y1')) - Number(l.getAttribute('y2'));
+    }""")
+    assert pos > 0 and neg < 0
+
+
+def test_scatter_yticks_default_four(chart_page):
+    """yTicks 缺省 4 条刻度（scatter 默认显示, 与 line 不同）; yTicks:false 关闭"""
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2},{x:2,y:4},{x:3,y:6}], {animation:false});
+    """)
+    n1 = chart_page.evaluate("document.querySelectorAll('.hm-c-yt').length")
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2},{x:2,y:4},{x:3,y:6}], {animation:false, yTicks:false});
+    """)
+    n2 = chart_page.evaluate("document.querySelectorAll('.hm-c-yt').length")
+    assert n1 == 4 and n2 == 0
+
+
+def test_scatter_xlabels_edge(chart_page):
+    """labels edge 默认: 首尾 X 标签; labels:'all' 全量"""
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2,label:'一月'},{x:2,y:4,label:'二月'},{x:3,y:6,label:'三月'}], {animation:false});
+    """)
+    xs1 = chart_page.evaluate("document.querySelector('.hm-c-line-x')?.textContent")
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2,label:'一月'},{x:2,y:4,label:'二月'},{x:3,y:6,label:'三月'}], {animation:false, labels:'all'});
+    """)
+    xs2 = chart_page.evaluate("document.querySelector('.hm-c-line-x')?.textContent")
+    assert xs1 == '一月三月' and xs2 == '一月二月三月'
+
+
+def test_scatter_mobile_no_overflow(chart_page):
+    """手机视口（375）: 散点全部落在容器内（0 溢出）"""
+    chart_page.set_viewport_size({'width': 375, 'height': 700})
+    chart_page.evaluate("""
+      window.charts.scatter(document.getElementById('root'),
+        [{x:1,y:2},{x:2,y:4},{x:3,y:6},{x:4,y:8}], {animation:false});
+    """)
+    over = chart_page.evaluate("""() => {
+      const box = document.querySelector('.hm-c-line-wrap').getBoundingClientRect();
+      return [...document.querySelectorAll('.hm-c-sdot')].some(d => {
+        const r = d.getBoundingClientRect();
+        return r.left < box.left || r.right > box.right || r.top < box.top || r.bottom > box.bottom;
+      });
+    }""")
+    assert not over
+
+
 # ── bar: 参数对齐 ───────────────────────────────────────
 
 def test_bar_format_and_single_color(chart_page):

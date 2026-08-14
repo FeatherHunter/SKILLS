@@ -1,6 +1,6 @@
-/* Base Skill 图表组件 v1.24（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.25（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
- * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge
+ * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge / scatter（v1.25 · #337）
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
  * 约束: 纯 CSS+SVG 无外部依赖 · 双端自适应（≤720px 手机独立 UI）· token A 组语义色
  *       · 坐标唯一性（容器零 padding, 留白进 viewBox, 数据点 overlay 与线同基准）
@@ -827,6 +827,95 @@ window.charts={
     if(opt.animation){
       var ap=el.querySelector('.hm-c-gauge path:last-child');
       if(ap){var len=ap.getTotalLength?ap.getTotalLength():500;ap.style.strokeDasharray=len;ap.style.strokeDashoffset=len;requestAnimationFrame(function(){requestAnimationFrame(function(){ap.style.transition='stroke-dashoffset 1s cubic-bezier(.22,1,.36,1)';ap.style.strokeDashoffset=String(len*(1-pct/100));});});}
+    }
+  },
+
+  /* ═══ 散点图: charts.scatter(el, items[, opt]) ═══
+   * items:[{x, y, label?}] 双数值坐标 · opt: {color, dotSize, format, regression(默认true, 线性最小二乘),
+   *   regressionColor, yTicks(默认4, 复用 line 轴刻度逻辑), labels(edge默认|all|none), tooltip, animation, height}
+   * 空态/结构校验对齐其他接口: 非法 x/y 直接报错, 空数组 → emptyState; 双端自适应沿用 line 语义 */
+  scatter:function(el,items,opt){
+    if(!el)return;
+    if(!Array.isArray(items))throw new Error('charts.scatter: items 必须是数组, 收到 '+(items===null?'null':typeof items));
+    items.forEach(function(it,i){
+      if(!it||typeof it!=='object')throw new Error('charts.scatter: items['+i+'] 必须是对象');
+      if(!_isNum(it.x)||!_isNum(it.y))throw new Error('charts.scatter: items['+i+'].x/y 无效（缺省/非数字）: '+JSON.stringify({x:it.x,y:it.y}));
+    });
+    if(!items.length){_empty(el);return;}
+    opt=_merge({color:'var(--blue,#007aff)',dotSize:null,format:null,regression:true,regressionColor:'#ff3b30',
+      yTicks:4,labels:'edge',tooltip:false,animation:true,height:null},opt);
+    var xs=items.map(function(it){return _num(it.x);}),ys=items.map(function(it){return _num(it.y);});
+    var xMin=Math.min.apply(null,xs),xMax=Math.max.apply(null,xs),yMin=Math.min.apply(null,ys),yMax=Math.max.apply(null,ys);
+    if(xMax===xMin)xMax=xMin+1;if(yMax===yMin)yMax=yMin+1;
+    var xr=(xMax-xMin)*0.06,yr=(yMax-yMin)*0.06;
+    xMin-=xr;xMax+=xr;yMin-=yr;yMax+=yr;
+    var X=function(v){return _P+(_W-2*_P)*(v-xMin)/(xMax-xMin);};
+    var Y=function(v){return _H-_P-(v-yMin)/(yMax-yMin)*(_H-2*_P);};
+    var dots='',pts=[];
+    items.forEach(function(it,i){
+      var px=X(_num(it.x)),py=Y(_num(it.y));
+      pts.push([px,py,it]);
+      var lx=(px/_W*100).toFixed(2),ty=(py/_H*100).toFixed(2);
+      dots+='<i class="hm-c-dot hm-c-sdot" data-i="'+i+'" style="left:'+lx+'%;top:'+ty+'%;border-color:'+opt.color+'" title="'+_esc(it.label||(it.x+', '+it.y))+'"></i>';
+    });
+    /* 回归线（线性最小二乘 y = a + bx; regression:false 关闭） */
+    var regHtml='';
+    if(opt.regression!==false&&items.length>=2){
+      var n=items.length,sx=0,sy=0,sxx=0,sxy=0;
+      items.forEach(function(it){var x=_num(it.x),y=_num(it.y);sx+=x;sy+=y;sxx+=x*x;sxy+=x*y;});
+      var denom=n*sxx-sx*sx;
+      var b=denom?(n*sxy-sx*sy)/denom:0;
+      var a=(sy-b*sx)/n;
+      var rx1=X(xMin),ry1=Y(a+b*xMin),rx2=X(xMax),ry2=Y(a+b*xMax);
+      regHtml='<line class="hm-c-sreg" x1="'+rx1.toFixed(1)+'" y1="'+ry1.toFixed(1)+'" x2="'+rx2.toFixed(1)+'" y2="'+ry2.toFixed(1)+'" stroke="'+opt.regressionColor+'" stroke-width="1.5" stroke-dasharray="5 4"/>';
+    }
+    /* Y 轴刻度（复用 line 的 yTicks 机制, v1.15 #333 逻辑; scatter 默认 4 条——读轴是散点核心用途, 与 line 默认关闭不同已在契约注明） */
+    var tickLines='',tickLabels='';
+    var yTickN=(typeof opt.yTicks==='number'&&isFinite(opt.yTicks))?Math.max(2,Math.min(6,Math.round(opt.yTicks))):0;
+    if(yTickN){
+      for(var ti=0;ti<yTickN;ti++){
+        var tv=yMin+(yMax-yMin)*ti/(yTickN-1);
+        var ty=Y(tv);
+        tickLines+='<line class="hm-c-yt-l" x1="'+_P+'" y1="'+ty.toFixed(1)+'" x2="'+(_P+5)+'" y2="'+ty.toFixed(1)+'" stroke="#d2d2d7" stroke-width="1"/>';
+        tickLabels+='<i class="hm-c-yt" style="top:'+(ty/_H*100).toFixed(2)+'%">'+_esc(_fmt(Math.round(tv*100)/100,opt.format))+'</i>';
+      }
+    }
+    /* X 轴标签（edge 默认: 首尾; all/none 可选） */
+    var xl='';
+    if(opt.labels==='all'){xl=items.map(function(it){return '<span>'+_esc(it.label||'')+'</span>';}).join('');}
+    else if(opt.labels!=='none'){xl='<span>'+_esc(items[0].label||'')+'</span><span>'+_esc(items[items.length-1].label||'')+'</span>';}
+    var hStyle=opt.height?('style="--c-h:'+opt.height+'px"'):'';
+    el.innerHTML='<div class="hm-c-line-wrap" '+hStyle+'><div class="hm-c-line-svg"><svg viewBox="0 0 '+_W+' '+_H+'" preserveAspectRatio="none">'+tickLines+regHtml+'</svg>'+dots+tickLabels+'</div>'+(xl?'<div class="hm-c-line-x">'+xl+'</div>':'')+'</div>';
+    if(opt.animation){
+      el.querySelectorAll('.hm-c-sdot').forEach(function(d){d.style.opacity='0';});
+      requestAnimationFrame(function(){requestAnimationFrame(function(){
+        el.querySelectorAll('.hm-c-sdot').forEach(function(d,i){
+          d.style.transition='opacity .4s ease '+(i*0.02)+'s';d.style.opacity='1';
+        });
+      });});
+    }
+    if(opt.tooltip){
+      var tip=document.createElement('div');tip.className='hm-c-tip';
+      var wrap=el.querySelector('.hm-c-line-svg')||el;wrap.appendChild(tip);
+      var onMove=function(e){
+        var r=wrap.getBoundingClientRect();
+        var ex=e.clientX-r.left,ey=e.clientY-r.top;
+        var best=-1,bd=1e9;
+        pts.forEach(function(p,i){
+          var sx=(p[0]/_W)*r.width,sy=(p[1]/_H)*r.height;
+          var dx=sx-ex,dy=sy-ey,d=dx*dx+dy*dy;
+          if(d<bd){bd=d;best=i;}
+        });
+        if(best<0)return;
+        var it=items[best];
+        tip.innerHTML='<div>'+_esc(it.label||('x='+it.x))+'</div><div><b>'+_esc(_fmt(_num(it.x),opt.format)+' · '+_fmt(_num(it.y),opt.format))+'</b></div>';
+        var px2=r.left+(pts[best][0]/_W)*r.width;
+        var lx=Math.min(Math.max(4,px2-r.left-tip.offsetWidth/2),r.width-tip.offsetWidth-4);
+        tip.style.left=lx+'px';tip.style.top=Math.max(4,ey-tip.offsetHeight-10)+'px';
+        tip.classList.add('show');
+      };
+      wrap.addEventListener('mousemove',onMove);
+      wrap.addEventListener('mouseleave',function(){tip.classList.remove('show');});
     }
   }
 };

@@ -184,8 +184,336 @@ window.__ModuleLoader__.load({
       }
 
       // ============================================================
+      // 0.5 locale（T3 #366 · dsws 命名空间 zh/en；跟随 harness 语言；GitHub 数据不翻译）
+      // 契约：ctx.locale（dsh-client-locale）：register(ns, {zh, en}) + bind(ns) 稳定引用，调用时读当前语言；
+      // 所有 outlet 在 locale 切换时自动重渲染（useLocaleRevision），模块级 t 即可生效。
+      // 模板默认文本（GUIDE_LINE/FIXATE_PROMPT/TPL_DEFAULT）= 注入内容而非控件文案，不翻译（T3 决策）。
+      // ============================================================
+      const L = {
+        zh: {
+          'nav.word': '沉淀',
+          'nav.takeable': '可接',
+          'nav.occupied': '占用',
+          'nav.env': '环境',
+          'nav.refresh': '更新',
+          'nav.refreshTitle': '重新检查 + 刷新快照',
+          'nav.fixateTitle': '沉淀：注入零丢失快照 prompt',
+          'nav.handoff': '交接',
+          'nav.handoffReady': '交接给新会话',
+          'nav.handoffTitle': '交接：发送 /handoff 生成交接文档',
+          'nav.handoffReadyTitle': '开新会话并预填交接文档路径',
+          'banner.setup': 'setup 未执行',
+          'banner.setupBtn': '帮我执行 /setup-matt-pocock-skills',
+          'act.diagnose': '诊断',
+          'act.fix': '修复',
+          'act.discuss': '讨论',
+          'act.execute': '执行',
+          'act.view': '查看',
+          'act.load': '加载',
+          'type.research': '研究',
+          'type.prototype': '原型',
+          'type.grilling': '对齐',
+          'type.task': '任务',
+          'list.back': '返回列表',
+          'list.mapChip': '地图',
+          'list.loadFail': '加载失败',
+          'list.noDest': '（未填写 Destination）',
+          'list.kpi.takeable': '可接',
+          'list.kpi.occupied': '占用',
+          'list.kpi.closed': '已关闭',
+          'list.refresh': '刷新',
+          'list.envWarn': '{n} 项环境未就绪，点此查看',
+          'list.all': '全部',
+          'list.loading': '加载中…',
+          'list.errFull': '快照加载失败：{err}',
+          'list.none': '暂无',
+          'list.closedN': '已关闭 {n}',
+          'list.collapse': '收起',
+          'list.blocked': '被阻塞',
+          'list.blockedTitle': '被 {by} 阻塞（点击查看地图详情）',
+          'list.tagsTitle': '全部标签：{names}（点击展开）',
+          'list.tagsCollapseTitle': '收起标签',
+          'list.copyLinkTitle': '复制链接',
+          'list.mapTitle': '查看地图详情',
+          'map.decisions': 'Decisions so far（{n}）',
+          'map.fog': 'Not yet specified（战雾 {n}）',
+          'map.outOfScope': 'Out of scope（{n}）',
+          'map.grpTakeable': '可接 {n}',
+          'map.grpClaimed': '已认领 {n}',
+          'map.grpBlocked': '被阻塞 {n}',
+          'map.grpClosed': '已关闭 {n}',
+          'map.subClaimed': '已认领 {who}',
+          'map.subBlocked': '被阻塞：{who}',
+          'map.subClosed': '已关闭',
+          'skill.centerRing': '中心 = 推荐 · 环绕 = 相关（实心已装/空心未装）· 点击注入 /skill',
+          'skill.all': '全部技能',
+          'skill.generic': '通用建议',
+          'skill.notes': '「{m}」Notes 指定',
+          'skill.treat': '用 /{s} 处理',
+          'skill.list': '列表',
+          'skill.ring': '圆环',
+          'env.title': '环境检查 {n}/8',
+          'env.recheck': '重新检查',
+          'env.checking': '检查中…',
+          'env.missing': '缺失',
+          'env.partial': '部分就绪',
+          'env.ready': '就绪',
+          'env.failFull': '环境检查失败：{err}',
+          'env.detecting': '检测中…',
+          'env.missingBanner': '{n} 项缺失，先补齐再开始 wayfinder 工作',
+          'panel.snapErr': '快照异常',
+          'panel.loading': '加载中…',
+          'panel.tabList': '列表',
+          'panel.tabSkills': '技能',
+          'panel.tabChecks': '环境检查',
+          'panel.refreshing': '刷新中…',
+          'rz.n': '向上拉大', 'rz.s': '向下拉大', 'rz.e': '向右拉大', 'rz.w': '向左拉大',
+          'rz.ne': '右上角缩放', 'rz.nw': '左上角缩放', 'rz.se': '右下角缩放', 'rz.sw': '左下角缩放',
+          'toast.injectedHandoff': '已注入 /handoff 交接模板（含时间戳文件名），确认后发送',
+          'toast.copiedHandoff': '已复制交接文档指令',
+          'toast.copiedHandoffFile': '已复制交接文档指令：{file}',
+          'toast.copiedHandoffNoLatest': '已复制交接文档指令（无法查询最新文档，兜底）',
+          'toast.handoffNotFound': '未找到交接文档，已复制默认路径；可先发送 /handoff 生成',
+          'toast.copiedHandoffFail': '已复制交接文档指令（查询失败兜底）',
+          'toast.injected': '已注入输入框，确认后发送',
+          'toast.copiedFallback': '已复制到剪贴板（输入框不可用，兜底）',
+          'toast.copied': '已复制',
+          'toast.copyFailed': '复制失败，请手动复制',
+          'toast.clipboardUnavailable': '剪贴板不可用',
+          'toast.snapFail': '快照刷新失败：{err}',
+          'toast.copiedLink': '已复制链接 #{n}',
+          'err.hostUnavailable': 'host.call 不可用（Host 半未加载）',
+          'err.connUnavailable': 'connection 服务不可用（Host 半未加载）',
+          'err.statusEmpty': 'wf.status 返回空结果',
+          'err.snapshotEmpty': 'wf.snapshot 返回异常',
+          'cfg.status': '配置',
+          'cfg.saved': '已保存',
+          'cfg.sub': '配置面板与动作提示词：静态文本可自由编辑，占位符由系统注入真值，点击即可插入。',
+          'cfg.panelHeight': '面板默认高度',
+          'cfg.panelHeightDesc': '打开面板时使用的初始高度，可随时拖拽调整。',
+          'cfg.defaultHeight': '默认高度',
+          'cfg.startTpl': '开始模板（执行动作）',
+          'cfg.startTplDesc': '「执行」按钮注入的提示词；留空使用默认模板。',
+          'cfg.withPrefix': '带 /wayfinder 前缀',
+          'cfg.tplEditor': '动作模板编辑器',
+          'cfg.tplEditorDesc': '「执行」外的六个动作按钮注入的提示词。点击下方占位符插入到光标处；红色「必填」占位符删除后无法保存。',
+          'cfg.execHint': '「执行」模板在开始模板节编辑 →',
+          'cfg.saveRejected': '保存被拒绝',
+          'cfg.saveAll': '保存全部',
+          'cfg.resetAll': '恢复全部默认',
+          'cfg.reset': '恢复默认',
+          'cfg.preview': '效果预览',
+          'cfg.must': '必填',
+          'cfg.chipReq': '必填占位符：删除后无法保存',
+          'cfg.chipInsert': '点击插入到光标处',
+          'tpl.missing': '缺少强制占位符 {list}',
+          'tpl.unknown': '未知占位符 {list}',
+          'tpl.name.diagnose': '诊断', 'tpl.name.fix': '修复', 'tpl.name.discuss': '讨论',
+          'tpl.name.handoff1': '交接第一击', 'tpl.name.handoff2': '交接第二击', 'tpl.name.fixate': '沉淀',
+          'tpl.desc.diagnose': 'needs-triage 票的行级动作',
+          'tpl.desc.fix': 'bug 票的行级动作',
+          'tpl.desc.discuss': 'wayfinder:grilling 票的行级动作',
+          'tpl.desc.handoff1': '生成交接文档（含时间戳，两击文件名一致）',
+          'tpl.desc.handoff2': '读取交接文档',
+          'tpl.desc.fixate': '零丢失快照 prompt',
+          'run.loaded': '已加载',
+          'run.desc': '环境检查（wf.status）+ 面板（wf.snapshot）均已接真。',
+          'run.openPanel': '打开面板',
+          'run.openCfg': '打开配置',
+          'run.cfgGuide': '配置页：设置 → 插件 → Waystation',
+          'skilldesc.ask-matt': '技能路由器：不知道该用哪个 skill 时问它',
+          'skilldesc.setup-matt-pocock-skills': '仓库初始化：issue tracker / 标签 / 文档路径',
+          'skilldesc.wayfinder': '巨型项目决策地图（本插件服务的对象）',
+          'skilldesc.triage': 'issue 状态机流转：categorise→verify→grill',
+          'skilldesc.grilling': '穷追不舍的对齐提问（设计树）',
+          'skilldesc.domain-modeling': '领域术语与统一语言',
+          'skilldesc.research': '后台调研，写进 repo 内 markdown 并引源',
+          'skilldesc.prototype': '一次性原型回答设计问题',
+          'skilldesc.implement': '把规格落成代码（task 型 ticket）',
+          'skilldesc.code-review': '按标准 + 规格双轴审查改动',
+          'skilldesc.codebase-design': '深模块设计词汇',
+          'skilldesc.diagnosing-bugs': '硬 bug 与性能回归诊断循环',
+          'skilldesc.improve-codebase-architecture': '扫 deepening opportunities 出 HTML 报告',
+          'skilldesc.tdd': '红-绿-重构',
+          'skilldesc.handoff': '把当前对话压缩成交接文档',
+          'skilldesc.teach': '跨 session 教你新技能',
+          'skilldesc.to-spec': '把讨论固化成规格',
+          'skilldesc.to-tickets': '把规格拆成 tickets',
+          'skilldesc.resolving-merge-conflicts': '解决合并冲突',
+          'skilldesc.writing-great-skills': '写出优秀技能',
+        },
+        en: {
+          'nav.word': 'Consolidate',
+          'nav.takeable': 'Ready',
+          'nav.occupied': 'Busy',
+          'nav.env': 'Env',
+          'nav.refresh': 'Refresh',
+          'nav.refreshTitle': 'Re-check + refresh snapshot',
+          'nav.fixateTitle': 'Consolidate: inject zero-loss snapshot prompt',
+          'nav.handoff': 'Handoff',
+          'nav.handoffReady': 'Handoff · new session',
+          'nav.handoffTitle': 'Handoff: send /handoff to generate the handoff doc',
+          'nav.handoffReadyTitle': 'Open a new session with the handoff doc path prefilled',
+          'banner.setup': 'setup not run yet',
+          'banner.setupBtn': 'Run /setup-matt-pocock-skills for me',
+          'act.diagnose': 'Diagnose',
+          'act.fix': 'Fix',
+          'act.discuss': 'Discuss',
+          'act.execute': 'Execute',
+          'act.view': 'View',
+          'act.load': 'Load',
+          'type.research': 'Research',
+          'type.prototype': 'Prototype',
+          'type.grilling': 'Align',
+          'type.task': 'Task',
+          'list.back': 'Back to list',
+          'list.mapChip': 'Map',
+          'list.loadFail': 'Failed to load',
+          'list.noDest': '(no Destination)',
+          'list.kpi.takeable': 'Ready',
+          'list.kpi.occupied': 'Busy',
+          'list.kpi.closed': 'Closed',
+          'list.refresh': 'Refresh',
+          'list.envWarn': '{n} check(s) not ready — click to view',
+          'list.all': 'All',
+          'list.loading': 'Loading…',
+          'list.errFull': 'Snapshot failed: {err}',
+          'list.none': 'None',
+          'list.closedN': 'Closed {n}',
+          'list.collapse': 'Collapse',
+          'list.blocked': 'Blocked',
+          'list.blockedTitle': 'Blocked by {by} (click for map details)',
+          'list.tagsTitle': 'All labels: {names} (click to expand)',
+          'list.tagsCollapseTitle': 'Collapse labels',
+          'list.copyLinkTitle': 'Copy link',
+          'list.mapTitle': 'View map details',
+          'map.decisions': 'Decisions so far ({n})',
+          'map.fog': 'Not yet specified (fog {n})',
+          'map.outOfScope': 'Out of scope ({n})',
+          'map.grpTakeable': 'Ready {n}',
+          'map.grpClaimed': 'Claimed {n}',
+          'map.grpBlocked': 'Blocked {n}',
+          'map.grpClosed': 'Closed {n}',
+          'map.subClaimed': 'Claimed by {who}',
+          'map.subBlocked': 'Blocked by: {who}',
+          'map.subClosed': 'Closed',
+          'skill.centerRing': 'Center = recommended · Ring = related (filled = installed / hollow = not) · click to inject /skill',
+          'skill.all': 'All skills',
+          'skill.generic': 'General suggestion',
+          'skill.notes': 'Specified by "{m}" Notes',
+          'skill.treat': 'Handle with /{s}',
+          'skill.list': 'List',
+          'skill.ring': 'Ring',
+          'env.title': 'Environment checks {n}/8',
+          'env.recheck': 'Re-check',
+          'env.checking': 'Checking…',
+          'env.missing': 'Missing',
+          'env.partial': 'Partial',
+          'env.ready': 'Ready',
+          'env.failFull': 'Environment check failed: {err}',
+          'env.detecting': 'Detecting…',
+          'env.missingBanner': '{n} missing — fix them before starting wayfinder work',
+          'panel.snapErr': 'Snapshot error',
+          'panel.loading': 'Loading…',
+          'panel.tabList': 'List',
+          'panel.tabSkills': 'Skills',
+          'panel.tabChecks': 'Checks',
+          'panel.refreshing': 'Refreshing…',
+          'rz.n': 'Expand up', 'rz.s': 'Expand down', 'rz.e': 'Widen right', 'rz.w': 'Widen left',
+          'rz.ne': 'Resize NE', 'rz.nw': 'Resize NW', 'rz.se': 'Resize SE', 'rz.sw': 'Resize SW',
+          'toast.injectedHandoff': '/handoff template injected (timestamped filename) — confirm before sending',
+          'toast.copiedHandoff': 'Handoff command copied',
+          'toast.copiedHandoffFile': 'Handoff command copied: {file}',
+          'toast.copiedHandoffNoLatest': 'Handoff command copied (cannot query the latest doc, fallback)',
+          'toast.handoffNotFound': 'Handoff doc not found; default path copied. Send /handoff first to generate',
+          'toast.copiedHandoffFail': 'Handoff command copied (query failed, fallback)',
+          'toast.injected': 'Injected into the input box — confirm before sending',
+          'toast.copiedFallback': 'Copied to clipboard (input box unavailable)',
+          'toast.copied': 'Copied',
+          'toast.copyFailed': 'Copy failed — copy manually',
+          'toast.clipboardUnavailable': 'Clipboard unavailable',
+          'toast.snapFail': 'Snapshot refresh failed: {err}',
+          'toast.copiedLink': 'Link # {n} copied',
+          'err.hostUnavailable': 'host.call unavailable (host half not loaded)',
+          'err.connUnavailable': 'connection service unavailable (host half not loaded)',
+          'err.statusEmpty': 'wf.status returned an empty result',
+          'err.snapshotEmpty': 'wf.snapshot returned an error',
+          'cfg.status': 'Config',
+          'cfg.saved': 'Saved',
+          'cfg.sub': 'Configure the panel and action prompts: static text is freely editable; placeholders are filled in by the system — click to insert.',
+          'cfg.panelHeight': 'Default panel height',
+          'cfg.panelHeightDesc': 'Initial height when the panel opens; adjustable by dragging.',
+          'cfg.defaultHeight': 'Default height',
+          'cfg.startTpl': 'Start template (execute)',
+          'cfg.startTplDesc': 'Prompt injected by the Execute button; leave empty for the default template.',
+          'cfg.withPrefix': 'Prefix with /wayfinder',
+          'cfg.tplEditor': 'Action template editor',
+          'cfg.tplEditorDesc': 'Prompts for the six action buttons other than Execute. Click a placeholder below to insert at the cursor; deleting a red Required placeholder blocks saving.',
+          'cfg.execHint': 'Edit the Execute template in the Start template section →',
+          'cfg.saveRejected': 'Save rejected',
+          'cfg.saveAll': 'Save all',
+          'cfg.resetAll': 'Reset all defaults',
+          'cfg.reset': 'Reset default',
+          'cfg.preview': 'Preview',
+          'cfg.must': 'Required',
+          'cfg.chipReq': 'Required placeholder: cannot save without it',
+          'cfg.chipInsert': 'Click to insert at cursor',
+          'tpl.missing': 'Missing required placeholder(s): {list}',
+          'tpl.unknown': 'Unknown placeholder(s): {list}',
+          'tpl.name.diagnose': 'Diagnose', 'tpl.name.fix': 'Fix', 'tpl.name.discuss': 'Discuss',
+          'tpl.name.handoff1': 'Handoff · first hit', 'tpl.name.handoff2': 'Handoff · second hit', 'tpl.name.fixate': 'Consolidate',
+          'tpl.desc.diagnose': 'Row action for needs-triage tickets',
+          'tpl.desc.fix': 'Row action for bug tickets',
+          'tpl.desc.discuss': 'Row action for wayfinder:grilling tickets',
+          'tpl.desc.handoff1': 'Generate the handoff doc (timestamped; both hits share the filename)',
+          'tpl.desc.handoff2': 'Read the handoff doc',
+          'tpl.desc.fixate': 'Zero-loss snapshot prompt',
+          'run.loaded': 'Loaded',
+          'run.desc': 'Environment checks (wf.status) and panel (wf.snapshot) are live.',
+          'run.openPanel': 'Open panel',
+          'run.openCfg': 'Open config',
+          'run.cfgGuide': 'Config: Settings → Plugins → Waystation',
+          'skilldesc.ask-matt': 'Skill router: ask it when unsure which skill to use',
+          'skilldesc.setup-matt-pocock-skills': 'Repo bootstrap: issue tracker / labels / doc paths',
+          'skilldesc.wayfinder': 'Decision maps for large projects (what this plugin serves)',
+          'skilldesc.triage': 'Issue state machine: categorise→verify→grill',
+          'skilldesc.grilling': 'Relentless alignment questioning (design tree)',
+          'skilldesc.domain-modeling': 'Domain terms & ubiquitous language',
+          'skilldesc.research': 'Background research written into repo markdown with sources',
+          'skilldesc.prototype': 'One-off prototype answering a design question',
+          'skilldesc.implement': 'Turn specs into code (task tickets)',
+          'skilldesc.code-review': 'Review changes on standards + spec axes',
+          'skilldesc.codebase-design': 'Deep module design vocabulary',
+          'skilldesc.diagnosing-bugs': 'Diagnosis loop for hard bugs & performance regressions',
+          'skilldesc.improve-codebase-architecture': 'Scan deepening opportunities, output an HTML report',
+          'skilldesc.tdd': 'Red-green-refactor',
+          'skilldesc.handoff': 'Compress this conversation into a handoff doc',
+          'skilldesc.teach': 'Teach you new skills across sessions',
+          'skilldesc.to-spec': 'Turn discussions into specs',
+          'skilldesc.to-tickets': 'Split specs into tickets',
+          'skilldesc.resolving-merge-conflicts': 'Resolve merge conflicts',
+          'skilldesc.writing-great-skills': 'Write great skills',
+        },
+      }
+      const localeSvc = ctx.get('locale')
+      if (localeSvc && typeof localeSvc.register === 'function') {
+        ctx.effect(function () {
+          return localeSvc.register('dsws', L)
+        }, 'dsws: locale')
+      }
+      // tr：locale 绑定（稳定引用，调用时读当前语言；命名 tr 避免与票务参数 t 冲突）；服务缺失时退化 zh 字典（与 locale 同语义：{name} 参数替换）
+      const tr = (localeSvc && typeof localeSvc.bind === 'function')
+        ? localeSvc.bind('dsws')
+        : function (key, params) {
+            let s = (L.zh[key] !== undefined) ? L.zh[key] : key
+            if (params) s = s.replace(/\{(\w+)\}/g, function (m, name) { return name in params ? String(params[name]) : m })
+            return s
+          }
+
+      // ============================================================
       // 1. 技能目录 + 场景推荐映射
       // ============================================================
+      // T3：描述在渲染时 tr('skilldesc.<name>')（此处 use 字段为中文静态参考）
       const SKILLS = [
         { name: 'ask-matt', level: 'warn', use: '技能路由器：不知道该用哪个 skill 时问它' },
         { name: 'setup-matt-pocock-skills', level: 'ok', use: '仓库初始化：issue tracker / 标签 / 文档路径' },
@@ -377,12 +705,13 @@ window.__ModuleLoader__.load({
         ;(TPL_REQUIRED[id] || []).forEach(function (n) { if (found.indexOf(n) < 0 && missing.indexOf(n) < 0) missing.push(n) })
         return { ok: unknown.length === 0 && missing.length === 0, unknown: unknown, missing: missing }
       }
-      const fixateText = () => tplText('fixate')
+      const fixateText = () => tplTextr('fixate')
 
       // ============================================================
-      // 3. store（按会话隔离；无 sid 时用 shared）
+      // 3. store（v14：按会话隔离；无 sid 时用 shared）
       // ============================================================
-      // v25：面板默认高度三档可配置（dsws.cfg.panelHeight: quarter/half/twothirds）
+      // v24-48：面板默认高度 = 屏幕约 1/2（用户反馈 1/4 太小；内容内部滚动，可拖手柄拉长）
+      // v25-50：面板默认高度三档可配置（dsws.cfg.panelHeight: quarter/half/twothirds）
       const PANEL_RATIOS = { quarter: 0.25, half: 0.5, twothirds: 2 / 3 }
       const DEFAULT_PANEL_H = (function () {
         const r = PANEL_RATIOS[cfg.panelHeight] || 0.5
@@ -439,7 +768,7 @@ window.__ModuleLoader__.load({
       }
       const frontierAll = (st) => compute(st).reduce(function (n, g) { return n + g.frontier.length }, 0)
 
-      // 状态栏可接/占用改用「列表 open issue」口径（与面板列表一致）：
+      // v18-30：状态栏可接/占用改用「列表 open issue」口径（与面板列表一致）：
       //   可接 = open issue 中未认领且未被 open 阻塞；占用 = 已认领 + 被阻塞；两者之和 = 全部 open issue
       const openIssuesOf = (st) => ((st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []).filter(function (x) { return x.state !== 'CLOSED' })
       const isOccupied = function (st, x) {
@@ -461,7 +790,7 @@ window.__ModuleLoader__.load({
       const occCount = (st) => openIssuesOf(st).filter(function (x) { return isOccupied(st, x) }).length
       const frontierCount = (st) => openIssuesOf(st).length - occCount(st)
 
-      // 共享 —— 标签配置色映射（从快照 issues 收集 GitHub label 配置色，动态查询非写死）
+      // v19：共享 —— 标签配置色映射（从快照 issues 收集 GitHub label 配置色，动态查询非写死）
       const buildColorOf = function (st) {
         const colorOf = {}
         const issues = (st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []
@@ -470,9 +799,8 @@ window.__ModuleLoader__.load({
         })
         return colorOf
       }
-      // 共享 —— 行级动作（列表与 map 详情共用）：按 label 四选一（诊断/修复/讨论/执行），预填输入框；
+      // v19：共享 —— 行级动作（列表与 map 详情共用）：按 label 四选一（诊断/修复/讨论/执行），预填输入框；
       // 按钮主体色 = 对应 label 的 GitHub 配置色（YIQ 感知亮度定文字色）
-      // v25 · T2b：诊断/修复/讨论走模板渲染（用户可自定义静态文本，{url} 注入）
       const mkRowAction = function (st, x, narrow, colorOf) {
         const url = 'https://github.com/' + repoStr(st) + '/issues/' + x.number
         const has = function (nm) { return (x.labels || []).some(function (l) { return (typeof l === 'string') ? l === nm : l.name === nm }) }
@@ -494,14 +822,14 @@ window.__ModuleLoader__.load({
             title: label,
           }, [Ic({ n: icon, size: 10 }), narrow ? null : h('span', null, label)])
         }
-        // 技能命令 + URL + 统一引导句（不再重复灌输技能内部流程）
-        // v25 · T2b：诊断/修复/讨论走模板渲染
-        if (has('needs-triage')) return mk('chat', '诊断', renderTemplate('diagnose', { url: url }), btnColor('needs-triage', '#f59e0b'))
-        if (has('bug')) return mk('hammer', '修复', renderTemplate('fix', { url: url }), btnColor('bug', '#f87171'))
-        if (has('wayfinder:grilling')) return mk('chat', '讨论', renderTemplate('discuss', { url: url }), btnColor('wayfinder:grilling', '#d93f0b'))
-        return mk('play', '执行', startText(st, x), '#c084fc')
+        // v21：技能命令 + URL + 统一引导句（不再重复灌输技能内部流程）
+        // v25 · T2b：诊断/修复/讨论走模板渲染（用户可自定义静态文本，{url} 注入）
+        if (has('needs-triage')) return mk('chat', tr('act.diagnose'), renderTemplate('diagnose', { url: url }), btnColor('needs-triage', '#f59e0b'))
+        if (has('bug')) return mk('hammer', tr('act.fix'), renderTemplate('fix', { url: url }), btnColor('bug', '#f87171'))
+        if (has('wayfinder:grilling')) return mk('chat', tr('act.discuss'), renderTemplate('discuss', { url: url }), btnColor('wayfinder:grilling', '#d93f0b'))
+        return mk('play', tr('act.execute'), startText(st, x), '#c084fc')
       }
-      // 交接文档时间戳文件名（YYYYMMDD-HHMMSS）
+      // v19：交接文档时间戳文件名（YYYYMMDD-HHMMSS）
       const timeStampStr = () => {
         try {
           const d = new Date()
@@ -510,14 +838,14 @@ window.__ModuleLoader__.load({
         } catch (e) { return 'latest' }
       }
 
-      // ---- 环境检查（rpcCall('status')；host 侧 30s 缓存 / force 重查）----
-      // 失败不再兜假数据 —— 非 real 状态一律视为未知（--/8），不展示假绿点
+      // ---- 环境检查（#344 · rpcCall('status')；host 侧 30s 缓存 / force 重查）----
+      // v12：失败不再兜假数据 —— 非 real 状态一律视为未知（--/8），不展示假绿点
       const CHECKS_TOTAL = 8
       const loadChecks = (st, force) => {
         if (st.checking) return Promise.resolve()
         if (conn === undefined || conn.rpc === undefined) {
           st.checksMode = 'err'
-          st.checksError = 'connection 服务不可用（Host 半未加载）'
+          st.checksError = tr('err.connUnavailable')
           emit(st)
           return Promise.resolve()
         }
@@ -534,7 +862,7 @@ window.__ModuleLoader__.load({
             st.checksError = null
           } else {
             st.checksMode = 'err'
-            st.checksError = (res && res.error) ? String(res.error).slice(0, 160) : 'status 返回空结果'
+            st.checksError = (res && res.error) ? String(res.error).slice(0, 160) : tr('err.statusEmpty')
           }
           emit(st)
         }).catch(function (e) {
@@ -546,7 +874,7 @@ window.__ModuleLoader__.load({
       }
       const activeChecks = (st) => (st.checksMode === 'real' && st.checks && st.checks.length) ? st.checks : []
       const readyCount = (st) => { const cs = activeChecks(st); return cs.length ? cs.filter(function (c) { return c.level === 'ok' }).length : -1 }
-      // 返回纯数字串（'6/8' / '--/8'），由状态栏 num() 固定宽度渲染
+      // v14-22：返回纯数字串（'6/8' / '--/8'），由状态栏 num() 固定宽度渲染
       const envLabel = (st) => { const n = readyCount(st); return n < 0 ? '--/8' : n + '/8' }
       const setupCheck = (st) => (st.checks || []).find(function (c) { return c.id === 2 })
 
@@ -555,7 +883,7 @@ window.__ModuleLoader__.load({
         return bt ? bt.title : ('#' + b)
       }).join('；')
 
-      // 从会话快照探测当前工作目录（ConversationSnapshot 字段名多探几个）
+      // v10：从会话快照探测当前工作目录（ConversationSnapshot 字段名多探几个）
       const detectCwd = function (ss) {
         try {
           if (ss && typeof ss === 'object') {
@@ -566,7 +894,7 @@ window.__ModuleLoader__.load({
         } catch (e) { /* 探测失败走 host 默认 */ }
         return ''
       }
-      // label 用 GitHub 配置色渲染 —— hex → rgba（.18 背景），无效 hex 返回 null 走兜底
+      // v11：label 用 GitHub 配置色渲染 —— hex → rgba（.18 背景），无效 hex 返回 null 走兜底
       const hexA = function (hex, a) {
         try {
           const hh = String(hex || '').replace('#', '')
@@ -575,7 +903,7 @@ window.__ModuleLoader__.load({
           return 'rgba(' + r + ',' + g + ',' + b + ',' + a + ')'
         } catch (e) { return null }
       }
-      // hex → HSL 亮度下调 amt（0-1）→ hex（chips 边框比 label 色深一档）
+      // v14-18：hex → HSL 亮度下调 amt（0-1）→ hex（chips 边框比 label 色深一档）
       const darken = function (hex, amt) {
         try {
           const hh = String(hex || '').replace('#', '')
@@ -609,7 +937,7 @@ window.__ModuleLoader__.load({
       const nowStr = () => {
         try { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') } catch (e) { return '' }
       }
-      // 时间固定格式 MM-DD HH:MM（本地）
+      // 定稿 1A：时间固定格式 MM-DD HH:MM（本地）
       const timeOf = (snap) => {
         if (!snap) return ''
         try {
@@ -620,8 +948,8 @@ window.__ModuleLoader__.load({
         } catch (e) { return '' }
       }
       // ============================================================
-      // 4. 配置广播（v25：配置保存后同步所有会话 store 的面板尺寸；外观定死不广播）
-      //    cfg/templates 定义见 §2.5（在 store 之前）
+      // 4. 配置广播（v25-50：配置保存后同步所有会话 store 的面板尺寸；外观定死不广播）
+      //    cfg/templates 定义见 §2.5（在 store 之前，DEFAULT_PANEL_H 依赖 cfg.panelHeight）
       // ============================================================
       const broadcastCfg = function () {
         const applyTo = function (st) {
@@ -634,12 +962,12 @@ window.__ModuleLoader__.load({
         Object.keys(stores).forEach(function (k) { applyTo(stores[k]) })
       }
 
-      // 快照（面板数据源；force 走 refresh 全量重建；snapshot 侧 5s 缓存）
+      // 快照（#346：面板数据源；force 走 wf.refresh 全量重建；wf.snapshot 侧 5s 缓存）
       const loadSnapshot = function (st, force) {
         if (st.snapLoading) return Promise.resolve()
         if (conn === undefined || conn.rpc === undefined) {
           st.snapMode = 'err'
-          st.snapError = 'connection 服务不可用（Host 半未加载）'
+          st.snapError = tr('err.connUnavailable')
           emit(st)
           return Promise.resolve()
         }
@@ -656,20 +984,20 @@ window.__ModuleLoader__.load({
             st.snapError = null
           } else {
             st.snapMode = 'err'
-            st.snapError = (snap && snap.error) ? String(snap.error).slice(0, 160) : 'snapshot 返回异常'
-            if (force) flash(st, '快照刷新失败：' + st.snapError, 'warn')
+            st.snapError = (snap && snap.error) ? String(snap.error).slice(0, 160) : tr('err.snapshotEmpty')
+            if (force) flash(st, tr('toast.snapFail', { err: st.snapError }), 'warn')
           }
           emit(st)
         }).catch(function (e) {
           st.snapLoading = false
           st.snapMode = 'err'
           st.snapError = String((e && e.message) || e).slice(0, 160)
-          if (force) flash(st, '快照刷新失败：' + st.snapError, 'warn')
+          if (force) flash(st, tr('toast.snapFail', { err: st.snapError }), 'warn')
           emit(st)
         })
       }
 
-      // 手动刷新（状态栏「更新」/ 列表「刷新」/ 检查页「重新检查」）→ 全面板遮罩 + 禁点
+      // v14-17：手动刷新（状态栏「更新」/ 列表「刷新」/ 检查页「重新检查」）→ 全面板遮罩 + 禁点
       const refreshAll = function (st) {
         if (st.refreshing) return
         st.refreshing = true; emit(st)
@@ -682,23 +1010,26 @@ window.__ModuleLoader__.load({
         ? st.snapshot.repo.owner + '/' + st.snapshot.repo.name
         : 'FeatherHunter/SKILLS'
 
+      // v21：开始 prompt 精简 —— /wayfinder + URL + 统一引导句（技能内部细节自带，不再重复灌输）
       // v25 · T2b：execute 走模板渲染（templates.execute 或默认），前缀开关 = cfg.withWayfinder
       const startText = (st, t) => {
         const url = 'https://github.com/' + repoStr(st) + '/issues/' + t.number
         const body = renderTemplate('execute', { number: String(t.number), url: url, title: t.title })
         return (cfg.withWayfinder ? '/wayfinder\n' : '') + body
       }
+      const SESSION_TITLE_PREFIX = '[dsh-waystation]'
+      const newSessionTitle = (t) => SESSION_TITLE_PREFIX + ' ' + t.title + ' #' + t.number
 
-      // 沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认文本见 §2.5 FIXATE_PROMPT，T2b 可编辑）
+      // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认文本见 §2.5 FIXATE_PROMPT，T2b 可编辑）
       const injectFixate = (st) => { inject(st, fixateText()) }
 
-      // 交接 —— 第一击自动注入 /handoff 模板（带时间戳文件名 + 引导句）并记忆该时间戳；
+      // v24-48：交接 —— 第一击自动注入 /handoff 模板（带时间戳文件名 + 引导句）并记忆该时间戳；
       // 第二击优先读「第一击模板里的同一个文件」（模板写什么名就读什么名，不再查目录导致旧文件名）；
       // 仅当未点过第一击（如刷新后）才回退 host 查最新实际文档；+ 复制 + 开新空白会话
       // v25 · T2b（F1 修正）：交接两击走模板渲染；{ts} 第一击注入时生成并记忆；
       //   {file} = 第一击模板渲染后解析出的实际文件名（用户改文件名结构也一致），解析失败兜底 handoffTs + '.md'
       const HANDOFF_READ = '/read .scratch/handoff/latest.md'
-      let handoffTs = null  // 第一击模板使用的时间戳（第二击优先复用同一文件名）
+      let handoffTs = null  // v24：第一击模板使用的时间戳（第二击优先复用同一文件名）
       let handoffFile = null  // v25 F1：第一击渲染后解析出的实际交接文件名（含用户自定义结构）
       const handoffPrompt = function (ts) {
         return renderTemplate('handoff1', { ts: ts })
@@ -720,7 +1051,7 @@ window.__ModuleLoader__.load({
           const text = handoffPrompt(handoffTs)
           handoffFile = extractHandoffFile(text) || (handoffTs + '.md')
           inject(st, text)
-          flash(st, '已注入 /handoff 交接模板（含时间戳文件名），确认后发送', 'ok')
+          flash(st, tr('toast.injectedHandoff'), 'ok')
           return
         }
         const ws = ctx.get('workspaces')
@@ -728,39 +1059,39 @@ window.__ModuleLoader__.load({
         const finish = function (file, msg) {
           const text = handoffReadText(file)
           pendingDraft = text
-          copyText(st, text, msg || '已复制交接文档指令')
+          copyText(st, text, msg || tr('toast.copiedHandoff'))
           if (ws && typeof ws.startSession === 'function') {
             ws.startSession()
           } else {
             pendingDraft = null
           }
         }
-        // v24：第一击模板指定的时间戳文件名优先（与模板完全一致）；v25 F1：用解析出的实际文件名
+        // v24：第一击模板指定的时间戳文件名优先（与模板完全一致）
         if (handoffFile) {
-          finish(handoffFile, '已复制交接文档指令：' + handoffFile)
+          finish(handoffFile, tr('toast.copiedHandoffFile', { file: handoffFile }))
           return
         }
         if (conn === undefined || conn.rpc === undefined) {
-          finish(null, '已复制交接文档指令（无法查询最新文档，兜底）')
+          finish(null, tr('toast.copiedHandoffNoLatest'))
           return
         }
         rpcCall('handoffLatest', cwdArg).then(function (res) {
           const file = (res && res.ok && res.file) ? res.file : null
-          if (file) finish(file, '已复制交接文档指令：' + file)
-          else finish(null, '未找到交接文档，已复制默认路径；可先发送 /handoff 生成')
+          if (file) finish(file, tr('toast.copiedHandoffFile', { file: file }))
+          else finish(null, tr('toast.handoffNotFound'))
         }).catch(function () {
-          finish(null, '已复制交接文档指令（查询失败兜底）')
+          finish(null, tr('toast.copiedHandoffFail'))
         })
       }
 
       const inject = (st, text) => {
-        if (st.injector) { st.injector(text); flash(st, '已注入输入框，确认后发送', 'ok') }
-        else copyText(st, text, '已复制到剪贴板（输入框不可用，兜底）')
+        if (st.injector) { st.injector(text); flash(st, tr('toast.injected'), 'ok') }
+        else copyText(st, text, tr('toast.copiedFallback'))
       }
       const copyText = (st, text, okMsg) => {
         if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(function () { flash(st, okMsg || '已复制', 'ok') }).catch(function () { flash(st, '复制失败，请手动复制', 'warn') })
-        } else flash(st, '剪贴板不可用', 'warn')
+          navigator.clipboard.writeText(text).then(function () { flash(st, okMsg || tr('toast.copied'), 'ok') }).catch(function () { flash(st, tr('toast.copyFailed'), 'warn') })
+        } else flash(st, tr('toast.clipboardUnavailable'), 'warn')
       }
 
       // ============================================================
@@ -772,7 +1103,7 @@ window.__ModuleLoader__.load({
         const cls = { research: 'dsws-chip-r', prototype: 'dsws-chip-p', grilling: 'dsws-chip-g', task: 'dsws-chip-t' }[type] || ''
         return h('span', { className: 'dsws-chip ' + cls }, [
           Ic({ n: TYPE_ICON[type] || 'dot', size: 11 }),
-          h('span', null, t[2]),
+          h('span', null, tr('type.' + type)),
         ])
       }
 
@@ -792,23 +1123,23 @@ window.__ModuleLoader__.load({
         ])
       }
 
-      // ---- 5.2 输入区状态栏（居中胶囊 · 反馈不进状态栏 · cwd 关联 · 数字区等宽 + 交接段）----
+      // ---- 5.2 输入区状态栏（定稿 1A 居中胶囊 · 反馈不进状态栏 · cwd 关联 · v14 数字区等宽 + 交接段）----
       const StatusBar = (props) => {
         const sid = props && props.sessionId
         const s = useStore(sid)
-        // 宿主权威 cwd —— SessionSummary.cwd（会话列表工作区标题同源），替换字段名猜测链
+        // v15-27：宿主权威 cwd —— SessionSummary.cwd（会话列表工作区标题同源），替换字段名猜测链
         const summaryCwd = props.useSessions(function (x) {
           return (sid && x.byId && x.byId[sid]) ? x.byId[sid].cwd : undefined
         })
         React.useEffect(function () {
           if (props && props.inputActions && typeof props.inputActions.setDraft === 'function') {
             s.injector = props.inputActions.setDraft
-            // 跨会话预填（交接开新会话后，新 dock 挂载即消费）
+            // v14-20：跨会话预填（交接开新会话后，新 dock 挂载即消费）
             if (pendingDraft) { props.inputActions.setDraft(pendingDraft); pendingDraft = null }
           }
         }, [props])
-        // 会话工作目录探测 —— 依赖 sessionId 变化重跑（切换对话必触发）。
-        // 优先 SessionSummary.cwd（宿主权威）；次选 props.session 直取；最后 rpcCall('cwd') 兜底。
+        // v13：会话工作目录探测 —— 依赖 sessionId 变化重跑（切换对话必触发）。
+        // v15-27：优先 SessionSummary.cwd（宿主权威）；次选 props.session 直取；最后 host wf.cwd 兜底。
         // cwd 变化后主动重拉快照与检查（否则面板/状态栏仍显示旧仓库数据）。
         React.useEffect(function () {
           const apply = function (cwd) {
@@ -824,7 +1155,7 @@ window.__ModuleLoader__.load({
           }
         }, [sid, summaryCwd])
         React.useEffect(function () { loadChecks(s, false); loadSnapshot(s, false) }, [])
-        // 可接/占用 = 列表 open issue 口径（与面板列表一致）
+        // v18-30：可接/占用 = 列表 open issue 口径（与面板列表一致）
         const fr = frontierCount(s)
         const blk = occCount(s)
         const n = readyCount(s)
@@ -832,7 +1163,7 @@ window.__ModuleLoader__.load({
         const setup = setupCheck(s)
         const amber = s.checksMode === 'real' && setup && setup.level !== 'ok'
         const go = function (tab) { s.tab = tab; s.open = true; emit(s) }
-        // 数字区固定两位数等宽（环境 5ch 容 '98/99'；可接/占用 2ch）
+        // v14-22：数字区固定两位数等宽（环境 5ch 容 '98/99'；可接/占用 2ch）
         const num = (txt, minW) => h('span', { className: 'dsws-num', style: minW ? { minWidth: minW } : null }, txt)
         const seg = (icon, label, color, onGo, title) => h('span', { className: 'dsws-seg', onClick: function (e) { e.stopPropagation(); onGo() }, title: title || '', style: { display: 'inline-flex', alignItems: 'center', gap: 4, color: color } }, [
           Ic({ n: icon, size: 12 }),
@@ -843,26 +1174,26 @@ window.__ModuleLoader__.load({
             Icon({ scheme: s.ui.icon, size: 14 }),
             h('span', null, 'Waystation'),
           ]),
-          seg('target', [h('span', null, '可接'), num(String(fr), '2ch')], '#4ade80', function () { go('list') }),
-          seg('lock', [h('span', null, '占用'), num(String(blk), '2ch')], '#f0883e', function () { go('list') }),
-          seg('note', s.ui.word, '#c084fc', function () { injectFixate(s) }, '沉淀：注入零丢失快照 prompt'),
-          seg('handoff', s.handoffReady ? '交接给新会话' : '交接', '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? '开新会话并预填交接文档路径' : '交接：发送 /handoff 生成交接文档'),
-          // 环境段移至末尾（更新左侧），用户少点
-          seg('dot', [h('span', null, '环境'), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
-          h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: '重新检查 + 刷新快照' }, '更新 ' + timeStr),
+          seg('target', [h('span', null, tr('nav.takeable')), num(String(fr), '2ch')], '#4ade80', function () { go('list') }),
+          seg('lock', [h('span', null, tr('nav.occupied')), num(String(blk), '2ch')], '#f0883e', function () { go('list') }),
+          seg('note', tr('nav.word'), '#c084fc', function () { injectFixate(s) }, tr('nav.fixateTitle')),
+          seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
+          // v19-36：环境段移至末尾（更新左侧），用户少点
+          seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
+          h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, tr('nav.refresh') + ' ' + timeStr),
         ])
         if (!amber) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
         return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '3px 8px 0' } }, [
           capsule,
           h('div', { className: 'dsws-banner warn', style: { margin: 0, maxWidth: 560, cursor: 'default' } }, [
             Ic({ n: 'alert', size: 13 }),
-            h('span', null, 'setup 未执行'),
-            h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(s, '/setup-matt-pocock-skills\n（请选择 GitHub Issues 作为 issue tracker）') } }, '帮我执行 /setup-matt-pocock-skills'),
+            h('span', null, tr('banner.setup')),
+            h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(s, '/setup-matt-pocock-skills\n（请选择 GitHub Issues 作为 issue tracker）') } }, tr('banner.setupBtn')),
           ]),
         ])
       }
 
-      // ---- 5.3 票务行（地图详情内：标题/阻塞来源 ellipsis；按标签给 诊断/修复/讨论/执行 动作，预填输入框）----
+      // ---- 5.3 票务行（地图详情内：标题/阻塞来源 ellipsis；v19：按标签给 诊断/修复/讨论/执行 动作，预填输入框）----
       const TicketRow = ({ st, g, t, indent, colorOf }) => {
         const openBlocker = function (b) { const bt = g.m.tickets.find(function (x) { return x.number === b }); return bt && bt.state === 'OPEN' }
         const blocked = t.state === 'OPEN' && t.blockedBy.some(openBlocker)
@@ -878,19 +1209,19 @@ window.__ModuleLoader__.load({
               h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + t.number),
             ]),
             h('div', { className: 'dsws-tt-sub', style: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } }, [
-              t.claimedBy ? subItem('person', '#58a6ff', '已认领 ' + t.claimedBy) : null,
-              t.blockedBy.length ? subItem('lock', '#f0883e', '被阻塞：' + blockerNames(t, g.m)) : null,
-              t.state === 'CLOSED' ? subItem('check', '#3fb950', '已关闭') : null,
+              t.claimedBy ? subItem('person', '#58a6ff', tr('map.subClaimed', { who: t.claimedBy })) : null,
+              t.blockedBy.length ? subItem('lock', '#f0883e', tr('map.subBlocked', { who: blockerNames(t, g.m) })) : null,
+              t.state === 'CLOSED' ? subItem('check', '#3fb950', tr('map.subClosed')) : null,
             ]),
           ]),
           t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4, alignItems: 'center', flex: 'none' } }, [
             blocked ? null : mkRowAction(st, t, false, colorOf),
             h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'link', size: 12 })),
-          ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, '查看'),
+          ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, tr('act.view')),
         ])
       }
 
-      // ---- 5.4 地图详情（垂直走廊：可接/已认领/被阻塞常显，已关闭折叠；阻塞缩进；顶部执行 + 任务按状态动作）----
+      // ---- 5.4 地图详情（定稿 3A 垂直走廊：可接/已认领/被阻塞常显，已关闭折叠；阻塞缩进；v19 顶部执行 + 任务按状态动作）----
       const MapDetail = ({ st, g }) => {
         const m = g.m
         const colorOf = buildColorOf(st)
@@ -898,57 +1229,56 @@ window.__ModuleLoader__.load({
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 } }, [
             h('button', { className: 'dsws-btn', onClick: function () { st.activeMap = null; emit(st) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
               Ic({ n: 'back', size: 12 }),
-              h('span', null, '返回列表'),
+              h('span', null, tr('list.back')),
             ]),
             h('span', { className: 'dsws-chip dsws-chip-m' }, [Ic({ n: 'map', size: 11 }), h('span', null, 'wayfinder:map')]),
             h('span', { style: { flex: 1 } }),
-            // 顶部「执行」= 整张 map 的执行入口（预填输入框）
-          // v25 T2b：顶部「执行」= 整张 map 的执行入口，走 execute 模板
-          h('button', { className: 'dsws-btn primary', onClick: function () {
-            const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
-            inject(st, (cfg.withWayfinder ? '/wayfinder\n' : '') + body)
-          }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
+            // v19-38：顶部「执行」= 整张 map 的执行入口（预填输入框）；v25 T2b：走 execute 模板
+            h('button', { className: 'dsws-btn primary', onClick: function () {
+              const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
+              inject(st, (cfg.withWayfinder ? '/wayfinder\n' : '') + body)
+            }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
               Ic({ n: 'play', size: 10 }),
-              h('span', null, '执行'),
+              h('span', null, tr('act.execute')),
             ]),
           ]),
           h('div', { className: 'dsws-mtitle dsws-ellip', title: m.title }, m.title),
-          m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, String((m.error && m.error.error) || '加载失败').slice(0, 160))]) : null,
-          h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#4ade80', margin: '2px 0 2px' } }, [Ic({ n: 'target', size: 12 }), h('span', { className: 'dsws-ellip', title: m.destination }, m.destination || '（未填写 Destination）')]),
+          m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, String((m.error && m.error.error) || tr('list.loadFail')).slice(0, 160))]) : null,
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#4ade80', margin: '2px 0 2px' } }, [Ic({ n: 'target', size: 12 }), h('span', { className: 'dsws-ellip', title: m.destination }, m.destination || tr('list.noDest'))]),
           m.notes ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, [Ic({ n: 'note', size: 11 }), h('span', { className: 'dsws-ellip', title: m.notes }, m.notes)]) : null,
           h('details', { style: { marginBottom: 4 } }, [
-            h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, 'Decisions so far（' + m.decisions.length + '）'),
+            h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, tr('map.decisions', { n: m.decisions.length })),
             h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.decisions.map(function (d, i) {
               return h('div', { key: i, className: 'dsws-ellip', title: d.title + ' ' + d.gist }, '· ' + d.title)
             })),
           ]),
           h('details', { style: { marginBottom: 4 } }, [
-            h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, 'Not yet specified（战雾 ' + m.fog.length + '）'),
+            h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, tr('map.fog', { n: m.fog.length })),
             h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.fog.map(function (f, i) { return h('div', { key: i, className: 'dsws-ellip', title: f }, '· ' + f) })),
           ]),
           h('details', { style: { marginBottom: 8 } }, [
-            h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, 'Out of scope（' + m.outOfScope.length + '）'),
+            h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, tr('map.outOfScope', { n: m.outOfScope.length })),
             h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.outOfScope.map(function (o, i) { return h('div', { key: i, className: 'dsws-ellip', title: o }, '· ' + o) })),
           ]),
-          g.frontier.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'target', size: 12, color: '#4ade80' }), h('span', null, '可接 ' + g.frontier.length)]) : null,
+          g.frontier.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'target', size: 12, color: '#4ade80' }), h('span', null, tr('map.grpTakeable', { n: g.frontier.length }))]) : null,
           g.frontier.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, colorOf: colorOf }) }),
-          g.claimed.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'person', size: 12, color: '#58a6ff' }), h('span', null, '已认领 ' + g.claimed.length)]) : null,
+          g.claimed.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'person', size: 12, color: '#58a6ff' }), h('span', null, tr('map.grpClaimed', { n: g.claimed.length }))]) : null,
           g.claimed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, colorOf: colorOf }) }),
-          g.blocked.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'lock', size: 12, color: '#f0883e' }), h('span', null, '被阻塞 ' + g.blocked.length)]) : null,
+          g.blocked.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'lock', size: 12, color: '#f0883e' }), h('span', null, tr('map.grpBlocked', { n: g.blocked.length }))]) : null,
           g.blocked.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, indent: true, colorOf: colorOf }) }),
           h('details', { style: { marginTop: 8 } }, [
-            h('summary', { className: 'dsws-grp', style: { margin: '6px 0 2px', cursor: 'pointer' } }, [Ic({ n: 'check', size: 12, color: '#52525b' }), h('span', null, '已关闭 ' + g.closed.length)]),
+            h('summary', { className: 'dsws-grp', style: { margin: '6px 0 2px', cursor: 'pointer' } }, [Ic({ n: 'check', size: 12, color: '#52525b' }), h('span', null, tr('map.grpClosed', { n: g.closed.length }))]),
             h('div', null, g.closed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, colorOf: colorOf }) })),
           ]),
         ])
       }
 
-      // ---- 5.5 主列表（三选一动作 / map 行突出 / 已关闭折叠行 / chips 深边框 / 窄屏双栏）----
+      // ---- 5.5 主列表（v14：三选一动作 / map 行突出 + 开始执行 / 已关闭折叠行 / chips 深边框 / 窄屏双栏）----
       const ListTab = ({ st, narrow }) => {
         const issues = (st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []
         const openIssues = issues.filter(function (x) { return x.state !== 'CLOSED' })
         const closedIssues = issues.filter(function (x) { return x.state === 'CLOSED' })
-        // open 列表 map 优先置顶（map 内部按 updatedAt 倒序），其余按 updatedAt 倒序；已关闭行保持纯时间序
+        // v15-25：open 列表 map 优先置顶（map 内部按 updatedAt 倒序），其余按 updatedAt 倒序；已关闭行保持纯时间序
         openIssues.sort(function (a, b) {
           const am = (a.labels || []).some(function (l) { return l.name === 'wayfinder:map' }) ? 0 : 1
           const bm = (b.labels || []).some(function (l) { return l.name === 'wayfinder:map' }) ? 0 : 1
@@ -956,6 +1286,7 @@ window.__ModuleLoader__.load({
           return String(b.updatedAt).localeCompare(String(a.updatedAt))
         })
         const groups = compute(st)
+        const occ = groups.reduce(function (n, g) { return n + g.blocked.length + g.claimed.length }, 0)
         const cs = activeChecks(st)
         const nBad = cs.filter(function (c) { return c.level === 'bad' }).length
         // 标签统计（open + closed 全量）与配色
@@ -971,7 +1302,7 @@ window.__ModuleLoader__.load({
         const filtered = st.lblFilter ? openIssues.filter(function (x) { return (x.labels || []).some(function (l) { return l.name === st.lblFilter }) }) : openIssues
         const has = function (x, nm) { return (x.labels || []).some(function (l) { return l.name === nm }) }
         const findMap = function (num) { return (st.snapshot && st.snapshot.maps || []).find(function (m) { return m.number === num }) }
-        // 主列表关联 map 子票阻塞信息（open 阻塞者才算阻塞；数据来自快照 maps.tickets.blockedBy，无需额外请求）
+        // v15-26：主列表关联 map 子票阻塞信息（open 阻塞者才算阻塞；数据来自快照 maps.tickets.blockedBy，无需额外请求）
         const blockOf = {}
         ;(st.snapshot && st.snapshot.maps || []).forEach(function (m) {
           const byNum = {}
@@ -983,7 +1314,7 @@ window.__ModuleLoader__.load({
           })
         })
         const openBlocked = function (blk) { st.activeMap = blk.map; emit(st) }
-        // chips 常显深一档边框（边框色 = label 色 HSL 亮度 -16%）
+        // v14-18：chips 常显深一档边框（边框色 = label 色 HSL 亮度 -16%）
         const chip = (nm, withCount, on, isAll) => {
           const c = colorOf[nm]
           const borderColor = isAll ? 'rgba(255,255,255,.35)' : (darken(c, 0.16) || 'rgba(188,140,255,.6)')
@@ -991,7 +1322,7 @@ window.__ModuleLoader__.load({
           return h('span', {
             key: nm,
             className: 'dsws-chip',
-            // 「全部」恒清空过滤并保持选中，与普通标签 toggle 语义分离
+            // v14-1：「全部」恒清空过滤并保持选中，与普通标签 toggle 语义分离
             onClick: function (e) { e.stopPropagation(); st.lblFilter = isAll ? null : ((st.lblFilter === nm) ? null : nm); emit(st) },
             style: {
               cursor: 'pointer', marginRight: 4, marginBottom: 3, fontSize: 10,
@@ -1001,17 +1332,17 @@ window.__ModuleLoader__.load({
             },
           }, nm + (withCount ? ' · ' + stat[nm] : ''))
         }
-        const copyUrl = function (x) { copyText(st, 'https://github.com/' + repoStr(st) + '/issues/' + x.number, '已复制链接 #' + x.number) }
-        // 行级动作按 label 四选一（诊断/修复/讨论/执行），全部预填输入框；
-        // 共享 mkRowAction（列表与 map 详情同逻辑，按钮色动态取 label 配置色）；窄屏折叠为纯图标
-        // 行 = 左列(flex:1 截断) + 右列按钮组(flex:none 不换行)
+        const copyUrl = function (x) { copyText(st, 'https://github.com/' + repoStr(st) + '/issues/' + x.number, tr('toast.copiedLink', { n: x.number })) }
+        // v14-4：行级动作按 label 四选一（诊断/修复/讨论/执行），全部预填输入框；
+        // v19：共享 mkRowAction（列表与 map 详情同逻辑，按钮色动态取 label 配置色）；v14-3 按钮 80%；v14-19 窄屏折叠为纯图标
+        // v14-19：行 = 左列(flex:1 截断) + 右列按钮组(flex:none 不换行)
         const issueRow = function (x, isOpen, narrow) {
           const isMap = has(x, 'wayfinder:map')
           const mapObj = isMap ? findMap(x.number) : null
-          // 被阻塞判定（open 阻塞者）→ 隐藏动作按钮 + 红色「被阻塞」标签（点击跳所属 map 详情）
+          // v15-26：被阻塞判定（open 阻塞者）→ 隐藏动作按钮 + 红色「被阻塞」标签（点击跳所属 map 详情）
           const blk = blockOf[x.number]
           const blocked = !!(blk && blk.by && blk.by.length)
-          // 展开态（st.expTags[num]）→ 显示全部标签；默认只显示前 2 个，「+N」可点击展开
+          // v20-43：展开态（st.expTags[num]）→ 显示全部标签；默认只显示前 2 个，「+N」可点击展开
           const expanded = !!(st.expTags && st.expTags[x.number])
           const shown = expanded ? (x.labels || []) : (x.labels || []).slice(0, 2)
           const rest = expanded ? 0 : (x.labels || []).length - shown.length
@@ -1019,20 +1350,20 @@ window.__ModuleLoader__.load({
           const toggleTags = function (e) { e.stopPropagation(); st.expTags[x.number] = !expanded; emit(st) }
           const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
             isOpen && !blocked ? mkRowAction(st, x, narrow, colorOf) : null,
-            h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: '复制链接', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
+            h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
             h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
           ])
           return h('div', {
             key: x.number,
             className: 'dsws-aggrow',
             onClick: function () { if (isMap && mapObj) { st.activeMap = x.number; emit(st) } },
-            title: (isMap && mapObj) ? '查看地图详情' : undefined,
-            // 地图行突出 —— 紫色竖条 + 浅紫底
+            title: (isMap && mapObj) ? tr('list.mapTitle') : undefined,
+            // v14-2：地图行突出 —— 紫色竖条 + 浅紫底
             style: isMap ? { cursor: 'pointer', borderLeft: '3px solid #c084fc', background: 'rgba(188,140,255,.07)' } : undefined,
           }, [
             h('div', { style: { flex: 1, minWidth: 0 } }, [
               h('div', { style: { display: 'flex', alignItems: 'center', gap: 5 } }, [
-                isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, flex: 'none', fontWeight: 600 } }, [Ic({ n: 'map', size: 12 }), h('span', null, '地图')]) : null,
+                isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, flex: 'none', fontWeight: 600 } }, [Ic({ n: 'map', size: 12 }), h('span', null, tr('list.mapChip'))]) : null,
                 h('span', { className: 'dsws-ellip', style: { flex: 1, fontWeight: isMap ? 600 : undefined }, title: x.title }, x.title),
                 h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + x.number),
               ]),
@@ -1040,11 +1371,11 @@ window.__ModuleLoader__.load({
                 shown.map(function (l, i) {
                   return h('span', { key: i, className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, background: hexA(l.color, 0.18) || 'rgba(188,140,255,.16)', color: l.color ? '#' + l.color : '#bc8cff', border: '1px solid ' + (darken(l.color, 0.16) || 'rgba(188,140,255,.6)') } }, l.name)
                 }),
-                rest > 0 ? h('span', { key: 'more', className: 'dsws-chip', onClick: toggleTags, title: '全部标签：' + allNames + '（点击展开）', style: { fontSize: 10, marginRight: 0, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + rest) : null,
-                expanded ? h('span', { key: 'less', className: 'dsws-chip', onClick: toggleTags, title: '收起标签', style: { fontSize: 10, marginRight: 0, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, '收起') : null,
-                blocked ? h('span', { key: 'blk', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: '被 ' + blk.by.map(function (b) { return '#' + b }).join('、') + ' 阻塞（点击查看地图详情）', style: { fontSize: 10, marginRight: 0, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, '被阻塞')]) : null,
+                rest > 0 ? h('span', { key: 'more', className: 'dsws-chip', onClick: toggleTags, title: tr('list.tagsTitle', { names: allNames }), style: { fontSize: 10, marginRight: 0, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + rest) : null,
+                expanded ? h('span', { key: 'less', className: 'dsws-chip', onClick: toggleTags, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 0, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
+                blocked ? h('span', { key: 'blk', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: tr('list.blockedTitle', { by: blk.by.map(function (b) { return '#' + b }).join('、') }), style: { fontSize: 10, marginRight: 0, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, tr('list.blocked'))]) : null,
               ]) : null,
-              // map 行进度（已完成/总数 + 进度条，如 13/14）
+              // v19-40：map 行进度（已完成/总数 + 进度条，如 13/14）
               (isMap && mapObj && mapObj.stats) ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 } }, [
                 h('div', { className: 'dsws-prog', style: { flex: 1 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]),
                 h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none' } }, mapObj.stats.closed + '/' + mapObj.stats.total),
@@ -1055,38 +1386,38 @@ window.__ModuleLoader__.load({
         }
         const kpi = (num, lab, icon, color) => h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [Ic({ n: icon, size: 11, color: color }), h('span', null, String(num) + ' ' + lab)])
         return h('div', null, [
-          // KPI 行 + 环境提示（可接/占用 = 列表 open issue 口径）
+          // KPI 行 + 环境提示（v18-30：可接/占用 = 列表 open issue 口径）
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' } }, [
-            kpi(frontierCount(st), '可接', 'target', '#4ade80'),
-            kpi(occCount(st), '占用', 'lock', '#f0883e'),
-            kpi(closedIssues.length, '已关闭', 'check', '#52525b'),
+            kpi(frontierCount(st), tr('list.kpi.takeable'), 'target', '#4ade80'),
+            kpi(occCount(st), tr('list.kpi.occupied'), 'lock', '#f0883e'),
+            kpi(closedIssues.length, tr('list.kpi.closed'), 'check', '#52525b'),
             h('span', { style: { flex: 1 } }),
-            h('button', { className: 'dsws-btn', onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, '刷新')]),
+            h('button', { className: 'dsws-btn', onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
           ]),
           nBad > 0 ? h('div', { className: 'dsws-banner bad', onClick: function () { st.tab = 'checks'; emit(st) } }, [
             Ic({ n: 'alert', size: 13 }),
-            h('span', null, nBad + ' 项环境未就绪，点此查看'),
+            h('span', null, tr('list.envWarn', { n: nBad })),
           ]) : null,
-          // 标签过滤 chips（动态统计 · GitHub 配置色 · 深边框）
+          // 标签过滤 chips（动态统计 · GitHub 配置色 · v14-18 深边框）
           h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0, marginBottom: 6 } }, [
-            chip('全部', false, st.lblFilter === null, true),
+            chip(tr('list.all'), false, st.lblFilter === null, true),
             tagNames.slice(0, 9).map(function (nm) { return chip(nm, true, st.lblFilter === nm, false) }),
           ]),
-          st.snapMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, '加载中…') : null,
-          st.snapMode === 'err' ? h('div', { style: { color: '#f87171', fontSize: 12, padding: '14px 0', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 12 }), h('span', null, '快照加载失败：' + st.snapError)]) : null,
-          filtered.length === 0 ? h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '14px 0', textAlign: 'center' } }, '暂无') : filtered.map(function (x) { return issueRow(x, true, narrow) }),
-          // 列表底部「已关闭 (N)」折叠行（默认收起，只占一行，展开可见）
+          st.snapMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, tr('list.loading')) : null,
+          st.snapMode === 'err' ? h('div', { style: { color: '#f87171', fontSize: 12, padding: '14px 0', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 12 }), h('span', null, tr('list.errFull', { err: st.snapError }))]) : null,
+          filtered.length === 0 ? h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '14px 0', textAlign: 'center' } }, tr('list.none')) : filtered.map(function (x) { return issueRow(x, true, narrow) }),
+          // v14-4⑤：列表底部「已关闭 (N)」折叠行（默认收起，只占一行，展开可见）
           closedIssues.length ? h('details', { style: { marginTop: 8 } }, [
             h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, padding: '4px 2px', userSelect: 'none' } }, [
               Ic({ n: 'check', size: 11 }),
-              h('span', null, '已关闭 ' + closedIssues.length),
+              h('span', null, tr('list.closedN', { n: closedIssues.length })),
             ]),
             h('div', null, closedIssues.map(function (x) { return issueRow(x, false, narrow) })),
           ]) : null,
         ])
       }
 
-      // ---- 5.6 技能雷达（推荐+列表 · 圆形技能环，A/B 切换）----
+      // ---- 5.6 技能雷达（定稿 4A 推荐+列表 · 4B 圆形技能环，A/B 切换）----
       const RingSkills = ({ st, rec, list }) => {
         const cx = 110, cy = 108, R2 = 88
         const center = rec[0] || 'ask-matt'
@@ -1095,24 +1426,24 @@ window.__ModuleLoader__.load({
           const a = (i / ring.length) * Math.PI * 2 - Math.PI / 2
           const x = cx + R2 * Math.cos(a), y = cy + R2 * Math.sin(a)
           const filled = sk.level === 'ok'
-          return h('div', { key: sk.name, title: sk.use, onClick: function () { inject(st, '/' + sk.name) }, style: { position: 'absolute', left: x - 15, top: y - 15, width: 30, height: 30, borderRadius: '50%', border: filled ? '2px solid #4ade80' : '2px solid #52525b', background: filled ? 'rgba(74,222,128,.15)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, cursor: 'pointer', color: filled ? '#4ade80' : '#8b8b95', lineHeight: 1.2, textAlign: 'center' } }, sk.name.length > 4 ? sk.name.slice(0, 4) + '…' : sk.name)
+          return h('div', { key: sk.name, title: tr('skilldesc.' + sk.name), onClick: function () { inject(st, '/' + sk.name) }, style: { position: 'absolute', left: x - 15, top: y - 15, width: 30, height: 30, borderRadius: '50%', border: filled ? '2px solid #4ade80' : '2px solid #52525b', background: filled ? 'rgba(74,222,128,.15)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, cursor: 'pointer', color: filled ? '#4ade80' : '#8b8b95', lineHeight: 1.2, textAlign: 'center' } }, sk.name.length > 4 ? sk.name.slice(0, 4) + '…' : sk.name)
         })
         return h('div', null, [
           h('div', { style: { position: 'relative', width: 220, height: 220, margin: '0 auto 6px' } }, [
             h('div', { onClick: function () { inject(st, '/' + center) }, title: center, style: { position: 'absolute', left: cx - 30, top: cy - 30, width: 60, height: 60, borderRadius: '50%', background: 'rgba(188,140,255,.18)', border: '2px solid #c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#c084fc', cursor: 'pointer', textAlign: 'center', lineHeight: 1.3 } }, '/' + center),
             nodes,
           ]),
-          h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', textAlign: 'center', marginBottom: 8 } }, '中心 = 推荐 · 环绕 = 相关（实心已装/空心未装）· 点击注入 /skill'),
-          h('div', { className: 'dsws-grp' }, [Ic({ n: 'compass', size: 12 }), h('span', null, '全部技能')]),
+          h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', textAlign: 'center', marginBottom: 8 } }, tr('skill.centerRing')),
+          h('div', { className: 'dsws-grp' }, [Ic({ n: 'compass', size: 12 }), h('span', null, tr('skill.all'))]),
           list.map(function (sk) {
             const on = rec.indexOf(sk.name) >= 0
             return h('div', { key: sk.name, className: 'dsws-skill', style: on ? { background: 'rgba(188,140,255,.12)', borderRadius: 6 } : null }, [
               Dot({ level: sk.level }),
               h('div', { className: 'dsws-tt' }, [
                 h('div', { className: 'dsws-tt-name', style: on ? { color: '#c084fc' } : null }, [h('span', null, '/' + sk.name), on ? Ic({ n: 'star', size: 11, color: '#c084fc' }) : null]),
-                h('div', { className: 'dsws-tt-sub dsws-ellip', title: sk.use }, sk.use),
+                h('div', { className: 'dsws-tt-sub dsws-ellip', title: tr('skilldesc.' + sk.name) }, tr('skilldesc.' + sk.name)),
               ]),
-              h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + sk.name) } }, '加载'),
+              h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + sk.name) } }, tr('act.load')),
             ])
           }),
         ])
@@ -1121,12 +1452,12 @@ window.__ModuleLoader__.load({
       const SkillsTab = ({ st }) => {
         const groups = compute(st)
         let rec = []
-        let recTitle = '通用建议'
+        let recTitle = tr('skill.generic')
         if (st.activeMap !== null) {
           const g = groups.find(function (x) { return x.m.number === st.activeMap })
           if (g && /research/.test(g.m.notes)) rec = ['research']
           if (g && /grill/.test(g.m.notes)) rec = ['grilling', 'domain-modeling']
-          recTitle = '「' + g.m.title + '」Notes 指定'
+          recTitle = tr('skill.notes', { m: g.m.title })
         }
         if (!rec.length) rec = ['ask-matt']
         const list = SKILLS.map(function (sk) {
@@ -1140,14 +1471,14 @@ window.__ModuleLoader__.load({
               ]),
               h('div', { className: 'dsws-tt-sub dsws-ellip', title: sk.use }, sk.use),
             ]),
-            h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + sk.name) } }, '加载'),
+            h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + sk.name) } }, tr('act.load')),
           ])
         })
         const head = h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 } }, [
           h('div', { className: 'dsws-grp', style: { margin: 0 } }, [Ic({ n: 'compass', size: 12 }), h('span', null, recTitle)]),
           h('span', { style: { flex: 1 } }),
-          h('span', { className: 'dsws-seg' + (st.skillView === 'list' ? ' on' : ''), onClick: function () { st.skillView = 'list'; emit(st) }, style: { fontSize: 11 } }, '列表'),
-          h('span', { className: 'dsws-seg' + (st.skillView === 'ring' ? ' on' : ''), onClick: function () { st.skillView = 'ring'; emit(st) }, style: { fontSize: 11 } }, '圆环'),
+          h('span', { className: 'dsws-seg' + (st.skillView === 'list' ? ' on' : ''), onClick: function () { st.skillView = 'list'; emit(st) }, style: { fontSize: 11 } }, tr('skill.list')),
+          h('span', { className: 'dsws-seg' + (st.skillView === 'ring' ? ' on' : ''), onClick: function () { st.skillView = 'ring'; emit(st) }, style: { fontSize: 11 } }, tr('skill.ring')),
         ])
         if (st.skillView === 'ring') return h('div', null, [head, h(RingSkills, { st: st, rec: rec, list: SKILLS })])
         return h('div', null, [
@@ -1159,7 +1490,7 @@ window.__ModuleLoader__.load({
         ])
       }
 
-      // ---- 5.7 环境检查（横幅 + 红/黄/绿分组卡；失败不兜假数据）----
+      // ---- 5.7 环境检查（定稿 5A：横幅 + 红/黄/绿分组卡；v12 失败不兜假数据）----
       const ChecksTab = ({ st }) => {
         React.useEffect(function () { loadChecks(st, false) }, [])
         const cs = activeChecks(st)
@@ -1170,7 +1501,7 @@ window.__ModuleLoader__.load({
           const hint = c.hint || ''
           const m = hint.match(/\/([a-z0-9-]+)/i)
           if (!m) return null
-          return h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + m[1]) } }, '用 /' + m[1] + ' 处理')
+          return h('button', { className: 'dsws-btn', onClick: function () { inject(st, '/' + m[1]) } }, tr('skill.treat', { s: m[1] }))
         }
         const card = (c) => h('div', { key: c.id, className: 'dsws-ccard' }, [
           h('div', { className: 'nm' }, c.name),
@@ -1183,23 +1514,23 @@ window.__ModuleLoader__.load({
         ]) : null
         return h('div', null, [
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12 } }, [
-            h('span', { style: { display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'gear', size: 12 }), h('span', null, '环境检查 ' + envLabel(st))]),
+            h('span', { style: { display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'gear', size: 12 }), h('span', null, tr('env.title', { n: envLabel(st) }))]),
             h('span', { style: { flex: 1 } }),
             h('button', { className: 'dsws-btn', disabled: st.checking, onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
               Ic({ n: 'refresh', size: 11 }),
-              h('span', null, st.checking ? '检查中…' : '重新检查'),
+              h('span', null, st.checking ? tr('env.checking') : tr('env.recheck')),
             ]),
           ]),
-          st.checksMode === 'err' ? h('div', { className: 'dsws-banner bad', style: { cursor: 'default' } }, [Ic({ n: 'alert', size: 13 }), h('span', null, '环境检查失败：' + st.checksError)]) : null,
-          st.checksMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, marginBottom: 6 } }, '检测中…') : null,
-          bad.length ? h('div', { className: 'dsws-banner bad', style: { cursor: 'default' } }, [Ic({ n: 'alert', size: 13 }), h('span', null, bad.length + ' 项缺失，先补齐再开始 wayfinder 工作')]) : null,
-          grp('缺失', '#f87171', bad),
-          grp('部分就绪', '#f59e0b', warn),
-          grp('就绪', '#4ade80', ok),
+          st.checksMode === 'err' ? h('div', { className: 'dsws-banner bad', style: { cursor: 'default' } }, [Ic({ n: 'alert', size: 13 }), h('span', null, tr('env.failFull', { err: st.checksError }))]) : null,
+          st.checksMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, marginBottom: 6 } }, tr('env.detecting')) : null,
+          bad.length ? h('div', { className: 'dsws-banner bad', style: { cursor: 'default' } }, [Ic({ n: 'alert', size: 13 }), h('span', null, tr('env.missingBanner', { n: bad.length }))]) : null,
+          grp(tr('env.missing'), '#f87171', bad),
+          grp(tr('env.partial'), '#f59e0b', warn),
+          grp(tr('env.ready'), '#4ade80', ok),
         ])
       }
 
-      // ---- 5.8 主面板（可拖动 · 8 向缩放 · 三视图 · 跟随当前会话 + 刷新遮罩）----
+      // ---- 5.8 主面板（可拖动 · 8 向缩放 · 三视图 · v14 跟随当前会话 + 刷新遮罩）----
       const OverlayPanel = (props) => {
         const cur = props.useSessions((x) => x.current)
         const s = useStore(cur)
@@ -1208,7 +1539,7 @@ window.__ModuleLoader__.load({
         if (!s.open) return null
         const groups = compute(s)
         const active = s.activeMap !== null ? groups.find(function (x) { return x.m.number === s.activeMap }) : null
-        // 窄屏阈值（面板宽 <380px 时动作按钮折叠为纯图标）
+        // v14-19：窄屏阈值（面板宽 <380px 时动作按钮折叠为纯图标）
         const narrow = s.size.w < 380
         const tabBtn = (id, icon, label) => h('button', { className: 'dsws-tab' + (s.tab === id ? ' on' : ''), onClick: function () { s.tab = id; emit(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
           Ic({ n: icon, size: 12 }),
@@ -1263,32 +1594,32 @@ window.__ModuleLoader__.load({
         return h('div', { ref: panelRef, className: 'dsws-panel', style: panelStyle }, [
           h('div', { className: 'dsws-head', onMouseDown: startDrag }, [
             h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } }, Icon({ scheme: s.ui.icon, size: 17 }), 'DSH-Waystation'),
-            // 「真数据」→ 显示 repo 名（对未来用户更有意义；异常时红色提示）
+            // v19-35：「真数据」→ 显示 repo 名（对未来用户更有意义；异常时红色提示）
             h('span', { className: 'dsws-chip ' + (s.snapMode === 'err' ? 'dsws-chip-t' : 'dsws-chip-m'), style: { maxWidth: 220 } }, [
               Ic({ n: s.snapMode === 'err' ? 'alert' : 'info', size: 11 }),
-              h('span', { className: 'dsws-ellip', title: repoStr(s) }, s.snapMode === 'err' ? '快照异常' : s.snapMode === 'loading' ? '加载中…' : repoStr(s)),
+              h('span', { className: 'dsws-ellip', title: repoStr(s) }, s.snapMode === 'err' ? tr('panel.snapErr') : s.snapMode === 'loading' ? tr('panel.loading') : repoStr(s)),
             ]),
             h('span', { style: { flex: 1 } }),
             h('button', { className: 'dsws-btn ghost', onClick: function () { s.open = false; emit(s) }, style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'x', size: 12 })),
           ]),
-          h('div', { className: 'dsws-tabs' }, [tabBtn('list', 'list', '列表'), tabBtn('skills', 'compass', '技能'), tabBtn('checks', 'gear', '环境检查')]),
+          h('div', { className: 'dsws-tabs' }, [tabBtn('list', 'list', tr('panel.tabList')), tabBtn('skills', 'compass', tr('panel.tabSkills')), tabBtn('checks', 'gear', tr('panel.tabChecks'))]),
           h('div', { className: 'dsws-body', onMouseDown: onBodyDown }, [
             s.tab === 'list' ? (active ? h(MapDetail, { st: s, g: active }) : h(ListTab, { st: s, narrow: narrow })) : null,
             s.tab === 'skills' ? h(SkillsTab, { st: s }) : null,
             s.tab === 'checks' ? h(ChecksTab, { st: s }) : null,
           ]),
-          h('div', { className: 'dsws-rz dsws-rz-n', onMouseDown: onResizeDown('n'), title: '向上拉大' }),
-          h('div', { className: 'dsws-rz dsws-rz-s', onMouseDown: onResizeDown('s'), title: '向下拉大' }),
-          h('div', { className: 'dsws-rz dsws-rz-e', onMouseDown: onResizeDown('e'), title: '向右拉大' }),
-          h('div', { className: 'dsws-rz dsws-rz-w', onMouseDown: onResizeDown('w'), title: '向左拉大' }),
-          h('div', { className: 'dsws-rz dsws-rz-ne', onMouseDown: onResizeDown('ne'), title: '右上角缩放' }),
-          h('div', { className: 'dsws-rz dsws-rz-nw', onMouseDown: onResizeDown('nw'), title: '左上角缩放' }),
-          h('div', { className: 'dsws-rz dsws-rz-se', onMouseDown: onResizeDown('se'), title: '右下角缩放' }),
-          h('div', { className: 'dsws-rz dsws-rz-sw', onMouseDown: onResizeDown('sw'), title: '左下角缩放' }),
-          // 手动刷新遮罩（期间禁点）
+          h('div', { className: 'dsws-rz dsws-rz-n', onMouseDown: onResizeDown('n'), title: tr('rz.n') }),
+          h('div', { className: 'dsws-rz dsws-rz-s', onMouseDown: onResizeDown('s'), title: tr('rz.s') }),
+          h('div', { className: 'dsws-rz dsws-rz-e', onMouseDown: onResizeDown('e'), title: tr('rz.e') }),
+          h('div', { className: 'dsws-rz dsws-rz-w', onMouseDown: onResizeDown('w'), title: tr('rz.w') }),
+          h('div', { className: 'dsws-rz dsws-rz-ne', onMouseDown: onResizeDown('ne'), title: tr('rz.ne') }),
+          h('div', { className: 'dsws-rz dsws-rz-nw', onMouseDown: onResizeDown('nw'), title: tr('rz.nw') }),
+          h('div', { className: 'dsws-rz dsws-rz-se', onMouseDown: onResizeDown('se'), title: tr('rz.se') }),
+          h('div', { className: 'dsws-rz dsws-rz-sw', onMouseDown: onResizeDown('sw'), title: tr('rz.sw') }),
+          // v14-17：手动刷新遮罩（期间禁点）
           s.refreshing ? h('div', { className: 'dsws-shade' }, [
             h('div', { className: 'dsws-spinner' }),
-            h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, '刷新中…'),
+            h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, tr('panel.refreshing')),
           ]) : null,
           s.notice ? h('div', { className: 'dsws-note', style: { display: 'flex', alignItems: 'center', gap: 6 } }, [
             Ic({ n: noticeIcon(s.notice.kind), size: 13, color: NOTICE_COLOR[s.notice.kind] || '#4ade80' }),
@@ -1300,6 +1631,7 @@ window.__ModuleLoader__.load({
       // ---- 5.9 配置页（v25 · settings.plugins.tab「Waystation」：功能配置 + 动作模板编辑器）----
       // 面板默认高度三档 / 开始模板（前缀开关 + execute 模板）/ 动作模板编辑器（其余 6 动作）
       const PANEL_HEIGHT_LABELS = { quarter: '1/4', half: '1/2', twothirds: '2/3' }
+      // T3：模板名/描述在渲染时 tr('tpl.name.*')/tr('tpl.desc.*')（此处保留中文静态表供默认文案参考）
       const TPL_NAMES = {
         diagnose: '诊断', fix: '修复', discuss: '讨论', handoff1: '交接第一击', handoff2: '交接第二击', fixate: '沉淀',
       }
@@ -1332,9 +1664,9 @@ window.__ModuleLoader__.load({
             const v = validateTemplate(id, text || TPL_DEFAULT[id] || '')
             if (!v.ok) {
               const bits = []
-              if (v.missing.length) bits.push('缺少强制占位符 ' + v.missing.map(function (n) { return '{' + n + '}' }).join('、'))
-              if (v.unknown.length) bits.push('未知占位符 ' + v.unknown.map(function (n) { return '{' + n + '}' }).join('、'))
-              errList.push('「' + (TPL_NAMES[id] || id) + '」' + bits.join('；'))
+              if (v.missing.length) bits.push(tr('tpl.missing', { list: v.missing.map(function (n) { return '{' + n + '}' }).join('、') }))
+              if (v.unknown.length) bits.push(tr('tpl.unknown', { list: v.unknown.map(function (n) { return '{' + n + '}' }).join('、') }))
+              errList.push('「' + tr('tpl.name.' + id) + '」' + bits.join('；'))
             }
           }
           check('execute', executeText)
@@ -1379,9 +1711,9 @@ window.__ModuleLoader__.load({
           setTimeout(function () { try { ta.focus(); ta.setSelectionRange(pos, pos) } catch (e) { /* 忽略 */ } }, 0)
         }
         const chip = function (id, n, req) {
-          return h('span', { key: n, className: 'dsws-cfg-chip' + (req ? ' req' : ''), title: req ? '必填占位符：删除后无法保存' : '点击插入到光标处', onClick: function () { insertPh(id, n) } }, [
+          return h('span', { key: n, className: 'dsws-cfg-chip' + (req ? ' req' : ''), title: req ? tr('cfg.chipReq') : tr('cfg.chipInsert'), onClick: function () { insertPh(id, n) } }, [
             h('span', null, '{' + n + '}'),
-            req ? h('span', { className: 'must' }, '必填') : null,
+            req ? h('span', { className: 'must' }, tr('cfg.must')) : null,
           ])
         }
         const tplCard = function (id) {
@@ -1390,14 +1722,14 @@ window.__ModuleLoader__.load({
           const req = (TPL_REQUIRED[id] || []).slice()
           return h('div', { key: id, className: 'dsws-cfg-card' }, [
             h('div', { className: 'dsws-cfg-card-head' }, [
-              h('span', { className: 'dsws-cfg-card-name' }, TPL_NAMES[id]),
+              h('span', { className: 'dsws-cfg-card-name' }, tr('tpl.name.' + id)),
               h('span', { style: { flex: 1 } }),
-              h('button', { className: 'dsws-cfg-btn', onClick: function () { resetTpl(id) } }, '恢复默认'),
+              h('button', { className: 'dsws-cfg-btn', onClick: function () { resetTpl(id) } }, tr('cfg.reset')),
             ]),
-            h('div', { className: 'dsws-cfg-card-desc' }, TPL_DESC[id]),
+            h('div', { className: 'dsws-cfg-card-desc' }, tr('tpl.desc.' + id)),
             h('div', { className: 'dsws-cfg-chips' }, (TPL_PH[id] || []).map(function (n) { return chip(id, n, req.indexOf(n) >= 0) })),
             h('textarea', { ref: function (el) { taRefs.current[id] = el }, className: 'dsws-cfg-ta', placeholder: TPL_DEFAULT[id] || '', value: val, onChange: function (e) { setTpl(id, e.target.value) } }),
-            h('div', { className: 'dsws-cfg-preview' }, [h('span', { className: 'pv-label' }, '效果预览'), preview]),
+            h('div', { className: 'dsws-cfg-preview' }, [h('span', { className: 'pv-label' }, tr('cfg.preview')), preview]),
           ])
         }
         const custom = tpls.execute || ''
@@ -1407,16 +1739,16 @@ window.__ModuleLoader__.load({
             h('span', { className: 't' }, 'DSH-Waystation'),
             h('span', { className: 's', style: { color: saved ? 'var(--dsw-alias-state-success-primary,#4ade80)' : 'var(--dsw-alias-label-caption,#8b8b95)' } }, [
               Ic({ n: saved ? 'check' : 'dot', size: 12 }),
-              h('span', null, saved ? '已保存' : '配置'),
+              h('span', null, saved ? tr('cfg.saved') : tr('cfg.status')),
             ]),
           ]),
-          h('div', { className: 'dsws-cfg-sub' }, '配置面板与动作提示词：静态文本可自由编辑，占位符（{…}）由系统注入真值，点击即可插入。'),
+          h('div', { className: 'dsws-cfg-sub' }, tr('cfg.sub')),
           // 1. 面板默认高度三档
           h('div', { className: 'dsws-cfg-group' }, [
-            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'target', size: 13 }), h('span', null, '面板默认高度')]),
-            h('div', { className: 'dsws-cfg-gdesc' }, '打开面板时使用的初始高度，可随时拖拽调整。'),
+            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'target', size: 13 }), h('span', null, tr('cfg.panelHeight'))]),
+            h('div', { className: 'dsws-cfg-gdesc' }, tr('cfg.panelHeightDesc')),
             h('div', { className: 'dsws-cfg-row' }, [
-              h('span', { className: 'dsws-cfg-label' }, '默认高度'),
+              h('span', { className: 'dsws-cfg-label' }, tr('cfg.defaultHeight')),
               h('div', { className: 'dsws-cfg-seg' }, Object.keys(PANEL_HEIGHT_LABELS).map(function (k) {
                 return h('button', { key: k, className: height === k ? 'on' : '', onClick: function () { setHeight(k) } }, PANEL_HEIGHT_LABELS[k])
               })),
@@ -1424,39 +1756,39 @@ window.__ModuleLoader__.load({
           ]),
           // 2. 开始模板（execute 唯一编辑点；id 供动作模板编辑器锚点跳转）
           h('div', { id: 'dsws-cfg-exec-group', className: 'dsws-cfg-group' }, [
-            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'play', size: 13 }), h('span', null, '开始模板（执行动作）')]),
-            h('div', { className: 'dsws-cfg-gdesc' }, '「执行」按钮注入的提示词；留空使用默认模板。'),
+            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'play', size: 13 }), h('span', null, tr('cfg.startTpl'))]),
+            h('div', { className: 'dsws-cfg-gdesc' }, tr('cfg.startTplDesc')),
             h('div', { className: 'dsws-cfg-row' }, [
               h('label', { className: 'dsws-cfg-sw' }, [
                 h('input', { type: 'checkbox', checked: wf, onChange: function (e) { setWf(e.target.checked) } }),
                 h('span', { className: 'tr' }),
-                h('span', null, '带 /wayfinder 前缀'),
+                h('span', null, tr('cfg.withPrefix')),
               ]),
             ]),
             h('textarea', { ref: function (el) { taRefs.current.execute = el }, className: 'dsws-cfg-ta', placeholder: TPL_DEFAULT.execute || '', value: custom, onChange: function (e) { setTpl('execute', e.target.value) } }),
             h('div', { className: 'dsws-cfg-chips' }, [
               (TPL_PH.execute || []).map(function (n) { return chip('execute', n, (TPL_REQUIRED.execute || []).indexOf(n) >= 0) }),
-              h('button', { className: 'dsws-cfg-btn', style: { marginLeft: 'auto' }, onClick: resetExecute }, '恢复默认'),
+              h('button', { className: 'dsws-cfg-btn', style: { marginLeft: 'auto' }, onClick: resetExecute }, tr('cfg.reset')),
             ]),
-            h('div', { className: 'dsws-cfg-preview' }, [h('span', { className: 'pv-label' }, '效果预览'), renderTemplate('execute', PREVIEW_VALUES)]),
+            h('div', { className: 'dsws-cfg-preview' }, [h('span', { className: 'pv-label' }, tr('cfg.preview')), renderTemplate('execute', PREVIEW_VALUES)]),
           ]),
           // 3. 动作模板编辑器（其余 6 动作）
           h('div', { className: 'dsws-cfg-group' }, [
-            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'note', size: 13 }), h('span', null, '动作模板编辑器')]),
+            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'note', size: 13 }), h('span', null, tr('cfg.tplEditor'))]),
             h('div', { className: 'dsws-cfg-gdesc' }, [
-              h('span', null, '「执行」外的六个动作按钮注入的提示词。点击下方占位符插入到光标处；红色「必填」占位符删除后无法保存。'),
-              h('a', { href: 'javascript:void(0)', onClick: function () { const el = document.getElementById('dsws-cfg-exec-group'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, style: { color: '#bc8cff', cursor: 'pointer', flex: 'none', textDecoration: 'none' } }, '「执行」模板在开始模板节编辑 →'),
+              h('span', null, tr('cfg.tplEditorDesc')),
+              h('a', { href: 'javascript:void(0)', onClick: function () { const el = document.getElementById('dsws-cfg-exec-group'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }) }, style: { color: '#bc8cff', cursor: 'pointer', flex: 'none', textDecoration: 'none' } }, tr('cfg.execHint')),
             ]),
             TPL_EDIT_IDS.map(tplCard),
           ]),
           // 校验错误提示
           errs.length ? h('div', { className: 'dsws-cfg-err' }, [
-            h('div', { className: 't' }, [Ic({ n: 'alert', size: 13 }), h('span', null, '保存被拒绝')]),
+            h('div', { className: 't' }, [Ic({ n: 'alert', size: 13 }), h('span', null, tr('cfg.saveRejected'))]),
             errs.map(function (e, i) { return h('div', { key: i }, '· ' + e) }),
           ]) : null,
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, alignSelf: 'flex-end' } }, [
-            h('button', { className: 'dsws-cfg-btn', onClick: resetAll }, '恢复全部默认'),
-            h('button', { className: 'dsws-cfg-save', onClick: save }, [Ic({ n: 'check', size: 13 }), h('span', null, '保存全部')]),
+            h('button', { className: 'dsws-cfg-btn', onClick: resetAll }, tr('cfg.resetAll')),
+            h('button', { className: 'dsws-cfg-save', onClick: save }, [Ic({ n: 'check', size: 13 }), h('span', null, tr('cfg.saveAll'))]),
           ]),
         ])
       }
@@ -1468,13 +1800,13 @@ window.__ModuleLoader__.load({
         return h('div', { style: { border: '1px solid var(--dsw-alias-border-l1,#2a2d35)', borderRadius: 8, padding: '10px 12px', background: 'var(--dsw-alias-bg-layer-1,#10131a)', fontFamily: 'var(--dsw-font-family)', fontSize: 13, color: 'var(--dsw-alias-label-primary,#e6edf3)', lineHeight: 1.6 } }, [
           h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } }, [
             h('strong', null, 'DSH-Waystation'),
-            h('span', { style: { display: 'flex', alignItems: 'center', gap: 4, color: '#4ade80', fontSize: 12 } }, [Ic({ n: 'dot', size: 10 }), h('span', null, '已加载')]),
+            h('span', { style: { display: 'flex', alignItems: 'center', gap: 4, color: '#4ade80', fontSize: 12 } }, [Ic({ n: 'dot', size: 10 }), h('span', null, tr('run.loaded'))]),
           ]),
-          h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', margin: '6px 0' } }, '环境检查（status）+ 面板（snapshot）均已接真。'),
+          h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', margin: '6px 0' } }, tr('run.desc')),
           h('div', { className: 'dsws-uirow' }, [
-            h('button', { className: 'dsws-btn', onClick: function () { s.open = true; emit(s) } }, '打开面板'),
+            h('button', { className: 'dsws-btn', onClick: function () { s.open = true; emit(s) } }, tr('run.openPanel')),
             // v25：设置面板为 shell 组件本地状态、无公开打开 API（已查证）→ 按钮引导路径（偏离记录见 T2a resolution）
-            h('button', { className: 'dsws-btn', onClick: function () { flash(s, '配置页：设置 → 插件 → Waystation', 'info') } }, '打开配置'),
+            h('button', { className: 'dsws-btn', onClick: function () { flash(s, tr('run.cfgGuide'), 'info') } }, tr('run.openCfg')),
           ]),
         ])
       }

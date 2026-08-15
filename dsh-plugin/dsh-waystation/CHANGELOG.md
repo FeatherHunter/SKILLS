@@ -6,6 +6,23 @@ All notable changes to **dsh-waystation** are documented here.
 
 ---
 
+## [1.3.2] - 2026-08-15 (HOTFIX)
+
+### Fixed · 致命 bug（T12 · npm 1.3.1 bundle 不加载）
+
+- **buildColorOf 重复 `return colorOf` + 多余 `}` 删除**（T9 commit `88d48d77` 引入）：
+  - 1.3.1 npm 包里 buildColorOf 函数结尾误插入了 `return colorOf` 和 `}`
+  - 多余的 `}` 让 apply 函数被提前闭合 → 整个 client bundle 语法无效 → `window.__ModuleLoader__.load` 从未执行
+  - DSH 加载 1.3.1 时报 `bundle loaded without registering via ModuleLoader.load`，所有 T2-T11 改动全部失效
+  - 修复：client.js + package/lib/client.js 删除多余两行，保留单份收尾
+
+### Hardening（建议 · 待开 ticket）
+
+- pre-publish hook 加 `node --check client.js && node --check package/lib/client.js`
+- verify-t3-locale.js 扩展 bundle 语法校验
+
+---
+
 ## [1.3.1] - 2026-08-15
 
 v27 范式 + 13 项用户报告 bug + v27 验证后新需求（label count + 新会话按钮）。

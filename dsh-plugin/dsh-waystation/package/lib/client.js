@@ -668,23 +668,23 @@ window.__ModuleLoader__.load({
       // ============================================================
       // v22：统一引导句（T1 拍板：普通静态文本，用户可改；不是占位符）
       const GUIDE_LINE = '从第一性原理出发完成任务，并对抗式审查。'
-      // #371：map 100% 完成收尾确认 prompt（注入内容保持中文；{n}/{total}/{closed} 点击时替换）
+      // T4 #8：完成 prompt 措辞优化（直接对应用户原话：询问 AI 当前 issue 情况，为什么该 map 还没有关闭，请它进行检查和确认）
       const COMPLETE_PROMPT = '## 完成确认 · MAP #{n}\n' +
         '\n' +
-        '当前地图已完成 100%：共 {total} 个 issue，已关闭 {closed} 个，未关闭 0 个。\n' +
+        '当前地图显示 100% 完成：{closed}/{total} 个 issue 已关闭，但 map 本身仍 open。\n' +
         '\n' +
         '请按以下流程处理：\n' +
         '\n' +
-        '1. 确认收尾：向用户复述上面的完成状态，并逐条核对：「这 {total} 个 issue 是否都已真正完成并标记为 CLOSED？有没有实际已完成却漏标 CLOSED 的？」然后询问：「该地图的全部工作是否已完成，需要做收尾吗？」\n' +
-        '\n' +
-        '2. 用户确认完成 → 执行收尾：与用户一起收尾，例如把最终结果/决定追加进 map 的「Decisions so far」（每个 closed ticket 一行 gist）、确认没有遗留雾区，必要时关闭 map 本体。\n' +
-        '\n' +
-        '3. 用户认为不能算完成 → 不要收尾，先做异常排查：向用户说明「当前显示 100% 完成，可能与实际不符」，并检查以下原因：\n' +
-        '   - 是否有属于该 map 的 issue 没有挂进来（未建立父子/sub-issue 关系，或挂在了别的 map 下）；\n' +
-        '   - 是否有 issue 实际已完成却没有标记为 CLOSED（漏关/误开）——逐个核对 {total} 个 ticket 的完成状态与关闭状态是否一致，并向用户问清楚「为什么这些 issue 已经完成了，却没有标记为 close 的完成状态？」；\n' +
-        '   - 是否有 issue 被直接关闭但内容并未真正交付；\n' +
-        '   - map 正文的票索引与 GitHub 子议题是否一致（漏挂/错挂）。\n' +
-        '   把排查结论与补救建议（补挂 issue / 重开 issue / 补标记 CLOSED）反馈给用户，等用户决定后再行动。\n' +
+        '1. 检查完成状态是否真实：{closed}/{total} 已 CLOSED —— 但 map 本身仍 OPEN。请检查：\n' +
+        '   - 子票是否真的解决了原 Destination？\n' +
+        '   - 是否还有 Not yet specified 中未毕业的事项？\n' +
+        '   - 实际已完成却漏标 CLOSED 的 issue（漏关/误开）—— 逐个核对 ticket 的完成状态与关闭状态是否一致；\n' +
+        '   - 是否有 issue 属于该 map 但未建立 sub-issue 关系；\n' +
+        '2. 确认后处理：\n' +
+        '   - 确实全部完成 → 调用 close + 在 Decisions so far 追加总结（每个 closed ticket 一行 gist）；\n' +
+        '   - 发现遗漏 → 列出未完成项，先解决再重新判断；\n' +
+        '   - 不确定 → 询问用户「该地图的全部工作是否已完成，需要做收尾吗？」不要擅自 close；\n' +
+        '3. 最终目标：要么 close map + 写 Decisions so far 总结，要么明确指出未完成项。\n' +
         '\n' +
         GUIDE_LINE
       // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认模板文本，T2b 可编辑）
@@ -748,10 +748,11 @@ window.__ModuleLoader__.load({
       }
       // 默认模板文本（空 = 用默认；T1 规格 §3 默认文本 = 现状代码文本）
       const TPL_DEFAULT = {
-        diagnose: '/triage\n{url}\n\n' + GUIDE_LINE,
-        fix: '/wayfinder\n{url}\n\n' + GUIDE_LINE,
-        discuss: '/wayfinder\n{url}\n\n' + GUIDE_LINE,
-        execute: '{url}\n\n' + GUIDE_LINE,
+        // T4 #9-12：4 个动作按钮 prompt 明确化
+        diagnose: '/triage\n{url}\n\n请诊断该 issue 并分流建议：\n1. 复现 / 现象 / 影响范围\n2. 根因推断（多个候选）\n3. 分流建议（修复 / 关闭 / 重设计 / 等）\n\n' + GUIDE_LINE,
+        fix: '/wayfinder\n{url}\n\n请修复该 bug：\n1. 先复现\n2. 定位根因\n3. 实施修复\n4. 加测试\n5. 对抗式审查\n\n' + GUIDE_LINE,
+        discuss: '/wayfinder\n{url}\n\n请与我就该 issue 进行讨论（grill）：\n1. 目标 / 边界\n2. 风险 / 假设\n3. 选项 / 权衡\n4. 决策\n\n' + GUIDE_LINE,
+        execute: '/wayfinder\n{url}\n\n请执行该 issue：\n1. 读 Description / Notes / 阻塞关系\n2. 制定方案\n3. 实施\n4. 验收\n\n' + GUIDE_LINE,
         handoff1: '/handoff\n\n请把当前会话生成交接文档，写到 .scratch/handoff/{ts}.md（相对当前工作目录），包含三部分：\n' +
           '1. 结论：本次会话已确认的决定与成果；\n2. 未完成事项：下一步要继续的事；\n3. 建议 skill：新会话接手时建议加载的技能。\n\n' + GUIDE_LINE,
         handoff2: '/read .scratch/handoff/{file}\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后' + GUIDE_LINE,

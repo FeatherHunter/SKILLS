@@ -1387,9 +1387,10 @@ window.__ModuleLoader__.load({
         return h('div', { className: 'dsws-trow', style: indent ? { paddingLeft: 18 } : null }, [
           h('div', { className: 'dsws-tt' }, [
             h('div', { className: 'dsws-tt-name' }, [
+              // T2 #3：编号前置
+              h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + t.number),
               TypeChip({ type: t.type }),
               h('span', { className: 'dsws-tt-wrap', style: { flex: 1 }, title: t.title }, t.title),
-              h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + t.number),
             ]),
             h('div', { className: 'dsws-tt-sub', style: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } }, [
               t.claimedBy ? subItem('person', '#58a6ff', tr('map.subClaimed', { who: t.claimedBy })) : null,
@@ -1609,11 +1610,12 @@ window.__ModuleLoader__.load({
           }, [
             h('div', { style: { flex: 1, minWidth: 0 } }, [
               h('div', { style: { display: 'flex', alignItems: 'center', gap: 5 } }, [
+                // T2 #3：编号前置
+                h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + x.number),
                 isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, flex: 'none', fontWeight: 600 } }, [Ic({ n: 'map', size: 12 }), h('span', null, tr('list.mapChip'))]) : null,
                 h('span', { className: 'dsws-tt-wrap', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
                 // 已关闭标识（低调：灰色小 chip + 淡标题；不喧宾夺主，关注点是未完成任务）
                 !isOpen ? h('span', { className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, flex: 'none', background: 'rgba(139,139,149,.12)', color: '#8b8b95', border: '1px solid rgba(139,139,149,.35)' } }, [Ic({ n: 'check', size: 9 }), h('span', null, tr('map.subClosed'))]) : null,
-                h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + x.number),
               ]),
               (shown.length || blocked) ? h('div', { style: { marginTop: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 } }, [
                 shown.map(function (l, i) {
@@ -1640,7 +1642,7 @@ window.__ModuleLoader__.load({
             kpi(occCount(st), tr('list.kpi.occupied'), 'lock', '#f0883e'),
             kpi(closedIssues.length, tr('list.kpi.closed'), 'check', '#52525b'),
             h('span', { style: { flex: 1 } }),
-            h('button', { className: 'dsws-btn', onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
+            // T2 #2：刷新按钮已上移至 OverlayPanel tabs 行
           ]),
           nBad > 0 ? h('div', { className: 'dsws-banner bad', onClick: function () { st.tab = 'checks'; emit(st) } }, [
             Ic({ n: 'alert', size: 13 }),
@@ -1942,7 +1944,13 @@ window.__ModuleLoader__.load({
             h('span', { style: { flex: 1 } }),
             h('button', { className: 'dsws-btn ghost', title: tr('panel.closeTitle'), onClick: function () { s.open = false; emit(s) }, style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'x', size: 12 })),
           ]),
-          h('div', { className: 'dsws-tabs' }, [tabBtn('list', 'list', tr('panel.tabList')), tabBtn('skills', 'compass', tr('panel.tabSkills')), tabBtn('checks', 'gear', tr('panel.tabChecks'))]),
+                  h('div', { className: 'dsws-tabs' }, [
+          tabBtn('list', 'list', tr('panel.tabList')),
+          tabBtn('skills', 'compass', tr('panel.tabSkills')),
+          tabBtn('checks', 'gear', tr('panel.tabChecks')),
+          // T2 #2：刷新按钮上移至 tabs 末尾（紧贴环境检查右边 · 用户需求）
+          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 'auto', padding: '2px 8px', fontSize: 11 } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
+        ]),
           h('div', { className: 'dsws-body', onMouseDown: onBodyDown }, [
             s.tab === 'list' ? (active ? h(MapDetail, { st: s, g: active }) : h(ListTab, { st: s, narrow: narrow })) : null,
             s.tab === 'skills' ? h(SkillsTab, { st: s }) : null,

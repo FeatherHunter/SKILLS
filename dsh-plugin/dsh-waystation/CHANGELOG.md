@@ -14,6 +14,9 @@ All notable changes to **dsh-waystation** are documented here.
   - `.dsws-cfg-preview` 移除 `max-height:80px` + `overflow:auto` → 预览区全展开
   - `.dsws-cfg-ta` textarea 增加 auto-grow（内容自适应高度）+ `resize:none`（禁手动拖拽）→ 面板内零内层滚动，写多少行高度自适应多少行，滚动只发生在最外层（DSH settings）
   - 图眼实测：内层滚动容器 11 → 0
+- **#13 新会话按钮与执行按钮同尺寸 + 窄屏折叠（真正实现）**：
+  - 尺寸对齐 mkRowAction（padding 3px10px→1px6px · fontSize 11 · gap 3 · icon 12→10）——此前文字按钮明显大于执行按钮
+  - issueRow 增加 narrow 折叠（narrow 时文字隐藏只留 external-link 图标，与执行按钮一致）——此前面板变窄时按钮不折叠
 - **#6 阻塞筛选（真正实现）**：
   - 补 `list.state.blocked` locale（zh: 阻塞 / en: Blocked）
   - 实现 blocked 过滤逻辑（open 且存在 open 阻塞者）——此前 chip 存在但点击等同 open

@@ -23,6 +23,14 @@ All notable changes to **dsh-waystation** are documented here.
   - 新增 `tests/verify-blocked-filter.js`（3/3 PASS）
 - 新增 `tests/verify-config-scroll.html`（配置面板滚动回归对照）
 
+### Fixed · 用户逐个核对 13 项后反馈的 6 点（commit 04321e12）
+
+- **#2 刷新按钮位置**：紧贴「环境检查」右边（去 marginLeft:auto 推右）
+- **#5 打开面板白等**：数据新鲜直接展示不再强制 refresh；过期保留旧数据后台静默刷新；首开才 loading
+- **#6 阻塞筛选**：改「被占用」口径（assignee 或 open 阻塞者）与 KPI 一致；KPI「占用」改名「阻塞」
+- **#8 map 行完成态**：主列表 map 行子票全关 → 绿色「完成」+ 收尾 prompt（与 MapDetail 一致）
+- **#10 执行 prompt 双重 /wayfinder**：execute 模板去前缀 + withWayfinderPrefix 守卫去重
+
 ### Technical
 
 - 双源镜像一致（client.js ↔ package/lib/client.js）

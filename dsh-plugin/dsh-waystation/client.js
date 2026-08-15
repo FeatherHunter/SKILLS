@@ -194,9 +194,12 @@ return {
         'nav.takeable': '可接',
         'nav.occupied': '占用',
         'nav.env': '环境',
+        'nav.envTitle': '环境检查 ({n}/8)',
+        'nav.takeableTitle': '可接 = 未认领可执行的任务数',
+        'nav.occupiedTitle': '占用 = 已认领未关闭的任务数',
         'nav.refresh': '更新',
         'nav.refreshTitle': '重新检查 + 刷新快照',
-        'nav.fixateTitle': '沉淀：注入零丢失快照 prompt',
+        'nav.fixateTitle': '保存进度快照 · 注入零丢失 prompt',
         'nav.handoff': '交接',
         'nav.handoffReady': '交接给新会话',
         'nav.handoffTitle': '交接：发送 /handoff 生成交接文档',
@@ -234,6 +237,7 @@ return {
         'list.tagsTitle': '全部标签：{names}（点击展开）',
         'list.tagsCollapseTitle': '收起标签',
         'list.copyLinkTitle': '复制链接',
+        'list.openInGithubTitle': '在 GitHub 上查看 #{n}',
         'list.mapTitle': '查看地图详情',
         'list.state.all': '全部', 'list.state.open': 'Open', 'list.state.closed': '已关闭',
         'list.sort.updatedAt': '更新', 'list.sort.createdAt': '创建', 'list.sort.number': '编号', 'list.sort.title': '标题',
@@ -247,7 +251,10 @@ return {
         'map.subClaimed': '已认领 {who}',
         'map.subBlocked': '被阻塞：{who}',
         'map.subClosed': '已关闭',
+        'map.executeTitle': '执行 · 注入地图开始提示词',
+        'map.doneTitle': '完成 · 注入收尾确认 prompt',
         'skill.centerRing': '中心 = 推荐 · 环绕 = 相关（实心已装/空心未装）· 点击注入 /skill',
+        'skill.centerTitle': '推荐 {skill} · 注入 /{skill}',
         'skill.all': '全部技能',
         'skill.generic': '通用建议',
         'skill.notes': '「{m}」Notes 指定',
@@ -271,7 +278,8 @@ return {
         'panel.tabSkills': '技能',
         'panel.tabChecks': '环境检查',
         'panel.refreshing': '刷新中…',
-        'rz.n': '向上拉大', 'rz.s': '向下拉大', 'rz.e': '向右拉大', 'rz.w': '向左拉大',
+        'panel.closeTitle': '关闭面板',
+        'rz.n': '拖上边 = 加高面板', 'rz.s': '拖下边 = 加高面板', 'rz.e': '拖右边 = 加宽面板', 'rz.w': '拖左边 = 加宽面板',
         'rz.ne': '右上角缩放', 'rz.nw': '左上角缩放', 'rz.se': '右下角缩放', 'rz.sw': '左下角缩放',
         'toast.injectedHandoff': '已注入 /handoff 交接模板（含时间戳文件名），确认后发送',
         'toast.copiedHandoff': '已复制交接文档指令',
@@ -355,9 +363,12 @@ return {
         'nav.takeable': 'Ready',
         'nav.occupied': 'Busy',
         'nav.env': 'Env',
+        'nav.envTitle': 'Environment checks ({n}/8)',
+        'nav.takeableTitle': 'Ready = unclaimed, takeable tasks',
+        'nav.occupiedTitle': 'Busy = claimed but not yet closed',
         'nav.refresh': 'Refresh',
         'nav.refreshTitle': 'Re-check + refresh snapshot',
-        'nav.fixateTitle': 'Consolidate: inject zero-loss snapshot prompt',
+        'nav.fixateTitle': 'Save a snapshot · inject the zero-loss prompt',
         'nav.handoff': 'Handoff',
         'nav.handoffReady': 'Handoff · new session',
         'nav.handoffTitle': 'Handoff: send /handoff to generate the handoff doc',
@@ -395,6 +406,7 @@ return {
         'list.tagsTitle': 'All labels: {names} (click to expand)',
         'list.tagsCollapseTitle': 'Collapse labels',
         'list.copyLinkTitle': 'Copy link',
+        'list.openInGithubTitle': 'Open #{n} on GitHub',
         'list.mapTitle': 'View map details',
         'list.state.all': 'All', 'list.state.open': 'Open', 'list.state.closed': 'Closed',
         'list.sort.updatedAt': 'Updated', 'list.sort.createdAt': 'Created', 'list.sort.number': 'Number', 'list.sort.title': 'Title',
@@ -408,7 +420,10 @@ return {
         'map.subClaimed': 'Claimed by {who}',
         'map.subBlocked': 'Blocked by: {who}',
         'map.subClosed': 'Closed',
+        'map.executeTitle': 'Execute · inject the map\'s start prompt',
+        'map.doneTitle': 'Complete · inject the wrap-up confirmation prompt',
         'skill.centerRing': 'Center = recommended · Ring = related (filled = installed / hollow = not) · click to inject /skill',
+        'skill.centerTitle': 'Recommended {skill} · click to inject /{skill}',
         'skill.all': 'All skills',
         'skill.generic': 'General suggestion',
         'skill.notes': 'Specified by "{m}" Notes',
@@ -432,7 +447,8 @@ return {
         'panel.tabSkills': 'Skills',
         'panel.tabChecks': 'Checks',
         'panel.refreshing': 'Refreshing…',
-        'rz.n': 'Expand up', 'rz.s': 'Expand down', 'rz.e': 'Widen right', 'rz.w': 'Widen left',
+        'panel.closeTitle': 'Close panel',
+        'rz.n': 'Drag the top edge up = grow taller', 'rz.s': 'Drag the bottom edge down = grow taller', 'rz.e': 'Drag the right edge right = grow wider', 'rz.w': 'Drag the left edge left = grow wider',
         'rz.ne': 'Resize NE', 'rz.nw': 'Resize NW', 'rz.se': 'Resize SE', 'rz.sw': 'Resize SW',
         'toast.injectedHandoff': '/handoff template injected (timestamped filename) — confirm before sending',
         'toast.copiedHandoff': 'Handoff command copied',
@@ -1299,12 +1315,12 @@ return {
           Icon({ scheme: s.ui.icon, size: 14 }),
           h('span', null, 'Waystation'),
         ]),
-        seg('target', [h('span', null, tr('nav.takeable')), num(String(fr), '2ch')], '#4ade80', function () { go('list') }),
-        seg('lock', [h('span', null, tr('nav.occupied')), num(String(blk), '2ch')], '#f0883e', function () { go('list') }),
+        seg('target', [h('span', null, tr('nav.takeable')), num(String(fr), '2ch')], '#4ade80', function () { go('list') }, tr('nav.takeableTitle')),
+        seg('lock', [h('span', null, tr('nav.occupied')), num(String(blk), '2ch')], '#f0883e', function () { go('list') }, tr('nav.occupiedTitle')),
         seg('note', tr('nav.word'), '#c084fc', function () { injectFixate(s) }, tr('nav.fixateTitle')),
         seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
         // v19-36：环境段移至末尾（更新左侧），用户少点
-        seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }),
+        seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }, tr('nav.envTitle', { n: n < 0 ? '?' : String(n) })),
         h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, tr('nav.refresh') + ' ' + timeStr),
       ])
       if (!amber) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
@@ -1345,7 +1361,7 @@ return {
           // #361 能力保留（同 cwd + 自动命名 + 预填指令）；#394：去 ghost/icon-only，与 nav.handoff 解耦
           //   marginLeft:4 与左侧 mkRowAction 形成隐式分组（动作组 vs 辅助组）
           h('button', { className: 'dsws-btn', onClick: function (e) { e.stopPropagation(); openInNewSession(st, t) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', marginLeft: 4 } }, [Ic({ n: 'external-link', size: 12 }), h('span', null, tr('list.newSessionLabel'))]),
-          h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'link', size: 12 })),
+          h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: t.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'link', size: 12 })),
         ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, tr('act.view')),
       ])
     }
@@ -1366,7 +1382,7 @@ return {
           // #371：子票全关（stats.total>0 且 closed===total）→ 按钮切「完成」（绿），注入收尾确认 prompt；
           //   空 map（total=0）不误判为完成，维持「执行」
           (m.stats && m.stats.total > 0 && m.stats.closed === m.stats.total)
-            ? h('button', { className: 'dsws-btn primary', onClick: function () {
+            ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function () {
                 const text = COMPLETE_PROMPT
                   .split('{n}').join(String(m.number || ''))
                   .split('{total}').join(String(m.stats.total))
@@ -1376,7 +1392,7 @@ return {
                 Ic({ n: 'check', size: 10 }),
                 h('span', null, tr('act.done')),
               ])
-            : h('button', { className: 'dsws-btn primary', onClick: function () {
+            : h('button', { className: 'dsws-btn primary', title: tr('map.executeTitle'), onClick: function () {
                 const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
                 inject(st, (cfg.withWayfinder ? '/wayfinder\n' : '') + body)
               }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
@@ -1539,7 +1555,7 @@ return {
           //   marginLeft:4 与左侧 mkRowAction 形成隐式分组（动作组 vs 辅助组）
           isOpen ? h('button', { className: 'dsws-btn', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', flex: 'none', marginLeft: 4 } }, [Ic({ n: 'external-link', size: 12 }), h('span', null, tr('list.newSessionLabel'))]) : null,
           h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
-          h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
+          h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: x.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
         ])
         return h('div', {
           key: x.number,
@@ -1643,7 +1659,7 @@ return {
       })
       return h('div', null, [
         h('div', { style: { position: 'relative', width: 220, height: 220, margin: '0 auto 6px' } }, [
-          h('div', { onClick: function () { inject(st, '/' + center) }, title: center, style: { position: 'absolute', left: cx - 30, top: cy - 30, width: 60, height: 60, borderRadius: '50%', background: 'rgba(188,140,255,.18)', border: '2px solid #c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#c084fc', cursor: 'pointer', textAlign: 'center', lineHeight: 1.3 } }, '/' + center),
+          h('div', { onClick: function () { inject(st, '/' + center) }, title: tr('skill.centerTitle', { skill: center }), style: { position: 'absolute', left: cx - 30, top: cy - 30, width: 60, height: 60, borderRadius: '50%', background: 'rgba(188,140,255,.18)', border: '2px solid #c084fc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#c084fc', cursor: 'pointer', textAlign: 'center', lineHeight: 1.3 } }, '/' + center),
           nodes,
         ]),
         h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', textAlign: 'center', marginBottom: 8 } }, tr('skill.centerRing')),
@@ -1787,7 +1803,7 @@ return {
           Icon({ scheme: 'compass', size: 15 }),
           h('span', { style: { fontWeight: 600, fontSize: 13 } }, 'Waystation'),
           h('span', { style: { flex: 1 } }),
-          h('button', { className: 'dsws-btn ghost', onClick: closeDock, style: { display: 'inline-flex', alignItems: 'center', padding: '2px 6px', fontSize: 11 } }, Ic({ n: 'x', size: 12 })),
+          h('button', { className: 'dsws-btn ghost', title: tr('panel.closeTitle'), onClick: closeDock, style: { display: 'inline-flex', alignItems: 'center', padding: '2px 6px', fontSize: 11 } }, Ic({ n: 'x', size: 12 })),
         ]),
         // 标签行下沿 = 与对话/轨迹一致的横线
         h('div', { className: 'dsws-tabs', style: { padding: '0 12px 7px', borderBottom: '1px solid var(--dsw-alias-border-l1,#2a2d35)', flex: 'none' } }, [
@@ -1882,7 +1898,7 @@ return {
             h('span', { className: 'dsws-ellip', title: repoStr(s) }, s.snapMode === 'err' ? tr('panel.snapErr') : s.snapMode === 'loading' ? tr('panel.loading') : repoStr(s)),
           ]),
           h('span', { style: { flex: 1 } }),
-          h('button', { className: 'dsws-btn ghost', onClick: function () { s.open = false; emit(s) }, style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'x', size: 12 })),
+          h('button', { className: 'dsws-btn ghost', title: tr('panel.closeTitle'), onClick: function () { s.open = false; emit(s) }, style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'x', size: 12 })),
         ]),
         h('div', { className: 'dsws-tabs' }, [tabBtn('list', 'list', tr('panel.tabList')), tabBtn('skills', 'compass', tr('panel.tabSkills')), tabBtn('checks', 'gear', tr('panel.tabChecks'))]),
         h('div', { className: 'dsws-body', onMouseDown: onBodyDown }, [

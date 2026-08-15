@@ -177,7 +177,8 @@ window.__ModuleLoader__.load({
       '.dsws-gate .g.open{border-color:rgba(74,222,128,.75);color:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.3)}',
       '.dsws-dest{position:relative;margin-top:14px;border-radius:14px;padding:14px 12px 12px;text-align:center;background:linear-gradient(180deg,rgba(192,132,252,.1),rgba(88,166,255,.03) 70%,transparent);border:1.5px solid rgba(192,132,252,.35)}',
       '.dsws-dest .ring{width:72px;height:72px;margin:0 auto;position:relative}',
-      '.dsws-dest .ring svg{transform:rotate(-90deg)}',
+      // v1.4 修复：rotate(-90deg) 只作用于进度环 svg（直接子元素），不波及 core 旗帜（旗帜保持竖直）
+      '.dsws-dest .ring > svg{transform:rotate(-90deg)}',
       '.dsws-dest .ring .track{stroke:rgba(255,255,255,.07);fill:none;stroke-width:6}',
       '.dsws-dest .ring .prog{fill:none;stroke-width:6;stroke-linecap:round;stroke:rgba(192,132,252,.7)}',
       '.dsws-dest .core{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}',
@@ -1682,13 +1683,25 @@ window.__ModuleLoader__.load({
               ]),
               h('div', { className: 'title' }, tr('map.destCap')),
               h('div', { className: 'acts' }, [
-                h('button', { className: 'dsws-btn primary', onClick: function () {
-                  const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
-                  inject(st, withWayfinderPrefix(body))
-                }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', fontSize: 11, background: '#4ade80', borderColor: 'transparent', color: '#04120a', fontWeight: 700 } }, [
-                  Ic({ n: 'play', size: 11 }),
-                  h('span', null, tr('map.startBtn', { n: m.number })),
-                ]),
+                // v1.4：底部按钮与顶部同语义 —— 完成态「完成」（COMPLETE_PROMPT 同列表）/ 未完成「执行」（execute 模板）
+                (m.stats && m.stats.total > 0 && m.stats.closed === m.stats.total)
+                  ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function () {
+                      const text = COMPLETE_PROMPT
+                        .split('{n}').join(String(m.number || ''))
+                        .split('{total}').join(String(m.stats.total))
+                        .split('{closed}').join(String(m.stats.closed))
+                      inject(st, text)
+                    }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', fontSize: 11, background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 700 } }, [
+                      Ic({ n: 'check', size: 11 }),
+                      h('span', null, tr('act.done')),
+                    ])
+                  : h('button', { className: 'dsws-btn primary', title: tr('map.executeTitle'), onClick: function () {
+                      const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
+                      inject(st, withWayfinderPrefix(body))
+                    }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', fontSize: 11, background: '#4ade80', borderColor: 'transparent', color: '#04120a', fontWeight: 700 } }, [
+                      Ic({ n: 'play', size: 11 }),
+                      h('span', null, tr('act.execute')),
+                    ]),
                 h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + m.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 11 } }, [Ic({ n: 'link', size: 11 }), h('span', null, tr('map.archive'))]),
               ]),
             ]),

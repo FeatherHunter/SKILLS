@@ -205,6 +205,48 @@ return {
       }
     }
 
+    // v1.4（T1 #442）：blockedBy DAG 最长路径深度分层
+    //   level(root) = 0（无依赖）；level(x) = 1 + max(level(所有直接阻塞者))
+    //   同层 = 无依赖互斥 → 可并行；层间 = 必须串行（上层全 closed 才解锁）
+    //   返回 { byNumber: {n: level}, levels: [{level, open, closed, total, frontier, claimed, blocked, numbers:[]}] }
+    function computeLevels(tickets) {
+      const byNum = {}
+      tickets.forEach(function (t) { byNum[t.number] = t })
+      const memo = {}
+      const levelOf = function (t) {
+        if (memo[t.number] !== undefined) return memo[t.number]
+        const blockers = (t.blockedBy || []).map(function (b) { return byNum[b] }).filter(Boolean)
+        if (!blockers.length) { memo[t.number] = 0; return 0 }
+        let maxL = -1
+        blockers.forEach(function (b) { const l = levelOf(b); if (l > maxL) maxL = l })
+        memo[t.number] = maxL + 1
+        return memo[t.number]
+      }
+      const byNumber = {}
+      tickets.forEach(function (t) { byNumber[t.number] = levelOf(t) })
+      const levels = []
+      tickets.forEach(function (t) {
+        const lv = byNumber[t.number]
+        let layer = levels[lv]
+        if (!layer) { layer = { level: lv, numbers: [], open: 0, closed: 0, total: 0, frontier: 0, claimed: 0, blocked: 0 }; levels[lv] = layer }
+        layer.numbers.push(t.number)
+        layer.total++
+        if (t.state === 'CLOSED') layer.closed++
+        else layer.open++
+      })
+      // 层内状态细分（frontier/claimed/blocked 归层）
+      const openBlocker = function (b) { const t = byNum[b]; return t !== undefined && t.state === 'OPEN' }
+      levels.forEach(function (layer) {
+        const openT = tickets.filter(function (t) { return byNumber[t.number] === layer.level && t.state === 'OPEN' })
+        layer.frontier = openT.filter(function (t) { return !t.claimedBy && !t.blockedBy.some(openBlocker) }).length
+        layer.claimed = openT.filter(function (t) { return t.claimedBy }).length
+        layer.blocked = openT.filter(function (t) { return !t.claimedBy && t.blockedBy.some(openBlocker) }).length
+      })
+      // 剔除空洞（levels 数组可能因跳级出现 undefined）
+      const compact = levels.filter(Boolean)
+      return { byNumber: byNumber, levels: compact }
+    }
+
     function groupTickets(tickets) {
       const byNum = {}
       tickets.forEach(function (t) { byNum[t.number] = t })
@@ -214,9 +256,12 @@ return {
       const frontier = open.filter(function (t) { return !t.claimedBy && !t.blockedBy.some(openBlocker) })
       const claimed = open.filter(function (t) { return t.claimedBy })
       const blocked = open.filter(function (t) { return !t.claimedBy && t.blockedBy.some(openBlocker) })
+      // v1.4（T1 #442）：附 DAG 分层（client 渲染漏斗分层用）
+      const lv = computeLevels(tickets)
       return {
         total: tickets.length, open: open.length, closed: closed.length,
         frontier: frontier.length, claimed: claimed.length, blocked: blocked.length,
+        levels: lv.levels, levelOf: lv.byNumber,
       }
     }
 
@@ -305,6 +350,9 @@ return {
         const subs = (issue.subIssues && issue.subIssues.nodes) || []
         const tickets = subs.map(mapTicket)
         const bp = parseMapBody(issue.body)
+        // v1.4（T1 #442）：每张票挂 level（DAG 最长路径深度），client 渲染漏斗分层直接取
+        const lvInfo = computeLevels(tickets)
+        tickets.forEach(function (t) { t.level = lvInfo.byNumber[t.number] })
         const stats = groupTickets(tickets)
         const labels2 = ((issue.labels && issue.labels.nodes) || []).map(function (x) { return x.name })
         maps.push({

@@ -559,6 +559,8 @@ function swapMove(weekIdx, dayIdx, sessIdx, movIdx, newName) {
     newName,
     reason: '用户在 HTML 内替换',
   });
+  // #318 验收:movements[movIdx].name 须变更(原 bug 仅注册 swap、不更新 WEEKS,致渲染名仍旧)
+  mov.name = newName;
   renderWeekDetail(currentWeekIdx);
   renderSwapSummary();
   updatePreview();
@@ -807,7 +809,7 @@ function renderWeekDetail(idx) {
     return;
   }
 
-  detailEl.innerHTML = week.days.map(d => {
+  detailEl.innerHTML = week.days.map((d, dayIdx) => {
     const sessions = d.sessions || [];
     if (sessions.length === 0) {
       return `
@@ -827,7 +829,7 @@ function renderWeekDetail(idx) {
           <span class="dow">${DAY_NAMES[d.day_of_week] || '?'}</span>
         </div>
         <div class="sessions">
-          ${sessions.map(s => {
+          ${sessions.map((s, sIdx) => {
             // BUG 修复:避免深度嵌套模板字符串(acorn parser 错位)
             // 整个 session-card 改用普通字符串拼接 + 单层模板字符串
             const movements = s.movements || [];

@@ -222,7 +222,7 @@ return {
         'list.loadFail': '加载失败',
         'list.noDest': '（未填写 Destination）',
         'list.kpi.takeable': '可接',
-        'list.kpi.occupied': '占用',
+        'list.kpi.occupied': '阻塞',
         'list.kpi.closed': '已关闭',
         'list.refresh': '刷新',
         'list.envWarn': '{n} 项环境未就绪，点此查看',
@@ -396,7 +396,7 @@ return {
         'list.loadFail': 'Failed to load',
         'list.noDest': '(no Destination)',
         'list.kpi.takeable': 'Ready',
-        'list.kpi.occupied': 'Busy',
+        'list.kpi.occupied': 'Blocked',
         'list.kpi.closed': 'Closed',
         'list.refresh': 'Refresh',
         'list.envWarn': '{n} check(s) not ready — click to view',
@@ -739,7 +739,7 @@ return {
       diagnose: '/triage\n{url}\n\n请诊断该 issue 并分流建议：\n1. 复现 / 现象 / 影响范围\n2. 根因推断（多个候选）\n3. 分流建议（修复 / 关闭 / 重设计 / 等）\n\n' + GUIDE_LINE,
       fix: '/wayfinder\n{url}\n\n请修复该 bug：\n1. 先复现\n2. 定位根因\n3. 实施修复\n4. 加测试\n5. 对抗式审查\n\n' + GUIDE_LINE,
       discuss: '/wayfinder\n{url}\n\n请与我就该 issue 进行讨论（grill）：\n1. 目标 / 边界\n2. 风险 / 假设\n3. 选项 / 权衡\n4. 决策\n\n' + GUIDE_LINE,
-      execute: '/wayfinder\n{url}\n\n请执行该 issue：\n1. 读 Description / Notes / 阻塞关系\n2. 制定方案\n3. 实施\n4. 验收\n\n' + GUIDE_LINE,
+      execute: '{url}\n\n请执行该 issue：\n1. 读 Description / Notes / 阻塞关系\n2. 制定方案\n3. 实施\n4. 验收\n\n' + GUIDE_LINE,
       handoff1: '/handoff\n\n请把当前会话生成交接文档，写到 .scratch/handoff/{ts}.md（相对当前工作目录），包含三部分：\n' +
         '1. 结论：本次会话已确认的决定与成果；\n2. 未完成事项：下一步要继续的事；\n3. 建议 skill：新会话接手时建议加载的技能。\n\n' + GUIDE_LINE,
       handoff2: '/read .scratch/handoff/{file}\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后' + GUIDE_LINE,
@@ -1140,12 +1140,18 @@ return {
     //   打开一律走 layout.openDetails()；layout 服务不可用时退回页内悬浮面板（仅兜底，无任何入口按钮）。
     const openPagePanel = function (st) {
       st.open = true
-      if (st.snapMode !== 'real' || !snapFresh(st)) {
+      if (st.snapMode === 'real' && snapFresh(st)) {
+        // v1.3.3 #5：数据新鲜直接展示，不 loading 不刷新（用户不再白等）
+        emit(st)
+      } else if (st.snapMode === 'real') {
+        // v1.3.3 #5：数据过期 → 保留旧数据展示 + 后台静默刷新（非 force · 走 5s 缓存），不弹全屏遮罩
+        emit(st)
+        loadSnapshot(st, false)
+      } else {
+        // 首开无数据 → 加载态 + 非 force 拉取
         st.snapMode = 'loading'
         emit(st)
-        loadSnapshot(st, true)
-      } else {
-        emit(st)
+        loadSnapshot(st, false)
       }
     }
     // 打开面板：一律右侧停靠（details 列）；layout 服务不可用 → 页内兜底
@@ -1153,8 +1159,14 @@ return {
       const ls = ctx.get('layout')
       if (ls && typeof ls.openDetails === 'function') {
         ls.openDetails()
-        if (st.snapMode !== 'real' || !snapFresh(st)) loadSnapshot(st, true)
-        else emit(st)
+        if (st.snapMode === 'real' && snapFresh(st)) {
+          emit(st)
+        } else if (st.snapMode === 'real') {
+          emit(st)
+          loadSnapshot(st, false)
+        } else {
+          loadSnapshot(st, false)
+        }
         return
       }
       openPagePanel(st)  // layout 服务不可用 → 退回悬浮
@@ -1173,10 +1185,16 @@ return {
 
     // v21：开始 prompt 精简 —— /wayfinder + URL + 统一引导句（技能内部细节自带，不再重复灌输）
     // v25 · T2b：execute 走模板渲染（templates.execute 或默认），前缀开关 = cfg.withWayfinder
+    // v1.3.3 #10：前缀去重 —— 模板（含用户自定义旧模板）若已以 /wayfinder 开头则不再重复拼接
+    const withWayfinderPrefix = function (body) {
+      if (!cfg.withWayfinder) return body
+      if (/^\/wayfinder\b/.test(String(body || '').trim())) return body
+      return '/wayfinder\n' + body
+    }
     const startText = (st, t) => {
       const url = 'https://github.com/' + repoStr(st) + '/issues/' + t.number
       const body = renderTemplate('execute', { number: String(t.number), url: url, title: t.title })
-      return (cfg.withWayfinder ? '/wayfinder\n' : '') + body
+      return withWayfinderPrefix(body)
     }
     const SESSION_TITLE_PREFIX = '[dsh-waystation]'
     const newSessionTitle = (t) => SESSION_TITLE_PREFIX + ' ' + t.title + ' #' + t.number
@@ -1423,7 +1441,7 @@ return {
               ])
             : h('button', { className: 'dsws-btn primary', title: tr('map.executeTitle'), onClick: function () {
                 const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
-                inject(st, (cfg.withWayfinder ? '/wayfinder\n' : '') + body)
+                inject(st, withWayfinderPrefix(body))
               }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
                 Ic({ n: 'play', size: 10 }),
                 h('span', null, tr('act.execute')),
@@ -1532,7 +1550,9 @@ return {
       const byLabel = function (x) { return (x.labels || []).some(function (l) { return l.name === st.lblFilter }) }
       const openRows = sortedMaps.concat(sortedOpen)
       const openFiltered = st.lblFilter ? openRows.filter(byLabel) : openRows
-      const filteredOpen = showOpen ? (st.stateFilter === 'blocked' ? openFiltered.filter(function (x) { return blockOf[x.number] }) : openFiltered) : []
+      // v1.3.3 #6：阻塞 = 被占用口径（isOccupied：有 assignee 或存在 open 阻塞者）——与 KPI「占用 N」一致，
+      //   用户点「阻塞」应筛出全部被占用项（此前 blockOf 只覆盖 map 子票的 blockedBy，漏掉 assignee 占用的）
+      const filteredOpen = showOpen ? (st.stateFilter === 'blocked' ? openFiltered.filter(function (x) { return isOccupied(st, x) }) : openFiltered) : []
       const filteredClosed = showClosedList ? (st.lblFilter ? closedSorted.filter(byLabel) : closedSorted) : []
       const has = function (x, nm) { return (x.labels || []).some(function (l) { return l.name === nm }) }
       const findMap = function (num) { return (st.snapshot && st.snapshot.maps || []).find(function (m) { return m.number === num }) }
@@ -1581,8 +1601,20 @@ return {
         const rest = expanded ? 0 : (x.labels || []).length - shown.length
         const allNames = (x.labels || []).map(function (l) { return l.name }).join('、')
         const toggleTags = function (e) { e.stopPropagation(); st.expTags[x.number] = !expanded; emit(st) }
+        // v1.3.3 #8：map 行完成态 —— 子票全关（total>0 且 closed===total）→ 主按钮切「完成」（绿），注入收尾确认 prompt；
+        //   与 MapDetail 顶部逻辑一致（此前主列表 map 行恒显示「执行」）
+        const mapDone = !!(isMap && mapObj && mapObj.stats && mapObj.stats.total > 0 && mapObj.stats.closed === mapObj.stats.total)
         const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
-          isOpen && !blocked ? mkRowAction(st, x, narrow, colorOf) : null,
+          isOpen && !blocked && mapDone
+            ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function (e) {
+                e.stopPropagation()
+                const text = COMPLETE_PROMPT
+                  .split('{n}').join(String(x.number || ''))
+                  .split('{total}').join(String(mapObj.stats.total))
+                  .split('{closed}').join(String(mapObj.stats.closed))
+                inject(st, text)
+              }, style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [Ic({ n: 'check', size: 10 }), narrow ? null : h('span', null, tr('act.done'))])
+            : isOpen && !blocked ? mkRowAction(st, x, narrow, colorOf) : null,
           // #361 能力保留；#394：去 ghost/icon-only，与 nav.handoff 图标解耦，加可见文字标签
           //   marginLeft:4 与左侧 mkRowAction 形成隐式分组（动作组 vs 辅助组）
           isOpen ? h('button', { className: 'dsws-btn primary', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', marginLeft: 4, background: actionColorOf(x, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 10 }), narrow ? null : h('span', null, tr('list.newSessionLabel'))]) : null,
@@ -1941,8 +1973,8 @@ return {
           tabBtn('list', 'list', tr('panel.tabList')),
           tabBtn('skills', 'compass', tr('panel.tabSkills')),
           tabBtn('checks', 'gear', tr('panel.tabChecks')),
-          // T2 #2：刷新按钮上移至 tabs 末尾（紧贴环境检查右边 · 用户需求）
-          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, marginLeft: 'auto', padding: '2px 8px', fontSize: 11 } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
+          // T2 #2：刷新按钮上移至 tabs 行 · 紧贴环境检查右边（用户需求：列表 / 技能 / 环境检查 / 刷新）
+          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
         ]),
         h('div', { className: 'dsws-body', onMouseDown: onBodyDown }, [
           s.tab === 'list' ? (active ? h(MapDetail, { st: s, g: active }) : h(ListTab, { st: s, narrow: narrow })) : null,

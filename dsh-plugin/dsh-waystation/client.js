@@ -1608,7 +1608,7 @@ return {
             h('span', null, tr('map.layer', { n: layerIndex + 1 }) + ' · ' + lv.open + ' open'),
             h('span', { className: 'sp' }),
           ]),
-          h('div', { className: 'dsws-layer' }, layerTickets.map(function (t) { return h(node(t), { key: 'n' + t.number }) })),
+          h('div', { className: 'dsws-layer' }, layerTickets.map(function (t) { return node(t) })),
           h('div', { className: 'dsws-gate' }, [
             h('span', { className: 'g ' + gate }, Ic({ n: gate === 'open' ? 'check' : 'lock', size: 12 })),
           ]),

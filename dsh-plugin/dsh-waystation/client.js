@@ -296,6 +296,8 @@ return {
         'toast.copiedLink': '已复制链接 #{n}',
         'toast.newSessionOpened': '已在新会话中打开并预填指令（同 cwd）',
         'toast.newSessionManual': '请手动新建会话并命名为「{title}」；指令已预填当前输入框',
+        'toast.resetPanelWidthDone': '面板宽度已重置 · 下次打开生效',
+        'toast.resetPanelWidthFail': 'layout 服务暂不支持重置 · 请更新 DSH harness',
         // #394：新会话按钮可见文字 + hover title（去掉冗余 detail，靠 #361 doc + 行为本身解释）
         'list.newSessionLabel': '新开会话',
         'err.hostUnavailable': 'host.call 不可用（Host 半未加载）',
@@ -308,6 +310,9 @@ return {
         'cfg.panelHeight': '面板默认高度',
         'cfg.panelHeightDesc': '打开面板时使用的初始高度，可随时拖拽调整。',
         'cfg.defaultHeight': '默认高度',
+        'cfg.panelWidth': '面板宽度',
+        'cfg.resetPanelWidth': '重置面板宽度',
+        'cfg.resetPanelWidthDesc': '下次打开面板时使用 layout 服务默认宽度（清掉上次的拖拽记忆）',
         'cfg.startTpl': '开始模板（执行动作）',
         'cfg.startTplDesc': '「执行」按钮注入的提示词；留空使用默认模板。',
         'cfg.withPrefix': '带 /wayfinder 前缀',
@@ -465,6 +470,8 @@ return {
         'toast.copiedLink': 'Link # {n} copied',
         'toast.newSessionOpened': 'Opened in a new session with the prompt prefilled (same cwd)',
         'toast.newSessionManual': 'Please create a new session manually and name it "{title}"; the prompt is prefilled in the current input',
+        'toast.resetPanelWidthDone': 'Panel width reset · takes effect on next open',
+        'toast.resetPanelWidthFail': 'Layout service doesn\'t support reset yet · please update DSH harness',
         // #394：visible label + hover title for new-session button
         'list.newSessionLabel': 'New session',
         'err.hostUnavailable': 'host.call unavailable (host half not loaded)',
@@ -477,6 +484,9 @@ return {
         'cfg.panelHeight': 'Default panel height',
         'cfg.panelHeightDesc': 'Initial height when the panel opens; adjustable by dragging.',
         'cfg.defaultHeight': 'Default height',
+        'cfg.panelWidth': 'Panel width',
+        'cfg.resetPanelWidth': 'Reset panel width',
+        'cfg.resetPanelWidthDesc': 'Next panel open will use the layout service default width (clears the persisted drag memory).',
         'cfg.startTpl': 'Start template (execute)',
         'cfg.startTplDesc': 'Prompt injected by the Execute button; leave empty for the default template.',
         'cfg.withPrefix': 'Prefix with /wayfinder',
@@ -1954,6 +1964,7 @@ return {
       })
       const [saved, setSaved] = React.useState(false)
       const [errs, setErrs] = React.useState([])
+      const [resetNote, setResetNote] = React.useState(null)
       const taRefs = React.useRef({})
       // 校验全部 7 个模板（生效文本 = 自定义 || 默认）
       const validateAll = function (executeText) {
@@ -2050,6 +2061,24 @@ return {
             h('div', { className: 'dsws-cfg-seg' }, Object.keys(PANEL_HEIGHT_LABELS).map(function (k) {
               return h('button', { key: k, className: height === k ? 'on' : '', onClick: function () { setHeight(k) } }, PANEL_HEIGHT_LABELS[k])
             })),
+          ]),
+        ]),
+        // 1.5 面板宽度重置（#398 拆票 A · 与 #397 协调 · 等 layoutSvc.resetDetails API；缺失时友好提示不让 UI 崩溃）
+        h('div', { className: 'dsws-cfg-group' }, [
+          h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'refresh', size: 13 }), h('span', null, tr('cfg.panelWidth'))]),
+          h('div', { className: 'dsws-cfg-gdesc' }, tr('cfg.resetPanelWidthDesc')),
+          h('div', { className: 'dsws-cfg-row' }, [
+            h('button', { className: 'dsws-cfg-btn', onClick: function () {
+              const ls = ctx.get('layout')
+              if (ls && typeof ls.resetDetails === 'function') {
+                try { ls.resetDetails(); setResetNote({ kind: 'ok', text: tr('toast.resetPanelWidthDone') }) }
+                catch (e) { setResetNote({ kind: 'warn', text: tr('toast.resetPanelWidthFail') }) }
+              } else {
+                setResetNote({ kind: 'warn', text: tr('toast.resetPanelWidthFail') })
+              }
+              if (timer !== undefined) timer.timeout(function () { setResetNote(null) }, 2800)
+            } }, tr('cfg.resetPanelWidth')),
+            resetNote ? h('span', { style: { marginLeft: 10, fontSize: 11, color: resetNote.kind === 'ok' ? '#4ade80' : '#fbbf24' } }, resetNote.text) : null,
           ]),
         ]),
         // 2. 开始模板（execute 唯一编辑点；id 供动作模板编辑器锚点跳转）

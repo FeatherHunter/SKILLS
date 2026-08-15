@@ -1541,7 +1541,7 @@ return {
             color: isAll ? 'var(--dsw-alias-label-secondary,#a1a1aa)' : (c ? '#' + c : '#bc8cff'),
             border: '1px solid ' + (on ? selColor : borderColor),
           },
-        }, nm + (withCount ? ' · ' + stat[nm] : ''))
+        }, nm)
       }
       const copyUrl = function (x) { copyText(st, 'https://github.com/' + repoStr(st) + '/issues/' + x.number, tr('toast.copiedLink', { n: x.number })) }
       // v14-4：行级动作按 label 四选一（诊断/修复/讨论/执行），全部预填输入框；

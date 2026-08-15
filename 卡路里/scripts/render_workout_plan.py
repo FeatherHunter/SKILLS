@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """健身计划 HTML 渲染器(2026-08-02 重构:多模式 · ticket #6)
 
 对应 SKILL.md 唤醒词:看完整计划 / 看本周计划 / 看下周计划 / 看上周计划 / 看指定周计划 / 看今天练什么 / 看某天练什么 / 看计划概览 / 看计划 vs 实际 / 看计划完成率 / 看未完成训练 / 看动作完成率 / 看某动作安排
@@ -21,7 +21,7 @@
 - 占位符唯一:<!--INJECT-DATA--> 恰好 1 次(注入器校验)
 """
 
-from _base_render import render_template, write_html  # noqa: E402
+from _base_render import envelope, inject_base, write_html  # noqa: E402
 import argparse
 import json
 from datetime import date, timedelta
@@ -33,8 +33,23 @@ from db import find_db_path, get_db, init_db  # noqa: E402 (供 _get_db 动态�
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 DB_FILENAME = "calorie_data.db"
-COMMAND_CN = None  # 场景名动态：render() 按 mode 推断
 TEMPLATE_PATH = SKILL_DIR / 'templates' / 'workout_plan_view.html'
+
+# === 场景名映射（#323） ===
+# 10 个 mode 各自的 command_cn / wake_word / scene_id（Base 管线 scene.snapshot 元数据）
+# 渲染器必须按 mode 填正确的 scene 名，否则复制数据头部永远是「看训练计划」
+_SCENE_NAMES = {
+    'full': '看完整计划',
+    'week': '看周计划',
+    'today': '看今天练什么',
+    'day': '看某天练什么',
+    'overview': '看计划概览',
+    'vs': '看计划vs实际',
+    'completion': '看计划完成率',
+    'missed': '看未完成训练',
+    'movement': '看动作完成率',
+    'action': '看某动作安排',
+}
 
 
 def _get_db():
@@ -620,14 +635,353 @@ def build_action_data(conn, name=None):
     }
 
 
-def _render_html(data: dict) -> str:
-    """读模板 + Base 管线注入"""
-    payload_obj = {
-        'status': 'ok',
-        'data': data,
-        'message': '健身计划 HTML 已生成',
-    }
-    return render_template(TEMPLATE_PATH, payload_obj, COMMAND_CN or "看训练计划")
+# === Per-mode snapshot builders（#323 · scene.snapshot 注入） ===
+# 任务：为 Base 管线 scene.snapshot 提供人类可读的全中文明细（旧 doCopy 等价物）
+# 通用规则：
+#   summary: 概览行(2-8 行)  · sections: [{heading, rows: [...]}]（按周/天/动作分组）
+#   数据空时 summary 友好占位 + sections=[]，不要抛错
+#   全中文人类可读，无 JSON 裸结构（与 buildDataText 契约一致）
+# 设计：每个 mode 独立函数，便于扩展（#326 用户要求的「整体分析」如需新模式直接加）
+
+def _fmt_rate(rate):
+    """完成率: 0.0/None/数字 统一为人类可读字符串"""
+    if rate is None:
+        return '—'
+    return f"{rate}%"
+
+
+def _fmt_session_time(s):
+    """训练段时间: '07:00-08:00' / 空段空串"""
+    t1 = s.get('time_start') or ''
+    t2 = s.get('time_end') or ''
+    if t1 or t2:
+        return f"{t1}-{t2}"
+    return ''
+
+
+def _fmt_movement_line(m):
+    """动作行(全中文人类可读):
+      '深蹲 · 腿 · 10次×50kg · 0/1 组'
+    缺字段时省略对应段(空 part 就不显示 '· 腿')
+
+    兼容两种数据形态(#323 对抗式审查发现):
+      形态 1 (full/week/overview 等,来自 _load_week):
+        m = {name, part, sets: [{reps, weight, unit}, ...]}
+      形态 2 (today/day,来自 _build_day_data):
+        m = {name, part, sets: N, sets_done, reps, weight, unit}
+    形态 1 提取 sets[0].reps/weight,形态 2 直接读顶层字段。
+    """
+    name = m.get('name') or '?'
+    part = f" · {m['part']}" if m.get('part') else ''
+    sets_raw = m.get('sets')
+    if isinstance(sets_raw, list) and sets_raw and not isinstance(m.get('reps'), (int, float)):
+        # 形态 1: sets 是 list of {reps, weight, unit}
+        s0 = sets_raw[0] or {}
+        reps = s0.get('reps')
+        weight = s0.get('weight')
+        unit = s0.get('unit') or m.get('unit') or 'kg'
+        sets_count = len(sets_raw)
+        done = m.get('sets_done')
+    else:
+        # 形态 2: sets 是 int(组数), reps/weight 在顶层
+        reps = m.get('reps')
+        weight = m.get('weight')
+        unit = m.get('unit') or 'kg'
+        sets_count = sets_raw or 0
+        done = m.get('sets_done')
+    if reps is not None and weight is not None:
+        sr = f" · {reps}次×{weight}{unit}"
+    elif reps is not None:
+        sr = f" · {reps}次"
+    elif weight is not None:
+        sr = f" · {weight}{unit}"
+    else:
+        sr = ''
+    if sets_count and done is not None:
+        progress = f" · {done}/{sets_count} 组"
+    elif sets_count:
+        progress = f" · {sets_count} 组"
+    else:
+        progress = ''
+    return f"{name}{part}{sr}{progress}"
+
+
+def _snapshot_full(data):
+    """全计划: 标题 + 总周数/起始日 + 逐周逐天逐训练段的动作明细"""
+    cfg = data.get('config') or {}
+    title = cfg.get('title') or '健身计划'
+    version = cfg.get('version') or ''
+    total = cfg.get('total_weeks') or 0
+    start = cfg.get('start_date') or ''
+    summary = [
+        f"计划: {title} {version} · 总周数 {total} · 起始 {start}".rstrip(),
+    ]
+    cw = data.get('current_week')
+    if cw is not None:
+        summary.append(f"当前周: 第 {cw} 周")
+    weeks = data.get('weeks') or []
+    sections = []
+    for w in weeks:
+        wn = w.get('week_number')
+        rows = []
+        for d in w.get('days') or []:
+            dlbl = d.get('day_label') or ''
+            sessions = d.get('sessions') or []
+            if not sessions:
+                rows.append(f"{dlbl} · 休息日")
+                continue
+            for s in sessions:
+                if s.get('is_rest_day'):
+                    rows.append(f"{dlbl} · 休息日")
+                    continue
+                t = _fmt_session_time(s)
+                head = (f"{dlbl} · {t} · {s.get('session_label', '')} · "
+                        f"{s.get('total_sets', 0)} 组").replace(' · · ', ' · ').strip(' ·')
+                rows.append(head)
+                for m in s.get('movements') or []:
+                    rows.append("  " + _fmt_movement_line(m))
+        if rows:
+            sections.append({"heading": f"第 {wn} 周", "rows": rows})
+    if not sections:
+        summary.append("尚无周计划")
+    return summary, sections
+
+
+def _snapshot_week(data):
+    """单周: 完成度 + 7 天明细"""
+    completion = data.get('completion') or {}
+    weeks = data.get('weeks') or []
+    if not weeks:
+        return [f"第 {data.get('focus_week', '?')} 周 · 无数据"], []
+    week = weeks[0]
+    wn = week.get('week_number')
+    rate = completion.get('completion_rate')
+    plan = completion.get('plan_sets', 0)
+    actual = completion.get('actual_sets', 0)
+    summary = [f"第 {wn} 周 · 完成度 {_fmt_rate(rate)} ({actual}/{plan} 组)"]
+    sections = []
+    for d in week.get('days') or []:
+        dlbl = d.get('day_label') or ''
+        sessions = d.get('sessions') or []
+        if not sessions:
+            sections.append({"heading": dlbl, "rows": ["休息日"]})
+            continue
+        for s in sessions:
+            if s.get('is_rest_day'):
+                sections.append({"heading": dlbl, "rows": ["休息日"]})
+                continue
+            t = _fmt_session_time(s)
+            head = (f"{t} · {s.get('session_label', '')} · {s.get('total_sets', 0)} 组").replace(' · · ', ' · ').strip(' ·')
+            rows = [head] + ["  " + _fmt_movement_line(m) for m in s.get('movements') or []]
+            sections.append({"heading": dlbl, "rows": rows})
+    return summary, sections
+
+
+def _snapshot_day(data):
+    """今日/指定日: 训练段 + 动作 + 实时完成进度(today/day 共用)"""
+    if data.get('unstarted'):
+        return [f"{data.get('date', '')} · 计划尚未开始",
+                f"起始: {data.get('start_date', '')}"], []
+    if data.get('is_rest'):
+        return [f"{data.get('date', '')} · 计划第 {data.get('plan_week', '?')} 周",
+                "今日休息"], []
+    date_str = data.get('date', '')
+    pweek = data.get('plan_week')
+    completion = data.get('completion') or {}
+    rate = completion.get('rate')
+    plan = completion.get('plan_sets', 0)
+    done = completion.get('done_sets', 0)
+    summary = [
+        f"{date_str} · 计划第 {pweek} 周",
+        f"完成度: {_fmt_rate(rate)} ({done}/{plan} 组)",
+    ]
+    sections = []
+    for s in data.get('sessions') or []:
+        if s.get('is_rest_day'):
+            continue
+        t = _fmt_session_time(s)
+        head = (f"{s.get('session_label', '')} {t} · {s.get('total_sets', 0)} 组").replace(' · · ', ' · ').strip()
+        rows = [head] + ["  " + _fmt_movement_line(m) for m in s.get('movements') or []]
+        sections.append({"heading": s.get('session_label') or '训练段', "rows": rows})
+    if not sections:
+        summary.append("今日无训练安排")
+    return summary, sections
+
+
+# today 与 day 共享 snapshot 函数（#255 已合并）
+_snapshot_today = _snapshot_day
+
+
+def _snapshot_overview(data):
+    """概览: KPI(总周数/完成率/训练日/动作数/当前周/剩余周/剩余训练日/周期状态)"""
+    cfg = data.get('config') or {}
+    kpi = data.get('kpi') or {}
+    title = cfg.get('title') or '健身计划'
+    summary = [
+        f"计划: {title} · 总周数 {kpi.get('total_weeks', '?')}",
+        f"整体完成率: {_fmt_rate(kpi.get('overall_rate'))} · 训练日 {kpi.get('training_days', '?')} · 动作 {kpi.get('total_movements', '?')} · 总 session {kpi.get('total_sessions', '?')}",
+        f"当前周: 第 {kpi.get('current_week', '?')} 周 · 剩余周: {kpi.get('remaining_weeks', '?')} · 剩余训练日: {kpi.get('remaining_training_days', '?')}",
+        f"周期: {kpi.get('period_start', '')} ~ {kpi.get('period_end', '')} · 状态: {kpi.get('period_status', '')}",
+    ]
+    weekly = data.get('weekly_rates') or []
+    sections = []
+    if weekly:
+        rows = []
+        for w in weekly:
+            rows.append(
+                f"第 {w.get('week_number', '?')} 周 · {_fmt_rate(w.get('completion_rate'))} "
+                f"({w.get('actual_sets', 0)}/{w.get('plan_sets', 0)} 组 · 训练日 {w.get('plan_days', 0)})"
+            )
+        sections.append({"heading": "每周完成率", "rows": rows})
+    return summary, sections
+
+
+def _snapshot_vs(data):
+    """vs: 完成度/偏差 + 动作级对比行"""
+    rate = data.get('completion_rate')
+    dev = data.get('deviation')
+    sd = data.get('start_date', '')
+    ed = data.get('end_date', '')
+    summary = [
+        f"区间: {sd} ~ {ed}",
+        f"完成度: {_fmt_rate(rate)} · 偏差: {dev if dev is not None else '—'}%",
+    ]
+    rows = []
+    for r in data.get('movement_rows') or []:
+        devv = r.get('deviation_pct')
+        devv_s = f"{devv}%" if devv is not None else '—'
+        rows.append(
+            f"{r.get('movement', '?')} · 计划 {r.get('plan_sets', 0)} 组 · "
+            f"实做 {r.get('actual_sets', 0)} 组 · 偏差 {devv_s}"
+        )
+    sections = [{"heading": "动作级对比", "rows": rows}] if rows else []
+    return summary, sections
+
+
+def _snapshot_completion(data):
+    """完成率: 每周完成率列表"""
+    weekly = data.get('weekly') or []
+    if not weekly:
+        return ["尚无周完成率数据"], []
+    summary = ["每周完成率"]
+    rows = [
+        f"第 {w.get('week_number', '?')} 周 · {_fmt_rate(w.get('completion_rate'))} "
+        f"({w.get('actual_sets', 0)}/{w.get('plan_sets', 0)} 组)"
+        for w in weekly
+    ]
+    return summary, [{"heading": "每周完成率", "rows": rows}]
+
+
+def _snapshot_missed(data):
+    """漏练: 漏练日期 + 应练动作 + 计划/实做组数"""
+    days = data.get('days', 28)
+    missed = data.get('missed') or []
+    summary = [f"近 {days} 天漏练 {len(missed)} 天"]
+    sections = []
+    for m in missed:
+        head = (f"{m.get('date', '')} · 第 {m.get('plan_week', '?')} 周{m.get('dow_label', '')} · "
+                f"应练 {m.get('plan_sets', 0)} 组 · 实做 {m.get('done_sets', 0)} 组")
+        rows = [head] + [f"  {n}" for n in (m.get('movements') or [])]
+        sections.append({"heading": m.get('date', ''), "rows": rows})
+    if not sections:
+        summary.append("无漏练，保持得很好！")
+    return summary, sections
+
+
+def _snapshot_movement(data):
+    """动作完成率: 动作 TOP 榜(名次/完成率/实做/计划组数)"""
+    days = data.get('days', 28)
+    ranking = data.get('ranking') or []
+    if ranking:
+        plan_total = sum(r.get('plan_sets', 0) for r in ranking)
+        done_total = sum(r.get('done_sets', 0) for r in ranking)
+        rate = round(done_total / plan_total * 100, 1) if plan_total else None
+    else:
+        rate = None
+    summary = [f"近 {days} 天动作 {len(ranking)} 个", f"总完成率: {_fmt_rate(rate)}"]
+    rows = []
+    for i, r in enumerate(ranking, 1):
+        rows.append(
+            f"#{i} {r.get('movement', '?')} · 完成率 {_fmt_rate(r.get('rate'))} · "
+            f"实做 {r.get('done_sets', 0)}/{r.get('plan_sets', 0)} 组"
+        )
+    sections = [{"heading": "动作 TOP 榜", "rows": rows}] if rows else []
+    return summary, sections
+
+
+def _snapshot_action(data):
+    """动作反查: 出现位置 + 频率 + 下次练习日 + 总组数 + 部位 + 重量区间"""
+    if data.get('error'):
+        return [f"动作: {data.get('query', '')}", f"提示: {data['error']}"], []
+    if data.get('candidates'):
+        cand = '、'.join(data['candidates'])
+        return [f"动作: {data.get('query', '')}", "未找到完全匹配", f"候选: {cand}"], []
+    summary_data = data.get('summary') or {}
+    query = data.get('query', '')
+    parts = summary_data.get('parts') or []
+    parts_s = '、'.join(parts) if parts else '—'
+    weight_min = summary_data.get('weight_min')
+    weight_max = summary_data.get('weight_max')
+    weight_s = (f"{weight_min}-{weight_max}kg"
+                if (weight_min is not None and weight_max is not None) else '—')
+    summary = [
+        f"动作: {query}",
+        f"出现: {summary_data.get('weeks_with', '?')} 周 · 频率 {summary_data.get('times_per_week', '?')} 次/周 · 总组数 {summary_data.get('total_sets', '?')}",
+        f"部位: {parts_s} · 重量: {weight_s}",
+        f"下次练习日: {data.get('next_date', '—')} (第 {data.get('next_week', '?')} 周)",
+    ]
+    rows = []
+    for p in data.get('positions') or []:
+        head = (f"第 {p.get('week', '?')} 周{p.get('dow_label', '')} · "
+                f"{p.get('session_label', '')} {p.get('time', '')} · {p.get('sets', 0)} 组").replace('  ', ' ').strip()
+        detail = _fmt_movement_line({
+            "name": p.get('name', ''),
+            "part": p.get('part', ''),
+            "reps": p.get('reps'),
+            "weight": p.get('weight'),
+            "unit": p.get('unit', 'kg'),
+            "sets": p.get('sets', 0),
+        })
+        rows.append(head)
+        rows.append("  " + detail)
+    sections = [{"heading": "出现位置", "rows": rows}] if rows else []
+    return summary, sections
+
+
+# mode → snapshot 调度表（#323 修复点）
+# _render_html 用此表按 mode 取对应 builder，注入 scene.snapshot
+_SNAPSHOT_BUILDERS = {
+    'full': _snapshot_full,
+    'week': _snapshot_week,
+    'today': _snapshot_today,
+    'day': _snapshot_day,
+    'overview': _snapshot_overview,
+    'vs': _snapshot_vs,
+    'completion': _snapshot_completion,
+    'missed': _snapshot_missed,
+    'movement': _snapshot_movement,
+    'action': _snapshot_action,
+}
+
+
+def _render_html(data: dict, mode: str = 'full') -> str:
+    """读模板 + Base 管线注入（#323：显式传 summary/sections 给 envelope，覆盖 auto_snapshot 空壳）
+
+    为何不调 render_template：render_template 内部 envelope 调用不转发
+    summary/sections kwargs（_base_render.py L186-214），会再次落入 auto_snapshot
+    空壳。直接 envelope() + inject_base() 等价 render_template 的 status='ok' 分支。
+    """
+    command_cn = _SCENE_NAMES.get(mode, '看训练计划')
+    wake_word = command_cn  # scene 名即唤醒词（Base 头部一致）
+    builder = _SNAPSHOT_BUILDERS.get(mode, _snapshot_full)
+    summary, sections = builder(data)
+    envelope(data, command_cn, wake_word=wake_word,
+             render_cmd=(data.get('meta') or {}).get('render_cmd', '（本地渲染）'),
+             summary=summary, sections=sections,
+             scene_id=command_cn)
+    payload = {'status': 'ok', 'data': data, 'message': '健身计划 HTML 已生成'}
+    template_text = TEMPLATE_PATH.read_text(encoding='utf-8')
+    return inject_base(template_text, payload)
 
 
 def render(mode='full', week=None, start_date=None, end_date=None, days=None, day_date=None, action_name=None,
@@ -671,15 +1025,11 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None, da
         return "尚未制定健身计划。"
 
     # 2026-08-10 #255:统一注入 meta(排障日志 + 底部数据源行依赖)
-    scene_names_inner = {
-        'full': '看完整计划', 'week': '看周计划', 'today': '看今天练什么', 'day': '看某天练什么',
-        'overview': '看计划概览', 'vs': '看计划vs实际', 'completion': '看计划完成率',
-        'missed': '看未完成训练', 'movement': '看动作完成率', 'action': '看某动作安排',
-    }
+    # 2026-08-13 #323:wake_word 来自模块级 _SCENE_NAMES,与 command_cn 一致(避免硬编码「看训练计划」)
     from render_crud_view import _quote_arg
     data['meta'] = {
         'generated_at': date.today().isoformat(),
-        'wake_word': scene_names_inner.get(mode, '健身计划'),
+        'wake_word': _SCENE_NAMES.get(mode, '看训练计划'),
         'source': 'workout_plans',
         'chain': '(未注入)',
         'render_cmd': 'python scripts/render_workout_plan.py ' + ' '.join(_quote_arg(a) for a in sys.argv[1:]),
@@ -692,17 +1042,13 @@ def render(mode='full', week=None, start_date=None, end_date=None, days=None, da
         finally:
             conn2.close()
 
-    html = _render_html(data)
+    # 2026-08-13 #323:显式传 mode 给 _render_html,scene 名按 mode 切换 + 注入 per-mode snapshot
+    html = _render_html(data, mode)
     if output_path:
         Path(output_path).write_text(html, encoding='utf-8')
         return output_path
 
-    scene_names = {
-        'full': '看完整计划', 'week': '看周计划', 'today': '看今天练什么', 'day': '看某天练什么',
-        'overview': '看计划概览', 'vs': '看计划vs实际', 'completion': '看计划完成率',
-        'missed': '看未完成训练', 'movement': '看动作完成率', 'action': '看某动作安排',
-    }
-    default_path = html_path(SKILL_DIR, scene_names.get(mode, '健身计划'))
+    default_path = html_path(SKILL_DIR, _SCENE_NAMES.get(mode, '看训练计划'))
     write_html(html, default_path)
     return str(default_path)
 

@@ -1601,7 +1601,7 @@ return {
         // v20-43：展开态（st.expTags[num]）→ 显示全部标签；#405 默认只显示前 4 个（与 filter row 视觉一致），「+N」可点击展开
         const expanded = !!(st.expTags && st.expTags[x.number])
         // v1.3.3 UI：标签默认显示数 —— 正常 4 / 窄屏 2（用户确认）
-        const shown = expanded ? (x.labels || []) : (x.labels || []).slice(0, narrow ? 2 : 4)
+        const shown = expanded ? (x.labels || []) : (x.labels || []).slice(0, narrow ? 1 : 4)
         const rest = expanded ? 0 : (x.labels || []).length - shown.length
         const allNames = (x.labels || []).map(function (l) { return l.name }).join('、')
         const toggleTags = function (e) { e.stopPropagation(); st.expTags[x.number] = !expanded; emit(st) }
@@ -1636,7 +1636,7 @@ return {
               blocked ? h('span', { key: 'blk', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: tr('list.blockedTitle', { by: blk.by.map(function (b) { return '#' + b }).join('、') }), style: { fontSize: 10, marginRight: 0, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, tr('list.blocked'))]) : null,
             ]) : h('span', { style: { flex: 1 } }),
             h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, flex: 'none', marginLeft: 'auto' } }, [
-              (isMap && mapObj && mapObj.stats) ? h('div', { className: 'dsws-prog', style: { width: 90, minWidth: 90 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]) : null,
+              (isMap && mapObj && mapObj.stats) ? h('div', { className: 'dsws-prog', style: { width: narrow ? 54 : 90, minWidth: narrow ? 54 : 90 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]) : null,
               (isMap && mapObj && mapObj.stats) ? h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'check', size: 9, color: '#4ade80' }), h('span', null, mapObj.stats.closed + '/' + mapObj.stats.total)]) : null,
               isOpen && !blocked ? h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none', marginLeft: 4 } }, [
                 mapDone

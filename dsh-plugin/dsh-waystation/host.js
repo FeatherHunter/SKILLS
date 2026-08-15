@@ -28,7 +28,8 @@ return {
     const GH_FALLBACK = 'D:\\0Tools\\GitHubCLI\\gh.exe'   // 本仓库实测 gh 不在 PATH（docs/agents/issue-tracker.md）
     const DEFAULT_CWD = 'D:\\2Study\\StudyNotes\\SKILLS'  // 默认工作区；可被 wf.snapshot args.cwd 覆盖
     const TIMEOUT_MS = 30000
-    const CACHE_MS = 5000
+    // v1.3.3 提速：快照缓存 5s → 60s（面板打开基本命中缓存，不再每次全量重建 11 次 gh 调用）
+    const CACHE_MS = 60000
     const STATUS_CACHE_MS = 30000  // 前置检查结果缓存（#344）
     const SKILL_PROBE_DIRS = ['.agents\\skills', '.minimax\\skills', '.claude\\skills']  // 技能文件层探测目录（相对用户主目录）
     const SKILL_PROBE_NAMES = ['wayfinder', 'ask-matt']  // 技能探测名单（#344 检查 7/8）
@@ -250,33 +251,37 @@ return {
       } catch (e) { return { ok: false, error: { kind: 'parse', error: String(e) } } }
     }
 
-    async function fetchMapDetail(number, cwd) {
+    // v1.3.3 提速：GraphQL aliases 一次查询全部 map 详情（8 次 → 1 次，Windows 下串行 8×2.4s → 单次 ~3.6s）
+    //   每个 map 一个 alias（m0/m1/...），响应按 alias 取；网络类失败整批重试 1 次
+    async function fetchMapsDetail(numbers, cwd) {
       const repo = await getRepoKey(cwd)
       if (!repo) return { ok: false, error: { kind: 'env', error: '无法解析 owner/repo（git remote 或 gh repo view 失败）' } }
-      // 网络类失败重试 1 次（实测 api.github.com 偶发 EOF；其他错误直接返回）
+      if (!numbers || !numbers.length) return { ok: true, issues: {} }
+      // 构造 aliases 查询：query($owner:String!,$name:String!){repository(...){m0:issue(number:409){...} m1:issue(...){...}}}
+      const frag = 'number title state body url labels(first:20){nodes{name}} subIssues(first:100){totalCount nodes{number title state url labels(first:10){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number title state}}}}'
+      const sel = numbers.map(function (n, i) { return 'm' + i + ':issue(number:' + n + '){' + frag + '}' }).join(' ')
+      const query = 'query($owner:String!,$name:String!){repository(owner:$owner,name:$name){' + sel + '}}'
       let last = null
       for (let attempt = 0; attempt < 2; attempt++) {
-        const r = await runGh(['api', 'graphql', '-f', 'query=' + QUERY, '-F', 'owner=' + repo.owner, '-F', 'name=' + repo.name, '-F', 'n=' + String(number)])
-        if (!r.ok) {
-          last = r
-          if (r.kind !== 'network') return { ok: false, error: r }
-          continue
-        }
+        const r = await runGh(['api', 'graphql', '-f', 'query=' + query, '-F', 'owner=' + repo.owner, '-F', 'name=' + repo.name])
+        if (!r.ok) { last = r; if (r.kind !== 'network') return { ok: false, error: r }; continue }
         try {
           const j = JSON.parse(r.text)
           if (j.errors) return { ok: false, error: { kind: 'graphql', error: JSON.stringify(j.errors).slice(0, 300) } }
-          return { ok: true, issue: j.data.repository.issue }
+          return { ok: true, issues: j.data.repository }
         } catch (e) { return { ok: false, error: { kind: 'parse', error: String(e) } } }
       }
-      return { ok: false, error: last || { kind: 'network', error: 'GraphQL 请求失败（重试后仍失败）' } }
+      return { ok: false, error: last || { kind: 'network', error: 'GraphQL aliases 请求失败（重试后仍失败）' } }
     }
 
     async function buildSnapshot(cwd) {
       const repo = await getRepoKey(cwd)
-      const fm = await fetchMaps(cwd)
-      if (!fm.ok) throw fm.error
+      // v1.3.3 提速：map 列表直接从全量 issues 过滤（fetchMaps 单独调用省去 —— 原 11 次 → 9 次 gh 调用）
       const fi = await fetchIssues(cwd)
       const issues = fi.ok ? fi.issues : []
+      const mapsMeta = fi.ok ? fi.issues.filter(function (x) {
+        return x.state === 'OPEN' && (x.labels || []).some(function (l) { return l.name === 'wayfinder:map' })
+      }) : []
       // #375：全量 label 列表（含空 label；获取失败容错置空，不阻塞快照构建，client 降级）
       let labels = []
       const fl = await runGh(['label', 'list', '--json', 'name,color'], cwd)
@@ -286,24 +291,24 @@ return {
           if (Array.isArray(ls)) labels = ls.map(function (l) { return { name: l.name, color: l.color || '' } })
         } catch (e) { labels = [] }
       }
-      // 并行拉取各 map 详情（Promise.all 保序输出；实测串行 7 map ≈ 10s → 并行 ≈ 3s）
-      const details = await Promise.all(fm.maps.map(function (m) { return fetchMapDetail(m.number, cwd) }))
+      // v1.3.3 提速：GraphQL aliases 一次查全部 map 详情（原每 map 一次 GraphQL，8 次串行 ~19s → 1 次 ~4s）
+      const d = await fetchMapsDetail(mapsMeta.map(function (m) { return m.number }), cwd)
+      const detailOk = d.ok
       const maps = []
-      for (let i = 0; i < fm.maps.length; i++) {
-        const m = fm.maps[i]
-        const d = details[i]
-        if (!d.ok) {
-          maps.push({ number: m.number, title: m.title, state: m.state, error: d.error, tickets: [], stats: { total: 0, open: 0, closed: 0, frontier: 0, claimed: 0, blocked: 0 } })
+      for (let i = 0; i < mapsMeta.length; i++) {
+        const m = mapsMeta[i]
+        const issue = detailOk ? (d.issues['m' + i] || null) : null
+        if (!detailOk || !issue) {
+          maps.push({ number: m.number, title: m.title, state: 'OPEN', error: detailOk ? undefined : d.error, tickets: [], stats: { total: 0, open: 0, closed: 0, frontier: 0, claimed: 0, blocked: 0 } })
           continue
         }
-        const issue = d.issue
         const subs = (issue.subIssues && issue.subIssues.nodes) || []
         const tickets = subs.map(mapTicket)
         const bp = parseMapBody(issue.body)
         const stats = groupTickets(tickets)
-        const labels = ((issue.labels && issue.labels.nodes) || []).map(function (x) { return x.name })
+        const labels2 = ((issue.labels && issue.labels.nodes) || []).map(function (x) { return x.name })
         maps.push({
-          number: issue.number, title: issue.title, state: issue.state, url: issue.url, labels: labels,
+          number: issue.number, title: issue.title, state: issue.state, url: issue.url, labels: labels2,
           destination: bp.destination, notes: bp.notes,
           decisions: bp.decisions, fog: bp.fog, outOfScope: bp.outOfScope,
           tickets: tickets, stats: stats,

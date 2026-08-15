@@ -784,7 +784,7 @@ return {
     // #374：主列表偏好（排序/状态过滤）持久化（localStorage 不可用时降级默认值）
     const LIST_PREFS_KEY = 'dsws.listPrefs'
     const listPrefs = (function () {
-      const d = { sortKey: 'updatedAt', sortDir: 'desc', stateFilter: 'all' }
+      const d = { sortKey: 'number', sortDir: 'asc', stateFilter: 'all' }
       try {
         const raw = localStorage.getItem(LIST_PREFS_KEY)
         if (raw) return Object.assign(d, JSON.parse(raw))
@@ -1624,7 +1624,7 @@ return {
       const kpi = (num, lab, icon, color) => h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [Ic({ n: icon, size: 11, color: color }), h('span', null, String(num) + ' ' + lab)])
       return h('div', null, [
         // KPI 行 + 环境提示（v18-30：可接/占用 = 列表 open issue 口径）
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' } }, [
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap', position: 'relative' } }, [
           kpi(frontierCount(st), tr('list.kpi.takeable'), 'target', '#4ade80'),
           kpi(occCount(st), tr('list.kpi.occupied'), 'lock', '#f0883e'),
           kpi(closedIssues.length, tr('list.kpi.closed'), 'check', '#52525b'),
@@ -1637,7 +1637,7 @@ return {
         ]) : null,
         // #374/#375：状态过滤 + 排序 + label 过滤 chips（全部小号紧凑同排，窄屏换行不增高；展开态点选 label 不收起）
         h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0, marginBottom: 6 } }, [
-          ['all', 'open', 'closed'].map(function (k) {
+          ['all', 'open', 'closed', 'blocked'].map(function (k) {
             const on = st.stateFilter === k
             return h('span', { key: 'stf-' + k, className: 'dsws-chip', onClick: function (e) {
               e.stopPropagation(); st.stateFilter = k; listPrefs.stateFilter = k; saveListPrefs(); emit(st)
@@ -1661,7 +1661,11 @@ return {
           (!st.expLabels && sortedLabels.length > 4) ? h('span', { key: 'lbl-more', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = true; emit(st) }, title: tr('list.tagsTitle', { names: sortedLabels.join('、') }), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + (sortedLabels.length - 4)) : null,
           st.expLabels ? h('span', { key: 'lbl-less', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = false; emit(st) }, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
         ]),
-        st.snapMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, tr('list.loading')) : null,
+        // T3 #5：加载遮罩（替代单行文本，全屏遮罩 + 转圈 + 禁点）
+        st.snapMode === 'loading' ? h('div', { className: 'dsws-loading-shade', style: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 5, pointerEvents: 'auto' } }, [
+          h('div', { className: 'dsws-spinner' }),
+          h('span', { style: { fontSize: 12, color: '#e6edf3' } }, tr('list.loading')),
+        ]) : null,
         st.snapMode === 'err' ? h('div', { style: { color: '#f87171', fontSize: 12, padding: '14px 0', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 12 }), h('span', null, tr('list.errFull', { err: st.snapError }))]) : null,
         // #374：状态过滤渲染 —— open 主体 / closed 列表 / 「全部」态保留已关闭折叠行
         showOpen ? (filteredOpen.length === 0 ? h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '14px 0', textAlign: 'center' } }, tr('list.none')) : filteredOpen.map(function (x) { return issueRow(x, true, narrow) })) : null,

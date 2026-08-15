@@ -1101,6 +1101,33 @@ LINE_ITEMS = [
 BAR_ITEMS = [
     {'label': '牛奶', 'value': 3}, {'label': '面包', 'value': 7}, {'label': '苹果', 'value': 5},
 ]
+
+def _bisect_path_y(path, svg, vx):
+    """沿 path 二分采样 x=vx 处的 y(viewBox 坐标, 60 次迭代精度 ≈ 1e-18)
+
+    用于几何断言: 给定 path 与 viewBox x, 找出 path 上 x 最近的点, 返回其 y。
+    测试断言时通常用 ±0.5 SVG 单位作为偏差容忍(对应 chart 默认宽度 320 的 0.16%)。
+    """
+    totalLen = path.getTotalLength()
+    lo, hi = 0, totalLen
+    for _ in range(60):
+        mid = (lo + hi) / 2
+        if path.getPointAtLength(mid).x < vx:
+            lo = mid
+        else:
+            hi = mid
+    return path.getPointAtLength((lo + hi) / 2).y
+
+
+def _dot_viewbox(dot, svg, _W=320, _H=110):
+    """dot.getBoundingClientRect 中心 → viewBox 坐标 (vx, vy)"""
+    dRect = dot.getBoundingClientRect()
+    svgRect = svg.getBoundingClientRect()
+    vx = (dRect.x + dRect.width / 2 - svgRect.x) / svgRect.width * _W
+    vy = (dRect.y + dRect.height / 2 - svgRect.y) / svgRect.height * _H
+    return vx, vy
+
+
 DONUT_ITEMS = [
     {'label': '食品', 'value': 120}, {'label': '出行', 'value': 80}, {'label': '日用', 'value': 50},
 ]
@@ -1133,6 +1160,185 @@ def test_line_smooth_keeps_dots_on_curve(chart_page):
     assert 'C' in path_d  # 三次贝塞尔曲线
     dots = chart_page.evaluate("document.querySelectorAll('.hm-c-dot').length")
     assert dots == 5
+
+
+def test_line_smooth_curve_passes_through_all_dots(chart_page):
+    """#381 修复验证: smooth 曲线必须经过每个数据点(几何断言, getPointAtLength 采样)
+
+    旧版 _smoothPath 因分段循环 off-by-one,曲线跳过了中间数据点作为曲线节点,
+    导致中点"飘"在曲线外(偏差可达数十 SVG 单位)。本测试用 dot.getBoundingClientRect
+    获取数据点真实屏幕坐标,转 viewBox 后在 path 上按 x 二分定位最近采样点,对比其 y
+    与 dot 的 viewBox y,偏差容忍 0.5 SVG 单位。
+    """
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, smooth:true})', LINE_ITEMS)
+    results = chart_page.evaluate("""
+        () => {
+            const dots = [...document.querySelectorAll('.hm-c-dot')];
+            const path = document.querySelector('.hm-c-line-svg path[fill="none"]');
+            const svg = path.ownerSVGElement;
+            const svgRect = svg.getBoundingClientRect();
+            const _W = 320, _H = 110;
+            const totalLen = path.getTotalLength();
+            function bisectY(vx) {
+                let lo = 0, hi = totalLen;
+                for (let i = 0; i < 60; i++) {
+                    const mid = (lo + hi) / 2;
+                    if (path.getPointAtLength(mid).x < vx) lo = mid; else hi = mid;
+                }
+                return path.getPointAtLength((lo + hi) / 2).y;
+            }
+            return dots.map(d => {
+                const dRect = d.getBoundingClientRect();
+                const vx = (dRect.x + dRect.width / 2 - svgRect.x) / svgRect.width * _W;
+                const vy = (dRect.y + dRect.height / 2 - svgRect.y) / svgRect.height * _H;
+                const py = bisectY(vx);
+                return { vx: vx, vy: vy, py: py, dy: Math.abs(py - vy) };
+            });
+        }
+    """)
+    for r in results:
+        assert r['dy'] <= 0.5, 'smooth 曲线未经过数据点: dot=(' + str(round(r["vx"],1)) + ',' + str(round(r["vy"],1)) + ') curve=(' + str(round(r["px"],1)) + ',' + str(round(r["py"],1)) + ') 偏差=' + str(round(r["dy"],2))
+
+
+def test_line_smooth_three_points_peak_reaches_middle(chart_page):
+    """#381 最小复现: [5,15,5] 三点 smooth 曲线峰值等于中点真实 y(修复前偏差 ~26 SVG 单位)
+
+    中间数据点(c1=15)是峰值,曲线必须经过其真实位置(允许 ±0.5 SVG 单位偏差)。
+    """
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), "
+        "[{label:'a',value:5},{label:'b',value:15},{label:'c',value:5}], "
+        "{animation:false, smooth:true})")
+    result = chart_page.evaluate("""
+        () => {
+            const dots = [...document.querySelectorAll('.hm-c-dot')];
+            const path = document.querySelector('.hm-c-line-svg path[fill="none"]');
+            const svg = path.ownerSVGElement;
+            const svgRect = svg.getBoundingClientRect();
+            const _W = 320, _H = 110;
+            const totalLen = path.getTotalLength();
+            function bisectY(vx) {
+                let lo = 0, hi = totalLen;
+                for (let i = 0; i < 60; i++) {
+                    const mid = (lo + hi) / 2;
+                    if (path.getPointAtLength(mid).x < vx) lo = mid; else hi = mid;
+                }
+                return path.getPointAtLength((lo + hi) / 2).y;
+            }
+            const mid = dots[1];
+            const dRect = mid.getBoundingClientRect();
+            const vx = (dRect.x + dRect.width / 2 - svgRect.x) / svgRect.width * _W;
+            const vy = (dRect.y + dRect.height / 2 - svgRect.y) / svgRect.height * _H;
+            const py = bisectY(vx);
+            return { vx: vx, vy: vy, py: py, dy: Math.abs(py - vy) };
+        }
+    """)
+    assert result['dy'] <= 0.5, '[5,15,5] 中点未在曲线上: dot=(' + str(round(result["vx"],1)) + ',' + str(round(result["vy"],1)) + ') curve.y=' + str(round(result["py"],2)) + ' 偏差=' + str(round(result["dy"],2))
+
+
+def test_line_smooth_series_on_curve(chart_page):
+    """#381 AC #6: smooth:true + series 多序列: 每序列独立平滑, 自身数据点全部过曲线
+
+    用双 series(A=LINE_ITEMS, B=LINE_ITEMS+10), 验证每序列路径上的曲线都过自己的 dot。
+    dots 用 data-s 属性区分所属序列, paths 按渲染顺序对应。
+    """
+    chart_page.evaluate("""
+        (items) => window.charts.line(document.getElementById('root'), items, {
+            animation:false,
+            smooth:true,
+            series:[
+                {name:'A', items:items, smooth:true},
+                {name:'B', items:items.map(it => ({label:it.label, value:it.value+10})), smooth:true}
+            ]
+        })
+    """, LINE_ITEMS)
+    results = chart_page.evaluate("""
+        () => {
+            /* 取所有非填充 path (line paths, 不含 area) */
+            const linePaths = [...document.querySelectorAll('.hm-c-line-svg path[fill="none"]')];
+            /* dots 按 data-s 索引分组 */
+            const dotsBySeries = {};
+            [...document.querySelectorAll('.hm-c-dot')].forEach(d => {
+                const si = d.getAttribute('data-s');
+                if (si !== null) {
+                    if (!dotsBySeries[si]) dotsBySeries[si] = [];
+                    dotsBySeries[si].push(d);
+                }
+            });
+            const svg = linePaths[0]?.ownerSVGElement;
+            if (!svg) return [{error: 'no svg'}];
+            const svgRect = svg.getBoundingClientRect();
+            const _W = 320, _H = 110;
+            function bisectY(path, vx) {
+                const totalLen = path.getTotalLength();
+                let lo = 0, hi = totalLen;
+                for (let i = 0; i < 60; i++) {
+                    const mid = (lo + hi) / 2;
+                    if (path.getPointAtLength(mid).x < vx) lo = mid; else hi = mid;
+                }
+                return path.getPointAtLength((lo + hi) / 2).y;
+            }
+            return linePaths.map((path, idx) => {
+                const dots = dotsBySeries[String(idx)] || [];
+                const deviations = dots.map(d => {
+                    const dRect = d.getBoundingClientRect();
+                    const vx = (dRect.x + dRect.width / 2 - svgRect.x) / svgRect.width * _W;
+                    const vy = (dRect.y + dRect.height / 2 - svgRect.y) / svgRect.height * _H;
+                    return Math.abs(bisectY(path, vx) - vy);
+                });
+                return { seriesIdx: idx, nDots: dots.length, maxDy: deviations.length ? Math.max(...deviations) : null };
+            });
+        }
+    """)
+    assert all('error' not in r for r in results), 'series paths not found: ' + str(results)
+    for r in results:
+        assert r['nDots'] == len(LINE_ITEMS), 'series ' + str(r['seriesIdx']) + ' dots 数 != ' + str(len(LINE_ITEMS)) + ': got ' + str(r['nDots'])
+        assert r['maxDy'] <= 0.5, 'series ' + str(r['seriesIdx']) + ' 曲线未过 dot: maxDy=' + str(round(r['maxDy'], 2))
+
+
+def test_line_connect_nulls_smooth_curve_passes_through_dots(chart_page):
+    """#381 强化: smooth:true + connectNulls:true 跨 null 段, 曲线过非 null 数据点
+
+    既有 test_line_connect_nulls_smooth 只断言 path 含 C + 1 个 M, 不验证几何。
+    本测试补强: 单段平滑曲线须经过所有非 null 数据点。
+    """
+    chart_page.evaluate("window.charts.line(document.getElementById('root'), "
+        "[{label:'a',value:1},{label:'b',value:null},{label:'c',value:3},{label:'d',value:null},{label:'e',value:5}], "
+        "{animation:false, connectNulls:true, smooth:true})")
+    result = chart_page.evaluate("""
+        () => {
+            const dots = [...document.querySelectorAll('.hm-c-dot')];
+            const path = document.querySelector('.hm-c-line-svg path[fill="none"]');
+            const svg = path.ownerSVGElement;
+            const svgRect = svg.getBoundingClientRect();
+            const _W = 320, _H = 110;
+            const totalLen = path.getTotalLength();
+            function bisectY(vx) {
+                let lo = 0, hi = totalLen;
+                for (let i = 0; i < 60; i++) {
+                    const mid = (lo + hi) / 2;
+                    if (path.getPointAtLength(mid).x < vx) lo = mid; else hi = mid;
+                }
+                return path.getPointAtLength((lo + hi) / 2).y;
+            }
+            const deviations = dots.map(d => {
+                const dRect = d.getBoundingClientRect();
+                const vx = (dRect.x + dRect.width / 2 - svgRect.x) / svgRect.width * _W;
+                const vy = (dRect.y + dRect.height / 2 - svgRect.y) / svgRect.height * _H;
+                return Math.abs(bisectY(vx) - vy);
+            });
+            return { nDots: dots.length, maxDy: Math.max(...deviations) };
+        }
+    """)
+    assert result['maxDy'] <= 0.5, 'connectNulls+smooth 曲线未过 dot: maxDy=' + str(round(result['maxDy'], 2))
+
+
+def test_line_smooth_omitted_equals_false(chart_page):
+    """#381 向后兼容: smooth 缺省 ≡ smooth:false（不传 smooth 渲染输出逐字节一致）"""
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false})', LINE_ITEMS)
+    h_omitted = chart_page.evaluate("document.getElementById('root').innerHTML")
+    chart_page.evaluate('(items) => window.charts.line(document.getElementById("root"), items, {animation:false, smooth:false})', LINE_ITEMS)
+    h_explicit = chart_page.evaluate("document.getElementById('root').innerHTML")
+    assert h_omitted == h_explicit
 
 
 def test_line_show_dots_off(chart_page):

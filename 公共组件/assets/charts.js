@@ -1,4 +1,4 @@
-/* Base Skill 图表组件 v1.29（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
+/* Base Skill 图表组件 v1.30（公共组件/ · 唯一真相源 · 跨技能 · 领域无关）
  * 版本沿革: 头注释曾滞留 v1.4 未随版本递增(v1.6 起以 CHANGELOG 为准) · v1.15 起恢复同步(#331 附带登记)
  * 接口: charts.bar / line / donut / progress / combo / sparkline / gauge / scatter（v1.25 · #337）
  * 全部参数「不传 = 默认」（默认观感 = Apple 极简, 方向 A 原型 v3 验收）
@@ -167,7 +167,14 @@ function _linePath(pts,connect){
   }).join('');
 }
 function _areaPath(pts,connect){if(!pts.length)return '';var ys=pts.filter(function(p){return !p[2];});if(!ys.length)return '';var lastX=ys[ys.length-1][0],firstX=ys[0][0];return _linePath(pts,connect)+' L'+lastX.toFixed(1)+' '+( _H-_P)+' L'+firstX.toFixed(1)+' '+(_H-_P)+' Z';}
-/* Catmull-Rom → 三次贝塞尔平滑（数据点仍经过真实位置） */
+/* Catmull-Rom → 三次贝塞尔平滑（数据点严格在曲线上 · v1.30 · #381 修复）
+ * 标准均匀 Catmull-Rom: 每段 P_i → P_{i+1}, P_i 为曲线起点;
+ * 控制点基于 (P_{i-1}, P_i, P_{i+1}, P_{i+2}) 计算, 首尾段控制点端点钳制
+ * (s[i-1] || s[i] / s[i+2] || s[i+1])——业界惯例 "phantom point extension",
+ * 让首尾点处一阶导数 = 邻段斜率（视觉 C¹ 连续）。
+ * 修复前循环 off-by-one 导致中点作为曲线节点被跳过, 数据点"飘"在曲线外
+ * (峰值塌陷 ~26 SVG 单位)。
+ */
 function _smoothPath(pts,connect){
   var segs=[],cur=[];
   if(connect){
@@ -181,10 +188,10 @@ function _smoothPath(pts,connect){
   return segs.map(function(s){
     if(s.length<3)return s.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1);}).join('');
     var d='M'+s[0][0].toFixed(1)+' '+s[0][1].toFixed(1);
-    for(var i=1;i<s.length-1;i++){
-      var p0=s[i-1],p1=s[i],p2=s[i+1];
+    for(var i=0;i<s.length-1;i++){
+      var p0=s[i-1]||s[i],p1=s[i],p2=s[i+1],p3=s[i+2]||s[i+1];
       var c1x=p1[0]+(p2[0]-p0[0])/6,c1y=p1[1]+(p2[1]-p0[1])/6;
-      var c2x=p2[0]-(p2[0]-p0[0])/6,c2y=p2[1]-(p2[1]-p0[1])/6;
+      var c2x=p2[0]-(p3[0]-p1[0])/6,c2y=p2[1]-(p3[1]-p1[1])/6;
       d+=' C'+c1x.toFixed(1)+' '+c1y.toFixed(1)+' '+c2x.toFixed(1)+' '+c2y.toFixed(1)+' '+p2[0].toFixed(1)+' '+p2[1].toFixed(1);
     }
     return d;

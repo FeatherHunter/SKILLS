@@ -123,10 +123,11 @@ window.__ModuleLoader__.load({
       // v1.3.3 UI：行1 编号 + map 徽章竖排（标题获得更宽展示区）
       '.dsws-idcol{display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:none}',
       // v1.3.3 UI：map 行迷你圆环进度（替代长条 + ✓）
-      '.dsws-ring{flex:none;display:inline-flex;align-items:center;gap:4px}',
+      '.dsws-ring{flex:none;display:inline-flex;align-items:center;gap:0}',
       '.dsws-ring svg{transform:rotate(-90deg)}',
-      // v1.3.3 对齐修复：进度文本固定最小宽度（5 字符容 26/27）+ 右对齐 → 各行右缘对齐
-      '.dsws-ring-txt{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.5;flex:none;letter-spacing:.2px;min-width:38px;text-align:right}',
+      // v1.3.3 对齐修复：圆环与数字零间隙（gap 0 + 文本左对齐紧贴），
+      //   文本固定最小宽度（5 字符容 26/27）→ 各行右缘对齐
+      '.dsws-ring-txt{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.5;flex:none;letter-spacing:.2px;min-width:38px;text-align:left}',
       // v1.3.3 UI：+N 弹窗（fixed 定位，自适应面板左右边界）
       '.dsws-pop{position:fixed;z-index:1000;background:#1c1f26;border:1px solid var(--dsw-alias-border-l2,#3a3f4a);border-radius:10px;box-shadow:0 10px 34px rgba(0,0,0,.55);padding:10px 12px;display:none}',
       '.dsws-pop .caret{position:absolute;width:10px;height:10px;background:#1c1f26;border-left:1px solid var(--dsw-alias-border-l2,#3a3f4a);border-top:1px solid var(--dsw-alias-border-l2,#3a3f4a);transform:rotate(45deg)}',

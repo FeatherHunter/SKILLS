@@ -900,8 +900,6 @@ window.__ModuleLoader__.load({
         })
         return colorOf
       }
-            return colorOf
-    }
     // T9：行级动作主色计算（与 mkRowAction 共享 · 给新会话按钮复用：与执行按钮同 label 主色）
     const isLightHex = function (hex) {
       try {

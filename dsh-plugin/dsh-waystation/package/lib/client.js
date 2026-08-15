@@ -109,9 +109,8 @@ window.__ModuleLoader__.load({
       // v1.3.3 UI 修复：aggrow 现含两行子块（行1 idcol+标题+圆环 / 行2 标签+按钮），必须纵向堆叠
       '.dsws-aggrow{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:6px 8px;border-radius:6px;border:1px solid transparent}',
       '.dsws-aggrow:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06));border-color:var(--dsw-alias-border-l1,#2a2d35)}',
-      // v1.3.3 UI：辅助按钮（复制/外链）hover 行时浮现
-      '.dsws-aggrow .dsws-aux{opacity:0;transition:opacity .12s;pointer-events:none}',
-      '.dsws-aggrow:hover .dsws-aux{opacity:1;pointer-events:auto}',
+      // v1.3.3 UI：辅助按钮（复制/外链）常显（用户要求一直显示，不 hover）
+      '.dsws-aggrow .dsws-aux{display:inline-flex;align-items:center;gap:2px;flex:none}',
       // v1.3.3 UI：行2 标签贪心折叠（单行不换行，宽多窄少，+N 弹窗展开）
       '.dsws-tags{display:flex;align-items:center;gap:3px;flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap}',
       '.dsws-tags .dsws-chip{flex:none}',
@@ -227,11 +226,11 @@ window.__ModuleLoader__.load({
         zh: {
           'nav.word': '沉淀',
           'nav.takeable': '可接',
-          'nav.occupied': '占用',
+          'nav.occupied': '阻塞',
           'nav.env': '环境',
           'nav.envTitle': '环境检查 ({n}/8)',
           'nav.takeableTitle': '可接 = 未认领可执行的任务数',
-          'nav.occupiedTitle': '占用 = 已认领未关闭的任务数',
+          'nav.occupiedTitle': '阻塞 = 已认领未关闭的任务数',
           'nav.refresh': '更新',
           'nav.refreshTitle': '重新检查 + 刷新快照',
           'nav.fixateTitle': '保存进度快照 · 注入零丢失 prompt',
@@ -1753,8 +1752,8 @@ window.__ModuleLoader__.load({
             // 行1：idcol 竖排（编号上 map 徽章下）+ 标题 + 圆环进度
             h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 6, width: '100%' } }, [
               h('span', { className: 'dsws-idcol' }, [
-                h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, lineHeight: 1.6 } }, '#' + x.number),
                 isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, fontWeight: 600, lineHeight: 1.7, padding: '0 8px' } }, [Ic({ n: 'map', size: 11 }), h('span', null, tr('list.mapChip'))]) : null,
+                h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, lineHeight: 1.6 } }, '#' + x.number),
               ]),
               h('span', { className: 'dsws-tt-wrap', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
               (isMap && mapObj && mapObj.stats) ? ringOf(mapObj.stats) : null,

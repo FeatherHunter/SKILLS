@@ -288,7 +288,8 @@ return {
         'toast.copiedLink': '已复制链接 #{n}',
         'toast.newSessionOpened': '已在新会话中打开并预填指令（同 cwd）',
         'toast.newSessionManual': '请手动新建会话并命名为「{title}」；指令已预填当前输入框',
-        'list.newSessionTitle': '在新会话中打开（同 cwd · 自动命名）',
+        // #394：新会话按钮可见文字 + hover title（去掉冗余 detail，靠 #361 doc + 行为本身解释）
+        'list.newSessionLabel': '新开会话',
         'err.hostUnavailable': 'host.call 不可用（Host 半未加载）',
         'err.connUnavailable': 'connection 服务不可用（Host 半未加载）',
         'err.statusEmpty': 'wf.status 返回空结果',
@@ -448,7 +449,8 @@ return {
         'toast.copiedLink': 'Link # {n} copied',
         'toast.newSessionOpened': 'Opened in a new session with the prompt prefilled (same cwd)',
         'toast.newSessionManual': 'Please create a new session manually and name it "{title}"; the prompt is prefilled in the current input',
-        'list.newSessionTitle': 'Open in a new session (same cwd · auto-named)',
+        // #394：visible label + hover title for new-session button
+        'list.newSessionLabel': 'New session',
         'err.hostUnavailable': 'host.call unavailable (host half not loaded)',
         'err.connUnavailable': 'connection service unavailable (host half not loaded)',
         'err.statusEmpty': 'wf.status returned an empty result',
@@ -615,6 +617,8 @@ return {
         case 'list': return h('svg', common, [h('path', { d: 'M8 6h12M8 12h12M8 18h12' }), h('circle', { cx: 4, cy: 6, r: 0.8, fill: 'currentColor', stroke: 'none' }), h('circle', { cx: 4, cy: 12, r: 0.8, fill: 'currentColor', stroke: 'none' }), h('circle', { cx: 4, cy: 18, r: 0.8, fill: 'currentColor', stroke: 'none' })])
         case 'info': return h('svg', common, [h('circle', { cx: 12, cy: 12, r: 9 }), h('path', { d: 'M12 11v5' }), h('circle', { cx: 12, cy: 8, r: 0.7, fill: 'currentColor', stroke: 'none' })])
         case 'handoff': return h('svg', common, [h('path', { d: 'M7 17l-4-4 4-4' }), h('path', { d: 'M3 13h6a6 6 0 016 6' }), h('path', { d: 'M17 7l4 4-4 4' }), h('path', { d: 'M21 11h-6a6 6 0 00-6-6' })])
+        // #394：与 nav.handoff 同图标造成「交接 / 新开会话」二义；新会话按钮换 external-link 消歧
+        case 'external-link': return h('svg', common, [h('path', { d: 'M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6' }), h('polyline', { points: '15 3 21 3 21 9' }), h('line', { x1: 10, y1: 14, x2: 21, y2: 3 })])
         default: return null
       }
     }
@@ -1338,8 +1342,9 @@ return {
         ]),
         t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4, alignItems: 'center', flex: 'none' } }, [
           blocked ? null : mkRowAction(st, t, false, colorOf),
-          // #361：新会话打开（同 cwd + 自动命名 + 预填指令）
-          h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); openInNewSession(st, t) }, title: tr('list.newSessionTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'handoff', size: 12 })),
+          // #361 能力保留（同 cwd + 自动命名 + 预填指令）；#394：去 ghost/icon-only，与 nav.handoff 解耦
+          //   marginLeft:4 与左侧 mkRowAction 形成隐式分组（动作组 vs 辅助组）
+          h('button', { className: 'dsws-btn', onClick: function (e) { e.stopPropagation(); openInNewSession(st, t) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', marginLeft: 4 } }, [Ic({ n: 'external-link', size: 12 }), h('span', null, tr('list.newSessionLabel'))]),
           h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'link', size: 12 })),
         ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, tr('act.view')),
       ])
@@ -1530,8 +1535,9 @@ return {
         const toggleTags = function (e) { e.stopPropagation(); st.expTags[x.number] = !expanded; emit(st) }
         const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
           isOpen && !blocked ? mkRowAction(st, x, narrow, colorOf) : null,
-          // #361：新会话打开（同 cwd + 自动命名 + 预填指令）
-          isOpen ? h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'handoff', size: 12 })) : null,
+          // #361 能力保留；#394：去 ghost/icon-only，与 nav.handoff 图标解耦，加可见文字标签
+          //   marginLeft:4 与左侧 mkRowAction 形成隐式分组（动作组 vs 辅助组）
+          isOpen ? h('button', { className: 'dsws-btn', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', flex: 'none', marginLeft: 4 } }, [Ic({ n: 'external-link', size: 12 }), h('span', null, tr('list.newSessionLabel'))]) : null,
           h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
           h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
         ])

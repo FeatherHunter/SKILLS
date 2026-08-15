@@ -1,121 +1,56 @@
-# dsh-Opencode TUI 主题
+# dsh-Opencode TUI 主题 v2 — 34 主题引擎
 
-> 一个为 DSH（DeepSeek Harness）Web 界面开发的主题插件（Client 端），
-> 让整个对话界面的文字样式复刻 opencode TUI 的观感。
-> 这不是 TUI 插件，只是一个改字体、颜色、字号、代码风格的主题插件。
-
-- **插件包名**: `dsh-opencode-tui-theme`（可分发 npm 包，见 `package/`，当前 v1.1.0）
-- **动态版 pluginId**: `ocode-2`，显示名 `dsh-Opencode TUI 主题`
-- **平台**: Client（浏览器页面）
-- **两种形态**: ① 动态插件（进程内，会话级）；② 正式安装的本地插件（开机自启，推荐）
+> 让 DSH（DeepSeek Harness）Web 界面支持 **opencode TUI 的全部 34 个主题**
+> （33 内置 + system），一键切换、即时生效、持久化保存。
 
 ## 功能
 
-| 维度 | 效果 |
+| 维度 | 说明 |
 |---|---|
-| 背景 | 统一为截图背景色 `#0a0a0a`（像素采样确认，所有表面层同色） |
-| 正文颜色 | 浅灰 `#d4d4d4`，次级 `#a1a1aa`，弱化 `#8b8b95` |
-| 标题 | 淡紫 `#c084fc`（h1–h6，含字号层级 16/15/14px） |
-| 内联代码 | 翠绿 `#4ade80` 等宽（`code:not(pre code)`），无背景芯片（opencode TUI 同款） |
-| 代码块 | 柔和浮起 `#131316` + 横幅（复制按钮模块）`#19191d`，无硬边框，12px 圆角，One Dark 语法高亮（shiki token） |
-| 字号 | 正文 13px、行高 22px（可切换 12/14px） |
-| 字体 | 正文无衬线（忠实模式）/ 全等宽（终端模式），代码等宽 5 种预设 |
-| 状态色 | 成功翠绿、警告琥珀、错误红 |
+| 主题 | **34 个**：aura / ayu / carbonfox / catppuccin×3 / cobalt2 / cursor / dracula / everforest / flexoki / github / gruvbox / kanagawa / lucent-orng / material / matrix / mercury / monokai / nightowl / nord / one-dark / opencode / orng / osaka-jade / palenight / rosepine / solarized / synthwave84 / system / tokyonight / vercel / vesper / zenburn |
+| 数据源 | opencode v1.18.12 官方主题 JSON（npm run sync 可升级/校验） |
+| 管线 | 主题 JSON → 颜色解析（引用链/ANSI/变体）→ DSH 适配注入（token + CSS + shiki） |
+| 切换 | 设置 → 插件 →「Opencode 主题」面板：排印三控件置顶 + 色系分组标签网格 + 搜索，点击即切换（组合 1 布局） |
+| system | 恢复 DSH 原生配色（只保留字体/字号/代码排印） |
+| 字体 | 主题只管颜色；正文模式（全等宽/无衬线）、字号 12-14px、5 种代码字体独立调节 |
+| 持久化 | localStorage 保存，刷新/重启后保持 |
+| 自检 | 面板内 getComputedStyle 实测背景/字体/字号 |
 
-## 使用方式
+## 开发
 
-### 方式一：正式安装（推荐 · 开机自启 · 一次性）
+    npm run sync    # ① 从 opencode 官方 tag 同步主题数据（版本锁 v1.18.12）
+    npm test        # ② 引擎单测（34 主题全量解析审计）
+    npm run build   # ③ 零依赖打包 → package/ 产物 + 动态版 client.js
 
-用 DSH 官方插件命令安装（跨平台，`~/.dsh` 即 `$DSH_HOME`）：
+## 安装（正式版）
 
-1. 安装：
+    1. 构建产物: npm run build
+    2. 更新已装副本（安装位 = profiles/web/node_modules/dsh-opencode-tui-theme）
+       或首次安装: npx --yes @deepseek-ai/dsh plugin --profile web add dsh-opencode-tui-theme
+       并在 cordis.patch.yml 追加:
+       - insert:
+           - id: opencode-tui-theme
+             name: 'dsh-opencode-tui-theme'
+    3. 刷新浏览器页面
 
-   ```bash
-   npx --yes @deepseek-ai/dsh plugin --profile web add dsh-opencode-tui-theme
-   ```
+> ⛔ 不要手动复制到 ~/.dsh/profiles/node_modules/（回退软链区，会被重建覆盖）。
+> 正确安装位 = profiles/web/node_modules，注册写 web/cordis.patch.yml。
 
-2. 在 `~/.dsh/profiles/web/cordis.patch.yml` 追加注册行（本包无 postinstall，需手动；
-   **无需重启 DSH**，配置文件热加载；刷新浏览器页面即生效）：
+## 架构
 
-   ```yaml
-   - insert:
-       - id: opencode-tui-theme
-         name: 'dsh-opencode-tui-theme'
-   ```
+见 DESIGN.md：数据驱动三层管线（数据层/引擎层/适配层），
+映射表 src/engine/map-dsh.mjs 是唯一需要理解 DSH 侧知识的地方；
+加新主题 = npm run sync，改 DSH 变量名 = 只改映射表。
 
-3. 刷新浏览器页面。之后每次 DSH 启动主题自动生效，**无需任何审批**。
-4. 卸载：删掉 patch 里的 insert 行 + `npx --yes @deepseek-ai/dsh plugin --profile web remove dsh-opencode-tui-theme`。
+## 调试
 
-> ⛔ 不要手动复制到 `~/.dsh/profiles/node_modules/`：那是 DSH 的**扁平回退软链区**
-> （启动时 `healProfilesModuleFallback` 自动重建），手动放进去会被清理/覆盖；
-> `npm install --prefix ~/.dsh/profiles` 更会把未声明包 prune 掉（2026-08-14 曾因此
-> 一次删掉 511 个包导致插件全部加载失败）。插件正确安装位 = `profiles/web/node_modules`，
-> 注册写 `web/cordis.patch.yml`。
-
-> **v1.1.0 起正式安装版自带控制面板**：设置 → 插件 → 「Opencode 主题」标签页，
-> 提供 ● 已启用/○ 已停用 状态、启用/停用开关、正文模式/字号/代码字体调节，
-> 以及一行「实测 body → …」生效自检（getComputedStyle 实测背景/字体/字号）。
-> 若该标签页能打开，说明插件已在本浏览器挂载。
-
-> 原理：DSH 的 `dsh.client` 插件机制（`dsh-client-modules`）会扫描组合里声明了
-> `dsh.client: { platform: 'web' }` 的包，把 `exports["./client"]` 指向的 bundle
-> 伺服为 `/plugins/<id>/client.js` 并注入 `window.__DSH_BOOT__`，浏览器内核在启动
-> 时自动挂载该插件条目。包内的 `dsh.client.inject` 保证 `theme` 服务（由
-> `@deepseek-ai/dsh-client-ui-theme` 提供）先于本插件加载。
-
-### 方式二：动态加载（零安装 · 会话级 · 重启失效）
-
-在 DSH 会话中由 Agent 通过 Cordis 工具链加载：
-
-1. `cordis_define` —— plugin 用 `kind: new`、`idPrefix: ocode`，code.client 填入
-   [client.js](./client.js) 的内容（即本仓库 `client.js` 文件的函数体）。
-2. `cordis_run` —— 首次运行需在界面批准（安全机制，Client 代码要在页面执行）。
-3. 生效后 Run 卡片内出现「🖥 Opencode TUI 主题」控制面板：
-   - 正文模式：无衬线（忠实）/ 全等宽（终端）
-   - 字号：12 / 13 / 14 px
-   - 代码字体：JetBrains Mono / Cascadia Code / Fira Code / SF Mono / Consolas
-   - 启停按钮：随时还原默认外观
-
-## 实现原理
-
-- **颜色 token**：`theme.overrideTokens(source, tokens)` 覆盖 13 个注册主题 token
-  （`--dsw-alias-*`），light/dark 均为深色终端值。
-- **CSS 层变量**：`styles.insert(css)`（动态版）/ `<style>` 标签（安装版）注入：
-  - 文字层级 `--dsw-alias-label-tertiary/caption/dimmed`
-  - 代码风格 `--dsw-alias-markdown-code-block(-banner)`、`markdown-inline-code`
-  - 语法高亮 `--shiki-token-*`（One Dark 配色）
-  - 字号层级 `--dsw-font-markdown-*`（h1/h2/h3/base/small）
-  - 字体根变量 `--dsw-font-family` / `--ds-font-family-code`
-- **标题紫色**：DSH markdown 容器只给标题设字号不设颜色（继承正文白色），
-  故用 `body h1..h6 { color: #c084fc }` 显式覆盖。
-- **代码块分层（opencode TUI 风格）**：无硬边框、无芯片——靠柔和亮度阶梯
-  L0 聊天画布 `#0a0a0a` < L1 代码块 `#131316` < L2 横幅 `#19191d` + 12px 圆角定义模块。
-- **内联代码无芯片**：`--dsw-alias-markdown-inline-code: transparent`，
-  纯翠绿文字，去掉产品默认的圆角背景块（刺眼来源）。
-- **内联代码绿色**：`code:not(pre code) { color: #4ade80 !important }`
-  （`pre code` 保持 shiki 语法高亮）。
+控制台可用 window.__opencodeTheme（getState / setTheme / toggle / list / previews）。
 
 ## 文件
 
-- `client.js` —— 动态版源码（cordis_define 的 `code.client` 函数体，含控制面板）
-- `package/` —— **可分发插件包**（正式安装用，标准 npm 包结构）
-  - `package.json` —— 包声明：`dsh.client`（platform web / immediately / inject ui-theme）
-  - `lib/index.js` —— 宿主半（no-op，保证 loader 条目可挂载）
-  - `lib/client.js` —— 浏览器半 bundle（`window.__ModuleLoader__.load` 注册格式，
-    v1.1.0 起 = 主题核心 + 设置面板；默认全等宽 13px JetBrains Mono）
-- `README.md` —— 本说明
-
-## 备注
-
-- **v1.0.0 已知 bug（已修复）**：旧 `lib/client.js` 把卸载清理写进
-  `ctx.effect(fn)` 的函数体，而 cordis 语义是 fn 立即执行、返回值才是清理器，
-  导致样式注入后立即被移除（清单里 active 但界面无变化）。v1.1.0 已修复；
-  npm 上若仍是 1.0.0，请用本仓库 `package/` 覆盖安装。
-- 要改默认参数直接编辑 `package/lib/client.js` 顶部的 `mode / size / fontKey`；
-  安装版面板可实时调节，无需改文件。
-- 若动态版（方式二）与正式安装版同时生效，两者 token 层不同源、互不冲突，
-  视觉一致；建议保留正式安装版即可，动态版 `cordis_stop` 掉。
-- 正式安装版由官方命令（`dsh plugin --profile web add`）装进 pnpm workspace 管理，
-  不会被重装清理；不要手动复制到 `profiles/node_modules`（回退软链区，会被重建覆盖）。
-- 选择器均为通用 HTML 元素级（h1/h2/code/body），未触碰产品私有 DOM class。
-- 配色基准来自用户提供的 opencode TUI 截图（mmx 视觉分析）+ One Dark 语法高亮。
+- scripts/sync-themes.mjs — 数据同步（下载 + 校验 + SHA256 指纹 + NOTICES）
+- src/engine/ — 纯逻辑引擎（resolve / map-dsh / generate / registry / index）
+- runtime/client.mjs — 浏览器胶水（注入/切换/持久化/面板）
+- scripts/build-client.mjs — 零依赖 mini-bundler
+- package/ — 产物包（lib/index.js 宿主半 + lib/client.js 浏览器半）
+- client.js — 动态版（cordis_define code.client 函数体，与包版同源）

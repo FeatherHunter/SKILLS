@@ -1,7 +1,7 @@
 {
   "name": "dsh-opencode-tui-theme",
-  "version": "1.1.0",
-  "description": "DSH Web 界面 opencode TUI 主题（Client 插件）：统一 #0a0a0a 深黑背景、全等宽终端正文、淡紫标题、翠绿内联代码、One Dark 语法高亮、深灰输入框卡片。",
+  "version": "1.3.1",
+  "description": "DSH Web 多主题引擎：完整支持 opencode TUI 全部 34 个主题（33 内置 + system）。数据驱动管线：主题 JSON → 颜色解析 → DSH 适配注入；设置面板即时切换、持久化。",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -19,7 +19,8 @@
     "theme",
     "opencode",
     "tui",
-    "dark"
+    "dark",
+    "multi-theme"
   ],
   "dsh": {
     "client": {

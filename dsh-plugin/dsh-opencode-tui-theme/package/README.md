@@ -1,74 +1,56 @@
-# dsh-opencode-tui-theme
+# dsh-Opencode TUI 主题 v2 — 34 主题引擎
 
-DSH（DeepSeek Harness）Web 界面的 **opencode TUI 风格主题**（Client 插件）。
+> 让 DSH（DeepSeek Harness）Web 界面支持 **opencode TUI 的全部 34 个主题**
+> （33 内置 + system），一键切换、即时生效、持久化保存。
 
-让整个对话界面复刻 opencode TUI 的观感：
+## 功能
 
-- 统一深黑背景 `#0a0a0a`（像素采样自 opencode TUI 截图）
-- 正文浅灰 `#d4d4d4`、全等宽终端字体、13px 紧凑字号
-- 标题淡紫 `#c084fc`、内联代码翠绿 `#4ade80`（无背景芯片）
-- 代码块柔和亮度分层（`#131316` / 横幅 `#19191d`）+ One Dark 语法高亮
-- 输入框深灰卡片 `#1c1c1e`，与聊天内容明显分层
+| 维度 | 说明 |
+|---|---|
+| 主题 | **34 个**：aura / ayu / carbonfox / catppuccin×3 / cobalt2 / cursor / dracula / everforest / flexoki / github / gruvbox / kanagawa / lucent-orng / material / matrix / mercury / monokai / nightowl / nord / one-dark / opencode / orng / osaka-jade / palenight / rosepine / solarized / synthwave84 / system / tokyonight / vercel / vesper / zenburn |
+| 数据源 | opencode v1.18.12 官方主题 JSON（npm run sync 可升级/校验） |
+| 管线 | 主题 JSON → 颜色解析（引用链/ANSI/变体）→ DSH 适配注入（token + CSS + shiki） |
+| 切换 | 设置 → 插件 →「Opencode 主题」面板：排印三控件置顶 + 色系分组标签网格 + 搜索，点击即切换（组合 1 布局） |
+| system | 恢复 DSH 原生配色（只保留字体/字号/代码排印） |
+| 字体 | 主题只管颜色；正文模式（全等宽/无衬线）、字号 12-14px、5 种代码字体独立调节 |
+| 持久化 | localStorage 保存，刷新/重启后保持 |
+| 自检 | 面板内 getComputedStyle 实测背景/字体/字号 |
 
-## v1.1.0 变更
+## 开发
 
-- **修复 v1.0.0 致命 bug**：旧版把卸载清理动作直接写进 `ctx.effect(fn)` 的函数体，
-  而 cordis 的语义是「fn 立即执行、返回值才是清理器」——导致样式注入后同一瞬间被
-  移除，插件显示 active 但界面毫无变化。v1.1.0 已改为正确写法。
-- **新增控制面板**：设置 → 插件 → 「Opencode 主题」标签页 ——
-  ● 已启用 / ○ 已停用 状态、启用/停用开关、正文模式（全等宽/无衬线）、
-  字号（12/13/14px）、代码字体（5 种预设），以及 `getComputedStyle` 实测
-  body 背景/字体/字号的生效自检行。
+    npm run sync    # ① 从 opencode 官方 tag 同步主题数据（版本锁 v1.18.12）
+    npm test        # ② 引擎单测（34 主题全量解析审计）
+    npm run build   # ③ 零依赖打包 → package/ 产物 + 动态版 client.js
 
-## 安装（正式 · 开机自启）
+## 安装（正式版）
 
-用 DSH 官方插件命令：
+    1. 构建产物: npm run build
+    2. 更新已装副本（安装位 = profiles/web/node_modules/dsh-opencode-tui-theme）
+       或首次安装: npx --yes @deepseek-ai/dsh plugin --profile web add dsh-opencode-tui-theme
+       并在 cordis.patch.yml 追加:
+       - insert:
+           - id: opencode-tui-theme
+             name: 'dsh-opencode-tui-theme'
+    3. 刷新浏览器页面
 
-```bash
-npx --yes @deepseek-ai/dsh plugin --profile web add dsh-opencode-tui-theme
-```
+> ⛔ 不要手动复制到 ~/.dsh/profiles/node_modules/（回退软链区，会被重建覆盖）。
+> 正确安装位 = profiles/web/node_modules，注册写 web/cordis.patch.yml。
 
-然后**手动**在 `~/.dsh/profiles/web/cordis.patch.yml` 追加注册行（本包无 postinstall，
-官方命令不代写注册行；且其内部 pnpm 默认忽略 build scripts）：
+## 架构
 
-```yaml
-- insert:
-    - id: opencode-tui-theme
-      name: 'dsh-opencode-tui-theme'
-```
+见 DESIGN.md：数据驱动三层管线（数据层/引擎层/适配层），
+映射表 src/engine/map-dsh.mjs 是唯一需要理解 DSH 侧知识的地方；
+加新主题 = npm run sync，改 DSH 变量名 = 只改映射表。
 
-刷新浏览器页面即可生效（配置热加载，无需重启 DSH）。之后每次启动自动生效，无需审批。
+## 调试
 
-> ⛔ 不要用 `npm install --prefix ~/.dsh/profiles` 安装，也不要手动复制到
-> `profiles/node_modules`：那是 DSH 的**扁平回退软链区**（启动时自动重建），
-> npm --prefix 会把它当新项目 prune 掉未声明包——2026-08-14 曾因此一次删掉 511 个包，
-> 导致 DSH 插件全部加载失败。插件正确安装位 = `profiles/web/node_modules`。
+控制台可用 window.__opencodeTheme（getState / setTheme / toggle / list / previews）。
 
-## 启停与验证
+## 文件
 
-- **开关**：设置 → 插件 → 「Opencode 主题」标签页，点「停用风格 / 启用风格」。
-- **验证是否生效**：面板底部有一行「实测 body → …」，显示当前 body 的真实
-  背景色与字体；主题生效时背景应为 `rgb(10, 10, 10)`、字体以 JetBrains Mono 开头。
-- **DevTools 兜底**：`document.querySelector('style[data-plugin="dsh-opencode-tui-theme"]')`
-  返回 style 元素即已注入。
-
-## 卸载
-
-删除 `cordis.patch.yml` 中的 insert 行，然后：
-
-```bash
-npx --yes @deepseek-ai/dsh plugin --profile web remove dsh-opencode-tui-theme
-```
-
-## 工作原理
-
-- `dsh.client: { platform: 'web' }` 声明自己是浏览器端插件；
-- DSH 的 `dsh-client-modules` 扫描组合条目，把 `exports["./client"]` 指向的
-  bundle 伺服为 `/plugins/<id>/client.js` 并注入 `window.__DSH_BOOT__`；
-- 浏览器内核启动时自动挂载，`theme.overrideTokens` 覆盖 13 个注册主题 token，
-  并注入 `<style>` 覆盖 CSS 层变量（输入框/按钮/代码块/shiki 高亮/字体/字号）；
-- 卸载时通过 `ctx.effect` 的返回值清理 token 层与样式标签。
-
-## License
-
-MIT
+- scripts/sync-themes.mjs — 数据同步（下载 + 校验 + SHA256 指纹 + NOTICES）
+- src/engine/ — 纯逻辑引擎（resolve / map-dsh / generate / registry / index）
+- runtime/client.mjs — 浏览器胶水（注入/切换/持久化/面板）
+- scripts/build-client.mjs — 零依赖 mini-bundler
+- package/ — 产物包（lib/index.js 宿主半 + lib/client.js 浏览器半）
+- client.js — 动态版（cordis_define code.client 函数体，与包版同源）

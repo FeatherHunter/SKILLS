@@ -152,9 +152,12 @@ window.__ModuleLoader__.load({
       '.dsws-start .desc{font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);font-style:italic;line-height:1.3}',
       '.dsws-layerTag{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);letter-spacing:.5px;margin:8px 0 4px;text-transform:uppercase}',
       '.dsws-layerTag .sp{flex:1;height:1px;background:linear-gradient(90deg,var(--dsw-alias-border-l1,#2a2d35),transparent)}',
-      '.dsws-layer{display:flex;justify-content:center;gap:8px;padding:2px 0;flex-wrap:wrap}',
-      '.dsws-node{display:flex;flex-direction:column;gap:4px;border-radius:10px;padding:7px 8px;min-width:0;width:calc(50% - 5px);position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));border:1.5px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3)}',
-      '.dsws-node.single{width:100%}',
+      // v1.4 修复：并行票水平并列（符合原型 .A-layer 无 wrap 横排）—— 层内节点不换行，横向滚动看全部
+      '.dsws-layer{display:flex;justify-content:flex-start;gap:8px;padding:2px 0;overflow-x:auto;scrollbar-width:thin}',
+      '.dsws-node{display:flex;flex-direction:column;gap:4px;border-radius:10px;padding:7px 8px;min-width:0;width:200px;flex:none;position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));border:1.5px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3)}',
+      '.dsws-node.single{width:100%;flex:none}',
+      // 窄框（面板 <380px）节点收窄，仍横排
+      '.dsws-narrow .dsws-node{width:170px}',
       '.dsws-node .row1{display:flex;align-items:center;gap:6px}',
       '.dsws-node .icbox{width:22px;height:22px;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1.5px solid;background:rgba(0,0,0,.5);color:var(--dsw-alias-label-secondary,#a1a1aa)}',
       '.dsws-node .meta{display:flex;align-items:center;gap:5px;margin-bottom:1px}',
@@ -2226,7 +2229,7 @@ window.__ModuleLoader__.load({
           Ic({ n: icon, size: 12 }),
           h('span', null, label),
         ])
-        return h('div', { ref: dockRef, 'data-dsws-host': '1', style: { position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'var(--dsw-font-family)', fontSize: 12, color: 'var(--dsw-alias-label-primary,#e6edf3)', background: 'var(--dsw-alias-bg-layer-1,#10131a)' } }, [
+        return h('div', { ref: dockRef, 'data-dsws-host': '1', className: narrow ? 'dsws-narrow' : undefined, style: { position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'var(--dsw-font-family)', fontSize: 12, color: 'var(--dsw-alias-label-primary,#e6edf3)', background: 'var(--dsw-alias-bg-layer-1,#10131a)' } }, [
           // 头部（标题 + 关闭）：横线不放在这行，下移到标签行下方与对话/轨迹对齐
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px 6px', flex: 'none' } }, [
             Icon({ scheme: 'compass', size: 15 }),

@@ -33,9 +33,9 @@
   .start .cap{font-size:13px;font-weight:700;color:#fff}
   .layerTag{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--c);letter-spacing:.5px;margin:8px 0 4px;text-transform:uppercase}
   .layerTag .sp{flex:1;height:1px;background:linear-gradient(90deg,var(--b1),transparent)}
-  .layer{display:flex;justify-content:center;gap:8px;padding:2px 0;flex-wrap:wrap}
-  .node{display:flex;flex-direction:column;gap:4px;border-radius:10px;padding:7px 8px;min-width:0;width:calc(50% - 5px);position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));border:1.5px solid var(--b1);color:var(--p);transition:filter .4s,opacity .4s}
-  .node.single{width:100%}
+  .layer{display:flex;justify-content:flex-start;gap:8px;padding:2px 0;overflow-x:auto;scrollbar-width:thin}
+  .node{display:flex;flex-direction:column;gap:4px;border-radius:10px;padding:7px 8px;min-width:0;width:200px;flex:none;position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));border:1.5px solid var(--b1);color:var(--p);transition:filter .4s,opacity .4s}
+  .node.single{width:100%;flex:none}
   .node .row1{display:flex;align-items:center;gap:6px}
   .node .icbox{width:22px;height:22px;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1.5px solid;background:rgba(0,0,0,.5);color:var(--s)}
   .node .meta{display:flex;align-items:center;gap:5px;margin-bottom:1px}

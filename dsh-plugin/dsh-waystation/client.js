@@ -1551,6 +1551,16 @@ return {
       }
       const fogTitles = (m.fog || []).map(function (f) { return String(f).trim() })
       const isFogTitle = function (t) { return fogTitles.some(function (f) { return f && t.title && t.title.indexOf(f) >= 0 }) }
+      // v1.4：同层内排序 —— 可执行（open 且非迷雾）最左 → open 被阻塞 → 已关闭靠右（一眼看到当前能做什么）
+      Object.keys(byLevel).forEach(function (lv) {
+        byLevel[lv].sort(function (a, b) {
+          const rank = function (t) {
+            if (t.state === 'OPEN') return isFog(t) || isFogTitle(t) ? 1 : 0
+            return 2
+          }
+          return rank(a) - rank(b) || a.number - b.number
+        })
+      })
       // 迷雾点击去雾状态（st 上按 map 存）
       st.reveal = st.reveal || {}
       const nodeCls = function (t) {

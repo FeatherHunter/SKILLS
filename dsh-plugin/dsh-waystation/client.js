@@ -88,7 +88,7 @@ return {
       // 现在：父 .dsws-tt-name 不再强制 break-all；标题 span 用 .dsws-tt-wrap（替换 .dsws-ellip），
       //   允许按空格/中文标点换行；hover 通过现有 title=... 兜底显示完整文本。
       '.dsws-tt-name{font-size:12.5px;display:flex;align-items:center;gap:5px}',
-      '.dsws-tt-wrap{min-width:0;overflow-wrap:break-word;word-break:normal;line-break:auto}',
+      '.dsws-tt-wrap{min-width:0;overflow-wrap:break-word;word-break:normal;line-break:auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
       '.dsws-tt-sub{font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa)}',
       '.dsws-btn{padding:3px 10px;border-radius:6px;border:1px solid var(--dsw-alias-border-l1,#2a2d35);background:var(--dsw-alias-bg-layer-1,#10131a);color:var(--dsw-alias-label-primary,#e6edf3);font-size:12px;cursor:pointer}',
       '.dsws-btn:hover{border-color:var(--dsw-alias-border-l2,#3a3f4a)}',
@@ -1597,14 +1597,16 @@ return {
         const blocked = !!(blk && blk.by && blk.by.length)
         // v20-43：展开态（st.expTags[num]）→ 显示全部标签；#405 默认只显示前 4 个（与 filter row 视觉一致），「+N」可点击展开
         const expanded = !!(st.expTags && st.expTags[x.number])
-        const shown = expanded ? (x.labels || []) : (x.labels || []).slice(0, 4)
+        // v1.3.3 UI：标签默认显示数 —— 正常 4 / 窄屏 2（用户确认）
+        const shown = expanded ? (x.labels || []) : (x.labels || []).slice(0, narrow ? 2 : 4)
         const rest = expanded ? 0 : (x.labels || []).length - shown.length
         const allNames = (x.labels || []).map(function (l) { return l.name }).join('、')
         const toggleTags = function (e) { e.stopPropagation(); st.expTags[x.number] = !expanded; emit(st) }
         // v1.3.3 #8：map 行完成态 —— 子票全关（total>0 且 closed===total）→ 主按钮切「完成」（绿），注入收尾确认 prompt；
         //   与 MapDetail 顶部逻辑一致（此前主列表 map 行恒显示「执行」）
         const mapDone = !!(isMap && mapObj && mapObj.stats && mapObj.stats.total > 0 && mapObj.stats.closed === mapObj.stats.total)
-        const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
+        // v1.3.3 UI：右侧按钮组 —— 正常单行；窄屏 2×2 网格（标题 2 行时按钮对齐，用户确认）
+        const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'flex-start', flex: 'none', flexWrap: narrow ? 'wrap' : 'nowrap', justifyContent: 'flex-end', width: narrow ? 88 : undefined, maxWidth: narrow ? 88 : undefined } }, [
           isOpen && !blocked && mapDone
             ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function (e) {
                 e.stopPropagation()
@@ -1630,7 +1632,7 @@ return {
           style: isMap ? { cursor: 'pointer', borderLeft: '3px solid #c084fc', background: 'rgba(188,140,255,.07)' } : undefined,
         }, [
           h('div', { style: { flex: 1, minWidth: 0 } }, [
-            h('div', { style: { display: 'flex', alignItems: 'center', gap: 5 } }, [
+            h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 5 } }, [
               // T2 #3：编号前置
               h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + x.number),
               isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, flex: 'none', fontWeight: 600 } }, [Ic({ n: 'map', size: 12 }), h('span', null, tr('list.mapChip'))]) : null,
@@ -1649,7 +1651,7 @@ return {
             // v19-40：map 行进度（已完成/总数 + 进度条，如 13/14）
             (isMap && mapObj && mapObj.stats) ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 } }, [
               h('div', { className: 'dsws-prog', style: { flex: 1 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]),
-              h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none' } }, mapObj.stats.closed + '/' + mapObj.stats.total),
+              h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'check', size: 9, color: '#4ade80' }), h('span', null, mapObj.stats.closed + '/' + mapObj.stats.total)]),
             ]) : null,
           ]),
           rightCol,

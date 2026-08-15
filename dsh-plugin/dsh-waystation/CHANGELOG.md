@@ -37,6 +37,7 @@ All notable changes to **dsh-waystation** are documented here.
 - 编号 + map 徽章同组垂直居中（行高统一）
 - 第二行：labels + 进度条（贯穿可用宽）+ 执行/新会话（常显）+ 复制/外链（hover 浮现）
 - 进度条加绿色 ✓ 前缀强化完成语义
+- **第二行布局修复**（commit 2ad6b0ad）：labels 区 flex:1 可换行（不再堆叠到右侧）；进度条固定 90px + 右侧（进度+按钮）flex:none 容器，窄屏不挤压
 
 ### Technical
 

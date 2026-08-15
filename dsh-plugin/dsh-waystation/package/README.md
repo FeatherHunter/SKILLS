@@ -27,10 +27,48 @@
 
 ## 使用方式
 
+### 第 0 步：安装 DSH CLI（仅首次 · 一次性）
+
+DSH CLI 提供 `dsh` 命令行工具（用于安装/更新/卸载插件、查看 DSH 状态）。
+本插件的安装/更新/卸载都通过 `dsh` 命令完成。
+
+**推荐一 · npm 全局安装（最常用）**
+
+```bash
+npm install -g @deepseek-ai/dsh
+```
+
+验证安装成功：
+
+```bash
+dsh --version
+# 期望输出类似 dsh@1.0.x 或更新版本
+```
+
+⚠️ 如果 `dsh` 命令找不到（PATH 未配置）：
+- **Windows**：npm 会自动把全局 bin 加到 `%APPDATA%\npm`，重启 cmd/终端即可
+- **macOS / Linux**：可能需要手动加 `$(npm config get prefix)/bin` 到 `~/.bashrc` 或 `~/.zshrc`
+
+**推荐二 · 不装 CLI，用 npx 临时跑**（不需要全局装）
+
+```bash
+npx --yes @deepseek-ai/dsh --version
+```
+
+`npx --yes @deepseek-ai/dsh` 等价于 `dsh`（每次首次会缓存包）。
+
 ### 方式一：正式安装（推荐 · 一条命令 · 装进整个 Harness · 开机自启）
 
-用 DSH 官方插件命令（跨平台，Windows / macOS / Linux 同一句；`~/.dsh` = DSH 的家，
-`DSH_HOME` 自定义过就换成它的路径）：
+用 DSH CLI（`dsh`）或 npx 临时命令（跨平台，Windows / macOS / Linux 同一句；
+`~/.dsh` = DSH 的家，`DSH_HOME` 自定义过就换成它的路径）：
+
+**安装（已装过 DSH CLI）**：
+
+```bash
+dsh plugin --profile web add dsh-waystation
+```
+
+**安装（未装 DSH CLI，用 npx）**：
 
 ```bash
 npx --yes @deepseek-ai/dsh plugin --profile web add dsh-waystation
@@ -61,13 +99,15 @@ npx --yes @deepseek-ai/dsh plugin --profile web add dsh-waystation
 **升级**：
 
 ```bash
-npx --yes @deepseek-ai/dsh plugin --profile web update dsh-waystation
+dsh plugin --profile web update dsh-waystation
+# 或用 npx：npx --yes @deepseek-ai/dsh plugin --profile web update dsh-waystation
 ```
 
 **卸载**：
 
 ```bash
-npx --yes @deepseek-ai/dsh plugin --profile web remove dsh-waystation
+dsh plugin --profile web remove dsh-waystation
+# 或用 npx：npx --yes @deepseek-ai/dsh plugin --profile web remove dsh-waystation
 # 并手动删除 cordis.patch.yml 里的 dsh-waystation insert 块（或保留，DSH 找不到包会忽略）
 ```
 

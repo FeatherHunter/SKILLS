@@ -739,7 +739,7 @@ def _snapshot_full(data):
                         f"{s.get('total_sets', 0)} 组").replace(' · · ', ' · ').strip(' ·')
                 rows.append(head)
                 for m in s.get('movements') or []:
-                    rows.append("  " + _fmt_movement_line(m))
+                    rows.append(_fmt_movement_line(m))  # 去掉手写缩进:buildDataText 统一加 '  · '
         if rows:
             sections.append({"heading": f"第 {wn} 周", "rows": rows})
     if not sections:
@@ -772,7 +772,7 @@ def _snapshot_week(data):
                 continue
             t = _fmt_session_time(s)
             head = (f"{t} · {s.get('session_label', '')} · {s.get('total_sets', 0)} 组").replace(' · · ', ' · ').strip(' ·')
-            rows = [head] + ["  " + _fmt_movement_line(m) for m in s.get('movements') or []]
+            rows = [head] + [_fmt_movement_line(m) for m in s.get('movements') or []]  # 去掉手写缩进:buildDataText 统一加 '  · '
             sections.append({"heading": dlbl, "rows": rows})
     return summary, sections
 
@@ -801,7 +801,7 @@ def _snapshot_day(data):
             continue
         t = _fmt_session_time(s)
         head = (f"{s.get('session_label', '')} {t} · {s.get('total_sets', 0)} 组").replace(' · · ', ' · ').strip()
-        rows = [head] + ["  " + _fmt_movement_line(m) for m in s.get('movements') or []]
+        rows = [head] + [_fmt_movement_line(m) for m in s.get('movements') or []]  # 去掉手写缩进:buildDataText 统一加 '  · '
         sections.append({"heading": s.get('session_label') or '训练段', "rows": rows})
     if not sections:
         summary.append("今日无训练安排")
@@ -881,7 +881,7 @@ def _snapshot_missed(data):
     for m in missed:
         head = (f"{m.get('date', '')} · 第 {m.get('plan_week', '?')} 周{m.get('dow_label', '')} · "
                 f"应练 {m.get('plan_sets', 0)} 组 · 实做 {m.get('done_sets', 0)} 组")
-        rows = [head] + [f"  {n}" for n in (m.get('movements') or [])]
+        rows = [head] + [n for n in (m.get('movements') or [])]  # 去掉手写缩进:buildDataText 统一加 '  · '
         sections.append({"heading": m.get('date', ''), "rows": rows})
     if not sections:
         summary.append("无漏练，保持得很好！")
@@ -943,7 +943,7 @@ def _snapshot_action(data):
             "sets": p.get('sets', 0),
         })
         rows.append(head)
-        rows.append("  " + detail)
+        rows.append(detail)  # 去掉手写缩进:buildDataText 统一加 '  · '
     sections = [{"heading": "出现位置", "rows": rows}] if rows else []
     return summary, sections
 

@@ -409,3 +409,56 @@ def test_snapshot_summary_sections_well_formed(seed_plan, mode):
         assert isinstance(sec.get("rows"), list), f"{mode}: section 缺 rows: {sec!r}"
         for row in sec["rows"]:
             assert isinstance(row, str) and row, f"{mode}: row 缺/空: {row!r}"
+
+# === #323 对抗式审查 · 双重缩进回归锁 ===
+# 旧 bug: snapshot builders 加 "  " 前缀 + buildDataText 加 "  · " 前缀 →
+#  动作行输出 "  ·   深蹲..."(三空格)。修复后 action 行不再含手写前缀。
+
+def test_no_double_indent_in_snapshot_rows(seed_plan):
+    """#323 对抗审查: snapshot rows 不应含手写缩进前缀(由 buildDataText 统一加)"""
+    for mode in ("full", "week", "day", "action", "missed"):
+        kwargs = {}
+        if mode == "day":
+            from datetime import date as _d
+            kwargs["day_date"] = _d(2026, 7, 27)
+        elif mode == "action":
+            kwargs["action_name"] = "深蹲"
+        html = rwp.render(
+            mode=mode,
+            output_path=str(Path(__file__).parent / f"_plan_{mode}_indent.html"),
+            **kwargs,
+        )
+        d = _extract_data(Path(html).read_text(encoding="utf-8"))["data"]
+        snap = d["scene"]["snapshot"]
+        for sec in snap["sections"]:
+            for row in sec["rows"]:
+                assert "·   " not in row, (
+                    f"{mode} 双重缩进残留: {row!r},section: {sec['heading']!r}"
+                )
+                assert not row.startswith("  "), (
+                    f"{mode} 行首双重缩进残留: {row!r},section: {sec['heading']!r}"
+                )
+
+
+def test_full_copy_output_no_triple_space(seed_plan):
+    """#323 对抗审查: 端到端验证 buildDataText 输出无三空格"""
+    from playwright.sync_api import sync_playwright
+    html = rwp.render(
+        mode="full",
+        output_path=str(Path(__file__).parent / "_plan_full_e2e_indent.html"),
+    )
+    with sync_playwright() as p:
+        browser = p.chromium.launch()
+        ctx = browser.new_context(
+            viewport={"width": 375, "height": 667},
+            device_scale_factor=2, is_mobile=True, has_touch=True,
+        )
+        page = ctx.new_page()
+        page.goto(f"file:///{Path(html).resolve()}")
+        page.wait_for_load_state("networkidle")
+        text = page.evaluate("() => window.buildDataText(window.__hmPayload)")
+        browser.close()
+    bad = [line for line in text.split('\n') if '  ·   ' in line]
+    assert not bad, (
+        f"复制数据输出含双重缩进行: {bad!r},完整输出:\n{text}"
+    )

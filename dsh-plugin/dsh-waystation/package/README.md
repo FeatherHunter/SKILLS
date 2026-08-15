@@ -78,16 +78,10 @@ npx --yes @deepseek-ai/dsh plugin --profile web add dsh-waystation
 ```
 
 - 命令把插件装进 **web profile**（`~/.dsh/profiles/web/node_modules`），同步 `web/package.json`
-  并自动 reconcile 注册。装完**刷新浏览器页面**（http://127.0.0.1:3080）即生效，之后每次 DSH 启动自动加载。
-- ⚠️ **装完必查注册**：官方命令内部走 pnpm，默认**忽略 build scripts** → 本包的 postinstall
-  （自动注册 `cordis.patch.yml`）可能不执行。检查 `~/.dsh/profiles/web/cordis.patch.yml`
-  是否已有 dsh-waystation 注册行；没有就手动追加：
-
-  ```yaml
-  - insert:
-      - id: dsh-waystation
-        name: 'dsh-waystation'
-  ```
+  并自动 reconcile 注册（bundle 装配）。装完**刷新浏览器页面**（http://127.0.0.1:3080）即生效，之后每次 DSH 启动自动加载。
+- ✅ **一键装完即用（bundle 装配）**：本包声明 `dsh.bundle.patch`（包根 `cordis.patch.yml`），
+  `dsh plugin add` 自动把包加入 profile 的 `dsh.profile.bundles`，启动时 loadProfile 自动应用——
+  **无构建脚本**（pnpm v10 不再拦截），无需手动编辑任何文件；`dsh plugin remove` 自动移除。
 
 - ⛔ **千万不要用 `npm install --prefix ~/.dsh/profiles` 安装**：`profiles/node_modules` 是 DSH 的
   **扁平回退软链区**（启动时 `healProfilesModuleFallback` 自动重建，装的是 npx 全家桶），
@@ -152,10 +146,10 @@ dsh plugin --profile web remove dsh-waystation
 
 - `host.js` / `client.js` —— 动态版源码（cordis_define 的 `code.host` / `code.client` 函数体）
 - `package/` —— **可分发插件包**（正式安装用，标准 npm 包结构）
-  - `package.json` —— 包声明：`dsh.client`（platform web / immediately）+ `scripts.postinstall`
+  - `package.json` —— 包声明：`dsh.client`（platform web / immediately）+ `dsh.bundle.patch`（装配）
+  - `cordis.patch.yml` —— bundle 装配 patch（`dsh plugin add` 自动应用，无构建脚本）
   - `lib/index.js` —— 宿主半（ESM：gh 数据层 + `/dsws` RPC 通道注册）
   - `lib/client.js` —— 浏览器半 bundle（`window.__ModuleLoader__.load` 注册格式）
-  - `scripts/install-patch.cjs` —— postinstall：自动注册 `cordis.patch.yml`（幂等）
 - `README.md` —— 本说明
 - `issues-checklist.html` —— 迭代需求清单（v9–v24，43+ 项）
 - `DESIGN.md` / `prototype.html` —— 设计定稿与原型

@@ -1,43 +1,44 @@
 {
-  "name": "dsh-waystation",
-  "version": "1.3.3",
-  "description": "DSH（DeepSeek Harness）上的 Waystation 控制面板插件，配合 Matt Pocock skills（github.com/mattpocock/skills）的 wayfinder / triage / grilling / handoff 等技能使用：右侧 details 列面板（GitHub issue 地图/列表/技能/环境检查）、输入区状态栏胶囊、动作注入与交接开新会话。打开形式仅右侧 details 列（无 PiP/悬浮）。npm 标准安装（postinstall 自动注册到 DSH profile，一条命令即装好）。",
-  "type": "module",
-  "main": "lib/index.js",
-  "exports": {
-    ".": "./lib/index.js",
-    "./client": "./lib/client.js",
-    "./package.json": "./package.json"
-  },
-  "files": [
-    "lib",
-    "scripts"
-  ],
-  "scripts": {
-    "postinstall": "node scripts/install-patch.cjs"
-  },
-  "keywords": [
-    "dsh",
-    "deepseek-harness",
-    "plugin",
-    "wayfinder",
-    "mattpocock",
-    "skills",
-    "github",
-    "issue-tracker",
-    "waystation"
-  ],
-  "dsh": {
-    "client": {
-      "platform": "web",
-      "immediately": true,
-      "inject": []
-    }
-  },
-  "homepage": "https://github.com/FeatherHunter/SKILLS/tree/main/dsh-plugin/dsh-waystation",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/FeatherHunter/SKILLS.git"
-  },
-  "license": "MIT"
+    "name": "dsh-waystation",
+    "version": "1.4.0",
+    "description": "DSH（DeepSeek Harness）上的 Waystation 控制面板插件，配合 Matt Pocock skills（github.com/mattpocock/skills）的 wayfinder / triage / grilling / handoff 等技能使用：右侧 details 列面板（GitHub issue 地图/列表/技能/环境检查）、输入区状态栏胶囊、动作注入与交接开新会话。打开形式仅右侧 details 列（无 PiP/悬浮）。npm 标准安装（bundle 装配，一条命令即装好，无需手动注册）。",
+    "type": "module",
+    "main": "lib/index.js",
+    "exports": {
+        ".": "./lib/index.js",
+        "./client": "./lib/client.js",
+        "./cordis.patch.yml": "./cordis.patch.yml",
+        "./package.json": "./package.json"
+    },
+    "files": [
+        "lib",
+        "cordis.patch.yml"
+    ],
+    "keywords": [
+        "dsh",
+        "deepseek-harness",
+        "plugin",
+        "wayfinder",
+        "mattpocock",
+        "skills",
+        "github",
+        "issue-tracker",
+        "waystation"
+    ],
+    "dsh": {
+        "bundle": {
+            "patch": "./cordis.patch.yml"
+        },
+        "client": {
+            "platform": "web",
+            "immediately": true,
+            "inject": []
+        }
+    },
+    "homepage": "https://github.com/FeatherHunter/SKILLS/tree/main/dsh-plugin/dsh-waystation",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/FeatherHunter/SKILLS.git"
+    },
+    "license": "MIT"
 }

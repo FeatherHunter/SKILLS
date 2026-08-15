@@ -75,6 +75,8 @@ window.__ModuleLoader__.load({
       // 主色按钮固定主题安全色（不再依赖 alias 变量，当前主题下会解析成深色导致黑底黑字）
       '.dsws-btn.primary{background:#c084fc;border-color:transparent;color:#140a1e;font-weight:600}',
       '.dsws-btn.primary:hover{border-color:rgba(20,10,30,.55)}',
+      // v1.3.3：窄屏只剩图标时保持按钮高度、画成正方形（高=宽=按钮高），图标居中
+      '.dsws-btn.narrow-icon{width:20px;height:20px;padding:0;justify-content:center;align-items:center;gap:0}',
       '.dsws-btn.ghost{background:transparent;border-color:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)}',
       '.dsws-grp{margin:12px 0 4px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa);display:flex;align-items:center;gap:6px}',
       '.dsws-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex:none}',
@@ -115,7 +117,8 @@ window.__ModuleLoader__.load({
       // v1.3.3 UI：行2 标签贪心折叠（单行不换行，宽多窄少，+N 弹窗展开）
       '.dsws-tags{display:flex;align-items:center;gap:3px;flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap}',
       '.dsws-tags .dsws-chip{flex:none}',
-      '.dsws-more{background:rgba(188,140,255,.1);color:#bc8cff;border:1px dashed rgba(188,140,255,.55);cursor:pointer;flex:none;transition:background .12s,border-color .12s}',
+      // v1.3.3：+N 展开符号整体缩小 20%（padding 8→6px · font 11→9px · line-height 1.7→1.8）
+      '.dsws-more{background:rgba(188,140,255,.1);color:#bc8cff;border:1px dashed rgba(188,140,255,.55);cursor:pointer;flex:none;transition:background .12s,border-color .12s;padding:0 6px;font-size:9px;line-height:1.8}',
       '.dsws-more:hover{background:rgba(188,140,255,.22);border-color:rgba(188,140,255,.8)}',
       // v1.3.3 UI：行1 编号 + map 徽章竖排（标题获得更宽展示区）
       '.dsws-idcol{display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:none}',
@@ -967,7 +970,7 @@ window.__ModuleLoader__.load({
         const mk = (icon, label, text, colorHex) => {
           const light = isLight(colorHex)
           return h('button', {
-            className: 'dsws-btn primary',
+            className: 'dsws-btn primary' + (narrow ? ' narrow-icon' : ''),
             onClick: function (e) { e.stopPropagation(); inject(st, text) },
             style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: colorHex, borderColor: 'transparent', color: light ? '#140a1e' : '#ffffff' },
             title: label,
@@ -1774,7 +1777,7 @@ window.__ModuleLoader__.load({
               h('div', { style: { display: 'flex', alignItems: 'center', gap: 3, flex: 'none', marginLeft: 'auto' } }, [
                 isOpen && !blocked ? h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
                   mapDone
-                    ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function (e) {
+                    ? h('button', { className: 'dsws-btn primary' + (narrow ? ' narrow-icon' : ''), title: tr('map.doneTitle'), onClick: function (e) {
                         e.stopPropagation()
                         const text = COMPLETE_PROMPT
                           .split('{n}').join(String(x.number || ''))
@@ -1783,11 +1786,12 @@ window.__ModuleLoader__.load({
                         inject(st, text)
                       }, style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [Ic({ n: 'check', size: 10 }), narrow ? null : h('span', null, tr('act.done'))])
                     : mkRowAction(st, x, narrow, colorOf),
-                  h('button', { className: 'dsws-btn primary', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', marginLeft: 4, background: actionColorOf(x, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 10 }), narrow ? null : h('span', null, tr('list.newSessionLabel'))]),
+                  h('button', { className: 'dsws-btn primary' + (narrow ? ' narrow-icon' : ''), onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', marginLeft: 4, background: actionColorOf(x, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 10 }), narrow ? null : h('span', null, tr('list.newSessionLabel'))]),
                 ]) : null,
                 isOpen ? h('div', { className: 'dsws-aux', style: { display: 'flex', gap: 2, alignItems: 'center', flex: 'none' } }, [
-                  h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 4px', flex: 'none' } }, Ic({ n: 'clipboard', size: 11 })),
-                  h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: x.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 4px', flex: 'none' } }, Ic({ n: 'link', size: 11 })),
+                  // v1.3.3：复制/外链图标增大 11 → 13
+                  h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '2px 4px', flex: 'none' } }, Ic({ n: 'clipboard', size: 13 })),
+                  h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: x.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '2px 4px', flex: 'none' } }, Ic({ n: 'link', size: 13 })),
                 ]) : null,
               ]),
             ]),

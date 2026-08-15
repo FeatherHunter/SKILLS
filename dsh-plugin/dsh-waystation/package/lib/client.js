@@ -1540,9 +1540,9 @@ window.__ModuleLoader__.load({
           // v15-26：被阻塞判定（open 阻塞者）→ 隐藏动作按钮 + 红色「被阻塞」标签（点击跳所属 map 详情）
           const blk = blockOf[x.number]
           const blocked = !!(blk && blk.by && blk.by.length)
-          // v20-43：展开态（st.expTags[num]）→ 显示全部标签；默认只显示前 2 个，「+N」可点击展开
+          // v20-43：展开态（st.expTags[num]）→ 显示全部标签；#405 默认只显示前 4 个（与 filter row 视觉一致），「+N」可点击展开
           const expanded = !!(st.expTags && st.expTags[x.number])
-          const shown = expanded ? (x.labels || []) : (x.labels || []).slice(0, 2)
+          const shown = expanded ? (x.labels || []) : (x.labels || []).slice(0, 4)
           const rest = expanded ? 0 : (x.labels || []).length - shown.length
           const allNames = (x.labels || []).map(function (l) { return l.name }).join('、')
           const toggleTags = function (e) { e.stopPropagation(); st.expTags[x.number] = !expanded; emit(st) }
@@ -1622,8 +1622,9 @@ window.__ModuleLoader__.load({
             }),
             h('span', { style: { width: 1, height: 12, background: 'var(--dsw-alias-border-l1,#2a2d35)', margin: '0 4px 3px', flex: 'none' } }),
             chip(tr('list.all'), false, st.lblFilter === null, true),
-            (st.expLabels ? sortedLabels : sortedLabels.slice(0, 9)).map(function (nm) { return chip(nm, true, st.lblFilter === nm, false) }),
-            (!st.expLabels && sortedLabels.length > 9) ? h('span', { key: 'lbl-more', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = true; emit(st) }, title: tr('list.tagsTitle', { names: sortedLabels.join('、') }), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + (sortedLabels.length - 9)) : null,
+            // #405：filter row 默认可见数 9 → 4（与 per-row 一致）；+N 触发条件 + 数字同步
+            (st.expLabels ? sortedLabels : sortedLabels.slice(0, 4)).map(function (nm) { return chip(nm, true, st.lblFilter === nm, false) }),
+            (!st.expLabels && sortedLabels.length > 4) ? h('span', { key: 'lbl-more', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = true; emit(st) }, title: tr('list.tagsTitle', { names: sortedLabels.join('、') }), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + (sortedLabels.length - 4)) : null,
             st.expLabels ? h('span', { key: 'lbl-less', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = false; emit(st) }, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
           ]),
           st.snapMode === 'loading' ? h('div', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)', fontSize: 12, padding: '14px 0', textAlign: 'center' } }, tr('list.loading')) : null,

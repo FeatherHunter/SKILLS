@@ -176,7 +176,6 @@ export function apply(ctx) {
   }
   function fireBindChanged(s) {
     try {
-      if (typeof harness.handleEvent === 'function') harness.handleEvent('im.bind.changed', sanitizeSession(s))
     } catch (_) { /* swallow */ }
   }
 
@@ -303,7 +302,7 @@ export function apply(ctx) {
     sendHelperCmd({ cmd: 'stopBot', payload: { agentId } })
     await clearCredentials(agentId)
     await deleteBinding(agentId)
-    try { if (typeof harness.handleEvent === 'function') harness.handleEvent('im.bind.changed', { agentId, status: 'unbound', updatedAt: Date.now() }) } catch (_) {}
+    try {
     return { ok: true, agentId }
   }
 
@@ -385,19 +384,19 @@ export function apply(ctx) {
       helperReady = true
       broadcastListOfBots().catch(function () {})
     } else if (t === 'botStarted') {
-      try { if (typeof harness.handleEvent === 'function') harness.handleEvent('im.bind.changed', { agentId: msg.agentId, status: 'connected', ts: msg.ts }) } catch (_) {}
+      try {
     } else if (t === 'botClosed') {
-      try { if (typeof harness.handleEvent === 'function') harness.handleEvent('im.bind.changed', { agentId: msg.agentId, status: 'closed', reason: msg.reason, ts: msg.ts }) } catch (_) {}
+      try {
     } else if (t === 'botFailed') {
-      try { if (typeof harness.handleEvent === 'function') harness.handleEvent('im.bind.changed', { agentId: msg.agentId, status: 'failed', error: msg.error, ts: msg.ts }) } catch (_) {}
+      try {
     } else if (t === 'botStalled') {
-      try { if (typeof harness.handleEvent === 'function') harness.handleEvent('im.bind.changed', { agentId: msg.agentId, status: 'reconnecting', ageMs: msg.ageMs, ts: msg.ts }) } catch (_) {}
+      try {
     } else if (t === 'message') {
       const m = (msg && msg.payload) || {}
       const item = { agentId: msg.agentId, message: m, receivedAt: Date.now() }
       recentMessages.push(item)
       while (recentMessages.length > MAX_RECEIVED_BUFFER) recentMessages.shift()
-      try { if (typeof harness.handleEvent === 'function') harness.handleEvent('im.message.received', { agentId: msg.agentId, message: m, eventType: msg.eventType, ts: msg.ts }) } catch (_) {}
+      try {
     } else if (t === 'log') {
       // 静默
     }

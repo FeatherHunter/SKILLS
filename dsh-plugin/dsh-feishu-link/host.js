@@ -10,7 +10,7 @@
  *   4. WSS 长连接管理：subprocess.spawn helper.mjs，stdin/stdout JSON RPC
  *   5. 7 RPC（harness.handle）：listAgents / beginBind / pollBind / cancelBind / unbind / send / health / listHelpers
  *   6. 2 model tools（harness.registerTool → tools.register）：im_send / im_pull
- *   7. 1 host→client 单向推送：im.bind.changed + im.message.received（harness.handleEvent）
+ *   7. 状态同步改用 client polling（harness.handleEvent 不存在；轮询 im.health / im.listAgents）
  *   8. timer：自动轮询 bind + helper watchdog 重启 + 最近消息 ring buffer
  *
  * sandbox 限制：本函数体不引入外部模块（一切通过 ctx.get 拿）；fs / subprocess / timer / credentials 是硬依赖。
@@ -23,7 +23,7 @@ return {
   // ====== 硬依赖 ======
   inject: ['subprocess', 'timer', 'fs', 'credentials', 'harness', 'tools', 'web'],
 
-  apply(ctx) {
+  async apply(ctx) {
     const subprocess = ctx.get('subprocess')
     const timer = ctx.get('timer')
     const fs = ctx.get('fs')
@@ -194,7 +194,6 @@ return {
     }
     function fireBindChanged(s) {
       try {
-        if (typeof harness.handleEvent === 'function') harness.handleEvent('im.bind.changed', sanitizeSession(s))
       } catch (_) { /* swallow */ }
     }
 
@@ -371,8 +370,8 @@ return {
       await clearCredentials(agentId)
       await deleteBinding(agentId)
       try {
-        if (typeof harness.handleEvent === 'function') {
-          harness.handleEvent('im.bind.changed', { agentId, status: 'unbound', updatedAt: Date.now() })
+        // (harness.handleEvent not available; client polls im.health / im.recentMessages instead)
+)
         }
       } catch (_) {}
       return { ok: true, agentId }
@@ -474,26 +473,26 @@ return {
         broadcastListOfBots().catch(function (e) { /* swallow */ })
       } else if (t === 'botStarted') {
         try {
-          if (typeof harness.handleEvent === 'function') {
-            harness.handleEvent('im.bind.changed', { agentId: msg.agentId, status: 'connected', ts: msg.ts })
+        // (harness.handleEvent not available; client polls im.health / im.recentMessages instead)
+)
           }
         } catch (_) {}
       } else if (t === 'botClosed') {
         try {
-          if (typeof harness.handleEvent === 'function') {
-            harness.handleEvent('im.bind.changed', { agentId: msg.agentId, status: 'closed', reason: msg.reason, ts: msg.ts })
+        // (harness.handleEvent not available; client polls im.health / im.recentMessages instead)
+)
           }
         } catch (_) {}
       } else if (t === 'botFailed') {
         try {
-          if (typeof harness.handleEvent === 'function') {
-            harness.handleEvent('im.bind.changed', { agentId: msg.agentId, status: 'failed', error: msg.error, ts: msg.ts })
+        // (harness.handleEvent not available; client polls im.health / im.recentMessages instead)
+)
           }
         } catch (_) {}
       } else if (t === 'botStalled') {
         try {
-          if (typeof harness.handleEvent === 'function') {
-            harness.handleEvent('im.bind.changed', { agentId: msg.agentId, status: 'reconnecting', ageMs: msg.ageMs, ts: msg.ts })
+        // (harness.handleEvent not available; client polls im.health / im.recentMessages instead)
+)
           }
         } catch (_) {}
       } else if (t === 'message') {
@@ -502,8 +501,8 @@ return {
         recentMessages.push(item)
         while (recentMessages.length > MAX_RECEIVED_BUFFER) recentMessages.shift()
         try {
-          if (typeof harness.handleEvent === 'function') {
-            harness.handleEvent('im.message.received', { agentId: msg.agentId, message: m, eventType: msg.eventType, ts: msg.ts })
+        // (harness.handleEvent not available; client polls im.health / im.recentMessages instead)
+)
           }
         } catch (_) {}
       } else if (t === 'log') {

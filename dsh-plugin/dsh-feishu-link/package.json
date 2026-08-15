@@ -1,10 +1,10 @@
 {
   "name": "dsh-feishu-link",
-  "version": "0.1.0",
-  "description": "DSH（DeepSeek Harness）Web 界面插件 — 给 DSH Agent 接入飞书/Lark IM 的能力。仿 MCODE「侧栏 Agent 列表 + 扫码绑飞书机器人 + 长连接实时沟通」体验，落地为路线 A（IM 中心 overlay + 设置页 + input.dock 提示条）。已锁决策见 docs/ADR-GRILLING-UX.md。",
+  "version": "0.2.0-pre",
+  "description": "DSH（DeepSeek Harness）Web 界面插件 — 给 DSH Agent 接入飞书/Lark IM 的能力。仿 MCODE「侧栏 Agent 列表 + 扫码绑飞书机器人 + 长连接实时沟通」体验，落地为路线 A（IM 中心 overlay + 设置页 + input.dock 提示条）。v0.2 全部 30+ 项完善版（含 sandbox 探测、Lark 海外、persist、redaction、拖动缩放、ESLint、CI、coverage、LICENSE、SPDX 等）。",
   "type": "module",
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=22.16.0"
   },
   "main": "host.js",
   "exports": {
@@ -19,27 +19,60 @@
     "client.js",
     "lib/",
     "helper/",
-    "docs/"
+    "docs/",
+    "CHANGELOG.md",
+    "DESIGN.md",
+    "SPEC.md",
+    "ACCEPTANCE.md",
+    "README.md",
+    "LICENSE",
+    "ROADMAP-completion.md"
   ],
   "scripts": {
-    "test:fetch": "node tests/verify-fetch.mjs"
+    "postinstall": "node scripts/install-patch.cjs",
+    "uninstall": "node scripts/uninstall-patch.cjs",
+    "test": "npm run test:fetch && npm run test:ipc && npm run test:coverage",
+    "test:fetch": "node tests/verify-fetch.mjs",
+    "test:ipc": "node tests/verify-ipc.mjs",
+    "test:probe-sandbox": "node tests/probe-sandbox.mjs",
+    "test:sandbox-real": "node tests/probe-sandbox.mjs",
+    "test:coverage": "c8 --check-coverage --lines 80 --functions 80 node tests/verify-fetch.mjs",
+    "test:integration": "node tests/integration/run-helper-smoke.mjs",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "release": "node scripts/release.mjs",
+    "prepublishOnly": "npm run lint && npm test"
   },
   "dependencies": {
     "@larksuiteoapi/node-sdk": "^1.73.0",
     "ws": "^8.18.0"
   },
+  "devDependencies": {
+    "c8": "^10.1.3",
+    "eslint": "^9.13.0",
+    "globals": "^17.11.0",
+    "prettier": "^3.3.3"
+  },
   "keywords": [
     "dsh",
     "deepseek-harness",
     "plugin",
+    "cordis",
     "feishu",
     "lark",
     "im",
     "bot",
-    "websocket"
+    "websocket",
+    "personal-agent",
+    "device-flow",
+    "wayfinder"
   ],
-  "author": "FeatherHunter",
+  "author": {
+    "name": "FeatherHunter"
+  },
   "license": "MIT",
+  "licensePath": "./LICENSE",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FeatherHunter/SKILLS.git",

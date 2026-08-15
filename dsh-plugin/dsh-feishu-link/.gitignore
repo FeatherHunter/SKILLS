@@ -1,4 +1,7 @@
-﻿# 临时调试文件
-*.git-commit-msg.txt
+node_modules/
+coverage/
+*.log
+.DS_Store
+.git-commit-msg.txt
 smoke-out.txt
-tmp-*.txt
+test-smoke.mjs

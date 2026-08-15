@@ -1,0 +1,49 @@
+# npm publish 时不包含的文件
+# 调试与开发文档不应发布到 npm
+
+# 调试日志
+smoke-out.txt
+test-smoke.mjs
+*.smoke.mjs
+*.integration.mjs
+
+# git 内部
+.gitignore
+
+# 工程验证脚本（发布无关）
+RESEARCH-*.md
+RESEARCH-t1-endpoints.md
+RESEARCH-feishu-connect-health.md
+
+# 设计过程草稿（不是产品文档）
+DESIGN-concept.md
+design-*.md
+
+# IDE / 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# CI / 临时
+.travis.yml
+.circleci/
+.github/workflows/
+
+# 不要把 node_modules 二次打包
+node_modules/
+package-lock.json
+npm-debug.log
+yarn-error.log
+*.log
+
+# 测试产物（如果某天开 coverage）
+coverage/
+.nyc_output/
+*.lcov
+
+# npm 不应自动加进 published package 的文件
+docs/
+helper/tests/

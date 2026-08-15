@@ -1,0 +1,134 @@
+{
+  "root": true,
+  "parserOptions": {
+    "ecmaVersion": 2023,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": false
+    }
+  },
+  "env": {
+    "node": true,
+    "es2023": true,
+    "browser": true
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "rules": {
+    "no-unused-vars": [
+      "warn",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+    "no-undef": "error",
+    "no-fallthrough": "warn",
+    "no-implicit-globals": "error",
+    "prefer-const": "warn",
+    "no-var": "error",
+    "no-implicit-coercion": "off",
+    "no-prototype-builtins": "off",
+    "no-empty": [
+      "error",
+      { "allowEmptyCatch": true }
+    ],
+    "no-useless-escape": "warn",
+    "no-unreachable": "error",
+    "valid-typeof": "error"
+  },
+  "overrides": [
+    {
+      "files": [
+        "tests/**/*.mjs",
+        "scripts/**/*.cjs",
+        "scripts/**/*.mjs"
+      ],
+      "env": {
+        "node": true,
+        "browser": false
+      },
+      "rules": {
+        "no-console": "off"
+      }
+    },
+    {
+      "files": [
+        "client.js",
+        "package/lib/client.js"
+      ],
+      "env": {
+        "browser": true,
+        "node": true,
+        "es2023": true
+      },
+      "parserOptions": {
+        "ecmaFeatures": {
+          "jsx": true
+        }
+      },
+      "globals": {
+        "React": "readonly",
+        "ctx": "readonly",
+        "host": "readonly",
+        "window": "readonly",
+        "document": "readonly",
+        "localStorage": "readonly",
+        "setTimeout": "readonly",
+        "clearTimeout": "readonly",
+        "setInterval": "readonly",
+        "clearInterval": "readonly",
+        "CustomEvent": "readonly",
+        "console": "readonly"
+      }
+    },
+    {
+      "files": [
+        "host.js",
+        "package/lib/index.js"
+      ],
+      "globals": {
+        "ctx": "readonly",
+        "host": "readonly",
+        "harness": "readonly",
+        "process": "readonly",
+        "__filename": "readonly",
+        "__dirname": "readonly",
+        "require": "readonly",
+        "module": "readonly",
+        "exports": "readonly",
+        "URLSearchParams": "readonly",
+        "console": "readonly"
+      }
+    },
+    {
+      "files": [
+        "lib/**/*.mjs",
+        "tests/**/*.mjs",
+        "helper/**/*.mjs"
+      ],
+      "parserOptions": {
+        "sourceType": "module"
+      },
+      "globals": {
+        "process": "readonly",
+        "console": "readonly",
+        "URLSearchParams": "readonly"
+      }
+    },
+    {
+      "files": [
+        "lib/fetch.mjs",
+        "lib/ipc.mjs"
+      ],
+      "rules": {
+        "no-console": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "node_modules/",
+    "dist/",
+    "coverage/",
+    ".git/",
+    "tests/probe-sandbox.mjs"
+  ]
+}

@@ -2,11 +2,11 @@
 
 > DSH（DeepSeek Harness）Web 界面的 **Waystation 控制面板**插件（Client + Host 双端），
 > **配合 [Matt Pocock skills](https://github.com/mattpocock/skills) 的 wayfinder / triage / grilling / handoff 等技能使用**：
-> 输入区状态栏胶囊（可接/占用/沉淀/交接/环境/更新）+ 右侧 details 列面板（列表 / 技能 / 环境检查三视图，
+> 输入区状态栏胶囊（可接/阻塞/沉淀/交接/环境/更新）+ 右侧 details 列面板（列表 / 技能 / 环境检查三视图，
 > 唯一打开形式）+ GitHub issue 动作注入（诊断 / 修复 / 讨论 / 执行，均带 `/wayfinder` `/triage` 技能命令）
 > + 交接开新会话。
 
-- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.3.3：配置页 + 模板编辑器 + 中英双语，打开形式仅右侧 details 列，无 PiP/悬浮；v1.3.3 = 13 项 bug 修复 + UI 两行结构 + 新会话按钮优化 + 配置面板全展开）
+- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.3.3：13 项 bug 修复 + UI 逐版定稿（C 卡片式两行结构 / 迷你圆环进度 / 标签贪心折叠 +N 弹窗 / 编号+map 竖排）+ 快照性能提速 + npm 发布）
 - **动态版 pluginId**: `wfst-1`（v9–v24 迭代产物）
 - **平台**: Client（浏览器页面）+ Host（Node 进程，gh CLI 数据层）
 - **配套**: [mattpocock/skills](https://github.com/mattpocock/skills)（wayfinder / triage / grilling / handoff / ask-matt 等）
@@ -17,12 +17,15 @@
 | 模块 | 说明 |
 |---|---|
 | 状态栏胶囊 | 输入区上方：可接 / 阻塞 / 沉淀（零丢失快照）/ 交接 / 环境 / 更新，点击直达对应面板视图 |
-| 面板 · 列表 | GitHub issue 全列表（map 置顶 + 子票进度条）、标签过滤 chips（GitHub 配置色）、阻塞筛选、已关闭折叠、行级动作按钮；行布局 = 两行结构（标题占满整宽限 2 行 + 信息/动作行） |
-| 面板 · 技能 | 技能雷达（推荐 / 列表 / 圆环），点击注入 `/skill` |
+| 面板 · 列表 | GitHub issue 全列表（map 置顶 + 子票迷你圆环进度）、标签过滤 chips（GitHub 配置色）、阻塞筛选、已关闭折叠、行级动作按钮；行布局 = 两行结构（编号/map 竖排 + 标题占满整宽限 2 行 + 标签/按钮行） |
+| 标签贪心折叠 | 单行不换行：宽面板显示多标签、窄面板少标签（最少 1 个），放不下的折叠为 +N 弹窗（fixed 定位 · 自适应面板左右边界 · 内容完整可见） |
+| 进度显示 | map 行右侧 18px 迷你圆环 + n/total（等宽数字右缘对齐，圆环零间隙） |
+| 面板 · 技能 | 技能雷达（推荐 / 列表 / 圆环），点击注入 /skill |
 | 面板 · 环境检查 | 8 项前置检查（仓库定位 / setup / tracker / gh CLI / 登录 / API / 技能探测），红黄绿分组 + 一键处理 |
-| 行级动作 | 按 label 四选一：诊断(`/triage`) / 修复(`/wayfinder`) / 讨论(`/wayfinder`) / 执行(`/wayfinder`)，按钮色 = GitHub label 配置色，点击预填输入框 |
+| tabs 行 | 列表 / 技能 / 环境检查 + 右侧刷新按钮 + 最右侧版本号（如 v1.3.3），便于核对已更新 |
+| 行级动作 | 按 label 四选一：诊断(/triage) / 修复(/wayfinder) / 讨论(/wayfinder) / 执行(/wayfinder)，按钮色 = GitHub label 配置色，点击预填输入框；执行/新会话按钮常显（复制/外链也常显） |
 | map 详情 | 顶部「执行」+ 任务按状态动作、可接/已认领/被阻塞/已关闭垂直走廊、Decision/Fog/Out-of-scope 折叠 |
-| 交接 | 第一击注入 `/handoff` 时间戳模板；第二击预填 `/read` + 复述确认 prompt 并开新会话 |
+| 交接 | 第一击注入 /handoff 时间戳模板；第二击预填 /read + 复述确认 prompt 并开新会话 |
 | 统一引导句 | 动作注入统一带「从第一性原理出发完成任务，并对抗式审查。」 |
 
 ## 使用方式
@@ -130,11 +133,20 @@ dsh plugin --profile web remove dsh-waystation
 
 - 依赖：`gh` CLI（兜底路径 `D:\0Tools\GitHubCLI\gh.exe`）+ git 仓库工作目录（默认
   `D:\2Study\StudyNotes\SKILLS`，可随会话 cwd 切换）。
-- 数据流：`gh issue list` 枚举 `wayfinder:map` → 每 map 一次 GraphQL（subIssues +
-  labels + assignees + blockedBy）→ 组装快照（map 五区块解析 + tickets + stats）。
+- 数据流：`gh issue list` 枚举全量 issues（map 列表从中过滤 `wayfinder:map`）→ **GraphQL aliases 一次查询全部 map 详情**（subIssues + labels + assignees + blockedBy）→ 组装快照（map 五区块解析 + tickets + stats）。
 - RPC 通道 `/dsws`：`status` / `snapshot` / `refresh` / `cwd` / `handoffLatest` / `claim`。
-- 刷新策略：纯手动（状态栏「更新」/ 列表「刷新」/ 打开面板即刷）+ 5s 快照缓存、
-  30s 环境检查缓存。
+- 刷新策略：纯手动（状态栏「更新」/ 列表「刷新」/ 打开面板即刷）+ **60s 快照缓存**、30s 环境检查缓存。
+- 性能：v1.3.3 起快照加载 ~35s → ~12s（aliases 批量 8 次 GraphQL → 1 次）。
+
+## v1.3.3 新增（2026-08-15）
+
+- 13 项用户 bug 修复（配置面板全展开 / textarea 自适应 / 占用→阻塞 / 按钮常显 / map 完成态 / 双 loading 修复等）
+- UI 逐版定稿：C 卡片式两行结构、编号/map 竖排、18px 迷你圆环进度、标签贪心折叠 +N 弹窗（自适应面板）、窄屏按钮正方形
+- tabs 行刷新按钮 + 最右侧版本号 v1.3.3
+- 快照性能提速 ~35s → ~12s（GraphQL aliases 批量 + 合并 fetchMaps + 缓存 60s）
+- 开发工作流文档 DEV-WORKFLOW.md（改 bug → 实时生效完整流程）
+
+完整变更历史见 [CHANGELOG.md](./CHANGELOG.md)。
 
 ## 文件
 

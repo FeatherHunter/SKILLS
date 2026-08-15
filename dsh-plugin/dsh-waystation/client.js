@@ -750,6 +750,14 @@ return {
     // ============================================================
     // v22：统一引导句（T1 拍板：普通静态文本，用户可改；不是占位符）
     const GUIDE_LINE = '从第一性原理出发完成任务，并对抗式审查。'
+    // v1.4（T2 #443）：map 推进式执行 prompt —— 仅用于 map（详情页主按钮 + 列表 map 行执行），
+    //   语义 = 在 map 上推进一步：加载技能 → 分析 map → 第一性原理挑下一个 frontier issue → 执行
+    const MAP_EXECUTE_PROMPT = '请按以下流程推进该 map：\n' +
+      '1. 加载 wayfinder 技能（如未加载）；\n' +
+      '2. 分析这个 map（Destination / Notes / 阻塞关系 / 当前 frontier）；\n' +
+      '3. 按第一性原理分析当前最适合推进的下一个 issue（frontier 中价值最高、风险最低、最解阻的）；\n' +
+      '4. 去执行它：读该 issue 的 Description / Notes / 阻塞关系 → 制定方案 → 实施 → 验收。\n\n' +
+      GUIDE_LINE
     // T4 #8：完成 prompt 措辞优化（直接对应用户原话：询问 AI 当前 issue 情况，为什么该 map 还没有关闭，请它进行检查和确认）
     const COMPLETE_PROMPT = '## 完成确认 · MAP #{n}\n' +
       '\n' +
@@ -1288,6 +1296,9 @@ return {
     }
     const startText = (st, t) => {
       const url = 'https://github.com/' + repoStr(st) + '/issues/' + t.number
+      // v1.4（T2 #443）：map 用推进式 prompt（加载技能→分析map→挑下一个issue→执行）；普通 issue 用 execute 模板
+      const isMap = (t.labels || []).some(function (l) { return (typeof l === 'string') ? l === 'wayfinder:map' : l.name === 'wayfinder:map' })
+      if (isMap) return MAP_EXECUTE_PROMPT
       const body = renderTemplate('execute', { number: String(t.number), url: url, title: t.title })
       return withWayfinderPrefix(body)
     }
@@ -1629,8 +1640,8 @@ return {
                 h('span', null, tr('act.done')),
               ])
             : h('button', { className: 'dsws-btn primary', title: tr('map.executeTitle'), onClick: function () {
-                const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
-                inject(st, withWayfinderPrefix(body))
+                // v1.4：map 推进式执行（startText 检测 wayfinder:map → MAP_EXECUTE_PROMPT）
+                inject(st, startText(st, m))
               }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11 } }, [
                 Ic({ n: 'play', size: 10 }),
                 h('span', null, tr('act.execute')),
@@ -1684,8 +1695,8 @@ return {
                     h('span', null, tr('act.done')),
                   ])
                 : h('button', { className: 'dsws-btn primary', title: tr('map.executeTitle'), onClick: function () {
-                    const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
-                    inject(st, withWayfinderPrefix(body))
+                    // v1.4：map 推进式执行（startText 检测 wayfinder:map → MAP_EXECUTE_PROMPT）
+                    inject(st, startText(st, m))
                   }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', fontSize: 11, background: '#4ade80', borderColor: 'transparent', color: '#04120a', fontWeight: 700 } }, [
                     Ic({ n: 'play', size: 11 }),
                     h('span', null, tr('act.execute')),

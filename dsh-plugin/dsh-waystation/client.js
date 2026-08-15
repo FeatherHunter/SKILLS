@@ -48,6 +48,8 @@ return {
     if (slots === undefined) return
     const timer = ctx.get('timer')
     const h = React.createElement
+    // v1.3.3：面板版本号（tabs 行最右侧显示，便于核对已更新）
+    const DSW_VERSION = 'v1.3.3'
 
     // ============================================================
     // 0. 样式
@@ -127,7 +129,8 @@ return {
       '.dsws-banner.warn{background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.45);color:#fbbf24}',
       '.dsws-banner.ok{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.35);color:#4ade80}',
       // v1.3.3 UI 修复：aggrow 现含两行子块（行1 idcol+标题+圆环 / 行2 标签+按钮），必须纵向堆叠
-      '.dsws-aggrow{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:6px 8px;border-radius:6px;border:1px solid transparent}',
+      // v1.3.3：左侧预留空白减 20%（8px → 6.4px，map 行/普通行一致更紧凑）
+      '.dsws-aggrow{display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:6px 6.4px;border-radius:6px;border:1px solid transparent}',
       '.dsws-aggrow:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06));border-color:var(--dsw-alias-border-l1,#2a2d35)}',
       // v1.3.3 UI：辅助按钮（复制/外链）常显（用户要求一直显示，不 hover）
       '.dsws-aggrow .dsws-aux{display:inline-flex;align-items:center;gap:2px;flex:none}',
@@ -1819,7 +1822,8 @@ return {
           st.expLabels ? h('span', { key: 'lbl-less', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = false; emit(st) }, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
         ]),
         // T3 #5：加载遮罩（替代单行文本，全屏遮罩 + 转圈 + 禁点）
-        st.snapMode === 'loading' ? h('div', { className: 'dsws-loading-shade', style: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 5, pointerEvents: 'auto' } }, [
+        // v1.3.3 修复：刷新中（refreshing）只显示全面板刷新遮罩，不叠加本加载遮罩（用户实测双 loading 叠加）
+        st.snapMode === 'loading' && !st.refreshing ? h('div', { className: 'dsws-loading-shade', style: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 5, pointerEvents: 'auto' } }, [
           h('div', { className: 'dsws-spinner' }),
           h('span', { style: { fontSize: 12, color: '#e6edf3' } }, tr('list.loading')),
         ]) : null,
@@ -1997,11 +2001,14 @@ return {
           h('span', { style: { flex: 1 } }),
           h('button', { className: 'dsws-btn ghost', title: tr('panel.closeTitle'), onClick: closeDock, style: { display: 'inline-flex', alignItems: 'center', padding: '2px 6px', fontSize: 11 } }, Ic({ n: 'x', size: 12 })),
         ]),
-        // 标签行下沿 = 与对话/轨迹一致的横线
-        h('div', { className: 'dsws-tabs', style: { padding: '0 12px 7px', borderBottom: '1px solid var(--dsw-alias-border-l1,#2a2d35)', flex: 'none' } }, [
+        // 标签行下沿 = 与对话/轨迹一致的横线；右侧：刷新按钮 + 版本号（v1.3.3）
+        h('div', { className: 'dsws-tabs', style: { padding: '0 12px 7px', borderBottom: '1px solid var(--dsw-alias-border-l1,#2a2d35)', flex: 'none', display: 'flex', alignItems: 'center', gap: 4 } }, [
           tabBtn('list', 'list', tr('panel.tabList')),
           tabBtn('skills', 'compass', tr('panel.tabSkills')),
           tabBtn('checks', 'gear', tr('panel.tabChecks')),
+          h('span', { style: { flex: 1 } }),
+          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
+          h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),
         ]),
         h('div', { className: 'dsws-body', style: { flex: 1, overflowY: 'auto', padding: '10px 12px' } }, [
           s.tab === 'list' ? (active ? h(MapDetail, { st: s, g: active }) : h(ListTab, { st: s, narrow: narrow })) : null,
@@ -2092,12 +2099,14 @@ return {
           h('span', { style: { flex: 1 } }),
           h('button', { className: 'dsws-btn ghost', title: tr('panel.closeTitle'), onClick: function () { s.open = false; emit(s) }, style: { display: 'inline-flex', alignItems: 'center' } }, Ic({ n: 'x', size: 12 })),
         ]),
-                h('div', { className: 'dsws-tabs' }, [
+                h('div', { className: 'dsws-tabs', style: { display: 'flex', alignItems: 'center', gap: 4 } }, [
           tabBtn('list', 'list', tr('panel.tabList')),
           tabBtn('skills', 'compass', tr('panel.tabSkills')),
           tabBtn('checks', 'gear', tr('panel.tabChecks')),
+          h('span', { style: { flex: 1 } }),
           // T2 #2：刷新按钮上移至 tabs 行 · 紧贴环境检查右边（用户需求：列表 / 技能 / 环境检查 / 刷新）
           h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
+          h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),
         ]),
         h('div', { className: 'dsws-body', onMouseDown: onBodyDown }, [
           s.tab === 'list' ? (active ? h(MapDetail, { st: s, g: active }) : h(ListTab, { st: s, narrow: narrow })) : null,

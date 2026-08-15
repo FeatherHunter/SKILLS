@@ -37,6 +37,12 @@ v27 范式 + 13 项用户报告 bug + v27 验证后新需求（label count + 新
 - **T8** label chip 不显示 issue count（filter row 移除 `· ${count}` 显示 · +N 折叠 chip 数字保留）
 - **T9** 新会话按钮文字缩短（"新开会话" → "新会话"）+ 颜色与执行按钮同色（按 issue label 动态取 GitHub 配置色 · YIQ 感知亮度自适应）
 
+### Changed · 用户微调（T11）
+
+- **T11** 沉淀 prompt 落盘逻辑二态改三态：
+  - 原：map（写进 map 正文 + ISSUE）/ 都没有（先生成快照笔记）
+  - 改：map（写进 map 正文 + ISSUE）/ 只有 ISSUE（写进对应 ISSUE）/ 都没有（先生成快照笔记）
+
 ### Technical
 
 - 双源镜像一致（client.js ↔ package/lib/client.js · 行号偏差 13）

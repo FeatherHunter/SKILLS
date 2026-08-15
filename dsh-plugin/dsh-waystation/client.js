@@ -175,7 +175,12 @@ return {
       '.dsws-layerTag{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);letter-spacing:.5px;margin:8px 0 4px;text-transform:uppercase}',
       '.dsws-layerTag .sp{flex:1;height:1px;background:linear-gradient(90deg,var(--dsw-alias-border-l1,#2a2d35),transparent)}',
       // v1.4 修复：并行票水平并列（符合原型 .A-layer 无 wrap 横排）—— 层内节点不换行，横向滚动看全部
-      '.dsws-layer{display:flex;justify-content:flex-start;gap:8px;padding:2px 0;overflow-x:auto;scrollbar-width:thin}',
+      // v1.4 美化：滚动条深色细条（透明轨道 + 半透明滑块），贴合深色主题不再白条
+      '.dsws-layer{display:flex;justify-content:flex-start;gap:8px;padding:2px 0 6px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}',
+      '.dsws-layer::-webkit-scrollbar{height:5px}',
+      '.dsws-layer::-webkit-scrollbar-track{background:transparent}',
+      '.dsws-layer::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:3px}',
+      '.dsws-layer::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28)}',
       '.dsws-node{display:flex;flex-direction:column;gap:4px;border-radius:10px;padding:7px 8px;min-width:0;width:200px;flex:none;position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));border:1.5px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3)}',
       '.dsws-node.single{width:100%;flex:none}',
       // 窄框（面板 <380px）节点收窄，仍横排

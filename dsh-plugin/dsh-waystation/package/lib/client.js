@@ -312,7 +312,7 @@ window.__ModuleLoader__.load({
           'toast.resetPanelWidthDone': '面板宽度已重置 · 下次打开生效',
           'toast.resetPanelWidthFail': 'layout 服务暂不支持重置 · 请更新 DSH harness',
           // #394：新会话按钮可见文字 + hover title（去掉冗余 detail，靠 #361 doc + 行为本身解释）
-          'list.newSessionLabel': '新开会话',
+          'list.newSessionLabel': '新会话',
           'err.hostUnavailable': 'host.call 不可用（Host 半未加载）',
           'err.connUnavailable': 'connection 服务不可用（Host 半未加载）',
           'err.statusEmpty': 'wf.status 返回空结果',
@@ -899,7 +899,26 @@ window.__ModuleLoader__.load({
         })
         return colorOf
       }
-      // #361：行级动作注入文本的单一真源（诊断/修复/讨论/执行）—— 新会话打开与行内动作共用
+            return colorOf
+    }
+    // T9：行级动作主色计算（与 mkRowAction 共享 · 给新会话按钮复用：与执行按钮同 label 主色）
+    const isLightHex = function (hex) {
+      try {
+        const hh = String(hex || '').replace('#', '')
+        if (!/^[0-9a-fA-F]{6}$/.test(hh)) return false
+        const r = parseInt(hh.slice(0, 2), 16), g = parseInt(hh.slice(2, 4), 16), b = parseInt(hh.slice(4, 6), 16)
+        return (299 * r + 587 * g + 114 * b) / 1000 > 160
+      } catch (e) { return false }
+    }
+    const actionColorOf = function (x, colorOf) {
+      const has = function (nm) { return (x.labels || []).some(function (l) { return (typeof l === 'string') ? l === nm : l.name === nm }) }
+      const bc = function (nm, fb) { const cc = colorOf[nm]; return cc ? '#' + cc : fb }
+      if (has('needs-triage')) return bc('needs-triage', '#f59e0b')
+      if (has('bug')) return bc('bug', '#f87171')
+      if (has('wayfinder:grilling')) return bc('wayfinder:grilling', '#d93f0b')
+      return '#c084fc'
+    }
+    // #361：行级动作注入文本的单一真源（诊断/修复/讨论/执行）—— 新会话打开与行内动作共用
       const rowActionText = function (st, x) {
         const url = 'https://github.com/' + repoStr(st) + '/issues/' + x.number
         const has = function (nm) { return (x.labels || []).some(function (l) { return (typeof l === 'string') ? l === nm : l.name === nm }) }
@@ -1383,7 +1402,7 @@ window.__ModuleLoader__.load({
             blocked ? null : mkRowAction(st, t, false, colorOf),
             // #361 能力保留（同 cwd + 自动命名 + 预填指令）；#394：去 ghost/icon-only，与 nav.handoff 解耦
             //   marginLeft:4 与左侧 mkRowAction 形成隐式分组（动作组 vs 辅助组）
-            h('button', { className: 'dsws-btn', onClick: function (e) { e.stopPropagation(); openInNewSession(st, t) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', marginLeft: 4 } }, [Ic({ n: 'external-link', size: 12 }), h('span', null, tr('list.newSessionLabel'))]),
+            h('button', { className: 'dsws-btn primary', onClick: function (e) { e.stopPropagation(); openInNewSession(st, t) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', marginLeft: 4, background: actionColorOf(t, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(t, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 12 }), h('span', null, tr('list.newSessionLabel'))]),
             h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: t.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 6px' } }, Ic({ n: 'link', size: 12 })),
           ]) : h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none' } }, tr('act.view')),
         ])
@@ -1576,7 +1595,7 @@ window.__ModuleLoader__.load({
             isOpen && !blocked ? mkRowAction(st, x, narrow, colorOf) : null,
             // #361 能力保留；#394：去 ghost/icon-only，与 nav.handoff 图标解耦，加可见文字标签
             //   marginLeft:4 与左侧 mkRowAction 形成隐式分组（动作组 vs 辅助组）
-            isOpen ? h('button', { className: 'dsws-btn', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', flex: 'none', marginLeft: 4 } }, [Ic({ n: 'external-link', size: 12 }), h('span', null, tr('list.newSessionLabel'))]) : null,
+            isOpen ? h('button', { className: 'dsws-btn primary', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', flex: 'none', marginLeft: 4, background: actionColorOf(x, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 12 }), h('span', null, tr('list.newSessionLabel'))]) : null,
             h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
             h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: x.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
           ])

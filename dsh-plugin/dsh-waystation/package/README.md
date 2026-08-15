@@ -6,7 +6,7 @@
 > 唯一打开形式）+ GitHub issue 动作注入（诊断 / 修复 / 讨论 / 执行，均带 `/wayfinder` `/triage` 技能命令）
 > + 交接开新会话。
 
-- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.3.0 · v26：配置页 + 模板编辑器 + 中英双语，打开形式仅右侧 details 列，无 PiP/悬浮）
+- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.3.3：配置页 + 模板编辑器 + 中英双语，打开形式仅右侧 details 列，无 PiP/悬浮；v1.3.3 = 13 项 bug 修复 + UI 两行结构 + 新会话按钮优化 + 配置面板全展开）
 - **动态版 pluginId**: `wfst-1`（v9–v24 迭代产物）
 - **平台**: Client（浏览器页面）+ Host（Node 进程，gh CLI 数据层）
 - **配套**: [mattpocock/skills](https://github.com/mattpocock/skills)（wayfinder / triage / grilling / handoff / ask-matt 等）
@@ -16,8 +16,8 @@
 
 | 模块 | 说明 |
 |---|---|
-| 状态栏胶囊 | 输入区上方：可接 / 占用 / 沉淀（零丢失快照）/ 交接 / 环境 / 更新，点击直达对应面板视图 |
-| 面板 · 列表 | GitHub issue 全列表（map 置顶 + 子票进度条）、标签过滤 chips（GitHub 配置色）、被阻塞标签、已关闭折叠、行级动作按钮 |
+| 状态栏胶囊 | 输入区上方：可接 / 阻塞 / 沉淀（零丢失快照）/ 交接 / 环境 / 更新，点击直达对应面板视图 |
+| 面板 · 列表 | GitHub issue 全列表（map 置顶 + 子票进度条）、标签过滤 chips（GitHub 配置色）、阻塞筛选、已关闭折叠、行级动作按钮；行布局 = 两行结构（标题占满整宽限 2 行 + 信息/动作行） |
 | 面板 · 技能 | 技能雷达（推荐 / 列表 / 圆环），点击注入 `/skill` |
 | 面板 · 环境检查 | 8 项前置检查（仓库定位 / setup / tracker / gh CLI / 登录 / API / 技能探测），红黄绿分组 + 一键处理 |
 | 行级动作 | 按 label 四选一：诊断(`/triage`) / 修复(`/wayfinder`) / 讨论(`/wayfinder`) / 执行(`/wayfinder`)，按钮色 = GitHub label 配置色，点击预填输入框 |

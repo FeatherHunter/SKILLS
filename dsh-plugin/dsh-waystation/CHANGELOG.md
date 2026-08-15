@@ -31,6 +31,13 @@ All notable changes to **dsh-waystation** are documented here.
 - **#8 map 行完成态**：主列表 map 行子票全关 → 绿色「完成」+ 收尾 prompt（与 MapDetail 一致）
 - **#10 执行 prompt 双重 /wayfinder**：execute 模板去前缀 + withWayfinderPrefix 守卫去重
 
+### Changed · UI 列表行两行结构（commit 86e10efa + 14c6c5e3）
+
+- 标题限 2 行（line-clamp + ellipsis）→ 根治一行一字/7-8 行换行，hover 显示完整
+- 编号 + map 徽章同组垂直居中（行高统一）
+- 第二行：labels + 进度条（贯穿可用宽）+ 执行/新会话（常显）+ 复制/外链（hover 浮现）
+- 进度条加绿色 ✓ 前缀强化完成语义
+
 ### Technical
 
 - 双源镜像一致（client.js ↔ package/lib/client.js）

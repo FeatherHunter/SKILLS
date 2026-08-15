@@ -136,6 +136,54 @@ window.__ModuleLoader__.load({
       '.dsws-pop .pl{display:flex;flex-wrap:wrap;gap:4px}',
       '.dsws-pop .ptitle{font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa);margin-top:8px;border-top:1px solid var(--dsw-alias-border-l1,#2a2d35);padding-top:7px;line-height:1.55;overflow-wrap:break-word;word-break:break-word}',
       '.dsws-pop .ptitle b{color:var(--dsw-alias-label-primary,#e6edf3);font-weight:600}',
+      // v1.4（T2 #443）：Map 详情页漏斗分层形态（D1-D8 规格）
+      '.dsws-layers{display:flex;flex-direction:column;gap:4px;margin:10px 0;padding:8px 10px;border-radius:10px;background:linear-gradient(90deg,rgba(74,222,128,.05),rgba(255,255,255,.015));border:1px solid rgba(74,222,128,.2)}',
+      '.dsws-layers .row1{display:flex;align-items:center;gap:8px}',
+      '.dsws-layers .cap{font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);letter-spacing:.5px;text-transform:uppercase;flex:none}',
+      '.dsws-layers .segs{flex:1;display:flex;gap:3px;height:12px}',
+      '.dsws-layers .seg{flex:1;border-radius:3px;position:relative;background:rgba(255,255,255,.06);border:1px dashed rgba(255,255,255,.14)}',
+      '.dsws-layers .seg.past{background:linear-gradient(180deg,rgba(74,222,128,.7),rgba(74,222,128,.4));border:none}',
+      '.dsws-layers .seg.past::after{content:"✓";position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:7px;color:#04120a;font-weight:700}',
+      '.dsws-layers .seg.curr{background:linear-gradient(180deg,#4ade80,#2dd45f);border:none;box-shadow:0 0 8px rgba(74,222,128,.5)}',
+      '.dsws-layers .row2{display:flex;justify-content:space-between;font-size:8.5px;color:var(--dsw-alias-label-caption,#8b8b95);align-items:center}',
+      '.dsws-layers .row2 .cur{color:#4ade80;font-weight:700;display:inline-flex;align-items:center;gap:4px}',
+      '.dsws-start{display:flex;gap:8px;align-items:flex-start;margin:6px 0 2px}',
+      '.dsws-start .cap{font-size:13px;font-weight:700;color:#fff;line-height:1.1}',
+      '.dsws-start .desc{font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);font-style:italic;line-height:1.3}',
+      '.dsws-layerTag{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);letter-spacing:.5px;margin:8px 0 4px;text-transform:uppercase}',
+      '.dsws-layerTag .sp{flex:1;height:1px;background:linear-gradient(90deg,var(--dsw-alias-border-l1,#2a2d35),transparent)}',
+      '.dsws-layer{display:flex;justify-content:center;gap:8px;padding:2px 0;flex-wrap:wrap}',
+      '.dsws-node{display:flex;flex-direction:column;gap:4px;border-radius:10px;padding:7px 8px;min-width:0;width:calc(50% - 5px);position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));border:1.5px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3)}',
+      '.dsws-node.single{width:100%}',
+      '.dsws-node .row1{display:flex;align-items:center;gap:6px}',
+      '.dsws-node .icbox{width:22px;height:22px;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1.5px solid;background:rgba(0,0,0,.5);color:var(--dsw-alias-label-secondary,#a1a1aa)}',
+      '.dsws-node .meta{display:flex;align-items:center;gap:5px;margin-bottom:1px}',
+      '.dsws-node .no{font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);font-family:var(--ds-font-family-code,Consolas,Menlo,monospace)}',
+      '.dsws-node .tag{font-size:8px;padding:0 4px;border-radius:3px;border:1px solid;opacity:.85;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace)}',
+      '.dsws-node .tt{font-size:11px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all}',
+      '.dsws-node .acts{display:flex;gap:4px;flex-wrap:wrap;align-items:center}',
+      '.dsws-node.done{opacity:.55}',
+      '.dsws-node.now{border-color:rgba(74,222,128,.9);box-shadow:0 0 14px rgba(74,222,128,.3)}',
+      '.dsws-node.wait{border-color:rgba(240,136,62,.5);border-style:dashed;opacity:.8}',
+      '.dsws-node.fog{filter:blur(2.4px) brightness(.45);opacity:.6;cursor:pointer;border-color:rgba(192,132,252,.4)}',
+      '.dsws-node.fog.revealed{filter:none;opacity:1;cursor:default}',
+      '.dsws-node.fog .acts{pointer-events:none;filter:blur(1px)}',
+      '.dsws-node.fog.revealed .acts{pointer-events:auto;filter:none}',
+      '.dsws-node .qmark{position:absolute;right:7px;bottom:7px;width:12px;height:12px;color:rgba(192,132,252,.8);fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}',
+      '.dsws-gate{height:26px;display:flex;align-items:center;justify-content:center;position:relative}',
+      '.dsws-gate::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:2px;background:linear-gradient(180deg,transparent,rgba(255,255,255,.15),transparent)}',
+      '.dsws-gate .g{width:22px;height:22px;border-radius:50%;background:var(--dsw-alias-bg-layer-2,#16181d);border:2px solid;display:flex;align-items:center;justify-content:center;z-index:1;color:var(--dsw-alias-label-secondary,#a1a1aa)}',
+      '.dsws-gate .g.lock{border-color:rgba(240,136,62,.55);color:#f0883e}',
+      '.dsws-gate .g.open{border-color:rgba(74,222,128,.75);color:#4ade80;box-shadow:0 0 8px rgba(74,222,128,.3)}',
+      '.dsws-dest{position:relative;margin-top:14px;border-radius:14px;padding:14px 12px 12px;text-align:center;background:linear-gradient(180deg,rgba(192,132,252,.1),rgba(88,166,255,.03) 70%,transparent);border:1.5px solid rgba(192,132,252,.35)}',
+      '.dsws-dest .ring{width:72px;height:72px;margin:0 auto;position:relative}',
+      '.dsws-dest .ring svg{transform:rotate(-90deg)}',
+      '.dsws-dest .ring .track{stroke:rgba(255,255,255,.07);fill:none;stroke-width:6}',
+      '.dsws-dest .ring .prog{fill:none;stroke-width:6;stroke-linecap:round;stroke:rgba(192,132,252,.7)}',
+      '.dsws-dest .core{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}',
+      '.dsws-dest .core svg{width:22px;height:22px;fill:none;stroke:#c084fc;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}',
+      '.dsws-dest .title{font-size:15px;font-weight:700;margin-top:4px;color:#e6edf3}',
+      '.dsws-dest .acts{display:flex;justify-content:center;gap:8px;margin-top:8px}',
       '.dsws-ellip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}',
       '.dsws-cgroup{margin:10px 0 2px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa);display:flex;align-items:center;gap:6px}',
       '.dsws-ccard{border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--dsw-alias-bg-layer-1,#10131a)}',
@@ -291,6 +339,14 @@ window.__ModuleLoader__.load({
           'map.grpClaimed': '已认领 {n}',
           'map.grpBlocked': '被阻塞 {n}',
           'map.grpClosed': '已关闭 {n}',
+          'map.layer': '层 {n}',
+          'map.progressCap': '地图进度',
+          'map.curLayer': '当前：层 {n}',
+          'map.layersPassed': '{n}/{t} 层已通过',
+          'map.startCap': 'Start',
+          'map.destCap': 'Destination',
+          'map.startBtn': '开始 #{n}',
+          'map.archive': '档案',
           'map.subClaimed': '已认领 {who}',
           'map.subBlocked': '被阻塞：{who}',
           'map.subClosed': '已关闭',
@@ -465,6 +521,14 @@ window.__ModuleLoader__.load({
           'map.grpClaimed': 'Claimed {n}',
           'map.grpBlocked': 'Blocked {n}',
           'map.grpClosed': 'Closed {n}',
+          'map.layer': 'Layer {n}',
+          'map.progressCap': 'Map progress',
+          'map.curLayer': 'Current: layer {n}',
+          'map.layersPassed': '{n}/{t} layers passed',
+          'map.startCap': 'Start',
+          'map.destCap': 'Destination',
+          'map.startBtn': 'Start #{n}',
+          'map.archive': 'Archive',
           'map.subClaimed': 'Claimed by {who}',
           'map.subBlocked': 'Blocked by: {who}',
           'map.subClosed': 'Closed',
@@ -1460,17 +1524,110 @@ window.__ModuleLoader__.load({
       const MapDetail = ({ st, g }) => {
         const m = g.m
         const colorOf = buildColorOf(st)
+        const tickets = m.tickets || []
+        const levels = (m.stats && m.stats.levels) || []
+        const totalLayers = levels.length
+        // 当前层 = 第一个含 open 票的层（无 open 全 done → 最后一层）
+        const curLevel = (function () {
+          for (let i = 0; i < levels.length; i++) { if (levels[i].open > 0) return i }
+          return Math.max(0, levels.length - 1)
+        })()
+        const passedLayers = levels.filter(function (l, i) { return i < curLevel }).length
+        const byLevel = {}
+        tickets.forEach(function (t) { const lv = (typeof t.level === 'number') ? t.level : 0; (byLevel[lv] = byLevel[lv] || []).push(t) })
+        // 迷雾：fog 票（Not yet specified）+ 被阻塞且其阻塞者 open 的票（半雾）；D7 视觉遮蔽
+        const isFog = function (t) {
+          if (t.state !== 'OPEN') return false
+          const blk = (t.blockedBy || []).map(function (b) { return tickets.find(function (x) { return x.number === b }) }).filter(Boolean)
+          return blk.some(function (b) { return b.state === 'OPEN' })
+        }
+        const fogTitles = (m.fog || []).map(function (f) { return String(f).trim() })
+        const isFogTitle = function (t) { return fogTitles.some(function (f) { return f && t.title && t.title.indexOf(f) >= 0 }) }
+        // 迷雾点击去雾状态（st 上按 map 存）
+        st.reveal = st.reveal || {}
+        const nodeCls = function (t) {
+          let cls = 'dsws-node'
+          if (t.state === 'CLOSED') cls += ' done'
+          else if (t.level === curLevel) cls += ' now'
+          const fog = isFog(t) || isFogTitle(t)
+          if (fog) { cls += ' fog'; if (st.reveal[m.number] && st.reveal[m.number][t.number]) cls += ' revealed' }
+          return cls
+        }
+        const toggleReveal = function (t) {
+          st.reveal[m.number] = st.reveal[m.number] || {}
+          st.reveal[m.number][t.number] = !(st.reveal[m.number][t.number])
+          emit(st)
+        }
+        const gateState = function (layerIndex) {
+          // 闸门：该层全 closed → open(绿✓)；层含 open 且在其之前层全 closed → open；否则 lock
+          const lv = levels[layerIndex]
+          if (!lv) return 'open'
+          if (lv.closed === lv.total && lv.total > 0) return 'open'
+          const prevAllClosed = levels.slice(0, layerIndex).every(function (p) { return p.closed === p.total })
+          return prevAllClosed ? 'open' : 'lock'
+        }
+        const node = function (t) {
+          const blocked = isFog(t)
+          const acts = (t.state === 'OPEN' && !blocked) ? h('div', { className: 'acts' }, [
+            mkRowAction(st, t, false, colorOf),
+            h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: t.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '2px 4px' } }, Ic({ n: 'link', size: 11 })),
+          ]) : null
+          const ic = t.type === 'research' ? 'mag' : t.type === 'prototype' ? 'bolt' : t.type === 'grilling' ? 'chat' : 'wrench'
+          return h('div', {
+            key: t.number,
+            className: nodeCls(t),
+            onClick: (isFog(t) || isFogTitle(t)) ? function (e) { e.stopPropagation(); toggleReveal(t) } : undefined,
+          }, [
+            h('div', { className: 'row1' }, [
+              h('span', { className: 'icbox' }, Ic({ n: ic, size: 12 })),
+              h('div', { style: { flex: 1, minWidth: 0 } }, [
+                h('div', { className: 'meta' }, [
+                  h('span', { className: 'no' }, '#' + t.number),
+                  TypeChip({ type: t.type }),
+                ]),
+                h('div', { className: 'tt', title: t.title }, t.title),
+                h('div', { className: 'sub', style: { fontSize: 8, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginTop: 1, display: 'flex', gap: 5, flexWrap: 'wrap' } }, [
+                  t.state === 'CLOSED' ? h('span', { style: { color: '#3fb950', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'check', size: 8 }), h('span', null, tr('map.subClosed'))]) : null,
+                  t.claimedBy ? h('span', { style: { color: '#58a6ff', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'person', size: 8 }), h('span', null, t.claimedBy)]) : null,
+                  blocked ? h('span', { style: { color: '#f0883e', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'lock', size: 8 }), h('span', null, tr('map.subBlocked', { who: blockerNames(t, m) }))]) : null,
+                ]),
+              ]),
+            ]),
+            acts,
+            (isFog(t) || isFogTitle(t)) ? h('svg', { className: 'qmark', viewBox: '0 0 24 24' }, [h('path', { d: 'M9.5 9a2.5 2.5 0 1 1 3.7 2.2c-.9.4-1.2 1-1.2 1.8' }), h('circle', { cx: '12', cy: '18', r: '.6' })]) : null,
+          ])
+        }
+        const layerBlock = function (layerIndex) {
+          const lv = levels[layerIndex]
+          if (!lv) return null
+          const layerTickets = byLevel[layerIndex] || []
+          const single = layerTickets.length === 1
+          const gate = gateState(layerIndex)
+          return [
+            h('div', { className: 'dsws-layerTag' }, [
+              h('span', null, tr('map.layer', { n: layerIndex + 1 }) + ' · ' + lv.open + ' open'),
+              h('span', { className: 'sp' }),
+            ]),
+            h('div', { className: 'dsws-layer' }, layerTickets.map(function (t) { return h(node(t), { key: 'n' + t.number }) })),
+            h('div', { className: 'dsws-gate' }, [
+              h('span', { className: 'g ' + gate }, Ic({ n: gate === 'open' ? 'check' : 'lock', size: 12 })),
+            ]),
+          ]
+        }
+        // 完成态：全 closed → 进度条全绿 + 环满圈
+        const allClosed = m.stats && m.stats.total > 0 && m.stats.closed === m.stats.total
+        const ringPct = allClosed ? 1 : (totalLayers ? Math.min(1, (passedLayers + 1) / totalLayers) : 0)
+        const C = 2 * Math.PI * 31
+        const ringOff = C * (1 - ringPct)
         return h('div', null, [
-          h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 } }, [
+          // 顶部操作行：返回 + map chip + 执行/完成
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 } }, [
             h('button', { className: 'dsws-btn', onClick: function () { st.activeMap = null; emit(st) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
               Ic({ n: 'back', size: 12 }),
               h('span', null, tr('list.back')),
             ]),
             h('span', { className: 'dsws-chip dsws-chip-m' }, [Ic({ n: 'map', size: 11 }), h('span', null, 'wayfinder:map')]),
             h('span', { style: { flex: 1 } }),
-            // v19-38：顶部「执行」= 整张 map 的执行入口（预填输入框）；v25 T2b：走 execute 模板
-            // #371：子票全关（stats.total>0 且 closed===total）→ 按钮切「完成」（绿），注入收尾确认 prompt；
-            //   空 map（total=0）不误判为完成，维持「执行」
             (m.stats && m.stats.total > 0 && m.stats.closed === m.stats.total)
               ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function () {
                   const text = COMPLETE_PROMPT
@@ -1492,9 +1649,52 @@ window.__ModuleLoader__.load({
           ]),
           h('div', { className: 'dsws-mtitle dsws-tt-wrap', title: m.title }, m.title),
           m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, String((m.error && m.error.error) || tr('list.loadFail')).slice(0, 160))]) : null,
-          h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#4ade80', margin: '2px 0 2px' } }, [Ic({ n: 'target', size: 12 }), h('span', { className: 'dsws-ellip', title: m.destination }, m.destination || tr('list.noDest'))]),
+          // D2：分段静态进度条 = 地图层缩略图（无动画，唯一真相源）
+          (levels.length > 0) ? h('div', { className: 'dsws-layers' }, [
+            h('div', { className: 'row1' }, [
+              h('span', { className: 'cap' }, tr('map.progressCap')),
+              h('div', { className: 'segs' }, levels.map(function (l, i) {
+                const segCls = i < curLevel ? 'seg past' : (i === curLevel ? 'seg curr' : 'seg future')
+                return h('div', { key: i, className: segCls, title: tr('map.layer', { n: i + 1 }) })
+              })),
+            ]),
+            h('div', { className: 'row2' }, [
+              h('span', { className: 'cur' }, [Ic({ n: 'play', size: 9 }), h('span', null, tr('map.curLayer', { n: curLevel + 1 }))]),
+              h('span', { className: 'pos' }, tr('map.layersPassed', { n: passedLayers, t: totalLayers })),
+            ]),
+          ]) : null,
+          h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#4ade80', margin: '4px 0 2px' } }, [Ic({ n: 'target', size: 12 }), h('span', { className: 'dsws-ellip', title: m.destination }, m.destination || tr('list.noDest'))]),
           m.notes ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, [Ic({ n: 'note', size: 11 }), h('span', { className: 'dsws-ellip', title: m.notes }, m.notes)]) : null,
-          h('details', { style: { marginBottom: 4 } }, [
+          // 漏斗分层主体
+          h('div', { style: { marginTop: 2 } }, [
+            h('div', { className: 'dsws-start' }, [
+              h('span', { className: 'cap' }, tr('map.startCap')),
+            ]),
+            levels.map(function (l, i) { return layerBlock(i) }),
+            // D3：Destination 72px 仪式环（环心旗帜，无数字）
+            h('div', { className: 'dsws-dest' }, [
+              h('div', { className: 'ring' }, [
+                h('svg', { width: 72, height: 72, viewBox: '0 0 72 72' }, [
+                  h('circle', { className: 'track', cx: 36, cy: 36, r: 31 }),
+                  h('circle', { className: 'prog', cx: 36, cy: 36, r: 31, strokeDasharray: String(C), strokeDashoffset: String(ringOff) }),
+                ]),
+                h('div', { className: 'core' }, h('svg', { viewBox: '0 0 24 24' }, [h('path', { d: 'M5 3v18' }), h('path', { d: 'M5 4c4-2 6 2 12 0v9c-6 2-8-2-12 0' })])),
+              ]),
+              h('div', { className: 'title' }, tr('map.destCap')),
+              h('div', { className: 'acts' }, [
+                h('button', { className: 'dsws-btn primary', onClick: function () {
+                  const body = renderTemplate('execute', { number: String(m.number || ''), url: m.url, title: m.title || '' })
+                  inject(st, withWayfinderPrefix(body))
+                }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', fontSize: 11, background: '#4ade80', borderColor: 'transparent', color: '#04120a', fontWeight: 700 } }, [
+                  Ic({ n: 'play', size: 11 }),
+                  h('span', null, tr('map.startBtn', { n: m.number })),
+                ]),
+                h('a', { className: 'dsws-btn ghost', href: 'https://github.com/' + repoStr(st) + '/issues/' + m.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 10px', fontSize: 11 } }, [Ic({ n: 'link', size: 11 }), h('span', null, tr('map.archive'))]),
+              ]),
+            ]),
+          ]),
+          // 折叠块：Decisions / Fog / Out of scope（保留信息展示）
+          h('details', { style: { marginTop: 10, marginBottom: 4 } }, [
             h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, tr('map.decisions', { n: m.decisions.length })),
             h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.decisions.map(function (d, i) {
               return h('div', { key: i, className: 'dsws-ellip', title: d.title + ' ' + d.gist }, '· ' + d.title)
@@ -1504,19 +1704,9 @@ window.__ModuleLoader__.load({
             h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, tr('map.fog', { n: m.fog.length })),
             h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.fog.map(function (f, i) { return h('div', { key: i, className: 'dsws-ellip', title: f }, '· ' + f) })),
           ]),
-          h('details', { style: { marginBottom: 8 } }, [
+          h('details', { style: { marginBottom: 4 } }, [
             h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, tr('map.outOfScope', { n: m.outOfScope.length })),
             h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.outOfScope.map(function (o, i) { return h('div', { key: i, className: 'dsws-ellip', title: o }, '· ' + o) })),
-          ]),
-          g.frontier.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'target', size: 12, color: '#4ade80' }), h('span', null, tr('map.grpTakeable', { n: g.frontier.length }))]) : null,
-          g.frontier.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, colorOf: colorOf }) }),
-          g.claimed.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'person', size: 12, color: '#58a6ff' }), h('span', null, tr('map.grpClaimed', { n: g.claimed.length }))]) : null,
-          g.claimed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, colorOf: colorOf }) }),
-          g.blocked.length ? h('div', { className: 'dsws-grp' }, [Ic({ n: 'lock', size: 12, color: '#f0883e' }), h('span', null, tr('map.grpBlocked', { n: g.blocked.length }))]) : null,
-          g.blocked.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, indent: true, colorOf: colorOf }) }),
-          h('details', { style: { marginTop: 8 } }, [
-            h('summary', { className: 'dsws-grp', style: { margin: '6px 0 2px', cursor: 'pointer' } }, [Ic({ n: 'check', size: 12, color: '#52525b' }), h('span', null, tr('map.grpClosed', { n: g.closed.length }))]),
-            h('div', null, g.closed.map(function (t) { return h(TicketRow, { key: t.number, st: st, g: g, t: t, colorOf: colorOf }) })),
           ]),
         ])
       }

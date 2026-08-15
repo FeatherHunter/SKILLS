@@ -131,6 +131,24 @@ return {
       // v1.3.3 UI：辅助按钮（复制/外链）hover 行时浮现
       '.dsws-aggrow .dsws-aux{opacity:0;transition:opacity .12s;pointer-events:none}',
       '.dsws-aggrow:hover .dsws-aux{opacity:1;pointer-events:auto}',
+      // v1.3.3 UI：行2 标签贪心折叠（单行不换行，宽多窄少，+N 弹窗展开）
+      '.dsws-tags{display:flex;align-items:center;gap:3px;flex:1 1 auto;min-width:0;overflow:hidden;white-space:nowrap}',
+      '.dsws-tags .dsws-chip{flex:none}',
+      '.dsws-more{background:rgba(188,140,255,.1);color:#bc8cff;border:1px dashed rgba(188,140,255,.55);cursor:pointer;flex:none;transition:background .12s,border-color .12s}',
+      '.dsws-more:hover{background:rgba(188,140,255,.22);border-color:rgba(188,140,255,.8)}',
+      // v1.3.3 UI：行1 编号 + map 徽章竖排（标题获得更宽展示区）
+      '.dsws-idcol{display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:none}',
+      // v1.3.3 UI：map 行迷你圆环进度（替代长条 + ✓）
+      '.dsws-ring{flex:none;display:inline-flex;align-items:center;gap:4px}',
+      '.dsws-ring svg{transform:rotate(-90deg)}',
+      '.dsws-ring-txt{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.5;flex:none;letter-spacing:.2px}',
+      // v1.3.3 UI：+N 弹窗（fixed 定位，自适应面板左右边界）
+      '.dsws-pop{position:fixed;z-index:1000;background:#1c1f26;border:1px solid var(--dsw-alias-border-l2,#3a3f4a);border-radius:10px;box-shadow:0 10px 34px rgba(0,0,0,.55);padding:10px 12px;display:none}',
+      '.dsws-pop .caret{position:absolute;width:10px;height:10px;background:#1c1f26;border-left:1px solid var(--dsw-alias-border-l2,#3a3f4a);border-top:1px solid var(--dsw-alias-border-l2,#3a3f4a);transform:rotate(45deg)}',
+      '.dsws-pop .pt{font-size:10px;color:var(--dsw-alias-label-caption,#8b8b95);letter-spacing:1px;margin-bottom:6px;text-transform:uppercase}',
+      '.dsws-pop .pl{display:flex;flex-wrap:wrap;gap:4px}',
+      '.dsws-pop .ptitle{font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa);margin-top:8px;border-top:1px solid var(--dsw-alias-border-l1,#2a2d35);padding-top:7px;line-height:1.55;overflow-wrap:break-word;word-break:break-word}',
+      '.dsws-pop .ptitle b{color:var(--dsw-alias-label-primary,#e6edf3);font-weight:600}',
       '.dsws-ellip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}',
       '.dsws-cgroup{margin:10px 0 2px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa);display:flex;align-items:center;gap:6px}',
       '.dsws-ccard{border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--dsw-alias-bg-layer-1,#10131a)}',
@@ -1482,7 +1500,93 @@ return {
     }
 
     // ---- 5.5 主列表（v14：三选一动作 / map 行突出 + 开始执行 / 已关闭折叠行 / chips 深边框 / 窄屏双栏）----
+    // v1.3.3 UI：行2 标签贪心折叠 —— 渲染后测量可用宽度，逐个放标签，放不下的隐藏进 +N（单行不换行）
+    const fitAllTags = function () {
+      if (typeof document === 'undefined') return
+      document.querySelectorAll('.dsws-tags').forEach(function (tags) {
+        const more = tags.querySelector('.dsws-more')
+        if (!more) return
+        const chips = Array.prototype.slice.call(tags.querySelectorAll('.dsws-chip:not(.dsws-more):not(.dsws-blocked)'))
+        chips.forEach(function (c) { c.style.display = 'inline-flex' })
+        more.style.display = 'inline-flex'
+        const avail = tags.clientWidth
+        const moreW = more.offsetWidth
+        const gap = 3
+        const room = avail - moreW - gap
+        let used = 0, shown = 0
+        chips.forEach(function (c, i) {
+          const w = c.offsetWidth
+          if (used + w <= room || i === 0) { c.style.display = 'inline-flex'; used += w + gap; shown++ }
+          else c.style.display = 'none'
+        })
+        const hidden = chips.length - shown
+        more.textContent = '+' + hidden
+        more.style.display = hidden > 0 ? 'inline-flex' : 'none'
+      })
+    }
+    // v1.3.3 UI：+N 弹窗 —— fixed 定位，基准 = 面板容器 rect（左右 clamp 不越界，上下自动翻转避让）
+    const showPop = function (trig, host, labels, title) {
+      if (typeof document === 'undefined') return
+      const old = document.getElementById('dsws-pop')
+      if (old && old.parentNode) old.parentNode.removeChild(old)
+      const pop = document.createElement('div')
+      pop.id = 'dsws-pop'
+      pop.className = 'dsws-pop'
+      const pt = document.createElement('div'); pt.className = 'pt'
+      pt.textContent = '全部标签 · ' + labels.length + ' 个'
+      const pl = document.createElement('div'); pl.className = 'pl'
+      labels.forEach(function (l) {
+        const s = document.createElement('span')
+        s.className = 'dsws-chip'
+        s.style.background = hexA(l.color, 0.18) || 'rgba(188,140,255,.16)'
+        s.style.color = l.color ? '#' + l.color : '#bc8cff'
+        s.style.border = '1px solid ' + (darken(l.color, 0.16) || 'rgba(188,140,255,.6)')
+        s.textContent = l.name
+        pl.appendChild(s)
+      })
+      const ptitle = document.createElement('div'); ptitle.className = 'ptitle'
+      ptitle.innerHTML = '<b>标题：</b>' + String(title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      pop.appendChild(pt); pop.appendChild(pl); pop.appendChild(ptitle)
+      document.body.appendChild(pop)
+      const pr = host ? host.getBoundingClientRect() : { left: 8, right: window.innerWidth - 8, top: 8, bottom: window.innerHeight - 8 }
+      const pad = 8
+      const maxW = Math.max(120, pr.right - pr.left - pad * 2)
+      pop.style.maxWidth = maxW + 'px'
+      pop.style.display = 'block'
+      const r = trig.getBoundingClientRect()
+      const pw = pop.offsetWidth, ph = pop.offsetHeight
+      let left = Math.max(pr.left + pad, Math.min(r.left, pr.right - pw - pad))
+      let top = r.bottom + 10, flip = false
+      if (top + ph > window.innerHeight - 8) { top = r.top - ph - 10; flip = true }
+      if (top < 8) { top = r.bottom + 10; flip = false }
+      if (top < pr.top + pad && !flip) { top = pr.top + pad }
+      pop.style.left = left + 'px'
+      pop.style.top = top + 'px'
+      const caret = document.createElement('div'); caret.className = 'caret'
+      const cx = r.left + r.width / 2 - left
+      caret.style.left = Math.max(6, Math.min(cx - 5, pw - 16)) + 'px'
+      caret.style.top = flip ? 'auto' : '-6px'
+      caret.style.bottom = flip ? '-6px' : 'auto'
+      if (flip) {
+        caret.style.borderLeft = 'none'; caret.style.borderTop = 'none'
+        caret.style.borderRight = '1px solid var(--dsw-alias-border-l2,#3a3f4a)'; caret.style.borderBottom = '1px solid var(--dsw-alias-border-l2,#3a3f4a)'
+        caret.style.transform = 'rotate(225deg)'
+      } else {
+        caret.style.borderLeft = '1px solid var(--dsw-alias-border-l2,#3a3f4a)'; caret.style.borderTop = '1px solid var(--dsw-alias-border-l2,#3a3f4a)'
+        caret.style.borderRight = 'none'; caret.style.borderBottom = 'none'
+        caret.style.transform = 'rotate(45deg)'
+      }
+      pop.appendChild(caret)
+      const close = function () { if (pop.parentNode) pop.parentNode.removeChild(pop); document.removeEventListener('mousedown', onDoc, true); document.removeEventListener('scroll', onScroll, true) }
+      const onDoc = function (ev) { if (pop.contains(ev.target)) return; close() }
+      const onScroll = function () { close() }
+      document.addEventListener('mousedown', onDoc, true)
+      document.addEventListener('scroll', onScroll, true)
+      pop._close = close
+    }
     const ListTab = ({ st, narrow }) => {
+      // v1.3.3 UI：每次渲染后执行贪心折叠（含窗口/列宽变化后的重渲染）
+      React.useLayoutEffect(function () { fitAllTags() })
       const issues = (st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []
       const openIssues = issues.filter(function (x) { return x.state !== 'CLOSED' })
       const closedIssues = issues.filter(function (x) { return x.state === 'CLOSED' })
@@ -1591,26 +1695,41 @@ return {
       const copyUrl = function (x) { copyText(st, 'https://github.com/' + repoStr(st) + '/issues/' + x.number, tr('toast.copiedLink', { n: x.number })) }
       // v14-4：行级动作按 label 四选一（诊断/修复/讨论/执行），全部预填输入框；
       // v19：共享 mkRowAction（列表与 map 详情同逻辑，按钮色动态取 label 配置色）；v14-3 按钮 80%；v14-19 窄屏折叠为纯图标
-      // v14-19：行 = 左列(flex:1 截断) + 右列按钮组(flex:none 不换行)
+      // v1.3.3 UI 定稿（用户逐版确认）：两行结构 · 卡片风（C）· 编号/map 竖排（idcol）·
+      //   行1 = 编号(上)+map徽章(下) 竖排 + 标题(占满,限2行) + 迷你圆环进度(右上)；
+      //   行2 = 标签单行贪心折叠（宽多窄少,最少1个,放不下进 +N 弹窗）+ 按钮组（执行/完成/新会话常显,复制/外链 hover）
+      //   +N 弹窗：fixed 定位,基准=面板容器,clamp 左右不越界,内容完整可见（用户验收 A 方案）
+      const ringOf = function (stats) {
+        const total = stats.total || 0, closed = stats.closed || 0
+        const pct = total ? Math.round(closed / total * 100) : 0
+        const C = 2 * Math.PI * 7
+        const off = C * (1 - pct / 100)
+        const color = pct >= 100 ? '#4ade80' : '#bc8cff'
+        return h('span', { className: 'dsws-ring' }, [
+          h('svg', { width: 18, height: 18, viewBox: '0 0 18 18' }, [
+            h('circle', { cx: 9, cy: 9, r: 7, fill: 'none', stroke: 'rgba(255,255,255,.12)', strokeWidth: 2.4 }),
+            h('circle', { cx: 9, cy: 9, r: 7, fill: 'none', stroke: color, strokeWidth: 2.4, strokeLinecap: 'round', strokeDasharray: String(C), strokeDashoffset: String(off) }),
+          ]),
+          h('span', { className: 'dsws-ring-txt', style: { color: color } }, closed + '/' + total),
+        ])
+      }
       const issueRow = function (x, isOpen, narrow) {
         const isMap = has(x, 'wayfinder:map')
         const mapObj = isMap ? findMap(x.number) : null
         // v15-26：被阻塞判定（open 阻塞者）→ 隐藏动作按钮 + 红色「被阻塞」标签（点击跳所属 map 详情）
         const blk = blockOf[x.number]
         const blocked = !!(blk && blk.by && blk.by.length)
-        // v20-43：展开态（st.expTags[num]）→ 显示全部标签；#405 默认只显示前 4 个（与 filter row 视觉一致），「+N」可点击展开
-        const expanded = !!(st.expTags && st.expTags[x.number])
-        // v1.3.3 UI：标签默认显示数 —— 正常 4 / 窄屏 2（用户确认）
-        const shown = expanded ? (x.labels || []) : (x.labels || []).slice(0, narrow ? 1 : 4)
-        const rest = expanded ? 0 : (x.labels || []).length - shown.length
-        const allNames = (x.labels || []).map(function (l) { return l.name }).join('、')
-        const toggleTags = function (e) { e.stopPropagation(); st.expTags[x.number] = !expanded; emit(st) }
-        // v1.3.3 #8：map 行完成态 —— 子票全关（total>0 且 closed===total）→ 主按钮切「完成」（绿），注入收尾确认 prompt；
-        //   与 MapDetail 顶部逻辑一致（此前主列表 map 行恒显示「执行」）
+        // v1.3.3 #8：map 行完成态 —— 子票全关（total>0 且 closed===total）→ 主按钮切「完成」（绿），注入收尾确认 prompt
         const mapDone = !!(isMap && mapObj && mapObj.stats && mapObj.stats.total > 0 && mapObj.stats.closed === mapObj.stats.total)
-        // v1.3.3 UI：两行结构（方案 C + 辅助按钮 hover）
-        //   第一行：编号 + map 徽章（同组垂直居中）+ 标题（占满整宽，限 2 行）
-        //   第二行：labels + 进度条（占满） + 动作区（执行/新会话常显，复制/外链 hover 浮现）
+        // v1.3.3 UI：全部标签渲染（渲染后贪心折叠，放不下的隐藏进 +N；+N 弹窗显示全部）
+        const labels = x.labels || []
+        const allNames = labels.map(function (l) { return l.name }).join('、')
+        const openPop = function (e) {
+          e.stopPropagation()
+          const trig = e.currentTarget
+          const host = trig.closest('.dsws-panel') || trig.closest('[data-dsws-host]')
+          showPop(trig, host, labels, x.title)
+        }
         return h('div', {
           key: x.number,
           className: 'dsws-aggrow',
@@ -1618,27 +1737,27 @@ return {
           title: (isMap && mapObj) ? tr('list.mapTitle') : undefined,
           style: isMap ? { cursor: 'pointer', borderLeft: '3px solid #c084fc', background: 'rgba(188,140,255,.07)' } : undefined,
         }, [
-          h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 5, width: '100%' } }, [
-            h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, flex: 'none' } }, [
+          // 行1：idcol 竖排（编号上 map 徽章下）+ 标题 + 圆环进度
+          h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 6, width: '100%' } }, [
+            h('span', { className: 'dsws-idcol' }, [
               h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, lineHeight: 1.6 } }, '#' + x.number),
-              isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, fontWeight: 600, lineHeight: 1.6, padding: '0 8px', display: 'inline-flex', alignItems: 'center', gap: 3 } }, [Ic({ n: 'map', size: 12 }), h('span', null, tr('list.mapChip'))]) : null,
+              isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, fontWeight: 600, lineHeight: 1.7, padding: '0 8px' } }, [Ic({ n: 'map', size: 11 }), h('span', null, tr('list.mapChip'))]) : null,
             ]),
             h('span', { className: 'dsws-tt-wrap', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
+            (isMap && mapObj && mapObj.stats) ? ringOf(mapObj.stats) : null,
             !isOpen ? h('span', { className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, flex: 'none', background: 'rgba(139,139,149,.12)', color: '#8b8b95', border: '1px solid rgba(139,139,149,.35)' } }, [Ic({ n: 'check', size: 9 }), h('span', null, tr('map.subClosed'))]) : null,
           ]),
-          h('div', { style: { marginTop: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, rowGap: 4, width: '100%' } }, [
-            (shown.length || blocked) ? h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, flex: '1 1 auto', minWidth: 0 } }, [
-              shown.map(function (l, i) {
-                return h('span', { key: i, className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, background: hexA(l.color, 0.18) || 'rgba(188,140,255,.16)', color: l.color ? '#' + l.color : '#bc8cff', border: '1px solid ' + (darken(l.color, 0.16) || 'rgba(188,140,255,.6)') } }, l.name)
+          // 行2：标签贪心折叠（单行不换行）+ 按钮组（常显）
+          h('div', { style: { marginTop: 8, display: 'flex', alignItems: 'center', gap: 6, width: '100%' } }, [
+            h('div', { className: 'dsws-tags', 'data-dsws-labels': JSON.stringify(labels.map(function (l) { return l.name })) }, [
+              labels.map(function (l, i) {
+                return h('span', { key: i, className: 'dsws-chip', style: { fontSize: 10, background: hexA(l.color, 0.18) || 'rgba(188,140,255,.16)', color: l.color ? '#' + l.color : '#bc8cff', border: '1px solid ' + (darken(l.color, 0.16) || 'rgba(188,140,255,.6)') } }, l.name)
               }),
-              rest > 0 ? h('span', { key: 'more', className: 'dsws-chip', onClick: toggleTags, title: tr('list.tagsTitle', { names: allNames }), style: { fontSize: 10, marginRight: 0, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + rest) : null,
-              expanded ? h('span', { key: 'less', className: 'dsws-chip', onClick: toggleTags, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 0, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
-              blocked ? h('span', { key: 'blk', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: tr('list.blockedTitle', { by: blk.by.map(function (b) { return '#' + b }).join('、') }), style: { fontSize: 10, marginRight: 0, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, tr('list.blocked'))]) : null,
-            ]) : h('span', { style: { flex: 1 } }),
-            h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, flex: 'none', marginLeft: 'auto' } }, [
-              (isMap && mapObj && mapObj.stats) ? h('div', { className: 'dsws-prog', style: { width: narrow ? 54 : 90, minWidth: narrow ? 54 : 90 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]) : null,
-              (isMap && mapObj && mapObj.stats) ? h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'check', size: 9, color: '#4ade80' }), h('span', null, mapObj.stats.closed + '/' + mapObj.stats.total)]) : null,
-              isOpen && !blocked ? h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none', marginLeft: 4 } }, [
+              labels.length > 0 ? h('span', { key: 'more', className: 'dsws-chip dsws-more', onClick: openPop, title: tr('list.tagsTitle', { names: allNames }) }, '+0') : null,
+              blocked ? h('span', { key: 'blk', className: 'dsws-chip dsws-blocked', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: tr('list.blockedTitle', { by: blk.by.map(function (b) { return '#' + b }).join('、') }), style: { fontSize: 10, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, tr('list.blocked'))]) : null,
+            ]),
+            h('div', { style: { display: 'flex', alignItems: 'center', gap: 3, flex: 'none', marginLeft: 'auto' } }, [
+              isOpen && !blocked ? h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none' } }, [
                 mapDone
                   ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function (e) {
                       e.stopPropagation()
@@ -1870,7 +1989,7 @@ return {
         Ic({ n: icon, size: 12 }),
         h('span', null, label),
       ])
-      return h('div', { ref: dockRef, style: { position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'var(--dsw-font-family)', fontSize: 12, color: 'var(--dsw-alias-label-primary,#e6edf3)', background: 'var(--dsw-alias-bg-layer-1,#10131a)' } }, [
+      return h('div', { ref: dockRef, 'data-dsws-host': '1', style: { position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', fontFamily: 'var(--dsw-font-family)', fontSize: 12, color: 'var(--dsw-alias-label-primary,#e6edf3)', background: 'var(--dsw-alias-bg-layer-1,#10131a)' } }, [
         // 头部（标题 + 关闭）：横线不放在这行，下移到标签行下方与对话/轨迹对齐
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px 6px', flex: 'none' } }, [
           Icon({ scheme: 'compass', size: 15 }),

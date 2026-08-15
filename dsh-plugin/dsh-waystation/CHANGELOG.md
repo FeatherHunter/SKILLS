@@ -12,7 +12,7 @@ All notable changes to **dsh-waystation** are documented here.
 
 - **#1 配置面板内容全展开（真正实现）**：
   - `.dsws-cfg-preview` 移除 `max-height:80px` + `overflow:auto` → 预览区全展开
-  - `.dsws-cfg-ta` textarea 增加 auto-grow（内容自适应高度）→ 面板内零内层滚动，滚动只发生在最外层（DSH settings）
+  - `.dsws-cfg-ta` textarea 增加 auto-grow（内容自适应高度）+ `resize:none`（禁手动拖拽）→ 面板内零内层滚动，写多少行高度自适应多少行，滚动只发生在最外层（DSH settings）
   - 图眼实测：内层滚动容器 11 → 0
 - **#6 阻塞筛选（真正实现）**：
   - 补 `list.state.blocked` locale（zh: 阻塞 / en: Blocked）

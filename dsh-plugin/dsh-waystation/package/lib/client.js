@@ -139,7 +139,7 @@ window.__ModuleLoader__.load({
       '.dsws-cfg-sw .tr::after{content:"";position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:var(--dsw-alias-label-caption,#8b8b95);transition:transform .15s,background .15s}',
       '.dsws-cfg-sw input:checked + .tr{background:rgba(192,132,252,.22);border-color:rgba(192,132,252,.55)}',
       '.dsws-cfg-sw input:checked + .tr::after{transform:translateX(15px);background:#c084fc}',
-      '.dsws-cfg-ta{width:100%;min-height:56px;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;color:var(--dsw-alias-label-primary,#e6edf3);font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:11.5px;line-height:1.6;padding:7px 9px;box-sizing:border-box;resize:vertical}',
+      '.dsws-cfg-ta{width:100%;min-height:56px;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;color:var(--dsw-alias-label-primary,#e6edf3);font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:11.5px;line-height:1.6;padding:7px 9px;box-sizing:border-box;resize:vertical;overflow:hidden}',
       '.dsws-cfg-ta:focus{outline:none;border-color:rgba(192,132,252,.6)}',
       '.dsws-cfg-chips{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0}',
       '.dsws-cfg-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 10px;border-radius:99px;font-size:11px;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);cursor:pointer;background:rgba(188,140,255,.14);color:#bc8cff;border:1px solid rgba(188,140,255,.35);transition:background .12s}',
@@ -152,7 +152,7 @@ window.__ModuleLoader__.load({
       '.dsws-cfg-card-head{display:flex;align-items:center;gap:8px;margin-bottom:2px}',
       '.dsws-cfg-card-name{font-size:13px;font-weight:650}',
       '.dsws-cfg-card-desc{font-size:11.5px;color:var(--dsw-alias-label-caption,#8b8b95);margin-bottom:4px;line-height:1.6}',
-      '.dsws-cfg-preview{border:1px dashed var(--dsw-alias-border-l2,#3a3f4a);border-radius:8px;background:var(--dsw-alias-bg-layer-3,#0c0e12);padding:7px 10px;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:10.5px;line-height:1.6;color:var(--dsw-alias-label-secondary,#a1a1aa);white-space:pre-wrap;word-break:break-all;max-height:80px;overflow:auto;margin-top:5px}',
+      '.dsws-cfg-preview{border:1px dashed var(--dsw-alias-border-l2,#3a3f4a);border-radius:8px;background:var(--dsw-alias-bg-layer-3,#0c0e12);padding:7px 10px;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);font-size:10.5px;line-height:1.6;color:var(--dsw-alias-label-secondary,#a1a1aa);white-space:pre-wrap;word-break:break-all;margin-top:5px}',
       '.dsws-cfg-preview .pv-label{display:block;font-family:var(--dsw-font-family);font-size:10px;letter-spacing:.5px;color:var(--dsw-alias-label-caption,#8b8b95);margin-bottom:3px}',
       '.dsws-cfg-err{border:1px solid rgba(248,113,113,.5);background:rgba(248,113,113,.1);border-radius:10px;padding:10px 12px;font-size:12px;color:#f87171;line-height:1.7}',
       '.dsws-cfg-err .t{font-weight:650;display:flex;align-items:center;gap:6px;margin-bottom:2px}',
@@ -252,7 +252,7 @@ window.__ModuleLoader__.load({
           'list.copyLinkTitle': '复制链接',
           'list.openInGithubTitle': '在 GitHub 上查看 #{n}',
           'list.mapTitle': '查看地图详情',
-          'list.state.all': '全部', 'list.state.open': 'Open', 'list.state.closed': '已关闭',
+          'list.state.all': '全部', 'list.state.open': 'Open', 'list.state.closed': '已关闭', 'list.state.blocked': '阻塞',
           'list.sort.updatedAt': '更新', 'list.sort.createdAt': '创建', 'list.sort.number': '编号', 'list.sort.title': '标题',
           'map.decisions': 'Decisions so far（{n}）',
           'map.fog': 'Not yet specified（战雾 {n}）',
@@ -426,7 +426,7 @@ window.__ModuleLoader__.load({
           'list.copyLinkTitle': 'Copy link',
           'list.openInGithubTitle': 'Open #{n} on GitHub',
           'list.mapTitle': 'View map details',
-          'list.state.all': 'All', 'list.state.open': 'Open', 'list.state.closed': 'Closed',
+          'list.state.all': 'All', 'list.state.open': 'Open', 'list.state.closed': 'Closed', 'list.state.blocked': 'Blocked',
           'list.sort.updatedAt': 'Updated', 'list.sort.createdAt': 'Created', 'list.sort.number': 'Number', 'list.sort.title': 'Title',
           'map.decisions': 'Decisions so far ({n})',
           'map.fog': 'Not yet specified (fog {n})',
@@ -1527,14 +1527,6 @@ window.__ModuleLoader__.load({
           if (fa !== fb) return fb - fa
           return String(a).localeCompare(String(b))
         })
-        // #374：状态过滤（全部/Open/已关闭）与 label 过滤叠加
-        const showOpen = st.stateFilter !== 'closed'
-        const showClosedList = st.stateFilter === 'closed'
-        const byLabel = function (x) { return (x.labels || []).some(function (l) { return l.name === st.lblFilter }) }
-        const filteredOpen = showOpen ? (st.lblFilter ? sortedMaps.concat(sortedOpen).filter(byLabel) : sortedMaps.concat(sortedOpen)) : []
-        const filteredClosed = showClosedList ? (st.lblFilter ? closedSorted.filter(byLabel) : closedSorted) : []
-        const has = function (x, nm) { return (x.labels || []).some(function (l) { return l.name === nm }) }
-        const findMap = function (num) { return (st.snapshot && st.snapshot.maps || []).find(function (m) { return m.number === num }) }
         // v15-26：主列表关联 map 子票阻塞信息（open 阻塞者才算阻塞；数据来自快照 maps.tickets.blockedBy，无需额外请求）
         const blockOf = {}
         ;(st.snapshot && st.snapshot.maps || []).forEach(function (m) {
@@ -1546,6 +1538,17 @@ window.__ModuleLoader__.load({
             if (openBlockers.length) blockOf[t.number] = { map: m.number, mapTitle: m.title, by: openBlockers }
           })
         })
+        // #374：状态过滤（全部/Open/阻塞/已关闭）与 label 过滤叠加
+        // v1.3.3 T3：blocked 过滤真正实现 —— open 且存在 open 阻塞者（blockOf 命中）
+        const showOpen = st.stateFilter !== 'closed'
+        const showClosedList = st.stateFilter === 'closed'
+        const byLabel = function (x) { return (x.labels || []).some(function (l) { return l.name === st.lblFilter }) }
+        const openRows = sortedMaps.concat(sortedOpen)
+        const openFiltered = st.lblFilter ? openRows.filter(byLabel) : openRows
+        const filteredOpen = showOpen ? (st.stateFilter === 'blocked' ? openFiltered.filter(function (x) { return blockOf[x.number] }) : openFiltered) : []
+        const filteredClosed = showClosedList ? (st.lblFilter ? closedSorted.filter(byLabel) : closedSorted) : []
+        const has = function (x, nm) { return (x.labels || []).some(function (l) { return l.name === nm }) }
+        const findMap = function (num) { return (st.snapshot && st.snapshot.maps || []).find(function (m) { return m.number === num }) }
         const openBlocked = function (blk) { st.activeMap = blk.map; emit(st) }
         // v14-18：chips 常显深一档边框（边框色 = label 色 HSL 亮度 -16%）
         const chip = (nm, withCount, on, isAll) => {
@@ -2009,6 +2012,12 @@ window.__ModuleLoader__.load({
         const [errs, setErrs] = React.useState([])
         const [resetNote, setResetNote] = React.useState(null)
         const taRefs = React.useRef({})
+        // v1.3.3 T1：模板 textarea 自适应高度（内容全展开 · 无内层滚动 · 最外层滑动）
+        const autoGrowTa = function (el) {
+          if (!el) return
+          el.style.height = 'auto'
+          el.style.height = (el.scrollHeight + 2) + 'px'
+        }
         // 校验全部 7 个模板（生效文本 = 自定义 || 默认）
         const validateAll = function (executeText) {
           const errList = []
@@ -2080,7 +2089,7 @@ window.__ModuleLoader__.load({
             ]),
             h('div', { className: 'dsws-cfg-card-desc' }, tr('tpl.desc.' + id)),
             h('div', { className: 'dsws-cfg-chips' }, (TPL_PH[id] || []).map(function (n) { return chip(id, n, req.indexOf(n) >= 0) })),
-            h('textarea', { ref: function (el) { taRefs.current[id] = el }, className: 'dsws-cfg-ta', placeholder: TPL_DEFAULT[id] || '', value: val, onChange: function (e) { setTpl(id, e.target.value) } }),
+            h('textarea', { ref: function (el) { taRefs.current[id] = el; autoGrowTa(el) }, className: 'dsws-cfg-ta', placeholder: TPL_DEFAULT[id] || '', value: val, onChange: function (e) { setTpl(id, e.target.value); autoGrowTa(e.target) } }),
             h('div', { className: 'dsws-cfg-preview' }, [h('span', { className: 'pv-label' }, tr('cfg.preview')), preview]),
           ])
         }
@@ -2135,7 +2144,7 @@ window.__ModuleLoader__.load({
                 h('span', null, tr('cfg.withPrefix')),
               ]),
             ]),
-            h('textarea', { ref: function (el) { taRefs.current.execute = el }, className: 'dsws-cfg-ta', placeholder: TPL_DEFAULT.execute || '', value: custom, onChange: function (e) { setTpl('execute', e.target.value) } }),
+            h('textarea', { ref: function (el) { taRefs.current.execute = el; autoGrowTa(el) }, className: 'dsws-cfg-ta', placeholder: TPL_DEFAULT.execute || '', value: custom, onChange: function (e) { setTpl('execute', e.target.value); autoGrowTa(e.target) } }),
             h('div', { className: 'dsws-cfg-chips' }, [
               (TPL_PH.execute || []).map(function (n) { return chip('execute', n, (TPL_REQUIRED.execute || []).indexOf(n) >= 0) }),
               h('button', { className: 'dsws-cfg-btn', style: { marginLeft: 'auto' }, onClick: resetExecute }, tr('cfg.reset')),

@@ -6,6 +6,27 @@ All notable changes to **dsh-waystation** are documented here.
 
 ---
 
+## [1.3.3] - 2026-08-15
+
+### Fixed · 用户实测「大量功能未生效」全面调查后补修（map #409 追加）
+
+- **#1 配置面板内容全展开（真正实现）**：
+  - `.dsws-cfg-preview` 移除 `max-height:80px` + `overflow:auto` → 预览区全展开
+  - `.dsws-cfg-ta` textarea 增加 auto-grow（内容自适应高度）→ 面板内零内层滚动，滚动只发生在最外层（DSH settings）
+  - 图眼实测：内层滚动容器 11 → 0
+- **#6 阻塞筛选（真正实现）**：
+  - 补 `list.state.blocked` locale（zh: 阻塞 / en: Blocked）
+  - 实现 blocked 过滤逻辑（open 且存在 open 阻塞者）——此前 chip 存在但点击等同 open
+  - 新增 `tests/verify-blocked-filter.js`（3/3 PASS）
+- 新增 `tests/verify-config-scroll.html`（配置面板滚动回归对照）
+
+### Technical
+
+- 双源镜像一致（client.js ↔ package/lib/client.js）
+- 测试：verify-status 21/21 · verify-panel 22/22 · verify-t2a 6/4 · verify-t2b 6/6 · verify-t3-locale 176 键 × 2 files（+state.blocked）· verify-blocked-filter 3/3 · scan-mangle clean
+
+---
+
 ## [1.3.2] - 2026-08-15 (HOTFIX)
 
 ### Fixed · 致命 bug（T12 · npm 1.3.1 bundle 不加载）

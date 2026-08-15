@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8">
-<title>waystation 面板 UI 最终版 · 两行结构</title>
+<title>waystation 面板 UI 最终版 · 两行结构（真实图标）</title>
 <style>
   :root { --dsw-alias-bg-layer-2:#16181d; --dsw-alias-bg-layer-3:#0c0e12; --dsw-alias-bg-layer-1:#10131a;
           --dsw-alias-border-l1:#2a2d35; --dsw-alias-border-l2:#3a3f4a; --dsw-alias-label-primary:#e6edf3;
@@ -11,7 +11,7 @@
   .sub{font-size:12px;color:#8b8b95;margin-bottom:14px}
   .flex{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap}
   .scene h3{font-size:12px;color:#9ca3af;margin:0 0 8px}
-  .dsws-panel{position:fixed;left:16px;top:76px;width:460px;max-height:calc(100vh - 24px);display:flex;flex-direction:column;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.45);z-index:9999;font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary,#e6edf3);line-height:1.6;overflow:hidden}
+  .dsws-panel{position:relative;left:0;top:0;width:460px;max-height:calc(100vh - 24px);display:flex;flex-direction:column;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,.45);z-index:9999;font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary,#e6edf3);line-height:1.6;overflow:hidden}
 .dsws-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,#2a2d35);cursor:move;user-select:none}
 .dsws-tabs{display:flex;gap:4px;padding:8px 12px 0}
 .dsws-tab{padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid transparent;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);font-size:12px}
@@ -128,55 +128,63 @@
 .dsws-cfg-btn:hover{border-color:var(--dsw-alias-border-l2,#3a3f4a);color:var(--dsw-alias-label-primary,#e6edf3)}
 .dsws-aggrow .dsws-aux{opacity:0;transition:opacity .12s;pointer-events:none}
 .dsws-aggrow:hover .dsws-aux{opacity:1;pointer-events:auto}
-  .dsws-panel{position:relative;left:0;top:0;display:flex;flex-direction:column;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary,#e6edf3);line-height:1.6;overflow:hidden}
-  .dsws-body{flex:1;overflow-y:auto;padding:10px 12px;max-height:520px}
+.dsws-panel{position:relative;left:0;top:0;width:460px;max-height:none}
 </style></head><body>
-<h1>waystation 面板 UI 最终版 · 两行结构（标题占满整宽 · 编号/map 同组居中 · 辅助按钮 hover）</h1>
-<div class="sub">第一行：#编号 + map 徽章（同组垂直居中）+ 标题（占满 ~100% 宽，限 2 行）。第二行：labels + 进度条 + 执行/新会话（常显）+ 复制/外链（hover 浮现）。</div>
+<h1>waystation 面板 UI 最终版 · 两行结构（真实 SVG 图标）</h1>
+<div class="sub">第一行：#编号 + map 徽章（同组垂直居中）+ 标题占满整宽（限 2 行）。第二行：labels + 进度条 + 执行/新会话（常显）+ 复制/外链（hover 浮现）。</div>
 <div class="flex">
   <div class="scene"><h3>正常宽度 460px</h3>
     <div class="dsws-panel" style="width:460px">
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,#2a2d35)"><span style="font-weight:600">DSH-Waystation</span><span style="flex:1"></span></div>
-      <div style="display:flex;gap:4px;padding:8px 12px 0;align-items:center"><span class="dsws-tab on" style="padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.14);border:1px solid var(--dsw-alias-border-l1,#2a2d35)">列表</span><span class="dsws-tab" style="padding:4px 10px">技能</span><span class="dsws-tab" style="padding:4px 10px">环境检查</span><span style="margin-left:auto;padding:2px 8px;font-size:11px;border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:6px">⟳ 刷新</span></div>
-      <div style="display:flex;align-items:center;gap:10px;margin:8px 12px 4px"><span style="font-size:11px">🎯 可接 13</span><span style="font-size:11px">🔒 阻塞 11</span><span style="font-size:11px">✅ 已关闭 32</span></div>
-      <div class="dsws-body"><div class="dsws-aggrow" style="cursor:pointer;border-left:3px solid #c084fc;background:rgba(188,140,255,.07)">
+      <div class="dsws-head" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,#2a2d35)"><span style="font-weight:600">DSH-Waystation</span><span style="flex:1"></span></div>
+      <div class="dsws-tabs" style="display:flex;gap:4px;padding:8px 12px 0;align-items:center">
+        <span class="dsws-tab on" style="padding:4px 10px;border-radius:6px;background:rgba(255,255,255,.14);border:1px solid var(--dsw-alias-border-l1,#2a2d35)">列表</span>
+        <span class="dsws-tab" style="padding:4px 10px">技能</span>
+        <span class="dsws-tab" style="padding:4px 10px">环境检查</span>
+        <button class="dsws-btn" style="margin-left:auto;padding:2px 8px;font-size:11px;display:inline-flex;align-items:center;gap:4px;border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg><span>刷新</span></button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin:8px 12px 4px;flex-wrap:wrap">
+        <span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg> 可接 13</span>
+        <span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> 阻塞 11</span>
+        <span style="display:inline-flex;align-items:center;gap:3px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> 已关闭 32</span>
+      </div>
+      <div class="dsws-body" style="max-height:460px"><div class="dsws-aggrow" style="cursor:pointer;border-left:3px solid #c084fc;background:rgba(188,140,255,.07)">
     <div style="display:flex;align-items:flex-start;gap:5px;width:100%">
       <span style="display:inline-flex;align-items:center;gap:5px;flex:none">
         <span style="color:var(--dsw-alias-label-caption,#8b8b95);font-size:11px;line-height:1.6">#409</span>
-        <span class="dsws-chip dsws-chip-m" style="font-size:11px;font-weight:600;line-height:1.6;padding:0 8px;display:inline-flex;align-items:center;gap:3px">map</span>
+        <span class="dsws-chip dsws-chip-m" style="font-size:11px;font-weight:600;line-height:1.6;padding:0 8px;display:inline-flex;align-items:center;gap:3px"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/></svg><span>map</span></span>
       </span>
       <span class="dsws-tt-wrap" style="flex:1;font-weight:600" title="[dsh-waystation] v1.3.1 修复合并 map · v27 推送 + 13 项 bug 修复 + npm 发布">[dsh-waystation] v1.3.1 修复合并 map · v27 推送 + 13 项 bug 修复 + npm 发布</span>
     </div>
     <div style="margin-top:3px;display:flex;align-items:center;gap:6px;width:100%">
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;flex:1 1 auto;min-width:0"><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(83,25,231,0.18);color:#5319e7;border:1px solid rgb(42,0,190)">wayfinder:map</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(191,212,242,0.18);color:#bfd4f2;border:1px solid rgb(150,171,201)">dsh:plugin:waystation</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(254,242,192,0.18);color:#fef2c0;border:1px solid rgb(213,201,151)">ready-for-human</span></div>
-      <div class="dsws-prog" style="flex:1 1 40%;min-width:60px"><i style="width:100%"></i></div><span style="font-size:10px;color:var(--dsw-alias-label-caption,#8b8b95);flex:none;display:inline-flex;align-items:center;gap:2px">✓ 25/25</span>
-      <div style="display:flex;gap:3;align-items:center;flex:none;margin-left:4px">
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;background:#5319e7;border-color:transparent;color:#ffffff">▶</button>
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#5319e7;border-color:transparent;color:#ffffff">↗ 新会话</button>
+      <div class="dsws-prog" style="flex:1 1 40%;min-width:60px;margin:0"><i style="width:100%"></i></div><span style="font-size:10px;color:var(--dsw-alias-label-caption,#8b8b95);flex:none;display:inline-flex;align-items:center;gap:2px"><svg class="ic" style="width:9px;height:9px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> 25/25</span>
+      <div style="display:flex;gap:3px;align-items:center;flex:none;margin-left:4px">
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;background:#5319e7;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span>执行</span></button>
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#5319e7;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>新会话</span></button>
       </div>
       <div class="dsws-aux" style="display:flex;gap:2px;align-items:center;flex:none">
-        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">⧉</button>
-        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">↗</a>
+        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 11h6M9 15h4"/></svg></button>
+        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a>
       </div>
     </div>
   </div><div class="dsws-aggrow" style="cursor:pointer;border-left:3px solid #c084fc;background:rgba(188,140,255,.07)">
     <div style="display:flex;align-items:flex-start;gap:5px;width:100%">
       <span style="display:inline-flex;align-items:center;gap:5px;flex:none">
         <span style="color:var(--dsw-alias-label-caption,#8b8b95);font-size:11px;line-height:1.6">#200</span>
-        <span class="dsws-chip dsws-chip-m" style="font-size:11px;font-weight:600;line-height:1.6;padding:0 8px;display:inline-flex;align-items:center;gap:3px">map</span>
+        <span class="dsws-chip dsws-chip-m" style="font-size:11px;font-weight:600;line-height:1.6;padding:0 8px;display:inline-flex;align-items:center;gap:3px"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/></svg><span>map</span></span>
       </span>
       <span class="dsws-tt-wrap" style="flex:1;font-weight:600" title="[私家大厨] 实施编排 map · v4.0 落地(10 域场景+08 对齐+数据层+开源)">[私家大厨] 实施编排 map · v4.0 落地(10 域场景+08 对齐+数据层+开源)</span>
     </div>
     <div style="margin-top:3px;display:flex;align-items:center;gap:6px;width:100%">
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;flex:1 1 auto;min-width:0"><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(83,25,231,0.18);color:#5319e7;border:1px solid rgb(42,0,190)">wayfinder:map</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(29,118,219,0.18);color:#1d76db;border:1px solid rgb(0,77,178)">skill:私家大厨</span></div>
-      <div class="dsws-prog" style="flex:1 1 40%;min-width:60px"><i style="width:87%"></i></div><span style="font-size:10px;color:var(--dsw-alias-label-caption,#8b8b95);flex:none;display:inline-flex;align-items:center;gap:2px">✓ 13/15</span>
-      <div style="display:flex;gap:3;align-items:center;flex:none;margin-left:4px">
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;background:#5319e7;border-color:transparent;color:#ffffff">▶</button>
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#5319e7;border-color:transparent;color:#ffffff">↗ 新会话</button>
+      <div class="dsws-prog" style="flex:1 1 40%;min-width:60px;margin:0"><i style="width:87%"></i></div><span style="font-size:10px;color:var(--dsw-alias-label-caption,#8b8b95);flex:none;display:inline-flex;align-items:center;gap:2px"><svg class="ic" style="width:9px;height:9px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> 13/15</span>
+      <div style="display:flex;gap:3px;align-items:center;flex:none;margin-left:4px">
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;background:#5319e7;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span>执行</span></button>
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#5319e7;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>新会话</span></button>
       </div>
       <div class="dsws-aux" style="display:flex;gap:2px;align-items:center;flex:none">
-        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">⧉</button>
-        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">↗</a>
+        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 11h6M9 15h4"/></svg></button>
+        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a>
       </div>
     </div>
   </div><div class="dsws-aggrow" style="">
@@ -190,13 +198,13 @@
     <div style="margin-top:3px;display:flex;align-items:center;gap:6px;width:100%">
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;flex:1 1 auto;min-width:0"><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(191,212,242,0.18);color:#bfd4f2;border:1px solid rgb(150,171,201)">wayfinder:task</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(191,212,242,0.18);color:#bfd4f2;border:1px solid rgb(150,171,201)">dsh:plugin:waystation</span></div>
       
-      <div style="display:flex;gap:3;align-items:center;flex:none;margin-left:4px">
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;background:#bfd4f2;border-color:transparent;color:#140a1e">执行</button>
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#bfd4f2;border-color:transparent;color:#140a1e">↗ 新会话</button>
+      <div style="display:flex;gap:3px;align-items:center;flex:none;margin-left:4px">
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;background:#bfd4f2;border-color:transparent;color:#140a1e;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span>执行</span></button>
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#bfd4f2;border-color:transparent;color:#140a1e;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>新会话</span></button>
       </div>
       <div class="dsws-aux" style="display:flex;gap:2px;align-items:center;flex:none">
-        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">⧉</button>
-        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">↗</a>
+        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 11h6M9 15h4"/></svg></button>
+        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a>
       </div>
     </div>
   </div><div class="dsws-aggrow" style="">
@@ -210,13 +218,13 @@
     <div style="margin-top:3px;display:flex;align-items:center;gap:6px;width:100%">
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;flex:1 1 auto;min-width:0"><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(215,58,74,0.18);color:#d73a4a;border:1px solid rgb(174,17,33)">bug</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(49,120,246,0.18);color:#3178f6;border:1px solid rgb(8,79,205)">skill:卡路里</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(249,208,196,0.18);color:#f9d0c4;border:1px solid rgb(208,167,155)">needs-triage</span></div>
       
-      <div style="display:flex;gap:3;align-items:center;flex:none;margin-left:4px">
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;background:#d73a4a;border-color:transparent;color:#ffffff">执行</button>
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#d73a4a;border-color:transparent;color:#ffffff">↗ 新会话</button>
+      <div style="display:flex;gap:3px;align-items:center;flex:none;margin-left:4px">
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;background:#d73a4a;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span>执行</span></button>
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#d73a4a;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg><span>新会话</span></button>
       </div>
       <div class="dsws-aux" style="display:flex;gap:2px;align-items:center;flex:none">
-        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">⧉</button>
-        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">↗</a>
+        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 11h6M9 15h4"/></svg></button>
+        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a>
       </div>
     </div>
   </div></div>
@@ -224,46 +232,51 @@
   </div>
   <div class="scene"><h3>窄宽度 360px</h3>
     <div class="dsws-panel" style="width:360px">
-      <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,#2a2d35)"><span style="font-weight:600;font-size:12px">DSH-Waystation</span><span style="flex:1"></span></div>
-      <div style="display:flex;gap:4px;padding:8px 12px 0;align-items:center"><span class="dsws-tab on" style="padding:4px 8px;font-size:11px">列表</span><span class="dsws-tab" style="padding:4px 8px;font-size:11px">技能</span><span class="dsws-tab" style="padding:4px 8px;font-size:11px">环境</span><span style="margin-left:auto;padding:2px 6px;font-size:10px;border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:6px">⟳</span></div>
-      <div class="dsws-body"><div class="dsws-aggrow" style="cursor:pointer;border-left:3px solid #c084fc;background:rgba(188,140,255,.07)">
+      <div class="dsws-head" style="display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,#2a2d35)"><span style="font-weight:600;font-size:12px">DSH-Waystation</span><span style="flex:1"></span></div>
+      <div class="dsws-tabs" style="display:flex;gap:4px;padding:8px 12px 0;align-items:center">
+        <span class="dsws-tab on" style="padding:4px 8px;font-size:11px">列表</span>
+        <span class="dsws-tab" style="padding:4px 8px;font-size:11px">技能</span>
+        <span class="dsws-tab" style="padding:4px 8px;font-size:11px">环境</span>
+        <button class="dsws-btn" style="margin-left:auto;padding:2px 6px;font-size:10px;border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg></button>
+      </div>
+      <div class="dsws-body" style="max-height:460px"><div class="dsws-aggrow" style="cursor:pointer;border-left:3px solid #c084fc;background:rgba(188,140,255,.07)">
     <div style="display:flex;align-items:flex-start;gap:5px;width:100%">
       <span style="display:inline-flex;align-items:center;gap:5px;flex:none">
         <span style="color:var(--dsw-alias-label-caption,#8b8b95);font-size:11px;line-height:1.6">#409</span>
-        <span class="dsws-chip dsws-chip-m" style="font-size:11px;font-weight:600;line-height:1.6;padding:0 8px;display:inline-flex;align-items:center;gap:3px">map</span>
+        <span class="dsws-chip dsws-chip-m" style="font-size:11px;font-weight:600;line-height:1.6;padding:0 8px;display:inline-flex;align-items:center;gap:3px"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/></svg><span>map</span></span>
       </span>
       <span class="dsws-tt-wrap" style="flex:1;font-weight:600" title="[dsh-waystation] v1.3.1 修复合并 map · v27 推送 + 13 项 bug 修复 + npm 发布">[dsh-waystation] v1.3.1 修复合并 map · v27 推送 + 13 项 bug 修复 + npm 发布</span>
     </div>
     <div style="margin-top:3px;display:flex;align-items:center;gap:6px;width:100%">
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;flex:1 1 auto;min-width:0"><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(83,25,231,0.18);color:#5319e7;border:1px solid rgb(42,0,190)">wayfinder:map</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(191,212,242,0.18);color:#bfd4f2;border:1px solid rgb(150,171,201)">dsh:plugin:waystation</span></div>
-      <div class="dsws-prog" style="flex:1 1 40%;min-width:60px"><i style="width:100%"></i></div><span style="font-size:10px;color:var(--dsw-alias-label-caption,#8b8b95);flex:none;display:inline-flex;align-items:center;gap:2px">✓ 25/25</span>
-      <div style="display:flex;gap:3;align-items:center;flex:none;margin-left:4px">
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;background:#5319e7;border-color:transparent;color:#ffffff">▶</button>
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#5319e7;border-color:transparent;color:#ffffff">↗</button>
+      <div class="dsws-prog" style="flex:1 1 40%;min-width:60px;margin:0"><i style="width:100%"></i></div><span style="font-size:10px;color:var(--dsw-alias-label-caption,#8b8b95);flex:none;display:inline-flex;align-items:center;gap:2px"><svg class="ic" style="width:9px;height:9px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> 25/25</span>
+      <div style="display:flex;gap:3px;align-items:center;flex:none;margin-left:4px">
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;background:#5319e7;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#5319e7;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
       </div>
       <div class="dsws-aux" style="display:flex;gap:2px;align-items:center;flex:none">
-        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">⧉</button>
-        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">↗</a>
+        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 11h6M9 15h4"/></svg></button>
+        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a>
       </div>
     </div>
   </div><div class="dsws-aggrow" style="cursor:pointer;border-left:3px solid #c084fc;background:rgba(188,140,255,.07)">
     <div style="display:flex;align-items:flex-start;gap:5px;width:100%">
       <span style="display:inline-flex;align-items:center;gap:5px;flex:none">
         <span style="color:var(--dsw-alias-label-caption,#8b8b95);font-size:11px;line-height:1.6">#200</span>
-        <span class="dsws-chip dsws-chip-m" style="font-size:11px;font-weight:600;line-height:1.6;padding:0 8px;display:inline-flex;align-items:center;gap:3px">map</span>
+        <span class="dsws-chip dsws-chip-m" style="font-size:11px;font-weight:600;line-height:1.6;padding:0 8px;display:inline-flex;align-items:center;gap:3px"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M1 6v16l7-4 8 4 7-4V2l-7 4-8-4-7 4z"/><path d="M8 2v16M16 6v16"/></svg><span>map</span></span>
       </span>
       <span class="dsws-tt-wrap" style="flex:1;font-weight:600" title="[私家大厨] 实施编排 map · v4.0 落地(10 域场景+08 对齐+数据层+开源)">[私家大厨] 实施编排 map · v4.0 落地(10 域场景+08 对齐+数据层+开源)</span>
     </div>
     <div style="margin-top:3px;display:flex;align-items:center;gap:6px;width:100%">
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;flex:1 1 auto;min-width:0"><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(83,25,231,0.18);color:#5319e7;border:1px solid rgb(42,0,190)">wayfinder:map</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(29,118,219,0.18);color:#1d76db;border:1px solid rgb(0,77,178)">skill:私家大厨</span></div>
-      <div class="dsws-prog" style="flex:1 1 40%;min-width:60px"><i style="width:87%"></i></div><span style="font-size:10px;color:var(--dsw-alias-label-caption,#8b8b95);flex:none;display:inline-flex;align-items:center;gap:2px">✓ 13/15</span>
-      <div style="display:flex;gap:3;align-items:center;flex:none;margin-left:4px">
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;background:#5319e7;border-color:transparent;color:#ffffff">▶</button>
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#5319e7;border-color:transparent;color:#ffffff">↗</button>
+      <div class="dsws-prog" style="flex:1 1 40%;min-width:60px;margin:0"><i style="width:87%"></i></div><span style="font-size:10px;color:var(--dsw-alias-label-caption,#8b8b95);flex:none;display:inline-flex;align-items:center;gap:2px"><svg class="ic" style="width:9px;height:9px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg> 13/15</span>
+      <div style="display:flex;gap:3px;align-items:center;flex:none;margin-left:4px">
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;background:#5319e7;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#5319e7;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
       </div>
       <div class="dsws-aux" style="display:flex;gap:2px;align-items:center;flex:none">
-        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">⧉</button>
-        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">↗</a>
+        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 11h6M9 15h4"/></svg></button>
+        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a>
       </div>
     </div>
   </div><div class="dsws-aggrow" style="">
@@ -277,13 +290,13 @@
     <div style="margin-top:3px;display:flex;align-items:center;gap:6px;width:100%">
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;flex:1 1 auto;min-width:0"><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(191,212,242,0.18);color:#bfd4f2;border:1px solid rgb(150,171,201)">wayfinder:task</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(191,212,242,0.18);color:#bfd4f2;border:1px solid rgb(150,171,201)">dsh:plugin:waystation</span></div>
       
-      <div style="display:flex;gap:3;align-items:center;flex:none;margin-left:4px">
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;background:#bfd4f2;border-color:transparent;color:#140a1e"></button>
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#bfd4f2;border-color:transparent;color:#140a1e">↗</button>
+      <div style="display:flex;gap:3px;align-items:center;flex:none;margin-left:4px">
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;background:#bfd4f2;border-color:transparent;color:#140a1e;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#bfd4f2;border-color:transparent;color:#140a1e;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
       </div>
       <div class="dsws-aux" style="display:flex;gap:2px;align-items:center;flex:none">
-        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">⧉</button>
-        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">↗</a>
+        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 11h6M9 15h4"/></svg></button>
+        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a>
       </div>
     </div>
   </div><div class="dsws-aggrow" style="">
@@ -297,13 +310,13 @@
     <div style="margin-top:3px;display:flex;align-items:center;gap:6px;width:100%">
       <div style="display:flex;align-items:center;flex-wrap:wrap;gap:2px;flex:1 1 auto;min-width:0"><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(215,58,74,0.18);color:#d73a4a;border:1px solid rgb(174,17,33)">bug</span><span class="dsws-chip" style="font-size:10px;margin-right:0;background:rgba(49,120,246,0.18);color:#3178f6;border:1px solid rgb(8,79,205)">skill:卡路里</span></div>
       
-      <div style="display:flex;gap:3;align-items:center;flex:none;margin-left:4px">
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;background:#d73a4a;border-color:transparent;color:#ffffff"></button>
-        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#d73a4a;border-color:transparent;color:#ffffff">↗</button>
+      <div style="display:flex;gap:3px;align-items:center;flex:none;margin-left:4px">
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;background:#d73a4a;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button>
+        <button class="dsws-btn primary" style="display:inline-flex;align-items:center;gap:3px;padding:1px 6px;font-size:11px;flex:none;margin-left:4px;background:#d73a4a;border-color:transparent;color:#ffffff;border-radius:6px;cursor:pointer;font-weight:600"><svg class="ic" style="width:10px;height:10px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
       </div>
       <div class="dsws-aux" style="display:flex;gap:2px;align-items:center;flex:none">
-        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">⧉</button>
-        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none">↗</a>
+        <button class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa);cursor:pointer"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 2h6v4H9z"/><path d="M9 11h6M9 15h4"/></svg></button>
+        <a class="dsws-btn ghost" style="display:inline-flex;align-items:center;padding:3px 4px;flex:none;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#a1a1aa)"><svg class="ic" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:1.8;vertical-align:-2px;flex:none" viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></a>
       </div>
     </div>
   </div></div>

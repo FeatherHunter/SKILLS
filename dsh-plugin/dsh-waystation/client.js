@@ -83,7 +83,12 @@ return {
       '.dsws-trow{display:flex;align-items:flex-start;gap:8px;padding:7px 8px;border-radius:6px;border:1px solid transparent}',
       '.dsws-trow:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06));border-color:var(--dsw-alias-border-l1,#2a2d35)}',
       '.dsws-trow .dsws-tt{flex:1;min-width:0}',
-      '.dsws-tt-name{font-size:12.5px;word-break:break-all;display:flex;align-items:center;gap:5px}',
+      // v27（#396）：标题渲染策略。
+      // 历史：word-break:break-all + 子 span 的 .dsws-ellip{white-space:nowrap} 导致长标题被静默省略号截断。
+      // 现在：父 .dsws-tt-name 不再强制 break-all；标题 span 用 .dsws-tt-wrap（替换 .dsws-ellip），
+      //   允许按空格/中文标点换行；hover 通过现有 title=... 兜底显示完整文本。
+      '.dsws-tt-name{font-size:12.5px;display:flex;align-items:center;gap:5px}',
+      '.dsws-tt-wrap{min-width:0;overflow-wrap:break-word;word-break:normal;line-break:auto}',
       '.dsws-tt-sub{font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa)}',
       '.dsws-btn{padding:3px 10px;border-radius:6px;border:1px solid var(--dsw-alias-border-l1,#2a2d35);background:var(--dsw-alias-bg-layer-1,#10131a);color:var(--dsw-alias-label-primary,#e6edf3);font-size:12px;cursor:pointer}',
       '.dsws-btn:hover{border-color:var(--dsw-alias-border-l2,#3a3f4a)}',
@@ -1321,7 +1326,7 @@ return {
         h('div', { className: 'dsws-tt' }, [
           h('div', { className: 'dsws-tt-name' }, [
             TypeChip({ type: t.type }),
-            h('span', { className: 'dsws-ellip', style: { flex: 1 }, title: t.title }, t.title),
+            h('span', { className: 'dsws-tt-wrap', style: { flex: 1 }, title: t.title }, t.title),
             h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + t.number),
           ]),
           h('div', { className: 'dsws-tt-sub', style: { display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' } }, [
@@ -1374,7 +1379,7 @@ return {
                 h('span', null, tr('act.execute')),
               ]),
         ]),
-        h('div', { className: 'dsws-mtitle dsws-ellip', title: m.title }, m.title),
+        h('div', { className: 'dsws-mtitle dsws-tt-wrap', title: m.title }, m.title),
         m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, String((m.error && m.error.error) || tr('list.loadFail')).slice(0, 160))]) : null,
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#4ade80', margin: '2px 0 2px' } }, [Ic({ n: 'target', size: 12 }), h('span', { className: 'dsws-ellip', title: m.destination }, m.destination || tr('list.noDest'))]),
         m.notes ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, [Ic({ n: 'note', size: 11 }), h('span', { className: 'dsws-ellip', title: m.notes }, m.notes)]) : null,
@@ -1541,7 +1546,7 @@ return {
           h('div', { style: { flex: 1, minWidth: 0 } }, [
             h('div', { style: { display: 'flex', alignItems: 'center', gap: 5 } }, [
               isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, flex: 'none', fontWeight: 600 } }, [Ic({ n: 'map', size: 12 }), h('span', null, tr('list.mapChip'))]) : null,
-              h('span', { className: 'dsws-ellip', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
+              h('span', { className: 'dsws-tt-wrap', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
               // 已关闭标识（低调：灰色小 chip + 淡标题；不喧宾夺主，关注点是未完成任务）
               !isOpen ? h('span', { className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, flex: 'none', background: 'rgba(139,139,149,.12)', color: '#8b8b95', border: '1px solid rgba(139,139,149,.35)' } }, [Ic({ n: 'check', size: 9 }), h('span', null, tr('map.subClosed'))]) : null,
               h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + x.number),

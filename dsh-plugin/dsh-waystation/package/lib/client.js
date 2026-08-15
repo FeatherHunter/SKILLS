@@ -247,7 +247,7 @@ window.__ModuleLoader__.load({
       const timer = ctx.get('timer')
       const h = React.createElement
       // v1.3.3：面板版本号（tabs 行最右侧显示，便于核对已更新）
-      const DSW_VERSION = 'v1.3.3'
+      const DSW_VERSION = 'v1.4.0'
 
       // 样式注入（静态插件没有 styles.insert builtin，手动 <style> + ctx.effect 清理）
       const styleEl = document.createElement('style')
@@ -1584,7 +1584,7 @@ window.__ModuleLoader__.load({
             mkRowAction(st, t, false, colorOf),
             h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: t.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '2px 4px' } }, Ic({ n: 'link', size: 11 })),
           ]) : null
-          const ic = t.type === 'research' ? 'mag' : t.type === 'prototype' ? 'bolt' : t.type === 'grilling' ? 'chat' : 'wrench'
+          const ic = t.type === 'research' ? 'search' : t.type === 'prototype' ? 'hammer' : t.type === 'grilling' ? 'chat' : 'gear'
           return h('div', {
             key: t.number,
             className: nodeCls(t),

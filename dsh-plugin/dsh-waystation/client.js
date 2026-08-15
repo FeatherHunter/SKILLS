@@ -128,6 +128,9 @@ return {
       '.dsws-banner.ok{background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.35);color:#4ade80}',
       '.dsws-aggrow{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:6px;border:1px solid transparent}',
       '.dsws-aggrow:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06));border-color:var(--dsw-alias-border-l1,#2a2d35)}',
+      // v1.3.3 UI：辅助按钮（复制/外链）hover 行时浮现
+      '.dsws-aggrow .dsws-aux{opacity:0;transition:opacity .12s;pointer-events:none}',
+      '.dsws-aggrow:hover .dsws-aux{opacity:1;pointer-events:auto}',
       '.dsws-ellip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}',
       '.dsws-cgroup{margin:10px 0 2px;font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa);display:flex;align-items:center;gap:6px}',
       '.dsws-ccard{border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:8px;padding:8px 10px;margin-bottom:6px;background:var(--dsw-alias-bg-layer-1,#10131a)}',
@@ -1605,56 +1608,53 @@ return {
         // v1.3.3 #8：map 行完成态 —— 子票全关（total>0 且 closed===total）→ 主按钮切「完成」（绿），注入收尾确认 prompt；
         //   与 MapDetail 顶部逻辑一致（此前主列表 map 行恒显示「执行」）
         const mapDone = !!(isMap && mapObj && mapObj.stats && mapObj.stats.total > 0 && mapObj.stats.closed === mapObj.stats.total)
-        // v1.3.3 UI：右侧按钮组 —— 正常单行；窄屏 2×2 网格（标题 2 行时按钮对齐，用户确认）
-        const rightCol = h('div', { style: { display: 'flex', gap: 3, alignItems: 'flex-start', flex: 'none', flexWrap: narrow ? 'wrap' : 'nowrap', justifyContent: 'flex-end', width: narrow ? 88 : undefined, maxWidth: narrow ? 88 : undefined } }, [
-          isOpen && !blocked && mapDone
-            ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function (e) {
-                e.stopPropagation()
-                const text = COMPLETE_PROMPT
-                  .split('{n}').join(String(x.number || ''))
-                  .split('{total}').join(String(mapObj.stats.total))
-                  .split('{closed}').join(String(mapObj.stats.closed))
-                inject(st, text)
-              }, style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [Ic({ n: 'check', size: 10 }), narrow ? null : h('span', null, tr('act.done'))])
-            : isOpen && !blocked ? mkRowAction(st, x, narrow, colorOf) : null,
-          // #361 能力保留；#394：去 ghost/icon-only，与 nav.handoff 图标解耦，加可见文字标签
-          //   marginLeft:4 与左侧 mkRowAction 形成隐式分组（动作组 vs 辅助组）
-          isOpen ? h('button', { className: 'dsws-btn primary', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', marginLeft: 4, background: actionColorOf(x, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 10 }), narrow ? null : h('span', null, tr('list.newSessionLabel'))]) : null,
-          h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'clipboard', size: 12 })),
-          h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: x.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 5px', flex: 'none' } }, Ic({ n: 'link', size: 12 })),
-        ])
+        // v1.3.3 UI：两行结构（方案 C + 辅助按钮 hover）
+        //   第一行：编号 + map 徽章（同组垂直居中）+ 标题（占满整宽，限 2 行）
+        //   第二行：labels + 进度条（占满） + 动作区（执行/新会话常显，复制/外链 hover 浮现）
         return h('div', {
           key: x.number,
           className: 'dsws-aggrow',
           onClick: function () { if (isMap && mapObj) { st.activeMap = x.number; emit(st) } },
           title: (isMap && mapObj) ? tr('list.mapTitle') : undefined,
-          // v14-2：地图行突出 —— 紫色竖条 + 浅紫底
           style: isMap ? { cursor: 'pointer', borderLeft: '3px solid #c084fc', background: 'rgba(188,140,255,.07)' } : undefined,
         }, [
-          h('div', { style: { flex: 1, minWidth: 0 } }, [
-            h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 5 } }, [
-              // T2 #3：编号前置
-              h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, flex: 'none' } }, '#' + x.number),
-              isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, flex: 'none', fontWeight: 600 } }, [Ic({ n: 'map', size: 12 }), h('span', null, tr('list.mapChip'))]) : null,
-              h('span', { className: 'dsws-tt-wrap', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
-              // 已关闭标识（低调：灰色小 chip + 淡标题；不喧宾夺主，关注点是未完成任务）
-              !isOpen ? h('span', { className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, flex: 'none', background: 'rgba(139,139,149,.12)', color: '#8b8b95', border: '1px solid rgba(139,139,149,.35)' } }, [Ic({ n: 'check', size: 9 }), h('span', null, tr('map.subClosed'))]) : null,
+          h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 5, width: '100%' } }, [
+            h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 5, flex: 'none' } }, [
+              h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, lineHeight: 1.6 } }, '#' + x.number),
+              isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, fontWeight: 600, lineHeight: 1.6, padding: '0 8px', display: 'inline-flex', alignItems: 'center', gap: 3 } }, [Ic({ n: 'map', size: 12 }), h('span', null, tr('list.mapChip'))]) : null,
             ]),
-            (shown.length || blocked) ? h('div', { style: { marginTop: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 } }, [
+            h('span', { className: 'dsws-tt-wrap', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
+            !isOpen ? h('span', { className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, flex: 'none', background: 'rgba(139,139,149,.12)', color: '#8b8b95', border: '1px solid rgba(139,139,149,.35)' } }, [Ic({ n: 'check', size: 9 }), h('span', null, tr('map.subClosed'))]) : null,
+          ]),
+          h('div', { style: { marginTop: 3, display: 'flex', alignItems: 'center', gap: 6, width: '100%' } }, [
+            (shown.length || blocked) ? h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, flex: '1 1 auto', minWidth: 0 } }, [
               shown.map(function (l, i) {
                 return h('span', { key: i, className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, background: hexA(l.color, 0.18) || 'rgba(188,140,255,.16)', color: l.color ? '#' + l.color : '#bc8cff', border: '1px solid ' + (darken(l.color, 0.16) || 'rgba(188,140,255,.6)') } }, l.name)
               }),
               rest > 0 ? h('span', { key: 'more', className: 'dsws-chip', onClick: toggleTags, title: tr('list.tagsTitle', { names: allNames }), style: { fontSize: 10, marginRight: 0, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + rest) : null,
               expanded ? h('span', { key: 'less', className: 'dsws-chip', onClick: toggleTags, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 0, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
               blocked ? h('span', { key: 'blk', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: tr('list.blockedTitle', { by: blk.by.map(function (b) { return '#' + b }).join('、') }), style: { fontSize: 10, marginRight: 0, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, tr('list.blocked'))]) : null,
+            ]) : h('span', { style: { flex: 1 } }),
+            (isMap && mapObj && mapObj.stats) ? h('div', { className: 'dsws-prog', style: { flex: '1 1 40%', minWidth: 60 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]) : null,
+            (isMap && mapObj && mapObj.stats) ? h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'check', size: 9, color: '#4ade80' }), h('span', null, mapObj.stats.closed + '/' + mapObj.stats.total)]) : null,
+            isOpen && !blocked ? h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none', marginLeft: 4 } }, [
+              mapDone
+                ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function (e) {
+                    e.stopPropagation()
+                    const text = COMPLETE_PROMPT
+                      .split('{n}').join(String(x.number || ''))
+                      .split('{total}').join(String(mapObj.stats.total))
+                      .split('{closed}').join(String(mapObj.stats.closed))
+                    inject(st, text)
+                  }, style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [Ic({ n: 'check', size: 10 }), narrow ? null : h('span', null, tr('act.done'))])
+                : mkRowAction(st, x, narrow, colorOf),
+              h('button', { className: 'dsws-btn primary', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', marginLeft: 4, background: actionColorOf(x, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 10 }), narrow ? null : h('span', null, tr('list.newSessionLabel'))]),
             ]) : null,
-            // v19-40：map 行进度（已完成/总数 + 进度条，如 13/14）
-            (isMap && mapObj && mapObj.stats) ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 } }, [
-              h('div', { className: 'dsws-prog', style: { flex: 1 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]),
-              h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'check', size: 9, color: '#4ade80' }), h('span', null, mapObj.stats.closed + '/' + mapObj.stats.total)]),
+            isOpen ? h('div', { className: 'dsws-aux', style: { display: 'flex', gap: 2, alignItems: 'center', flex: 'none' } }, [
+              h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 4px', flex: 'none' } }, Ic({ n: 'clipboard', size: 11 })),
+              h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: x.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 4px', flex: 'none' } }, Ic({ n: 'link', size: 11 })),
             ]) : null,
           ]),
-          rightCol,
         ])
       }
       const kpi = (num, lab, icon, color) => h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [Ic({ n: icon, size: 11, color: color }), h('span', null, String(num) + ' ' + lab)])

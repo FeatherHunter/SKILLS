@@ -1634,7 +1634,7 @@ window.__ModuleLoader__.load({
               h('span', { className: 'dsws-tt-wrap', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
               !isOpen ? h('span', { className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, flex: 'none', background: 'rgba(139,139,149,.12)', color: '#8b8b95', border: '1px solid rgba(139,139,149,.35)' } }, [Ic({ n: 'check', size: 9 }), h('span', null, tr('map.subClosed'))]) : null,
             ]),
-            h('div', { style: { marginTop: 3, display: 'flex', alignItems: 'center', gap: 6, width: '100%' } }, [
+            h('div', { style: { marginTop: 3, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6, rowGap: 4, width: '100%' } }, [
               (shown.length || blocked) ? h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2, flex: '1 1 auto', minWidth: 0 } }, [
                 shown.map(function (l, i) {
                   return h('span', { key: i, className: 'dsws-chip', style: { fontSize: 10, marginRight: 0, background: hexA(l.color, 0.18) || 'rgba(188,140,255,.16)', color: l.color ? '#' + l.color : '#bc8cff', border: '1px solid ' + (darken(l.color, 0.16) || 'rgba(188,140,255,.6)') } }, l.name)
@@ -1643,25 +1643,27 @@ window.__ModuleLoader__.load({
                 expanded ? h('span', { key: 'less', className: 'dsws-chip', onClick: toggleTags, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 0, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
                 blocked ? h('span', { key: 'blk', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); openBlocked(blk) }, title: tr('list.blockedTitle', { by: blk.by.map(function (b) { return '#' + b }).join('、') }), style: { fontSize: 10, marginRight: 0, background: 'rgba(248,113,113,.16)', color: '#f87171', border: '1px solid rgba(248,113,113,.55)', cursor: 'pointer' } }, [Ic({ n: 'lock', size: 10 }), h('span', null, tr('list.blocked'))]) : null,
               ]) : h('span', { style: { flex: 1 } }),
-              (isMap && mapObj && mapObj.stats) ? h('div', { className: 'dsws-prog', style: { flex: '1 1 40%', minWidth: 60 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]) : null,
-              (isMap && mapObj && mapObj.stats) ? h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'check', size: 9, color: '#4ade80' }), h('span', null, mapObj.stats.closed + '/' + mapObj.stats.total)]) : null,
-              isOpen && !blocked ? h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none', marginLeft: 4 } }, [
-                mapDone
-                  ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function (e) {
-                      e.stopPropagation()
-                      const text = COMPLETE_PROMPT
-                        .split('{n}').join(String(x.number || ''))
-                        .split('{total}').join(String(mapObj.stats.total))
-                        .split('{closed}').join(String(mapObj.stats.closed))
-                      inject(st, text)
-                    }, style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [Ic({ n: 'check', size: 10 }), narrow ? null : h('span', null, tr('act.done'))])
-                  : mkRowAction(st, x, narrow, colorOf),
-                h('button', { className: 'dsws-btn primary', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', marginLeft: 4, background: actionColorOf(x, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 10 }), narrow ? null : h('span', null, tr('list.newSessionLabel'))]),
-              ]) : null,
-              isOpen ? h('div', { className: 'dsws-aux', style: { display: 'flex', gap: 2, alignItems: 'center', flex: 'none' } }, [
-                h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 4px', flex: 'none' } }, Ic({ n: 'clipboard', size: 11 })),
-                h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: x.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 4px', flex: 'none' } }, Ic({ n: 'link', size: 11 })),
-              ]) : null,
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, flex: 'none', marginLeft: 'auto' } }, [
+                (isMap && mapObj && mapObj.stats) ? h('div', { className: 'dsws-prog', style: { width: 90, minWidth: 90 } }, [h('i', { style: { width: (mapObj.stats.total ? Math.round(mapObj.stats.closed / mapObj.stats.total * 100) : 0) + '%' } })]) : null,
+                (isMap && mapObj && mapObj.stats) ? h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'check', size: 9, color: '#4ade80' }), h('span', null, mapObj.stats.closed + '/' + mapObj.stats.total)]) : null,
+                isOpen && !blocked ? h('div', { style: { display: 'flex', gap: 3, alignItems: 'center', flex: 'none', marginLeft: 4 } }, [
+                  mapDone
+                    ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function (e) {
+                        e.stopPropagation()
+                        const text = COMPLETE_PROMPT
+                          .split('{n}').join(String(x.number || ''))
+                          .split('{total}').join(String(mapObj.stats.total))
+                          .split('{closed}').join(String(mapObj.stats.closed))
+                        inject(st, text)
+                      }, style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [Ic({ n: 'check', size: 10 }), narrow ? null : h('span', null, tr('act.done'))])
+                    : mkRowAction(st, x, narrow, colorOf),
+                  h('button', { className: 'dsws-btn primary', onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', marginLeft: 4, background: actionColorOf(x, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 10 }), narrow ? null : h('span', null, tr('list.newSessionLabel'))]),
+                ]) : null,
+                isOpen ? h('div', { className: 'dsws-aux', style: { display: 'flex', gap: 2, alignItems: 'center', flex: 'none' } }, [
+                  h('button', { className: 'dsws-btn ghost', onClick: function (e) { e.stopPropagation(); copyUrl(x) }, title: tr('list.copyLinkTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 4px', flex: 'none' } }, Ic({ n: 'clipboard', size: 11 })),
+                  h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: x.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + x.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '3px 4px', flex: 'none' } }, Ic({ n: 'link', size: 11 })),
+                ]) : null,
+              ]),
             ]),
           ])
         }

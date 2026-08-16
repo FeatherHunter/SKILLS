@@ -2763,7 +2763,7 @@ window.__ModuleLoader__.load({
         const panelStyle = { width: s.size.w, ...(s.size.h ? { height: s.size.h } : {}), ...(s.pos ? { left: s.pos.x, top: s.pos.y, right: 'auto' } : { left: 16, top: 76, right: 'auto' }) }
         return h('div', { ref: panelRef, className: 'dsws-panel', style: panelStyle }, [
           h('div', { className: 'dsws-head', onMouseDown: startDrag }, [
-            h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } }, Icon({ scheme: s.ui.icon, size: 17 }), 'DSH-Waystation'),
+            h('span', { style: { display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 } }, Icon({ scheme: s.ui.icon, size: 17 }), 'Waystation'),
             // v19-35：「真数据」→ 显示 repo 名（对未来用户更有意义；异常时红色提示）
             h('span', { className: 'dsws-chip ' + (s.snapMode === 'err' ? 'dsws-chip-t' : 'dsws-chip-m'), style: { maxWidth: 220 } }, [
               Ic({ n: s.snapMode === 'err' ? 'alert' : 'info', size: 11 }),
@@ -2942,7 +2942,7 @@ window.__ModuleLoader__.load({
           ]) : null,
           h('div', { className: 'dsws-cfg-head' }, [
             Icon({ scheme: 'compass', size: 20 }),
-            h('span', { className: 't' }, 'DSH-Waystation'),
+            h('span', { className: 't' }, 'Waystation'),
             h('span', { className: 's', style: { color: saved ? 'var(--dsw-alias-state-success-primary,#4ade80)' : 'var(--dsw-alias-label-caption,#8b8b95)' } }, [
               Ic({ n: saved ? 'check' : 'dot', size: 12 }),
               h('span', null, saved ? tr('cfg.saved') : tr('cfg.status')),
@@ -3036,7 +3036,7 @@ window.__ModuleLoader__.load({
         const s = useStore(cur)
         return h('div', { style: { border: '1px solid var(--dsw-alias-border-l1,#2a2d35)', borderRadius: 8, padding: '10px 12px', background: 'var(--dsw-alias-bg-layer-1,#10131a)', fontFamily: 'var(--dsw-font-family)', fontSize: 13, color: 'var(--dsw-alias-label-primary,#e6edf3)', lineHeight: 1.6 } }, [
           h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } }, [
-            h('strong', null, 'DSH-Waystation'),
+            h('strong', null, 'Waystation'),
             h('span', { style: { display: 'flex', alignItems: 'center', gap: 4, color: '#4ade80', fontSize: 12 } }, [Ic({ n: 'dot', size: 10 }), h('span', null, tr('run.loaded'))]),
           ]),
           h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', margin: '6px 0' } }, tr('run.desc')),

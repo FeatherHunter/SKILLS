@@ -204,6 +204,12 @@ window.__ModuleLoader__.load({
       // v1.5 T10 R7：刷新遮罩已废除（手动刷新走静默路径）；spinner 仅首开 loading 用
       '.dsws-spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.18);border-top-color:#c084fc;animation:dsws-spin .8s linear infinite;flex:none}',
       '@keyframes dsws-spin{to{transform:rotate(360deg)}}',
+      // v1.5 T10：刷新入口按钮内联转圈（非阻塞反馈 · R7 反馈半）+ R5 变化行高亮（变更琥珀渐隐 / 新增绿闪）
+      '.dsws-spin{display:inline-flex;animation:dsws-spin .8s linear infinite}',
+      '@keyframes dsws-flash-amber{0%{background-color:rgba(251,191,36,.20)}100%{background-color:transparent}}',
+      '@keyframes dsws-flash-green{0%{background-color:rgba(74,222,128,.20)}100%{background-color:transparent}}',
+      '.dsws-row-changed{animation:dsws-flash-amber 2.4s ease-out 1}',
+      '.dsws-row-added{animation:dsws-flash-green 2.4s ease-out 1}',
       // v25 · T2b：配置页（settings.plugins.tab）专用样式
       '.dsws-cfg{max-width:720px;display:flex;flex-direction:column;gap:12px;padding:2px 2px 4px}',
       '.dsws-cfg-head{display:flex;align-items:center;gap:10px}',
@@ -303,6 +309,7 @@ window.__ModuleLoader__.load({
           'nav.triage': '诊断',
           'nav.triageTitle': '过滤：open + needs-triage 标签',
           'nav.refresh': '更新',
+          'nav.refreshing': '更新中…',
           'nav.refreshTitle': '重新检查 + 刷新快照',
           'nav.fixateTitle': '保存进度快照 · 注入零丢失 prompt',
           'nav.handoff': '交接',
@@ -333,6 +340,7 @@ window.__ModuleLoader__.load({
           'list.kpi.occupied': '阻塞',
           'list.kpi.closed': '已关闭',
           'list.refresh': '刷新',
+          'list.refreshing': '刷新中…',
           'list.envWarn': '{n} 项环境未就绪，点此查看',
           'list.all': '全部',
           'list.loading': '加载中…',
@@ -424,6 +432,7 @@ window.__ModuleLoader__.load({
           'list.newSessionLabel': '新会话',
           'panel.newWayfinder': '+ 新建需求',
           'panel.newWayfinderTitle': '注入 /wayfinder 新增需求 prompt（带当前仓库）',
+          'panel.diffRemoved': '{n} 个已关闭/移除',
           'panel.repoTitle': '当前仓库，点击打开 GitHub',
           'panel.noRepo': '没有仓库',
           'panel.noRepoTitle': '当前工作区不是 Git 仓库 —— 请先 git init 或进入仓库目录',
@@ -515,6 +524,7 @@ window.__ModuleLoader__.load({
           'nav.triage': 'Triage',
           'nav.triageTitle': 'Filter: open + needs-triage label',
           'nav.refresh': 'Refresh',
+          'nav.refreshing': 'Updating…',
           'nav.refreshTitle': 'Re-check + refresh snapshot',
           'nav.fixateTitle': 'Save a snapshot · inject the zero-loss prompt',
           'nav.handoff': 'Handoff',
@@ -545,6 +555,7 @@ window.__ModuleLoader__.load({
           'list.kpi.occupied': 'Blocked',
           'list.kpi.closed': 'Closed',
           'list.refresh': 'Refresh',
+          'list.refreshing': 'Refreshing…',
           'list.envWarn': '{n} check(s) not ready — click to view',
           'list.all': 'All',
           'list.loading': 'Loading…',
@@ -636,6 +647,7 @@ window.__ModuleLoader__.load({
           'list.newSessionLabel': 'New session',
           'panel.newWayfinder': '+ New requirement',
           'panel.newWayfinderTitle': 'Inject a /wayfinder new-requirement prompt (with the current repo)',
+          'panel.diffRemoved': '{n} closed/removed',
           'panel.repoTitle': 'Current repo — open on GitHub',
           'panel.noRepo': 'No repo',
           'panel.noRepoTitle': 'Current workspace is not a Git repo — run git init or open a repo directory',
@@ -1306,31 +1318,42 @@ window.__ModuleLoader__.load({
       // v1.5 T10 R4（用户拍板）：数据层增量 diff —— 变更/新增/删除 按票号对比（含 map 子票级变化），
       //   多视图（列表/map详情/状态栏计数/过滤结果）数据驱动自动增量；diff 结果供 R5 视觉消费
       const diffSnapshots = function (oldS, newS) {
-        const out = { added: [], removed: [], changed: [], ts: Date.now() }
+        const out = { added: [], removed: [], changed: [], issueFlash: {}, ts: Date.now() }
         if (!oldS || !oldS.ok || !Array.isArray(oldS.maps)) return out
         if (!newS || !newS.ok || !Array.isArray(newS.maps)) return out
         const lbl = function (x) { return (x.labels || []).map(function (l) { return typeof l === 'string' ? l : l.name }).sort().join(',') }
         const idx = function (snap) { const m = {}; snap.maps.forEach(function (x) { m[x.number] = x }); return m }
         const a = idx(oldS), b = idx(newS)
-        const subChanged = function (x, y) {
-          if (!x || !y) return true
-          const ix = {}; (x.issues || []).forEach(function (i) { ix[i.number] = i })
-          const iy = {}; (y.issues || []).forEach(function (i) { iy[i.number] = i })
-          if (Object.keys(ix).length !== Object.keys(iy).length) return true
-          for (var n in iy) {
-            var a2 = ix[n], b2 = iy[n]
-            if (!a2) return true
-            if (a2.state !== b2.state || a2.progress !== b2.progress || lbl(a2) !== lbl(b2)) return true
-          }
-          return false
-        }
+        // 子票级变化：逐票对比（新增/变更标 issueFlash；任一变化 → 该 map 计入 changed，map 详情视图增量）
         Object.keys(b).forEach(function (n) {
           if (!a[n]) { out.added.push(Number(n)); return }
           var x = a[n], y = b[n]
-          if (x.state !== y.state || x.progress !== y.progress || x.title !== y.title || lbl(x) !== lbl(y) || subChanged(x, y)) out.changed.push(Number(n))
+          var sub = false
+          var ix = {}; (x.issues || []).forEach(function (i) { ix[i.number] = i })
+          var iy = {}; (y.issues || []).forEach(function (i) { iy[i.number] = i })
+          Object.keys(iy).forEach(function (k) {
+            if (!ix[k]) { sub = true; out.issueFlash[Number(k)] = 'added'; return }
+            var a2 = ix[k], b2 = iy[k]
+            if (a2.state !== b2.state || a2.progress !== b2.progress || lbl(a2) !== lbl(b2)) { sub = true; out.issueFlash[Number(k)] = 'changed' }
+          })
+          if (Object.keys(ix).length !== Object.keys(iy).length) sub = true
+          if (x.state !== y.state || x.progress !== y.progress || x.title !== y.title || lbl(x) !== lbl(y) || sub) out.changed.push(Number(n))
         })
         Object.keys(a).forEach(function (n) { if (!b[n]) out.removed.push(Number(n)) })
         return out
+      }
+      // R5：高亮定时清除（防堆积；一次只排一个 timer）
+      let _flashClearPending = false
+      const scheduleFlashClear = function (st) {
+        if (_flashClearPending) return
+        _flashClearPending = true
+        if (timer === undefined) { _flashClearPending = false; return }
+        timer.timeout(function () {
+          _flashClearPending = false
+          st.rowFlash = {}
+          st.issueFlash = {}
+          emit(st)
+        }, 2600)
       }
       // 快照（#346：面板数据源；force 走 wf.refresh 全量重建；wf.snapshot 侧 5s 缓存）
       const loadSnapshot = function (st, force, silent) {
@@ -1354,9 +1377,14 @@ window.__ModuleLoader__.load({
             // v1.5 T10 R4：数据层增量 diff（新旧快照对比）—— 供多视图增量与 R5 视觉
             st.lastDiff = diffSnapshots(st.snapshot, snap)
             st.rowFlash = {}
+            st.issueFlash = {}
             var _df = st.lastDiff
             _df.added.forEach(function (n) { st.rowFlash[n] = 'added' })
             _df.changed.forEach(function (n) { st.rowFlash[n] = 'changed' })
+            if (_df.issueFlash) Object.keys(_df.issueFlash).forEach(function (k) { st.issueFlash[Number(k)] = _df.issueFlash[k] })
+            // R5 视觉：有变化才提示 + 定时清除高亮（防堆积）
+            if (_df.removed.length) flash(st, tr('panel.diffRemoved', { n: _df.removed.length }), 'info')
+            scheduleFlashClear(st)
             st.snapshot = snap
             st.snapMode = 'real'
             st.snapError = null
@@ -1430,15 +1458,13 @@ window.__ModuleLoader__.load({
       }
 
       // v1.5 T10 R7（用户拍板）：手动刷新（状态栏「更新」/ 列表「刷新」/ 检查页「重新检查」）
-      //   改走静默路径 —— 不再出现「刷新中」全屏遮罩、不禁点；loading 态仅首开无数据时显示；
-      //   数据到达后数据驱动增量更新（MVVM · 无整屏替换）
-      let _manualRefreshing = false
+      //   走静默路径 —— 无全屏遮罩、不禁点；st.refreshing 仅驱动刷新入口的按钮 spinner（非阻塞反馈）
       const refreshAll = function (st) {
-        if (_manualRefreshing) return
-        _manualRefreshing = true
+        if (st.refreshing) return
+        st.refreshing = true; emit(st)
         Promise.all([loadChecks(st, true, true), loadSnapshot(st, true, true)]).then(function () {
-          _manualRefreshing = false
-        }).catch(function () { _manualRefreshing = false })
+          st.refreshing = false; emit(st)
+        }).catch(function () { st.refreshing = false; emit(st) })
       }
 
       // #376：打开面板即保证新鲜 —— 未就绪/失败 → force 加载（有「加载中」反馈）；
@@ -1774,7 +1800,7 @@ window.__ModuleLoader__.load({
           seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
           // v19-36：环境段移至末尾（更新左侧），用户少点
           seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 9 ? '#4ade80' : '#f59e0b', function () { go('checks') }, tr('nav.envTitle', { n: n < 0 ? '?' : String(n) })),
-          h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, tr('nav.refresh') + ' ' + timeStr),
+          h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, s.refreshing ? [h('span', { className: 'dsws-spin' }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('nav.refreshing'))] : tr('nav.refresh') + ' ' + timeStr),
         ])
         // 用户拍板 2026-08-16：横幅移到状态栏上方（技能检测 / setup 检测的提示弹窗置顶）
         if (!amber && !skillsBad) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
@@ -2010,6 +2036,8 @@ window.__ModuleLoader__.load({
           else if (t.level === curLevel) cls += ' now'
           const fog = isFog(t) || isFogTitle(t)
           if (fog) { cls += ' fog'; if (st.reveal[m.number] && st.reveal[m.number][t.number]) cls += ' revealed' }
+          // R5：子票级变化高亮（issueFlash）
+          if (st.issueFlash && st.issueFlash[t.number]) cls += st.issueFlash[t.number] === 'added' ? ' dsws-row-added' : ' dsws-row-changed'
           return cls
         }
         const toggleReveal = function (t) {
@@ -2451,7 +2479,8 @@ window.__ModuleLoader__.load({
           }
           return h('div', {
             key: x.number,
-            className: 'dsws-aggrow',
+            // R5：变化行视觉（变更琥珀渐隐 / 新增绿闪）
+            className: 'dsws-aggrow' + ((st.rowFlash && st.rowFlash[x.number]) ? (st.rowFlash[x.number] === 'added' ? ' dsws-row-added' : ' dsws-row-changed') : ''),
             onClick: function () { if (isMap && mapObj) { st.activeMap = x.number; emit(st) } },
             title: (isMap && mapObj) ? tr('list.mapTitle') : undefined,
             style: isMap ? { cursor: 'pointer', borderLeft: '3px solid #c084fc', background: 'rgba(188,140,255,.07)' } : undefined,
@@ -2696,9 +2725,9 @@ window.__ModuleLoader__.load({
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12 } }, [
             h('span', { style: { display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'gear', size: 12 }), h('span', null, tr('env.title', { n: envLabel(st) }))]),
             h('span', { style: { flex: 1 } }),
-            h('button', { className: 'dsws-btn', disabled: st.checking, onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
-              Ic({ n: 'refresh', size: 11 }),
-              h('span', null, st.checking ? tr('env.checking') : tr('env.recheck')),
+            h('button', { className: 'dsws-btn', disabled: st.checking || st.refreshing, onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
+              h('span', { className: (st.checking || st.refreshing) ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]),
+              h('span', null, (st.checking || st.refreshing) ? tr('env.checking') : tr('env.recheck')),
             ]),
           ]),
           st.checksMode === 'err' ? h('div', { className: 'dsws-banner bad', style: { cursor: 'default' } }, [Ic({ n: 'alert', size: 13 }), h('span', null, tr('env.failFull', { err: st.checksError }))]) : null,
@@ -2769,7 +2798,7 @@ window.__ModuleLoader__.load({
               Ic({ n: 'map', size: 11 }),
               h('span', null, tr('panel.newWayfinder')),
             ]),
-            h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
+            h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, s.refreshing ? tr('list.refreshing') : tr('list.refresh'))]),
             h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),
           ]),
           h('div', { className: 'dsws-body', style: { flex: 1, overflowY: 'auto', padding: '10px 12px' } }, [
@@ -2868,7 +2897,7 @@ window.__ModuleLoader__.load({
             h('span', null, tr('panel.newWayfinder')),
           ]),
           // T2 #2：刷新按钮上移至 tabs 末尾（紧贴环境检查右边 · 用户需求）
-          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
+          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, s.refreshing ? tr('list.refreshing') : tr('list.refresh'))]),
           h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),
         ]),
           h('div', { className: 'dsws-body', onMouseDown: onBodyDown }, [

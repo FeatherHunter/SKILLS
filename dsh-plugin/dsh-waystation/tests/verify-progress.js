@@ -91,17 +91,23 @@ check(appendCount(pcli) === 3, 'package client BODY_FORMAT 追加点 ×3（compl
 check(cli.includes('newWayfinderText') && cli.includes('BODY_FORMAT ?') && cli.includes("promptText('newWayfinder'"), 'client newWayfinder 建图入口挂 BODY_FORMAT（F2 补强）')
 check(pcli.includes('newWayfinderText') && pcli.includes('BODY_FORMAT ?') && pcli.includes("promptText('newWayfinder'"), 'package client newWayfinder 建图入口挂 BODY_FORMAT（F2 补强）')
 
-// T10 R7（#458 用户拍板）：手动刷新去「刷新中」遮罩 —— refreshAll 走静默路径、不再置 refreshing
-check(!cli.includes('st.refreshing = true') && !cli.includes('s.refreshing ?'), 'client 无 refreshing 遮罩（R7）')
-check(!pcli.includes('st.refreshing = true') && !pcli.includes('s.refreshing ?'), 'package client 无 refreshing 遮罩（R7）')
+// T10 R7（#458 用户拍板）：手动刷新去「刷新中」遮罩 —— 无全屏遮罩渲染；st.refreshing 仅驱动按钮 spinner
+check(!cli.includes("className: 'dsws-shade'") && !cli.includes('dsws-shade{'), 'client 无刷新遮罩渲染（R7）')
+check(!pcli.includes("className: 'dsws-shade'") && !pcli.includes('dsws-shade{'), 'package client 无刷新遮罩渲染（R7）')
 check(cli.includes('loadChecks(st, true, true)') && cli.includes('loadSnapshot(st, true, true)'), 'client refreshAll 静默路径（R7）')
 check(pcli.includes('loadChecks(st, true, true)') && pcli.includes('loadSnapshot(st, true, true)'), 'package client refreshAll 静默路径（R7）')
+// T10 R7 反馈半（用户拍板 2026-08-16）：刷新入口按钮内联 spinner + 文字切换（非阻塞）
+check(cli.includes('dsws-spin') && cli.includes("nav.refreshing") && cli.includes("list.refreshing"), 'client 刷新入口 spinner + 文案（R7 反馈）')
+check(pcli.includes('dsws-spin') && pcli.includes("nav.refreshing") && pcli.includes("list.refreshing"), 'package client 刷新入口 spinner + 文案（R7 反馈）')
 // T10 R9（Q4 拍板）：关键动作后延迟探测
 check(cli.includes('scheduleActionProbe') && cli.includes('probeNow(false)'), 'client 动作后探测（R9）')
 check(pcli.includes('scheduleActionProbe') && pcli.includes('probeNow(false)'), 'package client 动作后探测（R9）')
 // T10 R4（用户拍板）：数据层增量 diff
 check(cli.includes('diffSnapshots') && cli.includes('st.lastDiff') && cli.includes('st.rowFlash'), 'client 数据层 diff（R4）')
 check(pcli.includes('diffSnapshots') && pcli.includes('st.lastDiff') && pcli.includes('st.rowFlash'), 'package client 数据层 diff（R4）')
+// T10 R5（用户拍板方向 + 详谈定稿）：变化行高亮（变更琥珀/新增绿闪）+ 删除提示 + 定时清除
+check(cli.includes('dsws-row-changed') && cli.includes('dsws-row-added') && cli.includes('panel.diffRemoved') && cli.includes('scheduleFlashClear') && cli.includes('issueFlash'), 'client R5 变化视觉（高亮/删除提示/清除）')
+check(pcli.includes('dsws-row-changed') && pcli.includes('dsws-row-added') && pcli.includes('panel.diffRemoved') && pcli.includes('scheduleFlashClear') && pcli.includes('issueFlash'), 'package client R5 变化视觉（高亮/删除提示/清除）')
 
 if (failed) { console.log('\n存在失败'); process.exit(1) }
 console.log('\n全部通过')

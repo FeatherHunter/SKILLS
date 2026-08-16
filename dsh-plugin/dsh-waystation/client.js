@@ -947,13 +947,13 @@ return {
     }
     const tplText = (id) => templates[id] || TPL_DEFAULT[id] || ''
     // 渲染：转义 {{x}} → 字面 {x}（先替换哨兵防误替换），再替换已知占位符；未知占位符保留原样（保存层已拦截）
-    // T13：阶段闸门统一追加 —— 诊断/修复/执行 三类动作开头拼 stageGate（自定义模板也生效，免疫覆盖）
+    // T13 修订：阶段闸门统一追加 —— 诊断/修复/执行 三类动作**末尾**拼 stageGate（技能命令+链接保持开头，自定义模板也生效，免疫覆盖）
     const STAGE_GATED_IDS = ['diagnose', 'fix', 'execute']
     const renderTemplate = function (id, values) {
       let text = String(tplText(id))
       if (STAGE_GATED_IDS.indexOf(id) >= 0) {
         const gate = promptText('stageGate')
-        if (gate) text = gate + '\n\n' + text
+        if (gate) text = text + '\n\n' + gate
       }
       const esc = []
       text = text.replace(/\{\{([a-zA-Z][a-zA-Z0-9]*)\}\}/g, function (m, name) { esc.push('{' + name + '}'); return '\u0001' + (esc.length - 1) + '\u0001' })

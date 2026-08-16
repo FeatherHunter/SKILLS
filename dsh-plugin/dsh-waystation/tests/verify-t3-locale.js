@@ -47,7 +47,8 @@ const check = function (file) {
   //   静态 bundle 4 个（同上去掉 tool.view.cordis，disposeSlots 形态）
   const n = (src.match(/slots\.inject\('/g) || []).length
   // v1.4.1：better-sidebar tab 改走 ensureSidebarTab 直接注册（非 slots.inject）→ 静态 bundle 4 个（动态版 5 个：多 tool.view.cordis）
-  const expectInject = file.indexOf('package/') >= 0 ? 4 : 5
+  // v1.5 T2：新增 settings.section 注册 → 动态版 6 个（+settings.section），静态 bundle 5 个
+  const expectInject = file.indexOf('package/') >= 0 ? 5 : 6
   if (n !== expectInject) problems.push('slots.inject 注册数异常 ' + n + '（期望 ' + expectInject + '）')
   if (problems.length) { console.log('  FAIL', file, problems.join('；')); failed = true }
   else console.log('  PASS', file, '(' + zh.size + ' 键 × zh/en，' + used.size + ' 处引用)')

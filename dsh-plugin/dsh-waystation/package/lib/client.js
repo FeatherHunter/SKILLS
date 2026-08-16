@@ -415,9 +415,6 @@ window.__ModuleLoader__.load({
           'cfg.status': '配置',
           'cfg.saved': '已保存',
           'cfg.sub': '配置面板与动作提示词：静态文本可自由编辑，占位符由系统注入真值，点击即可插入。',
-          'cfg.panelHeight': '面板默认高度',
-          'cfg.panelHeightDesc': '打开面板时使用的初始高度，可随时拖拽调整。',
-          'cfg.defaultHeight': '默认高度',
           'cfg.openIn': '打开位置',
           'cfg.openInDesc': '面板在哪个区域打开。better-sidebar 已安装时默认侧边栏；窗口缩小时侧边栏更稳。',
           'cfg.openInLabel': '打开位置',
@@ -603,9 +600,6 @@ window.__ModuleLoader__.load({
           'cfg.status': 'Config',
           'cfg.saved': 'Saved',
           'cfg.sub': 'Configure the panel and action prompts: static text is freely editable; placeholders are filled in by the system — click to insert.',
-          'cfg.panelHeight': 'Default panel height',
-          'cfg.panelHeightDesc': 'Initial height when the panel opens; adjustable by dragging.',
-          'cfg.defaultHeight': 'Default height',
           'cfg.openIn': 'Open in',
           'cfg.openInDesc': 'Where the panel opens. Defaults to the sidebar when dsh-better-sidebar is installed; the sidebar stays put when the window shrinks.',
           'cfg.openInLabel': 'Open location',
@@ -779,7 +773,7 @@ window.__ModuleLoader__.load({
 
       // ============================================================
       // 2.5 配置模型（v25 · T2a：dsws.cfg + dsws.templates；旧 dsws.startCfg 自动迁移）
-      // 必须位于 §3 store 之前（DEFAULT_PANEL_H 依赖 cfg.panelHeight）
+      // 必须位于 §3 store 之前（DEFAULT_PANEL_H 固定 1/2）
       // ============================================================
       // v22：统一引导句（T1 拍板：普通静态文本，用户可改；不是占位符）
       const GUIDE_LINE = '从第一性原理出发完成任务，并对抗式审查。'
@@ -824,7 +818,7 @@ window.__ModuleLoader__.load({
       //   localStorage 已有值则尊重用户选择（不覆盖）
       const cfg = (function () {
         const bsInstalled = !!(ctx.get('betterSidebar') && typeof ctx.get('betterSidebar').registerTab === 'function')
-        const d = { withWayfinder: true, panelHeight: 'half', openIn: bsInstalled ? 'sidebar' : 'dock' }
+        const d = { withWayfinder: true, openIn: bsInstalled ? 'sidebar' : 'dock' }
         try {
           const raw = localStorage.getItem(CFG_KEY)
           if (raw) {
@@ -832,7 +826,7 @@ window.__ModuleLoader__.load({
             if (typeof saved.openIn === 'string') d.openIn = saved.openIn  // 用户已选过 → 尊重
             else d.openIn = bsInstalled ? 'sidebar' : 'dock'              // 首次 → 按安装情况默认
           }
-          return Object.assign({ withWayfinder: true, panelHeight: 'half', openIn: 'dock' }, d)
+          return Object.assign({ withWayfinder: true, openIn: 'dock' }, d)
         } catch (e) { /* 存储不可用用默认 */ }
         return d
       })()
@@ -919,12 +913,10 @@ window.__ModuleLoader__.load({
       // ============================================================
       // 3. store（v14：按会话隔离；无 sid 时用 shared）
       // ============================================================
-      // v24-48：面板默认高度 = 屏幕约 1/2（用户反馈 1/4 太小；内容内部滚动，可拖手柄拉长）
-      // v25-50：面板默认高度三档可配置（dsws.cfg.panelHeight: quarter/half/twothirds）
-      const PANEL_RATIOS = { quarter: 0.25, half: 0.5, twothirds: 2 / 3 }
+      // v24-48：面板默认高度 = 屏幕约 1/2
+      // v1.5 T3：面板默认高度固定 1/2（用户拍板彻底移除 panelHeight 配置 —— details 列高度与它无关，配置不生效）
       const DEFAULT_PANEL_H = (function () {
-        const r = PANEL_RATIOS[cfg.panelHeight] || 0.5
-        try { return Math.max(240, Math.round((window.innerHeight || 800) * r)) } catch (e) { return 400 }
+        try { return Math.max(240, Math.round((window.innerHeight || 800) * 0.5)) } catch (e) { return 400 }
       })()
       // #374：主列表偏好（排序/状态过滤）持久化（localStorage 不可用时降级默认值）
       const LIST_PREFS_KEY = 'dsws.listPrefs'
@@ -1212,13 +1204,11 @@ window.__ModuleLoader__.load({
       }
       // ============================================================
       // 4. 配置广播（v25-50：配置保存后同步所有会话 store 的面板尺寸；外观定死不广播）
-      //    cfg/templates 定义见 §2.5（在 store 之前，DEFAULT_PANEL_H 依赖 cfg.panelHeight）
       // ============================================================
       const broadcastCfg = function () {
         const applyTo = function (st) {
           if (!st) return
-          const r = PANEL_RATIOS[cfg.panelHeight] || 0.5
-          st.size = { w: st.size ? st.size.w : 460, h: Math.max(240, Math.round((window.innerHeight || 800) * r)) }
+          st.size = { w: st.size ? st.size.w : 460, h: Math.max(240, Math.round((window.innerHeight || 800) * 0.5)) }
           emit(st)
         }
         applyTo(shared)
@@ -2085,7 +2075,7 @@ window.__ModuleLoader__.load({
                         inject(st, text)
                       }, style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [Ic({ n: 'check', size: 10 }), narrow ? null : h('span', null, tr('act.done'))])
                     : mkRowAction(st, x, narrow, colorOf),
-                  h('button', { className: 'dsws-btn primary' + (narrow ? ' narrow-icon' : ''), onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', marginLeft: 4, background: actionColorOf(x, colorOf), borderColor: 'transparent', color: isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff' } }, [Ic({ n: 'external-link', size: 10 }), narrow ? null : h('span', null, tr('list.newSessionLabel'))]),
+                  h('button', { className: 'dsws-btn primary' + (narrow ? ' narrow-icon' : ''), onClick: function (e) { e.stopPropagation(); openInNewSession(st, x) }, title: tr('list.newSessionLabel'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', marginLeft: 4, background: mapDone ? '#3fb950' : actionColorOf(x, colorOf), borderColor: 'transparent', color: mapDone ? '#0c1a10' : (isLightHex(actionColorOf(x, colorOf)) ? '#140a1e' : '#ffffff') } }, [Ic({ n: 'external-link', size: 10 }), narrow ? null : h('span', null, tr('list.newSessionLabel'))]),
                 ]) : null,
                 isOpen ? h('div', { className: 'dsws-aux', style: { display: 'flex', gap: 2, alignItems: 'center', flex: 'none' } }, [
                   // v1.3.3：复制/外链图标增大 11 → 13
@@ -2449,8 +2439,7 @@ window.__ModuleLoader__.load({
       }
 
       // ---- 5.9 配置页（v25 · settings.plugins.tab「Waystation」：功能配置 + 动作模板编辑器）----
-      // 面板默认高度三档 / 开始模板（前缀开关 + execute 模板）/ 动作模板编辑器（其余 6 动作）
-      const PANEL_HEIGHT_LABELS = { quarter: '1/4', half: '1/2', twothirds: '2/3' }
+      // 开始模板（前缀开关 + execute 模板）/ 动作模板编辑器（其余 6 动作）
       // T3：模板名/描述在渲染时 tr('tpl.name.*')/tr('tpl.desc.*')（此处保留中文静态表供默认文案参考）
       const TPL_NAMES = {
         diagnose: '诊断', fix: '修复', discuss: '讨论', handoff1: '交接第一击', handoff2: '交接第二击', fixate: '沉淀',
@@ -2466,7 +2455,6 @@ window.__ModuleLoader__.load({
       const TPL_EDIT_IDS = ['diagnose', 'fix', 'discuss', 'handoff1', 'handoff2', 'fixate']  // execute 在「开始模板」节
       const PREVIEW_VALUES = { url: 'https://github.com/FeatherHunter/SKILLS/issues/365', number: '365', title: '示例 issue 标题', ts: '20260814-172113', file: '20260814-172113.md' }
       const SettingsPage = (props) => {
-        const [height, setHeight] = React.useState(cfg.panelHeight)
         const [openIn, setOpenIn] = React.useState(cfg.openIn || 'dock')
         const [openInNote, setOpenInNote] = React.useState(false)
         const [wf, setWf] = React.useState(cfg.withWayfinder)
@@ -2515,7 +2503,6 @@ window.__ModuleLoader__.load({
           const errList = validateAll(custom)
           if (errList.length) { setErrs(errList); return }
           setErrs([])
-          cfg.panelHeight = height
           cfg.openIn = openIn
           cfg.withWayfinder = wf
           templates.execute = custom
@@ -2533,7 +2520,6 @@ window.__ModuleLoader__.load({
           o.execute = ''
           TPL_EDIT_IDS.forEach(function (id) { o[id] = '' })
           setTpls(o)
-          setHeight('half')
           setWf(true)
           setErrs([])
         }
@@ -2582,17 +2568,6 @@ window.__ModuleLoader__.load({
             ]),
           ]),
           h('div', { className: 'dsws-cfg-sub' }, tr('cfg.sub')),
-          // 1. 面板默认高度三档
-          h('div', { className: 'dsws-cfg-group' }, [
-            h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'target', size: 13 }), h('span', null, tr('cfg.panelHeight'))]),
-            h('div', { className: 'dsws-cfg-gdesc' }, tr('cfg.panelHeightDesc')),
-            h('div', { className: 'dsws-cfg-row' }, [
-              h('span', { className: 'dsws-cfg-label' }, tr('cfg.defaultHeight')),
-              h('div', { className: 'dsws-cfg-seg' }, Object.keys(PANEL_HEIGHT_LABELS).map(function (k) {
-                return h('button', { key: k, className: height === k ? 'on' : '', onClick: function () { setHeight(k) } }, PANEL_HEIGHT_LABELS[k])
-              })),
-            ]),
-          ]),
           // v1.4：打开位置（details 列 / better-sidebar）—— better-sidebar 未装时仅显示 dock 选项
           h('div', { className: 'dsws-cfg-group' }, [
             h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'map', size: 13 }), h('span', null, tr('cfg.openIn'))]),
@@ -2696,6 +2671,10 @@ window.__ModuleLoader__.load({
         // v25-50：配置页（设置 → 插件 → Waystation；与 opencode 主题同模式）
         slots.inject('settings.plugins.tab', function () {
           return slots.register({ name: 'settings.plugins.tab', id: 'dsws-settings', order: 40, label: function () { return 'Waystation' } }, SettingsPage)
+        }),
+        // v1.5 T2：设置左侧直达 —— settings.section 左栏条目（与插件页 tab 双入口，复用同一 SettingsPage）
+        slots.inject('settings.section', function () {
+          return slots.register({ name: 'settings.section', id: 'dsws-settings-section', order: 200, label: function () { return 'Waystation' } }, SettingsPage)
         }),
         // 原型：右侧停靠（details 槽位 · 替换内置工具详情面板）
         // priority: -1 低于内置详情面板默认 0 → 无冲突且「低者胜出」替换内置面板

@@ -196,10 +196,12 @@ return {
     }
     async function writeDiskCache(repo, snap) {
       try {
-        if (fs === undefined || typeof fs.writeText !== 'function') return
+        if (fs === undefined || typeof fs.writeText !== 'function' || typeof fs.resolve !== 'function') return
         const dir = await getCacheDir(); if (!dir) return
         const fn = cacheFileName(repo); if (!fn) return
-        await fs.writeText(dir + '/' + fn, JSON.stringify(snap))
+        // T9 修复：fs 服务的 writeText 要求 resolve() 返回的 target 对象（{targetKey,displayPath}），不能直接传路径字符串
+        const t = await fs.resolve(dir + '/' + fn)
+        await fs.writeText(t, JSON.stringify(snap))
       } catch (e) { /* 写失败不影响主流程 */ }
     }
 

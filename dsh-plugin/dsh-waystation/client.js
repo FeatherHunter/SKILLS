@@ -1723,22 +1723,39 @@ return {
       const out = []
       let rest = mdEsc(text)
       let k = 0
-      // 先提取链接（防内部 ** 混淆）
+      // 先提取链接（防内部 ** 混淆；URL 协议白名单防 javascript:/data: 等危险协议）
       const linkParts = []
+      const mdSafeUrl = function (u) {
+        const s = String(u == null ? '' : u).trim()
+        if (!s) return null
+        if (/^(https?:|mailto:)/i.test(s)) return s
+        if (/^[#/]/.test(s) || /^\.\.?\//.test(s)) return s
+        if (!/^[a-z][a-z0-9+.-]*:/i.test(s)) return s
+        return null
+      }
       rest = rest.replace(MD_LINK_RE, function (m, label, url) {
-        linkParts.push(h('a', { key: 'l' + (k++), href: url, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'underline' } }, mdInline(label, 'll' + k)))
+        const u = mdSafeUrl(url)
+        if (u === null) return label
+        linkParts.push(h('a', { key: 'l' + (k++), href: u, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'underline' } }, mdInline(label, 'll' + k)))
         return '\u0001L' + (linkParts.length - 1) + '\u0001'
       })
-      // 再处理加粗 / 斜体 / 行内代码
+      // 再处理加粗 / 斜体 / 行内代码（先解析段内链接占位符——链接可嵌在文本任意位置）
       rest.split(/(\*\*[^*]+\*\*|\*[^*]+\*|\x60[^\x60]+\x60)/g).forEach(function (seg, si) {
         if (!seg) return
-        if (seg.indexOf('\u0001L') === 0) {
-          const n = parseInt(seg.slice(2, -1), 10)
-          if (!isNaN(n) && linkParts[n]) out.push(linkParts[n])
-          else out.push(seg)
+        if (seg.indexOf('\u0001') >= 0) {
+          const re = /\u0001L(\d+)\u0001/g
+          let last = 0
+          let m
+          while ((m = re.exec(seg)) !== null) {
+            if (m.index > last) out.push(seg.slice(last, m.index))
+            const n = parseInt(m[1], 10)
+            if (!isNaN(n) && linkParts[n]) out.push(linkParts[n])
+            else out.push(m[0])
+            last = m.index + m[0].length
+          }
+          if (last < seg.length) out.push(seg.slice(last))
           return
         }
-        if (seg.indexOf('\u0001') >= 0) { out.push(seg); return }
         const em = /^\*\*([^*]+)\*\*$/.exec(seg)
         if (em) { out.push(h('strong', { key: (keyBase || '') + 's' + (si) }, em[1])); return }
         const it = /^\*([^*]+)\*$/.exec(seg)

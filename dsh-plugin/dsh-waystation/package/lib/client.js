@@ -1558,6 +1558,9 @@ window.__ModuleLoader__.load({
         ensureCwd().then(function (cwd) {
           if (!cwd) { doFallback(); return }
           sessions.create({ cwd: cwd }).then(function (sid) {
+            // v1.5：新会话继承当前快照（同仓库同 cwd）—— 面板/状态栏秒显，避免冷缓存全量重建卡顿
+            const ns = storeOf(sid)
+            if (ns && st.snapshot) { ns.snapshot = st.snapshot; ns.snapMode = 'real'; ns.cwd = cwd }
             // 自动命名（失败不阻塞打开）
             try {
               const scopeCtx = sessions.scope(sid)
@@ -1625,7 +1628,8 @@ window.__ModuleLoader__.load({
             }).catch(function () { /* 保持现有 cwd */ })
           }
         }, [sid, summaryCwd])
-        React.useEffect(function () { loadChecks(s, false); loadSnapshot(s, false) }, [])
+        // v1.5：挂载时新鲜数据（≤60s，含新会话继承的快照）跳过重载，避免冷缓存全量重建卡顿
+        React.useEffect(function () { loadChecks(s, false); if (!snapFresh(s)) loadSnapshot(s, false) }, [])
         // v18-30：可接/占用 = 列表 open issue 口径（与面板列表一致）
         const fr = frontierCount(s)
         const bugN = bugCount(s)
@@ -2403,7 +2407,8 @@ window.__ModuleLoader__.load({
           return function () { try { ro.disconnect() } catch (e) { /* 忽略 */ } }
         }, [])
         // 初始数据（与状态栏同款：快照 + 环境检查）；壳保持子树常挂载，后续刷新走「更新」/停靠段
-        React.useEffect(function () { loadSnapshot(s, false); loadChecks(s, false) }, [])
+        // v1.5：挂载时新鲜数据跳过重载（同上）
+        React.useEffect(function () { if (!snapFresh(s)) loadSnapshot(s, false); loadChecks(s, false) }, [])
         const closeDock = function () {
           if (props && typeof props.closeDetails === 'function') props.closeDetails()
           else if (layoutSvc && typeof layoutSvc.closeDetails === 'function') layoutSvc.closeDetails()

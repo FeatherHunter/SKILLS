@@ -1497,7 +1497,8 @@ return {
     const SESSION_TITLE_PREFIX = '[dsh-waystation]'
     const newSessionTitle = (t) => SESSION_TITLE_PREFIX + ' ' + t.title + ' #' + t.number
     // v1.5 T6：新增 wayfinder prompt —— /wayfinder + 仓库信息 + 需求引导（用户拍板：prompt 带仓库信息）
-    const newWayfinderText = (st) => promptText('newWayfinder', { repo: 'https://github.com/' + repoStr(st) })
+    // T16 补强（#463 复核 F2）：建图入口同样挂正文格式契约（新建 map 正文从源头防字面 \\n / BOM）
+    const newWayfinderText = (st) => promptText('newWayfinder', { repo: 'https://github.com/' + repoStr(st) }) + (BODY_FORMAT ? '\n\n' + BODY_FORMAT : '')
 
     // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认文本见 §2.5 FIXATE_PROMPT，T2b 可编辑）
     const injectFixate = (st) => { inject(st, fixateText()) }

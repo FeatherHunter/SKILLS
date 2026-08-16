@@ -86,8 +86,10 @@ check(cli.includes('const BODY_FORMAT'), 'client 含 BODY_FORMAT 常量')
 check(pcli.includes('const BODY_FORMAT'), 'package client 含 BODY_FORMAT 常量')
 // 追加点跨行容错（completePrompt 的 + 在上一行末尾，CRLF 源码）：\+ 与 ( 之间允许空白/换行
 const appendCount = (s) => (s.match(/\+[\s]*\(BODY_FORMAT \? '\\n\\n' \+ BODY_FORMAT : ''\)/g) || []).length
-check(appendCount(cli) === 2, 'client BODY_FORMAT 追加点 ×2（completePrompt + mapExecute）')
-check(appendCount(pcli) === 2, 'package client BODY_FORMAT 追加点 ×2（completePrompt + mapExecute）')
+check(appendCount(cli) === 3, 'client BODY_FORMAT 追加点 ×3（completePrompt + mapExecute + newWayfinder）')
+check(appendCount(pcli) === 3, 'package client BODY_FORMAT 追加点 ×3（completePrompt + mapExecute + newWayfinder）')
+check(cli.includes('newWayfinderText') && cli.includes('BODY_FORMAT ?') && cli.includes("promptText('newWayfinder'"), 'client newWayfinder 建图入口挂 BODY_FORMAT（F2 补强）')
+check(pcli.includes('newWayfinderText') && pcli.includes('BODY_FORMAT ?') && pcli.includes("promptText('newWayfinder'"), 'package client newWayfinder 建图入口挂 BODY_FORMAT（F2 补强）')
 
 if (failed) { console.log('\n存在失败'); process.exit(1) }
 console.log('\n全部通过')

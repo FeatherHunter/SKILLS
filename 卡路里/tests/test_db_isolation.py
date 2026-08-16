@@ -23,12 +23,21 @@ import pytest
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
 SCRIPTS_DIR = SKILL_DIR / "scripts"
-PROD_DB = SKILL_DIR / "calorie_data.db"  # 本地副本(fresh clone 常见)
+PROD_DB = SKILL_DIR / "calorie_data.db"  # skill-local(fresh clone 常见,但 AGENTS.md 亦列为生产候选)
 PROD_DB_REAL = Path(r"D:\2Study\StudyNotes\.db\calorie_data.db")  # 真生产库(只读比对)
 PROD_DIR_REAL = Path(r"D:\2Study\StudyNotes\.db")
+PROD_DB_FALLBACK = Path("D:/.db") / "calorie_data.db"  # find_db_path 无 env 时的 fallback 生产库
 
 # 供 cwd_sentry 单测 import
 ISO_DB_DIR = SKILL_DIR.parent / "公共组件" / "iso_db"
+
+# 已知生产候选集合(写库前守卫:解析到其中任一 → FAIL 而非写)
+# 覆盖:真生产 D:\2Study\StudyNotes\.db + find_db_path fallback D:/.db + skill-local
+KNOWN_PROD_DBS = {
+    str(PROD_DB_REAL.resolve()),
+    str(PROD_DB_FALLBACK.resolve()),
+    str(PROD_DB.resolve()),
+}
 
 
 # ---------------------------------------------------------------------------
@@ -71,9 +80,15 @@ def test_writes_dont_touch_prod_db(temp_db, monkeypatch):
 # ---------------------------------------------------------------------------
 
 def _assert_isolated_from_real_prod(resolved: Path) -> None:
-    """写库前守卫:解析路径绝不能是真生产库(隔离失效则 FAIL,而非写生产)"""
-    assert str(resolved.resolve()) != str(PROD_DB_REAL.resolve()), (
-        f"[iso_db] 隔离失效!find_db_path 解析到真生产库 {resolved};拒绝执行写操作"
+    """写库前守卫:解析路径绝不能命中任一已知生产候选(隔离失效则 FAIL,而非写生产)
+
+    #400 对抗审查 C3a:不能只比对 D:/2Study/StudyNotes/.db 单一路径——
+    find_db_path 无 env 时 fallback 到 D:/.db,skill-local 卡路里/calorie_data.db
+    亦属生产候选(AGENTS.md);守卫用集合覆盖三者。
+    """
+    resolved_s = str(resolved.resolve())
+    assert resolved_s not in KNOWN_PROD_DBS, (
+        f"[iso_db] 隔离失效!find_db_path 解析到生产候选 {resolved};拒绝执行写操作"
     )
 
 
@@ -205,6 +220,28 @@ def test_modules_baked_after_plugin_get_temp_path():
     assert baked.parent.is_dir(), f"[iso_db] diet.DB_PATH 指向不存在目录: {baked}"
 
 
+def test_direct_baked_modules_point_to_skill_local_not_real_prod():
+    """adversarial A1:直烘焙模块(DB_PATH = SKILL_DIR/'calorie_data.db')不指向真生产
+
+    body_composition / body_measurements / render_body_composition_wizard 直接烘焙
+    skill-local 路径(绕过 find_db_path/env),L2 setenv 对它们无效——ADR-0006 已声明
+    该边界。本测试锁定:它们烘焙的是 skill-local 副本(测试侧 monkeypatch 兜底),
+    而非真生产 D:/2Study/StudyNotes/.db。
+    """
+    if str(SCRIPTS_DIR) not in sys.path:
+        sys.path.insert(0, str(SCRIPTS_DIR))
+    for mod_name in ("body_composition", "body_measurements", "render_body_composition_wizard"):
+        mod = __import__(mod_name)
+        baked = Path(mod.DB_PATH)
+        assert baked.name == "calorie_data.db", f"{mod_name}.DB_PATH 不是 calorie_data.db: {baked}"
+        assert str(baked.resolve()) != str(PROD_DB_REAL.resolve()), (
+            f"[iso_db] {mod_name}.DB_PATH 直烘焙到真生产: {baked}"
+        )
+        assert str(baked.resolve()) != str(PROD_DB_FALLBACK.resolve()), (
+            f"[iso_db] {mod_name}.DB_PATH 直烘焙到 fallback 生产: {baked}"
+        )
+
+
 # ---------------------------------------------------------------------------
 # 4. cwd_sentry 单测(#404 L3 复用 · 逻辑无 pytest hook 依赖,独立可测)
 # ---------------------------------------------------------------------------
@@ -238,6 +275,10 @@ def test_cwd_sentry_demo_in_scratch_dir(tmp_path, monkeypatch):
     assert result is not None, "demo 路径应自动隔离"
     assert Path(result).is_dir()
     assert os.environ.get("SKILLS_DB_PATH") == str(result)
+    # ensure_isolation 内部用 tempfile.mkdtemp 创建真实目录(非 tmp_path),
+    # 测试内显式清理,避免 %TEMP% 残留 iso_db_demo_* 目录
+    import shutil as _sh
+    _sh.rmtree(result, ignore_errors=True)
 
 
 def test_cwd_sentry_demo_by_script_name(tmp_path, monkeypatch):
@@ -265,7 +306,7 @@ def test_cwd_sentry_force_prod_bypass(tmp_path, monkeypatch):
 
 
 def test_cwd_sentry_ensure_isolation_skips_when_env_set(tmp_path, monkeypatch):
-    """调用方已显式设置 SKILLS_DB_PATH → 哨兵不重复覆盖(demo 路径也不动)"""
+    """调用方已显式设置非生产 SKILLS_DB_PATH → 哨兵尊重,不重复覆盖(demo 路径也不动)"""
     scratch_dir = tmp_path / ".scratch" / "explicit"
     scratch_dir.mkdir(parents=True)
     monkeypatch.chdir(scratch_dir)
@@ -278,16 +319,38 @@ def test_cwd_sentry_ensure_isolation_skips_when_env_set(tmp_path, monkeypatch):
     assert os.environ.get("SKILLS_DB_PATH") == custom
 
 
+def test_cwd_sentry_env_set_to_prod_still_isolates(tmp_path, monkeypatch):
+    """C5 对抗审查:env 指向**生产** + demo 路径 → 必须隔离(否则 demo 直写生产)
+
+    用户 shell 持久 SKILLS_DB_PATH=D:/2Study/StudyNotes/.db(#400 事故场景),
+    cwd 在 .scratch/ 下跑 demo 脚本 → 哨兵必须覆盖为 temp,不得尊重生产 env。
+    """
+    scratch_dir = tmp_path / ".scratch" / "prod_env"
+    scratch_dir.mkdir(parents=True)
+    monkeypatch.chdir(scratch_dir)
+    monkeypatch.setattr(sys, "argv", ["demo_x.py"])
+    monkeypatch.setenv("SKILLS_DB_PATH", r"D:\2Study\StudyNotes\.db")
+    sentry = _load_cwd_sentry()
+    assert sentry.is_demo_path() is True
+    assert sentry.env_points_to_known_prod() is True
+    result = sentry.ensure_isolation(verbose=False)
+    assert result is not None, "env 指向生产时 demo 路径必须隔离"
+    assert os.environ.get("SKILLS_DB_PATH") == str(result)
+    import shutil as _sh
+    _sh.rmtree(result, ignore_errors=True)
+
+
 # ---------------------------------------------------------------------------
 # 5. hardcode 生产 DB 路径扫描(已知 one-off 脚本豁免 · L1 verify 记录不改 C1.5)
 # ---------------------------------------------------------------------------
 
-# 已知 hardcode 生产路径的 one-off 脚本(2026-08-14 L1 verify 报告 + 实测),
+# 已知 hardcode 生产路径的 one-off 脚本(2026-08-14 L1 verify 报告 + 对抗审查 C4 补),
 # 均为一次性数据导入/CLI 默认参数,非正常 CLI 路径;L1 决策"verify 记录不改"。
 # 新增任何 hardcode 文件 → 测试失败,须先消除或显式加入本清单(带理由)。
 _KNOWN_HARDCODE_SCRIPTS = {
     "_add_jimmy_dean_products.py",   # 一次性产品导入脚本(Jimmy Dean 鸡排/松饼,L11 直连生产)
     "scan_contraindications.py",     # CLI --db 参数默认值(L64,用户可 --db 覆盖;非模块级烘焙)
+    "render_contraindication.py",    # CLI --db 参数默认值(L44 WSL /mnt/d/ 形式,同 scan_contraindications 同类)
 }
 
 
@@ -298,6 +361,7 @@ def test_no_scripts_file_hardcodes_prod_db_path():
         r'"D:\\2Study\\StudyNotes\\.db\\calorie_data\.db',
         r"'D:\\2Study\\StudyNotes\\.db\\calorie_data\.db",
         r"D:/2Study/StudyNotes/\.db/calorie_data\.db",
+        r"/mnt/d/2Study/StudyNotes/\.db/calorie_data\.db",   # WSL 形式(对抗审查 C4 补)
     ]
     bad_re = re.compile("|".join(bad_patterns))
 

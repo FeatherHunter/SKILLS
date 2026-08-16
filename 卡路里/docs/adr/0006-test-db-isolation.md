@@ -47,7 +47,9 @@ Status: accepted
 
 ## 为什么不修 29 个烘焙文件(L1 verify 仅记录 · C1.5)
 
-L2 autouse 在最早时机 setenv 已**完全覆盖**烘焙问题(import 即读 temp);改 29 文件 = 80 行 + 全 skill 回归 = 高工作量 + 新失败面。L1 verify 输出 `dbpath_baking_report.md` 记录不改代码。
+L2 autouse 在最早时机 setenv,**覆盖 find_db_path 式烘焙**(import 即读 temp,覆盖 26 个 find_db_path 式文件);改 29 文件 = 80 行 + 全 skill 回归 = 高工作量 + 新失败面。L1 verify 输出 `dbpath_baking_report.md` 记录不改代码。
+
+**已知边界(对抗审查 A1)**:3 个文件(`body_composition.py` / `body_measurements.py` / `render_body_composition_wizard.py`)直接烘焙 `DB_PATH = SKILL_DIR / 'calorie_data.db'`(绕过 find_db_path/env),L2 setenv 对它们**无效**——测试侧靠各测试自行 `monkeypatch.setattr(mod, 'DB_PATH', temp)` 兜底(见 `test_modules_baked_after_plugin_get_temp_path` 的直烘焙断言)。ADR 此处措辞为「find_db_path 式烘焙全覆盖」而非「全烘焙覆盖」。
 
 ## 验收测试(tests/test_db_isolation.py · 15 个)
 

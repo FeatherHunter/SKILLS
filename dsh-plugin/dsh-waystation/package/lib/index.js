@@ -155,10 +155,62 @@ export function apply(ctx) {
     return userHome
   }
 
+  // ============ v1.5 T9：git 根检测 + 磁盘缓存（跨重启秒开）============
+  // git rev-parse --show-toplevel 层层上溯找根；嵌套仓库（子目录含独立 .git）git 原生停在最近根 —— 符合用户要求
+  let repoRoots = {}           // 根路径按 cwd 缓存
+  let cacheDirResolved = null  // 缓存目录（惰性解析）
+  async function getRepoRoot(cwd) {
+    const key = cwd || DEFAULT_CWD
+    if (repoRoots[key] !== undefined) return repoRoots[key]
+    repoRoots[key] = null
+    const git = await resolveGit()
+    if (git) {
+      const r = await execProc([git, '-C', key, 'rev-parse', '--show-toplevel'], key)
+      const txt = r.ok ? r.text.trim() : ''
+      if (txt && !/fatal/i.test(txt)) repoRoots[key] = txt
+    }
+    return repoRoots[key]
+  }
+  // 缓存目录：~/.dsh/waystation-cache/（fs 服务 mkdir 建目录；正斜杠避免转义）
+  async function getCacheDir() {
+    if (cacheDirResolved) return cacheDirResolved
+    const home = await getHome()
+    if (!home) return null
+    cacheDirResolved = home + '/.dsh/waystation-cache'
+    try { if (fs !== undefined && typeof fs.mkdir === 'function') await fs.mkdir(cacheDirResolved) } catch (e) { /* 已存在或不可建，继续 */ }
+    return cacheDirResolved
+  }
+  function cacheFileName(repo) {
+    return (repo && repo.owner && repo.name) ? repo.owner + '__' + repo.name + '.json' : null
+  }
+  async function readDiskCache(repo) {
+    try {
+      if (fs === undefined || typeof fs.readText !== 'function' || typeof fs.resolve !== 'function') return null
+      const dir = await getCacheDir(); if (!dir) return null
+      const fn = cacheFileName(repo); if (!fn) return null
+      const p = await fs.resolve(fn, { cwd: dir })
+      const txt = await fs.readText(p)
+      if (!txt) return null
+      const j = JSON.parse(txt)
+      if (j && j.ok === true && Array.isArray(j.maps) && typeof j.generatedMs === 'number') return j
+      return null
+    } catch (e) { return null }
+  }
+  async function writeDiskCache(repo, snap) {
+    try {
+      if (fs === undefined || typeof fs.writeText !== 'function') return
+      const dir = await getCacheDir(); if (!dir) return
+      const fn = cacheFileName(repo); if (!fn) return
+      await fs.writeText(dir + '/' + fn, JSON.stringify(snap))
+    } catch (e) { /* 写失败不影响主流程 */ }
+  }
+
   async function getRepoKey(cwd) {
     const key = cwd || DEFAULT_CWD
     if (repoKeys[key]) return repoKeys[key]
-    const r = await runGh(['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner'], key)
+    // v1.5 T9：gh 在 git 根目录执行（嵌套仓库/子目录场景取最近仓库）
+    const root = await getRepoRoot(key)
+    const r = await runGh(['repo', 'view', '--json', 'nameWithOwner', '-q', '.nameWithOwner'], root || key)
     if (!r.ok) return null
     const s = r.text.trim()
     const i = s.indexOf('/')
@@ -367,6 +419,7 @@ export function apply(ctx) {
     return {
       ok: true,
       repo: repo,
+      repoRoot: await getRepoRoot(cwd),  // v1.5 T9：git 根路径（供仓库身份组件与 setup 检查）
       updatedAt: new Date().toISOString(),
       generatedMs: Date.now(),
       env: { ghPath: ghPath, ghError: ghPathError },
@@ -420,7 +473,10 @@ export function apply(ctx) {
   async function checkSetup(cwd) {
     if (fs === undefined) return { ok: false, level: 'bad', detail: 'fs 服务不可用，无法检测', hint: '请先运行 /setup-matt-pocock-skills', repo: null }
     try {
-      const info = await fs.lstat('docs/agents/issue-tracker.md', { cwd: cwd })
+      // v1.5 B1：改为针对 git 根目录检测（会话 cwd 在仓库子目录时不再误报「没有初始化」）
+      const root = await getRepoRoot(cwd)
+      const base = root || cwd
+      const info = await fs.lstat('docs/agents/issue-tracker.md', { cwd: base })
       if (info) return { ok: true, level: 'ok', detail: 'docs/agents/issue-tracker.md 存在', hint: '', repo: null }
     } catch (e) { /* 落到下方 bad */ }
     return { ok: false, level: 'bad', detail: 'docs/agents/issue-tracker.md 不存在', hint: '请先运行 /setup-matt-pocock-skills', repo: null }
@@ -552,8 +608,16 @@ export function apply(ctx) {
         const now = Date.now()
         if (cache.snapshot && cache.cwd === cwd && now - cache.ts < CACHE_MS) return cache.snapshot
         try {
+          // v1.5 T9：内存未命中 → 磁盘缓存秒开（fromCache 标记 → client 后台静默刷新动态更新 UI）
+          const repo0 = await getRepoKey(cwd)
+          const disk = await readDiskCache(repo0)
+          if (disk) {
+            cache = { ts: Date.now(), snapshot: disk, error: null, cwd: cwd }
+            return Object.assign({}, disk, { fromCache: true })
+          }
           const snap = await buildSnapshot(cwd)
           cache = { ts: Date.now(), snapshot: snap, error: null, cwd: cwd }
+          await writeDiskCache(snap.repo, snap)
           return snap
         } catch (e) {
           cache = { ts: Date.now(), snapshot: null, error: errText(e), cwd: cwd }
@@ -564,6 +628,8 @@ export function apply(ctx) {
         try {
           const snap = await buildSnapshot(cwd)
           cache = { ts: Date.now(), snapshot: snap, error: null, cwd: cwd }
+          // v1.5 T9：刷新后落盘，下次重启秒开
+          await writeDiskCache(snap.repo, snap)
           return snap
         } catch (e) {
           cache = { ts: Date.now(), snapshot: null, error: errText(e), cwd: cwd }

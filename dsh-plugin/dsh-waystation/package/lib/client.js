@@ -1258,7 +1258,7 @@ window.__ModuleLoader__.load({
       }
 
       // 快照（#346：面板数据源；force 走 wf.refresh 全量重建；wf.snapshot 侧 5s 缓存）
-      const loadSnapshot = function (st, force) {
+      const loadSnapshot = function (st, force, silent) {
         // #370 次要观察：force 刷新时跳过 snapLoading 守卫（加载中点击「刷新」不再 no-op）
         if (st.snapLoading && !force) return Promise.resolve()
         if (conn === undefined || conn.rpc === undefined) {
@@ -1268,7 +1268,8 @@ window.__ModuleLoader__.load({
           return Promise.resolve()
         }
         st.snapLoading = true
-        if (force) st.snapMode = 'loading'
+        // v1.5 T9：silent（后台静默刷新）不显示加载遮罩、不弹错误 toast
+        if (force && !silent) st.snapMode = 'loading'
         emit(st)
         const args = st.cwd ? { cwd: st.cwd } : {}
         const p = force ? rpcCall('refresh', args) : rpcCall('snapshot', args)
@@ -1278,17 +1279,22 @@ window.__ModuleLoader__.load({
             st.snapshot = snap
             st.snapMode = 'real'
             st.snapError = null
+            // v1.5 T9：磁盘缓存秒开（fromCache）→ 后台静默刷新一次，拿到新数据动态更新 UI
+            if (snap.fromCache && !st._bgRefresh) {
+              st._bgRefresh = true
+              setTimeout(function () { st._bgRefresh = false; loadSnapshot(st, true, true) }, 400)
+            }
           } else {
             st.snapMode = 'err'
             st.snapError = (snap && snap.error) ? String(snap.error).slice(0, 160) : tr('err.snapshotEmpty')
-            if (force) flash(st, tr('toast.snapFail', { err: st.snapError }), 'warn')
+            if (force && !silent) flash(st, tr('toast.snapFail', { err: st.snapError }), 'warn')
           }
           emit(st)
         }).catch(function (e) {
           st.snapLoading = false
           st.snapMode = 'err'
           st.snapError = String((e && e.message) || e).slice(0, 160)
-          if (force) flash(st, tr('toast.snapFail', { err: st.snapError }), 'warn')
+          if (force && !silent) flash(st, tr('toast.snapFail', { err: st.snapError }), 'warn')
           emit(st)
         })
       }

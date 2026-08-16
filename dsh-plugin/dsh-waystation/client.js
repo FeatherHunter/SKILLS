@@ -326,6 +326,7 @@ return {
         'list.all': '全部',
         'list.loading': '加载中…',
         'list.errFull': '快照加载失败：{err}',
+        'list.restFallback': '⚠ GraphQL 配额已耗尽，已切换 REST 通道（数据可能略旧，配额恢复后自动回切）',
         'list.none': '暂无',
         'list.closedN': '已关闭 {n}',
         'list.collapse': '收起',
@@ -537,6 +538,7 @@ return {
         'list.all': 'All',
         'list.loading': 'Loading…',
         'list.errFull': 'Snapshot failed: {err}',
+        'list.restFallback': '⚠ GraphQL quota exhausted — switched to REST channel (data may be slightly stale; auto-reverts when quota resets)',
         'list.none': 'None',
         'list.closedN': 'Closed {n}',
         'list.collapse': 'Collapse',
@@ -1354,14 +1356,16 @@ return {
           if (!(res && res.ok && res.changed)) return
           const rep = (res && res.repo && (res.repo.owner && res.repo.name))
             ? (res.repo.owner + '/' + res.repo.name) : null
+          // B5（第一性原理）：changed 只触发 1 次全量刷新（shared · force 走 wf.refresh），
+          //   同 repo 的其他 store 用非 force 的 wf.snapshot → 命中 host 60s 缓存（shared 刚刷过）→ 零额外 GraphQL。
+          //   原实现每个匹配 store 都 force → N×18 点。
           loadSnapshot(shared, true, true)
           if (rep) {
-            // B5：只刷新与该仓库匹配的 store（st.cwd 对应同一 repoKey 或 snapshot 已指向该 repo）
             Object.keys(stores).forEach(function (k) {
               const st2 = stores[k]
               const sr = (st2.snapshot && st2.snapshot.repo && st2.snapshot.repo.owner && st2.snapshot.repo.name)
                 ? (st2.snapshot.repo.owner + '/' + st2.snapshot.repo.name) : null
-              if (sr === rep) loadSnapshot(st2, true, true)
+              if (sr === rep) loadSnapshot(st2, false, true)
             })
           }
         }).catch(function () { /* 探测失败忽略，下轮再试 */ })
@@ -2493,6 +2497,7 @@ return {
           h('span', { style: { fontSize: 12, color: '#e6edf3' } }, tr('list.loading')),
         ]) : null,
         st.snapMode === 'err' ? h('div', { style: { color: '#f87171', fontSize: 12, padding: '14px 0', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 12 }), h('span', null, tr('list.errFull', { err: st.snapError }))]) : null,
+        st.snapMode === 'real' && st.snapshot && st.snapshot.fallback === 'rest' ? h('div', { style: { color: '#f59e0b', fontSize: 11, padding: '6px 12px', border: '1px solid rgba(245,158,11,.4)', borderRadius: 6, background: 'rgba(245,158,11,.08)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, tr('list.restFallback'))]) : null,
         // #374：状态过滤渲染 —— open 主体 / closed 列表 / 「全部」态保留已关闭折叠行
         showOpen ? (filteredOpen.length === 0 ? h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '14px 0', textAlign: 'center' } }, tr('list.none')) : filteredOpen.map(function (x) { return issueRow(x, true, narrow) })) : null,
         showClosedList ? (filteredClosed.length === 0 ? h('div', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', padding: '14px 0', textAlign: 'center' } }, tr('list.none')) : filteredClosed.map(function (x) { return issueRow(x, false, narrow) })) : null,

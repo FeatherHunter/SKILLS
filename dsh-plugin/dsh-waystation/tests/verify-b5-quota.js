@@ -52,6 +52,8 @@ for (const f of ['client.js', 'package/lib/client.js']) {
   check(src.includes('FOCUS_PROBE_MIN_MS = 60000'), f + ' focus 触发限流 ≥60s（防窗口来回切换疯狂烧）')
   const probeBlock = src.slice(src.indexOf('const startAutoProbe'), src.indexOf('const refreshAll'))
   check(probeBlock.includes('sr === rep'), f + ' changed 只刷新与探测 repo 匹配的 store（不再全 store 刷新）')
+  check(probeBlock.includes('loadSnapshot(shared, true, true)'), f + ' shared 用 force 刷新（1 次全量）')
+  check(probeBlock.includes('loadSnapshot(st2, false, true)'), f + ' 其他匹配 store 用非 force（命中 host 60s 缓存 · 零额外 GraphQL）')
   check(!/Object\.keys\(stores\)\.forEach\(function \(k\) \{ loadSnapshot\(stores\[k\], true, true\) \}\)/.test(src), f + ' 无全 store 暴力刷新（原放大因子已移除）')
   check(!src.includes('setTimeout(function () { st._bgRefresh'), f + ' 无磁盘缓存秒开后的 400ms 强制全量刷新（每次开面板白烧 18 点已移除）')
 }

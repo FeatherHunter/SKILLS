@@ -11,6 +11,12 @@ ticket 01 · 2026-07-29 起
 
 为什么 session-scope:测试间无 schema 变化,fixture setup/teardown 只跑一次,
 避免每个测试 copy/remove 浪费时间。
+
+L2 iso_db 强制隔离层(#400 重建 · 2026-08-16 · #386 Q6):
+  - pytest_configure:最早时机强制覆盖 SKILLS_DB_PATH → mktemp,
+    覆盖用户 shell 持久生产 env(opt-out: SKILLS_KEEP_DB=1 调试用)。
+  - iso_db_isolate(session autouse):兜底 setenv + 验证 find_db_path 解析到 temp。
+  - pytest_unconfigure:清理 mktemp 目录。
 """
 from __future__ import annotations
 
@@ -18,6 +24,7 @@ import os
 import shutil
 import sqlite3
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -91,3 +98,69 @@ def monkeypatch_session():
     mp = MonkeyPatch()
     yield mp
     mp.undo()
+
+
+# ============================================================================
+# L2 iso_db 强制隔离层(#400 重建 · 2026-08-16 · #386 Q6)
+#
+# 背景:用户 shell 持久 SKILLS_DB_PATH=D:\2Study\StudyNotes\.db(生产)。
+# 早期 temp_db 仅 session-scope + 显式请求;不请求 temp_db 的测试/import 会
+# 直接解析到生产路径(模块级 DB_PATH 烘焙在 import 时固化,monkeypatch 无效)。
+#
+# 本层在 pytest 启动最早时机(pytest_configure)强制 setenv SKILLS_DB_PATH →
+# mktemp,使任何 import / find_db_path() 都拿到 temp;autouse 兜底二次校验。
+# 调试 opt-out:SKILLS_KEEP_DB=1(保留 caller 已设 env,测试将指向真实路径,
+# 仅限开发者确认隔离问题时使用)。
+# ============================================================================
+
+_ISO_TEMP_DIR: Path | None = None
+
+
+def pytest_configure(config):
+    """pytest 启动最早时机:强制覆盖 SKILLS_DB_PATH → mktemp
+
+    为什么这里:任何 scripts/*.py 的模块级 DB_PATH 烘焙都发生在 import 时,
+    而 conftest 的 import 先于测试收集;在此 setenv 可保证烘焙读到 temp。
+    """
+    global _ISO_TEMP_DIR
+    if os.environ.get("SKILLS_KEEP_DB") == "1":
+        print("[iso_db] SKILLS_KEEP_DB=1 保留 caller 已设 SKILLS_DB_PATH(调试)")
+        return
+    _ISO_TEMP_DIR = Path(tempfile.mkdtemp(prefix="iso_db_pytest_"))
+    os.environ["SKILLS_DB_PATH"] = str(_ISO_TEMP_DIR)
+    print(f"[iso_db] pytest_configure CALLED · SKILLS_DB_PATH set to {_ISO_TEMP_DIR}")
+
+
+def pytest_unconfigure(config):
+    """pytest 退出:清理 mktemp 目录"""
+    global _ISO_TEMP_DIR
+    if _ISO_TEMP_DIR is not None:
+        shutil.rmtree(_ISO_TEMP_DIR, ignore_errors=True)
+        _ISO_TEMP_DIR = None
+
+
+@pytest.fixture(scope="session", autouse=True)
+def iso_db_isolate():
+    """session-scope autouse 兜底:再 setenv + 验证 find_db_path 解析到 temp
+
+    双保险:pytest_configure 若被绕过(如第三方加载方式),本 fixture 仍兜底。
+    SKILLS_KEEP_DB=1(调试 opt-out):不覆盖 caller env,仅打印警告不硬断言
+    (硬断言由 test_db_isolation.py::test_iso_db_plugin_loaded 承担,避免
+    调试模式下整个 session 无法运行)。
+    """
+    import db as db_mod
+
+    if os.environ.get("SKILLS_KEEP_DB") != "1" and _ISO_TEMP_DIR is not None:
+        os.environ["SKILLS_DB_PATH"] = str(_ISO_TEMP_DIR)
+
+    if os.environ.get("SKILLS_KEEP_DB") == "1":
+        print("[iso_db] SKILLS_KEEP_DB=1 调试模式:未强制隔离,写库测试可能触碰真实路径!")
+        yield
+        return
+
+    resolved = db_mod.find_db_path(SKILL_DIR)
+    prod = Path(r"D:\2Study\StudyNotes\.db") / "calorie_data.db"
+    assert str(resolved.resolve()) != str(prod.resolve()), (
+        f"[iso_db] 隔离未生效!find_db_path 解析到生产: {resolved}"
+    )
+    yield

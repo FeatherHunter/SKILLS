@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "iso-db"
+version = "1.0.0"
+description = "Pytest plugin + CLI helper for production DB isolation in SKILLS multi-skill repo"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "FeatherHunter" }]
+
+[project.entry-points.pytest11]
+iso_db = "iso_db.plugin"
+
+[tool.setuptools.packages.find]
+where = [".."]
+include = ["iso_db*"]

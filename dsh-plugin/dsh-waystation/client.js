@@ -413,6 +413,13 @@ return {
         'cfg.status': '配置',
         'cfg.saved': '已保存',
         'cfg.sub': '配置面板与动作提示词：静态文本可自由编辑，占位符由系统注入真值，点击即可插入。',
+        'matte.title': 'Matt Pocock 技能集',
+        'matte.desc': '工程领域 + 通用领域的 AI agent 技能集（wayfinder / triage / grilling / handoff 等 25 个核心技能）',
+        'matte.openRepo': '打开 GitHub',
+        'matte.copyPrompt': '复制安装 prompt',
+        'matte.injectPrompt': '填入输入框',
+        'matte.banner': '技能没装全？把安装 prompt 交给 AI 即可自动安装 Matt 技能集',
+        'matte.prompt': '请帮我安装 Matt Pocock 的 AI 技能集（https://github.com/mattpocock/skills）到技能目录 ~/.agents/skills：克隆仓库 → 按 README 安装工程领域与通用领域的全部 skills → 运行 /setup-matt-pocock-skills 完成仓库初始化（issue tracker 选择 GitHub Issues）',
         'cfg.openIn': '打开位置',
         'cfg.openInDesc': '面板在哪个区域打开。better-sidebar 已安装时默认侧边栏；窗口缩小时侧边栏更稳。',
         'cfg.openInLabel': '打开位置',
@@ -609,6 +616,13 @@ return {
         'cfg.status': 'Config',
         'cfg.saved': 'Saved',
         'cfg.sub': 'Configure the panel and action prompts: static text is freely editable; placeholders are filled in by the system — click to insert.',
+        'matte.title': 'Matt Pocock skills',
+        'matte.desc': 'Engineering + general-purpose AI agent skills (25 core skills: wayfinder / triage / grilling / handoff …)',
+        'matte.openRepo': 'Open GitHub',
+        'matte.copyPrompt': 'Copy install prompt',
+        'matte.injectPrompt': 'Fill input',
+        'matte.banner': 'Skills missing? Give an AI the install prompt to auto-install Matt\'s skills',
+        'matte.prompt': 'Please install Matt Pocock\'s AI skill collection (https://github.com/mattpocock/skills) into ~/.agents/skills: clone the repo → install all engineering and general-purpose skills per the README → run /setup-matt-pocock-skills to bootstrap the repo (choose GitHub Issues as the issue tracker)',
         'cfg.openIn': 'Open in',
         'cfg.openInDesc': 'Where the panel opens. Defaults to the sidebar when dsh-better-sidebar is installed; the sidebar stays put when the window shrinks.',
         'cfg.openInLabel': 'Open location',
@@ -786,6 +800,8 @@ return {
     // ============================================================
     // v22：统一引导句（T1 拍板：普通静态文本，用户可改；不是占位符）
     const GUIDE_LINE = '从第一性原理出发完成任务，并对抗式审查。'
+    // v1.5 T4/T5：Matt 技能仓库（介绍卡 GitHub 链接）
+    const MATT_REPO = 'https://github.com/mattpocock/skills'
     // v1.4（T2 #443）：map 推进式执行 prompt —— 仅用于 map（详情页主按钮 + 列表 map 行执行），
     //   语义 = 在 map 上推进一步：加载技能 → 分析 map → 第一性原理挑下一个 frontier issue → 执行
     const MAP_EXECUTE_PROMPT = '请按以下流程推进该 map：\n' +
@@ -2276,6 +2292,13 @@ return {
         items.map(card),
       ]) : null
       return h('div', null, [
+        // v1.5 T5：Matt 技能提示横幅（常驻 · 复制 + 填入输入框）
+        h('div', { className: 'dsws-banner', style: { cursor: 'default', marginBottom: 8 } }, [
+          Ic({ n: 'star', size: 13 }),
+          h('span', { style: { flex: 1 } }, tr('matte.banner')),
+          h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(188,140,255,.55)' }, onClick: function () { copyText(st, tr('matte.prompt'), tr('toast.copied')) } }, tr('matte.copyPrompt')),
+          h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(188,140,255,.55)' }, onClick: function () { inject(st, tr('matte.prompt')) } }, tr('matte.injectPrompt')),
+        ]),
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12 } }, [
           h('span', { style: { display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'gear', size: 12 }), h('span', null, tr('env.title', { n: envLabel(st) }))]),
           h('span', { style: { flex: 1 } }),
@@ -2604,6 +2627,16 @@ return {
           ]),
         ]),
         h('div', { className: 'dsws-cfg-sub' }, tr('cfg.sub')),
+        // v1.5 T4：Matt 技能介绍卡（工程领域 + 通用领域 skills · GitHub 链接 + 安装 prompt 复制/注入）
+        h('div', { className: 'dsws-cfg-group' }, [
+          h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'star', size: 13 }), h('span', null, tr('matte.title'))]),
+          h('div', { className: 'dsws-cfg-gdesc' }, tr('matte.desc')),
+          h('div', { className: 'dsws-cfg-row', style: { flexWrap: 'wrap', gap: 6 } }, [
+            h('a', { href: MATT_REPO, target: '_blank', rel: 'noreferrer', className: 'dsws-btn', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'link', size: 11 }), h('span', null, tr('matte.openRepo'))]),
+            h('button', { className: 'dsws-btn', onClick: function () { copyText(shared, tr('matte.prompt'), tr('toast.copied')) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'clipboard', size: 11 }), h('span', null, tr('matte.copyPrompt'))]),
+            h('button', { className: 'dsws-btn', onClick: function () { inject(shared, tr('matte.prompt')) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'play', size: 11 }), h('span', null, tr('matte.injectPrompt'))]),
+          ]),
+        ]),
         // v1.4：打开位置（details 列 / better-sidebar）—— better-sidebar 未装时仅显示 dock 选项
         h('div', { className: 'dsws-cfg-group' }, [
           h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'map', size: 13 }), h('span', null, tr('cfg.openIn'))]),

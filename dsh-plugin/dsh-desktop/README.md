@@ -1,5 +1,10 @@
 # dsh-harness-desktop · DSH 桌面版
 
+> ## ⛔ 项目已废弃 · 开发终止（2026-08-16）
+>
+> **dsh-desktop（dsh-harness-desktop 桌面壳）开发已完全废弃并终止**：不再修复 bug、不再新增功能、不再发布新版本。
+> 本 README 与 `dsh-plugin/dsh-desktop/` 源码仅作归档保留；相关 issue（#378 / #406 / #408 等）已按 `wontfix` 关闭。
+
 > DSH（DeepSeek Harness）的**桌面壳**：像普通桌面应用一样使用 DSH —— 双击打开，
 > 关窗后 DSH 继续在右下角托盘后台运行，随时点开秒回。**无需安装 Node.js**。
 

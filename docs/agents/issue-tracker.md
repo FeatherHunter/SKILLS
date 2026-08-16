@@ -34,7 +34,7 @@
   - 独立应用 / 桌面壳 / 工具：`dsh:<应用名>`
 - **已登记**：
   - `dsh:plugin:waystation`（DSH 动态插件 · dsh-waystation，wayfinder 实施地图/票务命名空间 · 2026-08-14 补登记，实为既有 label）
-  - `dsh:desktop`（DSH 桌面壳 · dsh-harness-desktop，Electron 应用 · 托盘常驻/检查更新/升级机制 · 2026-08-14 新建）
+  - `dsh:desktop`（DSH 桌面壳 · dsh-harness-desktop，Electron 应用 · 托盘常驻/检查更新/升级机制 · 2026-08-14 新建 · **2026-08-16 标记废弃：开发完全终止，不再维护**）
 - 对应 issue 标题前缀：`[dsh-waystation]` / `[dsh-desktop]` / `[dsh-opencode-tui-theme]` 等（项目名，无 `:`）
 
 每个被处理的 issue 同时携带 1 个技能 label、1 个分类 label、1 个状态 label。

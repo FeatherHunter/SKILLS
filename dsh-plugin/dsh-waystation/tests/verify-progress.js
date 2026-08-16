@@ -44,6 +44,13 @@ check(normBad.indexOf('\n') >= 0, 'normalizeBody 字面 \\n 还原为真实换�
 check(normBad.indexOf('\\n') < 0, 'normalizeBody 不再含字面 \\\\n')
 check(normalizeBody('正常\n正文\n带真实换行') === '正常\n正文\n带真实换行', 'normalizeBody 不误伤正常正文')
 check(normalizeBody('') === '', 'normalizeBody 空串安全')
+// T16 端到端回归（#463/#445）：parseMapBody 必须经 normalizeBody 接线 —— 坏格式 body（BOM + 字面 \n）恢复 Destination
+const pfm = host.match(/function parseMapBody\(body\) \{[\s\S]*?\n    \}/)
+check(!!pfm, 'host 含 parseMapBody 定义（T16 端到端）')
+const parseMapBody = pfm ? eval('(' + pfm[0] + ')') : function () { return { destination: '', notes: '' } }
+const e2eOut = parseMapBody(badBody)
+check(e2eOut.destination === 'DSH-Waystation **v1.5**', 'parseMapBody 端到端恢复 Destination（BOM+字面 \\n · #445 场景）')
+check(e2eOut.notes === 'note here', 'parseMapBody 端到端恢复 Notes（#445 场景）')
 
 // 2) host/package 均带 progress 字段
 check(host.includes('progress: parseProgress'), 'host mapTicket 带 progress')
@@ -54,6 +61,8 @@ check(pkg.includes('nodes{number title state body url'), 'package index frag 子
 check(host.includes('progress: parseProgress'), 'host mapTicket 带 progress（重复守卫）')
 check(host.includes('function normalizeBody'), 'host 含 normalizeBody（重复守卫）')
 check(pkg.includes('function normalizeBody'), 'package index 含 normalizeBody')
+check(host.includes('normalizeBody(body).split'), 'host parseMapBody 经 normalizeBody 接线（双源）')
+check(pkg.includes('normalizeBody(body).split'), 'package index parseMapBody 经 normalizeBody 接线（双源）')
 
 // 3) client/package 均含进度渲染
 check(cli.includes('const tProgressBar'), 'client 含 tProgressBar')
@@ -75,6 +84,10 @@ check(cli.includes('"bodyFormat"'), 'client 含 bodyFormat prompt')
 check(pcli.includes('"bodyFormat"'), 'package client 含 bodyFormat prompt')
 check(cli.includes('const BODY_FORMAT'), 'client 含 BODY_FORMAT 常量')
 check(pcli.includes('const BODY_FORMAT'), 'package client 含 BODY_FORMAT 常量')
+// 追加点跨行容错（completePrompt 的 + 在上一行末尾，CRLF 源码）：\+ 与 ( 之间允许空白/换行
+const appendCount = (s) => (s.match(/\+[\s]*\(BODY_FORMAT \? '\\n\\n' \+ BODY_FORMAT : ''\)/g) || []).length
+check(appendCount(cli) === 2, 'client BODY_FORMAT 追加点 ×2（completePrompt + mapExecute）')
+check(appendCount(pcli) === 2, 'package client BODY_FORMAT 追加点 ×2（completePrompt + mapExecute）')
 
 if (failed) { console.log('\n存在失败'); process.exit(1) }
 console.log('\n全部通过')

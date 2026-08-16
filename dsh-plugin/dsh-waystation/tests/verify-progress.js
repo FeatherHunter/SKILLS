@@ -32,6 +32,9 @@ cases.forEach(function (c) {
 check(host.includes('progress: parseProgress'), 'host mapTicket 带 progress')
 check(pkg.includes('progress: parseProgress'), 'package index mapTicket 带 progress')
 check(pkg.includes('function parseProgress'), 'package index 含 parseProgress')
+check(host.includes('nodes{number title state body url'), 'host frag 子票查询含 body（fetchMapsDetail）')
+check(pkg.includes('nodes{number title state body url'), 'package index frag 子票查询含 body')
+check(host.includes('progress: parseProgress'), 'host mapTicket 带 progress（重复守卫）')
 
 // 3) client/package 均含进度渲染
 check(cli.includes('const tProgressBar'), 'client 含 tProgressBar')

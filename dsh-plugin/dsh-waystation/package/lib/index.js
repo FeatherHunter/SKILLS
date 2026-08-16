@@ -370,7 +370,7 @@ export function apply(ctx) {
     const repo = await getRepoKey(cwd)
     if (!repo) return { ok: false, error: { kind: 'env', error: '无法解析 owner/repo（git remote 或 gh repo view 失败）' } }
     if (!numbers || !numbers.length) return { ok: true, issues: {} }
-    const frag = 'number title state body url labels(first:20){nodes{name}} subIssues(first:100){totalCount nodes{number title state url labels(first:10){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number title state}}}}'
+    const frag = 'number title state body url labels(first:20){nodes{name}} subIssues(first:100){totalCount nodes{number title state body url labels(first:10){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number title state}}}}'
     const sel = numbers.map(function (n, i) { return 'm' + i + ':issue(number:' + n + '){' + frag + '}' }).join(' ')
     const query = 'query($owner:String!,$name:String!){repository(owner:$owner,name:$name){' + sel + '}}'
     let last = null

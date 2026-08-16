@@ -19,6 +19,35 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from source_constants import SOURCE_HOME_CALIPER, SOURCE_HOSPITAL, SOURCE_GYM, SOURCE_CHOICES
 
 
+# L3 cwd 哨兵(#404 · #386 Q2/Q7/Q10):
+# 加载 公共组件/iso_db/cwd_sentry.py(demo 路径自动隔离 + CALORIE_FORCE_PROD opt-in)。
+# 用 importlib 按绝对路径加载,避免依赖安装/package 结构。
+_cwd_sentry = None
+_cwd_sentry_warned = False
+def _load_cwd_sentry():
+    """惰性加载 cwd_sentry(importlib,避免每次调用开销与循环依赖)"""
+    global _cwd_sentry, _cwd_sentry_warned
+    if _cwd_sentry is not None:
+        return _cwd_sentry
+    try:
+        import importlib.util
+        iso_db_dir = Path(__file__).resolve().parent.parent.parent / "公共组件" / "iso_db"
+        spec = importlib.util.spec_from_file_location("cwd_sentry", iso_db_dir / "cwd_sentry.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        _cwd_sentry = mod
+    except Exception as e:
+        # 对抗审查 M1:fail-open 必须可见——一次性 stderr 警告(DB 隔离红线保护未生效)
+        _cwd_sentry = None
+        if not _cwd_sentry_warned:
+            _cwd_sentry_warned = True
+            print(
+                f"⚠️ [cwd哨兵] 加载失败,DB 隔离保护未生效: {type(e).__name__}: {e}",
+                file=sys.stderr,
+            )
+    return _cwd_sentry
+
+
 DB_FILENAME = "calorie_data.db"
 
 
@@ -45,6 +74,10 @@ def _fallback_db_dir():
 def find_db_path(skill_dir, db_filename=DB_FILENAME):
     """两层查找 DB 路径：环境变量 SKILLS_DB_PATH > D:/.db
 
+    L3 cwd 哨兵(#404):demo 路径(.scratch/ 或 demo_/scratch_/_demo 脚本名)
+    自动隔离到临时目录;CALORIE_FORCE_PROD=1 显式 opt-in 生产。
+    检测顺序:CALORIE_FORCE_PROD > cwd 哨兵 > SKILLS_DB_PATH > D:/.db fallback。
+
     Args:
         skill_dir: 技能目录路径（通常为 Path(__file__).parent.parent）
         db_filename: 数据库文件名
@@ -52,6 +85,18 @@ def find_db_path(skill_dir, db_filename=DB_FILENAME):
     Returns:
         Path: 数据库文件路径
     """
+    # L3 cwd 哨兵(#404):demo 路径自动隔离,生产 env 不豁免;FORCE_PROD opt-in
+    # 提示走 stderr(对抗审查 L1):find_db_path 是库函数,stdout 可能被调用方机器消费
+    sentry = _load_cwd_sentry()
+    if sentry is not None:
+        if sentry.force_prod_enabled():
+            prod_hint = os.environ.get("SKILLS_DB_PATH") or _fallback_db_dir()
+            print(f"⚠️ CALORIE_FORCE_PROD=1: 写入 {prod_hint}", file=sys.stderr)
+        else:
+            isolated = sentry.ensure_isolation(verbose=False)
+            if isolated is not None:
+                print(f"🔒 已自动隔离到 {isolated} (.scratch/ 演示路径)", file=sys.stderr)
+
     # 1. 环境变量（最高优先级）
     env_path = os.environ.get('SKILLS_DB_PATH')
     if env_path:

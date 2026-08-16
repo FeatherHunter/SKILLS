@@ -7,6 +7,7 @@ opt-out: CALORIE_FORCE_PROD=1 env → 强制生产
 可被卡路里 scripts/db.py 的 find_db_path 直接调用(import 复用,不重复实现)。
 """
 from __future__ import annotations
+import atexit
 import os
 import sys
 import tempfile
@@ -17,6 +18,19 @@ from typing import Optional
 _SCRATCH_SENTINEL = ".scratch"
 _DEMO_PREFIXES = ("demo_", "scratch_", "_demo")
 _FORCE_PROD_ENV = "CALORIE_FORCE_PROD"
+
+# 已隔离的临时目录集合(进程退出时统一清理 · #404 对抗审查:防 %TEMP% 残留)
+_ISOLATED_DIRS: set[str] = set()
+
+
+def _cleanup_isolated_dirs():
+    import shutil
+    for d in list(_ISOLATED_DIRS):
+        shutil.rmtree(d, ignore_errors=True)
+    _ISOLATED_DIRS.clear()
+
+
+atexit.register(_cleanup_isolated_dirs)
 
 # 已知生产 DB 目录候选(#400 对抗审查 C5):env 指向其中任一且 cwd 是 demo 路径时,
 # 哨兵仍须隔离——否则用户 shell 持久生产 env 会让 demo 路径直写生产(事故场景)。
@@ -84,6 +98,7 @@ def ensure_isolation(verbose: bool = True) -> Optional[Path]:
         return None
     tmp = Path(tempfile.mkdtemp(prefix="iso_db_demo_"))
     os.environ["SKILLS_DB_PATH"] = str(tmp)
+    _ISOLATED_DIRS.add(str(tmp))  # 进程退出清理
     if verbose:
         print(f"[iso_db] demo path detected; isolated to {tmp}")
     return tmp

@@ -68,7 +68,7 @@ async function main() {
 
   // —— 性质断言：当前仓库 ——
   const s = await h['wf.status']({ cwd: REPO_CWD })
-  expect('8 项检测齐全', s.ok === true && s.total === 8 && s.checks.length === 8, 'total=' + s.total)
+  expect('9 项检测齐全', s.ok === true && s.total === 9 && s.checks.length === 9, 'total=' + s.total)
   expect('每项含 ok/level/detail/hint 且 ok 与 level 一致', s.checks.every(c => 'ok' in c && 'level' in c && 'detail' in c && 'hint' in c && c.ok === (c.level === 'ok')))
   expect('ready 与 ok 计数一致', s.ready === s.checks.filter(c => c.ok).length, 'ready=' + s.ready)
   expect('level 仅 ok/warn/bad', s.checks.every(c => c.level === 'ok' || c.level === 'warn' || c.level === 'bad'))

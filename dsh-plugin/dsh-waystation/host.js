@@ -32,7 +32,8 @@ return {
     const CACHE_MS = 60000
     const STATUS_CACHE_MS = 30000  // 前置检查结果缓存（#344）
     const SKILL_PROBE_DIRS = ['.agents\\skills', '.minimax\\skills', '.claude\\skills']  // 技能文件层探测目录（相对用户主目录）
-    const SKILL_PROBE_NAMES = ['wayfinder', 'ask-matt']  // 技能探测名单（#344 检查 7/8）
+    // v1.5 T11：全流程核心技能探测名单（各动作 prompt 引用的技能 + 基础技能；检查 7/8 取前两个，检查 9 聚合全量）
+    const SKILL_PROBE_NAMES = ['wayfinder', 'triage', 'grilling', 'grill-me', 'implement', 'ask-matt', 'research', 'prototype', 'handoff']
     const QUERY = 'query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){issue(number:$n){number title state body url labels(first:20){nodes{name}} subIssues(first:100){totalCount nodes{number title state url labels(first:10){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number title state}} }}}}}'
 
     // ============ 状态 ============
@@ -551,7 +552,18 @@ return {
       return { ok: false, level: 'bad', detail: '未安装', hint: SKILL_INSTALL_URL, repo: null }
     }
 
-    const CHECK_NAMES = ['仓库定位', 'setup 已执行', 'tracker = GitHub', 'gh CLI 可用', 'gh 已登录', 'API 可达', 'wayfinder 技能', 'ask-matt 技能']
+    // v1.5 T11：检查 9 · 核心技能套件聚合（全流程技能缺失检测）
+    async function probeSkillSuite() {
+      const missing = []
+      for (let i = 0; i < SKILL_PROBE_NAMES.length; i++) {
+        const r = await probeSkill(SKILL_PROBE_NAMES[i])
+        if (r.level !== 'ok') missing.push(SKILL_PROBE_NAMES[i])
+      }
+      if (!missing.length) return { ok: true, level: 'ok', detail: '核心技能套件已安装（' + SKILL_PROBE_NAMES.length + ' 个）', hint: '', repo: null }
+      return { ok: false, level: 'bad', detail: '缺失：' + missing.join(' / '), hint: SKILL_INSTALL_URL, repo: null }
+    }
+
+    const CHECK_NAMES = ['仓库定位', 'setup 已执行', 'tracker = GitHub', 'gh CLI 可用', 'gh 已登录', 'API 可达', 'wayfinder 技能', 'ask-matt 技能', '核心技能套件']
 
     async function buildStatus(cwd) {
       const c1 = await checkRepo(cwd)
@@ -562,7 +574,8 @@ return {
       const c6 = await checkApi(cwd, c1.repo)
       const c7 = await probeSkill(SKILL_PROBE_NAMES[0])
       const c8 = await probeSkill(SKILL_PROBE_NAMES[1])
-      const raw = [c1, c2, c3, c4, c5, c6, c7, c8]
+      const c9 = await probeSkillSuite()
+      const raw = [c1, c2, c3, c4, c5, c6, c7, c8, c9]
       const checks = raw.map(function (c, i) {
         return { id: i + 1, name: CHECK_NAMES[i], ok: c.level === 'ok', level: c.level, detail: c.detail, hint: c.hint }
       })

@@ -295,7 +295,7 @@ window.__ModuleLoader__.load({
           'nav.takeable': '可接',
           'nav.occupied': '阻塞',
           'nav.env': '环境',
-          'nav.envTitle': '环境检查 ({n}/8)',
+          'nav.envTitle': '环境检查 ({n}/9)',
           'nav.takeableTitle': '可接 = 未认领可执行的任务数',
           'nav.occupiedTitle': '阻塞 = 已认领未关闭的任务数',
           'nav.bug': 'BUG',
@@ -310,6 +310,8 @@ window.__ModuleLoader__.load({
           'nav.handoffTitle': '交接：发送 /handoff 生成交接文档',
           'nav.handoffReadyTitle': '开新会话并预填交接文档路径',
           'banner.setup': 'setup 未执行',
+          'banner.skills': '未检测到核心技能套件（wayfinder / triage / grilling / grill-me / implement / ask-matt 等）：{list}。安装后才能使用全流程功能。',
+          'banner.skillsBtn': '帮我安装 Matt 技能套件',
           'banner.setupBtn': '帮我执行 /setup-matt-pocock-skills',
           'act.diagnose': '诊断',
           'act.fix': '修复',
@@ -499,7 +501,7 @@ window.__ModuleLoader__.load({
           'nav.takeable': 'Ready',
           'nav.occupied': 'Busy',
           'nav.env': 'Env',
-          'nav.envTitle': 'Environment checks ({n}/8)',
+          'nav.envTitle': 'Environment checks ({n}/9)',
           'nav.takeableTitle': 'Ready = unclaimed, takeable tasks',
           'nav.occupiedTitle': 'Busy = claimed but not yet closed',
           'nav.bug': 'BUG',
@@ -514,6 +516,8 @@ window.__ModuleLoader__.load({
           'nav.handoffTitle': 'Handoff: send /handoff to generate the handoff doc',
           'nav.handoffReadyTitle': 'Open a new session with the handoff doc path prefilled',
           'banner.setup': 'setup not run yet',
+          'banner.skills': 'Core skill suite missing (wayfinder / triage / grilling / grill-me / implement / ask-matt …): {list}. Install them to use the full workflow.',
+          'banner.skillsBtn': 'Install the Matt skill suite for me',
           'banner.setupBtn': 'Run /setup-matt-pocock-skills for me',
           'act.diagnose': 'Diagnose',
           'act.fix': 'Fix',
@@ -1184,7 +1188,7 @@ window.__ModuleLoader__.load({
       const activeChecks = (st) => (st.checksMode === 'real' && st.checks && st.checks.length) ? st.checks : []
       const readyCount = (st) => { const cs = activeChecks(st); return cs.length ? cs.filter(function (c) { return c.level === 'ok' }).length : -1 }
       // v14-22：返回纯数字串（'6/8' / '--/8'），由状态栏 num() 固定宽度渲染
-      const envLabel = (st) => { const n = readyCount(st); return n < 0 ? '--/8' : n + '/8' }
+      const envLabel = (st) => { const n = readyCount(st); return n < 0 ? '--/9' : n + '/9' }
       const setupCheck = (st) => (st.checks || []).find(function (c) { return c.id === 2 })
 
       // #370：blockerNames 只列「仍 OPEN」的阻塞者（GitHub 依赖边在阻塞者关闭后仍保留，需按状态过滤）
@@ -1652,6 +1656,9 @@ window.__ModuleLoader__.load({
         const timeStr = timeOf(s.snapshot) || (s.checksUpdatedAt ? s.checksUpdatedAt.slice(5, 16) : '') || '-- --:--'
         const setup = setupCheck(s)
         const amber = s.checksMode === 'real' && setup && setup.level !== 'ok'
+        // v1.5 T11：核心技能套件检测（检查 9）—— 缺失时横幅优先于 setup 提示
+        const skillsCheck = (s.checks || []).find(function (c) { return c.id === 9 })
+        const skillsBad = s.checksMode === 'real' && skillsCheck && skillsCheck.level !== 'ok'
         const go = function (tab) { s.tab = tab; openPanel(s) }
         // v14-22：数字区固定两位数等宽（环境 5ch 容 '98/99'；可接/占用 2ch）
         const num = (txt, minW) => h('span', { className: 'dsws-num', style: minW ? { minWidth: minW } : null }, txt)
@@ -1670,17 +1677,23 @@ window.__ModuleLoader__.load({
           seg('note', tr('nav.word'), '#c084fc', function () { injectFixate(s) }, tr('nav.fixateTitle')),
           seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
           // v19-36：环境段移至末尾（更新左侧），用户少点
-          seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 8 ? '#4ade80' : '#f59e0b', function () { go('checks') }, tr('nav.envTitle', { n: n < 0 ? '?' : String(n) })),
+          seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 9 ? '#4ade80' : '#f59e0b', function () { go('checks') }, tr('nav.envTitle', { n: n < 0 ? '?' : String(n) })),
           h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, tr('nav.refresh') + ' ' + timeStr),
         ])
-        if (!amber) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
+        if (!amber && !skillsBad) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
         return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '3px 8px 0' } }, [
           capsule,
-          h('div', { className: 'dsws-banner warn', style: { margin: 0, maxWidth: 560, cursor: 'default' } }, [
-            Ic({ n: 'alert', size: 13 }),
-            h('span', null, tr('banner.setup')),
-            h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(s, promptText('setup')) } }, tr('banner.setupBtn')),
-          ]),
+          skillsBad
+            ? h('div', { className: 'dsws-banner warn', style: { margin: 0, maxWidth: 560, cursor: 'default' } }, [
+                Ic({ n: 'alert', size: 13 }),
+                h('span', { style: { flex: 1 } }, tr('banner.skills', { list: (skillsCheck && skillsCheck.detail) || '' })),
+                h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(s, promptText('setup')) } }, tr('banner.skillsBtn')),
+              ])
+            : h('div', { className: 'dsws-banner warn', style: { margin: 0, maxWidth: 560, cursor: 'default' } }, [
+                Ic({ n: 'alert', size: 13 }),
+                h('span', null, tr('banner.setup')),
+                h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(s, promptText('setup')) } }, tr('banner.setupBtn')),
+              ]),
         ])
       }
 

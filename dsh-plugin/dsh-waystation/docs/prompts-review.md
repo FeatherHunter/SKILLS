@@ -1,7 +1,7 @@
 # DSH-Waystation · Prompt 审阅清单（v1.5 · 方案A 注册表）
 
 > PROMPTS 注册表（client.js §prompts · 20 条）为**单一真相源**；zh/en 双语跟随 DSH 语言；{x} 占位符必须声明于 placeholders。
-> 校验：`node tests/verify-prompts.js`（占位符契约 + 双源键一致）。
+> 校验：`node tests/verify-prompts.js`（占位符契约 + 双源键一致 + T13 阶段闸门契约：stageGate 条目 / 版本号 bump / 诊断·修复·执行与 map 推进接线）。
 
 ## guide · v1
 
@@ -17,7 +17,7 @@
 
 ---
 
-## mapExecute · v3
+## mapExecute · v4
 
 - 用途：map 执行 / 新会话（未完成态）· 推进式
 - 占位符：无
@@ -210,7 +210,7 @@ Maintain map records (wayfinder rules):
 
 ---
 
-## tpl.diagnose · v2
+## tpl.diagnose · v3
 
 - 用途：动作按钮「诊断」（needs-triage 票）
 - 占位符：{url}
@@ -300,7 +300,7 @@ This issue needs discussion before a decision — use the grilling skill to talk
 
 ---
 
-## tpl.execute · v3
+## tpl.execute · v4
 
 - 用途：动作按钮「执行」（普通票）
 - 占位符：{url}

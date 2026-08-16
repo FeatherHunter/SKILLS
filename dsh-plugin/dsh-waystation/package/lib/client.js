@@ -297,6 +297,10 @@ window.__ModuleLoader__.load({
           'nav.envTitle': '环境检查 ({n}/8)',
           'nav.takeableTitle': '可接 = 未认领可执行的任务数',
           'nav.occupiedTitle': '阻塞 = 已认领未关闭的任务数',
+          'nav.bug': 'BUG',
+          'nav.bugTitle': '过滤：open + bug 标签',
+          'nav.triage': '诊断',
+          'nav.triageTitle': '过滤：open + needs-triage 标签',
           'nav.refresh': '更新',
           'nav.refreshTitle': '重新检查 + 刷新快照',
           'nav.fixateTitle': '保存进度快照 · 注入零丢失 prompt',
@@ -408,6 +412,10 @@ window.__ModuleLoader__.load({
           'toast.resetPanelWidthFail': 'layout 服务暂不支持重置 · 请更新 DSH harness',
           // #394：新会话按钮可见文字 + hover title（去掉冗余 detail，靠 #361 doc + 行为本身解释）
           'list.newSessionLabel': '新会话',
+          'panel.newWayfinder': '新增 wayfinder',
+          'panel.newWayfinderTitle': '注入 /wayfinder 新增需求 prompt（带当前仓库）',
+          'panel.repoTitle': '当前仓库，点击打开 GitHub',
+          'map.newSessionTitle': '在新会话打开（推进该 map）',
           'err.hostUnavailable': 'host.call 不可用（Host 半未加载）',
           'err.connUnavailable': 'connection 服务不可用（Host 半未加载）',
           'err.statusEmpty': 'wf.status 返回空结果',
@@ -482,6 +490,10 @@ window.__ModuleLoader__.load({
           'nav.envTitle': 'Environment checks ({n}/8)',
           'nav.takeableTitle': 'Ready = unclaimed, takeable tasks',
           'nav.occupiedTitle': 'Busy = claimed but not yet closed',
+          'nav.bug': 'BUG',
+          'nav.bugTitle': 'Filter: open + bug label',
+          'nav.triage': 'Triage',
+          'nav.triageTitle': 'Filter: open + needs-triage label',
           'nav.refresh': 'Refresh',
           'nav.refreshTitle': 'Re-check + refresh snapshot',
           'nav.fixateTitle': 'Save a snapshot · inject the zero-loss prompt',
@@ -593,6 +605,10 @@ window.__ModuleLoader__.load({
           'toast.resetPanelWidthFail': 'Layout service doesn\'t support reset yet · please update DSH harness',
           // #394：visible label + hover title for new-session button
           'list.newSessionLabel': 'New session',
+          'panel.newWayfinder': 'New wayfinder',
+          'panel.newWayfinderTitle': 'Inject a /wayfinder new-requirement prompt (with the current repo)',
+          'panel.repoTitle': 'Current repo — open on GitHub',
+          'map.newSessionTitle': 'Open in a new session (advance this map)',
           'err.hostUnavailable': 'host.call unavailable (host half not loaded)',
           'err.connUnavailable': 'connection service unavailable (host half not loaded)',
           'err.statusEmpty': 'wf.status returned an empty result',
@@ -1013,6 +1029,10 @@ window.__ModuleLoader__.load({
       }
       const occCount = (st) => openIssuesOf(st).filter(function (x) { return isOccupied(st, x) }).length
       const frontierCount = (st) => openIssuesOf(st).length - occCount(st)
+      // v1.5 T1：BUG / 诊断计数（open 且带对应标签，与「可接」同口径）
+      const hasLabelOf = function (x, nm) { return (x.labels || []).some(function (l) { return (typeof l === 'string') ? l === nm : l.name === nm }) }
+      const bugCount = (st) => openIssuesOf(st).filter(function (x) { return hasLabelOf(x, 'bug') }).length
+      const triageCount = (st) => openIssuesOf(st).filter(function (x) { return hasLabelOf(x, 'needs-triage') }).length
 
       // v19：共享 —— 标签配置色映射（从快照 issues 收集 GitHub label 配置色，动态查询非写死）
       const buildColorOf = function (st) {
@@ -1373,12 +1393,15 @@ window.__ModuleLoader__.load({
         const url = 'https://github.com/' + repoStr(st) + '/issues/' + t.number
         // v1.4（T2 #443）：map 用推进式 prompt（加载技能→分析map→挑下一个issue→执行）；普通 issue 用 execute 模板
         const isMap = (t.labels || []).some(function (l) { return (typeof l === 'string') ? l === 'wayfinder:map' : l.name === 'wayfinder:map' })
-        if (isMap) return MAP_EXECUTE_PROMPT
+        // v1.5 B2：map prompt 嵌入 map 标识（编号/标题/链接），新会话不再「找不到对应 ISSUE」
+        if (isMap) return MAP_EXECUTE_PROMPT + '\n\n## 目标 map\n- 编号：#' + String(t.number || '') + '\n- 标题：' + (t.title || '') + '\n- 链接：' + url
         const body = renderTemplate('execute', { number: String(t.number), url: url, title: t.title })
         return withWayfinderPrefix(body)
       }
       const SESSION_TITLE_PREFIX = '[dsh-waystation]'
       const newSessionTitle = (t) => SESSION_TITLE_PREFIX + ' ' + t.title + ' #' + t.number
+      // v1.5 T6：新增 wayfinder prompt —— /wayfinder + 仓库信息 + 需求引导（用户拍板：prompt 带仓库信息）
+      const newWayfinderText = (st) => '/wayfinder\n请帮我（新增 / 复用 / 直接实现）一个需求：\n仓库：' + 'https://github.com/' + repoStr(st) + '\n需求描述：'
 
       // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认文本见 §2.5 FIXATE_PROMPT，T2b 可编辑）
       const injectFixate = (st) => { inject(st, fixateText()) }
@@ -1525,7 +1548,8 @@ window.__ModuleLoader__.load({
         React.useEffect(function () { loadChecks(s, false); loadSnapshot(s, false) }, [])
         // v18-30：可接/占用 = 列表 open issue 口径（与面板列表一致）
         const fr = frontierCount(s)
-        const blk = occCount(s)
+        const bugN = bugCount(s)
+        const triageN = triageCount(s)
         const n = readyCount(s)
         const timeStr = timeOf(s.snapshot) || (s.checksUpdatedAt ? s.checksUpdatedAt.slice(5, 16) : '') || '-- --:--'
         const setup = setupCheck(s)
@@ -1543,7 +1567,8 @@ window.__ModuleLoader__.load({
             h('span', null, 'Waystation'),
           ]),
           seg('target', [h('span', null, tr('nav.takeable')), num(String(fr), '2ch')], '#4ade80', function () { go('list') }, tr('nav.takeableTitle')),
-          seg('lock', [h('span', null, tr('nav.occupied')), num(String(blk), '2ch')], '#f0883e', function () { go('list') }, tr('nav.occupiedTitle')),
+          seg('alert', [h('span', null, tr('nav.bug')), num(String(bugN), '2ch')], '#f87171', function () { s.stateFilter = 'open'; s.lblFilter = 'bug'; go('list') }, tr('nav.bugTitle')),
+          seg('search', [h('span', null, tr('nav.triage')), num(String(triageN), '2ch')], '#f59e0b', function () { s.stateFilter = 'open'; s.lblFilter = 'needs-triage'; go('list') }, tr('nav.triageTitle')),
           seg('note', tr('nav.word'), '#c084fc', function () { injectFixate(s) }, tr('nav.fixateTitle')),
           seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
           // v19-36：环境段移至末尾（更新左侧），用户少点
@@ -1730,6 +1755,11 @@ window.__ModuleLoader__.load({
                   Ic({ n: 'play', size: 10 }),
                   h('span', null, tr('act.execute')),
                 ]),
+            // v1.5 B2（O5）：详情页「在新会话打开」—— 与 执行/完成 同语义，开新会话推进该 map
+            h('button', { className: 'dsws-btn ghost', title: tr('map.newSessionTitle'), onClick: function () { openInNewSession(st, m) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11, flex: 'none' } }, [
+              Ic({ n: 'external-link', size: 10 }),
+              h('span', null, tr('list.newSessionLabel')),
+            ]),
           ]),
           h('div', { className: 'dsws-mtitle dsws-tt-wrap', title: m.title }, m.title),
           m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, String((m.error && m.error.error) || tr('list.loadFail')).slice(0, 160))]) : null,
@@ -2302,8 +2332,18 @@ window.__ModuleLoader__.load({
           // 头部（标题 + 关闭）：横线不放在这行，下移到标签行下方与对话/轨迹对齐
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, padding: '10px 12px 6px', flex: 'none' } }, [
             Icon({ scheme: 'compass', size: 15 }),
-            h('span', { style: { fontWeight: 600, fontSize: 13 } }, 'Waystation'),
+            h('span', { style: { fontWeight: 600, fontSize: 13, flex: 'none' } }, 'Waystation'),
+            // v1.5 T7：仓库身份组件 —— 当前检测到的 git 仓库（owner/name），点击打开 GitHub
+            (s.snapshot && s.snapshot.repo) ? h('a', { href: 'https://github.com/' + s.snapshot.repo.owner + '/' + s.snapshot.repo.name, target: '_blank', rel: 'noreferrer', title: tr('panel.repoTitle'), style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid var(--dsw-alias-border-l1,#2a2d35)', borderRadius: 6, padding: '1px 7px', maxWidth: narrow ? 90 : 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 'none' } }, [
+              Ic({ n: 'link', size: 10 }),
+              h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis' } }, s.snapshot.repo.owner + '/' + s.snapshot.repo.name),
+            ]) : null,
             h('span', { style: { flex: 1 } }),
+            // v1.5 T6：「新增 wayfinder」按钮（所有视图可见）—— 注入 /wayfinder + 仓库信息 + 需求引导
+            h('button', { className: 'dsws-btn ghost', title: tr('panel.newWayfinderTitle'), onClick: function () { inject(s, newWayfinderText(s)) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none', color: '#c084fc' } }, [
+              Ic({ n: 'map', size: 11 }),
+              h('span', null, tr('panel.newWayfinder')),
+            ]),
             h('button', { className: 'dsws-btn ghost', title: tr('panel.closeTitle'), onClick: closeDock, style: { display: 'inline-flex', alignItems: 'center', padding: '2px 6px', fontSize: 11 } }, Ic({ n: 'x', size: 12 })),
           ]),
           // 标签行下沿 = 与对话/轨迹一致的横线；右侧：刷新按钮 + 版本号（v1.3.3）

@@ -99,6 +99,11 @@ check(pcli.includes('loadChecks(st, true, true)') && pcli.includes('loadSnapshot
 // T10 R7 反馈半（用户拍板 2026-08-16 修订）：图标常驻转圈 + 文字恒定（控件宽度零变化）
 check(cli.includes('dsws-spin') && !cli.includes("s.refreshing ? tr('list.refreshing')") && !cli.includes("s.refreshing ? [h('span', { className: 'dsws-spin' }") && !cli.includes("st.refreshing) ? tr('env.checking')"), 'client 刷新入口图标转圈 · 文字恒定（R7 反馈）')
 check(pcli.includes('dsws-spin') && !pcli.includes("s.refreshing ? tr('list.refreshing')") && !pcli.includes("s.refreshing ? [h('span', { className: 'dsws-spin' }") && !pcli.includes("st.refreshing) ? tr('env.checking')"), 'package client 刷新入口图标转圈 · 文字恒定（R7 反馈）')
+// T10 提速（2026-08-17 用户反馈卡顿）：spinner 命令式即时转（spinAll + dsws-rficon，不依赖 React 重渲染）+ fitAllTags 指纹跳过
+check(cli.includes('const spinAll') && cli.includes('dsws-rficon') && cli.includes("querySelectorAll('[data-dsws-host] .dsws-rficon')"), 'client 即时转圈（spinAll/rficon）')
+check(pcli.includes('const spinAll') && pcli.includes('dsws-rficon') && pcli.includes("querySelectorAll('[data-dsws-host] .dsws-rficon')"), 'package client 即时转圈（spinAll/rficon）')
+check(cli.includes('_tagsFpOf') && cli.includes('fitAllTags()') && cli.includes('generatedMs'), 'client fitAllTags 指纹跳过')
+check(pcli.includes('_tagsFpOf') && pcli.includes('fitAllTags()') && pcli.includes('generatedMs'), 'package client fitAllTags 指纹跳过')
 // T10 R9（Q4 拍板）：关键动作后延迟探测
 check(cli.includes('scheduleActionProbe') && cli.includes('probeNow(false)'), 'client 动作后探测（R9）')
 check(pcli.includes('scheduleActionProbe') && pcli.includes('probeNow(false)'), 'package client 动作后探测（R9）')

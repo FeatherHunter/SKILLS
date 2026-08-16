@@ -1459,13 +1459,28 @@ window.__ModuleLoader__.load({
       }
 
       // v1.5 T10 R7（用户拍板）：手动刷新（状态栏「更新」/ 列表「刷新」/ 检查页「重新检查」）
-      //   走静默路径 —— 无全屏遮罩、不禁点；st.refreshing 仅驱动刷新入口的按钮 spinner（非阻塞反馈）
+      //   走静默路径 —— 无全屏遮罩、不禁点；按钮 spinner 即时反馈（命令式 DOM 直操作，不等 React 重渲染）
+      //   CSS 动画走合成线程：即使主线程被重渲染占用，转圈照常可见
+      const spinAll = function (on) {
+        if (typeof document === 'undefined') return
+        try {
+          const els = document.querySelectorAll('[data-dsws-host] .dsws-rficon')
+          for (let i = 0; i < els.length; i++) els[i].classList.toggle('dsws-spin', on)
+        } catch (e) { /* 忽略 */ }
+      }
       const refreshAll = function (st) {
         if (st.refreshing) return
-        st.refreshing = true; emit(st)
-        Promise.all([loadChecks(st, true, true), loadSnapshot(st, true, true)]).then(function () {
-          st.refreshing = false; emit(st)
-        }).catch(function () { st.refreshing = false; emit(st) })
+        st.refreshing = true
+        // 先发 RPC（异步即返回），再触发渲染 —— 避免重渲染挡住数据请求
+        var p1 = loadChecks(st, true, true)
+        var p2 = loadSnapshot(st, true, true)
+        spinAll(true)
+        emit(st)
+        Promise.all([p1, p2]).then(function () {
+          st.refreshing = false
+          spinAll(false)
+          emit(st)
+        }).catch(function () { st.refreshing = false; spinAll(false); emit(st) })
       }
 
       // #376：打开面板即保证新鲜 —— 未就绪/失败 → force 加载（有「加载中」反馈）；
@@ -1802,7 +1817,7 @@ window.__ModuleLoader__.load({
           // v19-36：环境段移至末尾（更新左侧），用户少点
           seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 9 ? '#4ade80' : '#f59e0b', function () { go('checks') }, tr('nav.envTitle', { n: n < 0 ? '?' : String(n) })),
           // v1.5 T10：刷新反馈 = 图标转圈（文字恒定不换 · 控件宽度零变化）
-          h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('nav.refresh') + ' ' + timeStr)]),
+          h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, [h('span', { className: 'dsws-rficon' + (s.refreshing ? ' dsws-spin' : '') }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('nav.refresh') + ' ' + timeStr)]),
         ])
         // 用户拍板 2026-08-16：横幅移到状态栏上方（技能检测 / setup 检测的提示弹窗置顶）
         if (!amber && !skillsBad) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
@@ -2241,6 +2256,7 @@ window.__ModuleLoader__.load({
 
       // ---- 5.5 主列表（v14：三选一动作 / map 行突出 + 开始执行 / 已关闭折叠行 / chips 深边框 / 窄屏双栏）----
       // v1.3.3 UI：行2 标签贪心折叠 —— 渲染后测量可用宽度，逐个放标签，放不下的隐藏进 +N（单行不换行）
+      const _tagsFpOf = (typeof WeakMap !== 'undefined') ? new WeakMap() : { get: function () { return undefined }, set: function () { } }
       const fitAllTags = function () {
         if (typeof document === 'undefined') return
         document.querySelectorAll('.dsws-tags').forEach(function (tags) {
@@ -2326,7 +2342,13 @@ window.__ModuleLoader__.load({
       }
       const ListTab = ({ st, narrow }) => {
         // v1.3.3 UI：每次渲染后执行贪心折叠（含窗口/列宽变化后的重渲染）
-        React.useLayoutEffect(function () { fitAllTags() })
+        // v1.5 T10 提速：按内容指纹跳过 —— 仅快照内容/tab/过滤变化才重排（refreshing 态等无关渲染不触发布局测量）
+        React.useLayoutEffect(function () {
+          const fp = String((st.snapshot && st.snapshot.generatedMs) || '') + '|' + st.tab + '|' + st.stateFilter + '|' + (st.lblFilters || []).join(',')
+          if (_tagsFpOf.get(st) === fp) return
+          _tagsFpOf.set(st, fp)
+          fitAllTags()
+        })
         const issues = (st.snapshot && Array.isArray(st.snapshot.issues)) ? st.snapshot.issues : []
         const openIssues = issues.filter(function (x) { return x.state !== 'CLOSED' })
         const closedIssues = issues.filter(function (x) { return x.state === 'CLOSED' })
@@ -2728,7 +2750,7 @@ window.__ModuleLoader__.load({
             h('span', { style: { display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'gear', size: 12 }), h('span', null, tr('env.title', { n: envLabel(st) }))]),
             h('span', { style: { flex: 1 } }),
             h('button', { className: 'dsws-btn', disabled: st.checking || st.refreshing, onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
-              h('span', { className: (st.checking || st.refreshing) ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]),
+              h('span', { className: 'dsws-rficon' + ((st.checking || st.refreshing) ? ' dsws-spin' : '') }, [Ic({ n: 'refresh', size: 11 })]),
               h('span', null, tr('env.recheck')),
             ]),
           ]),
@@ -2800,7 +2822,7 @@ window.__ModuleLoader__.load({
               Ic({ n: 'map', size: 11 }),
               h('span', null, tr('panel.newWayfinder')),
             ]),
-            h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('list.refresh'))]),
+            h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: 'dsws-rficon' + (s.refreshing ? ' dsws-spin' : '') }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('list.refresh'))]),
             h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),
           ]),
           h('div', { className: 'dsws-body', style: { flex: 1, overflowY: 'auto', padding: '10px 12px' } }, [
@@ -2899,7 +2921,7 @@ window.__ModuleLoader__.load({
             h('span', null, tr('panel.newWayfinder')),
           ]),
           // T2 #2：刷新按钮上移至 tabs 末尾（紧贴环境检查右边 · 用户需求）
-          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('list.refresh'))]),
+          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: 'dsws-rficon' + (s.refreshing ? ' dsws-spin' : '') }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('list.refresh'))]),
           h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),
         ]),
           h('div', { className: 'dsws-body', onMouseDown: onBodyDown }, [

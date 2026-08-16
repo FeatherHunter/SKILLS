@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8">
+<title>DSH-Waystation · Prompt 逐条审阅（v1.5 · 14 条）</title>
+<style>
+  :root{--bg:#0a0c10;--bg2:#16181d;--bg1:#10131a;--b1:#2a2d35;--p:#e6edf3;--s:#a1a1aa;--c:#8b8b95;--blue:#58a6ff;--purple:#c084fc;--font:-apple-system,'Segoe UI','PingFang SC',sans-serif;--mono:Consolas,Menlo,monospace}
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--p);font-family:var(--font);margin:0;padding:20px 24px 80px}
+  h1{font-size:17px;margin:0 0 4px;color:var(--purple)}
+  .sub{font-size:12px;color:var(--c);margin-bottom:18px;line-height:1.7}
+  .card{background:var(--bg2);border:1px solid var(--b1);border-radius:10px;margin-bottom:12px;overflow:hidden}
+  .card-h{display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:1px solid var(--b1);flex-wrap:wrap}
+  .no{font-family:var(--mono);font-size:11px;color:var(--c);flex:none}
+  .card-h code{font-family:var(--mono);font-size:12px;color:var(--blue);background:rgba(88,166,255,.1);padding:1px 7px;border-radius:5px;border:1px solid rgba(88,166,255,.35)}
+  .use{font-size:11px;color:var(--s);flex:none}
+  .ph{font-size:10px;color:var(--c);margin-left:auto;flex:none;font-family:var(--mono)}
+  .lang{display:flex;gap:10px;padding:8px 12px;align-items:flex-start}
+  .lang.en{border-top:1px dashed rgba(42,45,53,.8)}
+  .lbl{flex:none;font-size:9px;font-weight:700;border-radius:4px;padding:1px 5px;margin-top:3px}
+  .lbl.zh{background:rgba(192,132,252,.16);color:var(--purple)}
+  .lbl.en{background:rgba(88,166,255,.14);color:var(--blue)}
+  pre{margin:0;font-family:var(--font);font-size:12px;line-height:1.7;color:var(--p);white-space:pre-wrap;word-break:break-all;flex:1}
+  .foot{margin-top:18px;font-size:11px;color:var(--c);line-height:1.7}
+</style></head><body>
+<h1>DSH-Waystation · Prompt 逐条审阅</h1>
+<div class="sub">全部 prompt 已集中到 L 字典 <code>prompt.*</code>（zh/en 双语跟随 DSH 语言）。你逐条看，说「第 N 条我想改/讨论」，我们对内容逐条过。<br>目标：更贴合 wayfinder 规则（先对齐意图 → 建图 → 逐票 grill → 第一性原理执行）。</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">01</span><code>prompt.guide</code><span class="use">统一引导句（追加在所有动作 prompt 末尾）</span><span class="ph">占位符：无</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>从第一性原理出发完成任务，并对抗式审查。</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>Approach tasks from first principles, and review adversarially.</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">02</span><code>prompt.tpl.diagnose</code><span class="use">动作按钮「诊断」（needs-triage 票）</span><span class="ph">占位符：{url}</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>/triage {url} → 请诊断该 issue 并分流建议：1.复现/现象/影响 2.根因推断 3.分流建议（修复/关闭/重设计/等）</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>/triage {url} → Diagnose + propose triage (repro/symptom, root-cause candidates, triage suggestion)</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">03</span><code>prompt.tpl.fix</code><span class="use">动作按钮「修复」（bug 票）</span><span class="ph">占位符：{url}</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>/wayfinder {url} → 请修复该 bug：先复现→定位根因→实施修复→加测试→对抗式审查</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>/wayfinder {url} → Fix this bug: reproduce → root cause → implement → tests → adversarial review</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">04</span><code>prompt.tpl.discuss</code><span class="use">动作按钮「讨论」（grilling 票）</span><span class="ph">占位符：{url}</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>/wayfinder {url} → 请与我就该 issue 进行讨论（grill）：目标边界→风险假设→选项权衡→决策</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>/wayfinder {url} → Discuss (grill): goal/boundary, risks/assumptions, options/tradeoffs, decision</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">05</span><code>prompt.tpl.execute</code><span class="use">动作按钮「执行」（普通票）</span><span class="ph">占位符：{url} {number} {title}</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>{url} → 请执行该 issue：读 Description/Notes/阻塞关系→制定方案→实施→验收</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>{url} → Execute: read Description/Notes/blocking → plan → implement → verify</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">06</span><code>prompt.tpl.handoff1</code><span class="use">交接第一击（写交接文档）</span><span class="ph">占位符：{ts}</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>/handoff → 写 .scratch/handoff/{ts}.md（结论/未完成/建议 skill）</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>/handoff → write handoff doc {ts}.md (conclusion / unfinished / suggested skills)</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">07</span><code>prompt.tpl.handoff2</code><span class="use">交接第二击（读交接文档）</span><span class="ph">占位符：{file}</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>/read .scratch/handoff/{file} → 复述确认理解</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>/read handoff → restate understanding</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">08</span><code>prompt.mapExecute</code><span class="use">map 行「执行」/「新会话」（未完成态）</span><span class="ph">占位符：无（后接 mapHead）</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>请按以下流程推进该 map：1.加载 wayfinder 2.分析 map（Destination/Notes/阻塞/frontier）3.第一性原理挑下一个 issue 4.执行它</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>Advance this map: load wayfinder → analyze map → pick next frontier issue from first principles → execute</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">09</span><code>prompt.complete</code><span class="use">map 完成态「完成」/「新会话」（子票全关）</span><span class="ph">占位符：{n} {total} {closed}</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>## 完成确认 · MAP #{n}：核对完成真实性（Destination/雾区/漏标/子票关系）→ 收尾 close + Decisions so far 总结，或列未完成项</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>## Completion check · MAP #{n}: verify completion is real → close + Decisions-so-far summary, or list unfinished</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">10</span><code>prompt.mapHead</code><span class="use">新会话/执行的 map 标识头（B2）</span><span class="ph">占位符：{n} {title} {url}</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>## 目标 map：- 编号：#{n} - 标题：{title} - 链接：{url}</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>## Target map: - No: #{n} - Title: {title} - Link: {url}</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">11</span><code>prompt.fixate</code><span class="use">沉淀（零丢失快照）</span><span class="ph">占位符：无</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>里程碑固化点：五类全量复述（目的地/约束/决定/待决/雾区）+ 出处引用 + 可疑遗漏 + 停下核对</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>Milestone checkpoint: five-category full restatement + source quotes + suspected omissions + stop for review</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">12</span><code>prompt.setup</code><span class="use">环境检查横幅按钮（setup 未执行）</span><span class="ph">占位符：无</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>/setup-matt-pocock-skills（请选择 GitHub Issues 作为 issue tracker）</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>/setup-matt-pocock-skills (choose GitHub Issues as the issue tracker)</pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">13</span><code>prompt.newWayfinder</code><span class="use">「+ 新建需求」按钮</span><span class="ph">占位符：{repo}</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>/wayfinder 请帮我（新增/复用/直接实现）一个需求：仓库：{repo} 需求描述：</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>/wayfinder Please help me (add/reuse/directly implement) a requirement: Repo: {repo} Requirement: </pre></div>
+</div>
+
+<div class="card">
+  <div class="card-h"><span class="no">14</span><code>prompt.handoffRead</code><span class="use">交接第二击兜底（无文件时）</span><span class="ph">占位符：无</span></div>
+  <div class="lang"><span class="lbl zh">ZH</span><pre>/read .scratch/handoff/latest.md → 请先阅读这份交接文档并复述确认理解</pre></div>
+  <div class="lang"><span class="lbl en">EN</span><pre>/read latest.md → read + restate understanding</pre></div>
+</div>
+<div class="foot">共 14 条 · 对应键：prompt.guide / prompt.tpl.*(6) / prompt.mapExecute / prompt.complete / prompt.mapHead / prompt.fixate / prompt.setup / prompt.newWayfinder / prompt.handoffRead</div>
+</body></html>

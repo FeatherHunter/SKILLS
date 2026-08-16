@@ -339,6 +339,9 @@ window.__ModuleLoader__.load({
           'list.blocked': '被阻塞',
           'list.blockedTitle': '被 {by} 阻塞（点击查看地图详情）',
           'list.tagsTitle': '全部标签：{names}（点击展开）',
+          'list.tagsCount': '全部标签 · {n} 个',
+          'list.popTitle': '标题',
+          'cfg.previewTitle': '示例 issue 标题',
           'list.tagsCollapseTitle': '收起标签',
           'list.copyLinkTitle': '复制链接',
           'list.openInGithubTitle': '在 GitHub 上查看 #{n}',
@@ -532,6 +535,9 @@ window.__ModuleLoader__.load({
           'list.blocked': 'Blocked',
           'list.blockedTitle': 'Blocked by {by} (click for map details)',
           'list.tagsTitle': 'All labels: {names} (click to expand)',
+          'list.tagsCount': 'All labels · {n}',
+          'list.popTitle': 'Title',
+          'cfg.previewTitle': 'Sample issue title',
           'list.tagsCollapseTitle': 'Collapse labels',
           'list.copyLinkTitle': 'Copy link',
           'list.openInGithubTitle': 'Open #{n} on GitHub',
@@ -1871,7 +1877,7 @@ window.__ModuleLoader__.load({
         pop.id = 'dsws-pop'
         pop.className = 'dsws-pop'
         const pt = document.createElement('div'); pt.className = 'pt'
-        pt.textContent = '全部标签 · ' + labels.length + ' 个'
+        pt.textContent = tr('list.tagsCount', { n: labels.length })
         const pl = document.createElement('div'); pl.className = 'pl'
         labels.forEach(function (l) {
           const s = document.createElement('span')
@@ -1883,7 +1889,7 @@ window.__ModuleLoader__.load({
           pl.appendChild(s)
         })
         const ptitle = document.createElement('div'); ptitle.className = 'ptitle'
-        ptitle.innerHTML = '<b>标题：</b>' + String(title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        ptitle.innerHTML = '<b>' + tr('list.popTitle') + '：</b>' + String(title || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
         pop.appendChild(pt); pop.appendChild(pl); pop.appendChild(ptitle)
         document.body.appendChild(pop)
         const pr = host ? host.getBoundingClientRect() : { left: 8, right: window.innerWidth - 8, top: 8, bottom: window.innerHeight - 8 }
@@ -2493,7 +2499,7 @@ window.__ModuleLoader__.load({
         fixate: '零丢失快照 prompt',
       }
       const TPL_EDIT_IDS = ['diagnose', 'fix', 'discuss', 'handoff1', 'handoff2', 'fixate']  // execute 在「开始模板」节
-      const PREVIEW_VALUES = { url: 'https://github.com/FeatherHunter/SKILLS/issues/365', number: '365', title: '示例 issue 标题', ts: '20260814-172113', file: '20260814-172113.md' }
+      const PREVIEW_VALUES = { url: 'https://github.com/FeatherHunter/SKILLS/issues/365', number: '365', title: tr('cfg.previewTitle'), ts: '20260814-172113', file: '20260814-172113.md' }
       const SettingsPage = (props) => {
         const [openIn, setOpenIn] = React.useState(cfg.openIn || 'dock')
         const [openInNote, setOpenInNote] = React.useState(false)

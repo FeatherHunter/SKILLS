@@ -435,6 +435,20 @@ window.__ModuleLoader__.load({
           'matte.injectPrompt': '填入输入框',
           'matte.banner': '技能没装全？把安装 prompt 交给 AI 即可自动安装 Matt 技能集',
           'matte.prompt': '请帮我安装 Matt Pocock 的 AI 技能集（https://github.com/mattpocock/skills）到技能目录 ~/.agents/skills：克隆仓库 → 按 README 安装工程领域与通用领域的全部 skills → 运行 /setup-matt-pocock-skills 完成仓库初始化（issue tracker 选择 GitHub Issues）',
+          'prompt.guide': '从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.mapExecute': '请按以下流程推进该 map：\n1. 加载 wayfinder 技能（如未加载）；\n2. 分析这个 map（Destination / Notes / 阻塞关系 / 当前 frontier）；\n3. 按第一性原理分析当前最适合推进的下一个 issue（frontier 中价值最高、风险最低、最解阻的）；\n4. 去执行它：读该 issue 的 Description / Notes / 阻塞关系 → 制定方案 → 实施 → 验收。\n\n从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.complete': '## 完成确认 · MAP #{n}\n\n当前地图显示 100% 完成：{closed}/{total} 个 issue 已关闭，但 map 本身仍 open。\n\n请按以下流程处理：\n\n1. 检查完成状态是否真实：{closed}/{total} 已 CLOSED —— 但 map 本身仍 OPEN。请检查：\n   - 子票是否真的解决了原 Destination？\n   - 是否还有 Not yet specified 中未毕业的事项？\n   - 实际已完成却漏标 CLOSED 的 issue（漏关/误开）—— 逐个核对 ticket 的完成状态与关闭状态是否一致；\n   - 是否有 issue 属于该 map 但未建立 sub-issue 关系；\n2. 确认后处理：\n   - 确实全部完成 → 调用 close + 在 Decisions so far 追加总结（每个 closed ticket 一行 gist）；\n   - 发现遗漏 → 列出未完成项，先解决再重新判断；\n   - 不确定 → 询问用户「该地图的全部工作是否已完成，需要做收尾吗？」不要擅自 close；\n3. 最终目标：要么 close map + 写 Decisions so far 总结，要么明确指出未完成项。\n\n从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.fixate': '里程碑固化点。暂停推进，执行「零丢失快照」，从第一性原理出发：\n\n1. 全量复述：把我从会话开始到现在说过的全部信息，按「目的地 / 约束与偏好 / 已确认的决定 / 待决问题 / 雾区（隐约可见但还不清晰）」五类，逐条列出——不压缩、不合并，宁可啰嗦不可省略。\n2. 每条后面标注出处：用我的原话引用，让我知道它来自我哪句话。\n3. 单独列一节「可疑遗漏」：凡是我提过、但你觉得与主线无关、太模糊或像执行细节而没纳入的，全部摆出来，写明你当初不纳入的理由，由我裁决。\n4. 列完后停下等我逐条核对。我确认或修正完毕后，你再把清单落盘：已有地图就写进 map 正文和对应 ISSUE；只有ISSUE就写进对应ISSUE；都没有就先生成一份快照笔记并告诉我存哪，等建图时搬入。',
+          'prompt.tpl.diagnose': '/triage\n{url}\n\n请诊断该 issue 并分流建议：\n1. 复现 / 现象 / 影响范围\n2. 根因推断（多个候选）\n3. 分流建议（修复 / 关闭 / 重设计 / 等）\n\n从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.tpl.fix': '/wayfinder\n{url}\n\n请修复该 bug：\n1. 先复现\n2. 定位根因\n3. 实施修复\n4. 加测试\n5. 对抗式审查\n\n从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.tpl.discuss': '/wayfinder\n{url}\n\n请与我就该 issue 进行讨论（grill）：\n1. 目标 / 边界\n2. 风险 / 假设\n3. 选项 / 权衡\n4. 决策\n\n从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.tpl.execute': '{url}\n\n请执行该 issue：\n1. 读 Description / Notes / 阻塞关系\n2. 制定方案\n3. 实施\n4. 验收\n\n从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.tpl.handoff1': '/handoff\n\n请把当前会话生成交接文档，写到 .scratch/handoff/{ts}.md（相对当前工作目录），包含三部分：\n1. 结论：本次会话已确认的决定与成果；\n2. 未完成事项：下一步要继续的事；\n3. 建议 skill：新会话接手时建议加载的技能。\n\n从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.tpl.handoff2': '/read .scratch/handoff/{file}\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.handoffRead': '/read .scratch/handoff/latest.md\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后从第一性原理出发完成任务，并对抗式审查。',
+          'prompt.setup': '/setup-matt-pocock-skills\n（请选择 GitHub Issues 作为 issue tracker）',
+          'prompt.newWayfinder': '/wayfinder\n请帮我（新增 / 复用 / 直接实现）一个需求：\n仓库：{repo}\n需求描述：',
+          'prompt.mapHead': '## 目标 map\n- 编号：#{n}\n- 标题：{title}\n- 链接：{url}',
           'cfg.openIn': '打开位置',
           'cfg.openInDesc': '面板在哪个区域打开。better-sidebar 已安装时默认侧边栏；窗口缩小时侧边栏更稳。',
           'cfg.openInLabel': '打开位置',
@@ -639,6 +653,20 @@ window.__ModuleLoader__.load({
           'matte.injectPrompt': 'Fill input',
           'matte.banner': 'Skills missing? Give an AI the install prompt to auto-install Matt\'s skills',
           'matte.prompt': 'Please install Matt Pocock\'s AI skill collection (https://github.com/mattpocock/skills) into ~/.agents/skills: clone the repo → install all engineering and general-purpose skills per the README → run /setup-matt-pocock-skills to bootstrap the repo (choose GitHub Issues as the issue tracker)',
+          'prompt.guide': 'Approach tasks from first principles, and review adversarially.',
+          'prompt.mapExecute': 'Please advance this map:\n1. Load the wayfinder skill (if not loaded);\n2. Analyze this map (Destination / Notes / blocking relationships / current frontier);\n3. From first principles, pick the most valuable next issue on the frontier (highest value, lowest risk, most unblocking);\n4. Go execute it: read the issue Description / Notes / blocking relationships → plan → implement → verify.\n\nApproach tasks from first principles, and review adversarially.',
+          'prompt.complete': '## Completion check · MAP #{n}\n\nThe map shows 100% complete: {closed}/{total} issues closed, but the map itself is still open.\n\nHandle it as follows:\n\n1. Verify the completion is real: {closed}/{total} are CLOSED — but the map is still OPEN. Check:\n   - Did the sub-issues really resolve the original Destination?\n   - Are there ungraduated items left in Not yet specified?\n   - Any issue actually completed but missing CLOSED (missed/erroneous) — verify each ticket completion vs close state;\n   - Any issue belonging to this map without a sub-issue relationship;\n2. Then act:\n   - All truly done → close the map + append a summary to Decisions so far (one-line gist per closed ticket);\n   - Gaps found → list the unfinished items, resolve them first, then re-judge;\n   - Unsure → ask the user \"Has all the work on this map been completed? Should we wrap up?\" — do not close on your own;\n3. Goal: either close the map + write the Decisions-so-far summary, or clearly list the unfinished items.\n\nApproach tasks from first principles, and review adversarially.',
+          'prompt.fixate': 'Milestone checkpoint. Pause progress and take a "zero-loss snapshot", from first principles:\n\n1. Restate everything I have said since the session started, in five categories: "Destination / Constraints & preferences / Confirmed decisions / Open questions / Fog (dimly visible but not yet clear)" — list every item, no compression, no merging, rather verbose than omitted.\n2. Annotate each item with its source: quote my original words so I know which sentence it came from.\n3. Add a separate "Suspected omissions" section: everything I mentioned but you deemed off-topic, too vague, or execution detail and did not include — list them all with your reason, and let me decide.\n4. Stop and wait for my item-by-item review after listing. Once I confirm or correct, persist the list: if a map exists, write into the map body and the corresponding ISSUEs; if only ISSUEs, write into those ISSUEs; if neither, create a snapshot note and tell me where it is, to migrate when a map is created.',
+          'prompt.tpl.diagnose': '/triage\n{url}\n\nDiagnose this issue and propose triage:\n1. Reproduction / symptom / impact\n2. Root-cause candidates\n3. Triage suggestion (fix / close / redesign / wait)\n\nApproach tasks from first principles, and review adversarially.',
+          'prompt.tpl.fix': '/wayfinder\n{url}\n\nFix this bug:\n1. Reproduce first\n2. Find the root cause\n3. Implement the fix\n4. Add tests\n5. Adversarial review\n\nApproach tasks from first principles, and review adversarially.',
+          'prompt.tpl.discuss': '/wayfinder\n{url}\n\nDiscuss this issue with me (grill):\n1. Goal / boundary\n2. Risks / assumptions\n3. Options / tradeoffs\n4. Decision\n\nApproach tasks from first principles, and review adversarially.',
+          'prompt.tpl.execute': '{url}\n\nExecute this issue:\n1. Read Description / Notes / blocking relationships\n2. Plan\n3. Implement\n4. Verify\n\nApproach tasks from first principles, and review adversarially.',
+          'prompt.tpl.handoff1': '/handoff\n\nCreate a handoff doc from this session, written to .scratch/handoff/{ts}.md (relative to the current working directory), with three parts:\n1. Conclusion: decisions and outcomes confirmed this session;\n2. Unfinished: what to continue next;\n3. Suggested skills: skills the next session should load.\n\nApproach tasks from first principles, and review adversarially.',
+          'prompt.tpl.handoff2': '/read .scratch/handoff/{file}\n\nRead this handoff doc and restate your understanding (conclusions / unfinished / suggested skills), then approach tasks from first principles, and review adversarially.',
+          'prompt.handoffRead': '/read .scratch/handoff/latest.md\n\nRead this handoff doc and restate your understanding (conclusions / unfinished / suggested skills), then approach tasks from first principles, and review adversarially.',
+          'prompt.setup': '/setup-matt-pocock-skills\n(choose GitHub Issues as the issue tracker)',
+          'prompt.newWayfinder': '/wayfinder\nPlease help me (add / reuse / directly implement) a requirement:\nRepo: {repo}\nRequirement: ',
+          'prompt.mapHead': '## Target map\n- No: #{n}\n- Title: {title}\n- Link: {url}',
           'cfg.openIn': 'Open in',
           'cfg.openInDesc': 'Where the panel opens. Defaults to the sidebar when dsh-better-sidebar is installed; the sidebar stays put when the window shrinks.',
           'cfg.openInLabel': 'Open location',
@@ -815,43 +843,17 @@ window.__ModuleLoader__.load({
       // 必须位于 §3 store 之前（DEFAULT_PANEL_H 固定 1/2）
       // ============================================================
       // v22：统一引导句（T1 拍板：普通静态文本，用户可改；不是占位符）
-      const GUIDE_LINE = '从第一性原理出发完成任务，并对抗式审查。'
+      // v1.5：prompt 集中化 —— 全部 prompt 文本在 L 字典 prompt.*（zh/en 双语），此处只引用（审阅见 docs/prompts-review.md）
+      const GUIDE_LINE = tr('prompt.guide')
       // v1.5 T4/T5：Matt 技能仓库（介绍卡 GitHub 链接）
       const MATT_REPO = 'https://github.com/mattpocock/skills'
       // v1.4（T2 #443）：map 推进式执行 prompt —— 仅用于 map（详情页主按钮 + 列表 map 行执行），
       //   语义 = 在 map 上推进一步：加载技能 → 分析 map → 第一性原理挑下一个 frontier issue → 执行
-      const MAP_EXECUTE_PROMPT = '请按以下流程推进该 map：\n' +
-        '1. 加载 wayfinder 技能（如未加载）；\n' +
-        '2. 分析这个 map（Destination / Notes / 阻塞关系 / 当前 frontier）；\n' +
-        '3. 按第一性原理分析当前最适合推进的下一个 issue（frontier 中价值最高、风险最低、最解阻的）；\n' +
-        '4. 去执行它：读该 issue 的 Description / Notes / 阻塞关系 → 制定方案 → 实施 → 验收。\n\n' +
-        GUIDE_LINE
+      const MAP_EXECUTE_PROMPT = tr('prompt.mapExecute')
       // T4 #8：完成 prompt 措辞优化（直接对应用户原话：询问 AI 当前 issue 情况，为什么该 map 还没有关闭，请它进行检查和确认）
-      const COMPLETE_PROMPT = '## 完成确认 · MAP #{n}\n' +
-        '\n' +
-        '当前地图显示 100% 完成：{closed}/{total} 个 issue 已关闭，但 map 本身仍 open。\n' +
-        '\n' +
-        '请按以下流程处理：\n' +
-        '\n' +
-        '1. 检查完成状态是否真实：{closed}/{total} 已 CLOSED —— 但 map 本身仍 OPEN。请检查：\n' +
-        '   - 子票是否真的解决了原 Destination？\n' +
-        '   - 是否还有 Not yet specified 中未毕业的事项？\n' +
-        '   - 实际已完成却漏标 CLOSED 的 issue（漏关/误开）—— 逐个核对 ticket 的完成状态与关闭状态是否一致；\n' +
-        '   - 是否有 issue 属于该 map 但未建立 sub-issue 关系；\n' +
-        '2. 确认后处理：\n' +
-        '   - 确实全部完成 → 调用 close + 在 Decisions so far 追加总结（每个 closed ticket 一行 gist）；\n' +
-        '   - 发现遗漏 → 列出未完成项，先解决再重新判断；\n' +
-        '   - 不确定 → 询问用户「该地图的全部工作是否已完成，需要做收尾吗？」不要擅自 close；\n' +
-        '3. 最终目标：要么 close map + 写 Decisions so far 总结，要么明确指出未完成项。\n' +
-        '\n' +
-        GUIDE_LINE
+      const COMPLETE_PROMPT = tr('prompt.complete')
       // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认模板文本，T2b 可编辑）
-      const FIXATE_PROMPT = '里程碑固化点。暂停推进，执行「零丢失快照」，从第一性原理出发：\n' +
-        '\n' +
-        '1. 全量复述：把我从会话开始到现在说过的全部信息，按「目的地 / 约束与偏好 / 已确认的决定 / 待决问题 / 雾区（隐约可见但还不清晰）」五类，逐条列出——不压缩、不合并，宁可啰嗦不可省略。\n' +
-        '2. 每条后面标注出处：用我的原话引用，让我知道它来自我哪句话。\n' +
-        '3. 单独列一节「可疑遗漏」：凡是我提过、但你觉得与主线无关、太模糊或像执行细节而没纳入的，全部摆出来，写明你当初不纳入的理由，由我裁决。\n' +
-        '4. 列完后停下等我逐条核对。我确认或修正完毕后，你再把清单落盘：已有地图就写进 map 正文和对应 ISSUE；只有ISSUE就写进对应ISSUE；都没有就先生成一份快照笔记并告诉我存哪，等建图时搬入。'
+      const FIXATE_PROMPT = tr('prompt.fixate')
 
       const CFG_KEY = 'dsws.cfg'
       // 功能配置（用户拍板 2026-08-14：外观图标/动作词由设计定死，不提供配置项）
@@ -915,13 +917,12 @@ window.__ModuleLoader__.load({
       // 默认模板文本（空 = 用默认；T1 规格 §3 默认文本 = 现状代码文本）
       const TPL_DEFAULT = {
         // T4 #9-12：4 个动作按钮 prompt 明确化
-        diagnose: '/triage\n{url}\n\n请诊断该 issue 并分流建议：\n1. 复现 / 现象 / 影响范围\n2. 根因推断（多个候选）\n3. 分流建议（修复 / 关闭 / 重设计 / 等）\n\n' + GUIDE_LINE,
-        fix: '/wayfinder\n{url}\n\n请修复该 bug：\n1. 先复现\n2. 定位根因\n3. 实施修复\n4. 加测试\n5. 对抗式审查\n\n' + GUIDE_LINE,
-        discuss: '/wayfinder\n{url}\n\n请与我就该 issue 进行讨论（grill）：\n1. 目标 / 边界\n2. 风险 / 假设\n3. 选项 / 权衡\n4. 决策\n\n' + GUIDE_LINE,
-        execute: '{url}\n\n请执行该 issue：\n1. 读 Description / Notes / 阻塞关系\n2. 制定方案\n3. 实施\n4. 验收\n\n' + GUIDE_LINE,
-        handoff1: '/handoff\n\n请把当前会话生成交接文档，写到 .scratch/handoff/{ts}.md（相对当前工作目录），包含三部分：\n' +
-          '1. 结论：本次会话已确认的决定与成果；\n2. 未完成事项：下一步要继续的事；\n3. 建议 skill：新会话接手时建议加载的技能。\n\n' + GUIDE_LINE,
-        handoff2: '/read .scratch/handoff/{file}\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后' + GUIDE_LINE,
+        diagnose: tr('prompt.tpl.diagnose'),
+        fix: tr('prompt.tpl.fix'),
+        discuss: tr('prompt.tpl.discuss'),
+        execute: tr('prompt.tpl.execute'),
+        handoff1: tr('prompt.tpl.handoff1'),
+        handoff2: tr('prompt.tpl.handoff2'),
         fixate: FIXATE_PROMPT,
       }
       const tplText = (id) => templates[id] || TPL_DEFAULT[id] || ''
@@ -1454,7 +1455,7 @@ window.__ModuleLoader__.load({
             return mo ? mo.stats : null
           })()
           const done = !!(stats && stats.total > 0 && stats.closed === stats.total)
-          const head = '\n\n## 目标 map\n- 编号：#' + String(t.number || '') + '\n- 标题：' + (t.title || '') + '\n- 链接：' + url
+          const head = '\n\n' + tr('prompt.mapHead', { n: String(t.number || ''), title: (t.title || ''), url: url })
           if (done) {
             return COMPLETE_PROMPT
               .split('{n}').join(String(t.number || ''))
@@ -1469,7 +1470,7 @@ window.__ModuleLoader__.load({
       const SESSION_TITLE_PREFIX = '[dsh-waystation]'
       const newSessionTitle = (t) => SESSION_TITLE_PREFIX + ' ' + t.title + ' #' + t.number
       // v1.5 T6：新增 wayfinder prompt —— /wayfinder + 仓库信息 + 需求引导（用户拍板：prompt 带仓库信息）
-      const newWayfinderText = (st) => '/wayfinder\n请帮我（新增 / 复用 / 直接实现）一个需求：\n仓库：' + 'https://github.com/' + repoStr(st) + '\n需求描述：'
+      const newWayfinderText = (st) => tr('prompt.newWayfinder', { repo: 'https://github.com/' + repoStr(st) })
 
       // v10：沉淀 = 会话级动作 —— 注入「零丢失快照」prompt（默认文本见 §2.5 FIXATE_PROMPT，T2b 可编辑）
       const injectFixate = (st) => { inject(st, fixateText()) }
@@ -1479,7 +1480,6 @@ window.__ModuleLoader__.load({
       // 仅当未点过第一击（如刷新后）才回退 host 查最新实际文档；+ 复制 + 开新空白会话
       // v25 · T2b（F1 修正）：交接两击走模板渲染；{ts} 第一击注入时生成并记忆；
       //   {file} = 第一击模板渲染后解析出的实际文件名（用户改文件名结构也一致），解析失败兜底 handoffTs + '.md'
-      const HANDOFF_READ = '/read .scratch/handoff/latest.md'
       let handoffTs = null  // v24：第一击模板使用的时间戳（第二击优先复用同一文件名）
       let handoffFile = null  // v25 F1：第一击渲染后解析出的实际交接文件名（含用户自定义结构）
       const handoffPrompt = function (ts) {
@@ -1492,7 +1492,7 @@ window.__ModuleLoader__.load({
       }
       const handoffReadText = function (file) {
         if (file) return renderTemplate('handoff2', { file: file })
-        return HANDOFF_READ + '\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后' + GUIDE_LINE
+        return tr('prompt.handoffRead')
       }
       let pendingDraft = null  // 跨会话预填（新会话 dock 挂载后消费）
       const doHandoff = function (st) {
@@ -1668,7 +1668,7 @@ window.__ModuleLoader__.load({
           h('div', { className: 'dsws-banner warn', style: { margin: 0, maxWidth: 560, cursor: 'default' } }, [
             Ic({ n: 'alert', size: 13 }),
             h('span', null, tr('banner.setup')),
-            h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(s, '/setup-matt-pocock-skills\n（请选择 GitHub Issues 作为 issue tracker）') } }, tr('banner.setupBtn')),
+            h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(s, tr('prompt.setup')) } }, tr('banner.setupBtn')),
           ]),
         ])
       }

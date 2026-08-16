@@ -1336,7 +1336,7 @@ window.__ModuleLoader__.load({
           }
           sidebarTabDisposer = bs.registerTab({
             id: 'waystation:map',
-            title: function () { return tr('panel.tabList') },
+            title: function () { return 'Waystation' },
             icon: function () { return Ic({ n: 'map', size: 14 }) },
             order: 60,
             single: true,

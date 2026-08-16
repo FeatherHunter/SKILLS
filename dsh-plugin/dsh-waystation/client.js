@@ -833,6 +833,7 @@ return {
       "setup": { version: 2, placeholders: [], use: '环境检查横幅 · setup 未执行按钮', zh: '请帮我安装 Matt Pocock 的 AI 技能套件：\n1. 克隆 https://github.com/mattpocock/skills；\n2. 按 README 安装工程领域与通用领域的全部 skills 到 ~/.agents/skills；\n3. 安装完成后运行 /setup-matt-pocock-skills 初始化仓库（issue tracker 选择 GitHub Issues）；\n4. 初始化时按「强制标签体系」建立标签清单（bug / needs-triage / wayfinder:grilling）。', en: 'Please install Matt Pocock AI skill collection:\n1. Clone https://github.com/mattpocock/skills;\n2. Install all engineering and general-purpose skills per the README into ~/.agents/skills;\n3. After install, run /setup-matt-pocock-skills to bootstrap the repo (choose GitHub Issues as the issue tracker);\n4. During init, establish the mandatory label set (bug / needs-triage / wayfinder:grilling).' },
       "newWayfinder": { version: 2, placeholders: ['repo'], use: '「+ 新建需求」按钮', zh: '/wayfinder\n请帮我（新增 / 复用 / 直接实现）一个需求：\n仓库：{repo}\n\n先澄清需求：若对目标 / 范围 / 偏好有假设，先用 grilling 技能澄清。\n若目标较大：先按建图规划契约建 map（Destination + Notes + 规划表 + 票），不直接写码。\n需求描述：', en: '/wayfinder\nPlease help me (add / reuse / directly implement) a requirement:\nRepo: {repo}\n\nClarify first: if you hold assumptions about the goal / scope / preferences, settle them with the grilling skill.\nIf the goal is large: build a map per the planning contract (Destination + Notes + plan + tickets) instead of coding directly.\nRequirement: ' },
       "mapHead": { version: 1, placeholders: ['n', 'title', 'url'], use: '新会话/执行 · map 标识头（B2）', zh: '## 目标 map\n- 编号：#{n}\n- 标题：{title}\n- 链接：{url}', en: '## Target map\n- No: #{n}\n- Title: {title}\n- Link: {url}' },
+      "stageGate": { version: 1, placeholders: [], use: '阶段闸门条款（T13 · 统一追加于 诊断/修复/执行/map推进 动作：needs-triage 必须先诊断并判断现状）', zh: '阶段闸门（动作开始前必读，这是动作的一部分，不是可选项）：\n1. 先读该 issue 现状：进度区（## 进度：N%）/ 已有实施记录 / 评论 / 标签，判断它处于哪个阶段；\n2. 若带 needs-triage 标签：必须先完成诊断（这是前置步骤，不许跳过直接实施）；\n3. 诊断时判断当前进展：\n   - 已有实施且真实 → 核验是否符合验收标准，属实则维持 95% 待确认 + 摘 needs-triage（转 ready-for-agent）；\n   - 已有实施但虚假/半成品 → 进度据实回调到真实值（如 30%），继续诊断；\n   - 未动工 → 正常诊断（复现 → 根因 → 方案 → 写入 issue）；\n4. 诊断完成摘 needs-triage 后才允许进入实施阶段。', en: 'Stage gate (must read before starting the action — it is part of the action, not optional):\n1. First read the issue current state: progress section (## 进度：N%) / existing implementation record / comments / labels — determine which stage it is in;\n2. If it carries the needs-triage label: diagnosis MUST be completed first (a prerequisite step — do not skip straight to implementation);\n3. During diagnosis, judge current progress:\n   - Existing implementation and it is real → verify against acceptance criteria; if genuine, keep 95% awaiting confirmation + remove needs-triage (move to ready-for-agent);\n   - Existing implementation but fake/partial → revise progress back to the true value (e.g. 30%) and continue diagnosing;\n   - Not started → normal diagnosis (reproduce → root cause → plan → write into the issue);\n4. Only after diagnosis is done and needs-triage removed may implementation begin.' },
     }
     // 当前语言（跟随 DSH locale 快照 active；缺省 zh）
     const promptLang = function () {
@@ -934,8 +935,14 @@ return {
     }
     const tplText = (id) => templates[id] || TPL_DEFAULT[id] || ''
     // 渲染：转义 {{x}} → 字面 {x}（先替换哨兵防误替换），再替换已知占位符；未知占位符保留原样（保存层已拦截）
+    // T13：阶段闸门统一追加 —— 诊断/修复/执行 三类动作开头拼 stageGate（自定义模板也生效，免疫覆盖）
+    const STAGE_GATED_IDS = ['diagnose', 'fix', 'execute']
     const renderTemplate = function (id, values) {
       let text = String(tplText(id))
+      if (STAGE_GATED_IDS.indexOf(id) >= 0) {
+        const gate = promptText('stageGate')
+        if (gate) text = gate + '\n\n' + text
+      }
       const esc = []
       text = text.replace(/\{\{([a-zA-Z][a-zA-Z0-9]*)\}\}/g, function (m, name) { esc.push('{' + name + '}'); return '\u0001' + (esc.length - 1) + '\u0001' })
       text = text.replace(/\{([a-zA-Z][a-zA-Z0-9]*)\}/g, function (m, name) {
@@ -1466,7 +1473,9 @@ return {
           return completePrompt(st, t.number, stats.total, stats.closed) + head
         }
         // v1.5：技能 + 链接前置（用户规则：具体操作 prompt 开头 = /wayfinder + ISSUE 链接）
-        return '/wayfinder\n' + url + '\n\n' + MAP_EXECUTE_PROMPT + head
+        // T13：map 推进同样挂阶段闸门（推进的票若带 needs-triage 必须先诊断）
+        const gateText = promptText('stageGate')
+        return '/wayfinder\n' + url + '\n\n' + MAP_EXECUTE_PROMPT + (gateText ? '\n\n' + gateText : '') + head
       }
       const body = renderTemplate('execute', { number: String(t.number), url: url, title: t.title })
       return withWayfinderPrefix(body)
@@ -1901,7 +1910,11 @@ return {
             h('span', null, tr('list.newSessionLabel')),
           ]),
         ]),
-        h('div', { className: 'dsws-mtitle dsws-tt-wrap', title: m.title }, m.title),
+        // T14：map 编号徽章 —— 标题前方、紫色、与列表 map 行同款（dsws-idnum）
+        h('div', { style: { display: 'flex', alignItems: 'center', gap: 6, marginTop: 2, marginBottom: 2 } }, [
+          h('span', { className: 'dsws-idnum', style: { color: '#c084fc', borderColor: '#c084fc', flex: 'none' } }, '#' + m.number),
+          h('div', { className: 'dsws-mtitle dsws-tt-wrap', style: { flex: 1, minWidth: 0 }, title: m.title }, m.title),
+        ]),
         m.error ? h('div', { style: { color: '#f87171', fontSize: 11, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'alert', size: 11 }), h('span', null, String((m.error && m.error.error) || tr('list.loadFail')).slice(0, 160))]) : null,
         // D2：分段静态进度条 = 地图层缩略图（无动画，唯一真相源）
         (levels.length > 0) ? h('div', { className: 'dsws-layers' }, [

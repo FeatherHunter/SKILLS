@@ -423,6 +423,7 @@ window.__ModuleLoader__.load({
           'panel.newWayfinderTitle': '注入 /wayfinder 新增需求 prompt（带当前仓库）',
           'panel.repoTitle': '当前仓库，点击打开 GitHub',
           'map.newSessionTitle': '在新会话打开（推进该 map）',
+          'progress.todo': '未动工', 'progress.doing': '进行中 {n}%', 'progress.confirm': '95% · 待确认', 'progress.accept': '100% · 待验收', 'progress.done': '完成',
           'err.hostUnavailable': 'host.call 不可用（Host 半未加载）',
           'err.connUnavailable': 'connection 服务不可用（Host 半未加载）',
           'err.statusEmpty': 'wf.status 返回空结果',
@@ -629,6 +630,7 @@ window.__ModuleLoader__.load({
           'panel.newWayfinderTitle': 'Inject a /wayfinder new-requirement prompt (with the current repo)',
           'panel.repoTitle': 'Current repo — open on GitHub',
           'map.newSessionTitle': 'Open in a new session (advance this map)',
+          'progress.todo': 'Not started', 'progress.doing': 'In progress {n}%', 'progress.confirm': '95% · confirming', 'progress.accept': '100% · acceptance', 'progress.done': 'Done',
           'err.hostUnavailable': 'host.call unavailable (host half not loaded)',
           'err.connUnavailable': 'connection service unavailable (host half not loaded)',
           'err.statusEmpty': 'wf.status returned an empty result',
@@ -1697,6 +1699,42 @@ window.__ModuleLoader__.load({
         ])
       }
 
+      // v1.5 T12：票进度渲染（状态徽章 + 进度条）—— open/close 原生 + 进度自评
+      const tStatus = function (t) {
+        if (t.state === 'CLOSED') return { key: 'done', color: '#3fb950', icon: 'check' }
+        if (t.progress === null || t.progress === undefined) return { key: 'todo', color: '#8b8b95', icon: 'dot' }
+        if (t.progress >= 100) return { key: 'accept', color: '#f59e0b', icon: 'alert' }
+        if (t.progress >= 95) return { key: 'confirm', color: '#f59e0b', icon: 'alert' }
+        return { key: 'doing', color: '#58a6ff', icon: 'dot' }
+      }
+      const tStatusLabel = function (t) {
+        const s = tStatus(t)
+        if (s.key === 'done') return tr('progress.done')
+        if (s.key === 'accept') return tr('progress.accept')
+        if (s.key === 'confirm') return tr('progress.confirm')
+        if (s.key === 'doing') return tr('progress.doing', { n: t.progress })
+        return tr('progress.todo')
+      }
+      const tProgressBar = function (t) {
+        const p = (t.state === 'CLOSED') ? 100 : (t.progress === null || t.progress === undefined ? 0 : t.progress)
+        const color = (t.state === 'CLOSED') ? '#3fb950' : (t.progress === null || t.progress === undefined ? '#52525b' : '#58a6ff')
+        const label = (t.state === 'CLOSED') ? '100%' : (t.progress === null || t.progress === undefined ? '—' : t.progress + '%')
+        return h('div', { style: { display: 'flex', alignItems: 'center', gap: 5, marginTop: 3 } }, [
+          h('div', { style: { flex: 1, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.08)', overflow: 'hidden' } }, [
+            h('div', { style: { width: String(p) + '%', height: '100%', background: color, borderRadius: 2 } }),
+          ]),
+          h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums', minWidth: 26, textAlign: 'right' } }, label),
+        ])
+      }
+      const tStatusBadge = function (t) {
+        if (t.state === 'CLOSED') return null
+        const s = tStatus(t)
+        return h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: 2, color: s.color, fontSize: 9, flex: 'none' } }, [
+          Ic({ n: s.icon, size: 8 }),
+          h('span', null, tStatusLabel(t)),
+        ])
+      }
+
       // ---- 5.3 票务行（地图详情内：标题/阻塞来源 ellipsis；v19：按标签给 诊断/修复/讨论/执行 动作，预填输入框）----
       const TicketRow = ({ st, g, t, indent, colorOf }) => {
         const openBlocker = function (b) { const bt = g.m.tickets.find(function (x) { return x.number === b }); return bt && bt.state === 'OPEN' }
@@ -1718,7 +1756,9 @@ window.__ModuleLoader__.load({
               // #370：被阻塞 chip 只显示仍 OPEN 的阻塞者（与 compute/主列表/按钮抑制口径一致）
               blocked ? subItem('lock', '#f0883e', tr('map.subBlocked', { who: blockerNames(t, g.m) })) : null,
               t.state === 'CLOSED' ? subItem('check', '#3fb950', tr('map.subClosed')) : null,
+              tStatusBadge(t),
             ]),
+            (t.state === 'OPEN') ? tProgressBar(t) : null,
           ]),
           t.state === 'OPEN' ? h('div', { style: { display: 'flex', gap: 4, alignItems: 'center', flex: 'none' } }, [
             blocked ? null : mkRowAction(st, t, false, colorOf),
@@ -1811,6 +1851,9 @@ window.__ModuleLoader__.load({
                   t.claimedBy ? h('span', { style: { color: '#58a6ff', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'person', size: 8 }), h('span', null, t.claimedBy)]) : null,
                   blocked ? h('span', { style: { color: '#f0883e', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'lock', size: 8 }), h('span', null, tr('map.subBlocked', { who: blockerNames(t, m) }))]) : null,
                 ]),
+                // v1.5 T12：进度条 + 状态徽章（open 票显示真实进度 · 修 0/13）
+                tProgressBar(t),
+                h('div', { style: { marginTop: 2, display: 'flex', alignItems: 'center', gap: 2 } }, [tStatusBadge(t)]),
               ]),
             ]),
             acts,

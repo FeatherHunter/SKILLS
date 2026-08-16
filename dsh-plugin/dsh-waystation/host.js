@@ -34,7 +34,7 @@ return {
     const SKILL_PROBE_DIRS = ['.agents\\skills', '.minimax\\skills', '.claude\\skills']  // 技能文件层探测目录（相对用户主目录）
     // v1.5 T11：全流程核心技能探测名单（各动作 prompt 引用的技能 + 基础技能；检查 7/8 取前两个，检查 9 聚合全量）
     const SKILL_PROBE_NAMES = ['wayfinder', 'triage', 'grilling', 'grill-me', 'implement', 'ask-matt', 'research', 'prototype', 'handoff']
-    const QUERY = 'query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){issue(number:$n){number title state body url labels(first:20){nodes{name}} subIssues(first:100){totalCount nodes{number title state url labels(first:10){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number title state}} }}}}}'
+    const QUERY = 'query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){issue(number:$n){number title state body url labels(first:20){nodes{name}} subIssues(first:100){totalCount nodes{number title state body url labels(first:10){nodes{name}} assignees(first:10){nodes{login}} blockedBy(first:20){nodes{number title state}} }}}}}'
 
     // ============ 状态 ============
     let ghPath = null
@@ -242,6 +242,16 @@ return {
       return out
     }
 
+    // v1.5 T12：进度块解析（宽容：## 进度：90% / ## 进度: 90% / 进度：90% / Progress: 90%）
+    function parseProgress(body) {
+      if (!body) return null
+      const m = String(body).match(/进度[：:]\s*(\d{1,3})\s*%/i)
+      if (!m) return null
+      const n = parseInt(m[1], 10)
+      if (isNaN(n)) return null
+      return Math.max(0, Math.min(100, n))
+    }
+
     function mapTicket(raw) {
       const labels = ((raw.labels && raw.labels.nodes) || []).map(function (x) { return x.name })
       let type = 'other'
@@ -256,6 +266,7 @@ return {
         blockedBy: ((raw.blockedBy && raw.blockedBy.nodes) || []).map(function (b) { return b.number }),
         blocks: ((raw.blocking && raw.blocking.nodes) || []).map(function (b) { return b.number }),
         labels: labels, url: raw.url,
+        progress: parseProgress(raw.body),  // v1.5 T12：issue 正文进度块（## 进度：N%），null = 未表达
       }
     }
 

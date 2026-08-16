@@ -122,6 +122,7 @@ window.__ModuleLoader__.load({
       '.dsws-more:hover{background:rgba(188,140,255,.22);border-color:rgba(188,140,255,.8)}',
       // v1.3.3 UI：行1 编号 + map 徽章竖排（标题获得更宽展示区）
       '.dsws-idcol{display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:none}',
+      '.dsws-idnum{display:inline-block;font-family:Consolas,Menlo,monospace;font-weight:700;font-size:11px;line-height:1.5;padding:2px 8px;border-radius:6px;font-variant-numeric:tabular-nums}',
       // v1.3.3 UI：map 行迷你圆环进度（替代长条 + ✓）
       '.dsws-ring{flex:none;display:inline-flex;align-items:center;gap:0}',
       '.dsws-ring svg{transform:rotate(-90deg)}',
@@ -415,7 +416,7 @@ window.__ModuleLoader__.load({
           'toast.resetPanelWidthFail': 'layout 服务暂不支持重置 · 请更新 DSH harness',
           // #394：新会话按钮可见文字 + hover title（去掉冗余 detail，靠 #361 doc + 行为本身解释）
           'list.newSessionLabel': '新会话',
-          'panel.newWayfinder': '新增 wayfinder',
+          'panel.newWayfinder': '+ 新建需求',
           'panel.newWayfinderTitle': '注入 /wayfinder 新增需求 prompt（带当前仓库）',
           'panel.repoTitle': '当前仓库，点击打开 GitHub',
           'map.newSessionTitle': '在新会话打开（推进该 map）',
@@ -618,7 +619,7 @@ window.__ModuleLoader__.load({
           'toast.resetPanelWidthFail': 'Layout service doesn\'t support reset yet · please update DSH harness',
           // #394：visible label + hover title for new-session button
           'list.newSessionLabel': 'New session',
-          'panel.newWayfinder': 'New wayfinder',
+          'panel.newWayfinder': '+ New requirement',
           'panel.newWayfinderTitle': 'Inject a /wayfinder new-requirement prompt (with the current repo)',
           'panel.repoTitle': 'Current repo — open on GitHub',
           'map.newSessionTitle': 'Open in a new session (advance this map)',
@@ -2142,6 +2143,8 @@ window.__ModuleLoader__.load({
           const blocked = !!(blk && blk.by && blk.by.length)
           // v1.3.3 #8：map 行完成态 —— 子票全关（total>0 且 closed===total）→ 主按钮切「完成」（绿），注入收尾确认 prompt
           const mapDone = !!(isMap && mapObj && mapObj.stats && mapObj.stats.total > 0 && mapObj.stats.closed === mapObj.stats.total)
+          // v1.5：编号徽章颜色 = 右侧动作按钮同一逻辑（label 色；map 完成态绿）
+          const numColor = mapDone ? '#3fb950' : actionColorOf(x, colorOf)
           // v1.3.3 UI：全部标签渲染（渲染后贪心折叠，放不下的隐藏进 +N；+N 弹窗显示全部）
           const labels = x.labels || []
           const allNames = labels.map(function (l) { return l.name }).join('、')
@@ -2162,7 +2165,7 @@ window.__ModuleLoader__.load({
             h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 6, width: '100%' } }, [
               h('span', { className: 'dsws-idcol' }, [
                 isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, fontWeight: 600, lineHeight: 1.7, padding: '0 8px' } }, [Ic({ n: 'map', size: 11 }), h('span', null, tr('list.mapChip'))]) : null,
-                h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)', fontSize: 11, lineHeight: 1.6 } }, '#' + x.number),
+                h('span', { className: 'dsws-idnum', style: { background: numColor, color: isLightHex(numColor) ? '#140a1e' : '#ffffff' } }, '#' + x.number),
               ]),
               h('span', { className: 'dsws-tt-wrap', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
               (isMap && mapObj && mapObj.stats) ? ringOf(mapObj.stats) : null,
@@ -2431,11 +2434,6 @@ window.__ModuleLoader__.load({
               h('span', { style: { overflow: 'hidden', textOverflow: 'ellipsis' } }, s.snapshot.repo.owner + '/' + s.snapshot.repo.name),
             ]) : null,
             h('span', { style: { flex: 1 } }),
-            // v1.5 T6：「新增 wayfinder」按钮（所有视图可见）—— 注入 /wayfinder + 仓库信息 + 需求引导
-            h('button', { className: 'dsws-btn ghost', title: tr('panel.newWayfinderTitle'), onClick: function () { inject(s, newWayfinderText(s)) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none', color: '#c084fc' } }, [
-              Ic({ n: 'map', size: 11 }),
-              h('span', null, tr('panel.newWayfinder')),
-            ]),
             h('button', { className: 'dsws-btn ghost', title: tr('panel.closeTitle'), onClick: closeDock, style: { display: 'inline-flex', alignItems: 'center', padding: '2px 6px', fontSize: 11 } }, Ic({ n: 'x', size: 12 })),
           ]),
           // 标签行下沿 = 与对话/轨迹一致的横线；右侧：刷新按钮 + 版本号（v1.3.3）
@@ -2444,6 +2442,11 @@ window.__ModuleLoader__.load({
             tabBtn('skills', 'compass', tr('panel.tabSkills')),
             tabBtn('checks', 'gear', tr('panel.tabChecks')),
             h('span', { style: { flex: 1 } }),
+            // v1.5 T6 修订（V2 描边紫 · 刷新左侧）：新增 wayfinder —— 注入 /wayfinder + 仓库信息 + 需求引导
+            h('button', { className: 'dsws-btn', title: tr('panel.newWayfinderTitle'), onClick: function () { inject(s, newWayfinderText(s)) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none', background: 'transparent', border: '1px solid #c084fc', color: '#c084fc', fontWeight: 600 } }, [
+              Ic({ n: 'map', size: 11 }),
+              h('span', null, tr('panel.newWayfinder')),
+            ]),
             h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
             h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),
           ]),
@@ -2541,6 +2544,11 @@ window.__ModuleLoader__.load({
           tabBtn('skills', 'compass', tr('panel.tabSkills')),
           tabBtn('checks', 'gear', tr('panel.tabChecks')),
           h('span', { style: { flex: 1 } }),
+          // v1.5 T6 修订（V2 描边紫 · 刷新左侧）：新增 wayfinder
+          h('button', { className: 'dsws-btn', title: tr('panel.newWayfinderTitle'), onClick: function () { inject(s, newWayfinderText(s)) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none', background: 'transparent', border: '1px solid #c084fc', color: '#c084fc', fontWeight: 600 } }, [
+            Ic({ n: 'map', size: 11 }),
+            h('span', null, tr('panel.newWayfinder')),
+          ]),
           // T2 #2：刷新按钮上移至 tabs 末尾（紧贴环境检查右边 · 用户需求）
           h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [Ic({ n: 'refresh', size: 11 }), h('span', null, tr('list.refresh'))]),
           h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),

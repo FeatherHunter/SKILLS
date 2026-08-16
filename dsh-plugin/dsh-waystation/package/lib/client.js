@@ -1279,6 +1279,8 @@ window.__ModuleLoader__.load({
             st.snapshot = snap
             st.snapMode = 'real'
             st.snapError = null
+            // v1.5 T10：启动自动变化探测（幂等；快照就绪后生效）
+            startAutoProbe()
             // v1.5 T9：磁盘缓存秒开（fromCache）→ 后台静默刷新一次，拿到新数据动态更新 UI
             if (snap.fromCache && !st._bgRefresh) {
               st._bgRefresh = true
@@ -1297,6 +1299,25 @@ window.__ModuleLoader__.load({
           if (force && !silent) flash(st, tr('toast.snapFail', { err: st.snapError }), 'warn')
           emit(st)
         })
+      }
+
+      // v1.5 T10：自动刷新 —— 60s 轮询 + 窗口聚焦时调 probe（1 次 GraphQL 变化探测），
+      //   有变化 → 全 store 后台静默刷新（动态更新 UI；配额友好：轮询不触发全量重建）
+      const PROBE_MS = 60000
+      const startAutoProbe = function () {
+        if (shared._probeTimer) return
+        const probe = function () {
+          if (conn === undefined || conn.rpc === undefined) return
+          const args = shared.cwd ? { cwd: shared.cwd } : {}
+          rpcCall('probe', args).then(function (res) {
+            if (res && res.ok && res.changed) {
+              loadSnapshot(shared, true, true)
+              Object.keys(stores).forEach(function (k) { loadSnapshot(stores[k], true, true) })
+            }
+          }).catch(function () { /* 探测失败忽略，下轮再试 */ })
+        }
+        shared._probeTimer = setInterval(probe, PROBE_MS)
+        if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('focus', probe)
       }
 
       // v14-17：手动刷新（状态栏「更新」/ 列表「刷新」/ 检查页「重新检查」）→ 全面板遮罩 + 禁点

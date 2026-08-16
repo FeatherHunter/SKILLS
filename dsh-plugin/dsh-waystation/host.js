@@ -42,6 +42,7 @@ return {
     let cache = { ts: 0, snapshot: null, error: null, cwd: null }
     let statusCache = { ts: 0, status: null, error: null, cwd: null }  // wf.status 30s 缓存（按 cwd 区分）
     let userHome = null                                     // 用户主目录（cmd 探测，缓存）
+    let lastMapsUpdatedAt = null                             // v1.5 T10：open map updatedAt 表（变化探测基准）
 
     // ============ gh 封装 ============
     async function resolveGh() {
@@ -379,6 +380,9 @@ return {
       const mapsMeta = fi.ok ? fi.issues.filter(function (x) {
         return x.state === 'OPEN' && (x.labels || []).some(function (l) { return l.name === 'wayfinder:map' })
       }) : []
+      // v1.5 T10：记录本次构建的 open map updatedAt 表，作为变化探测基准
+      lastMapsUpdatedAt = {}
+      mapsMeta.forEach(function (m) { if (m.updatedAt) lastMapsUpdatedAt[m.number] = m.updatedAt })
       // #375：全量 label 列表（含空 label；获取失败容错置空，不阻塞快照构建，client 降级）
       let labels = []
       const fl = await runGh(['label', 'list', '--json', 'name,color'], cwd)
@@ -655,6 +659,32 @@ return {
         cache = { ts: Date.now(), snapshot: null, error: errText(e), cwd: cwd }
         return { ok: false, error: errText(e) }
       }
+    })
+
+    // v1.5 T10：变化探测 —— 1 次 GraphQL 查 open map 的 updatedAt 与上次构建对比；
+    //   changed=true → 失效内存缓存 + client 后台静默刷新（配额友好：轮询不触发全量重建）
+    harness.handle('wf.probe', async function (args) {
+      const cwd = (args && args.cwd) || DEFAULT_CWD
+      try {
+        const repo = await getRepoKey(cwd)
+        if (!repo) return { ok: false, error: '无法解析仓库' }
+        const q = 'query($owner:String!,$name:String!){repository(owner:$owner,name:$name){issues(first:50,states:OPEN,labels:["wayfinder:map"]){nodes{number updatedAt}}}}'
+        const r = await runGh(['api', 'graphql', '-f', 'query=' + q, '-F', 'owner=' + repo.owner, '-F', 'name=' + repo.name], cwd)
+        if (!r.ok) return { ok: false, error: r.error || 'probe 失败' }
+        const j = JSON.parse(r.text)
+        const nodes = (j && j.data && j.data.repository && j.data.repository.issues && j.data.repository.issues.nodes) || []
+        const cur = {}
+        nodes.forEach(function (n) { cur[n.number] = n.updatedAt })
+        const prev = lastMapsUpdatedAt
+        const changed = prev === null
+          || Object.keys(cur).length !== Object.keys(prev).length
+          || Object.keys(cur).some(function (k) { return prev[k] !== cur[k] })
+        if (changed) {
+          lastMapsUpdatedAt = cur
+          cache = { ts: 0, snapshot: null, error: null, cwd: cwd }  // 失效内存缓存 → 下次 snapshot 重建
+        }
+        return { ok: true, changed: changed }
+      } catch (e) { return { ok: false, error: errText(e) } }
     })
 
     // v19：查询 .scratch/handoff/ 下最新的交接文档（按 mtime 倒序），供「交接给新会话」预填 + 复制

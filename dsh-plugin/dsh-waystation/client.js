@@ -173,26 +173,27 @@ return {
       '.dsws-start{display:flex;gap:8px;align-items:flex-start;margin:6px 0 2px}',
       '.dsws-start .cap{font-size:13px;font-weight:700;color:#fff;line-height:1.1}',
       '.dsws-start .desc{font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);font-style:italic;line-height:1.3}',
-      '.dsws-layerTag{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);letter-spacing:.5px;margin:8px 0 4px;text-transform:uppercase}',
+      // T15：层容器 + 明显层号（当前层高亮）；层内网格自适应列数；卡片高度恒定
+      '.dsws-layerbox{border-radius:12px;border:1px solid var(--dsw-alias-border-l1,#2a2d35);background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008));padding:8px 10px 10px;margin-top:6px}',
+      '.dsws-layerbox.cur{border-color:rgba(74,222,128,.5);box-shadow:0 0 16px rgba(74,222,128,.14);background:linear-gradient(180deg,rgba(74,222,128,.05),rgba(255,255,255,.008))}',
+      '.dsws-layerTag{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--dsw-alias-label-primary,#e6edf3);letter-spacing:.5px;margin:0 0 8px}',
+      '.dsws-layerTag .layerNo{width:22px;height:22px;flex:none;border-radius:7px;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace);background:rgba(255,255,255,.08);border:1.5px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-secondary,#a1a1aa);font-variant-numeric:tabular-nums}',
+      '.dsws-layerbox.cur .dsws-layerNo{background:rgba(74,222,128,.16);border-color:rgba(74,222,128,.7);color:#4ade80}',
+      '.dsws-layerTag .layerTitle{flex:none}',
       '.dsws-layerTag .sp{flex:1;height:1px;background:linear-gradient(90deg,var(--dsw-alias-border-l1,#2a2d35),transparent)}',
-      // v1.4 修复：并行票水平并列（符合原型 .A-layer 无 wrap 横排）—— 层内节点不换行，横向滚动看全部
-      // v1.4 美化：滚动条深色细条（透明轨道 + 半透明滑块），贴合深色主题不再白条
-      '.dsws-layer{display:flex;justify-content:flex-start;gap:8px;padding:2px 0 6px;overflow-x:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}',
-      '.dsws-layer::-webkit-scrollbar{height:5px}',
-      '.dsws-layer::-webkit-scrollbar-track{background:transparent}',
-      '.dsws-layer::-webkit-scrollbar-thumb{background:rgba(255,255,255,.16);border-radius:3px}',
-      '.dsws-layer::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.28)}',
-      '.dsws-node{display:flex;flex-direction:column;gap:4px;border-radius:10px;padding:7px 8px;min-width:0;width:200px;flex:none;position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));border:1.5px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3)}',
-      '.dsws-node.single{width:100%;flex:none}',
-      // 窄框（面板 <380px）节点收窄，仍横排
-      '.dsws-narrow .dsws-node{width:170px}',
+      // T15：层内网格 —— 宽度变宽自动多列（minmax 190px 保证最窄 ≥1 列）；不再横向滚动
+      '.dsws-layer{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;padding:0 0 2px}',
+      // 窄面板（<380px）列宽下限降到 150px，仍保证 ≥1 列
+      '.dsws-narrow .dsws-layer{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}',
+      // T15：卡片宽度随列伸缩（不再固定 200px）；内部行固定占位保证高度恒定
+      '.dsws-node{display:flex;flex-direction:column;gap:4px;border-radius:10px;padding:7px 8px;min-width:0;width:auto;position:relative;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.015));border:1.5px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3)}',
       '.dsws-node .row1{display:flex;align-items:center;gap:6px}',
       '.dsws-node .icbox{width:22px;height:22px;flex:none;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1.5px solid;background:rgba(0,0,0,.5);color:var(--dsw-alias-label-secondary,#a1a1aa)}',
       '.dsws-node .meta{display:flex;align-items:center;gap:5px;margin-bottom:1px}',
       '.dsws-node .no{font-size:9px;color:var(--dsw-alias-label-caption,#8b8b95);font-family:var(--ds-font-family-code,Consolas,Menlo,monospace)}',
       '.dsws-node .tag{font-size:8px;padding:0 4px;border-radius:3px;border:1px solid;opacity:.85;font-family:var(--ds-font-family-code,Consolas,Menlo,monospace)}',
-      '.dsws-node .tt{font-size:11px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all}',
-      '.dsws-node .acts{display:flex;gap:4px;flex-wrap:wrap;align-items:center}',
+      '.dsws-node .tt{font-size:11px;font-weight:600;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-all;min-height:30.8px}',
+      '.dsws-node .acts{display:flex;gap:4px;flex-wrap:wrap;align-items:center;min-height:24px}',
       '.dsws-node.done{opacity:.55}',
       '.dsws-node.now{border-color:rgba(74,222,128,.9);box-shadow:0 0 14px rgba(74,222,128,.3)}',
       '.dsws-node.wait{border-color:rgba(240,136,62,.5);border-style:dashed;opacity:.8}',
@@ -1826,10 +1827,11 @@ return {
       }
       const node = function (t) {
         const blocked = isFog(t)
-        const acts = (t.state === 'OPEN' && !blocked) ? h('div', { className: 'acts' }, [
+        // T15：acts 恒渲染容器（CLOSED/fog 空占位）→ 卡片高度恒定
+        const acts = h('div', { className: 'acts' }, (t.state === 'OPEN' && !blocked) ? [
           mkRowAction(st, t, false, colorOf),
           h('a', { className: 'dsws-btn ghost', title: tr('list.openInGithubTitle', { n: t.number }), href: 'https://github.com/' + repoStr(st) + '/issues/' + t.number, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', padding: '2px 4px' } }, Ic({ n: 'link', size: 11 })),
-        ]) : null
+        ] : [])
         // v1.4 修复：图标名必须用 Ic 支持的（search/hammer/chat/gear），原 mag/bolt/wrench 不存在 → 节点图标空白
         const ic = t.type === 'research' ? 'search' : t.type === 'prototype' ? 'hammer' : t.type === 'grilling' ? 'chat' : 'gear'
         return h('div', {
@@ -1845,14 +1847,14 @@ return {
                 TypeChip({ type: t.type }),
               ]),
               h('div', { className: 'tt', title: t.title }, t.title),
-              h('div', { className: 'sub', style: { fontSize: 8, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginTop: 1, display: 'flex', gap: 5, flexWrap: 'wrap' } }, [
+              h('div', { className: 'sub', style: { fontSize: 8, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginTop: 1, minHeight: 12, display: 'flex', gap: 5, flexWrap: 'wrap' } }, [
                 t.state === 'CLOSED' ? h('span', { style: { color: '#3fb950', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'check', size: 8 }), h('span', null, tr('map.subClosed'))]) : null,
                 t.claimedBy ? h('span', { style: { color: '#58a6ff', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'person', size: 8 }), h('span', null, t.claimedBy)]) : null,
                 blocked ? h('span', { style: { color: '#f0883e', display: 'inline-flex', alignItems: 'center', gap: 2 } }, [Ic({ n: 'lock', size: 8 }), h('span', null, tr('map.subBlocked', { who: blockerNames(t, m) }))]) : null,
               ]),
               // v1.5 T12：进度条 + 状态徽章（open 票显示真实进度 · 修 0/13）
               tProgressBar(t),
-              h('div', { style: { marginTop: 2, display: 'flex', alignItems: 'center', gap: 2 } }, [tStatusBadge(t)]),
+              h('div', { style: { marginTop: 2, minHeight: 14, display: 'flex', alignItems: 'center', gap: 2 } }, [tStatusBadge(t)]),
             ]),
           ]),
           acts,
@@ -1863,14 +1865,18 @@ return {
         const lv = levels[layerIndex]
         if (!lv) return null
         const layerTickets = byLevel[layerIndex] || []
-        const single = layerTickets.length === 1
         const gate = gateState(layerIndex)
+        const isCur = layerIndex === curLevel
+        // T15：层容器 + 明显层号（当前层高亮）；层内网格自适应
         return [
-          h('div', { className: 'dsws-layerTag' }, [
-            h('span', null, tr('map.layer', { n: layerIndex + 1 }) + ' · ' + lv.open + ' open'),
-            h('span', { className: 'sp' }),
+          h('div', { className: 'dsws-layerbox' + (isCur ? ' cur' : '') }, [
+            h('div', { className: 'dsws-layerTag' }, [
+              h('span', { className: 'dsws-layerNo' }, String(layerIndex + 1)),
+              h('span', { className: 'dsws-layerTitle' }, tr('map.layer', { n: layerIndex + 1 }) + ' · ' + lv.open + ' open'),
+              h('span', { className: 'sp' }),
+            ]),
+            h('div', { className: 'dsws-layer' }, layerTickets.map(function (t) { return node(t) })),
           ]),
-          h('div', { className: 'dsws-layer' }, layerTickets.map(function (t) { return node(t) })),
           h('div', { className: 'dsws-gate' }, [
             h('span', { className: 'g ' + gate }, Ic({ n: gate === 'open' ? 'check' : 'lock', size: 12 })),
           ]),

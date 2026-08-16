@@ -109,6 +109,7 @@ async function main() {
   if (b1Subdir && fsx.existsSync(path.join(gitRoot, 'docs', 'agents', 'issue-tracker.md'))) {
     const sSub = await h['wf.status']({ cwd: b1Subdir })
     expect('B1 子目录：检查2 ok（git 根检测到 issue-tracker.md）', sSub.checks[1].level === 'ok', sSub.checks[1].level + ' @ ' + b1Subdir)
+    expect('B1 子目录：检查3 ok（git 根读到 tracker 内容）', sSub.checks[2].level === 'ok', sSub.checks[2].level + ' @ ' + b1Subdir)
   } else {
     console.log('  （跳过 B1 子目录断言：git 根无 docs/agents/issue-tracker.md 或无候选子目录）')
   }

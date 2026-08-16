@@ -587,7 +587,10 @@ export function apply(ctx) {
   async function checkTracker(cwd) {
     if (fs === undefined) return { ok: false, level: 'bad', detail: 'fs 服务不可用，无法判定 tracker', hint: '请先运行 /setup-matt-pocock-skills', repo: null }
     try {
-      const t = await fs.resolve('docs/agents/issue-tracker.md', { cwd: cwd })
+      // #455 B1 补全：与 checkSetup 一致针对 git 根目录读（会话 cwd 在仓库子目录时不误报「无法读取」）
+      const root = await getRepoRoot(cwd)
+      const base = root || cwd
+      const t = await fs.resolve('docs/agents/issue-tracker.md', { cwd: base })
       const txt = await fs.readText(t)
       if (/github/i.test(txt) && /gh\s+(issue|api|auth)|GitHub Issues/i.test(txt)) {
         return { ok: true, level: 'ok', detail: 'GitHub Issues + gh CLI', hint: '', repo: null }

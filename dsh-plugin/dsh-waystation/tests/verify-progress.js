@@ -108,6 +108,11 @@ check(pcli.includes('diffSnapshots') && pcli.includes('st.lastDiff') && pcli.inc
 // T10 R5（用户拍板方向 + 详谈定稿）：变化行高亮（变更琥珀/新增绿闪）+ 删除提示 + 定时清除
 check(cli.includes('dsws-row-changed') && cli.includes('dsws-row-added') && cli.includes('panel.diffRemoved') && cli.includes('scheduleFlashClear') && cli.includes('issueFlash'), 'client R5 变化视觉（高亮/删除提示/清除）')
 check(pcli.includes('dsws-row-changed') && pcli.includes('dsws-row-added') && pcli.includes('panel.diffRemoved') && pcli.includes('scheduleFlashClear') && pcli.includes('issueFlash'), 'package client R5 变化视觉（高亮/删除提示/清除）')
+// #458 字段实证修复：map 子票字段是 tickets（非 issues），且票级变化含 claimedBy
+check(cli.includes('(x.tickets || [])') && cli.includes('a2.claimedBy'), 'client diff 用 tickets + claimedBy（字段实证）')
+check(pcli.includes('(x.tickets || [])') && pcli.includes('a2.claimedBy'), 'package client diff 用 tickets + claimedBy（字段实证）')
+// #458 用户拍板：diff toast 置面板左下角（明显可见）
+check(cli.includes("'.dsws-note{position:absolute;left:14px;bottom:14px") && pcli.includes("'.dsws-note{position:absolute;left:14px;bottom:14px"), 'note toast 左下角（双源）')
 
 if (failed) { console.log('\n存在失败'); process.exit(1) }
 console.log('\n全部通过')

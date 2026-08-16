@@ -105,7 +105,7 @@ return {
       '.dsws-modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:10000}',
       '.dsws-modalbox{width:460px;max-width:94vw;background:var(--dsw-alias-bg-layer-2,#16181d);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:12px;padding:14px 16px;font-family:var(--dsw-font-family);font-size:13px;color:var(--dsw-alias-label-primary,#e6edf3)}',
       '.dsws-ta{width:100%;min-height:90px;background:var(--dsw-alias-bg-layer-1,#10131a);border:1px solid var(--dsw-alias-border-l1,#2a2d35);border-radius:6px;color:var(--dsw-alias-label-primary,#e6edf3);font-family:var(--ds-font-family-code,monospace);font-size:12px;padding:8px;box-sizing:border-box}',
-      '.dsws-note{position:absolute;right:14px;top:46px;padding:6px 12px;border-radius:6px;background:var(--dsw-alias-toast-bg,#22252c);border:1px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3);font-size:12px;z-index:10001;box-shadow:0 4px 20px rgba(0,0,0,.4)}',
+      '.dsws-note{position:absolute;left:14px;bottom:14px;top:auto;right:auto;padding:6px 12px;border-radius:6px;background:var(--dsw-alias-toast-bg,#22252c);border:1px solid var(--dsw-alias-border-l1,#2a2d35);color:var(--dsw-alias-label-primary,#e6edf3);font-size:12px;z-index:10001;box-shadow:0 4px 20px rgba(0,0,0,.4)}',
       '.dsws-skill{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px}',
       '.dsws-skill:hover{background:var(--dsw-alias-interactive-bg-hover,rgba(255,255,255,.06))}',
       '.dsws-skill .dsws-tt{flex:1;min-width:0}',
@@ -1313,19 +1313,20 @@ return {
       const idx = function (snap) { const m = {}; snap.maps.forEach(function (x) { m[x.number] = x }); return m }
       const a = idx(oldS), b = idx(newS)
       // 子票级变化：逐票对比（新增/变更标 issueFlash；任一变化 → 该 map 计入 changed，map 详情视图增量）
+      //   字段实证（#458 核验）：map 子票在快照里是 tickets（非 issues）；票级变化 = state/progress/claimedBy/labels
       Object.keys(b).forEach(function (n) {
         if (!a[n]) { out.added.push(Number(n)); return }
         var x = a[n], y = b[n]
         var sub = false
-        var ix = {}; (x.issues || []).forEach(function (i) { ix[i.number] = i })
-        var iy = {}; (y.issues || []).forEach(function (i) { iy[i.number] = i })
+        var ix = {}; (x.tickets || []).forEach(function (i) { ix[i.number] = i })
+        var iy = {}; (y.tickets || []).forEach(function (i) { iy[i.number] = i })
         Object.keys(iy).forEach(function (k) {
           if (!ix[k]) { sub = true; out.issueFlash[Number(k)] = 'added'; return }
           var a2 = ix[k], b2 = iy[k]
-          if (a2.state !== b2.state || a2.progress !== b2.progress || lbl(a2) !== lbl(b2)) { sub = true; out.issueFlash[Number(k)] = 'changed' }
+          if (a2.state !== b2.state || a2.progress !== b2.progress || a2.claimedBy !== b2.claimedBy || lbl(a2) !== lbl(b2)) { sub = true; out.issueFlash[Number(k)] = 'changed' }
         })
         if (Object.keys(ix).length !== Object.keys(iy).length) sub = true
-        if (x.state !== y.state || x.progress !== y.progress || x.title !== y.title || lbl(x) !== lbl(y) || sub) out.changed.push(Number(n))
+        if (x.state !== y.state || x.title !== y.title || lbl(x) !== lbl(y) || sub) out.changed.push(Number(n))
       })
       Object.keys(a).forEach(function (n) { if (!b[n]) out.removed.push(Number(n)) })
       return out
@@ -3041,7 +3042,7 @@ return {
       // T5 修订：设置页内 toast（独立于面板 dock 的 notice 渲染）
       const cfgNotice = sharedSt.notice
       return h('div', { className: 'dsws-cfg', style: { position: 'relative' } }, [
-        cfgNotice ? h('div', { className: 'dsws-note', style: { display: 'flex', alignItems: 'center', gap: 6, top: 10 } }, [
+        cfgNotice ? h('div', { className: 'dsws-note', style: { display: 'flex', alignItems: 'center', gap: 6, top: 10, bottom: 'auto', right: 'auto', left: 14 } }, [
           Ic({ n: noticeIcon(cfgNotice.kind), size: 13, color: NOTICE_COLOR[cfgNotice.kind] || '#4ade80' }),
           h('span', null, cfgNotice.text),
         ]) : null,

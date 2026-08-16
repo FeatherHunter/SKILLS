@@ -2821,6 +2821,8 @@ window.__ModuleLoader__.load({
       const TPL_EDIT_IDS = ['diagnose', 'fix', 'discuss', 'handoff1', 'handoff2', 'fixate']  // execute 在「开始模板」节
       const PREVIEW_VALUES = { url: 'https://github.com/FeatherHunter/SKILLS/issues/365', number: '365', title: tr('cfg.previewTitle'), ts: '20260814-172113', file: '20260814-172113.md' }
       const SettingsPage = (props) => {
+        // T5 修订：订阅 store（设置页独立于面板 dock，需自己订阅 shared 才能渲染 flash toast）
+        const sharedSt = useStore(props && props.sessionId)
         const [openIn, setOpenIn] = React.useState(cfg.openIn || 'dock')
         const [openInNote, setOpenInNote] = React.useState(false)
         const [wf, setWf] = React.useState(cfg.withWayfinder)
@@ -2924,7 +2926,13 @@ window.__ModuleLoader__.load({
           ])
         }
         const custom = tpls.execute || ''
-        return h('div', { className: 'dsws-cfg' }, [
+        // T5 修订：设置页内 toast（独立于面板 dock 的 notice 渲染）
+        const cfgNotice = sharedSt.notice
+        return h('div', { className: 'dsws-cfg', style: { position: 'relative' } }, [
+          cfgNotice ? h('div', { className: 'dsws-note', style: { display: 'flex', alignItems: 'center', gap: 6, top: 10 } }, [
+            Ic({ n: noticeIcon(cfgNotice.kind), size: 13, color: NOTICE_COLOR[cfgNotice.kind] || '#4ade80' }),
+            h('span', null, cfgNotice.text),
+          ]) : null,
           h('div', { className: 'dsws-cfg-head' }, [
             Icon({ scheme: 'compass', size: 20 }),
             h('span', { className: 't' }, 'DSH-Waystation'),
@@ -2940,8 +2948,7 @@ window.__ModuleLoader__.load({
             h('div', { className: 'dsws-cfg-gdesc' }, tr('matte.desc')),
             h('div', { className: 'dsws-cfg-row', style: { flexWrap: 'wrap', gap: 6 } }, [
               h('a', { href: MATT_REPO, target: '_blank', rel: 'noreferrer', className: 'dsws-btn', style: { textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'link', size: 11 }), h('span', null, tr('matte.openRepo'))]),
-              h('button', { className: 'dsws-btn', onClick: function () { copyText(shared, tr('matte.prompt'), tr('toast.copied')) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'clipboard', size: 11 }), h('span', null, tr('matte.copyPrompt'))]),
-              h('button', { className: 'dsws-btn', onClick: function () { inject(shared, tr('matte.prompt')) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'play', size: 11 }), h('span', null, tr('matte.injectPrompt'))]),
+              h('button', { className: 'dsws-btn', onClick: function () { copyText(sharedSt, tr('matte.prompt'), tr('toast.copied')) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'clipboard', size: 11 }), h('span', null, tr('matte.copyPrompt'))]),
             ]),
           ]),
           // v1.4：打开位置（details 列 / better-sidebar）—— better-sidebar 未装时仅显示 dock 选项

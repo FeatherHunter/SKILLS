@@ -1792,7 +1792,8 @@ return {
         seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
         // v19-36：环境段移至末尾（更新左侧），用户少点
         seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 9 ? '#4ade80' : '#f59e0b', function () { go('checks') }, tr('nav.envTitle', { n: n < 0 ? '?' : String(n) })),
-        h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, s.refreshing ? [h('span', { className: 'dsws-spin' }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('nav.refreshing'))] : tr('nav.refresh') + ' ' + timeStr),
+        // v1.5 T10：刷新反馈 = 图标转圈（文字恒定不换 · 控件宽度零变化）
+        h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('nav.refresh') + ' ' + timeStr)]),
       ])
       // 用户拍板 2026-08-16：横幅移到状态栏上方（技能检测 / setup 检测的提示弹窗置顶）
       if (!amber && !skillsBad) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
@@ -2723,7 +2724,7 @@ return {
           h('span', { style: { flex: 1 } }),
           h('button', { className: 'dsws-btn', disabled: st.checking || st.refreshing, onClick: function () { refreshAll(st) }, style: { fontSize: 11, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 4 } }, [
             h('span', { className: (st.checking || st.refreshing) ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]),
-            h('span', null, (st.checking || st.refreshing) ? tr('env.checking') : tr('env.recheck')),
+            h('span', null, tr('env.recheck')),
           ]),
         ]),
         st.checksMode === 'err' ? h('div', { className: 'dsws-banner bad', style: { cursor: 'default' } }, [Ic({ n: 'alert', size: 13 }), h('span', null, tr('env.failFull', { err: st.checksError }))]) : null,
@@ -2794,7 +2795,7 @@ return {
             Ic({ n: 'map', size: 11 }),
             h('span', null, tr('panel.newWayfinder')),
           ]),
-          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, s.refreshing ? tr('list.refreshing') : tr('list.refresh'))]),
+          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('list.refresh'))]),
           h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),
         ]),
         h('div', { className: 'dsws-body', style: { flex: 1, overflowY: 'auto', padding: '10px 12px' } }, [
@@ -2893,7 +2894,7 @@ return {
             h('span', null, tr('panel.newWayfinder')),
           ]),
           // T2 #2：刷新按钮上移至 tabs 行 · 紧贴环境检查右边（用户需求：列表 / 技能 / 环境检查 / 刷新）
-          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, s.refreshing ? tr('list.refreshing') : tr('list.refresh'))]),
+          h('button', { className: 'dsws-btn', title: tr('list.refresh'), onClick: function () { refreshAll(s) }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '2px 8px', fontSize: 11, flex: 'none' } }, [h('span', { className: s.refreshing ? 'dsws-spin' : undefined }, [Ic({ n: 'refresh', size: 11 })]), h('span', null, tr('list.refresh'))]),
           h('span', { style: { fontSize: 9, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none', fontVariantNumeric: 'tabular-nums' } }, DSW_VERSION),
         ]),
         h('div', { className: 'dsws-body', onMouseDown: onBodyDown }, [

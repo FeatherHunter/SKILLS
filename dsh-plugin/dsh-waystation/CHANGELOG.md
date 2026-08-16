@@ -6,6 +6,33 @@ All notable changes to **dsh-waystation** are documented here.
 
 ---
 
+## [1.5.0] - 2026-08-16
+
+> v1.5 系列（T1-T17）各阶段改动分别见 git 提交历史；本段聚焦 #456 B2。
+
+### Fixed · #456 B2 新会话 prompt 缺 issue 标识（map 行 + 详情页「在新会话打开」）
+
+- **map 新会话 prompt 带 map 标识**：`startText` 对 `wayfinder:map` 不再返回纯通用「推进该 map」，
+  追加标识头（`mapHead` 模板：编号 `#n` / 标题 / 链接），AI 一开新会话即可定位对应 ISSUE
+  （列表行新会话 + 详情页执行按钮两处同源）
+- **完成态感知（B2 修订 · 用户拍板 2026-08-16）**：新会话 prompt 永远跟随左侧主按钮语义 ——
+  子票全关（total>0 且 closed===total）→ 完成确认 prompt（`COMPLETE_PROMPT` 填好 `#n`/total/closed + map 标识）；
+  未完成 → 推进式（`MAP_EXECUTE_PROMPT`）+ map 标识；普通票 execute 模板回归不受影响
+- **详情页「在新会话打开」按钮（O5）**：map 详情顶部 执行/完成 旁新增「新会话」按钮
+  （`openInNewSession` · 与行内新会话同语义）
+- 双语（zh/en）：`mapHead` / `map.newSessionTitle` 双字典
+- 新增 `tests/verify-b2-map-newsession.js`（行为契约：提取真实 `startText`/`completePrompt` 源码执行 ·
+  双源 2/2 PASS）
+
+### Technical
+
+- 双源镜像一致（client.js ↔ package/lib/client.js）
+- 测试全绿：verify-status 21/21 · verify-panel 22/22 · verify-t2a 6/4 · verify-t2b 6/6 ·
+  verify-t3-locale 全过 · verify-prompts 全过 · verify-progress 全过 · verify-markdown 全过 ·
+  verify-b2-map-newsession 2/2 · scan-mangle clean
+
+---
+
 ## [1.3.3] - 2026-08-15
 
 ### Fixed · 用户实测「大量功能未生效」全面调查后补修（map #409 追加）

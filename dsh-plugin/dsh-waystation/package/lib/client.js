@@ -2579,14 +2579,27 @@ window.__ModuleLoader__.load({
           h('div', { className: 'dsws-cgroup' }, [h('span', { style: { width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' } }), h('span', null, title + ' ' + items.length)]),
           items.map(card),
         ]) : null
+        // 环境检查页顶部横幅（用户拍板 2026-08-16：优先级链，不并存）
+        //   技能未装全 → matte 横幅；技能已装但 setup 未执行 → setup 横幅；都 ok → 不显示
+        const skillsCheck2 = activeChecks(st).find(function (c) { return c.id === 9 })
+        const setupCheck2 = activeChecks(st).find(function (c) { return c.id === 2 })
+        const skillsOk = !skillsCheck2 || skillsCheck2.level === 'ok'
+        const setupOk = !setupCheck2 || setupCheck2.level === 'ok'
+        const topBanner = (!skillsOk)
+          ? h('div', { className: 'dsws-banner warn', style: { cursor: 'default', marginBottom: 8 } }, [
+              Ic({ n: 'star', size: 13 }),
+              h('span', { style: { flex: 1 } }, tr('matte.banner')),
+              h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(188,140,255,.55)' }, onClick: function () { copyText(st, tr('matte.prompt'), tr('toast.copied')) } }, tr('matte.copyPrompt')),
+            ])
+          : (!setupOk)
+            ? h('div', { className: 'dsws-banner warn', style: { cursor: 'default', marginBottom: 8 } }, [
+                Ic({ n: 'alert', size: 13 }),
+                h('span', { style: { flex: 1 } }, tr('banner.setup')),
+                h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(st, promptText('setupRun')) } }, tr('banner.setupBtn')),
+              ])
+            : null
         return h('div', null, [
-          // v1.5 T5：Matt 技能提示横幅（常驻 · 复制 + 填入输入框）
-          h('div', { className: 'dsws-banner', style: { cursor: 'default', marginBottom: 8 } }, [
-            Ic({ n: 'star', size: 13 }),
-            h('span', { style: { flex: 1 } }, tr('matte.banner')),
-            h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(188,140,255,.55)' }, onClick: function () { copyText(st, tr('matte.prompt'), tr('toast.copied')) } }, tr('matte.copyPrompt')),
-            h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(188,140,255,.55)' }, onClick: function () { inject(st, tr('matte.prompt')) } }, tr('matte.injectPrompt')),
-          ]),
+          topBanner,
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, fontSize: 12 } }, [
             h('span', { style: { display: 'flex', alignItems: 'center', gap: 4 } }, [Ic({ n: 'gear', size: 12 }), h('span', null, tr('env.title', { n: envLabel(st) }))]),
             h('span', { style: { flex: 1 } }),

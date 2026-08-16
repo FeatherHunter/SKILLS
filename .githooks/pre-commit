@@ -49,6 +49,28 @@ if [ ${#NEED_TEST[@]} -eq 0 ]; then
     exit 0
 fi
 
+# L4 测试隔离层(#402 · #386 Q6 双保险):
+# 强制 SKILLS_DB_PATH → mktemp,即使各 skill conftest 无 autouse 也能保证
+# 钩子内任何 pytest 都写临时库,生产 DB 永不被触碰(根 AGENTS.md DB 隔离红线)。
+# 背景: 用户 shell 持久 SKILLS_DB_PATH=D:\\2Study\\StudyNotes\\.db(生产),
+#        若钩子不注入,未自行隔离的测试会直写生产(08-09~14 事故根因)。
+# opt-out: 无(钩子场景 = 强制隔离;调试请勿在提交时进行)。
+HOOK_TEMP_DIR_MSYS="$(mktemp -d)"
+# git-bash 的 mktemp 返回 MSYS 路径(/tmp/tmp.xxx);Windows python 会把它解析成
+# 当前盘根的 \tmp(如 D:\tmp)——隔离虽生效但路径不一致,且 trap 清理不到实际写入点。
+# 用 cygpath -w 转 Windows 原生路径(两种运行时一致;cygpath 在 git-bash 必有)。
+if command -v cygpath >/dev/null 2>&1; then
+    HOOK_TEMP_DIR="$(cygpath -w "$HOOK_TEMP_DIR_MSYS")"
+else
+    HOOK_TEMP_DIR="$HOOK_TEMP_DIR_MSYS"
+fi
+export SKILLS_DB_PATH="$HOOK_TEMP_DIR"
+echo "🔒 [pre-commit] L4 隔离已注入: SKILLS_DB_PATH=$HOOK_TEMP_DIR"
+cleanup_hook_temp() {
+    rm -rf "$HOOK_TEMP_DIR_MSYS" 2>/dev/null || true
+}
+trap cleanup_hook_temp EXIT
+
 FAILED=0
 for skill in "${!NEED_TEST[@]}"; do
     if [ ! -d "$skill/tests" ]; then

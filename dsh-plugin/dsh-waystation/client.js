@@ -3029,9 +3029,9 @@ return {
       return slots.register({ name: 'settings.plugins.tab', id: 'dsws-settings', order: 40, label: function () { return 'Waystation' } }, SettingsPage)
     })
     // v1.5 T2：设置左侧直达 —— settings.section 左栏条目（与插件页 tab 双入口，复用同一 SettingsPage）
-    //   order 5 = 左栏顶端（用户拍板 2026-08-16：早于 插件页15 / AgentPresets20 / better-sidebar100）
+    //   order 18 = 紧跟 插件页15 之后（用户拍板 2026-08-16：15 < 18 < AgentPresets20 < better-sidebar100）
     slots.inject('settings.section', function () {
-      return slots.register({ name: 'settings.section', id: 'dsws-settings-section', order: 5, label: function () { return 'Waystation' } }, SettingsPage)
+      return slots.register({ name: 'settings.section', id: 'dsws-settings-section', order: 18, label: function () { return 'Waystation' } }, SettingsPage)
     })
     // 原型：右侧停靠（details 槽位 · 替换内置工具详情面板；single 槽动态注册优先级低 → 胜出）
     // priority: -1 低于内置详情面板的默认 0 → 无冲突且「低者胜出」替换内置面板

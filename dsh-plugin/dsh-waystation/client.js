@@ -1690,9 +1690,9 @@ return {
         seg('dot', [h('span', null, tr('nav.env')), num(envLabel(s))], n < 0 ? '#f87171' : n === 9 ? '#4ade80' : '#f59e0b', function () { go('checks') }, tr('nav.envTitle', { n: n < 0 ? '?' : String(n) })),
         h('span', { className: 'dsws-timebtn', onClick: function (e) { e.stopPropagation(); refreshAll(s) }, title: tr('nav.refreshTitle') }, tr('nav.refresh') + ' ' + timeStr),
       ])
+      // 用户拍板 2026-08-16：横幅移到状态栏上方（技能检测 / setup 检测的提示弹窗置顶）
       if (!amber && !skillsBad) return h('div', { style: { display: 'flex', justifyContent: 'center', padding: '3px 8px 0' } }, [capsule])
       return h('div', { style: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, padding: '3px 8px 0' } }, [
-        capsule,
         skillsBad
           ? h('div', { className: 'dsws-banner warn', style: { margin: 0, maxWidth: 560, cursor: 'default' } }, [
               Ic({ n: 'alert', size: 13 }),
@@ -1704,6 +1704,7 @@ return {
               h('span', null, tr('banner.setup')),
               h('button', { className: 'dsws-btn', style: { borderColor: 'rgba(245,158,11,.6)' }, onClick: function () { inject(s, promptText('setupRun')) } }, tr('banner.setupBtn')),
         ]),
+        capsule,
       ])
     }
 

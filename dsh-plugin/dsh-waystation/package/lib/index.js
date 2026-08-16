@@ -48,7 +48,7 @@ export function apply(ctx) {
   let cache = { ts: 0, snapshot: null, error: null, cwd: null }
   let statusCache = { ts: 0, status: null, error: null, cwd: null }  // 环境检查 30s 缓存（按 cwd 区分）
   let userHome = null                                     // 用户主目录（cmd 探测，缓存）
-  let lastMapsUpdatedAt = null                             // v1.5 T10：open map updatedAt 表（变化探测基准）
+  let lastMapsUpdatedAtByRepo = {}                        // v1.5 T10 修订（B5 配额止血）：open map updatedAt 表按 repoKey 隔离（多仓库并发不互串）
 
   // ============ gh 封装 ============
   async function resolveGh() {
@@ -385,6 +385,57 @@ export function apply(ctx) {
     } catch (e) { return { ok: false, error: { kind: 'parse', error: String(e) } } }
   }
 
+
+  // v1.5 B5（配额止血 · 第一性原理）：GraphQL 配额耗尽时的 REST 降级通道 ——
+  //   GraphQL 按复杂度计点（5000 点/h，aliases 大查询一次可数百点），REST 按请求计次
+  //   （5000 次/h，与复杂度无关）。配额耗尽时 GraphQL 全挂，REST 仍可用 → 面板不空白。
+  //   逐 map：issue 详情 + sub_issues + 每子票 blocked_by（client 只消费 blockedBy，
+  //   blocking 不组装省一半请求）；输出与 GraphQL 同构的 { 'm<i>': {...} }，下游 mapTicket 零改动。
+  async function fetchMapsDetailREST(numbers, cwd) {
+    const repo = await getRepoKey(cwd)
+    if (!repo) return { ok: false, error: { kind: 'env', error: '无法解析 owner/repo' } }
+    if (!numbers || !numbers.length) return { ok: true, issues: {} }
+    const issues = {}
+    for (let i = 0; i < numbers.length; i++) {
+      const n = numbers[i]
+      try {
+        const d = await runGh(['api', 'repos/' + repo.owner + '/' + repo.name + '/issues/' + n], cwd)
+        if (!d.ok) { issues['m' + i] = null; continue }
+        const m = JSON.parse(d.text)
+        const sub = await runGh(['api', 'repos/' + repo.owner + '/' + repo.name + '/issues/' + n + '/sub_issues?per_page=100'], cwd)
+        const subs = sub.ok ? (JSON.parse(sub.text) || []) : []
+        const nodes = []
+        for (let k = 0; k < subs.length; k++) {
+          const s = subs[k]
+          let blockedBy = []
+          try {
+            const bb = await runGh(['api', 'repos/' + repo.owner + '/' + repo.name + '/issues/' + s.number + '/dependencies/blocked_by'], cwd)
+            if (bb.ok) blockedBy = (JSON.parse(bb.text) || []).map(function (x) { return x.number })
+          } catch (e2) { /* 依赖查询失败该票 blockedBy 置空，不阻塞整体 */ }
+          nodes.push({
+            number: s.number, title: s.title, state: (s.state === 'closed' ? 'CLOSED' : 'OPEN'),
+            body: s.body || '', url: s.html_url || ('https://github.com/' + repo.owner + '/' + repo.name + '/issues/' + s.number),
+            labels: { nodes: (s.labels || []).map(function (l) { return { name: l.name } }) },
+            assignees: { nodes: (s.assignees || []).map(function (a) { return { login: a.login } }) },
+            blockedBy: { nodes: blockedBy.map(function (b) { return { number: b } }) },
+          })
+        }
+        issues['m' + i] = {
+          number: m.number, title: m.title, state: (m.state === 'closed' ? 'CLOSED' : 'OPEN'),
+          body: m.body || '', url: m.html_url || ('https://github.com/' + repo.owner + '/' + repo.name + '/issues/' + m.number),
+          labels: { nodes: (m.labels || []).map(function (l) { return { name: l.name } }) },
+          subIssues: { totalCount: nodes.length, nodes: nodes },
+        }
+      } catch (e) { issues['m' + i] = null }
+    }
+    return { ok: true, issues: issues, fallback: 'rest' }
+  }
+
+  function isRateLimitError(r) {
+    const t = String((r && r.error) || (r && r.kind) || '').toLowerCase()
+    return /rate\s*limit|ratelimit|403/.test(t)
+  }
+
   // v1.3.3 提速：GraphQL aliases 一次查询全部 map 详情（8 次 → 1 次，Windows 下串行 8×2.4s → 单次 ~3.6s）
   //   每个 map 一个 alias（m0/m1/...），响应按 alias 取；网络类失败整批重试 1 次
   async function fetchMapsDetail(numbers, cwd) {
@@ -397,10 +448,20 @@ export function apply(ctx) {
     let last = null
     for (let attempt = 0; attempt < 2; attempt++) {
       const r = await runGh(['api', 'graphql', '-f', 'query=' + query, '-F', 'owner=' + repo.owner, '-F', 'name=' + repo.name])
-      if (!r.ok) { last = r; if (r.kind !== 'network') return { ok: false, error: r }; continue }
+      if (!r.ok) {
+        last = r
+        // v1.5 B5：GraphQL 配额耗尽（RATE_LIMIT）→ 自动降级 REST 通道（不重试 2 次白烧，直接降级）
+        if (isRateLimitError(r)) return fetchMapsDetailREST(numbers, cwd)
+        if (r.kind !== 'network') return { ok: false, error: r }
+        continue
+      }
       try {
         const j = JSON.parse(r.text)
-        if (j.errors) return { ok: false, error: { kind: 'graphql', error: JSON.stringify(j.errors).slice(0, 300) } }
+        if (j.errors) {
+          // v1.5 B5：GraphQL 返回 errors（含 RATE_LIMIT）→ REST 降级
+          if (isRateLimitError({ error: JSON.stringify(j.errors) })) return fetchMapsDetailREST(numbers, cwd)
+          return { ok: false, error: { kind: 'graphql', error: JSON.stringify(j.errors).slice(0, 300) } }
+        }
         return { ok: true, issues: j.data.repository }
       } catch (e) { return { ok: false, error: { kind: 'parse', error: String(e) } } }
     }
@@ -415,9 +476,11 @@ export function apply(ctx) {
     const mapsMeta = fi.ok ? fi.issues.filter(function (x) {
       return x.state === 'OPEN' && (x.labels || []).some(function (l) { return l.name === 'wayfinder:map' })
     }) : []
-    // v1.5 T10：记录本次构建的 open map updatedAt 表，作为变化探测基准
-    lastMapsUpdatedAt = {}
-    mapsMeta.forEach(function (m) { if (m.updatedAt) lastMapsUpdatedAt[m.number] = m.updatedAt })
+    // v1.5 T10 修订（B5）：open map updatedAt 表按 repoKey 隔离 —— 多仓库会话并发时各记各的，
+    //   否则 probe 的 changed 判定拿别的仓库的表对比 → 键数恒不同 → 永远 changed → 全 store 疯狂刷新烧 GraphQL 配额
+    const rk0 = (repo && repo.owner && repo.name) ? (repo.owner + '/' + repo.name) : (cwd || '')
+    lastMapsUpdatedAtByRepo[rk0] = {}
+    mapsMeta.forEach(function (m) { if (m.updatedAt) lastMapsUpdatedAtByRepo[rk0][m.number] = m.updatedAt })
     // #375：全量 label 列表（含空 label；获取失败容错置空，不阻塞快照构建，client 降级）
     let labels = []
     const fl = await runGh(['label', 'list', '--json', 'name,color'], cwd)
@@ -463,6 +526,7 @@ export function apply(ctx) {
       maps: maps,
       issues: issues,
       labels: labels,
+      fallback: d.fallback || null,  // v1.5 B5：'rest' = GraphQL 配额耗尽已降级 REST（client 可提示）
     }
   }
 
@@ -686,27 +750,28 @@ export function apply(ctx) {
         }
       }
       case 'probe': {
-        // v1.5 T10：变化探测 —— 1 次 GraphQL 查 open map 的 updatedAt 与上次构建对比；
-        //   changed=true → 失效内存缓存 + client 后台静默刷新（配额友好：轮询不触发全量重建）
+        // v1.5 T10 修订（B5 配额止血 · 第一性原理）：变化探测是「轻量检测」——走 REST（1 次请求/次，
+        //   不占 GraphQL 5000 点配额，REST 独立 5000 次/小时），且只对比本 repo 的 updatedAt 表
+        //   （原 GraphQL + 模块级单例：多仓库并发 probe 拿别仓库的表对比 → 永远 changed → 全 store 刷新烧配额）
         try {
           const repo = await getRepoKey(cwd)
           if (!repo) return { ok: false, error: '无法解析仓库' }
-          const q = 'query($owner:String!,$name:String!){repository(owner:$owner,name:$name){issues(first:50,states:OPEN,labels:["wayfinder:map"]){nodes{number updatedAt}}}}'
-          const r = await runGh(['api', 'graphql', '-f', 'query=' + q, '-F', 'owner=' + repo.owner, '-F', 'name=' + repo.name], cwd)
+          // REST 通道：issue list 按 label 过滤（1 次 REST），取 number + updated_at
+          const r = await runGh(['api', 'repos/' + repo.owner + '/' + repo.name + '/issues?state=open&labels=wayfinder:map&per_page=100', '--jq', '[.[] | {number: .number, updatedAt: .updated_at}]'], cwd)
           if (!r.ok) return { ok: false, error: r.error || 'probe 失败' }
-          const j = JSON.parse(r.text)
-          const nodes = (j && j.data && j.data.repository && j.data.repository.issues && j.data.repository.issues.nodes) || []
+          const arr = JSON.parse(r.text)
           const cur = {}
-          nodes.forEach(function (n) { cur[n.number] = n.updatedAt })
-          const prev = lastMapsUpdatedAt
+          arr.forEach(function (n) { cur[n.number] = n.updatedAt })
+          const rk1 = (repo.owner && repo.name) ? (repo.owner + '/' + repo.name) : (cwd || '')
+          const prev = lastMapsUpdatedAtByRepo[rk1] || null
           const changed = prev === null
             || Object.keys(cur).length !== Object.keys(prev).length
             || Object.keys(cur).some(function (k) { return prev[k] !== cur[k] })
           if (changed) {
-            lastMapsUpdatedAt = cur
+            lastMapsUpdatedAtByRepo[rk1] = cur
             cache = { ts: 0, snapshot: null, error: null, cwd: cwd }  // 失效内存缓存 → 下次 snapshot 重建
           }
-          return { ok: true, changed: changed }
+          return { ok: true, changed: changed, repo: repo }
         } catch (e) { return { ok: false, error: errText(e) } }
       }
       case 'cwd': {

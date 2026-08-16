@@ -50,7 +50,8 @@ for (const f of ['client.js', 'package/lib/client.js']) {
 
   check(src.includes('PROBE_MS = 300000'), f + ' probe 轮询降到 5min（#348 拍板纯手动 + 低频兜底）')
   check(src.includes('FOCUS_PROBE_MIN_MS = 60000'), f + ' focus 触发限流 ≥60s（防窗口来回切换疯狂烧）')
-  const probeBlock = src.slice(src.indexOf('const startAutoProbe'), src.indexOf('const refreshAll'))
+  // T10 R9 重构后 probe 逻辑位于 probeNow（startAutoProbe 仅剩定时器装配）——切片锚点随之更新
+  const probeBlock = src.slice(src.indexOf('const probeNow'), src.indexOf('const startAutoProbe'))
   check(probeBlock.includes('sr === rep'), f + ' changed 只刷新与探测 repo 匹配的 store（不再全 store 刷新）')
   check(probeBlock.includes('loadSnapshot(shared, true, true)'), f + ' shared 用 force 刷新（1 次全量）')
   check(probeBlock.includes('loadSnapshot(st2, false, true)'), f + ' 其他匹配 store 用非 force（命中 host 60s 缓存 · 零额外 GraphQL）')

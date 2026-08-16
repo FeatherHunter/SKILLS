@@ -201,8 +201,7 @@ window.__ModuleLoader__.load({
       '.dsws-ccard .nm{font-size:12.5px;font-weight:600}',
       '.dsws-ccard .dt{font-size:11px;color:var(--dsw-alias-label-secondary,#a1a1aa)}',
       '.dsws-ccard .act{margin-top:5px;display:flex;gap:6px}',
-      // 手动刷新全面板遮罩 + spinner
-      '.dsws-shade{position:absolute;inset:0;background:rgba(8,10,14,.55);display:flex;align-items:center;justify-content:center;gap:8px;z-index:7;border-radius:12px}',
+      // v1.5 T10 R7：刷新遮罩已废除（手动刷新走静默路径）；spinner 仅首开 loading 用
       '.dsws-spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.18);border-top-color:#c084fc;animation:dsws-spin .8s linear infinite;flex:none}',
       '@keyframes dsws-spin{to{transform:rotate(360deg)}}',
       // v25 · T2b：配置页（settings.plugins.tab）专用样式
@@ -1035,7 +1034,7 @@ window.__ModuleLoader__.load({
         stateFilter: listPrefs.stateFilter, sortKey: listPrefs.sortKey, sortDir: listPrefs.sortDir,
         checks: null, checksUpdatedAt: '', checksMode: 'loading', checksError: null, checking: false,
         snapMode: 'loading', snapError: null, snapLoading: false,
-        refreshing: false, handoffReady: false, expTags: {}, subs: [],
+        handoffReady: false, expTags: {}, subs: [],
       })
       const shared = makeStore()
       const stores = {}
@@ -1179,7 +1178,7 @@ window.__ModuleLoader__.load({
       // ---- 环境检查（#344 · rpcCall('status')；host 侧 30s 缓存 / force 重查）----
       // v12：失败不再兜假数据 —— 非 real 状态一律视为未知（--/8），不展示假绿点
       const CHECKS_TOTAL = 8
-      const loadChecks = (st, force) => {
+      const loadChecks = (st, force, silent) => {
         if (st.checking) return Promise.resolve()
         if (conn === undefined || conn.rpc === undefined) {
           st.checksMode = 'err'
@@ -1188,7 +1187,8 @@ window.__ModuleLoader__.load({
           return Promise.resolve()
         }
         st.checking = true
-        if (force) st.checksMode = 'loading'
+        // v1.5 T10 R7：silent（手动刷新走静默路径）不切 loading 态
+        if (force && !silent) st.checksMode = 'loading'
         emit(st)
         const args = Object.assign({}, st.cwd ? { cwd: st.cwd } : {}, force ? { force: true } : {})
         return rpcCall('status', args).then(function (res) {
@@ -1303,6 +1303,35 @@ window.__ModuleLoader__.load({
         Object.keys(stores).forEach(function (k) { applyTo(stores[k]) })
       }
 
+      // v1.5 T10 R4（用户拍板）：数据层增量 diff —— 变更/新增/删除 按票号对比（含 map 子票级变化），
+      //   多视图（列表/map详情/状态栏计数/过滤结果）数据驱动自动增量；diff 结果供 R5 视觉消费
+      const diffSnapshots = function (oldS, newS) {
+        const out = { added: [], removed: [], changed: [], ts: Date.now() }
+        if (!oldS || !oldS.ok || !Array.isArray(oldS.maps)) return out
+        if (!newS || !newS.ok || !Array.isArray(newS.maps)) return out
+        const lbl = function (x) { return (x.labels || []).map(function (l) { return typeof l === 'string' ? l : l.name }).sort().join(',') }
+        const idx = function (snap) { const m = {}; snap.maps.forEach(function (x) { m[x.number] = x }); return m }
+        const a = idx(oldS), b = idx(newS)
+        const subChanged = function (x, y) {
+          if (!x || !y) return true
+          const ix = {}; (x.issues || []).forEach(function (i) { ix[i.number] = i })
+          const iy = {}; (y.issues || []).forEach(function (i) { iy[i.number] = i })
+          if (Object.keys(ix).length !== Object.keys(iy).length) return true
+          for (var n in iy) {
+            var a2 = ix[n], b2 = iy[n]
+            if (!a2) return true
+            if (a2.state !== b2.state || a2.progress !== b2.progress || lbl(a2) !== lbl(b2)) return true
+          }
+          return false
+        }
+        Object.keys(b).forEach(function (n) {
+          if (!a[n]) { out.added.push(Number(n)); return }
+          var x = a[n], y = b[n]
+          if (x.state !== y.state || x.progress !== y.progress || x.title !== y.title || lbl(x) !== lbl(y) || subChanged(x, y)) out.changed.push(Number(n))
+        })
+        Object.keys(a).forEach(function (n) { if (!b[n]) out.removed.push(Number(n)) })
+        return out
+      }
       // 快照（#346：面板数据源；force 走 wf.refresh 全量重建；wf.snapshot 侧 5s 缓存）
       const loadSnapshot = function (st, force, silent) {
         // #370 次要观察：force 刷新时跳过 snapLoading 守卫（加载中点击「刷新」不再 no-op）
@@ -1322,6 +1351,12 @@ window.__ModuleLoader__.load({
         return p.then(function (snap) {
           st.snapLoading = false
           if (snap && snap.ok === true && Array.isArray(snap.maps)) {
+            // v1.5 T10 R4：数据层增量 diff（新旧快照对比）—— 供多视图增量与 R5 视觉
+            st.lastDiff = diffSnapshots(st.snapshot, snap)
+            st.rowFlash = {}
+            var _df = st.lastDiff
+            _df.added.forEach(function (n) { st.rowFlash[n] = 'added' })
+            _df.changed.forEach(function (n) { st.rowFlash[n] = 'changed' })
             st.snapshot = snap
             st.snapMode = 'real'
             st.snapError = null
@@ -1351,44 +1386,59 @@ window.__ModuleLoader__.load({
       const PROBE_MS = 300000
       const FOCUS_PROBE_MIN_MS = 60000
       let lastFocusProbe = 0
+      // v1.5 T10 R9（Q4 拍板 · DESIGN.md 12.2）：关键动作后延迟探测 —— 完成/执行/交接后面板尽快反映 GitHub 变化；
+      //   防抖（一次只排一个）+ 探测本身 1 次轻量 REST，配额安全
+      let _actionProbePending = false
+      const probeNow = function (fromFocus) {
+        if (conn === undefined || conn.rpc === undefined) return
+        if (fromFocus) {
+          const now = Date.now()
+          if (now - lastFocusProbe < FOCUS_PROBE_MIN_MS) return
+          lastFocusProbe = now
+        }
+        const args = shared.cwd ? { cwd: shared.cwd } : {}
+        rpcCall('probe', args).then(function (res) {
+          if (!(res && res.ok && res.changed)) return
+          const rep = (res && res.repo && (res.repo.owner && res.repo.name))
+            ? (res.repo.owner + '/' + res.repo.name) : null
+          // B5（第一性原理）：changed 只触发 1 次全量刷新（shared · force 走 wf.refresh），
+          //   同 repo 的其他 store 用非 force 的 wf.snapshot → 命中 host 60s 缓存（shared 刚刷过）→ 零额外 GraphQL。
+          loadSnapshot(shared, true, true)
+          if (rep) {
+            Object.keys(stores).forEach(function (k) {
+              const st2 = stores[k]
+              const sr = (st2.snapshot && st2.snapshot.repo && st2.snapshot.repo.owner && st2.snapshot.repo.name)
+                ? (st2.snapshot.repo.owner + '/' + st2.snapshot.repo.name) : null
+              if (sr === rep) loadSnapshot(st2, false, true)
+            })
+          }
+        }).catch(function () { /* 探测失败忽略，下轮再试 */ })
+      }
+      const scheduleActionProbe = function () {
+        if (_actionProbePending) return
+        _actionProbePending = true
+        if (timer === undefined) { _actionProbePending = false; return }
+        timer.timeout(function () {
+          _actionProbePending = false
+          probeNow(false)
+        }, 8000)
+      }
       const startAutoProbe = function () {
         if (shared._probeTimer) return
-        const probe = function (fromFocus) {
-          if (conn === undefined || conn.rpc === undefined) return
-          if (fromFocus) {
-            const now = Date.now()
-            if (now - lastFocusProbe < FOCUS_PROBE_MIN_MS) return
-            lastFocusProbe = now
-          }
-          const args = shared.cwd ? { cwd: shared.cwd } : {}
-          rpcCall('probe', args).then(function (res) {
-            if (!(res && res.ok && res.changed)) return
-            const rep = (res && res.repo && (res.repo.owner && res.repo.name))
-              ? (res.repo.owner + '/' + res.repo.name) : null
-                      // B5（第一性原理）：changed 只触发 1 次全量刷新（shared · force 走 wf.refresh），
-                      //   同 repo 的其他 store 用非 force 的 wf.snapshot → 命中 host 60s 缓存（shared 刚刷过）→ 零额外 GraphQL。
-                      loadSnapshot(shared, true, true)
-                      if (rep) {
-                        Object.keys(stores).forEach(function (k) {
-                          const st2 = stores[k]
-                          const sr = (st2.snapshot && st2.snapshot.repo && st2.snapshot.repo.owner && st2.snapshot.repo.name)
-                            ? (st2.snapshot.repo.owner + '/' + st2.snapshot.repo.name) : null
-                          if (sr === rep) loadSnapshot(st2, false, true)
-                        })
-                      }
-          }).catch(function () { /* 探测失败忽略，下轮再试 */ })
-        }
-        shared._probeTimer = setInterval(function () { probe(false) }, PROBE_MS)
-        if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('focus', function () { probe(true) })
+        shared._probeTimer = setInterval(function () { probeNow(false) }, PROBE_MS)
+        if (typeof window !== 'undefined' && window.addEventListener) window.addEventListener('focus', function () { probeNow(true) })
       }
 
-      // v14-17：手动刷新（状态栏「更新」/ 列表「刷新」/ 检查页「重新检查」）→ 全面板遮罩 + 禁点
+      // v1.5 T10 R7（用户拍板）：手动刷新（状态栏「更新」/ 列表「刷新」/ 检查页「重新检查」）
+      //   改走静默路径 —— 不再出现「刷新中」全屏遮罩、不禁点；loading 态仅首开无数据时显示；
+      //   数据到达后数据驱动增量更新（MVVM · 无整屏替换）
+      let _manualRefreshing = false
       const refreshAll = function (st) {
-        if (st.refreshing) return
-        st.refreshing = true; emit(st)
-        Promise.all([loadChecks(st, true), loadSnapshot(st, true)]).then(function () {
-          st.refreshing = false; emit(st)
-        })
+        if (_manualRefreshing) return
+        _manualRefreshing = true
+        Promise.all([loadChecks(st, true, true), loadSnapshot(st, true, true)]).then(function () {
+          _manualRefreshing = false
+        }).catch(function () { _manualRefreshing = false })
       }
 
       // #376：打开面板即保证新鲜 —— 未就绪/失败 → force 加载（有「加载中」反馈）；
@@ -1639,6 +1689,8 @@ window.__ModuleLoader__.load({
       const inject = (st, text) => {
         if (st.injector) { st.injector(text); flash(st, tr('toast.injected'), 'ok') }
         else copyText(st, text, tr('toast.copiedFallback'))
+        // v1.5 T10 R9（Q4 拍板）：关键动作（完成/执行/交接/认领）后延迟探测，面板尽快反映变化
+        scheduleActionProbe()
       }
       const copyText = (st, text, okMsg) => {
         if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
@@ -2497,8 +2549,8 @@ window.__ModuleLoader__.load({
             st.expLabels ? h('span', { key: 'lbl-less', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = false; emit(st) }, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
           ]),
           // T3 #5：加载遮罩（替代单行文本，全屏遮罩 + 转圈 + 禁点）
-          // v1.3.3 修复：刷新中（refreshing）只显示全面板刷新遮罩，不叠加本加载遮罩（用户实测双 loading 叠加）
-        st.snapMode === 'loading' && !st.refreshing ? h('div', { className: 'dsws-loading-shade', style: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 5, pointerEvents: 'auto' } }, [
+          // v1.3.3 修复：加载遮罩仅首开无数据时显示（手动刷新已走静默路径，不再叠加）
+        st.snapMode === 'loading' ? h('div', { className: 'dsws-loading-shade', style: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10, zIndex: 5, pointerEvents: 'auto' } }, [
           h('div', { className: 'dsws-spinner' }),
           h('span', { style: { fontSize: 12, color: '#e6edf3' } }, tr('list.loading')),
         ]) : null,
@@ -2725,11 +2777,7 @@ window.__ModuleLoader__.load({
             s.tab === 'skills' ? h(SkillsTab, { st: s }) : null,
             s.tab === 'checks' ? h(ChecksTab, { st: s }) : null,
           ]),
-          // v26：刷新遮罩（与悬浮面板同款；期间禁点）
-          s.refreshing ? h('div', { className: 'dsws-shade' }, [
-            h('div', { className: 'dsws-spinner' }),
-            h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, tr('panel.refreshing')),
-          ]) : null,
+          // v1.5 T10 R7：刷新遮罩已废除（手动刷新走静默路径，无「刷新中」）
           s.notice ? h('div', { className: 'dsws-note', style: { display: 'flex', alignItems: 'center', gap: 6 } }, [
             Ic({ n: noticeIcon(s.notice.kind), size: 13, color: NOTICE_COLOR[s.notice.kind] || '#4ade80' }),
             h('span', null, s.notice.text),
@@ -2836,11 +2884,7 @@ window.__ModuleLoader__.load({
           h('div', { className: 'dsws-rz dsws-rz-nw', onMouseDown: onResizeDown('nw'), title: tr('rz.nw') }),
           h('div', { className: 'dsws-rz dsws-rz-se', onMouseDown: onResizeDown('se'), title: tr('rz.se') }),
           h('div', { className: 'dsws-rz dsws-rz-sw', onMouseDown: onResizeDown('sw'), title: tr('rz.sw') }),
-          // v14-17：手动刷新遮罩（期间禁点）
-          s.refreshing ? h('div', { className: 'dsws-shade' }, [
-            h('div', { className: 'dsws-spinner' }),
-            h('span', { style: { fontSize: 12, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, tr('panel.refreshing')),
-          ]) : null,
+          // v1.5 T10 R7：刷新遮罩已废除（手动刷新走静默路径，无「刷新中」）
           s.notice ? h('div', { className: 'dsws-note', style: { display: 'flex', alignItems: 'center', gap: 6 } }, [
             Ic({ n: noticeIcon(s.notice.kind), size: 13, color: NOTICE_COLOR[s.notice.kind] || '#4ade80' }),
             h('span', null, s.notice.text),

@@ -329,6 +329,7 @@ window.__ModuleLoader__.load({
           'list.mapChip': '地图',
           'list.loadFail': '加载失败',
           'list.noDest': '（未填写 Destination）',
+          'list.noNotes': '（未填写 Notes）',
           'list.kpi.takeable': '可接',
           'list.kpi.occupied': '阻塞',
           'list.kpi.closed': '已关闭',
@@ -364,6 +365,7 @@ window.__ModuleLoader__.load({
           'map.progressCap': '地图进度',
           'map.curLayer': '当前：层 {n}',
           'map.layersPassed': '{n}/{t} 层已通过',
+          'map.notesCap': '正文详情',
           'map.startCap': 'Start',
           'map.destCap': 'Destination',
           'map.startBtn': '开始 #{n}',
@@ -536,6 +538,7 @@ window.__ModuleLoader__.load({
           'list.mapChip': 'Map',
           'list.loadFail': 'Failed to load',
           'list.noDest': '(no Destination)',
+          'list.noNotes': '(no Notes)',
           'list.kpi.takeable': 'Ready',
           'list.kpi.occupied': 'Blocked',
           'list.kpi.closed': 'Closed',
@@ -571,6 +574,7 @@ window.__ModuleLoader__.load({
           'map.progressCap': 'Map progress',
           'map.curLayer': 'Current: layer {n}',
           'map.layersPassed': '{n}/{t} layers passed',
+          'map.notesCap': 'Notes',
           'map.startCap': 'Start',
           'map.destCap': 'Destination',
           'map.startBtn': 'Start #{n}',
@@ -2039,9 +2043,16 @@ window.__ModuleLoader__.load({
               h('span', { className: 'pos' }, tr('map.layersPassed', { n: passedLayers, t: totalLayers })),
             ]),
           ]) : null,
-          h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#4ade80', margin: '4px 0 2px' } }, [Ic({ n: 'target', size: 12 }), h('span', { className: 'dsws-ellip', title: m.destination }, m.destination || tr('list.noDest'))]),
-          // T17：Notes markdown 渲染（列表/加粗/链接/代码随主题变色）
-          m.notes ? h('div', { style: { display: 'flex', gap: 4, fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4, alignItems: 'flex-start' } }, [Ic({ n: 'note', size: 11, style: { marginTop: 2, flex: 'none' } }), h('div', { style: { flex: 1, minWidth: 0 } }, mdToHtml(m.notes))]) : null,
+          // T17 修订：Destination 走 markdown 渲染（**加粗** 等不再裸露；去 ellip 允许换行）
+          h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 4, fontSize: 12, color: '#4ade80', margin: '4px 0 2px' } }, [Ic({ n: 'target', size: 12, style: { marginTop: 2, flex: 'none' } }), h('div', { style: { flex: 1, minWidth: 0 } }, m.destination ? mdToHtml(m.destination) : tr('list.noDest'))]),
+          // T17 修订：正文详情（Notes）默认折叠 —— <details> 收起，点击展开
+          h('details', { style: { margin: '2px 0 4px' } }, [
+            h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 } }, [
+              Ic({ n: 'note', size: 11 }),
+              h('span', null, tr('map.notesCap')),
+            ]),
+            m.notes ? h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', marginTop: 4, paddingLeft: 8, borderLeft: '2px solid var(--dsw-alias-border-l1,#2a2d35)' } }, mdToHtml(m.notes)) : h('div', { style: { fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginTop: 4, paddingLeft: 8 } }, tr('list.noNotes')),
+          ]),
           // 漏斗分层主体
           h('div', { style: { marginTop: 2 } }, [
             h('div', { className: 'dsws-start' }, [

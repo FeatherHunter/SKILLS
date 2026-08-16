@@ -5,7 +5,7 @@
 const fsx = require('fs')
 const fsp = fsx.promises
 const path = require('path')
-const { spawn } = require('child_process')
+const { spawn, spawnSync } = require('child_process')
 const os = require('os')
 
 const REPO_CWD = process.argv[2] || process.cwd()
@@ -98,6 +98,20 @@ async function main() {
   expect('临时目录：检查5 独立判定', sC.checks[4].level === s.checks[4].level, sC.checks[4].level + ' vs ' + s.checks[4].level)
   expect('临时目录：检查6 独立判定', sC.checks[5].level === s.checks[5].level, sC.checks[5].level + ' vs ' + s.checks[5].level)
   expect('临时目录 repo=null', sC.repo === null)
+
+  // —— B1 回归（#455）：仓库子目录打开面板不误报「没有初始化」——
+  //   前提：git 根存在 docs/agents/issue-tracker.md（setup 已跑）；子目录本身无该文件
+  //   断言：cwd=子目录 时检查2（setup）必须 ok（针对 git 根检测）——旧实现按 cwd 查会误报 bad
+  const gitRootRes = spawnSync('git', ['-C', REPO_CWD, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' })
+  const gitRoot = (gitRootRes.status === 0 && gitRootRes.stdout.trim() && !/fatal/i.test(gitRootRes.stdout)) ? gitRootRes.stdout.trim() : null
+  const subdirCandidates = gitRoot ? [path.join(gitRoot, 'docs'), path.join(gitRoot, 'src'), path.join(gitRoot, 'tests'), path.join(gitRoot, 'scripts')] : []
+  const b1Subdir = subdirCandidates.find(function (d) { return fsx.existsSync(d) })
+  if (b1Subdir && fsx.existsSync(path.join(gitRoot, 'docs', 'agents', 'issue-tracker.md'))) {
+    const sSub = await h['wf.status']({ cwd: b1Subdir })
+    expect('B1 子目录：检查2 ok（git 根检测到 issue-tracker.md）', sSub.checks[1].level === 'ok', sSub.checks[1].level + ' @ ' + b1Subdir)
+  } else {
+    console.log('  （跳过 B1 子目录断言：git 根无 docs/agents/issue-tracker.md 或无候选子目录）')
+  }
 
   // —— 缓存按 cwd 区分（#344 缺陷回归） ——
   const sF = await h['wf.status']({ cwd: tmp })

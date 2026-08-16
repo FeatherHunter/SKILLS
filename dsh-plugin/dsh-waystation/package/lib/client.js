@@ -830,8 +830,8 @@ window.__ModuleLoader__.load({
         "grill": { version: 1, placeholders: [], use: '澄清规则（grilling 技能）', zh: '动手前先想一下：我要做的事里，有没有哪部分是「我猜用户想要这样」的？如果有，别猜 —— 用 grilling 技能把猜的地方问清楚再动手。', en: 'Before you start, check: is any part of what you are about to do based on a guess about what the user wants? If so, do not guess — use the grilling skill to settle those guesses before acting.' },
         "newMap": { version: 1, placeholders: [], use: '建图规划契约', zh: '建图前先完成（写入 map body 既有章节，遵循 wayfinder 技能规则）：\n0. 先用 grilling 澄清目的地与范围，不自己定 scope；\n1. 并行 / 串行：在 Notes 用一句话概括「哪些票串行（被阻塞）、哪些可并行」；\n2. 已知 / 待调查 / 迷雾：已确认 → Decisions so far；待调查 → 建票；模糊待定 → Not yet specified（迷雾区，后续毕业为新票）；\n3. 归属：每张票声明建议 owner（agent 或人 · HITL），grilling 类必须标 HITL；\n4. 每张新建票写入 `## 进度：0%` 基准。', en: 'Complete before building a map (write into the map body existing sections, follow the wayfinder skill rules):\n0. Clarify the destination and scope with grilling first; do not set scope yourself;\n1. Parallel / serial: summarize in Notes in one sentence "which tickets are serial (blocked) and which run in parallel";\n2. Known / to-investigate / fog: confirmed → Decisions so far; to investigate → create tickets; vague pending → Not yet specified (the fog zone, later graduating into new tickets);\n3. Ownership: declare a suggested owner per ticket (agent or human · HITL); grilling tickets must be marked HITL;\n4. Write a `## 进度：0%` baseline into every new ticket.' },
         "tpl.diagnose": { version: 2, placeholders: ['url'], use: '动作按钮「诊断」（needs-triage 票）', zh: '/triage\n{url}\n\n诊断这个 issue（诊断流程遵循 /triage 技能自身规则）：\n1. 先弄清它到底出了什么问题（现象 / 影响范围 / 复现步骤）；\n2. 列出可能的根因（多个候选，标注各自可能性）；\n3. 给分流建议（修复 / 关闭 / 重设计 / 等待）—— 建议是你的判断，不是让你直接执行；\n4. 动手前若有「我猜用户想要这样」的地方，先用 grilling 技能澄清；\n5. 结束前按进度契约更新 issue 正文。', en: '/triage\n{url}\n\nDiagnose this issue (follow the /triage skill own rules):\n1. Pin down what is actually wrong (symptoms / impact / repro steps);\n2. List possible root causes (multiple candidates, with confidence);\n3. Propose triage (fix / close / redesign / wait) — a recommendation for the user, not a license to execute;\n4. Before acting, if any part rests on a guess about what the user wants, settle it with the grilling skill first;\n5. Update the issue body per the progress contract before finishing.' },
-        "tpl.fix": { version: 2, placeholders: ['url'], use: '动作按钮「修复」（bug 票）', zh: '/wayfinder\n{url}\n\n修复这个 bug（遵循 wayfinder 技能规则）：\n1. 先复现，再定位根因（修错地方 = 白修）；\n2. 实施修复；\n3. 加测试并跑通；\n4. 对抗式审查自己的改动（我会漏在哪里？）；\n5. 有假设先用 grilling 技能澄清，不默认；\n6. 结束前按进度契约更新（修复完成但未验收 → 95% · 待确认）。', en: '/wayfinder\n{url}\n\nFix this bug (follow the wayfinder skill rules):\n1. Reproduce it first, then find the root cause (fixing the wrong spot is wasted work);\n2. Implement the fix;\n3. Add tests and get them green;\n4. Adversarially review your own change (where did I miss?);\n5. Settle assumptions with the grilling skill first, never assume;\n6. Update per the progress contract before finishing (fix done, unverified → 95% · awaiting confirmation).' },
-        "tpl.discuss": { version: 2, placeholders: ['url'], use: '动作按钮「讨论」（grilling 票）', zh: '/wayfinder\n{url}\n\n这个 issue 需要讨论定夺，用 grilling 技能和我对话（对话方式遵循 grilling 技能自身规则）：\n1. 讨论围绕目标 / 边界 / 风险 / 选项权衡 / 决策；\n2. 不替我做决定，等我确认结论；\n3. 讨论有结论时，把结论写进 issue 正文（或建议落成票 / 决策记录）；\n4. 结束前按进度契约更新。', en: '/wayfinder\n{url}\n\nThis issue needs discussion before a decision — use the grilling skill to talk with me (follow the grilling skill own dialogue rules):\n1. Keep the discussion on goal / boundary / risks / options-tradeoffs / decision;\n2. Do not decide for me; wait for my confirmation of conclusions;\n3. When a conclusion emerges, write it into the issue body (or propose it as a ticket / decision record);\n4. Update per the progress contract before finishing.' },
+        "tpl.fix": { version: 2, placeholders: ['url'], use: '动作按钮「修复」（bug 票）', zh: '/implement\n{url}\n\n修复这个 bug（遵循 wayfinder 技能规则）：\n1. 先复现，再定位根因（修错地方 = 白修）；\n2. 实施修复；\n3. 加测试并跑通；\n4. 对抗式审查自己的改动（我会漏在哪里？）；\n5. 有假设先用 grilling 技能澄清，不默认；\n6. 结束前按进度契约更新（修复完成但未验收 → 95% · 待确认）。', en: '/implement\n{url}\n\nFix this bug (follow the wayfinder skill rules):\n1. Reproduce it first, then find the root cause (fixing the wrong spot is wasted work);\n2. Implement the fix;\n3. Add tests and get them green;\n4. Adversarially review your own change (where did I miss?);\n5. Settle assumptions with the grilling skill first, never assume;\n6. Update per the progress contract before finishing (fix done, unverified → 95% · awaiting confirmation).' },
+        "tpl.discuss": { version: 2, placeholders: ['url'], use: '动作按钮「讨论」（grilling 票）', zh: '/grill-me\n{url}\n\n这个 issue 需要讨论定夺，用 grilling 技能和我对话（对话方式遵循 grilling 技能自身规则）：\n1. 讨论围绕目标 / 边界 / 风险 / 选项权衡 / 决策；\n2. 不替我做决定，等我确认结论；\n3. 讨论有结论时，把结论写进 issue 正文（或建议落成票 / 决策记录）；\n4. 结束前按进度契约更新。', en: '/grill-me\n{url}\n\nThis issue needs discussion before a decision — use the grilling skill to talk with me (follow the grilling skill own dialogue rules):\n1. Keep the discussion on goal / boundary / risks / options-tradeoffs / decision;\n2. Do not decide for me; wait for my confirmation of conclusions;\n3. When a conclusion emerges, write it into the issue body (or propose it as a ticket / decision record);\n4. Update per the progress contract before finishing.' },
         "tpl.execute": { version: 2, placeholders: ['url'], use: '动作按钮「执行」（普通票）', zh: '/wayfinder\n{url}\n\n执行这个 issue（遵循 wayfinder 技能规则）：\n1. 先认领（若未认领）；读 Description / Notes / 阻塞关系，确认它到底要交付什么；\n2. 若目标不清或需要用户定夺 → 先用 grilling 技能澄清；\n3. 制定方案 → 实施 → 按验收标准自查；\n4. 完成且通过验收 → 100% + close；未完成 → 按进度契约如实更新（含下一步）。', en: '/wayfinder\n{url}\n\nExecute this issue (follow the wayfinder skill rules):\n1. Claim it first (if unclaimed); read Description / Notes / blocking relationships; confirm what it must deliver;\n2. If the goal is unclear or needs the user call, settle it with the grilling skill first;\n3. Plan → implement → self-check against acceptance criteria;\n4. Done and verified → 100% + close; otherwise update honestly per the progress contract (with next step).' },
         "tpl.handoff1": { version: 1, placeholders: ['ts'], use: '交接第一击（写交接文档）', zh: '/handoff\n\n请把当前会话生成交接文档，写到 .scratch/handoff/{ts}.md（相对当前工作目录），包含三部分：\n1. 结论：本次会话已确认的决定与成果；\n2. 未完成事项：下一步要继续的事；\n3. 建议 skill：新会话接手时建议加载的技能。\n\n从第一性原理出发完成任务，并对抗式审查。', en: '/handoff\n\nCreate a handoff doc from this session, written to .scratch/handoff/{ts}.md (relative to the current working directory), with three parts:\n1. Conclusion: decisions and outcomes confirmed this session;\n2. Unfinished: what to continue next;\n3. Suggested skills: skills the next session should load.\n\nApproach tasks from first principles, and review adversarially.' },
         "tpl.handoff2": { version: 1, placeholders: ['file'], use: '交接第二击（读交接文档）', zh: '/read .scratch/handoff/{file}\n\n请先阅读这份交接文档并复述确认理解（结论 / 未完成事项 / 建议 skill），然后从第一性原理出发完成任务，并对抗式审查。', en: '/read .scratch/handoff/{file}\n\nRead this handoff doc and restate your understanding (conclusions / unfinished / suggested skills), then approach tasks from first principles, and review adversarially.' },
@@ -861,6 +861,11 @@ window.__ModuleLoader__.load({
       const MATT_REPO = 'https://github.com/mattpocock/skills'
       const MAP_EXECUTE_PROMPT = promptText('mapExecute')
       const COMPLETE_PROMPT = promptText('complete')
+      // v1.5：完成确认 prompt —— 技能+链接前置（/wayfinder + map 链接），再拼完成确认正文（完成 = wayfinder）
+      const completePrompt = function (st, num, total, closed) {
+        return '/wayfinder\n' + 'https://github.com/' + repoStr(st) + '/issues/' + String(num || '') + '\n\n' +
+          COMPLETE_PROMPT.split('{n}').join(String(num || '')).split('{total}').join(String(total)).split('{closed}').join(String(closed))
+      }
       const FIXATE_PROMPT = promptText('fixate')
 
       const CFG_KEY = 'dsws.cfg'
@@ -1465,10 +1470,7 @@ window.__ModuleLoader__.load({
           const done = !!(stats && stats.total > 0 && stats.closed === stats.total)
           const head = '\n\n' + promptText('mapHead', { n: String(t.number || ''), title: (t.title || ''), url: url })
           if (done) {
-            return COMPLETE_PROMPT
-              .split('{n}').join(String(t.number || ''))
-              .split('{total}').join(String(stats.total))
-              .split('{closed}').join(String(stats.closed)) + head
+            return completePrompt(st, t.number, stats.total, stats.closed) + head
           }
           // v1.5：技能 + 链接前置（用户规则：具体操作 prompt 开头 = /wayfinder + ISSUE 链接）
         return '/wayfinder\n' + url + '\n\n' + MAP_EXECUTE_PROMPT + head
@@ -1835,10 +1837,7 @@ window.__ModuleLoader__.load({
             h('span', { style: { flex: 1 } }),
             (m.stats && m.stats.total > 0 && m.stats.closed === m.stats.total)
               ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function () {
-                  const text = COMPLETE_PROMPT
-                    .split('{n}').join(String(m.number || ''))
-                    .split('{total}').join(String(m.stats.total))
-                    .split('{closed}').join(String(m.stats.closed))
+                  const text = completePrompt(st, m.number, m.stats.total, m.stats.closed)
                   inject(st, text)
                 }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '1px 6px', fontSize: 11, background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [
                   Ic({ n: 'check', size: 10 }),
@@ -1895,10 +1894,7 @@ window.__ModuleLoader__.load({
                 // v1.4：底部按钮与顶部同语义 —— 完成态「完成」（COMPLETE_PROMPT 同列表）/ 未完成「执行」（execute 模板）
                 (m.stats && m.stats.total > 0 && m.stats.closed === m.stats.total)
                   ? h('button', { className: 'dsws-btn primary', title: tr('map.doneTitle'), onClick: function () {
-                      const text = COMPLETE_PROMPT
-                        .split('{n}').join(String(m.number || ''))
-                        .split('{total}').join(String(m.stats.total))
-                        .split('{closed}').join(String(m.stats.closed))
+                      const text = completePrompt(st, m.number, m.stats.total, m.stats.closed)
                       inject(st, text)
                     }, style: { display: 'inline-flex', alignItems: 'center', gap: 4, padding: '4px 12px', fontSize: 11, background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 700 } }, [
                       Ic({ n: 'check', size: 11 }),
@@ -2204,10 +2200,7 @@ window.__ModuleLoader__.load({
                   mapDone
                     ? h('button', { className: 'dsws-btn primary' + (narrow ? ' narrow-icon' : ''), title: tr('map.doneTitle'), onClick: function (e) {
                         e.stopPropagation()
-                        const text = COMPLETE_PROMPT
-                          .split('{n}').join(String(x.number || ''))
-                          .split('{total}').join(String(mapObj.stats.total))
-                          .split('{closed}').join(String(mapObj.stats.closed))
+                        const text = completePrompt(st, x.number, mapObj.stats.total, mapObj.stats.closed)
                         inject(st, text)
                       }, style: { display: 'inline-flex', alignItems: 'center', gap: 3, padding: '1px 6px', fontSize: 11, flex: 'none', background: '#3fb950', borderColor: 'transparent', color: '#0c1a10', fontWeight: 600 } }, [Ic({ n: 'check', size: 10 }), narrow ? null : h('span', null, tr('act.done'))])
                     : mkRowAction(st, x, narrow, colorOf),

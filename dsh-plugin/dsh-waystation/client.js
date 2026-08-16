@@ -1800,7 +1800,7 @@ return {
     // v1.5 T12：票进度渲染（状态徽章 + 进度条）—— open/close 原生 + 进度自评
     const tStatus = function (t) {
       if (t.state === 'CLOSED') return { key: 'done', color: '#3fb950', icon: 'check' }
-      if (t.progress === null || t.progress === undefined) return { key: 'todo', color: '#8b8b95', icon: 'dot' }
+      if (t.progress === null || t.progress === undefined || t.progress <= 0) return { key: 'todo', color: '#8b8b95', icon: 'dot' } // B4：0% = 未动工（契约），不进 doing
       if (t.progress >= 100) return { key: 'accept', color: '#f59e0b', icon: 'alert' }
       if (t.progress >= 95) return { key: 'confirm', color: '#f59e0b', icon: 'alert' }
       return { key: 'doing', color: '#58a6ff', icon: 'dot' }

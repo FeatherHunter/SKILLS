@@ -22,6 +22,10 @@ const cases = [
   ['无进度内容', null],
   ['## 进度：0%', 0],
   ['## 进度：95%', 95],
+  // B4 回归：三级锚定 —— 正文示例/规则文本不劫持标题行进度区（#459/#460 实证）
+  ['## 已对齐决定\n3. 每张新票写 ## 进度：0% 基准。\n## 进度：90%', 90],
+  ['## 待 grill 点\n- 宽容：## 进度：90% 主格式\n## 进度：95%', 95],
+  ['Progress: 40%', 40],
 ]
 cases.forEach(function (c) {
   const got = parseProgress(c[0])
@@ -60,6 +64,11 @@ check(cli.includes("'progress.done'") && cli.includes("'progress.accept'"), 'cli
 check(pcli.includes("'progress.done'") && pcli.includes("'progress.accept'"), 'package client 含进度 locale 键')
 check(cli.includes('tProgressBar(t)') && cli.includes('tStatusBadge(t)'), 'client 渲染点存在')
 check(pcli.includes('tProgressBar(t)') && pcli.includes('tStatusBadge(t)'), 'package client 渲染点存在')
+// B4：0% = 未动工（契约）—— tStatus 0 分支 + parseProgress 标题行锚定守卫
+check(cli.includes('t.progress <= 0'), 'client tStatus 0% → todo（B4）')
+check(pcli.includes('t.progress <= 0'), 'package client tStatus 0% → todo（B4）')
+check(host.includes('#{1,6}'), 'host parseProgress 标题行锚定（B4）')
+check(pkg.includes('#{1,6}'), 'package parseProgress 标题行锚定（B4）')
 
 // T16: client/package 均含 bodyFormat 契约与追加点
 check(cli.includes('"bodyFormat"'), 'client 含 bodyFormat prompt')

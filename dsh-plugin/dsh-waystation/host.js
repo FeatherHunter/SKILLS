@@ -256,10 +256,16 @@ return {
       return out
     }
 
-    // v1.5 T12：进度块解析（宽容：## 进度：90% / ## 进度: 90% / 进度：90% / Progress: 90%）
+    // v1.5 T12 修订（B4）：进度块解析三级锚定 —— 进度区 = 契约固定章节「## 进度：N%」，先锚定标题行，防正文示例/规则文本劫持（#459/#460 实证）
+    //   1) 标题行：## 进度：90%（行首 markdown 标题 · 进度区正形）
+    //   2) 行首变体：进度：90% / Progress: 90%（无标题符号 · 兑现注释承诺）
+    //   3) 全文兜底：任意出现（兼容老票随手格式 · 放最后不劫持前两层）
     function parseProgress(body) {
       if (!body) return null
-      const m = String(body).match(/进度[：:]\s*(\d{1,3})\s*%/i)
+      const s = String(body)
+      const m = s.match(/^\s*#{1,6}\s*(?:进度|Progress)\s*[：:]\s*(\d{1,3})\s*%/im)
+        || s.match(/^\s*(?:进度|Progress)\s*[：:]\s*(\d{1,3})\s*%/im)
+        || s.match(/(?:进度|Progress)\s*[：:]\s*(\d{1,3})\s*%/i)
       if (!m) return null
       const n = parseInt(m[1], 10)
       if (isNaN(n)) return null

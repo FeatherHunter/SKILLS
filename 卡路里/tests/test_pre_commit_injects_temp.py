@@ -24,12 +24,52 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent  # SKILLS 仓库根
 HOOK = REPO_ROOT / ".githooks" / "pre-commit"
 
-_BASH = shutil.which("bash")
+# git-bash 优先(含 cygpath,路径语义与 git 触发钩子一致;WSL bash 无 cygpath 会让
+# trap 清理断言空转);PATH bash 作 fallback。
+_GIT_BASH = Path(r"C:\Program Files\Git\bin\bash.exe")
+_BASH = str(_GIT_BASH) if _GIT_BASH.exists() else shutil.which("bash")
 
 
 def _require_bash():
     if not _BASH:
-        pytest.skip("无 bash(WSL/git-bash),跳过钩子动态测试")
+        pytest.skip("无 bash(git-bash/WSL),跳过钩子动态测试")
+
+
+def _clean_git_env(env=None):
+    """清洗 GIT_* / GIT_CONFIG_* / SKILLS_DB_PATH 环境变量
+
+    Standards 审查 C4 高严重度:本测试的 git 子进程曾继承调用方的 GIT_DIR 等 env,
+    导致测试写入真实仓库 gitdir 配置(core.worktree 被覆盖为 pytest 临时路径、
+    user 身份被写成 test)——必须隔离。
+    同时删除 SKILLS_DB_PATH:外层 conftest L2 注入的 iso_db temp 会泄漏进 commit
+    子进程,被 commit-msg 钩子的 python3 调用记录,污染「钩子注入」断言。
+    """
+    import os as _os
+    e = dict(_os.environ if env is None else env)
+    for key in list(e.keys()):
+        if key.startswith("GIT_") or key.startswith("GIT_CONFIG_"):
+            del e[key]
+    # 兜底:显式指向临时仓库,彻底隔离(即使上层有 GIT_DIR 泄漏)
+    e.pop("GIT_DIR", None)
+    e.pop("GIT_WORK_TREE", None)
+    e.pop("SKILLS_DB_PATH", None)
+    return e
+
+
+def _git(repo, *args, extra_env=None, check=True):
+    """在临时仓库跑 git,env 清洗 + 显式 GIT_DIR/WORK_TREE
+
+    extra_env: 附加 env(如给钩子内的假 python3 提供 PATH),会覆盖清洗后的值。
+    """
+    env = _clean_git_env()
+    env["GIT_DIR"] = str(repo / ".git")
+    env["GIT_WORK_TREE"] = str(repo)
+    if extra_env:
+        env.update(extra_env)
+    return subprocess.run(
+        ["git", *args], cwd=repo, env=env, capture_output=True,
+        text=True, encoding="utf-8", errors="replace", timeout=120,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -50,10 +90,18 @@ def test_hook_has_l4_isolation_block():
 
 
 def test_hook_injects_before_pytest():
-    """注入必须在 pytest 调用之前(否则隔离不生效)"""
+    """注入必须在 pytest 调用之前(否则隔离不生效)
+
+    锚定 L4 块(避免注释里先出现关键词导致误报):
+    取「L4 测试隔离层」注释到「跑 $skill pytest」之间,
+    断言 export 在 python3 -m pytest 之前。
+    """
     text = HOOK.read_text(encoding="utf-8", errors="replace")
-    inject_pos = text.index("export SKILLS_DB_PATH")
-    pytest_pos = text.index("python3 -m pytest")
+    l4_marker = "# L4 测试隔离层"
+    assert l4_marker in text, "缺少 L4 块注释标记"
+    l4_start = text.index(l4_marker)
+    pytest_pos = text.index("python3 -m pytest", l4_start)
+    inject_pos = text.index("export SKILLS_DB_PATH", l4_start)
     assert inject_pos < pytest_pos, (
         f"注入位置在 pytest 之后!inject@{inject_pos} > pytest@{pytest_pos}"
     )
@@ -102,14 +150,14 @@ def test_pre_commit_injects_temp(tmp_path):
     # 临时 git 仓库
     repo = tmp_path / "repo"
     repo.mkdir()
-    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.name", "test"], cwd=repo, check=True)
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "test")
     # 与真实仓库一致:core.quotepath=false,否则 git diff 输出中文路径为 \345 字节转义,
     # 导致钩子 case 匹配失败(诊断:临时仓库默认 true 时 NEED_TEST 为空,钩子提前 exit)
-    subprocess.run(["git", "config", "core.quotepath", "false"], cwd=repo, check=True)
+    _git(repo, "config", "core.quotepath", "false")
     shutil.copytree(REPO_ROOT / ".githooks", repo / ".githooks")
-    subprocess.run(["git", "config", "core.hooksPath", ".githooks"], cwd=repo, check=True)
+    _git(repo, "config", "core.hooksPath", ".githooks")
 
     # 制造卡路里改动(触发 NEED_TEST[卡路里]=1)
     cal_dir = repo / "卡路里"
@@ -117,7 +165,7 @@ def test_pre_commit_injects_temp(tmp_path):
     # 钩子需要 $skill/tests 目录存在才跑 pytest
     (cal_dir / "tests").mkdir()
     (cal_dir / "x.py").write_text("x = 1\\n", encoding="utf-8")
-    subprocess.run(["git", "add", "卡路里/x.py"], cwd=repo, check=True)
+    _git(repo, "add", "卡路里/x.py")
 
     # git commit 触发真实 pre-commit 钩子
     env = os.environ.copy()
@@ -127,11 +175,8 @@ def test_pre_commit_injects_temp(tmp_path):
 
     # 合规 commit message: [技能名] 主题 + Tested-By 行(否则 commit-msg 钩子拒绝)
     msg = "[卡路里] 测试钩子注入 \u00b7 Tested-By: exempt(\u65e0 fresh agent)"
-    proc = subprocess.run(
-        ["git", "commit", "-m", msg],
-        cwd=repo, env=env, capture_output=True, text=True, encoding="utf-8",
-        errors="replace", timeout=120,
-    )
+    proc = _git(repo, "commit", "-m", msg,
+                extra_env={"PATH": str(fake_bin) + os.pathsep + os.environ.get("PATH", "")})
 
     # 假 python3 必须被钩子调用(证明钩子跑了 pytest 路径并注入 env)
     assert env_dump.exists(), (

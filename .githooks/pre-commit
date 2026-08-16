@@ -56,6 +56,12 @@ fi
 #        若钩子不注入,未自行隔离的测试会直写生产(08-09~14 事故根因)。
 # opt-out: 无(钩子场景 = 强制隔离;调试请勿在提交时进行)。
 HOOK_TEMP_DIR_MSYS="$(mktemp -d)"
+# 立即注册 trap:mktemp 后任何 set -e 失败(如 cygpath 命令替换失败)都会触发清理,
+# 消除泄漏窗口(对抗审查 C2)。
+cleanup_hook_temp() {
+    rm -rf "$HOOK_TEMP_DIR_MSYS" 2>/dev/null || true
+}
+trap cleanup_hook_temp EXIT
 # git-bash 的 mktemp 返回 MSYS 路径(/tmp/tmp.xxx);Windows python 会把它解析成
 # 当前盘根的 \tmp(如 D:\tmp)——隔离虽生效但路径不一致,且 trap 清理不到实际写入点。
 # 用 cygpath -w 转 Windows 原生路径(两种运行时一致;cygpath 在 git-bash 必有)。
@@ -66,10 +72,6 @@ else
 fi
 export SKILLS_DB_PATH="$HOOK_TEMP_DIR"
 echo "🔒 [pre-commit] L4 隔离已注入: SKILLS_DB_PATH=$HOOK_TEMP_DIR"
-cleanup_hook_temp() {
-    rm -rf "$HOOK_TEMP_DIR_MSYS" 2>/dev/null || true
-}
-trap cleanup_hook_temp EXIT
 
 FAILED=0
 for skill in "${!NEED_TEST[@]}"; do

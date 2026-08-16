@@ -20,7 +20,8 @@
 export const name = 'dsh-waystation'
 
 // 服务依赖声明（loader 等待就绪后再 apply；connection 依赖 webServer，显式声明避免静默失效）
-export const inject = ['subprocess', 'timer', 'connection']
+// v1.5 T9 修复：fs 必须声明 —— 磁盘缓存（waystation-cache）依赖 fs 服务；未声明时 ctx.get('fs') 为 undefined → 缓存静默失效
+export const inject = ['subprocess', 'timer', 'connection', 'fs']
 
 export function apply(ctx) {
   const subprocess = ctx.get('subprocess')

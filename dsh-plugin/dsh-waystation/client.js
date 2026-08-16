@@ -49,7 +49,7 @@ return {
     const timer = ctx.get('timer')
     const h = React.createElement
     // v1.3.3：面板版本号（tabs 行最右侧显示，便于核对已更新）
-    const DSW_VERSION = 'v1.4.1'
+    const DSW_VERSION = 'v1.5.0'
 
     // ============================================================
     // 0. 样式

@@ -255,7 +255,7 @@ window.__ModuleLoader__.load({
       const timer = ctx.get('timer')
       const h = React.createElement
       // v1.3.3：面板版本号（tabs 行最右侧显示，便于核对已更新）
-      const DSW_VERSION = 'v1.4.1'
+      const DSW_VERSION = 'v1.5.0'
 
       // 样式注入（静态插件没有 styles.insert builtin，手动 <style> + ctx.effect 清理）
       const styleEl = document.createElement('style')

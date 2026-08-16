@@ -1714,7 +1714,94 @@ window.__ModuleLoader__.load({
         ])
       }
 
-      // v1.5 T12：票进度渲染（状态徽章 + 进度条）—— open/close 原生 + 进度自评
+      // ============================================================
+    // T17：issue 正文 markdown 白名单渲染（mdToHtml）
+    //   只认白名单语法，其余一律纯文本（不渲染原始 HTML，防 XSS）
+    //   输出标准 HTML 标签 → opencode-palette 主题自动上色（markdownHeading/Link/Code/Emph/Strong）
+    //   返回值：React 元素数组（可直接作为 h(...) children）
+    // ============================================================
+    const MD_LINK_RE = /\[([^\]]+)\]\(([^\s)]+)\)/g
+    const MD_TASK_RE = /^- \[([ xX])\]\s*(.*)$/
+    const mdEsc = function (s) { return String(s == null ? '' : s) }
+    const mdInline = function (text, keyBase) {
+      const out = []
+      let rest = mdEsc(text)
+      let k = 0
+      // 先提取链接（防内部 ** 混淆）
+      const linkParts = []
+      rest = rest.replace(MD_LINK_RE, function (m, label, url) {
+        linkParts.push(h('a', { key: 'l' + (k++), href: url, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'underline' } }, mdInline(label, 'll' + k)))
+        return '\u0001L' + (linkParts.length - 1) + '\u0001'
+      })
+      // 再处理加粗 / 斜体 / 行内代码
+      rest.split(/(\*\*[^*]+\*\*|\*[^*]+\*|\x60[^\x60]+\x60)/g).forEach(function (seg, si) {
+        if (!seg) return
+        if (seg.indexOf('\u0001L') === 0) {
+          const n = parseInt(seg.slice(2, -1), 10)
+          if (!isNaN(n) && linkParts[n]) out.push(linkParts[n])
+          else out.push(seg)
+          return
+        }
+        if (seg.indexOf('\u0001') >= 0) { out.push(seg); return }
+        const em = /^\*\*([^*]+)\*\*$/.exec(seg)
+        if (em) { out.push(h('strong', { key: (keyBase || '') + 's' + (si) }, em[1])); return }
+        const it = /^\*([^*]+)\*$/.exec(seg)
+        if (it) { out.push(h('em', { key: (keyBase || '') + 'i' + (si) }, it[1])); return }
+        const cd = /^\x60([^\x60]+)\x60$/.exec(seg)
+        if (cd) { out.push(h('code', { key: (keyBase || '') + 'c' + (si), style: { fontFamily: 'var(--ds-font-family-code,Consolas,Menlo,monospace)', fontSize: '0.92em', padding: '0 3px', borderRadius: 4, background: 'var(--dsw-alias-markdown-code-block,rgba(255,255,255,.07))' } }, cd[1])); return }
+        out.push(seg)
+      })
+      return out
+    }
+    const mdToHtml = function (md, opts) {
+      const o = opts || {}
+      const nodes = []
+      const lines = String(md == null ? '' : md).split(/\r?\n/)
+      let i = 0
+      let k = 0
+      const pushList = function (items) {
+        if (!items.length) return
+        nodes.push(h('ul', { key: 'ul' + (k++), style: { margin: '2px 0', paddingLeft: 16 } }, items.map(function (it, ii) {
+          if (it.task !== null) {
+            return h('li', { key: 'li' + ii, style: { listStyle: 'none', marginLeft: -14 } }, [
+              h('input', { type: 'checkbox', checked: it.task === 'x' || it.task === 'X', disabled: true, style: { marginRight: 5, verticalAlign: 'middle' } }),
+              h('span', null, mdInline(it.text, 't' + ii)),
+            ])
+          }
+          return h('li', { key: 'li' + ii }, mdInline(it.text, 't' + ii))
+        })))
+      }
+      while (i < lines.length) {
+        const line = lines[i]
+        const trim = line.trim()
+        const h2 = /^##\s+(.+)$/.exec(trim)
+        if (h2) { nodes.push(h('div', { key: 'h' + (k++), style: { fontSize: 14, fontWeight: 700, margin: '6px 0 3px', color: 'var(--dsw-alias-markdown-heading,var(--dsw-alias-label-primary,#e6edf3))', fontFamily: 'var(--dsw-font-markdown-h2,var(--dsw-font-family))' } }, mdInline(h2[1], 'h' + k))); i++; continue }
+        const hr = /^---+$/.test(trim) || /^\*\*\*+$/.test(trim)
+        if (hr) { nodes.push(h('hr', { key: 'hr' + (k++), style: { border: 'none', borderTop: '1px solid var(--dsw-alias-border-l1,#2a2d35)', margin: '4px 0' } })); i++; continue }
+        const q = /^>\s?(.*)$/.exec(trim)
+        if (q) { nodes.push(h('blockquote', { key: 'bq' + (k++), style: { margin: '2px 0', paddingLeft: 8, borderLeft: '3px solid var(--dsw-alias-border-l1,#2a2d35)', color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, mdInline(q[1], 'q' + k))); i++; continue }
+        // 列表（连续行归组）
+        const listItems = []
+        let j = i
+        while (j < lines.length) {
+          const lt = lines[j].trim()
+          const taskM = MD_TASK_RE.exec(lt)
+          const bullet = /^-\s+(.+)$/.exec(lt) || /^\*\s+(.+)$/.exec(lt)
+          if (taskM) { listItems.push({ task: taskM[1], text: taskM[2] }); j++; continue }
+          if (bullet) { listItems.push({ task: null, text: bullet[1] }); j++; continue }
+          break
+        }
+        if (listItems.length) { pushList(listItems); i = j; continue }
+        // 空行 / 普通段落
+        if (trim === '') { i++; continue }
+        nodes.push(h('div', { key: 'p' + (k++), style: { margin: '1px 0' } }, mdInline(line, 'p' + k)))
+        i++
+      }
+      if (o.single) return nodes[0] || null
+      return nodes
+    }
+    // ============================================================
+    // v1.5 T12：票进度渲染（状态徽章 + 进度条）—— open/close 原生 + 进度自评
       const tStatus = function (t) {
         if (t.state === 'CLOSED') return { key: 'done', color: '#3fb950', icon: 'check' }
         if (t.progress === null || t.progress === undefined) return { key: 'todo', color: '#8b8b95', icon: 'dot' }
@@ -1953,7 +2040,8 @@ window.__ModuleLoader__.load({
             ]),
           ]) : null,
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: '#4ade80', margin: '4px 0 2px' } }, [Ic({ n: 'target', size: 12 }), h('span', { className: 'dsws-ellip', title: m.destination }, m.destination || tr('list.noDest'))]),
-          m.notes ? h('div', { style: { display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4 } }, [Ic({ n: 'note', size: 11 }), h('span', { className: 'dsws-ellip', title: m.notes }, m.notes)]) : null,
+          // T17：Notes markdown 渲染（列表/加粗/链接/代码随主题变色）
+          m.notes ? h('div', { style: { display: 'flex', gap: 4, fontSize: 11, color: 'var(--dsw-alias-label-caption,#8b8b95)', marginBottom: 4, alignItems: 'flex-start' } }, [Ic({ n: 'note', size: 11, style: { marginTop: 2, flex: 'none' } }), h('div', { style: { flex: 1, minWidth: 0 } }, mdToHtml(m.notes))]) : null,
           // 漏斗分层主体
           h('div', { style: { marginTop: 2 } }, [
             h('div', { className: 'dsws-start' }, [
@@ -1995,16 +2083,24 @@ window.__ModuleLoader__.load({
           h('details', { style: { marginTop: 10, marginBottom: 4 } }, [
             h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, tr('map.decisions', { n: m.decisions.length })),
             h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.decisions.map(function (d, i) {
-              return h('div', { key: i, className: 'dsws-ellip', title: d.title + ' ' + d.gist }, '· ' + d.title)
+              return h('div', { key: i, style: { margin: '2px 0' } }, [
+                h('span', { style: { color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, '· '),
+                (d.url ? h('a', { href: d.url, target: '_blank', rel: 'noreferrer', style: { textDecoration: 'underline' } }, d.title) : h('span', null, d.title)),
+                d.gist ? h('span', { style: { color: 'var(--dsw-alias-label-caption,#8b8b95)' } }, ' — ' + d.gist) : null,
+              ])
             })),
           ]),
           h('details', { style: { marginBottom: 4 } }, [
             h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, tr('map.fog', { n: m.fog.length })),
-            h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.fog.map(function (f, i) { return h('div', { key: i, className: 'dsws-ellip', title: f }, '· ' + f) })),
+            h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.fog.map(function (f, i) {
+              return h('div', { key: i, style: { margin: '2px 0' } }, mdToHtml('· ' + f))
+            })),
           ]),
           h('details', { style: { marginBottom: 4 } }, [
             h('summary', { style: { fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)', cursor: 'pointer' } }, tr('map.outOfScope', { n: m.outOfScope.length })),
-            h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.outOfScope.map(function (o, i) { return h('div', { key: i, className: 'dsws-ellip', title: o }, '· ' + o) })),
+            h('div', { style: { fontSize: 12, paddingLeft: 8 } }, m.outOfScope.map(function (o, i) {
+              return h('div', { key: i, style: { margin: '2px 0' } }, mdToHtml('· ' + o))
+            })),
           ]),
         ])
       }

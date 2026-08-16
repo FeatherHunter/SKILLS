@@ -49,7 +49,7 @@ return {
     const timer = ctx.get('timer')
     const h = React.createElement
     // v1.3.3：面板版本号（tabs 行最右侧显示，便于核对已更新）
-    const DSW_VERSION = 'v1.4.0'
+    const DSW_VERSION = 'v1.4.1'
 
     // ============================================================
     // 0. 样式
@@ -410,6 +410,7 @@ return {
         'cfg.openInLabel': '打开位置',
         'cfg.openInDock': '停靠列',
         'cfg.openInSidebar': '侧边栏',
+        'cfg.openInHint': '已即时生效：下次打开面板时按新位置打开',
         'cfg.panelWidth': '面板宽度',
         'cfg.resetPanelWidth': '重置面板宽度',
         'cfg.resetPanelWidthDesc': '下次打开面板时使用 layout 服务默认宽度（清掉上次的拖拽记忆）',
@@ -597,6 +598,7 @@ return {
         'cfg.openInLabel': 'Open location',
         'cfg.openInDock': 'Details column',
         'cfg.openInSidebar': 'Sidebar',
+        'cfg.openInHint': 'Applied instantly — next panel open uses this location',
         'cfg.panelWidth': 'Panel width',
         'cfg.resetPanelWidth': 'Reset panel width',
         'cfg.resetPanelWidthDesc': 'Next panel open will use the layout service default width (clears the persisted drag memory).',
@@ -1302,10 +1304,39 @@ return {
     }
     // v1.4：打开位置可选 —— cfg.openIn: 'dock'（details 列，默认）/ 'sidebar'（dsh-better-sidebar tab）
     //   better-sidebar 已装时可用；未装或服务不可用 → 回退 details 列
+    // v1.4.1 修复「切侧边栏没反应」：
+    //   ① ensureSidebarTab 幂等注册 —— better-sidebar 的 client 可能晚于本模块加载（未声明 inject 依赖），
+    //      注册必须可重试；openTab 前 ensure 一次保证已注册（否则 openTab 静默 no-op）。
+    //   ② openTab 带 path seed 走「内容型打开」→ 侧边栏面板折叠时自动展开
+    //      （类型型打开不展开面板，侧边栏收着就「看不见 = 没反应」）。
+    let sidebarTabDisposer = null
+    let sidebarTabRetry = null
+    const ensureSidebarTab = function () {
+      if (sidebarTabDisposer) return true
+      try {
+        const bs = ctx.get('betterSidebar')
+        if (!(bs && typeof bs.registerTab === 'function')) return false
+        const WaystationSidebarTab = function (props) {
+          const scope = props && props.scope
+          const sessionId = scope ? scope.sessionId : undefined
+          return h('div', { style: { height: '100%', overflow: 'hidden' } }, h(DetailsDock, { sessionId: sessionId }))
+        }
+        sidebarTabDisposer = bs.registerTab({
+          id: 'waystation:map',
+          title: function () { return tr('panel.tabList') },
+          icon: function () { return Ic({ n: 'map', size: 14 }) },
+          order: 60,
+          single: true,
+          component: WaystationSidebarTab,
+        })
+        return true
+      } catch (e) { return false }
+    }
     const openInSidebar = function (st) {
       const bs = ctx.get('betterSidebar')
       if (bs && typeof bs.openTab === 'function') {
-        bs.openTab({ type: 'waystation:map' })
+        if (!ensureSidebarTab()) { openDockPanel(st); return }  // 注册失败 → 回退 details 列
+        bs.openTab({ type: 'waystation:map', path: 'waystation:map' })  // path seed → 内容型打开 → 自动展开面板
         // 打开 tab 即视为面板已开（数据新鲜直接展示）
         if (st.snapMode === 'real' && snapFresh(st)) { emit(st); return }
         if (st.snapMode === 'real') { emit(st); loadSnapshot(st, false); return }
@@ -2427,6 +2458,7 @@ return {
     const SettingsPage = (props) => {
       const [height, setHeight] = React.useState(cfg.panelHeight)
       const [openIn, setOpenIn] = React.useState(cfg.openIn || 'dock')
+      const [openInNote, setOpenInNote] = React.useState(false)
       const [wf, setWf] = React.useState(cfg.withWayfinder)
       const [tpls, setTpls] = React.useState(function () {
         const o = {}
@@ -2438,6 +2470,15 @@ return {
       const [errs, setErrs] = React.useState([])
       const [resetNote, setResetNote] = React.useState(null)
       const taRefs = React.useRef({})
+      // v1.4.1：打开位置即时生效 —— seg 点击即写入 cfg + localStorage + 广播（无需滚到底部点保存全部）
+      const pickOpenIn = function (v) {
+        setOpenIn(v)
+        cfg.openIn = v
+        saveCfg()
+        broadcastCfg()
+        setOpenInNote(true)
+        if (timer !== undefined) timer.timeout(function () { setOpenInNote(false) }, 2600)
+      }
       // v1.3.3 T1：模板 textarea 自适应高度（内容全展开 · 无内层滚动 · 最外层滑动）
       const autoGrowTa = function (el) {
         if (!el) return
@@ -2549,11 +2590,12 @@ return {
           h('div', { className: 'dsws-cfg-row' }, [
             h('span', { className: 'dsws-cfg-label' }, tr('cfg.openInLabel')),
             h('div', { className: 'dsws-cfg-seg' }, [
-              h('button', { key: 'dock', className: openIn === 'dock' ? 'on' : '', onClick: function () { setOpenIn('dock') } }, tr('cfg.openInDock')),
+              h('button', { key: 'dock', className: openIn === 'dock' ? 'on' : '', onClick: function () { pickOpenIn('dock') } }, tr('cfg.openInDock')),
               (function () { try { return !!ctx.get('betterSidebar') } catch (e) { return false } })()
-                ? h('button', { key: 'sidebar', className: openIn === 'sidebar' ? 'on' : '', onClick: function () { setOpenIn('sidebar') } }, tr('cfg.openInSidebar'))
+                ? h('button', { key: 'sidebar', className: openIn === 'sidebar' ? 'on' : '', onClick: function () { pickOpenIn('sidebar') } }, tr('cfg.openInSidebar'))
                 : null,
             ]),
+            openInNote ? h('div', { style: { fontSize: 11, color: '#4ade80', marginTop: 6 } }, tr('cfg.openInHint')) : null,
           ]),
         ]),
         // 1.5 面板宽度重置（#398 拆票 A · 与 #397 协调 · 等 layoutSvc.resetDetails API；缺失时友好提示不让 UI 崩溃）
@@ -2653,28 +2695,22 @@ return {
       return slots.register({ name: 'details', id: 'dsws-details', order: 10, priority: -1 }, DetailsDock)
     })
 
-    // v1.4：dsh-better-sidebar 集成 —— 已装时注册「Waystation」tab（打开位置可配 cfg.openIn）
-    //   tab 内容 = 现有 DetailsDock 渲染（复用三视图 + store；better-sidebar 未装则跳过，无副作用）
-    try {
-      const betterSidebar = ctx.get('betterSidebar')
-      if (betterSidebar && typeof betterSidebar.registerTab === 'function') {
-        const WaystationSidebarTab = function (props) {
-          const scope = props && props.scope
-          const sessionId = scope ? scope.sessionId : undefined
-          return h('div', { style: { height: '100%', overflow: 'hidden' } }, h(DetailsDock, { sessionId: sessionId }))
-        }
-        ctx.effect(function () {
-          return betterSidebar.registerTab({
-            id: 'waystation:map',
-            title: function () { return tr('panel.tabList') },
-            icon: function () { return Ic({ n: 'map', size: 14 }) },
-            order: 60,
-            single: true,
-            component: WaystationSidebarTab,
-          })
-        })
+    // v1.4.1：apply 时尽力注册「Waystation」tab；better-sidebar 服务未就绪（加载晚于本模块）→ 定时重试（最多 10 次）
+    //   卸载（HMR / 插件禁用）时清理 disposer + 重试定时器
+    if (!ensureSidebarTab()) {
+      let tries = 0
+      sidebarTabRetry = setInterval(function () {
+        tries++
+        if (ensureSidebarTab() || tries >= 10) { clearInterval(sidebarTabRetry); sidebarTabRetry = null }
+      }, 1000)
+    }
+    ctx.effect(function () {
+      return function () {
+        try { if (sidebarTabDisposer) sidebarTabDisposer() } catch (e) { /* 忽略 */ }
+        sidebarTabDisposer = null
+        if (sidebarTabRetry) { clearInterval(sidebarTabRetry); sidebarTabRetry = null }
       }
-    } catch (e) { /* better-sidebar 集成失败不影响主功能 */ }
+    }, 'dsh-waystation: better-sidebar tab')
 
     // #347：加载真数据快照（repo 链接 + 前置检测兜底），失败静默
     loadSnapshot(shared, false)

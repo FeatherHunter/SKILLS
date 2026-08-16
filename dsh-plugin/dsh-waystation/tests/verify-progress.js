@@ -1,6 +1,6 @@
-// verify-progress.js — dsh-waystation v1.5 T12：进度块解析 + 渲染契约校验
+// verify-progress.js — dsh-waystation v1.5 T12/T16：进度块解析 + 正文容错 + 渲染契约校验
 // 用法: node tests/verify-progress.js（在插件根目录）
-// 验证：1) parseProgress 变体解析 2) host/package 均带 progress 字段 3) client/package 均含进度渲染
+// 验证：1) parseProgress 变体解析 2) normalizeBody 容错（字面 \n + BOM） 3) host/package 均带 progress 字段 4) client/package 均含进度渲染
 const fs = require('fs')
 const host = fs.readFileSync('host.js', 'utf8')
 const pkg = fs.readFileSync('package/lib/index.js', 'utf8')
@@ -28,6 +28,19 @@ cases.forEach(function (c) {
   check(got === c[1], 'parseProgress(' + JSON.stringify(c[0]) + ') = ' + got + '（期望 ' + c[1] + '）')
 })
 
+// T16: normalizeBody 容错测试（从 host 提取；字面 \\n 还原 + 剥 BOM）
+const nfm = host.match(/function normalizeBody\(raw\) \{[\s\S]*?\n    \}/)
+check(!!nfm, 'host 含 normalizeBody 定义（T16）')
+const normalizeBody = nfm ? eval('(' + nfm[0] + ')') : function (s) { return String(s || '') }
+// 坏格式：BOM + 整篇字面 \\n（无真实换行）
+const badBody = String.fromCharCode(0xfeff) + '## Destination\\n\\nDSH-Waystation **v1.5**\\n\\n## Notes\\n\\nnote here'
+const normBad = normalizeBody(badBody)
+check(!normBad.startsWith(String.fromCharCode(0xfeff)), 'normalizeBody 剥 BOM')
+check(normBad.indexOf('\n') >= 0, 'normalizeBody 字面 \\n 还原为真实换行')
+check(normBad.indexOf('\\n') < 0, 'normalizeBody 不再含字面 \\\\n')
+check(normalizeBody('正常\n正文\n带真实换行') === '正常\n正文\n带真实换行', 'normalizeBody 不误伤正常正文')
+check(normalizeBody('') === '', 'normalizeBody 空串安全')
+
 // 2) host/package 均带 progress 字段
 check(host.includes('progress: parseProgress'), 'host mapTicket 带 progress')
 check(pkg.includes('progress: parseProgress'), 'package index mapTicket 带 progress')
@@ -35,6 +48,8 @@ check(pkg.includes('function parseProgress'), 'package index 含 parseProgress')
 check(host.includes('nodes{number title state body url'), 'host frag 子票查询含 body（fetchMapsDetail）')
 check(pkg.includes('nodes{number title state body url'), 'package index frag 子票查询含 body')
 check(host.includes('progress: parseProgress'), 'host mapTicket 带 progress（重复守卫）')
+check(host.includes('function normalizeBody'), 'host 含 normalizeBody（重复守卫）')
+check(pkg.includes('function normalizeBody'), 'package index 含 normalizeBody')
 
 // 3) client/package 均含进度渲染
 check(cli.includes('const tProgressBar'), 'client 含 tProgressBar')
@@ -45,6 +60,12 @@ check(cli.includes("'progress.done'") && cli.includes("'progress.accept'"), 'cli
 check(pcli.includes("'progress.done'") && pcli.includes("'progress.accept'"), 'package client 含进度 locale 键')
 check(cli.includes('tProgressBar(t)') && cli.includes('tStatusBadge(t)'), 'client 渲染点存在')
 check(pcli.includes('tProgressBar(t)') && pcli.includes('tStatusBadge(t)'), 'package client 渲染点存在')
+
+// T16: client/package 均含 bodyFormat 契约与追加点
+check(cli.includes('"bodyFormat"'), 'client 含 bodyFormat prompt')
+check(pcli.includes('"bodyFormat"'), 'package client 含 bodyFormat prompt')
+check(cli.includes('const BODY_FORMAT'), 'client 含 BODY_FORMAT 常量')
+check(pcli.includes('const BODY_FORMAT'), 'package client 含 BODY_FORMAT 常量')
 
 if (failed) { console.log('\n存在失败'); process.exit(1) }
 console.log('\n全部通过')

@@ -222,11 +222,22 @@ export function apply(ctx) {
   }
 
   // ============ 数据流 ============
+  // T16：正文预处理 —— 剥 BOM + 字面 \n 还原为真实换行（历史坏格式 body 也能解析）
+  //   触发条件：真实换行极少而字面 \n 大量存在（整篇被压成一行）；避免误伤正常正文
+  function normalizeBody(raw) {
+    let s = String(raw || '').replace(/^\uFEFF/, '')
+    const realNL = (s.match(/\n/g) || []).length
+    const literalNL = (s.match(/\\n/g) || []).length
+    if (realNL < 2 && literalNL > 0) {
+      s = s.replace(/\\n/g, '\n')
+    }
+    return s
+  }
   function parseMapBody(body) {
     const out = { destination: '', notes: '', decisions: [], fog: [], outOfScope: [] }
     if (!body) return out
     const sec = {}
-    const lines = String(body).split(/\r?\n/)
+    const lines = normalizeBody(body).split(/\r?\n/)
     let cur = null
     for (let i = 0; i < lines.length; i++) {
       const m = lines[i].match(/^##\s+(.+?)\s*$/)

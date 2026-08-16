@@ -169,13 +169,14 @@ return {
       }
       return repoRoots[key]
     }
-    // 缓存目录：~/.dsh/waystation-cache/（fs 服务 mkdir 建目录；正斜杠避免转义）
+    // 缓存目录：<DSH 进程 cwd>/.dsh-waystation-cache/（T9 修复：fs 沙箱 workspace-write 只允许 cwd 下，
+    //   ~/.dsh 在沙箱外被拒 → 缓存永不写入；改用 process.cwd() 落点，跨重启秒开）
     async function getCacheDir() {
       if (cacheDirResolved) return cacheDirResolved
-      const home = await getHome()
-      if (!home) return null
-      cacheDirResolved = home + '/.dsh/waystation-cache'
-      try { if (fs !== undefined && typeof fs.mkdir === 'function') await fs.mkdir(cacheDirResolved) } catch (e) { /* 已存在或不可建，继续 */ }
+      const cwd0 = (typeof process !== 'undefined' && process.cwd) ? process.cwd() : DEFAULT_CWD
+      if (!cwd0) return null
+      cacheDirResolved = cwd0 + '/.dsh-waystation-cache'
+      try { if (fs !== undefined && typeof fs.mkdir === 'function') await fs.mkdir(cacheDirResolved) } catch (e) { /* 已存在或不可建，writeText 会自建 */ }
       return cacheDirResolved
     }
     function cacheFileName(repo) {

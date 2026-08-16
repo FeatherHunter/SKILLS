@@ -996,7 +996,7 @@ window.__ModuleLoader__.load({
       const storeOf = (sid) => {
         if (!sid) return shared
         let st = stores[sid]
-        if (!st) { st = makeStore(); stores[sid] = st }
+        if (!st) { st = makeStore(); st.sessionId = sid; stores[sid] = st }  // v1.5：store 挂 sessionId（新会话 cwd 兜底解析用）
         return st
       }
       const emit = (st) => { st.tick++; (st.subs || []).forEach(function (f) { f(st.tick) }) }
@@ -1542,19 +1542,34 @@ window.__ModuleLoader__.load({
           inject(st, text)
           flash(st, tr('toast.newSessionManual', { title: newSessionTitle(x) }), 'warn')
         }
-        if (!sessions || typeof sessions.create !== 'function' || !st.cwd) { doFallback(); return }
-        sessions.create({ cwd: st.cwd }).then(function (sid) {
-          // 自动命名（失败不阻塞打开）
-          try {
-            const scopeCtx = sessions.scope(sid)
-            const face = scopeCtx ? sessions.sessionOf(scopeCtx) : undefined
-            if (face && typeof face.rename === 'function') face.rename(newSessionTitle(x)).catch(function () { /* 命名失败忽略 */ })
-          } catch (e) { /* 命名失败忽略 */ }
-          // 预填：新会话 dock 挂载后经 StatusBar 消费 pendingDraft（与交接开新会话同机制）
-          pendingDraft = text
-          sessions.open(sid)
-          flash(st, tr('toast.newSessionOpened'), 'ok')
-        }).catch(function () { doFallback() })
+        if (!sessions || typeof sessions.create !== 'function') { doFallback(); return }
+        // v1.5：新会话默认继承「点击时所在会话」的工作区（st.cwd）；
+        //   缺失时即时向 host 解析（侧边栏 tab / StatusBar 未挂载场景兜底）
+        const ensureCwd = function () {
+          if (st.cwd) return Promise.resolve(st.cwd)
+          if (conn !== undefined && conn.rpc !== undefined && st.sessionId) {
+            return rpcCall('cwd', { sessionId: st.sessionId }).then(function (res) {
+              if (res && res.ok && res.cwd) { st.cwd = res.cwd; return res.cwd }
+              return null
+            }).catch(function () { return null })
+          }
+          return Promise.resolve(null)
+        }
+        ensureCwd().then(function (cwd) {
+          if (!cwd) { doFallback(); return }
+          sessions.create({ cwd: cwd }).then(function (sid) {
+            // 自动命名（失败不阻塞打开）
+            try {
+              const scopeCtx = sessions.scope(sid)
+              const face = scopeCtx ? sessions.sessionOf(scopeCtx) : undefined
+              if (face && typeof face.rename === 'function') face.rename(newSessionTitle(x)).catch(function () { /* 命名失败忽略 */ })
+            } catch (e) { /* 命名失败忽略 */ }
+            // 预填：新会话 dock 挂载后经 StatusBar 消费 pendingDraft（与交接开新会话同机制）
+            pendingDraft = text
+            sessions.open(sid)
+            flash(st, tr('toast.newSessionOpened'), 'ok')
+          }).catch(function () { doFallback() })
+        })
       }
       const inject = (st, text) => {
         if (st.injector) { st.injector(text); flash(st, tr('toast.injected'), 'ok') }

@@ -976,7 +976,7 @@ return {
       // 外观定死（用户拍板：图标/动作词不可配置）
       ui: { icon: 'compass', word: '沉淀' },
       snapshot: null,
-      cwd: '', lblFilter: null, skillView: 'list', expLabels: false,
+      cwd: '', lblFilters: [], skillView: 'list', expLabels: false,
       // #374：状态过滤 + 排序（默认 更新时间↓，与现状一致）
       stateFilter: listPrefs.stateFilter, sortKey: listPrefs.sortKey, sortDir: listPrefs.sortDir,
       checks: null, checksUpdatedAt: '', checksMode: 'loading', checksError: null, checking: false,
@@ -1641,8 +1641,8 @@ return {
           h('span', null, 'Waystation'),
         ]),
         seg('target', [h('span', null, tr('nav.takeable')), num(String(fr), '2ch')], '#4ade80', function () { s.stateFilter = 'frontier'; go('list') }, tr('nav.takeableTitle')),
-        seg('alert', [h('span', null, tr('nav.bug')), num(String(bugN), '2ch')], '#f87171', function () { s.stateFilter = 'open'; s.lblFilter = 'bug'; go('list') }, tr('nav.bugTitle')),
-        seg('search', [h('span', null, tr('nav.triage')), num(String(triageN), '2ch')], '#f59e0b', function () { s.stateFilter = 'open'; s.lblFilter = 'needs-triage'; go('list') }, tr('nav.triageTitle')),
+        seg('alert', [h('span', null, tr('nav.bug')), num(String(bugN), '2ch')], '#f87171', function () { s.stateFilter = 'open'; s.lblFilters = ['bug']; go('list') }, tr('nav.bugTitle')),
+        seg('search', [h('span', null, tr('nav.triage')), num(String(triageN), '2ch')], '#f59e0b', function () { s.stateFilter = 'open'; s.lblFilters = ['needs-triage']; go('list') }, tr('nav.triageTitle')),
         seg('note', tr('nav.word'), '#c084fc', function () { injectFixate(s) }, tr('nav.fixateTitle')),
         seg('handoff', s.handoffReady ? tr('nav.handoffReady') : tr('nav.handoff'), '#58a6ff', function () { doHandoff(s) }, s.handoffReady ? tr('nav.handoffReadyTitle') : tr('nav.handoffTitle')),
         // v19-36：环境段移至末尾（更新左侧），用户少点
@@ -2068,14 +2068,19 @@ return {
       // v1.3.3 T3：blocked 过滤真正实现 —— open 且存在 open 阻塞者（blockOf 命中）
       const showOpen = st.stateFilter !== 'closed'
       const showClosedList = st.stateFilter === 'closed'
-      const byLabel = function (x) { return (x.labels || []).some(function (l) { return l.name === st.lblFilter }) }
+      // v1.5：多选标签过滤（OR 语义：命中任一选中标签即显示）
+      const byLabel = function (x) {
+        const ls = st.lblFilters || []
+        if (!ls.length) return true
+        return (x.labels || []).some(function (l) { return ls.indexOf(l.name) >= 0 })
+      }
       const openRows = sortedMaps.concat(sortedOpen)
-      const openFiltered = st.lblFilter ? openRows.filter(byLabel) : openRows
+      const openFiltered = (st.lblFilters && st.lblFilters.length) ? openRows.filter(byLabel) : openRows
       // v1.3.3 #6：阻塞 = 被占用口径（isOccupied：有 assignee 或存在 open 阻塞者）——与 KPI「占用 N」一致，
       //   用户点「阻塞」应筛出全部被占用项（此前 blockOf 只覆盖 map 子票的 blockedBy，漏掉 assignee 占用的）
       const filteredOpen = showOpen ? (st.stateFilter === 'blocked' ? openFiltered.filter(function (x) { return isOccupied(st, x) })
         : (st.stateFilter === 'frontier' ? openFiltered.filter(function (x) { return !isOccupied(st, x) }) : openFiltered)) : []
-      const filteredClosed = showClosedList ? (st.lblFilter ? closedSorted.filter(byLabel) : closedSorted) : []
+      const filteredClosed = showClosedList ? ((st.lblFilters && st.lblFilters.length) ? closedSorted.filter(byLabel) : closedSorted) : []
       const has = function (x, nm) { return (x.labels || []).some(function (l) { return l.name === nm }) }
       const findMap = function (num) { return (st.snapshot && st.snapshot.maps || []).find(function (m) { return m.number === num }) }
       const openBlocked = function (blk) { st.activeMap = blk.map; emit(st) }
@@ -2091,7 +2096,9 @@ return {
           // #375：点选即记点击记忆（次数 + 最近点击时间，双键排序）
           onClick: function (e) {
             e.stopPropagation()
-            st.lblFilter = isAll ? null : ((st.lblFilter === nm) ? null : nm)
+            // v1.5：多选 toggle —— 选中/取消单个标签，互不覆盖
+            const cur = st.lblFilters || []
+            st.lblFilters = isAll ? [] : (cur.indexOf(nm) >= 0 ? cur.filter(function (x) { return x !== nm }) : cur.concat([nm]))
             if (!isAll) {
               const c = labelClicks[nm] || { n: 0, ts: 0 }
               labelClicks[nm] = { n: c.n + 1, ts: Date.now() }
@@ -2199,17 +2206,18 @@ return {
       const kpi = (num, lab, icon, color) => h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [Ic({ n: icon, size: 11, color: color }), h('span', null, String(num) + ' ' + lab)])
       return h('div', null, [
         // v1.5：当前过滤指示（点 ✕ 关闭单项 / 清除全部）—— 状态过滤或 label 过滤任一激活时显示
-        (st.stateFilter !== 'all' || st.lblFilter) ? h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: 6 } }, [
+        (st.stateFilter !== 'all' || (st.lblFilters && st.lblFilters.length)) ? h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: 6 } }, [
           h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none' } }, tr('list.filterActive')),
           st.stateFilter !== 'all' ? h('span', { key: 'f-state', className: 'dsws-chip', style: { fontSize: 10, background: 'rgba(188,140,255,.18)', color: '#c084fc', border: '1px solid rgba(188,140,255,.6)' } }, [
             tr('list.state.' + st.stateFilter),
             h('span', { onClick: function (e) { e.stopPropagation(); st.stateFilter = 'all'; listPrefs.stateFilter = 'all'; saveListPrefs(); emit(st) }, style: { cursor: 'pointer', marginLeft: 4, fontWeight: 700 } }, '✕'),
           ]) : null,
-          st.lblFilter ? h('span', { key: 'f-label', className: 'dsws-chip', style: { fontSize: 10, background: 'rgba(188,140,255,.18)', color: '#c084fc', border: '1px solid rgba(188,140,255,.6)' } }, [
-            st.lblFilter,
-            h('span', { onClick: function (e) { e.stopPropagation(); st.lblFilter = null; emit(st) }, style: { cursor: 'pointer', marginLeft: 4, fontWeight: 700 } }, '✕'),
-          ]) : null,
-          h('span', { key: 'f-clear', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.stateFilter = 'all'; listPrefs.stateFilter = 'all'; saveListPrefs(); st.lblFilter = null; emit(st) }, style: { fontSize: 10, cursor: 'pointer', background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid rgba(255,255,255,.15)' } }, tr('list.filterClear')),
+          (st.lblFilters || []).map(function (nm) { return h('span', { key: 'f-label-' + nm, className: 'dsws-chip', style: { fontSize: 10, background: 'rgba(188,140,255,.18)', color: '#c084fc', border: '1px solid rgba(188,140,255,.6)' } }, [
+            nm,
+            h('span', { onClick: function (e) { e.stopPropagation(); st.lblFilters = (st.lblFilters || []).filter(function (x) { return x !== nm }); emit(st) }, style: { cursor: 'pointer', marginLeft: 4, fontWeight: 700 } }, '✕'),
+          ]) }),
+          (st.lblFilters || []).length ? h('span', { key: 'f-label-clear', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.lblFilters = []; emit(st) }, style: { fontSize: 10, cursor: 'pointer', background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid rgba(255,255,255,.15)' } }, tr('list.filterClear')) : null,
+          h('span', { key: 'f-clear', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.stateFilter = 'all'; listPrefs.stateFilter = 'all'; saveListPrefs(); st.lblFilters = []; emit(st) }, style: { fontSize: 10, cursor: 'pointer', background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid rgba(255,255,255,.15)' } }, tr('list.filterClear')),
         ]) : null,
         // KPI 行 + 环境提示（v18-30：可接/占用 = 列表 open issue 口径）
         h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap', position: 'relative' } }, [
@@ -2243,9 +2251,9 @@ return {
             }, style: { cursor: 'pointer', marginRight: 4, marginBottom: 3, fontSize: 10, background: on ? 'rgba(88,166,255,.16)' : 'rgba(255,255,255,.06)', color: on ? '#58a6ff' : 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid ' + (on ? 'rgba(88,166,255,.55)' : 'rgba(255,255,255,.15)') } }, tr('list.sort.' + k) + arrow)
           }),
           h('span', { style: { width: 1, height: 12, background: 'var(--dsw-alias-border-l1,#2a2d35)', margin: '0 4px 3px', flex: 'none' } }),
-          chip(tr('list.all'), false, st.lblFilter === null, true),
+          chip(tr('list.all'), false, !st.lblFilters || !st.lblFilters.length, true),
           // #405：filter row 默认可见数 9 → 4（与 per-row 一致）；+N 触发条件 + 数字同步
-          (st.expLabels ? sortedLabels : sortedLabels.slice(0, 4)).map(function (nm) { return chip(nm, true, st.lblFilter === nm, false) }),
+          (st.expLabels ? sortedLabels : sortedLabels.slice(0, 4)).map(function (nm) { return chip(nm, true, (st.lblFilters || []).indexOf(nm) >= 0, false) }),
           (!st.expLabels && sortedLabels.length > 4) ? h('span', { key: 'lbl-more', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = true; emit(st) }, title: tr('list.tagsTitle', { names: sortedLabels.join('、') }), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(188,140,255,.1)', color: '#bc8cff', border: '1px dashed rgba(188,140,255,.55)', cursor: 'pointer' } }, '+' + (sortedLabels.length - 4)) : null,
           st.expLabels ? h('span', { key: 'lbl-less', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.expLabels = false; emit(st) }, title: tr('list.tagsCollapseTitle'), style: { fontSize: 10, marginRight: 4, marginBottom: 3, background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-caption,#8b8b95)', border: '1px dashed rgba(255,255,255,.3)', cursor: 'pointer' } }, tr('list.collapse')) : null,
         ]),

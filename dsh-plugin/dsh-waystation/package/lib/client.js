@@ -122,7 +122,7 @@ window.__ModuleLoader__.load({
       '.dsws-more:hover{background:rgba(188,140,255,.22);border-color:rgba(188,140,255,.8)}',
       // v1.3.3 UI：行1 编号 + map 徽章竖排（标题获得更宽展示区）
       '.dsws-idcol{display:flex;flex-direction:column;align-items:flex-start;gap:3px;flex:none}',
-      '.dsws-idnum{display:inline-block;font-family:Consolas,Menlo,monospace;font-weight:700;font-size:11px;line-height:1.5;padding:2px 8px;border-radius:6px;font-variant-numeric:tabular-nums}',
+      '.dsws-idnum{display:inline-block;font-family:Consolas,Menlo,monospace;font-weight:700;font-size:11px;line-height:1.4;padding:2px 7px;border-radius:6px;border:1px solid;font-variant-numeric:tabular-nums}',
       // v1.3.3 UI：map 行迷你圆环进度（替代长条 + ✓）
       '.dsws-ring{flex:none;display:inline-flex;align-items:center;gap:0}',
       '.dsws-ring svg{transform:rotate(-90deg)}',
@@ -2165,7 +2165,7 @@ window.__ModuleLoader__.load({
             h('div', { style: { display: 'flex', alignItems: 'flex-start', gap: 6, width: '100%' } }, [
               h('span', { className: 'dsws-idcol' }, [
                 isMap ? h('span', { className: 'dsws-chip dsws-chip-m', style: { fontSize: 11, fontWeight: 600, lineHeight: 1.7, padding: '0 8px' } }, [Ic({ n: 'map', size: 11 }), h('span', null, tr('list.mapChip'))]) : null,
-                h('span', { className: 'dsws-idnum', style: { background: numColor, color: isLightHex(numColor) ? '#140a1e' : '#ffffff' } }, '#' + x.number),
+                h('span', { className: 'dsws-idnum', style: { color: numColor, borderColor: numColor } }, '#' + x.number),
               ]),
               h('span', { className: 'dsws-tt-wrap', style: { flex: 1, fontWeight: isMap ? 600 : undefined, color: isOpen ? undefined : 'var(--dsw-alias-label-secondary,#a1a1aa)' }, title: x.title }, x.title),
               (isMap && mapObj && mapObj.stats) ? ringOf(mapObj.stats) : null,

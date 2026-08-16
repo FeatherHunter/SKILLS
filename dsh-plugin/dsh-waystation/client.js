@@ -405,6 +405,11 @@ return {
         'cfg.panelHeight': '面板默认高度',
         'cfg.panelHeightDesc': '打开面板时使用的初始高度，可随时拖拽调整。',
         'cfg.defaultHeight': '默认高度',
+        'cfg.openIn': '打开位置',
+        'cfg.openInDesc': '面板在哪个区域打开。better-sidebar 已安装时默认侧边栏；窗口缩小时侧边栏更稳。',
+        'cfg.openInLabel': '打开位置',
+        'cfg.openInDock': '停靠列',
+        'cfg.openInSidebar': '侧边栏',
         'cfg.panelWidth': '面板宽度',
         'cfg.resetPanelWidth': '重置面板宽度',
         'cfg.resetPanelWidthDesc': '下次打开面板时使用 layout 服务默认宽度（清掉上次的拖拽记忆）',
@@ -587,6 +592,11 @@ return {
         'cfg.panelHeight': 'Default panel height',
         'cfg.panelHeightDesc': 'Initial height when the panel opens; adjustable by dragging.',
         'cfg.defaultHeight': 'Default height',
+        'cfg.openIn': 'Open in',
+        'cfg.openInDesc': 'Where the panel opens. Defaults to the sidebar when dsh-better-sidebar is installed; the sidebar stays put when the window shrinks.',
+        'cfg.openInLabel': 'Open location',
+        'cfg.openInDock': 'Details column',
+        'cfg.openInSidebar': 'Sidebar',
         'cfg.panelWidth': 'Panel width',
         'cfg.resetPanelWidth': 'Reset panel width',
         'cfg.resetPanelWidthDesc': 'Next panel open will use the layout service default width (clears the persisted drag memory).',
@@ -795,11 +805,19 @@ return {
 
     const CFG_KEY = 'dsws.cfg'
     // 功能配置（用户拍板 2026-08-14：外观图标/动作词由设计定死，不提供配置项）
+    // v1.4：打开位置 cfg.openIn —— 检测到 dsh-better-sidebar 已装则默认 'sidebar'，否则 'dock'；
+    //   localStorage 已有值则尊重用户选择（不覆盖）
     const cfg = (function () {
-      const d = { withWayfinder: true, panelHeight: 'half' }
+      const bsInstalled = !!(ctx.get('betterSidebar') && typeof ctx.get('betterSidebar').registerTab === 'function')
+      const d = { withWayfinder: true, panelHeight: 'half', openIn: bsInstalled ? 'sidebar' : 'dock' }
       try {
         const raw = localStorage.getItem(CFG_KEY)
-        if (raw) return Object.assign(d, JSON.parse(raw))
+        if (raw) {
+          const saved = JSON.parse(raw)
+          if (typeof saved.openIn === 'string') d.openIn = saved.openIn  // 用户已选过 → 尊重
+          else d.openIn = bsInstalled ? 'sidebar' : 'dock'              // 首次 → 按安装情况默认
+        }
+        return Object.assign({ withWayfinder: true, panelHeight: 'half', openIn: 'dock' }, d)
       } catch (e) { /* 存储不可用用默认 */ }
       return d
     })()
@@ -1282,8 +1300,23 @@ return {
       }
       openPagePanel(st)  // layout 服务不可用 → 退回悬浮
     }
+    // v1.4：打开位置可选 —— cfg.openIn: 'dock'（details 列，默认）/ 'sidebar'（dsh-better-sidebar tab）
+    //   better-sidebar 已装时可用；未装或服务不可用 → 回退 details 列
+    const openInSidebar = function (st) {
+      const bs = ctx.get('betterSidebar')
+      if (bs && typeof bs.openTab === 'function') {
+        bs.openTab({ type: 'waystation:map' })
+        // 打开 tab 即视为面板已开（数据新鲜直接展示）
+        if (st.snapMode === 'real' && snapFresh(st)) { emit(st); return }
+        if (st.snapMode === 'real') { emit(st); loadSnapshot(st, false); return }
+        loadSnapshot(st, false)
+        return
+      }
+      openDockPanel(st)  // better-sidebar 不可用 → 回退 details 列
+    }
     const openPanel = function (st) {
-      openDockPanel(st)
+      if (cfg.openIn === 'sidebar') openInSidebar(st)
+      else openDockPanel(st)
     }
     const togglePanel = function (st) {
       if (st.open) { st.open = false; emit(st); return }
@@ -2393,6 +2426,7 @@ return {
     const PREVIEW_VALUES = { url: 'https://github.com/FeatherHunter/SKILLS/issues/365', number: '365', title: '示例 issue 标题', ts: '20260814-172113', file: '20260814-172113.md' }
     const SettingsPage = (props) => {
       const [height, setHeight] = React.useState(cfg.panelHeight)
+      const [openIn, setOpenIn] = React.useState(cfg.openIn || 'dock')
       const [wf, setWf] = React.useState(cfg.withWayfinder)
       const [tpls, setTpls] = React.useState(function () {
         const o = {}
@@ -2431,6 +2465,7 @@ return {
         if (errList.length) { setErrs(errList); return }
         setErrs([])
         cfg.panelHeight = height
+        cfg.openIn = openIn
         cfg.withWayfinder = wf
         templates.execute = custom
         TPL_EDIT_IDS.forEach(function (id) { templates[id] = tpls[id] })
@@ -2505,6 +2540,20 @@ return {
             h('div', { className: 'dsws-cfg-seg' }, Object.keys(PANEL_HEIGHT_LABELS).map(function (k) {
               return h('button', { key: k, className: height === k ? 'on' : '', onClick: function () { setHeight(k) } }, PANEL_HEIGHT_LABELS[k])
             })),
+          ]),
+        ]),
+        // v1.4：打开位置（details 列 / better-sidebar）—— better-sidebar 未装时仅显示 dock 选项
+        h('div', { className: 'dsws-cfg-group' }, [
+          h('div', { className: 'dsws-cfg-gtitle' }, [Ic({ n: 'map', size: 13 }), h('span', null, tr('cfg.openIn'))]),
+          h('div', { className: 'dsws-cfg-gdesc' }, tr('cfg.openInDesc')),
+          h('div', { className: 'dsws-cfg-row' }, [
+            h('span', { className: 'dsws-cfg-label' }, tr('cfg.openInLabel')),
+            h('div', { className: 'dsws-cfg-seg' }, [
+              h('button', { key: 'dock', className: openIn === 'dock' ? 'on' : '', onClick: function () { setOpenIn('dock') } }, tr('cfg.openInDock')),
+              (function () { try { return !!ctx.get('betterSidebar') } catch (e) { return false } })()
+                ? h('button', { key: 'sidebar', className: openIn === 'sidebar' ? 'on' : '', onClick: function () { setOpenIn('sidebar') } }, tr('cfg.openInSidebar'))
+                : null,
+            ]),
           ]),
         ]),
         // 1.5 面板宽度重置（#398 拆票 A · 与 #397 协调 · 等 layoutSvc.resetDetails API；缺失时友好提示不让 UI 崩溃）
@@ -2603,6 +2652,29 @@ return {
     slots.inject('details', function () {
       return slots.register({ name: 'details', id: 'dsws-details', order: 10, priority: -1 }, DetailsDock)
     })
+
+    // v1.4：dsh-better-sidebar 集成 —— 已装时注册「Waystation」tab（打开位置可配 cfg.openIn）
+    //   tab 内容 = 现有 DetailsDock 渲染（复用三视图 + store；better-sidebar 未装则跳过，无副作用）
+    try {
+      const betterSidebar = ctx.get('betterSidebar')
+      if (betterSidebar && typeof betterSidebar.registerTab === 'function') {
+        const WaystationSidebarTab = function (props) {
+          const scope = props && props.scope
+          const sessionId = scope ? scope.sessionId : undefined
+          return h('div', { style: { height: '100%', overflow: 'hidden' } }, h(DetailsDock, { sessionId: sessionId }))
+        }
+        ctx.effect(function () {
+          return betterSidebar.registerTab({
+            id: 'waystation:map',
+            title: function () { return tr('panel.tabList') },
+            icon: function () { return Ic({ n: 'map', size: 14 }) },
+            order: 60,
+            single: true,
+            component: WaystationSidebarTab,
+          })
+        })
+      }
+    } catch (e) { /* better-sidebar 集成失败不影响主功能 */ }
 
     // #347：加载真数据快照（repo 链接 + 前置检测兜底），失败静默
     loadSnapshot(shared, false)

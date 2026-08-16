@@ -46,7 +46,8 @@ const check = function (file) {
   //   动态版注册 5 个插槽（shell.overlay / conversation.input.dock / tool.view.cordis / settings.plugins.tab / details）
   //   静态 bundle 4 个（同上去掉 tool.view.cordis，disposeSlots 形态）
   const n = (src.match(/slots\.inject\('/g) || []).length
-  const expectInject = file.indexOf('package/') >= 0 ? 4 : 5
+  // v1.4：静态 bundle 新增 better-sidebar tab 注册 → 5 个（动态版 5 个保持不变）
+  const expectInject = file.indexOf('package/') >= 0 ? 5 : 5
   if (n !== expectInject) problems.push('slots.inject 注册数异常 ' + n + '（期望 ' + expectInject + '）')
   if (problems.length) { console.log('  FAIL', file, problems.join('；')); failed = true }
   else console.log('  PASS', file, '(' + zh.size + ' 键 × zh/en，' + used.size + ' 处引用)')

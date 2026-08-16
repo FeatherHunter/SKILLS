@@ -1446,7 +1446,10 @@ window.__ModuleLoader__.load({
         // v1.5 B2 修订（用户拍板）：新会话/执行 prompt 跟随行状态 —— map 完成态 → 完成确认 prompt（与左「完成」按钮同语义）；
         //   未完成 → 推进式；统一带 map 标识（编号/标题/链接），新会话不再「找不到对应 ISSUE」
         if (isMap) {
-          const stats = t.stats || (function () { const mo = findMap(t.number); return mo ? mo.stats : null })()
+          const stats = t.stats || (function () {
+            const mo = ((st.snapshot && st.snapshot.maps) || []).find(function (m) { return m.number === t.number })
+            return mo ? mo.stats : null
+          })()
           const done = !!(stats && stats.total > 0 && stats.closed === stats.total)
           const head = '\n\n## 目标 map\n- 编号：#' + String(t.number || '') + '\n- 标题：' + (t.title || '') + '\n- 链接：' + url
           if (done) {

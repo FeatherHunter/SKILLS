@@ -2215,19 +2215,18 @@ window.__ModuleLoader__.load({
         }
         const kpi = (num, lab, icon, color) => h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: 3, fontSize: 11, color: 'var(--dsw-alias-label-secondary,#a1a1aa)' } }, [Ic({ n: icon, size: 11, color: color }), h('span', null, String(num) + ' ' + lab)])
         return h('div', null, [
-          // v1.5：当前过滤指示（点 ✕ 关闭单项 / 清除全部）—— 状态过滤或 label 过滤任一激活时显示
-          (st.stateFilter !== 'all' || (st.lblFilters && st.lblFilters.length)) ? h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: 6 } }, [
+          // v1.5：已选标签过滤条（仅标签 · 颜色 = 该标签配置色 · 点 ✕ 关闭）
+          (st.lblFilters && st.lblFilters.length) ? h('div', { style: { display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 4, marginBottom: 6 } }, [
             h('span', { style: { fontSize: 10, color: 'var(--dsw-alias-label-caption,#8b8b95)', flex: 'none' } }, tr('list.filterActive')),
-            st.stateFilter !== 'all' ? h('span', { key: 'f-state', className: 'dsws-chip', style: { fontSize: 10, background: 'rgba(188,140,255,.18)', color: '#c084fc', border: '1px solid rgba(188,140,255,.6)' } }, [
-              tr('list.state.' + st.stateFilter),
-              h('span', { onClick: function (e) { e.stopPropagation(); st.stateFilter = 'all'; listPrefs.stateFilter = 'all'; saveListPrefs(); emit(st) }, style: { cursor: 'pointer', marginLeft: 4, fontWeight: 700 } }, '✕'),
-            ]) : null,
-            (st.lblFilters || []).map(function (nm) { return h('span', { key: 'f-label-' + nm, className: 'dsws-chip', style: { fontSize: 10, background: 'rgba(188,140,255,.18)', color: '#c084fc', border: '1px solid rgba(188,140,255,.6)' } }, [
-              nm,
-              h('span', { onClick: function (e) { e.stopPropagation(); st.lblFilters = (st.lblFilters || []).filter(function (x) { return x !== nm }); emit(st) }, style: { cursor: 'pointer', marginLeft: 4, fontWeight: 700 } }, '✕'),
-            ]) }),
-            (st.lblFilters || []).length ? h('span', { key: 'f-label-clear', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.lblFilters = []; emit(st) }, style: { fontSize: 10, cursor: 'pointer', background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid rgba(255,255,255,.15)' } }, tr('list.filterClear')) : null,
-            h('span', { key: 'f-clear', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.stateFilter = 'all'; listPrefs.stateFilter = 'all'; saveListPrefs(); st.lblFilters = []; emit(st) }, style: { fontSize: 10, cursor: 'pointer', background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid rgba(255,255,255,.15)' } }, tr('list.filterClear')),
+            (st.lblFilters || []).map(function (nm) {
+              const c = colorOf[nm]
+              const hex = c ? '#' + c : '#bc8cff'
+              return h('span', { key: 'f-label-' + nm, className: 'dsws-chip', style: { fontSize: 10, background: hexA(c, 0.18) || 'rgba(188,140,255,.16)', color: hex, border: '1px solid ' + (darken(c, 0.16) || 'rgba(188,140,255,.6)') } }, [
+                nm,
+                h('span', { onClick: function (e) { e.stopPropagation(); st.lblFilters = (st.lblFilters || []).filter(function (x) { return x !== nm }); emit(st) }, style: { cursor: 'pointer', marginLeft: 4, fontWeight: 700 } }, '✕'),
+              ])
+            }),
+            h('span', { key: 'f-label-clear', className: 'dsws-chip', onClick: function (e) { e.stopPropagation(); st.lblFilters = []; emit(st) }, style: { fontSize: 10, cursor: 'pointer', background: 'rgba(255,255,255,.06)', color: 'var(--dsw-alias-label-secondary,#a1a1aa)', border: '1px solid rgba(255,255,255,.15)' } }, tr('list.filterClear')),
           ]) : null,
           // KPI 行 + 环境提示（v18-30：可接/占用 = 列表 open issue 口径）
           h('div', { style: { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap', position: 'relative' } }, [

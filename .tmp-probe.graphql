@@ -1,0 +1,1 @@
+query($owner:String!,$name:String!){repository(owner:$owner,name:$name){issues(first:50,states:OPEN,labels:["wayfinder:map"]){nodes{number updatedAt}}}}

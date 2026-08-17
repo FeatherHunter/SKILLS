@@ -52,6 +52,28 @@ if ($Preview) {
 }
 
 Set-Location -Path $PackageDir
+
+# ── 登录检测（2026-08-16 实测补丁）：npm 10 未登录时 publish 不发 Auth URL、直接 ENEEDAUTH ──
+# 必须先登录拿到令牌（网页登录，浏览器完成 2FA），之后 publish 的 2FA 才走网页审批流。
+$whoami = npm whoami --registry=https://registry.npmjs.org 2>$null
+if ($LASTEXITCODE -ne 0 -or -not $whoami) {
+    Write-Host ''
+    Write-Host '============================================================'
+    Write-Host '  未检测到登录（npm 10 未登录时 publish 会直接 ENEEDAUTH）'
+    Write-Host '  接下来走【网页登录】：浏览器打开授权页 → 登录 + 2FA → 自动继续'
+    Write-Host '============================================================'
+    Write-Host ''
+    npm login --auth-type=web --registry=https://registry.npmjs.org
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ''
+        Write-Host '登录失败——请把本窗口内容完整告知 Agent'
+        Read-Host '按回车关闭窗口'
+        exit 1
+    }
+    Write-Host '登录成功，继续发布...'
+    Write-Host ''
+}
+
 npm publish --registry=https://registry.npmjs.org
 
 Write-Host ''

@@ -1,3 +1,8 @@
+﻿---
+name: npm-publish
+description: 把本地目录 / 包发布为 **npm 官方源**包的全流程技能：发布前检查（包名占用 / 登录态 / 打包内容 / registry 源）→ npm pack --dry-run 预览 → 登录 → 发布（2FA 交互式网页审批流 / schtasks 发布窗口）→ npm view 验证 → 版本迭代 → 72h 内撤回。当用户要发布 npm 包、发新版本 / 升版重发、撤回 unpublish、检查打包内容、登录 npm 账号，或 npm 报镜像 / 2FA / EOTP / E403 类错误时使用。
+---
+
 # npm-publish
 
 > 把本地目录 / 包发布为 **npm 包**的全流程技能：检查 → 打包预览 → 登录 → 发布 → 验证 → 版本迭代 → 撤回。
@@ -74,9 +79,13 @@ npm pack --dry-run
 ### 3. 登录
 
 ```powershell
-npm login --registry=https://registry.npmjs.org
+npm login --auth-type=web --registry=https://registry.npmjs.org   # 推荐：浏览器登录 + 2FA（npm 10）
 npm whoami          # 必须输出用户名，否则回到 0
 ```
+
+- **npm 10 首选网页登录**：`--auth-type=web` 打印浏览器授权链接，完成登录 + 2FA 后 CLI 自动写令牌（不输密码到终端）。
+- 旧式交互登录（用户名/密码/OTP）在 npm 10 仍可用，但密码输入不回显、且 2FA 需另输码——能用 web 就用 web。
+- **未登录 ≠ 2FA 审批**：未登录时 `npm publish` 直接报 ENEEDAUTH（不发 Auth URL）；必须先登录拿到令牌，之后 publish 的 2FA 才走网页审批流。
 
 - 密码输入时不回显（正常现象）
 - 登录凭证按 registry 分开存；镜像登录 ≠ 官方登录
@@ -135,7 +144,7 @@ npm publish --registry=https://registry.npmjs.org
 | E403 `Two-factor authentication ... required` | 2FA 未开/未输码 | 走上方「交互式网页审批流」；无认证器 App 用恢复码填 2FA 框 |
 | EOTP（非交互环境） | 无 TTY 时 npm 不发 URL 直接拒绝 | 必须在交互终端跑；或 `--otp=` 带当前码 |
 | E403 `cannot publish over previously published version` | 版本重复 | 升 version 再发 |
-| E401 / ENEEDAUTH | 未登录或令牌失效 | §流程 3 重新登录 |
+| E401 / ENEEDAUTH | 未登录或令牌失效 | §流程 3 重新登录（npm 10 未登录时 publish 不发 URL 直接 ENEEDAUTH，先 login 再 publish） |
 | E404 发布路径 404 | 包名被抢 / registry 错 | 查 `npm view`；确认 `--registry` |
 | E409 | 版本冲突 | 升 version |
 
@@ -195,6 +204,7 @@ npm unpublish <包名>@<版本> --registry=https://registry.npmjs.org
 2. **2FA 门槛**：npm 强制发布 2FA，`npm publish` 报 `Two-factor authentication ... is required`。解决：官网/CLI 开认证器 2FA，发布输 6 位码。
 3. **令牌泄露**：令牌出现在聊天/日志 = 已泄露，**立即 revoke**，发布能力用 2FA 补上（不要"反正能用就先留着"）。
 4. **非交互环境发布必 EOTP**：Start-Process / 后台 job / CI 跑 `npm publish` 时 npm 跳过网页审批直接报 EOTP（不发 URL）。
+   - **未登录先登录（2026-08-16 实测）**：npm 10 未登录时 publish 不发 Auth URL、直接 `ENEEDAUTH`——必须先 `npm login --auth-type=web`（浏览器登录 + 2FA 拿令牌），之后 publish 的 2FA 才走网页审批流。发布窗口脚本已内置登录检测（未登录自动先引导登录）。
    解决：把命令交给用户在**交互终端**自己跑，npm 会打印 `Authenticate your account at: <URL>` + `Press ENTER to open in the browser...`，
    浏览器完成 2FA 审批（无认证器 App 时填恢复码）即发布成功。
    - **输出重定向也会触发 EOTP**（2026-08-14 实测）：`npm publish > result.txt 2>&1` 让 stdout 非 TTY → npm 跳过网页审批直接要 OTP。
@@ -235,4 +245,11 @@ npm unpublish <包名>@<版本> --registry=https://registry.npmjs.org
 - 2026-08-14（同日追加）：`dsh-harness-desktop@1.0.2` 实盘发布落地**发布窗口方案**——Agent 用 `schtasks /it` 把
   powershell.exe 窗口启动到用户交互桌面（直接 Start-Process 的窗口用户不可见）；脚本 UTF-8(BOM) 适配 65001 代码页；
   记录「输出重定向触发 EOTP」「镜像同步延迟导致验证误判」两个新坑。新增 `scripts/publish-window.ps1`（§流程 4）。
+- 2026-08-16（实盘补丁，`dsh-opencode-palette@1.6.1`）：**bypass-2FA 旧令牌被 npm 政策限制**（stderr 提示
+  `tokens that bypass 2FA are being restricted for direct publishing`）→ publish 拿失效令牌直接 PUT 返回
+  **E404（假象）**，且不发 Auth URL。修复：`npm logout` 清旧令牌 → 重新发布触发网页登录。
+  同时发现 **npm 10 未登录 publish 直接 ENEEDAUTH**（不发 URL）→ publish-window.ps1 升级：
+  内置登录检测（未登录先 `npm login --auth-type=web`，浏览器 2FA，成功后再 publish）。
+  另：edit 工具改 ps1 会丢 UTF-8 BOM（Windows PowerShell 按 GBK 读中文乱码致语法错误）——
+  改完必须用 `UTF8Encoding($true)` 重写补 BOM。
 - Tested-By: exempt(无 fresh agent + 发布有真实外部副作用不适合黑盒重放 · 详见 备忘录/docs/adr/0005-d-exemptions-and-rituals.md)

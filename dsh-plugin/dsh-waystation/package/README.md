@@ -6,7 +6,7 @@
 > 唯一打开形式）+ GitHub issue 动作注入（诊断 / 修复 / 讨论 / 执行，均带 `/wayfinder` `/triage` 技能命令）
 > + 交接开新会话。
 
-- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.3.3：13 项 bug 修复 + UI 逐版定稿（C 卡片式两行结构 / 迷你圆环进度 / 标签贪心折叠 +N 弹窗 / 编号+map 竖排）+ 快照性能提速 + npm 发布）
+- **插件包名**: `dsh-waystation`（可分发 npm 包，见 `package/`，当前 v1.5.0：v1.4 详情页（#441）+ v1.5 升级 map 全量落地 —— 状态栏 BUG/诊断过滤 + 设置直达 + 删 panelHeight + Matt 引导 + 新增 wayfinder + 仓库身份 + 双语 + 仓库级缓存架构（git 根检测 → 磁盘缓存秒开 → 自动探测刷新）+ 进度契约与阶段闸门 + 正文格式容错 + markdown 白名单渲染 + 3 项 bug 修复 + T10 自动刷新机制（变化行高亮/即时转圈反馈））
 - **动态版 pluginId**: `wfst-1`（v9–v24 迭代产物）
 - **平台**: Client（浏览器页面）+ Host（Node 进程，gh CLI 数据层）
 - **配套**: [mattpocock/skills](https://github.com/mattpocock/skills)（wayfinder / triage / grilling / handoff / ask-matt 等）
@@ -139,6 +139,15 @@ dsh plugin --profile web remove dsh-waystation
 - tabs 行刷新按钮 + 最右侧版本号 v1.3.3
 - 快照性能提速 ~35s → ~12s（GraphQL aliases 批量 + 合并 fetchMaps + 缓存 60s）
 - 开发工作流文档 DEV-WORKFLOW.md（改 bug → 实时生效完整流程）
+
+## v1.5.0 新增（2026-08-16/17）
+
+- 状态栏「BUG / 诊断」一键过滤（带计数）+ 设置左侧直达 + 删「面板默认高度」
+- Matt 技能安装引导（设置页 + 环境检查页）+「新增 wayfinder」按钮（prompt 带仓库信息）+ 仓库身份组件
+- 全量中英双语 + 进度契约（## 进度：N%）与阶段闸门（needs-triage 前置诊断）
+- 仓库级缓存数据架构：git 根上溯检测 → 宿主磁盘缓存 → 打开/重启秒开 → 自动探测刷新（probe + 轮询 + focus + 动作后）
+- 正文格式容错自愈（字面 \n + BOM 还原）+ 正文格式契约 + issue 正文 markdown 白名单渲染
+- 3 项 bug 修复（setup 误报 / 新会话 prompt 缺 issue 标识 / 完成态按钮配色）+ 手动刷新去遮罩（按钮即时转圈反馈 · 文字恒定）+ 变化行高亮/新增绿闪/删除提示
 
 完整变更历史见 [CHANGELOG.md](./CHANGELOG.md)。
 

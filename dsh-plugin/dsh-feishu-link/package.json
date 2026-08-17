@@ -1,43 +1,44 @@
 {
   "name": "dsh-feishu-link",
   "version": "0.2.0-pre",
-  "description": "DSH（DeepSeek Harness）Web 界面插件 — 给 DSH Agent 接入飞书/Lark IM 的能力。仿 MCODE「侧栏 Agent 列表 + 扫码绑飞书机器人 + 长连接实时沟通」体验，落地为路线 A（IM 中心 overlay + 设置页 + input.dock 提示条）。v0.2 全部 30+ 项完善版（含 sandbox 探测、Lark 海外、persist、redaction、拖动缩放、ESLint、CI、coverage、LICENSE、SPDX 等）。",
+  "description": "DSH（DeepSeek Harness）插件 — 给 DSH Agent 接入飞书/Lark IM。仿 MCODE「侧栏 Agent 列表 + 扫码绑飞书机器人 + 长连接实时沟通」UX，落地路线 A（IM 中心 overlay + 设置页 + input.dock 提示条）。v0.2 完整 30+ 项完善版（含 cordis 实测、Lark、persist、redaction、ESLint、CI、coverage、LICENSE 等）。",
   "type": "module",
   "engines": {
     "node": ">=22.16.0"
   },
-  "main": "host.js",
+  "main": "./bundle/index.js",
   "exports": {
-    ".": "./host.js",
-    "./client": "./client.js",
+    ".": "./bundle/index.js",
+    "./client": "./bundle/client.js",
+    "./host-source": "./host.js",
+    "./client-source": "./client.js",
     "./helper": "./helper/helper.mjs",
     "./fetch": "./lib/fetch.mjs",
     "./package.json": "./package.json"
   },
   "files": [
+    "bundle/",
     "host.js",
     "client.js",
     "lib/",
     "helper/",
     "docs/",
+    "README.md",
     "CHANGELOG.md",
     "DESIGN.md",
     "SPEC.md",
     "ACCEPTANCE.md",
-    "README.md",
     "LICENSE",
     "ROADMAP-completion.md"
   ],
   "scripts": {
-    "postinstall": "node scripts/install-patch.cjs",
-    "uninstall": "node scripts/uninstall-patch.cjs",
+    "postinstall": "node bundle/install-patch.cjs",
+    "uninstall": "node bundle/uninstall-patch.cjs",
     "test": "npm run test:fetch && npm run test:ipc && npm run test:coverage",
     "test:fetch": "node tests/verify-fetch.mjs",
     "test:ipc": "node tests/verify-ipc.mjs",
     "test:probe-sandbox": "node tests/probe-sandbox.mjs",
-    "test:sandbox-real": "node tests/probe-sandbox.mjs",
     "test:coverage": "c8 --check-coverage --lines 80 --functions 80 node tests/verify-fetch.mjs",
-    "test:integration": "node tests/integration/run-helper-smoke.mjs",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -72,7 +73,6 @@
     "name": "FeatherHunter"
   },
   "license": "MIT",
-  "licensePath": "./LICENSE",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FeatherHunter/SKILLS.git",
@@ -91,5 +91,13 @@
       "https://github.com/FeatherHunter/SKILLS/issues/391",
       "https://github.com/FeatherHunter/SKILLS/issues/392"
     ]
+  },
+  "dsh": {
+    "name": "dsh-feishu-link",
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": []
+    }
   }
 }

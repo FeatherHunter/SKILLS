@@ -49,8 +49,8 @@ llm-pi-ai:
       baseURL: https://opencode.ai/zen/go/v1
       models:
         - id: muse-spark-1.2-contributor
-          name: Muse Spark 1.2 Contributor
-          input: [ text ]
+          name: muse-spark-1.2-contributor
+          input: [ text, image ]
           contextWindow: 1048576
           maxTokens: 13272
           reasoningEfforts:
@@ -89,13 +89,14 @@ llm-pi-ai:
 | 直连 `403`，代理 `200` | 步骤 3 + 步骤 4 | 不重写整文件，不改 `agent-default-model`（除非用户要求设为默认） |
 | 直连 `401 Model not supported` | 按步骤 3 写入新 id `muse-spark-1.2-contributor` | 不保留旧 `muse-spark-1.2` |
 | 已被限制但本机无代理监听 | 提示用户启动 Clash / 切换节点 | 不硬编码 `7890` 也不静默失败 |
-| `input: [text, image]` | 保持 `[text]` | 不声明 `image`（网关 `input_image` 返回 400） |
+| `input: [text, image]` | 保持 `[text, image]`（多模态声明，不影响纯文本调用） | 不要剥成 `[text]`——升级后用户偏好即如此 |
 | `reasoningEfforts` 含 `max` | 只保留 5 档 `minimal/low/medium/high/xhigh` | 不写 `max/none/off:bare` |
 
 ## 其他约束
 
 - `displayName` 必须加引号
-- `baseURL` 必须为 `https://opencode.ai/zen/go/v1`，不含 `/responses`
+- `baseURL` 必须为 `https://opencode.ai/zen/go/v1`，**不带** `/responses` 路径段——`pi-ai` 直接把字段值传给 OpenAI SDK，OpenAI SDK 内部默认拼 `/responses`，所以 settings.yaml 里写 `/v1`、DSH 模型下拉显示的实际请求 URL 是 `/v1/responses`
+- `name` 字段可以直接用 `id`（如 `name: muse-spark-1.2-contributor`）——DSH 模型下拉会同时展示 `displayName` 与 `name`，无需改成人类可读标题
 - `maxTokens` 写入 `13272` 会成为请求默认值，符合该模型硬上限
 
 ## 回滚
@@ -103,3 +104,76 @@ llm-pi-ai:
 - `settings.yaml.bak.<时间戳>` 覆盖
 - 若改过 `verge.yaml:enable_tun_mode` 则改回原值
 - 若打过补丁则用 `*.bak.*` 还原 `openai-responses.js` 并重启 DSH
+
+---
+
+## 实战参考（2026-08-25 · DSH 桌面版 2.0.2 · 真机排查录）
+
+> 本次在 **DSH 桌面版（Electron app.asar 打包）** 上完整走通「直连 403 → 代理穿透 → 补丁落地」的排坑全过程。以下经验能显著缩短未来里程。
+
+### 1. 探测「直连 vs 代理」必须先显式区分，否则会被系统代理骗
+
+- **坑**：PowerShell 的 `Invoke-WebRequest / Invoke-RestMethod` 默认走 **IE 系统代理**（`HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings` 的 `ProxyEnable/ProxyServer`）。本机 Clash 开了系统代理 + `HTTP_PROXY=127.0.0.1:7890` 时，**“直连探测”其实是代理穿透** → 误判为“未限制” → 白折腾一轮。
+- **正确做法（强制真直连）**：用 `[System.Net.HttpWebRequest]` 且 `$req.Proxy = $null`：
+
+```powershell
+$req = [System.Net.HttpWebRequest]::Create('https://opencode.ai/zen/go/v1/responses')
+$req.Method = 'POST'; $req.ContentType = 'application/json'
+$req.Proxy = $null   # 关键：强制无代理
+$req.Headers.Add('Authorization', 'Bearer ' + $key)
+$req.Timeout = 20000
+```
+
+- 结果判定：`403 RegionError` = 真被地区限制；`200` = 未限制。
+- 反过来**验证代理可穿透**：同请求 `$req.Proxy = New-Object System.Net.WebProxy('http://127.0.0.1:7890')`，`200` 即代理可用。
+
+### 2. DSH 桌面版实际加载的 pi-ai 在 `app.asar.unpacked`，不是 agent/node_modules
+
+- **关键认知**：DSH 桌面版（`D:\0Tools\DSH Desktop\resources\app.asar` + `app.asar.unpacked`）的 agent/LLM 依赖打包在 **`resources\app.asar.unpacked\node_modules\@earendil-works\pi-ai\`**。Electron 对 unpacked 目录**优先于 asar 内同名文件**加载。
+- `%APPDATA%\DSH Desktop\agent\node_modules\@earendil-works\pi-ai` 那份是**不会被加载的死副本**——在上面打补丁无效（本次踩坑：改了 3 轮才定位）。
+- **定位真实加载路径的方法**：
+  - `npx -y @electron/asar list app.asar | findstr pi-ai` 看 asar 内清单
+  - `npx -y @electron/asar extract app.asar <outDir>` 整包解出可读文件（extract-file 对含中文用户名路径不稳）
+  - 直接查 `resources\app.asar.unpacked\node_modules\@earendil-works\pi-ai\dist\api\openai-responses.js` 在不在、有没有补丁特征
+
+### 3. 补丁打对位置的完整套路（B 方案增强版）
+
+在对的文件（`...\app.asar.unpacked\node_modules\@earendil-works\pi-ai\dist\api\openai-responses.js`）上：
+
+1. **备份**：`Copy-Item <file> <file>.bak -Force`
+2. **头部加 import**（该文件原本可能没有 undici/resolver）：
+
+```js
+import { ProxyAgent, fetch as undiciFetch } from "undici";
+import { resolveHttpProxyUrlForTarget } from "../utils/node-http-proxy.js";
+```
+
+3. **createClient 顶部加硬编码代理块（对本域强制，不依赖环境变量）**：
+
+```js
+const baseHost = String(model.baseUrl || '');
+if (!globalThis.__dshOpenCodeProxyPatched && baseHost.includes('opencode.ai')) {
+    globalThis.__dshOpenCodeProxyPatched = true;
+    try {
+        const proxyAgent = new ProxyAgent('http://127.0.0.1:7890'); // 用现场探测的端口
+        globalThis.fetch = (input, init) => undiciFetch(input, { ...init, dispatcher: proxyAgent });
+    } catch {}
+}
+```
+
+4. **语法验证**：`node --check <file>` -> EXIT 0
+5. **端到端验证**（依赖同目录 undici 可解析）：在 unpacked 目录放 `.tmp-e2e.mjs`，node 跑；从 `~/.dsh/.credentials.yaml` 读 key -> `undiciFetch(url, { dispatcher: proxyAgent })`，预期 HTTP 200
+6. **重启 DSH 生效**（补丁在进程启动时加载，必须重启）
+
+### 4. 为什么「setx 用户级代理」对 DSH 桌面版无效
+
+- `setx HTTP_PROXY/HTTPS_PROXY/ALL_PROXY` 写用户级注册表，**只对之后启动的新进程生效**。
+- Electron 桌面应用（DSH Desktop.exe）从 explorer/启动器拉起，**是否继承 setx 的 user-env 不确定**（本次实测：重启多次都未继承 -> 兜底的 process.env 探测代理路径一直为空）。
+- 结论：**不要依赖环境变量方案**（对桌面版），直接走硬编码补丁；TUN 模式可作为备选但需管理员建 Meta 网卡（本次未采用）。
+
+### 5. 其他经验
+
+- **日志是实锤**：`%APPDATA%\DSH Desktop\logs\dsh-*.log` 的 `[llm-fallbacks]` 行会显示 `opencode-go-muse/... -> minimax-cn/... (reason=trigger-code)`——trigger-code 即 AUTH 类错误触发降级，是「模型不可用」的最早信号。
+- **“API key is invalid” 的误报**：DSH/pi-ai 把 403 RegionError 归一化成 `API key is invalid` 类错误——**不要因为文案以为是 key 问题**，先做步骤 2 的强制直连探测区分 403/401。
+- **reasoning 模型响应**：`output` 里是 `type: "reasoning"`（加密内容），`output_text` 可能为空，这是正常现象；看 `status: completed` + `usage` 计数即可判定成功。
+- **不要一次改多处**：先确认唯一真实加载路径（unpacked），改对一处 + 重启验证，成功即止；改多份反而会互相掩盖。

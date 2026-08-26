@@ -1,6 +1,6 @@
 ---
 name: pharma-market-registration
-description: Use ONLY when the user works on pharmaceutical international registration market requirements (药品国际注册市场要点 / 注册要求 / 申报要求 / 文件清单). Covers developed markets 马达加斯加, 喀麦隆, 也门, 科特迪瓦, 利比里亚, 尼日利亚, 多米尼加, 洪都拉斯, 危地马拉, 柬埔寨, 马里, 南苏丹 and any new (undeveloped) market. Front-load trigger keywords: 注册要求, 申报要求, 市场要求, 文件清单, GMP, COPP, FSC, CPP, CTD, 注册证, 进口许可, 马达加斯加, 喀麦隆, 也门, 科特迪瓦, 利比里亚, 尼日利亚, 多米尼加, 洪都拉斯, 危地马拉, 柬埔寨, 马里, 南苏丹, 非洲, 中美洲, registration requirements, market requirements.
+description: Use ONLY when the user works on pharmaceutical international registration market requirements (药品国际注册市场要点 / 注册要求 / 申报要求 / 文件清单). Covers developed markets 马达加斯加, 喀麦隆, 也门, 科特迪瓦, 利比里亚, 尼日利亚, 多米尼加, 洪都拉斯, 危地马拉, 柬埔寨, 马里, 南苏丹, 阿富汗, 多哥, 菲律宾, 乌兹别克斯坦, 伊拉克, 刚果金, 老挝 and any new (undeveloped) market. Front-load trigger keywords: 注册要求, 申报要求, 市场要求, 文件清单, GMP, COPP, FSC, CPP, CTD, 注册证, 进口许可, 马达加斯加, 喀麦隆, 也门, 科特迪瓦, 利比里亚, 尼日利亚, 多米尼加, 洪都拉斯, 危地马拉, 柬埔寨, 马里, 南苏丹, 阿富汗, 多哥, 菲律宾, 乌兹别克斯坦, 伊拉克, 刚果金, 老挝, DRC, 非洲, 中美洲, registration requirements, market requirements.
 ---
 
 # 药品国际注册 · 市场要点库（Market Registration Guide）
@@ -25,6 +25,13 @@ description: Use ONLY when the user works on pharmaceutical international regist
 | 柬埔寨 | `markets/cambodia.md` |
 | 马里 | `markets/mali.md` |
 | 南苏丹 | `markets/south-sudan.md` |
+| 阿富汗 | `markets/afghanistan.md` |
+| 多哥 | `markets/togo.md` |
+| 菲律宾 | `markets/philippines.md` |
+| 乌兹别克斯坦 | `markets/uzbekistan.md` |
+| 伊拉克 | `markets/iraq.md` |
+| 刚果金（DRC） | `markets/dr-congo.md` |
+| 老挝 | `markets/laos.md` |
 
 不在列表内的市场（未开发市场）→ 用 `markets/_template.md` 新建文件，全部内容标「待确认」。
 

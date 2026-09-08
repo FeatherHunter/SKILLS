@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# ilife #45 双包发布 wizard：dsh-life-pack 0.2.0 + dsh-calorie 0.1.3。
+# ilife #45 双包发布 wizard：dsh-life-pack 0.2.0 + dsh-calorie 0.1.4。
 # 人在可交互终端里跑；登录走网页审批、发布要 OTP 当场输/当场批。
 # Agent 不代跑 publish（非交互必 EOTP，见 references/pitfalls.md 坑 8）。
 #
@@ -190,7 +190,7 @@ finish() {
 TOTAL_STAGES=4
 REG="https://registry.npmjs.org"
 
-banner "ilife #45 双包发布（dsh-life-pack 0.2.0 + dsh-calorie 0.1.3）"
+banner "ilife #45 双包发布（dsh-life-pack 0.2.0 + dsh-calorie 0.1.4）"
 
 # ── Stage 1：登录 ─────────────────────────────────────────────────────────
 stage "登录官方源"
@@ -233,26 +233,26 @@ else
   SKIPPED+=("dsh-life-pack 0.2.0（人跳过）")
 fi
 
-# ── Stage 3：发 dsh-calorie 0.1.3 ──────────────────────────────────────────
-stage "发布 dsh-calorie 0.1.3"
-say "目录：D:/ilife/packages/plugin-calorie（已是待发版 0.1.3，注册表现有 0.1.2）。"
+# ── Stage 3：发 dsh-calorie 0.1.4 ──────────────────────────────────────────
+stage "发布 dsh-calorie 0.1.4"
+say "目录：D:/ilife/packages/plugin-calorie（已是待发版 0.1.4，注册表现有 0.1.3）。"
 cd "D:/ilife/packages/plugin-calorie"
-printf '  %s确认发布 dsh-calorie@0.1.3 到官方源（不可逆）：直接回车=发布，输入 n 跳过%s ' "$YELLOW" "$RESET"
+printf '  %s确认发布 dsh-calorie@0.1.4 到官方源（不可逆）：直接回车=发布，输入 n 跳过%s ' "$YELLOW" "$RESET"
 read -r _pub2 || true
 if [[ ! "$_pub2" =~ ^[Nn] ]]; then
   npm publish --registry="$REG"
   got=$(npm view dsh-calorie version --registry="$REG" --prefer-online 2>/dev/null || true)
-  if [[ "$got" == "0.1.3" ]]; then
-    say "✓ 注册表已是 0.1.3。"
+  if [[ "$got" == "0.1.4" ]]; then
+    say "✓ 注册表已是 0.1.4。"
   else
-    warn "注册表读到 [$got]，不是 0.1.3——别往下走，找 Agent 看。"
-    SKIPPED+=("dsh-calorie 0.1.3 复核（读到 $got）")
+    warn "注册表读到 [$got]，不是 0.1.4——别往下走，找 Agent 看。"
+    SKIPPED+=("dsh-calorie 0.1.4 复核（读到 $got）")
     finish
     exit 1
   fi
 else
   note "已跳过本包。"
-  SKIPPED+=("dsh-calorie 0.1.3（人跳过）")
+  SKIPPED+=("dsh-calorie 0.1.4（人跳过）")
 fi
 
 # ── Stage 4：下一步 ───────────────────────────────────────────────────────

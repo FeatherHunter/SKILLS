@@ -190,7 +190,7 @@ finish() {
 TOTAL_STAGES=3
 REG="https://registry.npmjs.org"
 
-banner "单发 dsh-calorie 0.1.5"
+banner "单发 dsh-calorie 0.1.6"
 
 # ── Stage 1：登录 ─────────────────────────────────────────────────────────
 stage "登录官方源"
@@ -211,31 +211,31 @@ else
   fi
 fi
 
-# ── Stage 2：发 dsh-calorie 0.1.5 ──────────────────────────────────────────
-stage "发布 dsh-calorie 0.1.5"
-say "目录：D:/ilife/packages/plugin-calorie（已是待发版 0.1.5，注册表现有 0.1.4）。"
+# ── Stage 2：发 dsh-calorie 0.1.6 ──────────────────────────────────────────
+stage "发布 dsh-calorie 0.1.6"
+say "目录：D:/ilife/packages/plugin-calorie（已是待发版 0.1.6，注册表现有 0.1.5）。"
 cd "D:/ilife/packages/plugin-calorie"
-printf '  %s确认发布 dsh-calorie@0.1.5 到官方源（不可逆）：直接回车=发布，输入 n 跳过%s ' "$YELLOW" "$RESET"
+printf '  %s确认发布 dsh-calorie@0.1.6 到官方源（不可逆）：直接回车=发布，输入 n 跳过%s ' "$YELLOW" "$RESET"
 read -r _pub2 || true
 if [[ ! "$_pub2" =~ ^[Nn] ]]; then
   npm publish --registry="$REG"
   got=$(npm view dsh-calorie version --registry="$REG" --prefer-online 2>/dev/null || true)
-  if [[ "$got" == "0.1.5" ]]; then
-    say "✓ 注册表已是 0.1.5。"
+  if [[ "$got" == "0.1.6" ]]; then
+    say "✓ 注册表已是 0.1.6。"
   else
-    warn "注册表读到 [$got]，不是 0.1.5——别往下走，找 Agent 看。"
-    SKIPPED+=("dsh-calorie 0.1.5 复核（读到 $got）")
+    warn "注册表读到 [$got]，不是 0.1.6——别往下走，找 Agent 看。"
+    SKIPPED+=("dsh-calorie 0.1.6 复核（读到 $got）")
     finish
     exit 1
   fi
 else
   note "已跳过本包。"
-  SKIPPED+=("dsh-calorie 0.1.5（人跳过）")
+  SKIPPED+=("dsh-calorie 0.1.6（人跳过）")
 fi
 
 # ── Stage 3：下一步 ───────────────────────────────────────────────────────
 stage "收尾"
-say "0.1.4 发出去了。回 Agent 说一声，Agent 复核注册表 + 给重装命令。"
+say "0.1.6 发出去了。回 Agent 说一声，Agent 复核注册表 + 给重装命令。"
 note "（不要自己先装别的 ilife 单品包：bill/chef/home/schedule 还是坏的，同批会炸。）"
 
 finish

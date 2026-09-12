@@ -39,6 +39,22 @@
 
 每个被处理的 issue 同时携带 1 个技能 label、1 个分类 label、1 个状态 label。
 
+### ⛔ 已停止开发的技能分区（2026-09-12 冻结 · 迁往 ilife）
+
+下列技能与公共层**已停止开发**，其 issue 于 2026-09-12 一次性全部关闭（29 张，关闭理由 `not planned` ＋ 标签 `wontfix`）：
+
+> `skill:卡路里` · `skill:作息管家` · `skill:私家大厨` · `skill:饼干记账` · `skill:备忘录` · `skill:公共组件` · `skill:技能互联`
+
+**新项目地址：<https://github.com/FeatherHunter/ilife>** —— 原技能已**重构为 TypeScript 项目**（`packages/skill-*`），并在此基础上**开发了 DSH 插件**（`packages/plugin-*-ilife`），由插件把技能能力注册给 DSH 会话。
+
+对 agent 的硬要求：
+
+- **不要再给上述分区新建 issue，也不要把 label 打到新票上**；相关需求提到 ilife 仓。
+- 这些 label **保留不删**，仅供历史检索（旧票仍可筛出来）。
+- 本仓对应技能目录**冻结**，不接新功能／修复／验收推进。
+- 档案「为什么关、关了哪些、边界在哪」：`docs/ilife-迁移-20260912/README.md`；公告票 = [#468](https://github.com/FeatherHunter/SKILLS/issues/468)（已置顶）。
+- **边界**：`skill:居家管家` **不在**本次关闭名单内（其 4 张票仍开放），另行裁决；`dsh:plugin:waystation` 等 DSH 插件生态分区不受本冻结影响。
+
 ## 命令约定
 
 > ⚠️ **gh 未加入 PATH**（2026-08-02 核实：`shutil.which('gh')` 返回 None）。gh 可执行文件在 **`D:\0Tools\GitHubCLI\gh.exe`**。PowerShell 调用方式：

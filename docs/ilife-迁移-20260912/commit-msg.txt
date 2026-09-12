@@ -1,0 +1,26 @@
+[总纲] 停止开发归档 · 技能本体迁 ilife 新仓(本次关闭 29 张票)
+
+范围:「跨技能 / 公共组件 / 卡路里 / 作息管家 / 私家大厨 / 饼干记账 / 备忘录」相关 issue
+全部关闭(29 张 · 关闭理由 not planned ＋ 标签 wontfix),并在每张票上留下指向新仓的说明。
+
+新仓: https://github.com/FeatherHunter/ilife
+  —— 原 SKILL 重构成 TypeScript 项目(packages/skill-*) 并在此基础上开发了 DSH 插件
+     (packages/plugin-*-ilife),由插件把技能能力注册给 DSH 会话。故本仓这批东西停止开发。
+
+分布: 卡路里 9 / 技能互联 8 / 私家大厨 7 / 公共组件 2 / 饼干记账 1 / 备忘录 1 / 作息管家 1
+
+本次改动:
+- docs/ilife-迁移-20260912/ 新增归档索引
+  · README.md        总索引(关闭口径 / 29 张票清单 / 边界 / 样板 / 编码踩坑)
+  · plan.json        票号→模板→技能名 映射(执行输入)
+  · comments/*.md    三份评论模板(单技能 / 公共组件 / 技能互联 · {{SKILL}} 占位)
+  · close-issues.ps1 执行脚本(DryRun 预演 / Only 分批 / 幂等跳过已关闭)
+  · close-log.csv    本次执行日志
+  · 公告issue.md     公告票正文快照
+- docs/agents/issue-tracker.md 新增「已停止开发的技能分区」冻结条款
+  · 禁止再给这些 label 建票;label 保留不删仅供历史检索
+
+公告票: #468(已置顶)
+边界: skill:居家管家 的 4 张票(#104/#116/#253/#292)不在名单内,仍开放待裁决
+
+Tested-By: exempt(无 fresh agent · 详见 备忘录/docs/adr/0005-d-exemptions-and-rituals.md)
